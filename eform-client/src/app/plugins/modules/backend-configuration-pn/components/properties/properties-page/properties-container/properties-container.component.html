@@ -1,0 +1,54 @@
+<eform-subheader>
+  <div class="p-3">
+    <button
+      mdbBtn
+      *ngIf="
+        authStateService.checkClaim(
+          backendConfigurationPnClaims.createProperties
+        )
+      "
+      id="propertyCreateBtn"
+      class="btn-success btn-small-height"
+      mdbTooltip="{{ 'Create Property' | translate }}"
+      [routerLink]="['./create']"
+    >
+      {{ 'New property' | translate }}
+    </button>
+  </div>
+</eform-subheader>
+
+<div class="container-fluid">
+  <app-properties-table
+    [propertiesModel]="propertiesModel"
+    (showDeletePropertyModal)="showDeletePropertyModal($event)"
+  ></app-properties-table>
+  <!--  <div class="row justify-content-between mr-2 ml-2">-->
+  <!--    <div class="col-md-1 col-sm-3">-->
+  <!--      <eform-page-size-->
+  <!--        [pageSize]="propertysStateService.getPageSize() | async"-->
+  <!--        (onPageSizeChanged)="onPageSizeChanged($event)"-->
+  <!--      >-->
+  <!--      </eform-page-size>-->
+  <!--    </div>-->
+  <!--    <div class="col-md-4 ml-auto d-flex justify-content-end p-2">-->
+  <!--      <eform-pagination-->
+  <!--        [pagination]="propertysStateService.getPagination() | async"-->
+  <!--        (onPageChanged)="changePage($event)"-->
+  <!--      ></eform-pagination>-->
+  <!--    </div>-->
+  <!--  </div>-->
+</div>
+<app-property-delete
+  #deletePropertyModal
+  (propertyDelete)="onPropertyDelete($event)"
+></app-property-delete>
+
+<app-property-create
+  #createPropertyModal
+  (propertyCreate)="onPropertyCreate($event)"
+></app-property-create>
+
+<app-property-edit
+  #editPropertyModal
+  (propertyUpdate)="onPropertyUpdate($event)"
+></app-property-edit>
