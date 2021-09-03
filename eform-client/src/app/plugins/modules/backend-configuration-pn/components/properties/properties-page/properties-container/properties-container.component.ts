@@ -4,9 +4,9 @@ import { Subscription } from 'rxjs';
 import { Paged } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import {
-  PropertyCreateComponent,
-  PropertyDeleteComponent,
-  PropertyEditComponent,
+  PropertyCreateModalComponent,
+  PropertyDeleteModalComponent,
+  PropertyEditModalComponent,
 } from '../../property-actions';
 import { BackendConfigurationPnClaims } from '../../../../enums';
 import {
@@ -25,11 +25,11 @@ import { PropertiesStateService } from '../../store';
 })
 export class PropertiesContainerComponent implements OnInit, OnDestroy {
   @ViewChild('createPropertyModal', { static: false })
-  createPropertyModal: PropertyCreateComponent;
+  createPropertyModal: PropertyCreateModalComponent;
   @ViewChild('editPropertyModal', { static: false })
-  editPropertyModal: PropertyEditComponent;
+  editPropertyModal: PropertyEditModalComponent;
   @ViewChild('deletePropertyModal', { static: false })
-  deletePropertyModal: PropertyDeleteComponent;
+  deletePropertyModal: PropertyDeleteModalComponent;
 
   // descriptionSearchSubject = new Subject();
   // nameSearchSubject = new Subject();

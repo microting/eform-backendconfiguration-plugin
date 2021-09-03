@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { PermissionGuard } from 'src/app/common/guards';
+import { AuthGuard, PermissionGuard } from 'src/app/common/guards';
 import { PropertiesContainerComponent } from './components';
 import { BackendConfigurationPnClaims } from './enums';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
@@ -22,6 +22,14 @@ export const routes: Routes = [
           requiredPermission: BackendConfigurationPnClaims.getProperties,
         },
         component: PropertiesContainerComponent,
+      },
+      {
+        path: 'property-workers',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/property-workers/property-workers.module').then(
+            (m) => m.PropertyWorkersModule
+          ),
       },
     ],
   },

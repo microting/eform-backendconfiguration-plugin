@@ -38,17 +38,17 @@
   <!--    </div>-->
   <!--  </div>-->
 </div>
-<app-property-delete
+<app-property-delete-modal
   #deletePropertyModal
   (propertyDelete)="onPropertyDelete($event)"
-></app-property-delete>
+></app-property-delete-modal>
 
-<app-property-create
+<app-property-create-modal
   #createPropertyModal
   (propertyCreate)="onPropertyCreate($event)"
-></app-property-create>
+></app-property-create-modal>
 
-<app-property-edit
+<app-property-edit-modal
   #editPropertyModal
   (propertyUpdate)="onPropertyUpdate($event)"
-></app-property-edit>
+></app-property-edit-modal>

@@ -8,11 +8,11 @@ import {
 import { PropertyModel } from '../../../../models';
 
 @Component({
-  selector: 'app-property-delete',
-  templateUrl: './property-delete.component.html',
-  styleUrls: ['./property-delete.component.scss'],
+  selector: 'app-property-delete-modal',
+  templateUrl: './property-delete-modal.component.html',
+  styleUrls: ['./property-delete-modal.component.scss'],
 })
-export class PropertyDeleteComponent implements OnInit {
+export class PropertyDeleteModalComponent implements OnInit {
   @ViewChild('frame', { static: false }) frame;
   @Output() propertyDelete: EventEmitter<number> = new EventEmitter<number>();
   propertyModel: PropertyModel = new PropertyModel();

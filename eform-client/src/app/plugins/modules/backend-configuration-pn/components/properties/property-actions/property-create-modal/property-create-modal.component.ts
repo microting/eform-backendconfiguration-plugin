@@ -8,11 +8,11 @@ import {
 import { PropertyCreateModel } from '../../../../models';
 
 @Component({
-  selector: 'app-property-create',
-  templateUrl: './property-create.component.html',
-  styleUrls: ['./property-create.component.scss'],
+  selector: 'app-property-create-modal',
+  templateUrl: './property-create-modal.component.html',
+  styleUrls: ['./property-create-modal.component.scss'],
 })
-export class PropertyCreateComponent implements OnInit {
+export class PropertyCreateModalComponent implements OnInit {
   @ViewChild('frame', { static: false }) frame;
   @Output() propertyCreate: EventEmitter<PropertyCreateModel> =
     new EventEmitter<PropertyCreateModel>();

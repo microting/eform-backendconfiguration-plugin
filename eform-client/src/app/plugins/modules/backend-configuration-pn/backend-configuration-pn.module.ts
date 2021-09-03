@@ -14,12 +14,15 @@ import { EformSharedModule } from 'src/app/common/modules/eform-shared/eform-sha
 import { BackendConfigurationPnRouting } from './backend-configuration-pn.routing.module';
 import {
   BackendConfigurationSettingsComponent,
-  PlanningsHeaderComponent,
-  PlanningsTableComponent,
   PropertiesContainerComponent,
-  PropertyCreateComponent,
-  PropertyDeleteComponent,
-  PropertyEditComponent,
+  PropertyCreateModalComponent,
+  PropertyDeleteModalComponent,
+  PropertyEditModalComponent,
+  PropertiesTableComponent,
+  PropertyWorkersPageComponent,
+  PropertyWorkerCreateComponent,
+  PropertyWorkerDeleteComponent,
+  PropertyWorkerEditComponent,
 } from './components';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 import {
@@ -49,11 +52,14 @@ import { backendConfigurationStoreProviders } from './store-providers.config';
     BackendConfigurationPnLayoutComponent,
     BackendConfigurationSettingsComponent,
     PropertiesContainerComponent,
-    PropertyCreateComponent,
-    PropertyEditComponent,
-    PropertyDeleteComponent,
-    PlanningsHeaderComponent,
-    PlanningsTableComponent,
+    PropertyCreateModalComponent,
+    PropertyEditModalComponent,
+    PropertyDeleteModalComponent,
+    PropertiesTableComponent,
+    PropertyWorkersPageComponent,
+    PropertyWorkerCreateComponent,
+    PropertyWorkerDeleteComponent,
+    PropertyWorkerEditComponent,
   ],
   providers: [
     BackendConfigurationPnSettingsService,

@@ -8,11 +8,11 @@ import {
 import { PropertyModel, PropertyUpdateModel } from '../../../../models';
 
 @Component({
-  selector: 'app-property-edit',
-  templateUrl: './property-edit.component.html',
-  styleUrls: ['./property-edit.component.scss'],
+  selector: 'app-property-edit-modal',
+  templateUrl: './property-edit-modal.component.html',
+  styleUrls: ['./property-edit-modal.component.scss'],
 })
-export class PropertyEditComponent implements OnInit {
+export class PropertyEditModalComponent implements OnInit {
   @ViewChild('frame', { static: false }) frame;
   @Output() propertyUpdate: EventEmitter<PropertyUpdateModel> =
     new EventEmitter<PropertyUpdateModel>();
