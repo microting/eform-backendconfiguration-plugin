@@ -1,0 +1,128 @@
+[
+  {
+    "Key": "BackendConfiguration",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Backend Configuration",
+      "uk-UA": "Конфігурація серверної частини"
+    }
+  },
+  {
+    "Key": "Properties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Properties",
+      "uk-UA": "Властивості"
+    }
+  },
+  {
+    "Key": "Workers",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Workers",
+      "uk-UA": "Працівники"
+    }
+  },
+  {
+    "Key": "Areas",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Areas",
+      "uk-UA": "Області"
+    }
+  },
+  {
+    "Key": "ErrorWhileObtainingProperties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Error while obtaining properties",
+      "uk-UA": "Помилка при отриманні властивостей"
+    }
+  },
+  {
+    "Key": "SuccessfullyCreatingProperties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Successfully creating properties",
+      "uk-UA": "Успішне створення властивостей"
+    }
+  },
+  {
+    "Key": "ErrorWhileCreatingProperties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Error while creating properties",
+      "uk-UA": "Помилка при створенні властивостей"
+    }
+  },
+  {
+    "Key": "PropertyNotFound",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Property not found",
+      "uk-UA": "Властивість не знайдені"
+    }
+  },
+  {
+    "Key": "ErrorWhileReadProperty",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Error while read property",
+      "uk-UA": "Помилка при читанні властивості"
+    }
+  },
+  {
+    "Key": "SuccessfullyUpdateProperties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Successfully update properties",
+      "uk-UA": "Успішно оновлено властивість"
+    }
+  },
+  {
+    "Key": "ErrorWhileUpdateProperties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Error while update properties",
+      "uk-UA": "Помилка при оновленні властивостей"
+    }
+  },
+  {
+    "Key": "SuccessfullyDeleteProperties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Successfully delete properties",
+      "uk-UA": "Успішно видалено властивості"
+    }
+  },
+  {
+    "Key": "ErrorWhileDeleteProperties",
+    "LocalizedValue": {
+      "da": "", //todo
+      "de": "", //todo
+      "en-US": "Error while delete properties",
+      "uk-UA": "Помилка при видаленні властивостей"
+    }
+  },
+  {
+    "Key": "",
+    "LocalizedValue": {
+      "da": "",
+      "de": "",
+      "en-US": "",
+      "uk-UA": ""
+    }
+  }
+]
