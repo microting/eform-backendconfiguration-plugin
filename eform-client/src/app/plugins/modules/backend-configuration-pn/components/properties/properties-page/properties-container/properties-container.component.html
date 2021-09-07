@@ -1,4 +1,4 @@
-<eform-subheader>
+<eform-subheader [title]="'Properties' | translate">
   <div class="p-3">
     <button
       mdbBtn
@@ -10,7 +10,7 @@
       id="propertyCreateBtn"
       class="btn-success btn-small-height"
       mdbTooltip="{{ 'Create Property' | translate }}"
-      [routerLink]="['./create']"
+      (click)="showPropertyCreateModal()"
     >
       {{ 'New property' | translate }}
     </button>
@@ -21,6 +21,7 @@
   <app-properties-table
     [propertiesModel]="propertiesModel"
     (showDeletePropertyModal)="showDeletePropertyModal($event)"
+    (showEditPropertyModal)="showEditPropertyModal($event)"
   ></app-properties-table>
   <!--  <div class="row justify-content-between mr-2 ml-2">-->
   <!--    <div class="col-md-1 col-sm-3">-->

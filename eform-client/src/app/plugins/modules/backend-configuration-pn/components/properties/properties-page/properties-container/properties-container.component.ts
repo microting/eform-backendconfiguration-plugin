@@ -67,6 +67,14 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
+  showPropertyCreateModal() {
+    this.createPropertyModal.show();
+  }
+
+  showEditPropertyModal(property: PropertyModel) {
+    this.editPropertyModal.show(property);
+  }
+
   showDeletePropertyModal(property: PropertyModel) {
     this.deletePropertyModal.show(property);
   }
