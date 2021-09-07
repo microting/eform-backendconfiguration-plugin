@@ -1,8 +1,13 @@
-<div [config]="{ignoreBackdropClick: true}" mdbModal class="modal fade" #frame="mdbModal">
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade"
+  #frame="mdbModal"
+>
   <div class="modal-dialog modal-md">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>{{'New Device User' | translate}}</h3>
+        <h3>{{ 'New Device User' | translate }}</h3>
         <button class="close" data-dismiss="modal" (click)="frame.hide()">
           <span>×</span>
         </button>
@@ -12,18 +17,30 @@
           <div class="row">
             <div class="col-md-12">
               <div class="md-form">
-                <input mdbInput
-                       [(ngModel)]="simpleSiteModel.userFirstName"
-                       required type="text" name="userName" id="firstName" class="form-control">
-                <label for="firstName">{{'First name' | translate }} </label>
+                <input
+                  mdbInput
+                  [(ngModel)]="simpleSiteModel.userFirstName"
+                  required
+                  type="text"
+                  name="userName"
+                  id="firstName"
+                  class="form-control"
+                />
+                <label for="firstName">{{ 'First name' | translate }} </label>
               </div>
             </div>
             <div class="col-md-12">
               <div class="md-form">
-                <input mdbInput
-                       [(ngModel)]="simpleSiteModel.userLastName"
-                       required type="text" name="email" id="lastName" class="form-control">
-                <label for="lastName">{{'Last name' | translate }} </label>
+                <input
+                  mdbInput
+                  [(ngModel)]="simpleSiteModel.userLastName"
+                  required
+                  type="text"
+                  name="email"
+                  id="lastName"
+                  class="form-control"
+                />
+                <label for="lastName">{{ 'Last name' | translate }} </label>
               </div>
             </div>
           </div>
@@ -31,28 +48,77 @@
             <div class="col-md-12">
               <div class="md-form">
                 <ng-select
-                  id = "ProfileLanguageSelector"
+                  id="ProfileLanguageSelector"
                   [placeholder]="'Language' | translate"
                   [bindLabel]="'text'"
                   [bindValue]="'locale'"
                   [clearable]="false"
                   [(ngModel)]="simpleSiteModel.languageCode"
-                  [items]="languages"></ng-select>
+                  [items]="languages"
+                ></ng-select>
               </div>
             </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-xs table-bordered text-center z-depth-1">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>{{ 'Property name' | translate }}</th>
+                  <th>{{ 'Check to pair' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody id="pairingModalTableBody">
+                <tr *ngFor="let property of availableProperties">
+                  <td class="align-middle">{{ property.id }}</td>
+                  <td class="align-middle">{{ property.name }}</td>
+                  <td class="align-middle">
+                    <ng-container *ngFor="let assignment of assignments">
+                      <div
+                        class="mat-checkbox"
+                        *ngIf="assignment.propertyId == property.id"
+                      >
+                        <input
+                          id="checkbox{{ assignment.propertyId }}"
+                          (change)="addToArray($event, assignment.propertyId)"
+                          [checked]="assignment.isChecked"
+                          [value]="assignment.isChecked"
+                          color="primary"
+                          type="checkbox"
+                        />
+                        <label
+                          for="checkbox{{ assignment.propertyId }}"
+                        ></label>
+                      </div>
+                    </ng-container>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button mdbBtn class="btn-success btn-small-height" id="saveCreateBtn"
-                [disabled]="!simpleSiteModel.userFirstName || !simpleSiteModel.userLastName"
-                (click)="createDeviceUser()">{{ 'Create' | translate }}</button>
-        <button mdbBtn class="btn-neutral text-black-50 btn-small-height" id="cancelCreateBtn" (click)="frame.hide()">
-          {{ 'Cancel' | translate }}</button>
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          id="saveCreateBtn"
+          [disabled]="
+            !simpleSiteModel.userFirstName || !simpleSiteModel.userLastName
+          "
+          (click)="createDeviceUser()"
+        >
+          {{ 'Create' | translate }}
+        </button>
+        <button
+          mdbBtn
+          class="btn-neutral text-black-50 btn-small-height"
+          id="cancelCreateBtn"
+          (click)="frame.hide()"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
       </div>
     </div>
   </div>
 </div>
-
-
-

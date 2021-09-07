@@ -1,10 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  CommonDictionaryModel,
   OperationDataResult,
   OperationResult,
   Paged,
 } from 'src/app/common/models';
+import {
+  PropertyAssignmentWorkerModel,
+  PropertyAssignWorkersModel,
+} from '../models/properties/property-workers-assignment.model';
 import {
   PropertyCreateModel,
   PropertyModel,
@@ -14,8 +19,9 @@ import {
 import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationPnPropertiesMethods = {
-  Properties: 'api/items-planning-pn/properties',
-  PropertiesIndex: 'api/items-planning-pn/properties/index',
+  Properties: 'api/backend-configuration-pn/properties',
+  PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
+  PropertiesIndex: 'api/backend-configuration-pn/properties/index',
 };
 
 @Injectable({
@@ -33,14 +39,11 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getSingleProperty(
-    planningId: number
-  ): Observable<OperationDataResult<PropertyModel>> {
+  getAllPropertiesDictionary(): Observable<
+    OperationDataResult<CommonDictionaryModel[]>
+  > {
     return this.apiBaseService.get(
-      BackendConfigurationPnPropertiesMethods.Properties,
-      {
-        id: planningId,
-      }
+      `${BackendConfigurationPnPropertiesMethods.PropertiesIndex}/dictionary`
     );
   }
 
@@ -55,6 +58,29 @@ export class BackendConfigurationPnPropertiesService {
     return this.apiBaseService.post(
       BackendConfigurationPnPropertiesMethods.Properties,
       model
+    );
+  }
+
+  assignPropertiesToWorker(
+    model: PropertyAssignWorkersModel
+  ): Observable<OperationResult> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnPropertiesMethods.PropertiesAssignment,
+      model
+    );
+  }
+
+  getPropertiesAssignments(): Observable<
+    OperationDataResult<PropertyAssignWorkersModel[]>
+  > {
+    return this.apiBaseService.get(
+      `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}`
+    );
+  }
+
+  removeWorkerAssignments(deviceUserId: number): Observable<OperationResult> {
+    return this.apiBaseService.delete(
+      `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}/${deviceUserId}`
     );
   }
 

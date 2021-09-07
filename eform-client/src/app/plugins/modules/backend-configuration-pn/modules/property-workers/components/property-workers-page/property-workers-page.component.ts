@@ -1,15 +1,26 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
+import { Subscription } from 'rxjs';
 import { DeviceUserModel } from 'src/app/common/models/device-users';
 import { SiteDto } from 'src/app/common/models/dto';
 import { DeviceUserService } from 'src/app/common/services/device-users';
-import { TableHeaderElementModel } from 'src/app/common/models';
+import {
+  CommonDictionaryModel,
+  TableHeaderElementModel,
+} from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
+import {
+  PropertyAssignmentWorkerModel,
+  PropertyAssignWorkersModel
+} from '../../../../models/properties/property-workers-assignment.model';
+import { BackendConfigurationPnPropertiesService } from '../../../../services';
 
+@AutoUnsubscribe()
 @Component({
   selector: 'app-property-workers-page',
   templateUrl: './property-workers-page.component.html',
 })
-export class PropertyWorkersPageComponent implements OnInit {
+export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   @ViewChild('editDeviceUserModal', { static: true }) editDeviceUserModal;
   @ViewChild('newOtpModal', { static: true }) newOtpModal;
   @ViewChild('deleteDeviceUserModal', { static: true }) deleteDeviceUserModal;
@@ -17,6 +28,8 @@ export class PropertyWorkersPageComponent implements OnInit {
   selectedSimpleSiteDto: SiteDto = new SiteDto();
   selectedSimpleSite: DeviceUserModel = new DeviceUserModel();
   sitesDto: Array<SiteDto>;
+  availableProperties: CommonDictionaryModel[];
+  workersAssignments: PropertyAssignWorkersModel[];
 
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Site ID', sortable: false, elementId: '' },
@@ -31,17 +44,23 @@ export class PropertyWorkersPageComponent implements OnInit {
       : null,
   ];
 
+  getSites$: Subscription;
+  getPropertiesDictionary$: Subscription;
+  deviceUserAssignments$: Subscription;
+
   get userClaims() {
     return this.authStateService.currentUserClaims;
   }
 
   constructor(
     private deviceUsersService: DeviceUserService,
-    private authStateService: AuthStateService
+    private authStateService: AuthStateService,
+    private propertiesService: BackendConfigurationPnPropertiesService
   ) {}
 
   ngOnInit() {
     this.loadAllSimpleSites();
+    this.getPropertiesDictionary();
   }
 
   openEditModal(simpleSiteDto: SiteDto) {
@@ -49,7 +68,8 @@ export class PropertyWorkersPageComponent implements OnInit {
     this.selectedSimpleSite.userLastName = simpleSiteDto.lastName;
     this.selectedSimpleSite.id = simpleSiteDto.siteUid;
     this.selectedSimpleSite.languageCode = simpleSiteDto.languageCode;
-    this.editDeviceUserModal.show();
+
+    this.editDeviceUserModal.show(simpleSiteDto);
   }
 
   openOtpModal(siteDto: SiteDto) {
@@ -66,10 +86,35 @@ export class PropertyWorkersPageComponent implements OnInit {
   }
 
   loadAllSimpleSites() {
-    this.deviceUsersService.getAllDeviceUsers().subscribe((operation) => {
-      if (operation && operation.success) {
-        this.sitesDto = operation.model;
-      }
-    });
+    this.getSites$ = this.deviceUsersService
+      .getAllDeviceUsers()
+      .subscribe((operation) => {
+        if (operation && operation.success) {
+          this.sitesDto = operation.model;
+          this.getWorkerProperties();
+        }
+      });
   }
+
+  getPropertiesDictionary() {
+    this.getPropertiesDictionary$ = this.propertiesService
+      .getAllPropertiesDictionary()
+      .subscribe((operation) => {
+        if (operation && operation.success) {
+          this.availableProperties = operation.model;
+        }
+      });
+  }
+
+  getWorkerProperties() {
+    this.deviceUserAssignments$ = this.propertiesService
+      .getPropertiesAssignments()
+      .subscribe((operation) => {
+        if (operation && operation.success) {
+          this.workersAssignments = [...operation.model];
+        }
+      });
+  }
+
+  ngOnDestroy(): void {}
 }

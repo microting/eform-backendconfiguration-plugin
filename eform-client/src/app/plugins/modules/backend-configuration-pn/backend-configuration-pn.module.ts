@@ -18,11 +18,7 @@ import {
   PropertyCreateModalComponent,
   PropertyDeleteModalComponent,
   PropertyEditModalComponent,
-  PropertiesTableComponent,
-  PropertyWorkersPageComponent,
-  PropertyWorkerCreateComponent,
-  PropertyWorkerDeleteComponent,
-  PropertyWorkerEditComponent,
+  PropertiesTableComponent
 } from './components';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 import {
@@ -55,16 +51,13 @@ import { backendConfigurationStoreProviders } from './store-providers.config';
     PropertyCreateModalComponent,
     PropertyEditModalComponent,
     PropertyDeleteModalComponent,
-    PropertiesTableComponent,
-    PropertyWorkersPageComponent,
-    PropertyWorkerCreateComponent,
-    PropertyWorkerDeleteComponent,
-    PropertyWorkerEditComponent,
+    PropertiesTableComponent
   ],
   providers: [
     BackendConfigurationPnSettingsService,
     BackendConfigurationPnPropertiesService,
     ...backendConfigurationStoreProviders,
   ],
+  exports: [PropertyCreateModalComponent],
 })
 export class BackendConfigurationPnModule {}

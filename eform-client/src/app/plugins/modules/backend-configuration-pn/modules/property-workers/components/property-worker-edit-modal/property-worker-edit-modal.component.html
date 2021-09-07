@@ -41,6 +41,43 @@
               </div>
             </div>
           </div>
+          <div class="table-responsive">
+            <table class="table table-xs table-bordered text-center z-depth-1">
+              <thead>
+              <tr>
+                <th>ID</th>
+                <th>{{ 'Property name' | translate }}</th>
+                <th>{{ 'Check to pair' | translate }}</th>
+              </tr>
+              </thead>
+              <tbody id="pairingEditModalTableBody">
+              <tr *ngFor="let property of availableProperties">
+                <td class="align-middle">{{ property.id }}</td>
+                <td class="align-middle">{{ property.name }}</td>
+                <td class="align-middle">
+                  <ng-container *ngFor="let assignment of assignments">
+                    <div
+                      class="mat-checkbox"
+                      *ngIf="assignment.propertyId == property.id"
+                    >
+                      <input
+                        id="checkbox_edit{{ assignment.propertyId }}"
+                        (change)="addToArray($event, assignment.propertyId)"
+                        [checked]="assignment.isChecked"
+                        [value]="assignment.isChecked"
+                        color="primary"
+                        type="checkbox"
+                      />
+                      <label
+                        for="checkbox_edit{{ assignment.propertyId }}"
+                      ></label>
+                    </div>
+                  </ng-container>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
