@@ -3,13 +3,17 @@ import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { Paged } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
+import { PropertyAreasViewModalComponent } from 'src/app/plugins/modules/backend-configuration-pn/components';
 import {
   PropertyCreateModalComponent,
   PropertyDeleteModalComponent,
+  PropertyAreasEditModalComponent,
   PropertyEditModalComponent,
 } from '../../property-actions';
 import { BackendConfigurationPnClaims } from '../../../../enums';
 import {
+  PropertyAreaModel,
+  PropertyAreasUpdateModel,
   PropertyCreateModel,
   PropertyModel,
   PropertyUpdateModel,
@@ -30,12 +34,18 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   editPropertyModal: PropertyEditModalComponent;
   @ViewChild('deletePropertyModal', { static: false })
   deletePropertyModal: PropertyDeleteModalComponent;
+  @ViewChild('viewPropertyAreasModal', { static: false })
+  viewPropertyAreasModal: PropertyAreasViewModalComponent;
+  @ViewChild('editPropertyAreasModal', { static: false })
+  editPropertyAreasModal: PropertyAreasEditModalComponent;
 
   // descriptionSearchSubject = new Subject();
   // nameSearchSubject = new Subject();
   propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
 
   getPropertiesSub$: Subscription;
+  getPropertyAreasSub$: Subscription;
+  updatePropertyAreasSub$: Subscription;
   createPropertySub$: Subscription;
   editPropertySub$: Subscription;
   deletePropertySub$: Subscription;
@@ -67,8 +77,36 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
+  getAndShowPropertyAreas(property: PropertyModel, showModal: 'view' | 'edit') {
+    this.getPropertyAreasSub$ = this.propertiesService
+      .getPropertyAreas(property.id)
+      .subscribe((data) => {
+        if (showModal === 'view') {
+          this.viewPropertyAreasModal.show(property, data.model);
+        } else if (showModal === 'edit') {
+          this.editPropertyAreasModal.show(property, data.model);
+        }
+      });
+  }
+
+  onUpdatePropertyAreas(model: PropertyAreasUpdateModel) {
+    this.updatePropertyAreasSub$ = this.propertiesService
+      .updatePropertyAreas(model)
+      .subscribe(() => {
+        this.editPropertyAreasModal.hide();
+      });
+  }
+
   showPropertyCreateModal() {
     this.createPropertyModal.show();
+  }
+
+  showEditPropertyAreasModal(property: PropertyModel) {
+    this.getAndShowPropertyAreas(property, 'edit');
+  }
+
+  showViewPropertyAreasModal(property: PropertyModel) {
+    this.getAndShowPropertyAreas(property, 'view');
   }
 
   showEditPropertyModal(property: PropertyModel) {

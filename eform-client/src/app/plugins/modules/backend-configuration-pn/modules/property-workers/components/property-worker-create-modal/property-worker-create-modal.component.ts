@@ -70,7 +70,7 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
       .subscribe((operation) => {
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {
-            this.assignWorkerToProperties();
+            this.assignWorkerToProperties(1);
           } else {
             this.deviceUserCreated.emit();
             this.hide();
@@ -79,9 +79,9 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
       });
   }
 
-  assignWorkerToProperties() {
+  assignWorkerToProperties(siteId: number) {
     this.deviceUserAssign$ = this.propertiesService
-      .assignPropertiesToWorker({ siteId: 1, assignments: this.assignments })
+      .assignPropertiesToWorker({ siteId, assignments: this.assignments })
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.deviceUserCreated.emit();

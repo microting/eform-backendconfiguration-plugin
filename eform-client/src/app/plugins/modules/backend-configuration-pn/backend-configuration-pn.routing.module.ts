@@ -9,18 +9,18 @@ export const routes: Routes = [
   {
     path: '',
     component: BackendConfigurationPnLayoutComponent,
-    canActivate: [PermissionGuard],
-    data: {
-      requiredPermission:
-        BackendConfigurationPnClaims.accessBackendConfigurationPlugin,
-    },
+    // canActivate: [PermissionGuard],
+    // data: {
+    //   requiredPermission:
+    //     BackendConfigurationPnClaims.accessBackendConfigurationPlugin,
+    // },
     children: [
       {
         path: 'properties',
-        canActivate: [PermissionGuard],
-        data: {
-          requiredPermission: BackendConfigurationPnClaims.getProperties,
-        },
+        // canActivate: [PermissionGuard],
+        // data: {
+        //   requiredPermission: BackendConfigurationPnClaims.getProperties,
+        // },
         component: PropertiesContainerComponent,
       },
       {

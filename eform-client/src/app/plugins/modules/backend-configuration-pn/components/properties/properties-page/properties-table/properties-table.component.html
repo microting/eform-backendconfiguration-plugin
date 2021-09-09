@@ -28,6 +28,22 @@
         <td>
           <div class="d-flex flex-row justify-content-center">
             <button
+              id="showPropertyAreasBtn"
+              class="btn btn-success btn-icon mr-2"
+              mdbTooltip="{{ 'View property areas' | translate }}"
+              (click)="onShowPropertyAreasModal(property)"
+            >
+              <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
+            </button>
+            <button
+              id="editPropertyAreasBtn"
+              class="btn btn-accent text-black-50 btn-icon mb-2"
+              mdbTooltip="{{ 'Configure property areas' | translate }}"
+              (click)="onShowEditPropertyModal(property)"
+            >
+              <fa-icon icon="cogs" size="lg" [fixedWidth]="true"></fa-icon>
+            </button>
+            <button
               id="editPropertyBtn"
               class="btn btn-accent text-black-50 btn-icon mb-2"
               mdbTooltip="{{ 'Edit property' | translate }}"

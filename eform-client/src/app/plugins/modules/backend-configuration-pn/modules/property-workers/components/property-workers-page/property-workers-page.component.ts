@@ -91,7 +91,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.sitesDto = operation.model;
-          this.getWorkerProperties();
+          this.getWorkerPropertiesAssignments();
         }
       });
   }
@@ -106,7 +106,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       });
   }
 
-  getWorkerProperties() {
+  getWorkerPropertiesAssignments() {
     this.deviceUserAssignments$ = this.propertiesService
       .getPropertiesAssignments()
       .subscribe((operation) => {

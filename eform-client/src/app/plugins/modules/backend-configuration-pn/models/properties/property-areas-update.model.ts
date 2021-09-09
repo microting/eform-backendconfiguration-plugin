@@ -1,4 +1,6 @@
+import {PropertyAreaModel} from './property-area.model';
+
 export class PropertyAreasUpdateModel {
   propertyId: number;
-  areasIds: number[];
+  areas: PropertyAreaModel[];
 }

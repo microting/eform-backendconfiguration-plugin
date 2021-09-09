@@ -1,0 +1,70 @@
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade"
+  #frame="mdbModal"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit {{ selectedProperty.name }} - {{ 'areas' | translate }}</h3>
+        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+          <span>×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-xs table-bordered text-center z-depth-1">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>{{ 'Area' | translate }}</th>
+              <th>{{ 'Description' | translate }}</th>
+              <th>{{ 'Status' | translate }}</th>
+              <th></th>
+            </tr>
+            </thead>
+            <tbody id="editPropertyAreasModalTableBody">
+            <ng-container *ngFor="let area of selectedPropertyAreas">
+              <tr *ngIf="area.activated">
+                <td class="align-middle">{{ area.id }}</td>
+                <td class="align-middle">{{ area.name }}</td>
+                <td class="align-middle">{{ area.description }}</td>
+                <td class="align-middle">
+                  {{ areaPlanningStatuses[area.status] }}
+                </td>
+                <td class="align-middle">
+                  <div
+                    class="mat-checkbox"
+                  >
+                    <input
+                      id="checkbox_assignment_edit{{ area.id }}"
+                      [checked]="area.activated"
+                      [value]="area.activated"
+                      color="primary"
+                      type="checkbox"
+                    />
+                    <label
+                      for="checkbox_assignment_edit{{ area.id }}"
+                    ></label>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+          id="editPropertyAreasViewCloseBtn"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -15,11 +15,14 @@ import {
   PropertyModel,
   PropertiesRequestModel,
   PropertyUpdateModel,
+  PropertyAreaModel,
+  PropertyAreasUpdateModel,
 } from '../models/properties';
 import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationPnPropertiesMethods = {
   Properties: 'api/backend-configuration-pn/properties',
+  PropertyAreas: 'api/backend-configuration-pn/property-areas',
   PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
   PropertiesIndex: 'api/backend-configuration-pn/properties/index',
 };
@@ -39,11 +42,27 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
+  getPropertyAreas(
+    propertyId: number
+  ): Observable<OperationDataResult<PropertyAreaModel[]>> {
+    return this.apiBaseService.get(
+      `${BackendConfigurationPnPropertiesMethods.PropertyAreas}`,
+      { id: propertyId }
+    );
+  }
+
   getAllPropertiesDictionary(): Observable<
     OperationDataResult<CommonDictionaryModel[]>
   > {
     return this.apiBaseService.get(
-      `${BackendConfigurationPnPropertiesMethods.PropertiesIndex}/dictionary`
+      `${BackendConfigurationPnPropertiesMethods.Properties}/dictionary`
+    );
+  }
+
+  createProperty(model: PropertyCreateModel): Observable<OperationResult> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnPropertiesMethods.Properties,
+      model
     );
   }
 
@@ -54,9 +73,11 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  createProperty(model: PropertyCreateModel): Observable<OperationResult> {
-    return this.apiBaseService.post(
-      BackendConfigurationPnPropertiesMethods.Properties,
+  updatePropertyAreas(
+    model: PropertyAreasUpdateModel
+  ): Observable<OperationResult> {
+    return this.apiBaseService.put(
+      BackendConfigurationPnPropertiesMethods.PropertyAreas,
       model
     );
   }
@@ -80,7 +101,8 @@ export class BackendConfigurationPnPropertiesService {
 
   removeWorkerAssignments(deviceUserId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(
-      `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}/${deviceUserId}`
+      `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}`,
+      { id: deviceUserId }
     );
   }
 

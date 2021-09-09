@@ -18,7 +18,7 @@ import {
   PropertyCreateModalComponent,
   PropertyDeleteModalComponent,
   PropertyEditModalComponent,
-  PropertiesTableComponent
+  PropertiesTableComponent, PropertyAreasEditModalComponent, PropertyAreasViewModalComponent
 } from './components';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 import {
@@ -51,7 +51,9 @@ import { backendConfigurationStoreProviders } from './store-providers.config';
     PropertyCreateModalComponent,
     PropertyEditModalComponent,
     PropertyDeleteModalComponent,
-    PropertiesTableComponent
+    PropertiesTableComponent,
+    PropertyAreasEditModalComponent,
+    PropertyAreasViewModalComponent
   ],
   providers: [
     BackendConfigurationPnSettingsService,

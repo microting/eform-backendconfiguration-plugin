@@ -21,6 +21,10 @@ export class PropertiesTableComponent implements OnInit {
   @Output()
   showEditPropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   @Output()
+  showEditPropertyAreasModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
+  @Output()
+  showPropertyAreasModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
+  @Output()
   showDeletePropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
 
   tableHeaders: TableHeaderElementModel[] = [
@@ -53,5 +57,13 @@ export class PropertiesTableComponent implements OnInit {
 
   onShowEditPropertyModal(planning: PropertyModel) {
     this.showDeletePropertyModal.emit(planning);
+  }
+
+  onShowEditPropertyAreasModal(planning: PropertyModel) {
+    this.showEditPropertyAreasModal.emit(planning);
+  }
+
+  onShowPropertyAreasModal(planning: PropertyModel) {
+    this.showPropertyAreasModal.emit(planning);
   }
 }
