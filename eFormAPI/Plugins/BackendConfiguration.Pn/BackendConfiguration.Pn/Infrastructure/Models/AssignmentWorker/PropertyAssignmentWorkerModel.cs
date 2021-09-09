@@ -22,26 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
+namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.Properties;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-
-    public interface IBackendConfigurationPropertiesService
+    public class PropertyAssignmentWorkerModel
     {
-        Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request);
+        public int PropertyId { get; set; }
 
-        Task<OperationResult> Create(PropertiesCreateModel createModel);
-
-        Task<OperationDataResult<PropertiesModel>> Read(int id);
-
-        Task<OperationResult> Update(PropertiesModel updateModel);
-
-        Task<OperationResult> Delete(int id);
-
-        Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary();
+        public bool IsChecked { get; set; }
     }
 }

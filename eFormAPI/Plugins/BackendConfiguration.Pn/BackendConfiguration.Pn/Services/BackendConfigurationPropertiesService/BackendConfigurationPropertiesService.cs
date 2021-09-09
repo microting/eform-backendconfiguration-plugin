@@ -67,19 +67,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
                 // add sort
-                propertiesQuery = QueryHelper.AddSortToQuery(propertiesQuery, request.Sort, request.IsSortDsc);
+                //propertiesQuery = QueryHelper.AddSortToQuery(propertiesQuery, request.Sort, request.IsSortDsc);
 
                 // add filtering
-                if (!string.IsNullOrEmpty(request.NameFilter))
-                {
-                    propertiesQuery = QueryHelper
-                        .AddFilterToQuery(propertiesQuery, new List<string>
-                        {
-                            "Name",
-                            "CHR",
-                            "Address",
-                        }, request.NameFilter);
-                }
+                //if (!string.IsNullOrEmpty(request.NameFilter))
+                //{
+                //    propertiesQuery = QueryHelper
+                //        .AddFilterToQuery(propertiesQuery, new List<string>
+                //        {
+                //            "Name",
+                //            "CHR",
+                //            "Address",
+                //        }, request.NameFilter);
+                //}
 
                 // get total
                 var total = await propertiesQuery.Select(x => x.Id).CountAsync();
@@ -89,9 +89,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 if (total > 0)
                 {
                     // pagination
-                    propertiesQuery = propertiesQuery
-                        .Skip(request.Offset)
-                        .Take(request.PageSize);
+                    //propertiesQuery = propertiesQuery
+                    //    .Skip(request.Offset)
+                    //    .Take(request.PageSize);
 
                     // add select to query and get from db
                     properties = await propertiesQuery
@@ -223,6 +223,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileDeleteProperties"));
+            }
+        }
+
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary()
+        {
+            try
+            {
+                var properties = await _backendConfigurationPnDbContext.Properties
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => new CommonDictionaryModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Description = "",
+                    }).ToListAsync(); ;
+                return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex.Message);
+                Log.LogException(ex.StackTrace);
+                return new OperationDataResult<List<CommonDictionaryModel>>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties"));
             }
         }
     }
