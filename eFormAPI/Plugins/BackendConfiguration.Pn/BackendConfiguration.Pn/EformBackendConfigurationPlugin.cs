@@ -45,6 +45,7 @@ namespace BackendConfiguration.Pn
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
     using Services.BackendConfigurationAssignmentWorkerService;
     using Services.BackendConfigurationLocalizationService;
+    using Services.BackendConfigurationPropertiesService;
     using Services.RebusService;
 
     public class EformBackendConfigurationPlugin : IEformPlugin
@@ -65,6 +66,7 @@ namespace BackendConfiguration.Pn
         {
             services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
             services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
+            services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddControllers();
         }
@@ -236,22 +238,22 @@ namespace BackendConfiguration.Pn
                         new PluginMenuItemModel
                         {
                             Name = "Workers",
-                            E2EId = "backend-configuration-pn-workers",
-                            Link = "/plugins/backend-configuration-pn/workers",
+                            E2EId = "backend-configuration-pn-property-workers",
+                            Link = "/plugins/backend-configuration-pn/property-workers",
                             Type = MenuItemTypeEnum.Link,
                             Position = 1,
                             MenuTemplate = new PluginMenuTemplateModel
                             {
                                 Name = "Workers",
-                                E2EId = "backend-configuration-pn-workers",
-                                DefaultLink = "/plugins/backend-configuration-pn/workers",
+                                E2EId = "backend-configuration-pn-property-workers",
+                                DefaultLink = "/plugins/backend-configuration-pn/property-workers",
                                 Permissions = new List<PluginMenuTemplatePermissionModel>(),
                                 Translations = new List<PluginMenuTranslationModel>
                                 {
                                     new PluginMenuTranslationModel
                                     {
                                         LocaleName = LocaleNames.English,
-                                        Name = "Workers",
+                                        Name = "Property workers",
                                         Language = LanguageNames.English,
                                     },
                                     new PluginMenuTranslationModel
@@ -269,7 +271,7 @@ namespace BackendConfiguration.Pn
                                     new PluginMenuTranslationModel
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Працівники",
+                                        Name = "Властивості працівників",
                                         Language = LanguageNames.Ukrainian,
                                     }
                                 }
@@ -279,7 +281,7 @@ namespace BackendConfiguration.Pn
                                 new PluginMenuTranslationModel
                                 {
                                     LocaleName = LocaleNames.English,
-                                    Name = "Workers",
+                                    Name = "Property workers",
                                     Language = LanguageNames.English,
                                 },
                                 new PluginMenuTranslationModel
@@ -297,7 +299,7 @@ namespace BackendConfiguration.Pn
                                 new PluginMenuTranslationModel
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Працівники",
+                                    Name = "Властивості працівників",
                                     Language = LanguageNames.Ukrainian,
                                 }
                             }

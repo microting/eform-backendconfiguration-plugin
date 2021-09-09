@@ -98,9 +98,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         .Select(x => new PropertiesModel
                         {
                             Id = x.Id,
-                            PropertyAddressType = x.Address,
-                            PropertyCHRNumber = x.CHR,
-                            PropertyName = x.Name,
+                            Address = x.Address,
+                            Chr = x.CHR,
+                            Name = x.Name,
                         }).ToListAsync();
                 }
 
@@ -121,9 +121,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 var newProperty = new Properties
                 {
-                    Address = propertiesCreateModel.PropertyAddressType,
-                    CHR = propertiesCreateModel.PropertyCHRNumber,
-                    Name = propertiesCreateModel.PropertyName,
+                    Address = propertiesCreateModel.Address,
+                    CHR = propertiesCreateModel.Chr,
+                    Name = propertiesCreateModel.Name,
                     CreatedByUserId = _userService.UserId,
                 };
                 await newProperty.Create(_backendConfigurationPnDbContext);
@@ -147,9 +147,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Select(x => new PropertiesModel()
                     {
                         Id = x.Id,
-                        PropertyAddressType = x.Address,
-                        PropertyCHRNumber = x.CHR,
-                        PropertyName = x.Name,
+                        Address = x.Address,
+                        Chr = x.CHR,
+                        Name = x.Name,
                     })
                     .FirstOrDefaultAsync();
 
@@ -182,9 +182,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     return new OperationResult(false, _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
                 }
 
-                property.Address = updateModel.PropertyAddressType;
-                property.CHR = updateModel.PropertyCHRNumber;
-                property.Name = updateModel.PropertyName;
+                property.Address = updateModel.Address;
+                property.CHR = updateModel.Chr;
+                property.Name = updateModel.Name;
                 property.UpdatedByUserId = _userService.UserId;
 
                 await property.Update(_backendConfigurationPnDbContext);

@@ -28,11 +28,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
     {
         public int Id { get; set; }
 
-        public string PropertyName { get; set; }
+        public string Name { get; set; }
+        
+        public string Chr { get; set; }
 
-        // ReSharper disable once InconsistentNaming
-        public string PropertyCHRNumber { get; set; }
-
-        public string PropertyAddressType { get; set; }
+        public string Address { get; set; }
     }
 }
