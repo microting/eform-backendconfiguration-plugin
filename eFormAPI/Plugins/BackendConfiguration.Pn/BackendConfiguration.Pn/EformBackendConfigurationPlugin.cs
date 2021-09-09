@@ -43,8 +43,8 @@ namespace BackendConfiguration.Pn
     using Microting.EformBackendConfigurationBase.Infrastructure.Const;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
+    using Services.BackendConfigurationAssignmentWorkerService;
     using Services.BackendConfigurationLocalizationService;
-    using Services.BackendConfigurationPropertiesService;
     using Services.RebusService;
 
     public class EformBackendConfigurationPlugin : IEformPlugin
@@ -64,7 +64,7 @@ namespace BackendConfiguration.Pn
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
-            services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
+            services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddControllers();
         }

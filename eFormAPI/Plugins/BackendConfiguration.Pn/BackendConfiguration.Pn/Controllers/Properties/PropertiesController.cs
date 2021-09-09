@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -24,6 +24,7 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Controllers.Properties
 {
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Infrastructure.Models.Properties;
     using Microsoft.AspNetCore.Authorization;
@@ -73,6 +74,13 @@ namespace BackendConfiguration.Pn.Controllers.Properties
         public Task<OperationResult> Delete(int id)
         {
             return _backendConfigurationPropertiesService.Delete(id);
+        }
+
+        [HttpGet]
+        [Route("dictionary")]
+        public Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary()
+        {
+            return _backendConfigurationPropertiesService.GetCommonDictionary();
         }
     }
 }
