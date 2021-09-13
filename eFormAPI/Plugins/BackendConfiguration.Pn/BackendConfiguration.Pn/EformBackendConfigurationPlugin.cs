@@ -46,6 +46,7 @@ namespace BackendConfiguration.Pn
     using Services.BackendConfigurationAssignmentWorkerService;
     using Services.BackendConfigurationLocalizationService;
     using Services.BackendConfigurationPropertiesService;
+    using Services.BackendConfigurationPropertyAreasService;
     using Services.RebusService;
 
     public class EformBackendConfigurationPlugin : IEformPlugin
@@ -67,6 +68,7 @@ namespace BackendConfiguration.Pn
             services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
             services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
             services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
+            services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddControllers();
         }

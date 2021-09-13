@@ -1,4 +1,4 @@
-/*
+﻿/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -22,15 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
+namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 {
-    using System.Collections.Generic;
-
-    public class PropertyAssignWorkersModel
+    public enum PropertyAreaPlanningStatusesEnum
     {
-        public int SiteId { get; set; }
-
-        public List<PropertyAssignmentWorkerModel> Assignments { get; set; }
-            = new List<PropertyAssignmentWorkerModel>();
+        Off = 1,
+        On = 2,
     }
 }
