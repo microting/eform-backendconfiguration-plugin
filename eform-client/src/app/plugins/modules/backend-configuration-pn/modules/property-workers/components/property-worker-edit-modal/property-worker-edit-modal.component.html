@@ -71,13 +71,13 @@
                 </tr>
               </thead>
               <tbody id="pairingEditModalTableBody">
-                <tr *ngFor="let property of availableProperties">
+                <tr *ngFor="let property of availableProperties; let i = index">
                   <td class="align-middle">{{ property.id }}</td>
                   <td class="align-middle">{{ property.name }}</td>
                   <td class="align-middle">
                     <div class="mat-checkbox">
                       <input
-                        id="CheckboxEditAssignment"
+                        id="CheckboxEditAssignment{{ i }}"
                         (change)="
                           addToArray(
                             $event,
@@ -93,7 +93,7 @@
                         color="primary"
                         type="checkbox"
                       />
-                      <label for="CheckboxEditAssignment"></label>
+                      <label for="CheckboxEditAssignment{{ i }}"></label>
                     </div>
                   </td>
                 </tr>

@@ -56,6 +56,7 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
     const assignmentObject = new PropertyAssignmentWorkerModel();
     if (e.target.checked) {
       assignmentObject.isChecked = true;
+      assignmentObject.propertyId = propertyId;
       this.assignments = [...this.assignments, assignmentObject];
     } else {
       this.assignments = this.assignments.filter(
@@ -66,11 +67,11 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
 
   createDeviceUser() {
     this.deviceUserCreate$ = this.deviceUserService
-      .createSingleDeviceUser(this.simpleSiteModel)
+      .createSingleDeviceUserWithResponse(this.simpleSiteModel)
       .subscribe((operation) => {
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {
-            this.assignWorkerToProperties(1);
+            this.assignWorkerToProperties(operation.model);
           } else {
             this.deviceUserCreated.emit();
             this.hide();
@@ -88,6 +89,22 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
           this.hide();
         }
       });
+  }
+
+  getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
+    const assignment = this.assignments.find(
+      (x) => x.propertyId === propertyId
+    );
+    return assignment ? assignment.isChecked : false;
+  }
+
+  getAssignmentByPropertyId(propertyId: number): PropertyAssignmentWorkerModel {
+    return (
+      this.assignments.find((x) => x.propertyId === propertyId) ?? {
+        propertyId: propertyId,
+        isChecked: false,
+      }
+    );
   }
 
   ngOnDestroy(): void {}

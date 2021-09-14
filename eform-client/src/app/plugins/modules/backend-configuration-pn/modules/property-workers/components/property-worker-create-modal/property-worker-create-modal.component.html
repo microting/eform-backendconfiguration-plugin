@@ -69,28 +69,30 @@
                 </tr>
               </thead>
               <tbody id="pairingModalTableBody">
-                <tr *ngFor="let property of availableProperties">
+                <tr *ngFor="let property of availableProperties; let i = index">
                   <td class="align-middle">{{ property.id }}</td>
                   <td class="align-middle">{{ property.name }}</td>
                   <td class="align-middle">
-                    <ng-container *ngFor="let assignment of assignments">
-                      <div
-                        class="mat-checkbox"
-                        *ngIf="assignment.propertyId == property.id"
-                      >
-                        <input
-                          id="checkbox{{ assignment.propertyId }}"
-                          (change)="addToArray($event, assignment.propertyId)"
-                          [checked]="assignment.isChecked"
-                          [value]="assignment.isChecked"
-                          color="primary"
-                          type="checkbox"
-                        />
-                        <label
-                          for="checkbox{{ assignment.propertyId }}"
-                        ></label>
-                      </div>
-                    </ng-container>
+                    <div class="mat-checkbox">
+                      <input
+                        id="CheckboxCreateAssignment{{ i }}"
+                        (change)="
+                          addToArray(
+                            $event,
+                            getAssignmentByPropertyId(property.id).propertyId
+                          )
+                        "
+                        [checked]="
+                          getAssignmentIsCheckedByPropertyId(property.id)
+                        "
+                        [value]="
+                          getAssignmentIsCheckedByPropertyId(property.id)
+                        "
+                        color="primary"
+                        type="checkbox"
+                      />
+                      <label for="CheckboxCreateAssignment{{ i }}"></label>
+                    </div>
                   </td>
                 </tr>
               </tbody>

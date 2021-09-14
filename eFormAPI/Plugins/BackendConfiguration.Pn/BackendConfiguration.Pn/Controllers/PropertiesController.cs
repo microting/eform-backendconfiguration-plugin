@@ -70,9 +70,9 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpDelete]
-        public Task<OperationResult> Delete(int id)
+        public Task<OperationResult> Delete(int propertyId)
         {
-            return _backendConfigurationPropertiesService.Delete(id);
+            return _backendConfigurationPropertiesService.Delete(propertyId);
         }
 
         [HttpGet]
