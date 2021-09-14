@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
 {
     using System;
     using System.Collections.Generic;
@@ -36,7 +36,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Services.BackendConfigurationPropertyAreasService;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
     public class BackendConfigurationPropertyAreasService : IBackendConfigurationPropertyAreasService
     {
@@ -57,7 +57,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         }
 
-        public async Task<OperationDataResult<List<PropertyAreaModel>>> Read(int id)
+        public async Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId)
         {
             try
             {
@@ -65,21 +65,51 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperty
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.ProperyId == id)
+                    .Where(x => x.PropertyId == propertyId)
                     .Include(x => x.Area);
-                if(propertyAreasQuery.Any())
+
+                var areas = _backendConfigurationPnDbContext.Areas
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToList();
+
+                var areasForAdd = new List<PropertyAreaModel>();
+
+                if (propertyAreasQuery.Any())
                 {
                     propertyAreas = await propertyAreasQuery
                         .Select(x => new PropertyAreaModel
                         {
                             Id = x.Id,
                             Activated = x.Checked,
-                            Descriprion = x.Area.Description,
+                            Description = x.Area.Description,
                             Name = x.Area.Name,
                             // Status = 
                         })
                         .ToListAsync();
+                    areasForAdd = areas.Where(x => propertyAreas.Find(y => y.Name != x.Name && y.Description != x.Description) == null)
+                        .Select(x => new PropertyAreaModel
+                        {
+                            Id = null,
+                            Activated = false,
+                            Description = x.Description,
+                            Name = x.Name,
+                        })
+                        .ToList();
                 }
+                else
+                {
+                    areasForAdd = areas
+                        .Select(x => new PropertyAreaModel
+                        {
+                            Id = null,
+                            Activated = false,
+                            Description = x.Description,
+                            Name = x.Name,
+                        })
+                        .ToList();
+                }
+
+                propertyAreas.AddRange(areasForAdd);
 
                 return new OperationDataResult<List<PropertyAreaModel>>(true, propertyAreas);
             }
@@ -95,30 +125,54 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         {
             try
             {
-                //var property = await _backendConfigurationPnDbContext.Properties
-                //    .Where(x => x.Id == updateModel.Id)
-                //    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                //    .FirstOrDefaultAsync();
+                //updateModel.Areas = updateModel.Areas.Where(x => x.Activated).ToList();
 
-                //if (property == null)
-                //{
-                //    return new OperationResult(false, _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
-                //}
+                var assignments = await _backendConfigurationPnDbContext.AreaProperty
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PropertyId == updateModel.PropertyId)
+                    .Include(x => x.Area)
+                    .AsNoTracking()
+                    .ToListAsync();
 
-                //property.Address = updateModel.Address;
-                //property.CHR = updateModel.Chr;
-                //property.Name = updateModel.Name;
-                //property.UpdatedByUserId = _userService.UserId;
+                var assignmentsForCreate = updateModel.Areas
+                    .Where(x => x.Id == null)
+                    .ToList();
 
-                //await property.Update(_backendConfigurationPnDbContext);
+                var assignmentsForUpdate = updateModel.Areas
+                    .Where(x => x.Id.HasValue)
+                    .ToList();
+                
+                foreach (var assignmentForCreate in assignmentsForCreate)
+                {
+                    var area = await _backendConfigurationPnDbContext.Areas.FirstOrDefaultAsync(x =>
+                        x.Name == assignmentForCreate.Name && x.Description == assignmentForCreate.Description);
 
-                return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyUpdateProperties"));
+                    var newAssignment = new AreaProperty
+                    {
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                        AreaId = area.Id,
+                        PropertyId = updateModel.PropertyId,
+                        Checked = assignmentForCreate.Activated,
+                    };
+                    await newAssignment.Create(_backendConfigurationPnDbContext);
+                }
+
+                foreach (var areaProperty in assignmentsForUpdate)
+                {
+                    var assignmentForUpdate = assignments.First(x => x.Id == areaProperty.Id);
+                    assignmentForUpdate.Checked = areaProperty.Activated;
+                    assignmentForUpdate.UpdatedByUserId = _userService.UserId;
+                    await assignmentForUpdate.Update(_backendConfigurationPnDbContext);
+                }
+
+                return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyUpdatePropertyAreas"));
             }
             catch (Exception e)
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdateProperties"));
+                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePropertyAreas"));
             }
         }
     }

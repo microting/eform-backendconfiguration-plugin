@@ -36,5 +36,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         Task<OperationResult> Create(PropertyAssignWorkersModel createModel);
         
         Task<OperationResult> Update(PropertyAssignWorkersModel updateModel);
+
+        Task<OperationResult> Delete(int deviceUserId);
     }
 }

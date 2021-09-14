@@ -61,10 +61,10 @@ namespace BackendConfiguration.Pn.Controllers
             return _backendConfigurationAssignmentWorkerService.Update(updateModel);
         }
 
-        //[HttpDelete]
-        //public Task<OperationResult> Delete(int id)
-        //{
-        //    return _backendConfigurationAssignmentWorkerService.Delete(id);
-        //}
+        [HttpDelete]
+        public Task<OperationResult> Delete(int deviceUserId)
+        {
+            return _backendConfigurationAssignmentWorkerService.Delete(deviceUserId);
+        }
     }
 }

@@ -26,11 +26,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 {
     public class PropertyAreaModel
     {
-        public int Id { get; set; }
+        public int? Id { get; set; }
 
         public string Name { get; set; }
 
-        public string Descriprion { get; set; }
+        public string Description { get; set; }
 
         public bool Activated { get; set; }
 

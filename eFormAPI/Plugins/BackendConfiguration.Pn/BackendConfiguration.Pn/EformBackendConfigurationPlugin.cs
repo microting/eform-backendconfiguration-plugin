@@ -306,75 +306,6 @@ namespace BackendConfiguration.Pn
                                 }
                             }
                         },
-                        new PluginMenuItemModel
-                        {
-                            Name = "Areas",
-                            E2EId = "backend-configuration-pn-areas",
-                            Link = "/plugins/backend-configuration-pn/areas",
-                            Type = MenuItemTypeEnum.Link,
-                            Position = 2,
-                            MenuTemplate = new PluginMenuTemplateModel
-                            {
-                                Name = "Areas",
-                                E2EId = "backend-configuration-pn-areas",
-                                DefaultLink = "/plugins/backend-configuration-pn/areas",
-                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Areas",
-                                        Language = LanguageNames.English,
-                                    },
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "",//todo
-                                        Language = LanguageNames.German,
-                                    },
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "",//todo
-                                        Language = LanguageNames.Danish,
-                                    },
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Області",
-                                        Language = LanguageNames.Ukrainian,
-                                    }
-                                }
-                            },
-                            Translations = new List<PluginMenuTranslationModel>
-                            {
-                                new PluginMenuTranslationModel
-                                {
-                                    LocaleName = LocaleNames.English,
-                                    Name = "Areas",
-                                    Language = LanguageNames.English,
-                                },
-                                new PluginMenuTranslationModel
-                                {
-                                    LocaleName = LocaleNames.German,
-                                    Name = "",//todo
-                                    Language = LanguageNames.German,
-                                },
-                                new PluginMenuTranslationModel
-                                {
-                                    LocaleName = LocaleNames.Danish,
-                                    Name = "",//todo
-                                    Language = LanguageNames.Danish,
-                                },
-                                new PluginMenuTranslationModel
-                                {
-                                    LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Області",
-                                    Language = LanguageNames.Ukrainian,
-                                }
-                            }
-                        }
                     }
                 }
             };
@@ -412,13 +343,6 @@ namespace BackendConfiguration.Pn
                         Guards = new List<string>(),
                         Position = 1,
                     },
-                    new MenuItemModel
-                    {
-                        Name = localizationService?.GetString("Areas"),
-                        E2EId = "backend-configuration-areas",
-                        Link = "/plugins/backend-configuration/areas",
-                        Position = 2,
-                    }
                 }
             });
             return result;

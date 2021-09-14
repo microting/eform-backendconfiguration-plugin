@@ -81,10 +81,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed
                 {
                     Id = p.Id,
                     Name = p.Name,
+                    Description = p.Description,
                     CreatedAt = DateTime.UtcNow,
                     Version = 1,
                     WorkflowState = Constants.WorkflowStates.Created,
                     CreatedByUserId = 1,
+                    UpdatedByUserId = 1,
+                    UpdatedAt = DateTime.UtcNow,
                 }
                 );
             dbContext.Areas.AddRange(newAreas);

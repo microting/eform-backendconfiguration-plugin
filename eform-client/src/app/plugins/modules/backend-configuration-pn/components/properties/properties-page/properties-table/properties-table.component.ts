@@ -56,7 +56,7 @@ export class PropertiesTableComponent implements OnInit {
   }
 
   onShowEditPropertyModal(planning: PropertyModel) {
-    this.showDeletePropertyModal.emit(planning);
+    this.showEditPropertyModal.emit(planning);
   }
 
   onShowEditPropertyAreasModal(planning: PropertyModel) {

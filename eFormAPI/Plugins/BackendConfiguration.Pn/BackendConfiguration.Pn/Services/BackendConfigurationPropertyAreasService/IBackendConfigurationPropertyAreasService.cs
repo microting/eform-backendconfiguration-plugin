@@ -31,7 +31,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
     public interface IBackendConfigurationPropertyAreasService
     {
-        Task<OperationDataResult<List<PropertyAreaModel>>> Read(int id);
+        Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId);
 
         Task<OperationResult> Update(PropertyAreasUpdateModel updateModel);
     }

@@ -53,12 +53,14 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   hide() {
     this.selectedDeviceUser = new DeviceUserModel();
     this.assignments = [];
+    this.frame.hide();
   }
 
   addToArray(e: any, propertyId: number) {
     const assignmentObject = new PropertyAssignmentWorkerModel();
     if (e.target.checked) {
       assignmentObject.isChecked = true;
+      assignmentObject.propertyId = propertyId;
       this.assignments = [...this.assignments, assignmentObject];
     } else {
       this.assignments = this.assignments.filter(
@@ -98,6 +100,22 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
 
   get languages() {
     return applicationLanguages;
+  }
+
+  getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
+    const assignment = this.assignments.find(
+      (x) => x.propertyId === propertyId
+    );
+    return assignment ? assignment.isChecked : false;
+  }
+
+  getAssignmentByPropertyId(propertyId: number): PropertyAssignmentWorkerModel {
+    return (
+      this.assignments.find((x) => x.propertyId === propertyId) ?? {
+        propertyId: propertyId,
+        isChecked: false,
+      }
+    );
   }
 
   ngOnDestroy(): void {}

@@ -47,7 +47,7 @@ export class BackendConfigurationPnPropertiesService {
   ): Observable<OperationDataResult<PropertyAreaModel[]>> {
     return this.apiBaseService.get(
       `${BackendConfigurationPnPropertiesMethods.PropertyAreas}`,
-      { id: propertyId }
+      { propertyId: propertyId }
     );
   }
 
@@ -102,14 +102,14 @@ export class BackendConfigurationPnPropertiesService {
   removeWorkerAssignments(deviceUserId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(
       `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}`,
-      { id: deviceUserId }
+      { deviceUserId: deviceUserId }
     );
   }
 
   deleteProperty(propertyId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(
       BackendConfigurationPnPropertiesMethods.Properties,
-      { id: propertyId }
+      { propertyId: propertyId }
     );
   }
 }

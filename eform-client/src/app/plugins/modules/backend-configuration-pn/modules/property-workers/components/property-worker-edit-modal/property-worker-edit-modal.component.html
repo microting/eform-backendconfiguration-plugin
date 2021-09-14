@@ -1,8 +1,13 @@
-<div [config]="{ignoreBackdropClick: true}" mdbModal class="modal fade" #frame="mdbModal">
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade"
+  #frame="mdbModal"
+>
   <div class="modal-dialog modal-md">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>{{'Edit Device User' | translate}}</h3>
+        <h3>{{ 'Edit Device User' | translate }}</h3>
         <button class="close" data-dismiss="modal" (click)="frame.hide()">
           <span>×</span>
         </button>
@@ -12,80 +17,112 @@
           <div class="row">
             <div class="col-md-12">
               <div class="md-form">
-                <input mdbInput id="editFirstNameInput"
-                       [(ngModel)]="selectedDeviceUser.userFirstName"
-                        type="text" name="userName" class="form-control">
-                <label for="editFirstNameInput">{{'First name' | translate }} </label>
+                <input
+                  mdbInput
+                  id="editFirstNameInput"
+                  [(ngModel)]="selectedDeviceUser.userFirstName"
+                  type="text"
+                  name="userName"
+                  class="form-control"
+                />
+                <label for="editFirstNameInput"
+                  >{{ 'First name' | translate }}
+                </label>
               </div>
             </div>
             <div class="col-md-12">
               <div class="md-form">
-                <input mdbInput
-                       [(ngModel)]="selectedDeviceUser.userLastName"
-                        type="text" name="email" id="editLastNameInput" class="form-control">
-                <label for="editLastNameInput">{{'Last name' | translate }} </label>
+                <input
+                  mdbInput
+                  [(ngModel)]="selectedDeviceUser.userLastName"
+                  type="text"
+                  name="email"
+                  id="editLastNameInput"
+                  class="form-control"
+                />
+                <label for="editLastNameInput"
+                  >{{ 'Last name' | translate }}
+                </label>
               </div>
             </div>
           </div>
           <div class="row">
             <div class="col-md-12">
               <div class="md-form">
-            <ng-select
-              id = "ProfileLanguageSelector"
-              [placeholder]="'Language' | translate"
-              [bindLabel]="'text'"
-              [bindValue]="'locale'"
-              [clearable]="false"
-              [(ngModel)]="selectedDeviceUser.languageCode"
-              [items]="languages"></ng-select>
+                <ng-select
+                  id="ProfileLanguageSelector"
+                  [placeholder]="'Language' | translate"
+                  [bindLabel]="'text'"
+                  [bindValue]="'locale'"
+                  [clearable]="false"
+                  [(ngModel)]="selectedDeviceUser.languageCode"
+                  [items]="languages"
+                ></ng-select>
               </div>
             </div>
           </div>
           <div class="table-responsive">
             <table class="table table-xs table-bordered text-center z-depth-1">
               <thead>
-              <tr>
-                <th>ID</th>
-                <th>{{ 'Property name' | translate }}</th>
-                <th>{{ 'Check to pair' | translate }}</th>
-              </tr>
+                <tr>
+                  <th>ID</th>
+                  <th>{{ 'Property name' | translate }}</th>
+                  <th>{{ 'Check to pair' | translate }}</th>
+                </tr>
               </thead>
               <tbody id="pairingEditModalTableBody">
-              <tr *ngFor="let property of availableProperties">
-                <td class="align-middle">{{ property.id }}</td>
-                <td class="align-middle">{{ property.name }}</td>
-                <td class="align-middle">
-                  <ng-container *ngFor="let assignment of assignments">
-                    <div
-                      class="mat-checkbox"
-                      *ngIf="assignment.propertyId == property.id"
-                    >
+                <tr *ngFor="let property of availableProperties">
+                  <td class="align-middle">{{ property.id }}</td>
+                  <td class="align-middle">{{ property.name }}</td>
+                  <td class="align-middle">
+                    <div class="mat-checkbox">
                       <input
-                        id="checkbox_edit{{ assignment.propertyId }}"
-                        (change)="addToArray($event, assignment.propertyId)"
-                        [checked]="assignment.isChecked"
-                        [value]="assignment.isChecked"
+                        id="CheckboxEditAssignment"
+                        (change)="
+                          addToArray(
+                            $event,
+                            getAssignmentByPropertyId(property.id).propertyId
+                          )
+                        "
+                        [checked]="
+                          getAssignmentIsCheckedByPropertyId(property.id)
+                        "
+                        [value]="
+                          getAssignmentIsCheckedByPropertyId(property.id)
+                        "
                         color="primary"
                         type="checkbox"
                       />
-                      <label
-                        for="checkbox_edit{{ assignment.propertyId }}"
-                      ></label>
+                      <label for="CheckboxEditAssignment"></label>
                     </div>
-                  </ng-container>
-                </td>
-              </tr>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button mdbBtn class="btn-success btn-small-height" id="saveEditBtn"
-                [disabled]="!selectedDeviceUser.userFirstName || !selectedDeviceUser.userLastName"
-                (click)="updateSingle()">{{'Save' | translate}}</button>
-        <button mdbBtn id="cancelEditBtn" class="btn btn-accent text-black-50 btn-small-height" (click)="frame.hide()">
-          {{'Cancel' | translate}}</button>
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          id="saveEditBtn"
+          [disabled]="
+            !selectedDeviceUser.userFirstName ||
+            !selectedDeviceUser.userLastName
+          "
+          (click)="updateSingle()"
+        >
+          {{ 'Save' | translate }}
+        </button>
+        <button
+          mdbBtn
+          id="cancelEditBtn"
+          class="btn btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
       </div>
     </div>
   </div>

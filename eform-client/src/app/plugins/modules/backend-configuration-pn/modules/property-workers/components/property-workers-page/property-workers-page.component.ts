@@ -11,7 +11,7 @@ import {
 import { AuthStateService } from 'src/app/common/store';
 import {
   PropertyAssignmentWorkerModel,
-  PropertyAssignWorkersModel
+  PropertyAssignWorkersModel,
 } from '../../../../models/properties/property-workers-assignment.model';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 
@@ -69,7 +69,13 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.selectedSimpleSite.id = simpleSiteDto.siteUid;
     this.selectedSimpleSite.languageCode = simpleSiteDto.languageCode;
 
-    this.editDeviceUserModal.show(simpleSiteDto);
+    const workersAssignments = this.workersAssignments.find(
+      (x) => x.siteId === simpleSiteDto.siteUid
+    );
+    this.editDeviceUserModal.show(
+      this.selectedSimpleSite,
+      workersAssignments ? workersAssignments.assignments : []
+    );
   }
 
   openOtpModal(siteDto: SiteDto) {

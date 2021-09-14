@@ -178,6 +178,29 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdateAssignmentsProperties"));
             }
         }
-        
+
+        public async Task<OperationResult> Delete(int deviceUserId)
+        {
+            try
+            {
+                var assignments = await _backendConfigurationPnDbContext.PropertyWorkers
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.WorkerId == deviceUserId)
+                    .ToListAsync();
+
+                foreach (var assignment in assignments)
+                {
+                    await assignment.Delete(_backendConfigurationPnDbContext);
+                }
+                
+                return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyDeleteAssignmentsProperties"));
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties"));
+            }
+        }
     }
 }

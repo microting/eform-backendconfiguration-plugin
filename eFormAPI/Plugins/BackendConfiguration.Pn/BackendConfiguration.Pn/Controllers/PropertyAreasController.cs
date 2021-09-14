@@ -40,9 +40,15 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpGet]
-        public Task<OperationDataResult<List<PropertyAreaModel>>> Read(int id)
+        public Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId)
         {
-            return _backendConfigurationPropertyAreasService.Read(id);
+            return _backendConfigurationPropertyAreasService.Read(propertyId);
+        }
+
+        [HttpPut]
+        public Task<OperationResult> Update([FromBody] PropertyAreasUpdateModel updateModel)
+        {
+            return _backendConfigurationPropertyAreasService.Update(updateModel);
         }
     }
 }

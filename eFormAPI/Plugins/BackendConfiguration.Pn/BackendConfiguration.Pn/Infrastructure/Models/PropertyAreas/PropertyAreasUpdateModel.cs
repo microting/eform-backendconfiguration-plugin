@@ -31,6 +31,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
         public int PropertyId { get; set; }
 
         public List<PropertyAreaModel> Areas { get; set; }
-             = new List<PropertyAreaModel>();
+             = new();
     }
 }

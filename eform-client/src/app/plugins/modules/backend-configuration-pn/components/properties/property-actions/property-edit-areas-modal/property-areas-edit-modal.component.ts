@@ -20,8 +20,8 @@ import { PropertyAreasUpdateModel } from '../../../../models';
 })
 export class PropertyAreasEditModalComponent implements OnInit {
   @ViewChild('frame', { static: false }) frame;
-  @Output() updatePropertyAreas: EventEmitter<PropertyAreasUpdateModel> =
-    new EventEmitter<PropertyAreasUpdateModel>();
+  @Output()
+  updatePropertyAreas: EventEmitter<PropertyAreasUpdateModel> = new EventEmitter<PropertyAreasUpdateModel>();
   selectedProperty: PropertyUpdateModel = new PropertyUpdateModel();
   selectedPropertyAreas: PropertyAreaModel[] = [];
 
@@ -49,5 +49,14 @@ export class PropertyAreasEditModalComponent implements OnInit {
       propertyId: this.selectedProperty.id,
       areas: this.selectedPropertyAreas,
     });
+  }
+
+  updateArea($event: any, area: PropertyAreaModel) {
+    const findetArea = this.selectedPropertyAreas.find(
+      (x) => x.name === area.name && x.description === area.description
+    );
+    if (findetArea) {
+      findetArea.activated = $event.target.checked;
+    }
   }
 }
