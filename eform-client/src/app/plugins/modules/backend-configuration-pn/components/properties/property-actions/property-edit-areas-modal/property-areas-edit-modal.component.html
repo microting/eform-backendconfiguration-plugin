@@ -1,0 +1,81 @@
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade overflow-auto"
+  #frame="mdbModal"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit {{ selectedProperty.name }} - {{ 'areas' | translate }}</h3>
+        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+          <span>×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-xs table-bordered text-center z-depth-1">
+            <thead>
+              <tr>
+                <!--                <th>ID</th>-->
+                <th>{{ 'Area' | translate }}</th>
+                <th>{{ 'Description' | translate }}</th>
+                <th>{{ 'Status' | translate }}</th>
+                <th>{{ 'Select' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody id="editPropertyAreasModalTableBody">
+              <ng-container
+                *ngFor="let area of selectedPropertyAreas; let i = index"
+              >
+                <tr>
+                  <!--                  <td class="align-middle">{{ area.id }}</td>-->
+                  <td class="align-middle">{{ area.name }}</td>
+                  <td class="align-middle">
+                    <a [href]="area.description" target="_blank">{{
+                      (area.description ? 'Read more' : '') | translate
+                    }}</a>
+                  </td>
+                  <td class="align-middle">
+                    {{ areaPlanningStatuses[area.status] }}
+                  </td>
+                  <td class="align-middle">
+                    <div class="mat-checkbox">
+                      <input
+                        id="checkboxAssignmentEdit{{ i }}"
+                        [checked]="area.activated"
+                        [value]="area.activated"
+                        (change)="updateArea($event, area)"
+                        color="primary"
+                        type="checkbox"
+                      />
+                      <label for="checkboxAssignmentEdit{{ i }}"></label>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          (click)="onUpdatePropertyAreas()"
+          id="editPropertyAreasViewSaveBtn"
+        >
+          {{ 'Save' | translate }}
+        </button>
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="hide()"
+          id="editPropertyAreasViewCloseBtn"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
