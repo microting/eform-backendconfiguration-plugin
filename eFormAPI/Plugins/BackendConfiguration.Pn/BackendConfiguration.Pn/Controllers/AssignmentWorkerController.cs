@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Controllers.AssignmentWorker
+namespace BackendConfiguration.Pn.Controllers
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;

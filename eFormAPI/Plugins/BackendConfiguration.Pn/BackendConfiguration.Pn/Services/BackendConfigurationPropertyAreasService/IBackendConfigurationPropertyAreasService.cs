@@ -1,4 +1,4 @@
-/*
+﻿/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -22,15 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
+namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
 {
     using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Infrastructure.Models.PropertyAreas;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
-    public class PropertyAssignWorkersModel
+    public interface IBackendConfigurationPropertyAreasService
     {
-        public int SiteId { get; set; }
+        Task<OperationDataResult<List<PropertyAreaModel>>> Read(int id);
 
-        public List<PropertyAssignmentWorkerModel> Assignments { get; set; }
-            = new List<PropertyAssignmentWorkerModel>();
+        Task<OperationResult> Update(PropertyAreasUpdateModel updateModel);
     }
 }

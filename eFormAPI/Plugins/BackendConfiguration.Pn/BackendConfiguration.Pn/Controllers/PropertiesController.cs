@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Controllers.Properties
+namespace BackendConfiguration.Pn.Controllers
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
@@ -56,7 +56,6 @@ namespace BackendConfiguration.Pn.Controllers.Properties
         {
             return _backendConfigurationPropertiesService.Create(createModel);
         }
-
 
         [HttpGet]
         public Task<OperationDataResult<PropertiesModel>> Read(int id)
