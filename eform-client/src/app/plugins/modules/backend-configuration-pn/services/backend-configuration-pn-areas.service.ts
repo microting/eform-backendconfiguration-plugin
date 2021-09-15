@@ -1,93 +1,60 @@
-// import { Injectable } from '@angular/core';
-// import { Observable } from 'rxjs';
-// import {
-//   CommonDictionaryModel,
-//   OperationDataResult,
-//   OperationResult,
-//   Paged,
-// } from 'src/app/common/models';
-// import {
-//   PropertyAssignmentWorkerModel,
-//   PropertyAssignWorkersModel,
-// } from '../models/properties/property-workers-assignment.model';
-// import {
-//   PropertyCreateModel,
-//   PropertyModel,
-//   PropertiesRequestModel,
-//   PropertyUpdateModel,
-// } from '../models/properties';
-// import { ApiBaseService } from 'src/app/common/services';
-//
-// export let BackendConfigurationPnPropertiesMethods = {
-//   Properties: 'api/backend-configuration-pn/areas',
-//   PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
-//   PropertiesIndex: 'api/backend-configuration-pn/properties/index',
-// };
-//
-// @Injectable({
-//   providedIn: 'root',
-// })
-// export class BackendConfigurationPnPropertiesService {
-//   constructor(private apiBaseService: ApiBaseService) {}
-//
-//   getAllProperties(
-//     model: PropertiesRequestModel
-//   ): Observable<OperationDataResult<Paged<PropertyModel>>> {
-//     return this.apiBaseService.post(
-//       BackendConfigurationPnPropertiesMethods.PropertiesIndex,
-//       model
-//     );
-//   }
-//
-//   getAllPropertiesDictionary(): Observable<
-//     OperationDataResult<CommonDictionaryModel[]>
-//     > {
-//     return this.apiBaseService.get(
-//       `${BackendConfigurationPnPropertiesMethods.PropertiesIndex}/dictionary`
-//     );
-//   }
-//
-//   updateProperty(model: PropertyUpdateModel): Observable<OperationResult> {
-//     return this.apiBaseService.put(
-//       BackendConfigurationPnPropertiesMethods.Properties,
-//       model
-//     );
-//   }
-//
-//   createProperty(model: PropertyCreateModel): Observable<OperationResult> {
-//     return this.apiBaseService.post(
-//       BackendConfigurationPnPropertiesMethods.Properties,
-//       model
-//     );
-//   }
-//
-//   assignPropertiesToWorker(
-//     model: PropertyAssignWorkersModel
-//   ): Observable<OperationResult> {
-//     return this.apiBaseService.post(
-//       BackendConfigurationPnPropertiesMethods.PropertiesAssignment,
-//       model
-//     );
-//   }
-//
-//   getPropertiesAssignments(): Observable<
-//     OperationDataResult<PropertyAssignWorkersModel[]>
-//     > {
-//     return this.apiBaseService.get(
-//       `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}`
-//     );
-//   }
-//
-//   removeWorkerAssignments(deviceUserId: number): Observable<OperationResult> {
-//     return this.apiBaseService.delete(
-//       `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}/${deviceUserId}`
-//     );
-//   }
-//
-//   deleteProperty(propertyId: number): Observable<OperationResult> {
-//     return this.apiBaseService.delete(
-//       BackendConfigurationPnPropertiesMethods.Properties,
-//       { id: propertyId }
-//     );
-//   }
-// }
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { OperationDataResult, OperationResult } from 'src/app/common/models';
+import { ApiBaseService } from 'src/app/common/services';
+import {
+  AreaRuleModel,
+  AreaRulePlanningModel,
+  AreaRulesCreateModel,
+} from '../models';
+
+export let BackendConfigurationPnAreasMethods = {
+  AreaRules: 'api/backend-configuration-pn/area-rules',
+  AreaRulePlanning: 'api/backend-configuration-pn/area-rules/planning',
+};
+
+@Injectable({
+  providedIn: 'root',
+})
+export class BackendConfigurationPnAreasService {
+  constructor(private apiBaseService: ApiBaseService) {}
+
+  getAreaRules(
+    areaId: number
+  ): Observable<OperationDataResult<AreaRuleModel[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.AreaRules,
+      { areaId }
+    );
+  }
+
+  updateAreaRule(model: any): Observable<OperationResult> {
+    return this.apiBaseService.put(
+      BackendConfigurationPnAreasMethods.AreaRules,
+      model
+    );
+  }
+
+  updateAreaRulePlanning(
+    model: AreaRulePlanningModel
+  ): Observable<OperationResult> {
+    return this.apiBaseService.put(
+      BackendConfigurationPnAreasMethods.AreaRulePlanning,
+      model
+    );
+  }
+
+  createAreaRules(model: AreaRulesCreateModel): Observable<OperationResult> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnAreasMethods.AreaRules,
+      model
+    );
+  }
+
+  deleteAreaRule(areaId: number): Observable<OperationResult> {
+    return this.apiBaseService.delete(
+      BackendConfigurationPnAreasMethods.AreaRules,
+      { areaId }
+    );
+  }
+}

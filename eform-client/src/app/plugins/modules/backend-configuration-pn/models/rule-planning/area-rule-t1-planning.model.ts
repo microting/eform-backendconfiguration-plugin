@@ -1,6 +1,4 @@
-import { AreaRulePlanningModel } from './area-rule-planning.model';
-
-export class AreaRuleT1PlanningModel extends AreaRulePlanningModel {
+export class AreaRuleT1PlanningModel {
   repeatEvery: number;
   repeatType: number;
 }

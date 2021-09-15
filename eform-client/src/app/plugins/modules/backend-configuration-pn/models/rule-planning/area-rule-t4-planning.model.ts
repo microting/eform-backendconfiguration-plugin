@@ -1,5 +1,3 @@
-import { AreaRulePlanningModel } from './area-rule-planning.model';
-
-export class AreaRuleT4PlanningModel extends AreaRulePlanningModel {
+export class AreaRuleT4PlanningModel {
   endDate: string;
 }
