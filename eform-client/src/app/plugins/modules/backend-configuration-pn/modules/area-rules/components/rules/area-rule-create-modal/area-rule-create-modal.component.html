@@ -1,1 +1,54 @@
-<p>area-rule-plan-create-modal works!</p>
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade"
+  #frame="mdbModal"
+>
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{{ 'New rule' | translate }}</h3>
+        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+          <span>×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="container-fluid">
+          <!--          <div class="row">-->
+          <!--            <div class="col-md-12">-->
+          <!--              <div class="md-form">-->
+          <!--                <input-->
+          <!--                  mdbInput-->
+          <!--                  type="text"-->
+          <!--                  [(ngModel)]="newProperty.name"-->
+          <!--                  name="createPropertyName"-->
+          <!--                  class="form-control"-->
+          <!--                  id="createPropertyName"-->
+          <!--                />-->
+          <!--                <label for="createPropertyName">{{ 'Name' | translate }}</label>-->
+          <!--              </div>-->
+          <!--            </div>-->
+          <!--          </div>-->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          (click)="onCreateAreaRule()"
+          id="areaRuleCreateSaveBtn"
+        >
+          {{ 'Save' | translate }}
+        </button>
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+          id="areaRuleCreateSaveCancelBtn"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

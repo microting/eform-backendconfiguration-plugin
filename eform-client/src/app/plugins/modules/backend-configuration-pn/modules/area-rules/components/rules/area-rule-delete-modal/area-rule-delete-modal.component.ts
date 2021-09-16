@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
+import {AreaRuleSimpleModel} from '../../../../../models';
 
 @Component({
   selector: 'app-area-rule-delete-modal',
@@ -6,10 +7,24 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./area-rule-delete-modal.component.scss']
 })
 export class AreaRuleDeleteModalComponent implements OnInit {
+  @ViewChild('frame', { static: false }) frame;
+  @Output() deleteAreaRule: EventEmitter<number> = new EventEmitter<number>();
+  areaRule: AreaRuleSimpleModel = new AreaRuleSimpleModel();
 
-  constructor() { }
+  constructor() {}
 
-  ngOnInit(): void {
+  ngOnInit() {}
+
+  show(rule: AreaRuleSimpleModel) {
+    this.areaRule = rule;
+    this.frame.show();
   }
 
+  hide() {
+    this.frame.hide();
+  }
+
+  onDeleteAreaRule() {
+    this.deleteAreaRule.emit(this.areaRule.id);
+  }
 }

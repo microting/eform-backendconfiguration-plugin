@@ -3,13 +3,15 @@ import { Observable } from 'rxjs';
 import { OperationDataResult, OperationResult } from 'src/app/common/models';
 import { ApiBaseService } from 'src/app/common/services';
 import {
-  AreaRuleModel,
+  AreaRuleSimpleModel,
   AreaRulePlanningModel,
   AreaRulesCreateModel,
+  AreaRuleModel,
 } from '../models';
 
 export let BackendConfigurationPnAreasMethods = {
   AreaRules: 'api/backend-configuration-pn/area-rules',
+  AreaRulesIndex: 'api/backend-configuration-pn/area-rules/index',
   AreaRulePlanning: 'api/backend-configuration-pn/area-rules/planning',
 };
 
@@ -21,10 +23,19 @@ export class BackendConfigurationPnAreasService {
 
   getAreaRules(
     areaId: number
-  ): Observable<OperationDataResult<AreaRuleModel[]>> {
+  ): Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.AreaRulesIndex,
+      { areaId }
+    );
+  }
+
+  getSingleAreaRule(
+    ruleId: number
+  ): Observable<OperationDataResult<AreaRuleModel>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRules,
-      { areaId }
+      { ruleId }
     );
   }
 

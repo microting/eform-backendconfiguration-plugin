@@ -5,7 +5,9 @@ import { AreaRuleT1Model } from './area-rule-t1.model';
 
 export class AreaRuleUpdateModel {
   id: number;
+  eformName: string;
+  isDefault: boolean;
+  languages: string[];
   translatedNames: CommonTranslationModel[] = [];
-  type: 1 | 2 | 3 | 4 | 5;
   typeSpecificFields: AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model;
 }

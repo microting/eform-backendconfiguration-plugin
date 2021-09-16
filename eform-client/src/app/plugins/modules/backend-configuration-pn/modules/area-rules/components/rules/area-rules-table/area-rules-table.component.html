@@ -12,56 +12,50 @@
       [stickyHeader]="true"
     ></thead>
     <tbody id="tableBody">
-    <tr *ngFor="let property of propertiesModel.entities; let i = index">
-      <td id="propertyId">
-        {{ property.id }}
-      </td>
-      <td id="propertyName">
-        {{ property.name }}
-      </td>
-      <td id="propertyCHR">
-        {{ property.chr }}
-      </td>
-      <td id="propertyAddress">
-        {{ property.address }}
-      </td>
-      <td>
-        <div class="d-flex flex-row justify-content-center">
-          <button
-            id="showPropertyAreasBtn"
-            class="btn btn-success btn-icon mr-2"
-            mdbTooltip="{{ 'View property areas' | translate }}"
-            (click)="onShowPropertyAreasModal(property)"
-          >
-            <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
-          </button>
-          <button
-            id="editPropertyAreasBtn"
-            class="btn btn-accent text-black-50 btn-icon mb-2"
-            mdbTooltip="{{ 'Configure property areas' | translate }}"
-            (click)="onShowEditPropertyModal(property)"
-          >
-            <fa-icon icon="cogs" size="lg" [fixedWidth]="true"></fa-icon>
-          </button>
-          <button
-            id="editPropertyBtn"
-            class="btn btn-accent text-black-50 btn-icon mb-2"
-            mdbTooltip="{{ 'Edit property' | translate }}"
-            (click)="onShowEditPropertyModal(property)"
-          >
-            <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-          </button>
-          <button
-            id="deletePropertyBtn"
-            class="btn btn-danger btn-icon mb-2"
-            mdbTooltip="{{ 'Delete property' | translate }}"
-            (click)="onShowDeletePropertyModal(property)"
-          >
-            <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
-          </button>
-        </div>
-      </td>
-    </tr>
+      <tr *ngFor="let rule of areaRules; let i = index">
+        <td id="ruleName">
+          {{ rule.translatedName }}
+        </td>
+        <td id="ruleEformName">
+          {{ rule.eformName }}
+        </td>
+        <td id="ruleLanguages">
+          <ng-container *ngFor="let ruleLanguage of rule.languages"
+            >{{ ruleLanguage }} |
+          </ng-container>
+        </td>
+        <td id="rulePlanningStatus">
+          {{ (rule.planning.status ? 'ON' : 'OFF') | translate }}
+        </td>
+        <td>
+          <div class="d-flex flex-row justify-content-center">
+            <button
+              id="showPropertyAreasBtn"
+              class="btn btn-success btn-icon mr-2"
+              mdbTooltip="{{ 'Plan' | translate }}"
+              (click)="onShowPlanAreaRule(rule)"
+            >
+              <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
+            </button>
+            <button
+              id="showEditRuleBtn"
+              class="btn btn-accent text-black-50 btn-icon mb-2"
+              mdbTooltip="{{ 'Edit rule' | translate }}"
+              (click)="onShowEditRuleModal(rule)"
+            >
+              <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+            </button>
+            <button
+              id="deleteRuleBtn"
+              class="btn btn-danger btn-icon mb-2"
+              mdbTooltip="{{ 'Delete rule' | translate }}"
+              (click)="onShowDeleteRuleModal(rule)"
+            >
+              <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
+            </button>
+          </div>
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>

@@ -1,1 +1,42 @@
-<p>area-rule-plans-container works!</p>
+<eform-subheader [title]="'Properties' | translate">
+  <div class="p-3">
+    <button
+      mdbBtn
+      id="ruleCreateBtn"
+      class="btn-success btn-small-height"
+      mdbTooltip="{{ 'Create rule' | translate }}"
+      (click)="showAreaRuleCreateModal()"
+    >
+      {{ 'New rule' | translate }}
+    </button>
+  </div>
+</eform-subheader>
+
+<div class="container-fluid">
+  <app-area-rules-table
+    [areaRules]="areaRules"
+    (showDeleteRuleModal)="showDeleteAreaRuleModal($event)"
+    (showEditRuleModal)="showAreaRule($event, 'edit')"
+    (showPlanAreaRuleModal)="showAreaRule($event, 'plan')"
+  ></app-area-rules-table>
+</div>
+
+<app-area-rule-delete-modal
+  #deleteAreaRuleModal
+  (deleteAreaRule)="onDeleteAreaRule($event)"
+></app-area-rule-delete-modal>
+
+<app-area-rule-create-modal
+  #createAreaRuleModal
+  (createAreaRule)="onCreateAreaRule($event)"
+></app-area-rule-create-modal>
+
+<app-area-rule-edit-modal
+  #editAreaRuleModal
+  (updateAreaRule)="onUpdateAreaRule($event)"
+></app-area-rule-edit-modal>
+
+<app-area-rule-plan-modal
+  #planAreaRuleModal
+  (updateAreaRulePlan)="onUpdateAreaRulePlan($event)"
+></app-area-rule-plan-modal>
