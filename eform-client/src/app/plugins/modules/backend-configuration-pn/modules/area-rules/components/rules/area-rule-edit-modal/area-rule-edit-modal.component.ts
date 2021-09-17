@@ -1,11 +1,11 @@
 import {
   Component,
-  EventEmitter,
+  EventEmitter, Input,
   OnInit,
   Output,
   ViewChild,
 } from '@angular/core';
-import { AreaRuleModel, AreaRuleUpdateModel } from '../../../../../models';
+import {AreaModel, AreaRuleModel, AreaRuleUpdateModel} from '../../../../../models';
 
 @Component({
   selector: 'app-area-rule-edit-modal',
@@ -13,6 +13,7 @@ import { AreaRuleModel, AreaRuleUpdateModel } from '../../../../../models';
   styleUrls: ['./area-rule-edit-modal.component.scss'],
 })
 export class AreaRuleEditModalComponent implements OnInit {
+  @Input() selectedArea: AreaModel = new AreaModel();
   @ViewChild('frame', { static: false }) frame;
   @Output() updateAreaRule: EventEmitter<AreaRuleUpdateModel> =
     new EventEmitter<AreaRuleUpdateModel>();

@@ -1,19 +1,20 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { AuthStateService } from 'src/app/common/store';
-import { AreaRulePlanModalComponent } from 'src/app/plugins/modules/backend-configuration-pn/modules/area-rules/components';
+import { AreaModel } from 'src/app/plugins/modules/backend-configuration-pn/models/area.model';
+import { AreaRulePlanModalComponent } from '../../rule-plans';
 import {
   AreaRuleCreateModalComponent,
   AreaRuleDeleteModalComponent,
   AreaRuleEditModalComponent,
 } from '../';
 import {
-  AreaRuleSimpleModel,
   AreaRulePlanningModel,
   AreaRulesCreateModel,
+  AreaRuleSimpleModel,
   AreaRuleUpdateModel,
-  AreaRuleModel,
 } from '../../../../../models';
 import { BackendConfigurationPnAreasService } from '../../../../../services/backend-configuration-pn-areas.service';
 
@@ -35,8 +36,11 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   planAreaRuleModal: AreaRulePlanModalComponent;
 
   areaRulesModel: AreaRuleSimpleModel[] = [];
+  selectedArea: AreaModel = new AreaModel();
+  selectedAreaId: number;
 
   getAreaRulesSub$: Subscription;
+  getAreaSub$: Subscription;
   getSingleAreaRuleSub$: Subscription;
   createAreaRuleSub$: Subscription;
   editAreaRuleSub$: Subscription;
@@ -44,24 +48,36 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   planAreaRuleSub$: Subscription;
 
   constructor(
-    private areaRulesService: BackendConfigurationPnAreasService,
-    public authStateService: AuthStateService
+    private areasService: BackendConfigurationPnAreasService,
+    public authStateService: AuthStateService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
-    this.getAreaRules();
+    this.route.params.subscribe((params) => {
+      const selectedAreaId = params['areaId'];
+      this.selectedAreaId = selectedAreaId;
+      this.getAreaRules(selectedAreaId);
+      this.getArea(selectedAreaId);
+    });
   }
 
-  getAreaRules() {
-    this.getAreaRulesSub$ = this.areaRulesService
-      .getAreaRules(1)
+  getArea(areaId: number) {
+    this.getAreaSub$ = this.areasService.getArea(areaId).subscribe((data) => {
+      this.selectedArea = data.model;
+    });
+  }
+
+  getAreaRules(areaId: number) {
+    this.getAreaRulesSub$ = this.areasService
+      .getAreaRules(areaId)
       .subscribe((data) => {
         this.areaRulesModel = data.model;
       });
   }
 
   showAreaRule(rule: AreaRuleSimpleModel, modal: 'edit' | 'plan') {
-    this.getSingleAreaRuleSub$ = this.areaRulesService
+    this.getSingleAreaRuleSub$ = this.areasService
       .getSingleAreaRule(rule.id)
       .subscribe((data) => {
         if (modal === 'edit') {
@@ -81,44 +97,44 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   }
 
   onCreateAreaRule(model: AreaRulesCreateModel) {
-    this.createAreaRuleSub$ = this.areaRulesService
+    this.createAreaRuleSub$ = this.areasService
       .createAreaRules(model)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules();
+          this.getAreaRules(this.selectedAreaId);
           this.createAreaRuleModal.hide();
         }
       });
   }
 
   onUpdateAreaRule(model: AreaRuleUpdateModel) {
-    this.editAreaRuleSub$ = this.areaRulesService
+    this.editAreaRuleSub$ = this.areasService
       .updateAreaRule(model)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules();
+          this.getAreaRules(this.selectedAreaId);
           this.editAreaRuleModal.hide();
         }
       });
   }
 
   onDeleteAreaRule(areaRuleId: number) {
-    this.deleteAreaRuleSub$ = this.areaRulesService
+    this.deleteAreaRuleSub$ = this.areasService
       .deleteAreaRule(areaRuleId)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules();
+          this.getAreaRules(this.selectedAreaId);
           this.deleteAreaRuleModal.hide();
         }
       });
   }
 
   onUpdateAreaRulePlan(rulePlanning: AreaRulePlanningModel) {
-    this.planAreaRuleSub$ = this.areaRulesService
+    this.planAreaRuleSub$ = this.areasService
       .updateAreaRulePlanning(rulePlanning)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules();
+          this.getAreaRules(this.selectedAreaId);
           this.planAreaRuleModal.hide();
         }
       });

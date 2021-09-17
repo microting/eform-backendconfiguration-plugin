@@ -1,3 +1,3 @@
 export class AreaRuleT1Model {
-  eformId: number;
+  eformId: number | null;
 }

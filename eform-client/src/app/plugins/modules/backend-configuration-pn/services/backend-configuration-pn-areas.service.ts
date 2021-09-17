@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { OperationDataResult, OperationResult } from 'src/app/common/models';
 import { ApiBaseService } from 'src/app/common/services';
+import { AreaModel } from 'src/app/plugins/modules/backend-configuration-pn/models/area.model';
 import {
   AreaRuleSimpleModel,
   AreaRulePlanningModel,
@@ -10,6 +11,7 @@ import {
 } from '../models';
 
 export let BackendConfigurationPnAreasMethods = {
+  Area: 'api/backend-configuration-pn/area',
   AreaRules: 'api/backend-configuration-pn/area-rules',
   AreaRulesIndex: 'api/backend-configuration-pn/area-rules/index',
   AreaRulePlanning: 'api/backend-configuration-pn/area-rules/planning',
@@ -20,6 +22,13 @@ export let BackendConfigurationPnAreasMethods = {
 })
 export class BackendConfigurationPnAreasService {
   constructor(private apiBaseService: ApiBaseService) {}
+
+  getArea(areaId: number): Observable<OperationDataResult<AreaModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.Area,
+      { areaId }
+    );
+  }
 
   getAreaRules(
     areaId: number

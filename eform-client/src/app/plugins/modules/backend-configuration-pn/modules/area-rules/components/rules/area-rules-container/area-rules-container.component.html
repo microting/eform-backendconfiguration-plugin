@@ -28,15 +28,18 @@
 
 <app-area-rule-create-modal
   #createAreaRuleModal
+  [selectedArea]="selectedArea"
   (createAreaRule)="onCreateAreaRule($event)"
 ></app-area-rule-create-modal>
 
 <app-area-rule-edit-modal
   #editAreaRuleModal
+  [selectedArea]="selectedArea"
   (updateAreaRule)="onUpdateAreaRule($event)"
 ></app-area-rule-edit-modal>
 
 <app-area-rule-plan-modal
   #planAreaRuleModal
+  [selectedArea]="selectedArea"
   (updateAreaRulePlan)="onUpdateAreaRulePlan($event)"
 ></app-area-rule-plan-modal>

@@ -9,6 +9,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MDBBootstrapModule } from 'angular-bootstrap-md';
 import { FileUploadModule } from 'ng2-file-upload';
 import { EformSharedModule } from 'src/app/common/modules/eform-shared/eform-shared.module';
+import { AreaRulesRouting } from './area-rules.routing';
 import {
   AreaRuleCreateModalComponent,
   AreaRuleDeleteModalComponent,
@@ -49,6 +50,7 @@ import {
     ReactiveFormsModule,
     FileUploadModule,
     OwlDateTimeModule,
+    AreaRulesRouting,
   ],
 })
 export class AreaRulesModule {}
