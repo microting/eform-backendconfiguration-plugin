@@ -7,7 +7,7 @@ import {
   Output,
 } from '@angular/core';
 import { TableHeaderElementModel } from 'src/app/common/models';
-import { AreaRuleSimpleModel } from '../../../../../models';
+import {AreaModel, AreaRuleSimpleModel} from '../../../../../models';
 
 @Component({
   selector: 'app-area-rules-table',
@@ -17,6 +17,7 @@ import { AreaRuleSimpleModel } from '../../../../../models';
 })
 export class AreaRulesTableComponent implements OnInit {
   @Input() areaRules: AreaRuleSimpleModel[] = [];
+  @Input() selectedArea: AreaModel = new AreaModel();
   @Output() showPlanAreaRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
   @Output() showEditRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
   @Output() showDeleteRuleModal: EventEmitter<AreaRuleSimpleModel> =

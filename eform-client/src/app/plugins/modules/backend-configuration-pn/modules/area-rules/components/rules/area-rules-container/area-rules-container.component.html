@@ -1,5 +1,5 @@
 <eform-subheader [title]="'Properties' | translate">
-  <div class="p-3">
+  <div class="p-3" *ngIf="selectedArea.type !== 4">
     <button
       mdbBtn
       id="ruleCreateBtn"
@@ -15,6 +15,7 @@
 <div class="container-fluid">
   <app-area-rules-table
     [areaRules]="areaRules"
+    [selectedArea]="selectedArea"
     (showDeleteRuleModal)="showDeleteAreaRuleModal($event)"
     (showEditRuleModal)="showAreaRule($event, 'edit')"
     (showPlanAreaRuleModal)="showAreaRule($event, 'plan')"

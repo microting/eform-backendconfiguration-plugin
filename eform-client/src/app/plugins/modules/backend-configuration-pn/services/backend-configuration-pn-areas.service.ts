@@ -7,7 +7,7 @@ import {
   AreaRuleSimpleModel,
   AreaRulePlanningModel,
   AreaRulesCreateModel,
-  AreaRuleModel,
+  AreaRuleModel, AreaRuleUpdateModel,
 } from '../models';
 
 export let BackendConfigurationPnAreasMethods = {
@@ -48,7 +48,7 @@ export class BackendConfigurationPnAreasService {
     );
   }
 
-  updateAreaRule(model: any): Observable<OperationResult> {
+  updateAreaRule(model: AreaRuleUpdateModel): Observable<OperationResult> {
     return this.apiBaseService.put(
       BackendConfigurationPnAreasMethods.AreaRules,
       model

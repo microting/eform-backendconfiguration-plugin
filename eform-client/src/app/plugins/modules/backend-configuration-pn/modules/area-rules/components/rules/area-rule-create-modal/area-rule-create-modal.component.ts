@@ -1,4 +1,5 @@
 import {
+  ChangeDetectorRef,
   Component,
   EventEmitter,
   Input,
@@ -6,7 +7,10 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
+import { debounceTime, switchMap } from 'rxjs/operators';
 import { applicationLanguages } from 'src/app/common/const';
+import { TemplateListModel, TemplateRequestModel } from 'src/app/common/models';
+import { EFormService } from 'src/app/common/services';
 import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
@@ -18,6 +22,7 @@ import {
   AreaRuleT1Model,
   AreaRuleT2Model,
   AreaRuleT3Model,
+  AreaRuleT5Model,
 } from '../../../../../models';
 
 @Component({
@@ -31,9 +36,29 @@ export class AreaRuleCreateModalComponent implements OnInit {
   @Output() createAreaRule: EventEmitter<AreaRulesCreateModel> =
     new EventEmitter<AreaRulesCreateModel>();
   newAreaRules: AreaRulesCreateModel = new AreaRulesCreateModel();
+  templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
   newAreaRulesString: string;
+  newAreaRulesDayOfWeek: number | null;
+  typeahead = new EventEmitter<string>();
+  templatesModel: TemplateListModel = new TemplateListModel();
 
-  constructor() {}
+  constructor(
+    private eFormService: EFormService,
+    private cd: ChangeDetectorRef
+  ) {
+    this.typeahead
+      .pipe(
+        debounceTime(200),
+        switchMap((term) => {
+          this.templateRequestModel.nameFilter = term;
+          return this.eFormService.getAll(this.templateRequestModel);
+        })
+      )
+      .subscribe((items) => {
+        this.templatesModel = items.model;
+        this.cd.markForCheck();
+      });
+  }
 
   ngOnInit() {}
 
@@ -44,6 +69,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
   hide() {
     this.newAreaRules = new AreaRulesCreateModel();
     this.newAreaRulesString = '';
+    this.newAreaRulesDayOfWeek = null;
     this.frame.hide();
   }
 
@@ -54,18 +80,20 @@ export class AreaRuleCreateModalComponent implements OnInit {
         ...this.newAreaRules.areaRules,
         {
           typeSpecificFields: this.generateAreaTypeSpecificFields(),
-          translatedNames: applicationLanguages.map((x) => {
-            return { value: lines[i], languageId: x.id };
+          translatedNames: this.selectedArea.languages.map((x) => {
+            return { name: lines[i], id: x.id, description: x.name };
           }),
         },
       ];
     }
+    // Add weekday for type 4
   }
 
   generateAreaTypeSpecificFields():
     | AreaRuleT1Model
     | AreaRuleT2Model
-    | AreaRuleT3Model {
+    | AreaRuleT3Model
+    | AreaRuleT5Model {
     if (this.selectedArea.type === 1) {
       return { eformId: null };
     }
@@ -77,6 +105,9 @@ export class AreaRuleCreateModalComponent implements OnInit {
     }
     if (this.selectedArea.type === 3) {
       return { checklistStable: false, tailBite: false, eformId: null };
+    }
+    if (this.selectedArea.type === 5) {
+      return { dayOfWeek: this.newAreaRulesDayOfWeek };
     }
     return null;
   }
