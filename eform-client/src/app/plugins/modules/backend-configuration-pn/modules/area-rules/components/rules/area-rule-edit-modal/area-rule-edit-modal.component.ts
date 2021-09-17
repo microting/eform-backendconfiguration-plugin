@@ -1,10 +1,14 @@
 import {
+  ChangeDetectorRef,
   Component,
   EventEmitter, Input,
   OnInit,
   Output,
   ViewChild,
 } from '@angular/core';
+import {debounceTime, switchMap} from 'rxjs/operators';
+import {TemplateListModel, TemplateRequestModel} from 'src/app/common/models';
+import {EFormService} from 'src/app/common/services';
 import {AreaModel, AreaRuleModel, AreaRuleUpdateModel} from '../../../../../models';
 
 @Component({
@@ -18,8 +22,27 @@ export class AreaRuleEditModalComponent implements OnInit {
   @Output() updateAreaRule: EventEmitter<AreaRuleUpdateModel> =
     new EventEmitter<AreaRuleUpdateModel>();
   selectedAreaRule: AreaRuleUpdateModel = new AreaRuleUpdateModel();
+  typeahead = new EventEmitter<string>();
+  templatesModel: TemplateListModel = new TemplateListModel();
+  templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
 
-  constructor() {}
+  constructor(
+    private eFormService: EFormService,
+    private cd: ChangeDetectorRef
+  ) {
+    this.typeahead
+      .pipe(
+        debounceTime(200),
+        switchMap((term) => {
+          this.templateRequestModel.nameFilter = term;
+          return this.eFormService.getAll(this.templateRequestModel);
+        })
+      )
+      .subscribe((items) => {
+        this.templatesModel = items.model;
+        this.cd.markForCheck();
+      });
+  }
 
   ngOnInit() {}
 

@@ -14,21 +14,149 @@
       </div>
       <div class="modal-body">
         <div class="container-fluid">
-          <!--          <div class="row">-->
-          <!--            <div class="col-md-12">-->
-          <!--              <div class="md-form">-->
-          <!--                <input-->
-          <!--                  mdbInput-->
-          <!--                  type="text"-->
-          <!--                  [(ngModel)]="selectedAreaRule.name"-->
-          <!--                  name="editAreaRuleName"-->
-          <!--                  class="form-control"-->
-          <!--                  id="editAreaRuleName"-->
-          <!--                />-->
-          <!--                <label for="editAreaRuleName">{{ 'Name' | translate }}</label>-->
-          <!--              </div>-->
-          <!--            </div>-->
-          <!--          </div>-->
+          <!-- Show all translations for rule -->
+          <ng-container
+            *ngFor="
+              let translation of selectedAreaRule.translatedNames;
+              let k = index
+            "
+          >
+            <div class="row">
+              <div class="col-md-12">
+                <div class="md-form">
+                  <input
+                    mdbInput
+                    type="text"
+                    [(ngModel)]="translation.name"
+                    class="form-control"
+                    id="editRuleName{{ k }}"
+                  />
+                  <label for="editRuleName{{ k }}">{{
+                    translation.description | translate
+                  }}</label>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+          <!-- Rule type 1, 5, 3 -->
+          <ng-container
+            *ngIf="
+              selectedArea.type === 1 ||
+              selectedArea.type === 5 ||
+              selectedArea.type === 3
+            "
+          >
+            <div class="row">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="templatesModel.templates"
+                  bindLabel="label"
+                  [placeholder]="'Selected template' | translate"
+                  bindValue="id"
+                  [typeahead]="typeahead"
+                  [(ngModel)]="selectedAreaRule.typeSpecificFields.eformId"
+                  id="editRuleEformId"
+                >
+                </ng-select>
+              </div>
+            </div>
+          </ng-container>
+          <!-- Rule type 2 -->
+          <ng-container *ngIf="selectedArea.type === 2">
+            <div class="row">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: '1', name: 'Open' | translate },
+                    { id: '2', name: 'Closed' | translate }
+                  ]"
+                  bindLabel="label"
+                  [placeholder]="'Type' | translate"
+                  bindValue="id"
+                  [(ngModel)]="selectedAreaRule.typeSpecificFields.type"
+                  id="editRuleType"
+                >
+                </ng-select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: '1', name: 'Yes' | translate },
+                    { id: '2', name: 'No' | translate }
+                  ]"
+                  bindLabel="label"
+                  [placeholder]="'Alarm' | translate"
+                  bindValue="id"
+                  [(ngModel)]="selectedAreaRule.typeSpecificFields.alarm"
+                  id="editRuleAlarm"
+                >
+                </ng-select>
+              </div>
+            </div>
+          </ng-container>
+          <!-- Rule type 3 -->
+          <ng-container *ngIf="selectedArea.type === 3">
+            <div class="row">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: '1', name: 'Yes' | translate },
+                    { id: '2', name: 'No' | translate }
+                  ]"
+                  bindLabel="label"
+                  [placeholder]="'Checklist stable' | translate"
+                  bindValue="id"
+                  [(ngModel)]="
+                    selectedAreaRule.typeSpecificFields.checklistStable
+                  "
+                  id="editRuleChecklistStable"
+                >
+                </ng-select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: '1', name: 'Yes' | translate },
+                    { id: '2', name: 'No' | translate }
+                  ]"
+                  bindLabel="label"
+                  [placeholder]="'Tail bite' | translate"
+                  bindValue="id"
+                  [(ngModel)]="selectedAreaRule.typeSpecificFields.tailBite"
+                  id="editRuleTailBite"
+                >
+                </ng-select>
+              </div>
+            </div>
+          </ng-container>
+          <!-- Rule type 5 -->
+          <ng-container *ngIf="selectedArea.type === 5">
+            <div class="row">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: 1, name: 'Monday' | translate },
+                    { id: 2, name: 'Tuesday' | translate },
+                    { id: 3, name: 'Wednesday' | translate },
+                    { id: 4, name: 'Thursday' | translate },
+                    { id: 5, name: 'Friday' | translate },
+                    { id: 6, name: 'Saturday' | translate },
+                    { id: 0, name: 'Sunday' | translate }
+                  ]"
+                  bindLabel="name"
+                  [placeholder]="'Day of week' | translate"
+                  bindValue="id"
+                  [(ngModel)]="selectedAreaRule.typeSpecificFields.dayOfWeek"
+                  id="editAreaDayOfWeek"
+                >
+                </ng-select>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
       <div class="modal-footer">

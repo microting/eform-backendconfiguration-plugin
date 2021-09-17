@@ -25,7 +25,6 @@ export class AreaRulesTableComponent implements OnInit {
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Name', elementId: 'nameTableHeader', sortable: false },
     { name: 'Eform', elementId: 'eformTableHeader', sortable: false },
-    { name: 'Language', elementId: 'languageTableHeader', sortable: false },
     { name: 'Status', elementId: 'statusTableHeader', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];

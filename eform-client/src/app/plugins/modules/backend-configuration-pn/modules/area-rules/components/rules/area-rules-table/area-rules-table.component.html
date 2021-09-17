@@ -19,11 +19,6 @@
         <td id="ruleEformName">
           {{ rule.eformName }}
         </td>
-        <td id="ruleLanguages">
-          <ng-container *ngFor="let ruleLanguage of rule.languages"
-            >{{ ruleLanguage }} |
-          </ng-container>
-        </td>
         <td id="rulePlanningStatus">
           {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
         </td>
