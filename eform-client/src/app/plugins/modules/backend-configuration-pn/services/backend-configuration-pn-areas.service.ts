@@ -39,6 +39,15 @@ export class BackendConfigurationPnAreasService {
     );
   }
 
+  getAreaRulePlanning(
+    areaId: number
+  ): Observable<OperationDataResult<AreaRulePlanningModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.AreaRulePlanning,
+      { areaId }
+    );
+  }
+
   getSingleAreaRule(
     ruleId: number
   ): Observable<OperationDataResult<AreaRuleModel>> {

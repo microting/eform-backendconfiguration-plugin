@@ -40,6 +40,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   selectedAreaId: number;
 
   getAreaRulesSub$: Subscription;
+  getAreaRulePlanningSub$: Subscription;
   getAreaSub$: Subscription;
   getSingleAreaRuleSub$: Subscription;
   createAreaRuleSub$: Subscription;
@@ -76,15 +77,19 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
-  showAreaRule(rule: AreaRuleSimpleModel, modal: 'edit' | 'plan') {
+  showAreaRulePlanning(rule: AreaRuleSimpleModel) {
+    this.getAreaRulePlanningSub$ = this.areasService
+      .getAreaRulePlanning(rule.id)
+      .subscribe((data) => {
+        this.planAreaRuleModal.show(data.model);
+      });
+  }
+
+  showEditAreaRule(rule: AreaRuleSimpleModel) {
     this.getSingleAreaRuleSub$ = this.areasService
       .getSingleAreaRule(rule.id)
       .subscribe((data) => {
-        if (modal === 'edit') {
-          this.editAreaRuleModal.show(data.model);
-        } else {
-          this.planAreaRuleModal.show(data.model);
-        }
+        this.editAreaRuleModal.show(data.model);
       });
   }
 

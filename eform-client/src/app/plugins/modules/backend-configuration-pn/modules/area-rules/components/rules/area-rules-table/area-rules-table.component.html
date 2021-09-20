@@ -7,8 +7,33 @@
     class="z-depth-1 text-center"
   >
     <thead
+      *ngIf="selectedArea.type === 1"
       table-headers
-      [tableHeaders]="tableHeaders"
+      [tableHeaders]="tableHeadersT1"
+      [stickyHeader]="true"
+    ></thead>
+    <thead
+      *ngIf="selectedArea.type === 2"
+      table-headers
+      [tableHeaders]="tableHeadersT2"
+      [stickyHeader]="true"
+    ></thead>
+    <thead
+      *ngIf="selectedArea.type === 3"
+      table-headers
+      [tableHeaders]="tableHeadersT3"
+      [stickyHeader]="true"
+    ></thead>
+    <thead
+      *ngIf="selectedArea.type === 4"
+      table-headers
+      [tableHeaders]="tableHeadersT4"
+      [stickyHeader]="true"
+    ></thead>
+    <thead
+      *ngIf="selectedArea.type === 5"
+      table-headers
+      [tableHeaders]="tableHeadersT5"
       [stickyHeader]="true"
     ></thead>
     <tbody id="tableBody">
@@ -16,12 +41,43 @@
         <td id="ruleName">
           {{ rule.translatedName }}
         </td>
-        <td id="ruleEformName">
-          {{ rule.eformName }}
-        </td>
+        <ng-container *ngIf="selectedArea.type === 1">
+          <td id="ruleEformNameT1">
+            {{ rule.eformName }}
+          </td>
+        </ng-container>
+        <ng-container *ngIf="selectedArea.type === 2">
+          <td id="ruleType">
+            {{ areaRuleTypes[rule.typeSpecificFields.type] | translate }}
+          </td>
+          <td id="ruleAlarm">
+            {{ areaRuleAlarms[rule.typeSpecificFields.alarm] | translate }}
+          </td>
+        </ng-container>
+        <ng-container *ngIf="selectedArea.type === 3">
+          <td id="ruleChecklistStable">
+            {{
+              (rule.typeSpecificFields.checklistStable ? 'Yes' : 'No')
+                | translate
+            }}
+          </td>
+          <td id="ruleEformNameT3">
+            {{ rule.eformName }}
+          </td>
+          <td id="ruleTailBite">
+            {{ (rule.typeSpecificFields.tailBite ? 'Yes' : 'No') | translate }}
+          </td>
+        </ng-container>
+        <ng-container *ngIf="selectedArea.type === 5">
+          <td id="ruleWeekDay">
+            {{ rule.typeSpecificFields.dayOfWeekName }}
+          </td>
+        </ng-container>
+
         <td id="rulePlanningStatus">
           {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
         </td>
+
         <td>
           <div class="d-flex flex-row justify-content-center">
             <button

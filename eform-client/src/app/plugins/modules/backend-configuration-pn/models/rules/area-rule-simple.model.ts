@@ -2,7 +2,7 @@ import {
   CommonDictionaryModel,
   CommonTranslationModel,
 } from 'src/app/common/models';
-import { AreaRuleT1Model, AreaRuleT2Model, AreaRuleT3Model } from './';
+import {AreaRuleT1Model, AreaRuleT2Model, AreaRuleT3Model, AreaRuleT5Model} from './';
 import { AreaRulePlanningModel } from '../rule-planning/area-rule-planning.model';
 
 export class AreaRuleSimpleModel {
@@ -11,6 +11,7 @@ export class AreaRuleSimpleModel {
   translatedName: string;
   isDefault: boolean;
   planningStatus: boolean;
+  typeSpecificFields: AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model;
 }
 
 export class AreaRuleModel {
@@ -20,6 +21,6 @@ export class AreaRuleModel {
   isDefault: boolean;
   languages: string[];
   translatedNames: CommonDictionaryModel[] = [];
-  typeSpecificFields: AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model;
+  typeSpecificFields: AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model;
   planning: AreaRulePlanningModel;
 }
