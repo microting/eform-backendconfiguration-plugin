@@ -103,7 +103,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
 
   onCreateAreaRule(model: AreaRulesCreateModel) {
     this.createAreaRuleSub$ = this.areasService
-      .createAreaRules(model)
+      .createAreaRules({ ...model, areaId: this.selectedAreaId })
       .subscribe((data) => {
         if (data && data.success) {
           this.getAreaRules(this.selectedAreaId);

@@ -88,22 +88,28 @@
             >
               <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
             </button>
-            <button
-              id="showEditRuleBtn"
-              class="btn btn-accent text-black-50 btn-icon mb-2"
-              mdbTooltip="{{ 'Edit rule' | translate }}"
-              (click)="onShowEditRuleModal(rule)"
-            >
-              <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-            </button>
-            <button
-              id="deleteRuleBtn"
-              class="btn btn-danger btn-icon mb-2"
-              mdbTooltip="{{ 'Delete rule' | translate }}"
-              (click)="onShowDeleteRuleModal(rule)"
-            >
-              <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
-            </button>
+            <ng-container *ngIf="!rule.isDefault">
+              <button
+                id="showEditRuleBtn"
+                class="btn btn-accent text-black-50 btn-icon mb-2"
+                mdbTooltip="{{ 'Edit rule' | translate }}"
+                (click)="onShowEditRuleModal(rule)"
+              >
+                <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+              </button>
+              <button
+                id="deleteRuleBtn"
+                class="btn btn-danger btn-icon mb-2"
+                mdbTooltip="{{ 'Delete rule' | translate }}"
+                (click)="onShowDeleteRuleModal(rule)"
+              >
+                <fa-icon
+                  icon="trash-alt"
+                  size="lg"
+                  [fixedWidth]="true"
+                ></fa-icon>
+              </button>
+            </ng-container>
           </div>
         </td>
       </tr>

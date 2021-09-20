@@ -5,6 +5,8 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
+import { applicationLanguages } from 'src/app/common/const';
+import { PropertyAssignmentWorkerModel } from 'src/app/plugins/modules/backend-configuration-pn/models/properties/property-workers-assignment.model';
 import { PropertyCreateModel } from '../../../../models';
 
 @Component({
@@ -17,6 +19,11 @@ export class PropertyCreateModalComponent implements OnInit {
   @Output() propertyCreate: EventEmitter<PropertyCreateModel> =
     new EventEmitter<PropertyCreateModel>();
   newProperty: PropertyCreateModel = new PropertyCreateModel();
+  selectedLanguages: { id: number; checked: boolean }[] = [];
+
+  get applicationLanguages() {
+    return applicationLanguages;
+  }
 
   constructor() {}
 
@@ -32,6 +39,27 @@ export class PropertyCreateModalComponent implements OnInit {
   }
 
   onCreateProperty() {
-    this.propertyCreate.emit(this.newProperty);
+    this.propertyCreate.emit({
+      ...this.newProperty,
+      languagesIds: this.selectedLanguages.map((x) => x.id),
+    });
+  }
+
+  addToArray(e: any, languageId: number) {
+    if (e.target.checked) {
+      this.selectedLanguages = [
+        ...this.selectedLanguages,
+        { id: languageId, checked: true },
+      ];
+    } else {
+      this.selectedLanguages = this.selectedLanguages.filter(
+        (x) => x.id !== languageId
+      );
+    }
+  }
+
+  getLanguageIsChecked(languageId: number): boolean {
+    const language = this.selectedLanguages.find((x) => x.id === languageId);
+    return language ? language.checked : false;
   }
 }
