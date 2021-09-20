@@ -9,20 +9,15 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MDBBootstrapModule } from 'angular-bootstrap-md';
 import { FileUploadModule } from 'ng2-file-upload';
 import { EformSharedModule } from 'src/app/common/modules/eform-shared/eform-shared.module';
-import { AreaRulesRouting } from './area-rules.routing';
 import {
   AreaRuleCreateModalComponent,
   AreaRuleDeleteModalComponent,
   AreaRuleEditModalComponent,
   AreaRulePlanModalComponent,
-  AreaRulePlanT1Component,
-  AreaRulePlanT2Component,
-  AreaRulePlanT3Component,
-  AreaRulePlanT4Component,
-  AreaRulePlanT5Component,
   AreaRulesContainerComponent,
   AreaRulesTableComponent,
 } from './components';
+import { AreaRulesRouting } from './area-rules.routing';
 
 @NgModule({
   declarations: [
@@ -32,11 +27,6 @@ import {
     AreaRuleEditModalComponent,
     AreaRuleDeleteModalComponent,
     AreaRulePlanModalComponent,
-    AreaRulePlanT1Component,
-    AreaRulePlanT2Component,
-    AreaRulePlanT3Component,
-    AreaRulePlanT4Component,
-    AreaRulePlanT5Component,
   ],
   imports: [
     CommonModule,

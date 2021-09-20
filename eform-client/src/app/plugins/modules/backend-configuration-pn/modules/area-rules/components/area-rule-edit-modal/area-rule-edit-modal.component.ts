@@ -9,7 +9,7 @@ import {
 import {debounceTime, switchMap} from 'rxjs/operators';
 import {TemplateListModel, TemplateRequestModel} from 'src/app/common/models';
 import {EFormService} from 'src/app/common/services';
-import {AreaModel, AreaRuleModel, AreaRuleUpdateModel} from '../../../../../models';
+import {AreaModel, AreaRuleModel, AreaRuleUpdateModel} from '../../../../models';
 
 @Component({
   selector: 'app-area-rule-edit-modal',

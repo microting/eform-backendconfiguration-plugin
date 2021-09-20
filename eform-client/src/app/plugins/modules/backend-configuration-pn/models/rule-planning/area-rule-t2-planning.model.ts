@@ -5,5 +5,6 @@ export class AreaRuleT2PlanningModel {
   alarm: AreaRuleT2AlarmsEnum;
   repeatEvery: number;
   repeatType: number;
+  startDate: string;
 }
 

@@ -1,5 +1,5 @@
 import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
-import {AreaRuleSimpleModel} from '../../../../../models';
+import {AreaRuleSimpleModel} from '../../../../models';
 
 @Component({
   selector: 'app-area-rule-delete-modal',

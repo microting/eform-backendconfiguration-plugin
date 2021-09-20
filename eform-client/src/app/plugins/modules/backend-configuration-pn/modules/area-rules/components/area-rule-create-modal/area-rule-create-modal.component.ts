@@ -23,7 +23,7 @@ import {
   AreaRuleT2Model,
   AreaRuleT3Model,
   AreaRuleT5Model,
-} from '../../../../../models';
+} from '../../../../models';
 
 @Component({
   selector: 'app-area-rule-create-modal',

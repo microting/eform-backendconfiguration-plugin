@@ -11,7 +11,7 @@ import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
 } from 'src/app/plugins/modules/backend-configuration-pn/enums';
-import { AreaModel, AreaRuleSimpleModel } from '../../../../../models';
+import { AreaModel, AreaRuleSimpleModel } from '../../../../models';
 
 @Component({
   selector: 'app-area-rules-table',

@@ -3,20 +3,20 @@ import { ActivatedRoute } from '@angular/router';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { AuthStateService } from 'src/app/common/store';
-import { AreaModel } from 'src/app/plugins/modules/backend-configuration-pn/models/area.model';
-import { AreaRulePlanModalComponent } from '../../rule-plans';
 import {
   AreaRuleCreateModalComponent,
   AreaRuleDeleteModalComponent,
   AreaRuleEditModalComponent,
-} from '../';
+  AreaRulePlanModalComponent,
+} from '../index';
 import {
   AreaRulePlanningModel,
   AreaRulesCreateModel,
   AreaRuleSimpleModel,
   AreaRuleUpdateModel,
-} from '../../../../../models';
-import { BackendConfigurationPnAreasService } from '../../../../../services/backend-configuration-pn-areas.service';
+  AreaModel
+} from '../../../../models';
+import { BackendConfigurationPnAreasService } from '../../../../services/backend-configuration-pn-areas.service';
 
 @AutoUnsubscribe()
 @Component({
@@ -77,15 +77,15 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
-  showAreaRulePlanning(rule: AreaRuleSimpleModel) {
+  showPlanAreaRuleModal(rule: AreaRuleSimpleModel) {
     this.getAreaRulePlanningSub$ = this.areasService
       .getAreaRulePlanning(rule.id)
       .subscribe((data) => {
-        this.planAreaRuleModal.show(data.model);
+        this.planAreaRuleModal.show(data.model, rule);
       });
   }
 
-  showEditAreaRule(rule: AreaRuleSimpleModel) {
+  showEditAreaRuleModal(rule: AreaRuleSimpleModel) {
     this.getSingleAreaRuleSub$ = this.areasService
       .getSingleAreaRule(rule.id)
       .subscribe((data) => {
