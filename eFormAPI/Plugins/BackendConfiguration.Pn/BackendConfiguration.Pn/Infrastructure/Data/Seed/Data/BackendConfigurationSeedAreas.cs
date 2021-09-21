@@ -33,172 +33,172 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             new Areas
             {
                 Id = 1,
-                Name = "Environmental Management (kun IE-husdyrbrug)",
+                Name = "01. Environmental Management (kun IE-husdyrbrug)",
                 Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
                 Type = 1,
             },
             new Areas
             {
                 Id = 2,
-                Name = "Contingency",
+                Name = "02. Contingency",
                 Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
                 Type = 1,
             },
             new Areas
             {
                 Id = 3,
-                Name = "Slurry tanks",
+                Name = "03. Slurry tanks",
                 Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                 Type = 2,
             },
             new Areas
             {
                 Id = 4,
-                Name = "Feeding documentation (kun IE-husdyrbrug)",
+                Name = "04. Feeding documentation (kun IE-husdyrbrug)",
                 Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                 Type = 1,
             },
             new Areas
             {
                 Id = 5,
-                Name = "Stable preparations and tail bite documentation",
+                Name = "05. Stable preparations and tail bite documentation",
                 Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
                 Type = 3,
             },
             new Areas
             {
                 Id = 6,
-                Name = "Silos",
+                Name = "06. Silos",
                 Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
                 Type = 1,
             },
             new Areas
             {
                 Id = 7,
-                Name = "Pest control",
+                Name = "07. Pest control",
                 Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
                 Type = 1,
             },
             new Areas
             {
                 Id = 8,
-                Name = "Aircleaning",
+                Name = "08. Aircleaning",
                 Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
                 Type = 1,
             },
             new Areas
             {
                 Id = 9,
-                Name = "Acidification",
+                Name = "09. Acidification",
                 Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
                 Type = 1,
             },
             new Areas
             {
                 Id = 10,
-                Name = "Heat pumps",
+                Name = "10. Heat pumps",
                 Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
                 Type = 1,
             },
             new Areas
             {
                 Id = 11,
-                Name = "Pellot stoves",
+                Name = "11. Pellot stoves",
                 Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
                 Type = 1,
             },
             new Areas
             {
                 Id = 12,
-                Name = "Environmentally hazardous substances",
+                Name = "12. Environmentally hazardous substances",
                 Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
                 Type = 1,
             },
             new Areas
             {
                 Id = 13,
-                Name = "Work Place Assesment",
+                Name = "13. Work Place Assesment",
                 Description = @"https://www.microting.dk/eform/landbrug/13-apv",
                 Type = 4,
             },
             new Areas
             {
                 Id = 14,
-                Name = "Machines",
+                Name = "14. Machines",
                 Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
                 Type = 1,
             },
             new Areas
             {
                 Id = 15,
-                Name = "Inspection of power tools",
+                Name = "15. Inspection of power tools",
                 Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
                 Type = 1,
             },
             new Areas
             {
                 Id = 16,
-                Name = "Inspection of wagons",
+                Name = "16. Inspection of wagons",
                 Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                 Type = 1,
             },
             new Areas
             {
                 Id = 17,
-                Name = "Inspection of ladders",
+                Name = "17. Inspection of ladders",
                 Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                 Type = 1,
             },
             new Areas
             {
                 Id = 18,
-                Name = "Alarm",
+                Name = "18. Alarm",
                 Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
                 Type = 1,
             },
             new Areas
             {
                 Id = 19,
-                Name = "Ventilation",
+                Name = "19. Ventilation",
                 Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
                 Type = 1,
             },
             new Areas
             {
                 Id = 20,
-                Name = "Recurring tasks (mon-sun)",
+                Name = "20. Recurring tasks (mon-sun)",
                 Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
                 Type = 5,
             },
             new Areas
             {
                 Id = 21,
-                Name = "DANISH Standard",
+                Name = "21. DANISH Standard",
                 Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
                 Type = 4,
             },
             new Areas
             {
                 Id = 22,
-                Name = "Sieve test",
+                Name = "22. Sieve test",
                 Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
             },
             new Areas
             {
                 Id = 23,
-                Name = "Water consumption",
+                Name = "23. Water consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
             },
             new Areas
             {
                 Id = 24,
-                Name = "Electricity consumption",
+                Name = "24. Electricity consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
             },
             new Areas
             {
                 Id = 25,
-                Name = "Field irrigation consumption",
+                Name = "25. Field irrigation consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
             },
             new Areas
