@@ -36,8 +36,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public string StartDate { get; set; }
 
-        // AreaRuleT1PlanningModel | AreaRuleT2PlanningModel | AreaRuleT4PlanningModel | (AreaRuleT5PlanningModel == AreaRuleT1PlanningModel)
-        public object TypeSpecificFields { get; set; }
+        public AreaRuleTypePlanningModel TypeSpecificFields { get; set; }
 
         public List<AreaRuleAssignedSitesModel> AssignedSites { get; set; }
             = new ();

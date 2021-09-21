@@ -301,5 +301,113 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 return new OperationDataResult<AreaRuleModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileCreateAreaRule"));
             }
         }
+
+        public async Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel)
+        {
+            try
+            {
+                var areaRulePlanning = new AreaRulesPlanning
+                {
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId,
+                    EndDate = areaRulePlanningModel.TypeSpecificFields.EndDate,
+                    DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek,
+                    RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery,
+                    RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType,
+                    StartDate = areaRulePlanningModel.StartDate,
+                    Status = areaRulePlanningModel.Status,
+                    SendNotifications = areaRulePlanningModel.SendNotifications,
+                    Alarm = areaRulePlanningModel.TypeSpecificFields.Alarm,
+                    Type = areaRulePlanningModel.TypeSpecificFields.Type,
+                };
+
+                await areaRulePlanning.Create(_backendConfigurationPnDbContext);
+
+                var assignedSites = areaRulePlanningModel.AssignedSites.Select(x => new PlanningSites
+                {
+                    PlanningId = areaRulePlanning.Id,
+                    SiteId = x.SiteId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId,
+                }).ToList();
+
+                foreach (var assignedSite in assignedSites)
+                {
+                    await assignedSite.Create(_backendConfigurationPnDbContext);
+                }
+
+                var areaRule = await _backendConfigurationPnDbContext.AreaRules
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == areaRulePlanningModel.RuleId)
+                    .FirstOrDefaultAsync();
+
+                areaRule.UpdatedByUserId = _userService.UserId;
+                areaRule.PlanningId = areaRulePlanning.Id;
+                await areaRule.Update(_backendConfigurationPnDbContext);
+
+                return new OperationDataResult<AreaRuleModel>(true, _backendConfigurationLocalizationService.GetString("SuccessfullyUpdatePlanning"));
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationDataResult<AreaRuleModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePlanning"));
+            }
+        }
+
+        public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId)
+        {
+            try
+            {
+                var areaRule = await _backendConfigurationPnDbContext.AreaRules
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == ruleId)
+                    .FirstOrDefaultAsync();
+
+                if (areaRule?.PlanningId == null)
+                {
+                    return new OperationDataResult<AreaRulePlanningModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadPlanning"));
+                }
+
+                var assignedSites = _backendConfigurationPnDbContext.PlanningSites
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == areaRule.PlanningId)
+                    .Select(x => new AreaRuleAssignedSitesModel {SiteId = x.SiteId})
+                    .ToList();
+
+                var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == areaRule.PlanningId)
+                    .Select(x => new AreaRulePlanningModel
+                    {
+                        RuleId = ruleId,
+                        StartDate = x.StartDate,
+                        Status = x.Status,
+                        TypeSpecificFields = new AreaRuleTypePlanningModel
+                        {
+                            DayOfWeek = x.DayOfWeek,
+                            EndDate = x.EndDate,
+                            RepeatEvery = (int) x.RepeatEvery,
+                            RepeatType = (int) x.RepeatType,
+                        },
+                        SendNotifications = x.SendNotifications,
+                        AssignedSites = assignedSites,
+                    }).FirstOrDefaultAsync();
+
+
+                if (areaRulePlanning == null)
+                {
+                    return new OperationDataResult<AreaRulePlanningModel>(false, _backendConfigurationLocalizationService.GetString("PlanningNotFound"));
+                }
+
+                return new OperationDataResult<AreaRulePlanningModel>(true, areaRulePlanning);
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationDataResult<AreaRulePlanningModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadPlanning"));
+            }
+        }
     }
 }

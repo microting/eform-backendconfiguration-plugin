@@ -24,12 +24,20 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
-    public class AreaRuleT3Model
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
+    public class AreaRuleTypePlanningModel
     {
-        public int EformId { get; set; }
+        public int RepeatEvery { get; set; }
 
-        public bool ChecklistStable { get; set; }
+        public int RepeatType { get; set; }
 
-        public bool TailBite { get; set; }
+        public AreaRuleT2TypesEnum Type { get; set; }
+
+        public AreaRuleT2AlarmsEnum Alarm { get; set; }
+
+        public string EndDate { get; set; }
+
+        public string DayOfWeek { get; set; }
     }
 }

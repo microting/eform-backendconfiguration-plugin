@@ -27,7 +27,6 @@ namespace BackendConfiguration.Pn.Controllers
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Services.BackendConfigurationAreaRules;
 
-    [Route("api/backend-configuration-pn/area-rules")]
     public class AreaRulesController : Controller
     {
         private readonly IBackendConfigurationAreaRulesService _backendConfigurationAreaRulesService;
@@ -38,34 +37,53 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpGet]
-        [Route("index")]
+        [Route("api/backend-configuration-pn/area-rules/index")]
         public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int areaId)
         {
             return await _backendConfigurationAreaRulesService.Index(areaId);
         }
 
         [HttpGet]
+        [Route("api/backend-configuration-pn/area-rules")]
         public async Task<OperationDataResult<AreaRuleModel>> Read(int ruleId, int propertyId)
         {
             return await _backendConfigurationAreaRulesService.Read(ruleId);
         }
 
         [HttpPut]
+        [Route("api/backend-configuration-pn/area-rules")]
         public async Task<OperationResult> Update([FromBody] AreaRuleUpdateModel updateModel)
         {
             return await _backendConfigurationAreaRulesService.Update(updateModel);
         }
 
         [HttpDelete]
+        [Route("api/backend-configuration-pn/area-rules")]
         public async Task<OperationResult> Delete(int areaId)
         {
             return await _backendConfigurationAreaRulesService.Delete(areaId);
         }
 
         [HttpPost]
+        [Route("api/backend-configuration-pn/area-rules")]
         public async Task<OperationResult> Create([FromBody] AreaRulesCreateModel createModel)
         {
             return await _backendConfigurationAreaRulesService.Create(createModel);
+        }
+
+        [HttpPut]
+        [Route("api/backend-configuration-pn/area-rules/planning")]
+        public async Task<OperationResult> UpdatePlanning([FromBody] AreaRulePlanningModel areaRulePlanningModel)
+        {
+            return await _backendConfigurationAreaRulesService.UpdatePlanning(areaRulePlanningModel);
+        }
+
+
+        [HttpGet]
+        [Route("api/backend-configuration-pn/area-rules/planning")]
+        public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId)
+        {
+            return await _backendConfigurationAreaRulesService.GetPlanning(ruleId);
         }
     }
 }

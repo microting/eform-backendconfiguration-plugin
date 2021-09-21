@@ -40,5 +40,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         Task<OperationResult> Delete(int areaId);
 
         Task<OperationResult> Create(AreaRulesCreateModel createModel);
+
+        Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel);
+
+        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId);
     }
 }

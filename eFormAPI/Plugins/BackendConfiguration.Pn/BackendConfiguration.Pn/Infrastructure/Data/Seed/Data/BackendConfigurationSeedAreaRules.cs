@@ -38,8 +38,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 EformId = 142242,
                 AreaId = 1,
                 EformName = "01. Vandforbrug",
-                RepeatEvery = 1,
-                RepeatType = (int?)RepeatType.Month,
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new() { AreaRuleId = 1, LanguageId = 1, Name = "Water consumption" },
