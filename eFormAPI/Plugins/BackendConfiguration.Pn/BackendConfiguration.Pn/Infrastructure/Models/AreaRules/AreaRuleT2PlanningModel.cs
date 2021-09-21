@@ -22,18 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
-    public class PropertyAreaModel
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
+    public class AreaRuleT2PlanningModel
     {
-        public int? Id { get; set; }
+        public AreaRuleT2TypesEnum Type { get; set; }
 
-        public string Name { get; set; }
+        public AreaRuleT2AlarmsEnum Alarm { get; set; }
 
-        public string Description { get; set; }
+        public int RepeatEvery { get; set; }
 
-        public bool Activated { get; set; }
-
-        public bool Status { get; set; }
+        public int RepeatType { get; set; }
     }
 }

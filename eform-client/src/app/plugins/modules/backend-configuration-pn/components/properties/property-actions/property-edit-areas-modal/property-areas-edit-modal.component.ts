@@ -34,7 +34,7 @@ export class PropertyAreasEditModalComponent implements OnInit {
   }
 
   show(model: PropertyModel, propertyAreas: PropertyAreaModel[]) {
-    this.selectedProperty = { ...model };
+    this.selectedProperty = { ...model, languagesIds: [] };
     this.selectedPropertyAreas = [...propertyAreas];
     this.frame.show();
   }

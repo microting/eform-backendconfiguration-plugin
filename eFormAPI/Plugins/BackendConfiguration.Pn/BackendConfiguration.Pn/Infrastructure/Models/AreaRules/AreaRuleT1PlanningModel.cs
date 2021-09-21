@@ -22,18 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
-    public class PropertyAreaModel
+    public class AreaRuleT1PlanningModel
     {
-        public int? Id { get; set; }
+        public int RepeatEvery { get; set; }
 
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public bool Activated { get; set; }
-
-        public bool Status { get; set; }
+        public int RepeatType { get; set; }
     }
 }

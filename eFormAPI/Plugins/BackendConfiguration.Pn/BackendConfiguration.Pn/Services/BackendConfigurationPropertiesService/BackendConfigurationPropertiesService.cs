@@ -64,6 +64,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 // get query
                 var propertiesQuery = _backendConfigurationPnDbContext.Properties
+                    .Include(x => x.SelectedLanguages)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
                 // add sort
@@ -101,6 +102,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             Address = x.Address,
                             Chr = x.CHR,
                             Name = x.Name,
+                            Languages = x.SelectedLanguages
+                                .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Select(y => new CommonDictionaryModel {Id = y.LanguageId})
+                                .ToList()
                         }).ToListAsync();
                 }
 
@@ -127,6 +132,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     CreatedByUserId = _userService.UserId,
                 };
                 await newProperty.Create(_backendConfigurationPnDbContext);
+
+                var selectedTranslates = propertiesCreateModel.LanguagesIds
+                    .Select(x => new PropertySelectedLanguages
+                    {
+                        LanguageId = x, PropertyId = newProperty.Id,
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                    });
+
+                foreach (var selectedTranslate in selectedTranslates)
+                {
+                    await selectedTranslate.Create(_backendConfigurationPnDbContext);
+                }
+
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));
             }
             catch (Exception e)
@@ -144,12 +163,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var property = await _backendConfigurationPnDbContext.Properties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == id)
+                    .Include(x => x.SelectedLanguages)
                     .Select(x => new PropertiesModel()
                     {
                         Id = x.Id,
                         Address = x.Address,
                         Chr = x.CHR,
                         Name = x.Name,
+                        Languages = x.SelectedLanguages
+                            .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(y => new CommonDictionaryModel {Id = y.LanguageId})
+                            .ToList()
                     })
                     .FirstOrDefaultAsync();
 
@@ -168,13 +192,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             }
         }
 
-        public async Task<OperationResult> Update(PropertiesModel updateModel)
+        public async Task<OperationResult> Update(PropertiesUpdateModel updateModel)
         {
             try
             {
                 var property = await _backendConfigurationPnDbContext.Properties
                     .Where(x => x.Id == updateModel.Id)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Include(x => x.SelectedLanguages)
                     .FirstOrDefaultAsync();
 
                 if (property == null)
@@ -188,6 +213,37 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 property.UpdatedByUserId = _userService.UserId;
 
                 await property.Update(_backendConfigurationPnDbContext);
+
+                property.SelectedLanguages = property.SelectedLanguages
+                    .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToList();
+
+                var selectedLanguagesForDelete = property.SelectedLanguages
+                    .Where(x => !updateModel.LanguagesIds.Contains(x.LanguageId))
+                    .ToList();
+
+                var selectedLanguagesForCreate = updateModel.LanguagesIds
+                    .Where(x => !property.SelectedLanguages.Exists(y => y.LanguageId == x))
+                    .Select(x => new PropertySelectedLanguages
+                    {
+                        LanguageId = x,
+                        PropertyId = property.Id,
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                    })
+                    .ToList();
+
+                foreach (var selectedLanguageForDelete in selectedLanguagesForDelete)
+                {
+                    selectedLanguageForDelete.UpdatedByUserId = _userService.UserId;
+                    await selectedLanguageForDelete.Delete(_backendConfigurationPnDbContext);
+                }
+
+
+                foreach (var selectedLanguageForCreate in selectedLanguagesForCreate)
+                {
+                    await selectedLanguageForCreate.Create(_backendConfigurationPnDbContext);
+                }
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyUpdateProperties"));
             }
@@ -205,6 +261,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 var property = await _backendConfigurationPnDbContext.Properties
                     .Where(x => x.Id == id)
+                    .Include(x => x.SelectedLanguages)
                     .FirstOrDefaultAsync();
 
                 if (property == null)
@@ -213,6 +270,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 }
                 
                 property.UpdatedByUserId = _userService.UserId;
+
+                foreach (var selectedLanguage in property.SelectedLanguages)
+                {
+                    await selectedLanguage.Delete(_backendConfigurationPnDbContext);
+                }
 
                 await property.Delete(_backendConfigurationPnDbContext);
 
@@ -237,7 +299,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         Id = x.Id,
                         Name = x.Name,
                         Description = "",
-                    }).ToListAsync(); ;
+                    }).ToListAsync();
                 return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
             }
             catch (Exception ex)

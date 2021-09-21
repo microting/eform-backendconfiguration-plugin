@@ -24,6 +24,9 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 {
+    using System.Collections.Generic;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
     public class PropertiesModel
     {
         public int Id { get; set; }
@@ -33,5 +36,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         public string Chr { get; set; }
 
         public string Address { get; set; }
+
+        public List<CommonDictionaryModel> Languages { get; set; }
     }
 }

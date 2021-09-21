@@ -22,18 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
-    public class PropertyAreaModel
+    using System.Collections.Generic;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+    public class AreaRuleCreateModel
     {
-        public int? Id { get; set; }
+        public List<CommonTranslationsModel> TranslatedNames { get; set; }
+            = new();
 
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public bool Activated { get; set; }
-
-        public bool Status { get; set; }
+        // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
+        public object TypeSpecificFields { get; set; }
     }
 }

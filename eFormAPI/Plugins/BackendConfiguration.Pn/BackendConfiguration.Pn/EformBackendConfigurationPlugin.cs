@@ -26,6 +26,7 @@ namespace BackendConfiguration.Pn
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Infrastructure.Data.Seed;
@@ -35,6 +36,7 @@ namespace BackendConfiguration.Pn
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microting.eFormApi.BasePn;
+    using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Consts;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Application;
@@ -43,6 +45,7 @@ namespace BackendConfiguration.Pn
     using Microting.EformBackendConfigurationBase.Infrastructure.Const;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
+    using Services.BackendConfigurationAreaRules;
     using Services.BackendConfigurationAssignmentWorkerService;
     using Services.BackendConfigurationLocalizationService;
     using Services.BackendConfigurationPropertiesService;
@@ -69,8 +72,11 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
             services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
             services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
+            services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesServiceService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddControllers();
+            SeedEForms(services);
+            SeedFolders(services);
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
@@ -87,8 +93,50 @@ namespace BackendConfiguration.Pn
             IServiceCollection services,
             IConfiguration configuration)
         {
-            //services.ConfigurePluginDbOptions<ItemsPlanningBaseSettings>(
-            //    configuration.GetSection("ItemsPlanningBaseSettings"));
+            //services.ConfigurePluginDbOptions<BackendConfigurationsBaseSettings>(
+            //    configuration.GetSection("BackendConfigurationsBaseSettings"));
+        }
+
+        private static async void SeedEForms(IServiceCollection services)
+        {
+            var serviceProvider = services.BuildServiceProvider();
+
+            var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
+            var eforms = BackendConfigurationSeedEforms.EformsSeed;
+            var sdkDbContex = core.DbContextHelper.GetDbContext();
+
+            foreach (var eform in eforms)
+            {
+                var newTemplate = await core.TemplateFromXml(eform);
+                if (!await sdkDbContex.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
+                {
+                    await core.TemplateCreate(newTemplate);
+                }
+            }
+        }
+
+        private static async void SeedFolders(IServiceCollection services)
+        {
+            var serviceProvider = services.BuildServiceProvider();
+
+            var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
+            var folders = BackendConfigurationSeedFolders.SeedFolders;
+            var sdkDbContex = core.DbContextHelper.GetDbContext();
+
+            foreach (var folder in folders)
+            {
+                if (!await sdkDbContex.Folders.AnyAsync(x => x.Id == folder.Id))
+                {
+                    await folder.Create(sdkDbContex);
+                    var folderTranslations = BackendConfigurationSeedFolders.SeedFolderTranslations
+                        .Where(x => x.FolderId == folder.Id)
+                        .ToList();
+                    foreach (var folderTranslation in folderTranslations)
+                    {
+                        await folderTranslation.Create(sdkDbContex);
+                    }
+                }
+            }
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
@@ -102,7 +150,7 @@ namespace BackendConfiguration.Pn
                     builder.MigrationsAssembly(PluginAssembly().FullName);
                 }));
 
-            BackendConfigurationPnContextFactory contextFactory = new BackendConfigurationPnContextFactory();
+            var contextFactory = new BackendConfigurationPnContextFactory();
             var context = contextFactory.CreateDbContext(new[] { connectionString });
             context.Database.Migrate();
 
@@ -114,7 +162,7 @@ namespace BackendConfiguration.Pn
         {
             var serviceProvider = appBuilder.ApplicationServices;
 
-            string rabbitMqHost = "localhost";
+            var rabbitMqHost = "localhost";
 
             if (_connectionString.Contains("frontend"))
             {
@@ -122,8 +170,8 @@ namespace BackendConfiguration.Pn
                 rabbitMqHost = $"frontend-{dbPrefix}-rabbitmq";
             }
 
-            IRebusService rebusService = serviceProvider.GetService<IRebusService>();
-            rebusService.Start(_connectionString, "admin", "password", rabbitMqHost);
+            var rebusService = serviceProvider.GetService<IRebusService>();
+            rebusService?.Start(_connectionString, "admin", "password", rabbitMqHost);
 
             //_bus = rebusService.GetBus();
         }
@@ -132,7 +180,7 @@ namespace BackendConfiguration.Pn
         {
             var pluginMenu = new List<PluginMenuItemModel>
             {
-                new PluginMenuItemModel
+                new()
                 {
                     Name = "Dropdown",
                     E2EId = "backend-configuration-pn",
@@ -141,25 +189,25 @@ namespace BackendConfiguration.Pn
                     Position = 0,
                     Translations = new List<PluginMenuTranslationModel>
                     {
-                        new PluginMenuTranslationModel
+                        new()
                         {
                              LocaleName = LocaleNames.English,
                              Name = "Backend Configuration",
                              Language = LanguageNames.English,
                         },
-                        new PluginMenuTranslationModel
+                        new()
                         {
                              LocaleName = LocaleNames.German,
                              Name = "",//todo
                              Language = LanguageNames.German,
                         },
-                        new PluginMenuTranslationModel
+                        new()
                         {
                              LocaleName = LocaleNames.Danish,
                              Name = "",//todo
                              Language = LanguageNames.Danish,
                         },
-                        new PluginMenuTranslationModel
+                        new()
                         {
                             LocaleName = LocaleNames.Ukrainian,
                             Name = "Конфігурація серверної частини",
@@ -168,7 +216,7 @@ namespace BackendConfiguration.Pn
                     },
                     ChildItems = new List<PluginMenuItemModel>
                     {
-                        new PluginMenuItemModel
+                        new()
                         {
                             Name = "Properties",
                             E2EId = "backend-configuration-pn-properties",
@@ -183,25 +231,25 @@ namespace BackendConfiguration.Pn
                                 Permissions = new List<PluginMenuTemplatePermissionModel>(),
                                 Translations = new List<PluginMenuTranslationModel>
                                 {
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.English,
                                         Name = "Properties",
                                         Language = LanguageNames.English,
                                     },
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.German,
                                         Name = "",//todo
                                         Language = LanguageNames.German,
                                     },
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.Danish,
                                         Name = "",//todo
                                         Language = LanguageNames.Danish,
                                     },
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
                                         Name = "Властивості",
@@ -211,25 +259,25 @@ namespace BackendConfiguration.Pn
                             },
                             Translations = new List<PluginMenuTranslationModel>
                             {
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.English,
                                     Name = "Properties",
                                     Language = LanguageNames.English,
                                 },
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.German,
                                     Name = "",//todo
                                     Language = LanguageNames.German,
                                 },
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.Danish,
                                     Name = "",//todo
                                     Language = LanguageNames.Danish,
                                 },
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
                                     Name = "Властивості",
@@ -237,7 +285,7 @@ namespace BackendConfiguration.Pn
                                 },
                             },
                         },
-                        new PluginMenuItemModel
+                        new()
                         {
                             Name = "Workers",
                             E2EId = "backend-configuration-pn-property-workers",
@@ -252,25 +300,25 @@ namespace BackendConfiguration.Pn
                                 Permissions = new List<PluginMenuTemplatePermissionModel>(),
                                 Translations = new List<PluginMenuTranslationModel>
                                 {
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.English,
                                         Name = "Property workers",
                                         Language = LanguageNames.English,
                                     },
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.German,
                                         Name = "",//todo
                                         Language = LanguageNames.German,
                                     },
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.Danish,
                                         Name = "",//todo
                                         Language = LanguageNames.Danish,
                                     },
-                                    new PluginMenuTranslationModel
+                                    new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
                                         Name = "Властивості працівників",
@@ -280,25 +328,25 @@ namespace BackendConfiguration.Pn
                             },
                             Translations = new List<PluginMenuTranslationModel>
                             {
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.English,
                                     Name = "Property workers",
                                     Language = LanguageNames.English,
                                 },
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.German,
                                     Name = "",//todo
                                     Language = LanguageNames.German,
                                 },
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.Danish,
                                     Name = "",//todo
                                     Language = LanguageNames.Danish,
                                 },
-                                new PluginMenuTranslationModel
+                                new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
                                     Name = "Властивості працівників",
@@ -327,7 +375,7 @@ namespace BackendConfiguration.Pn
                 Guards = new List<string> { BackendConfigurationClaims.AccessBackendConfigurationPlugin },
                 MenuItems = new List<MenuItemModel>
                 {
-                    new MenuItemModel
+                    new()
                     {
                         Name = localizationService?.GetString("Properties"),
                         E2EId = "backend-configuration-properties",
@@ -335,7 +383,7 @@ namespace BackendConfiguration.Pn
                         Guards = new List<string>(),
                         Position = 0,
                     },
-                    new MenuItemModel
+                    new()
                     {
                         Name = localizationService?.GetString("Workers"),
                         E2EId = "backend-configuration-workers",

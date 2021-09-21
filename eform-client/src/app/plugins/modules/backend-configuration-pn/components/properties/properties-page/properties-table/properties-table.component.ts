@@ -9,6 +9,7 @@ import {
 import { Paged, TableHeaderElementModel } from 'src/app/common/models';
 import { BackendConfigurationPnClaims } from '../../../../enums';
 import { PropertyModel } from '../../../../models/properties';
+import { applicationLanguages } from 'src/app/common/const';
 
 @Component({
   selector: 'app-properties-table',
@@ -66,5 +67,9 @@ export class PropertiesTableComponent implements OnInit {
 
   onShowPropertyAreasModal(planning: PropertyModel) {
     this.showPropertyAreasModal.emit(planning);
+  }
+
+  getLanguageNameById(languageId: number): string {
+    return applicationLanguages.find((x) => x.id === languageId).text;
   }
 }

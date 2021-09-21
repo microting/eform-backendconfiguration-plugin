@@ -22,18 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
 {
-    public class PropertyAreaModel
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using Infrastructure.Models.AreaRules;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+
+    public interface IBackendConfigurationAreaRulesService
     {
-        public int? Id { get; set; }
+        Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int areaId);
 
-        public string Name { get; set; }
+        Task<OperationDataResult<AreaRuleModel>> Read(int ruleId);
 
-        public string Description { get; set; }
+        Task<OperationResult> Update(AreaRuleUpdateModel updateModel);
 
-        public bool Activated { get; set; }
+        Task<OperationResult> Delete(int areaId);
 
-        public bool Status { get; set; }
+        Task<OperationResult> Create(AreaRulesCreateModel createModel);
     }
 }

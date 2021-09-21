@@ -93,6 +93,31 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed
             dbContext.Areas.AddRange(newAreas);
 
             dbContext.SaveChanges();
+
+
+            // Seed area rules
+            var newAreaRules = BackendConfigurationSeedAreaRules.AreaRulesSeed
+                .Where(p => dbContext.AreaRules.All(x => x.AreaId != p.AreaId))
+                .Select(p => new AreaRules
+                {
+                    Id = p.Id,
+                    AreaId = p.AreaId,
+                    EformId = p.EformId,
+                    EformName = p.EformName,
+                    FolderId = p.FolderId,
+                    FolderName = p.FolderName,
+                    CreatedAt = DateTime.UtcNow,
+                    Version = 1,
+                    WorkflowState = Constants.WorkflowStates.Created,
+                    CreatedByUserId = 1,
+                    UpdatedByUserId = 1,
+                    UpdatedAt = DateTime.UtcNow,
+                    AreaRuleTranslations = p.AreaRuleTranslations,
+                }
+                );
+            dbContext.AreaRules.AddRange(newAreaRules);
+
+            dbContext.SaveChanges();
         }
     }
 }

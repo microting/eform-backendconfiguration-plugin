@@ -63,7 +63,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             {
                 var propertyAreas = new List<PropertyAreaModel>();
 
-                var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperty
+                var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyId == propertyId)
                     .Include(x => x.Area);
@@ -127,7 +127,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             {
                 //updateModel.Areas = updateModel.Areas.Where(x => x.Activated).ToList();
 
-                var assignments = await _backendConfigurationPnDbContext.AreaProperty
+                var assignments = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyId == updateModel.PropertyId)
                     .Include(x => x.Area)

@@ -22,11 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
-    public enum PropertyAreaPlanningStatusesEnum
+    using System.Collections.Generic;
+
+    public class AreaRulesCreateModel
     {
-        Off = 1,
-        On = 2,
+        public int AreaId { get; set; }
+
+        public List<AreaRuleCreateModel> AreaRules { get; set; }
+            = new();
     }
 }

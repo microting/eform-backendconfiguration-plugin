@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -22,18 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 {
-    public class PropertyAreaModel
+    using System.Collections.Generic;
+    using Enums;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+
+    public static class BackendConfigurationSeedAreaRules
     {
-        public int? Id { get; set; }
-
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public bool Activated { get; set; }
-
-        public bool Status { get; set; }
+        public static IEnumerable<AreaRules> AreaRulesSeed => new[]
+        {
+            new AreaRules
+            {
+                Id = 1,
+                EformId = 142242,
+                AreaId = 1,
+                EformName = "01. Vandforbrug",
+                RepeatEvery = 1,
+                RepeatType = (int?)RepeatType.Month,
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { AreaRuleId = 1, LanguageId = 1, Name = "Water consumption" },
+                    new() { AreaRuleId = 1, LanguageId = 4, Name = "Споживання води" },
+                },
+                PlanningId = null,
+                FolderId = 5,
+            }
+        };
     }
 }

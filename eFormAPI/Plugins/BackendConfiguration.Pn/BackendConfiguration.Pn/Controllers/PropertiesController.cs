@@ -64,7 +64,7 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpPut]
-        public Task<OperationResult> Update([FromBody] PropertiesModel updateModel)
+        public Task<OperationResult> Update([FromBody] PropertiesUpdateModel updateModel)
         {
             return _backendConfigurationPropertiesService.Update(updateModel);
         }

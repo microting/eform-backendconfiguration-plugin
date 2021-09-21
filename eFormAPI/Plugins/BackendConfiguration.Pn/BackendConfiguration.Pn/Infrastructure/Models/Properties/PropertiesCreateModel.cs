@@ -24,6 +24,8 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 {
+    using System.Collections.Generic;
+
     public class PropertiesCreateModel
     {
         public string Name { get; set; }
@@ -31,5 +33,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         public string Chr { get; set; }
 
         public string Address { get; set; }
+
+        public List<int> LanguagesIds { get; set; }
     }
 }
