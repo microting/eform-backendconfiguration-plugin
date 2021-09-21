@@ -31,27 +31,29 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using BackendConfigurationLocalizationService;
     using Infrastructure.Models.PropertyAreas;
     using Microsoft.EntityFrameworkCore;
+    using Microting.eForm.Dto;
     using Microting.eForm.Infrastructure.Constants;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
     public class BackendConfigurationPropertyAreasService : IBackendConfigurationPropertyAreasService
     {
-        //private readonly IEFormCoreService _coreHelper;
+        private readonly IEFormCoreService _coreHelper;
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 
         public BackendConfigurationPropertyAreasService(
-            //IEFormCoreService coreHelper,
+            IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
         {
-            //_coreHelper = coreHelper;
+            _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
@@ -72,7 +74,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToList();
 
-                var areasForAdd = new List<PropertyAreaModel>();
+                List<PropertyAreaModel> areasForAdd;
 
                 if (propertyAreasQuery.Any())
                 {
@@ -83,7 +85,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Activated = x.Checked,
                             Description = x.Area.Description,
                             Name = x.Area.Name,
-                            // Status = 
+                            Status = false,
                         })
                         .ToListAsync();
                     areasForAdd = areas.Where(x => propertyAreas.Find(y => y.Name != x.Name && y.Description != x.Description) == null)
@@ -93,6 +95,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Activated = false,
                             Description = x.Description,
                             Name = x.Name,
+                            Status = false,
                         })
                         .ToList();
                 }
@@ -105,6 +108,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Activated = false,
                             Description = x.Description,
                             Name = x.Name,
+                            Status = false,
                         })
                         .ToList();
                 }
@@ -173,6 +177,62 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePropertyAreas"));
+            }
+        }
+
+        public async Task<OperationDataResult<AreaModel>> ReadArea(int areaId, int selectedPropertyId)
+        {
+            try
+            {
+                var area = await _backendConfigurationPnDbContext.Areas
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == areaId)
+                    .FirstOrDefaultAsync();
+
+                var areaProperties = await _backendConfigurationPnDbContext.AreaProperties
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.AreaId == areaId)
+                    .Where(x => x.PropertyId == selectedPropertyId)
+                    .Include(x => x.Property)
+                    .ThenInclude(x => x.SelectedLanguages)
+                    .FirstOrDefaultAsync();
+
+                var workers = await _backendConfigurationPnDbContext.PropertyWorkers
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PropertyId == selectedPropertyId)
+                    .Select(x => x.WorkerId)
+                    .ToListAsync();
+
+                var core = await _coreHelper.GetCore();
+                var sdkDbContex = core.DbContextHelper.GetDbContext();
+                var sites = new List<SiteDto>();
+
+                foreach (var worker in workers)
+                {
+                    sites.Add(await core.SiteRead(worker));
+                }
+
+                var languages = await sdkDbContex.Languages.AsNoTracking().ToListAsync();
+
+                var areaModel = new AreaModel
+                {
+                    Name = area.Name,
+                    Id = area.Id,
+                    Languages = areaProperties.Property.SelectedLanguages.Select(x => new CommonDictionaryModel
+                    {
+                        Id = x.LanguageId,
+                        Name = languages.First(y => y.Id == x.LanguageId).Name,
+                    }).ToList(),
+                    AvailableWorkers = sites,
+                    Type = area.Type,
+                };
+                return new OperationDataResult<AreaModel>(true, areaModel);
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationDataResult<AreaModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadArea"));
             }
         }
     }

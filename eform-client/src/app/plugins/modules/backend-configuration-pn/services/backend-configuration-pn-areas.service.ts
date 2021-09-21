@@ -7,7 +7,8 @@ import {
   AreaRuleSimpleModel,
   AreaRulePlanningModel,
   AreaRulesCreateModel,
-  AreaRuleModel, AreaRuleUpdateModel,
+  AreaRuleModel,
+  AreaRuleUpdateModel,
 } from '../models';
 
 export let BackendConfigurationPnAreasMethods = {
@@ -23,11 +24,14 @@ export let BackendConfigurationPnAreasMethods = {
 export class BackendConfigurationPnAreasService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getArea(areaId: number): Observable<OperationDataResult<AreaModel>> {
-    return this.apiBaseService.get(
-      BackendConfigurationPnAreasMethods.Area,
-      { areaId }
-    );
+  getArea(
+    areaId: number,
+    selectedPropertyId: number
+  ): Observable<OperationDataResult<AreaModel>> {
+    return this.apiBaseService.get(BackendConfigurationPnAreasMethods.Area, {
+      areaId,
+      selectedPropertyId,
+    });
   }
 
   getAreaRules(
@@ -49,11 +53,12 @@ export class BackendConfigurationPnAreasService {
   }
 
   getSingleAreaRule(
-    ruleId: number
+    ruleId: number,
+    propertyId: number
   ): Observable<OperationDataResult<AreaRuleModel>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRules,
-      { ruleId }
+      { ruleId, propertyId }
     );
   }
 

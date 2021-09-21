@@ -14,7 +14,7 @@ import {
   AreaRulesCreateModel,
   AreaRuleSimpleModel,
   AreaRuleUpdateModel,
-  AreaModel
+  AreaModel,
 } from '../../../../models';
 import { BackendConfigurationPnAreasService } from '../../../../services/backend-configuration-pn-areas.service';
 
@@ -38,6 +38,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   areaRulesModel: AreaRuleSimpleModel[] = [];
   selectedArea: AreaModel = new AreaModel();
   selectedAreaId: number;
+  selectedPropertyId: number;
 
   getAreaRulesSub$: Subscription;
   getAreaRulePlanningSub$: Subscription;
@@ -56,38 +57,45 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.route.params.subscribe((params) => {
-      const selectedAreaId = params['areaId'];
+      const selectedAreaId = +params['areaId'];
+      this.selectedPropertyId = +params['propertyId'];
       this.selectedAreaId = selectedAreaId;
       this.getAreaRules(selectedAreaId);
-      this.getArea(selectedAreaId);
+      this.getArea(selectedAreaId, this.selectedPropertyId);
     });
   }
 
-  getArea(areaId: number) {
-    this.getAreaSub$ = this.areasService.getArea(areaId).subscribe((data) => {
-      this.selectedArea = data.model;
-    });
+  getArea(areaId: number, selectedPropertyId: number) {
+    this.getAreaSub$ = this.areasService
+      .getArea(areaId, selectedPropertyId)
+      .subscribe((data) => {
+        this.selectedArea = data.model;
+      });
   }
 
   getAreaRules(areaId: number) {
     this.getAreaRulesSub$ = this.areasService
       .getAreaRules(areaId)
       .subscribe((data) => {
-        this.areaRulesModel = data.model;
+        this.areaRules = data.model;
       });
   }
 
   showPlanAreaRuleModal(rule: AreaRuleSimpleModel) {
-    this.getAreaRulePlanningSub$ = this.areasService
-      .getAreaRulePlanning(rule.id)
-      .subscribe((data) => {
-        this.planAreaRuleModal.show(data.model, rule);
-      });
+    if (rule.planningId) {
+      this.getAreaRulePlanningSub$ = this.areasService
+        .getAreaRulePlanning(rule.id)
+        .subscribe((data) => {
+          this.planAreaRuleModal.show(rule, data.model);
+        });
+    } else {
+      this.planAreaRuleModal.show(rule);
+    }
   }
 
   showEditAreaRuleModal(rule: AreaRuleSimpleModel) {
     this.getSingleAreaRuleSub$ = this.areasService
-      .getSingleAreaRule(rule.id)
+      .getSingleAreaRule(rule.id, this.selectedPropertyId)
       .subscribe((data) => {
         this.editAreaRuleModal.show(data.model);
       });

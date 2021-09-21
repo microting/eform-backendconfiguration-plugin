@@ -45,7 +45,7 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpGet]
-        public async Task<OperationDataResult<AreaRuleModel>> Read(int ruleId)
+        public async Task<OperationDataResult<AreaRuleModel>> Read(int ruleId, int propertyId)
         {
             return await _backendConfigurationAreaRulesService.Read(ruleId);
         }
@@ -63,7 +63,7 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpPost]
-        public async Task<OperationResult> Create(AreaRulesCreateModel createModel)
+        public async Task<OperationResult> Create([FromBody] AreaRulesCreateModel createModel)
         {
             return await _backendConfigurationAreaRulesService.Create(createModel);
         }

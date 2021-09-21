@@ -33,8 +33,8 @@ import {
 export class AreaRuleCreateModalComponent implements OnInit {
   @Input() selectedArea: AreaModel = new AreaModel();
   @ViewChild('frame', { static: false }) frame;
-  @Output() createAreaRule: EventEmitter<AreaRulesCreateModel> =
-    new EventEmitter<AreaRulesCreateModel>();
+  @Output()
+  createAreaRule: EventEmitter<AreaRulesCreateModel> = new EventEmitter<AreaRulesCreateModel>();
   newAreaRules: AreaRulesCreateModel = new AreaRulesCreateModel();
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
   newAreaRulesString: string;

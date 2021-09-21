@@ -45,6 +45,7 @@ namespace BackendConfiguration.Pn
     using Microting.EformBackendConfigurationBase.Infrastructure.Const;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
+    using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Services.BackendConfigurationAreaRules;
     using Services.BackendConfigurationAssignmentWorkerService;
     using Services.BackendConfigurationLocalizationService;
@@ -141,9 +142,21 @@ namespace BackendConfiguration.Pn
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
         {
+            var itemsPlannigConnectionString = connectionString.Replace(
+                "backend-configuration-plugin",
+                "eform-angular-items-planning-plugin");
+
             _connectionString = connectionString;
             services.AddDbContext<BackendConfigurationPnDbContext>(o =>
                 o.UseMySql(connectionString, new MariaDbServerVersion(
+                    new Version(10, 4, 0)), mySqlOptionsAction: builder =>
+                {
+                    builder.EnableRetryOnFailure();
+                    builder.MigrationsAssembly(PluginAssembly().FullName);
+                }));
+
+            services.AddDbContext<ItemsPlanningPnDbContext>(o =>
+                o.UseMySql(itemsPlannigConnectionString, new MariaDbServerVersion(
                     new Version(10, 4, 0)), mySqlOptionsAction: builder =>
                 {
                     builder.EnableRetryOnFailure();
@@ -156,6 +169,7 @@ namespace BackendConfiguration.Pn
 
             // Seed database
             SeedDatabase(connectionString);
+            
         }
 
         public void Configure(IApplicationBuilder appBuilder)

@@ -29,26 +29,34 @@ namespace BackendConfiguration.Pn.Controllers
     using Services.BackendConfigurationPropertyAreasService;
 
     [Authorize]
-    [Route("api/backend-configuration-pn/property-areas")]
     public class PropertyAreasController : Controller
     {
         private readonly IBackendConfigurationPropertyAreasService _backendConfigurationPropertyAreasService;
-
+        
         public PropertyAreasController(IBackendConfigurationPropertyAreasService backendConfigurationPropertyAreasService)
         {
             _backendConfigurationPropertyAreasService = backendConfigurationPropertyAreasService;
         }
 
         [HttpGet]
+        [Route("api/backend-configuration-pn/property-areas")]
         public Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId)
         {
             return _backendConfigurationPropertyAreasService.Read(propertyId);
         }
 
         [HttpPut]
+        [Route("api/backend-configuration-pn/property-areas")]
         public Task<OperationResult> Update([FromBody] PropertyAreasUpdateModel updateModel)
         {
             return _backendConfigurationPropertyAreasService.Update(updateModel);
+        }
+
+        [HttpGet]
+        [Route("api/backend-configuration-pn/area")]
+        public Task<OperationDataResult<AreaModel>> ReadArea(int areaId, int selectedPropertyId)
+        {
+            return _backendConfigurationPropertyAreasService.ReadArea(areaId, selectedPropertyId);
         }
     }
 }

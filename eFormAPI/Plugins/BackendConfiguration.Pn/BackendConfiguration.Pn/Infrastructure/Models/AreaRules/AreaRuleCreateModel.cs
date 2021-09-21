@@ -26,13 +26,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
     using System.Collections.Generic;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    using PropertyAreas;
 
     public class AreaRuleCreateModel
     {
-        public List<CommonTranslationsModel> TranslatedNames { get; set; }
+        public List<CommonDictionaryModel> TranslatedNames { get; set; }
             = new();
-
-        // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
-        public object TypeSpecificFields { get; set; }
+        
+        public TypeSpecificFields TypeSpecificFields { get; set; }
     }
 }

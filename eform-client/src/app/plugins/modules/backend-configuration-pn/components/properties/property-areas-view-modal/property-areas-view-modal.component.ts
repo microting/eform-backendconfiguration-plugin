@@ -23,13 +23,13 @@ export class PropertyAreasViewModalComponent implements OnInit {
   selectedProperty: PropertyUpdateModel = new PropertyUpdateModel();
   selectedPropertyAreas: PropertyAreaModel[] = [];
 
-  get areaPlanningStatuses() {
-    return PropertyAreaPlanningStatusesEnum;
-  }
-
   constructor() {}
 
   ngOnInit() {}
+
+  getAreaPlanningStatus(area: PropertyAreaModel) {
+    return area.status ? PropertyAreaPlanningStatusesEnum[area.status] : 'OFF';
+  }
 
   show(model: PropertyModel, propertyAreas: PropertyAreaModel[]) {
     this.selectedProperty = { ...model, languagesIds: [] };

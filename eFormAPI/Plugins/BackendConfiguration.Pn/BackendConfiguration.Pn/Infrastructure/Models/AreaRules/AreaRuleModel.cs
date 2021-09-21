@@ -36,11 +36,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
         public int EformId { get; set; }
 
         public bool IsDefault { get; set; }
-
-        public List<string> Languages { get; set; }
-            = new();
-
-        public List<CommonTranslationsModel> TranslatedNames { get; set; }
+        
+        public List<CommonDictionaryModel> TranslatedNames { get; set; }
             = new();
 
         // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model

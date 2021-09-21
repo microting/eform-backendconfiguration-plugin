@@ -4,7 +4,7 @@ import { AreaRulesContainerComponent } from './components';
 
 export const routes: Routes = [
   {
-    path: ':areaId',
+    path: ':areaId/:propertyId',
     component: AreaRulesContainerComponent,
   },
 ];

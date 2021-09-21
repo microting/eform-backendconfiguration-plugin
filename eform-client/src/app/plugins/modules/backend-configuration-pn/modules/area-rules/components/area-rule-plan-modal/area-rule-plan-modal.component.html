@@ -34,164 +34,176 @@
               </div>
             </div>
           </div>
-          <div class="row" *ngIf="selectedArea.type === 5">
-            <div class="col-12 ng-select-wrapper">
-              <ng-select
-                [items]="[
-                  { id: 1, name: 'Monday' | translate },
-                  { id: 2, name: 'Tuesday' | translate },
-                  { id: 3, name: 'Wednesday' | translate },
-                  { id: 4, name: 'Thursday' | translate },
-                  { id: 5, name: 'Friday' | translate },
-                  { id: 6, name: 'Saturday' | translate },
-                  { id: 0, name: 'Sunday' | translate }
-                ]"
-                bindLabel="name"
-                [placeholder]="'Day of week' | translate"
-                bindValue="id"
-                [ngModel]="
-                  selectedAreaRulePlanning.typeSpecificFields.dayOfWeek
-                "
-                [disabled]="true"
-                id="planAreaDayOfWeek"
-              >
-              </ng-select>
-            </div>
-          </div>
-          <!-- Rule type 1, 2, 3, 5 -->
-          <ng-container *ngIf="selectedArea.type !== 4">
-            <div class="row">
-              <div class="col-md-12">
-                <div class="form-check form-switch">
-                  <input
-                    mdbCheckbox
-                    class="form-check-input"
-                    type="checkbox"
-                    id="planAreaRuleNotificationsToggle"
-                    [value]="selectedAreaRulePlanning.sendNotifications"
-                    [checked]="selectedAreaRulePlanning.sendNotifications"
-                  />
-                  <label
-                    class="form-check-label"
-                    for="planAreaRuleNotificationsToggle"
-                    >{{ 'Notifications on/off' | translate }}</label
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 col-sm-6 col-xs-6">
-                <div class="md-form">
-                  <input
-                    mdbInput
-                    [(ngModel)]="
-                      selectedAreaRulePlanning.typeSpecificFields.repeatEvery
-                    "
-                    type="text"
-                    id="planRepeatEvery"
-                    name="createRepeatEvery"
-                    class="form-control"
-                  />
-                  <label for="planRepeatEvery">{{
-                    'Repeat every' | translate
-                  }}</label>
-                </div>
-              </div>
-              <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+          <ng-container *ngIf="selectedAreaRulePlanning.typeSpecificFields">
+            <div class="row" *ngIf="selectedArea.type === 5">
+              <div class="col-12 ng-select-wrapper">
                 <ng-select
                   [items]="[
-                    { id: 1, name: 'Day' | translate },
-                    { id: 2, name: 'Week' | translate },
-                    { id: 3, name: 'Month' | translate }
+                    { id: 1, name: 'Monday' | translate },
+                    { id: 2, name: 'Tuesday' | translate },
+                    { id: 3, name: 'Wednesday' | translate },
+                    { id: 4, name: 'Thursday' | translate },
+                    { id: 5, name: 'Friday' | translate },
+                    { id: 6, name: 'Saturday' | translate },
+                    { id: 0, name: 'Sunday' | translate }
                   ]"
                   bindLabel="name"
-                  [placeholder]="'Repeat Type' | translate"
+                  [placeholder]="'Day of week' | translate"
                   bindValue="id"
-                  [(ngModel)]="
-                    selectedAreaRulePlanning.typeSpecificFields.repeatType
+                  [ngModel]="
+                    selectedAreaRulePlanning.typeSpecificFields.dayOfWeek
                   "
-                  id="planRepeatType"
+                  [disabled]="true"
+                  id="planAreaDayOfWeek"
                 >
                 </ng-select>
               </div>
             </div>
-            <div class="row">
-              <div class="col-12">
-                <div class="md-form" [owlDateTimeTrigger]="dt1">
-                  <input
-                    mdbInput
-                    [owlDateTime]="dt1"
-                    [min]="currentDate"
-                    [(ngModel)]="selectedAreaRulePlanning.startDate"
-                    type="text"
-                    id="planStartFrom"
-                    name="createStartFrom"
-                    class="form-control"
-                  />
-                  <owl-date-time [pickerType]="'calendar'" #dt1></owl-date-time>
-                  <label for="planStartFrom">{{
-                    'Start date' | translate
-                  }}</label>
+            <!-- Rule type 1, 2, 3, 5 -->
+            <ng-container *ngIf="selectedArea.type !== 4">
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="form-check form-switch">
+                    <input
+                      mdbCheckbox
+                      class="form-check-input"
+                      type="checkbox"
+                      id="planAreaRuleNotificationsToggle"
+                      [value]="selectedAreaRulePlanning.sendNotifications"
+                      [checked]="selectedAreaRulePlanning.sendNotifications"
+                    />
+                    <label
+                      class="form-check-label"
+                      for="planAreaRuleNotificationsToggle"
+                      >{{ 'Notifications on/off' | translate }}</label
+                    >
+                  </div>
                 </div>
               </div>
-            </div>
-          </ng-container>
-          <ng-container *ngIf="selectedArea.type === 2">
-            <div class="row">
-              <div class="col-12 ng-select-wrapper">
-                <ng-select
-                  [items]="[
-                    { id: '1', name: 'Open' | translate },
-                    { id: '2', name: 'Closed' | translate }
-                  ]"
-                  bindLabel="label"
-                  [placeholder]="'Type' | translate"
-                  bindValue="id"
-                  [ngModel]="selectedAreaRulePlanning.typeSpecificFields.type"
-                  [disabled]="true"
-                  id="planRuleType"
-                >
-                </ng-select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-12 ng-select-wrapper">
-                <ng-select
-                  [items]="[
-                    { id: '1', name: 'Yes' | translate },
-                    { id: '2', name: 'No' | translate }
-                  ]"
-                  bindLabel="label"
-                  [placeholder]="'Alarm' | translate"
-                  bindValue="id"
-                  [ngModel]="selectedAreaRulePlanning.typeSpecificFields.alarm"
-                  [disabled]="true"
-                  id="planRuleAlarm"
-                >
-                </ng-select>
-              </div>
-            </div>
-          </ng-container>
-          <ng-container *ngIf="selectedArea.type === 4">
-            <div class="row">
-              <div class="col-md-3 col-sm-6 col-xs-6">
-                <div class="md-form" [owlDateTimeTrigger]="dt2">
-                  <input
-                    mdbInput
-                    [owlDateTime]="dt2"
-                    [min]="currentDatePlusTwoWeeks"
+              <div class="row">
+                <div class="col-md-6 col-sm-6 col-xs-6">
+                  <div class="md-form">
+                    <input
+                      mdbInput
+                      [(ngModel)]="
+                        selectedAreaRulePlanning.typeSpecificFields.repeatEvery
+                      "
+                      type="text"
+                      id="planRepeatEvery"
+                      name="createRepeatEvery"
+                      class="form-control"
+                    />
+                    <label for="planRepeatEvery">{{
+                      'Repeat every' | translate
+                    }}</label>
+                  </div>
+                </div>
+                <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+                  <ng-select
+                    [items]="[
+                      { id: 1, name: 'Day' | translate },
+                      { id: 2, name: 'Week' | translate },
+                      { id: 3, name: 'Month' | translate }
+                    ]"
+                    bindLabel="name"
+                    [placeholder]="'Repeat Type' | translate"
+                    bindValue="id"
                     [(ngModel)]="
-                      selectedAreaRulePlanning.typeSpecificFields.endDate
+                      selectedAreaRulePlanning.typeSpecificFields.repeatType
                     "
-                    type="text"
-                    id="planEndDate"
-                    class="form-control"
-                  />
-                  <owl-date-time [pickerType]="'calendar'" #dt2></owl-date-time>
-                  <label for="planEndDate">{{ 'End date' | translate }}</label>
+                    id="planRepeatType"
+                  >
+                  </ng-select>
                 </div>
               </div>
-            </div>
+              <div class="row">
+                <div class="col-12">
+                  <div class="md-form" [owlDateTimeTrigger]="dt1">
+                    <input
+                      mdbInput
+                      [owlDateTime]="dt1"
+                      [min]="currentDate"
+                      [(ngModel)]="selectedAreaRulePlanning.startDate"
+                      type="text"
+                      id="planStartFrom"
+                      name="createStartFrom"
+                      class="form-control"
+                    />
+                    <owl-date-time
+                      [pickerType]="'calendar'"
+                      #dt1
+                    ></owl-date-time>
+                    <label for="planStartFrom">{{
+                      'Start date' | translate
+                    }}</label>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 2">
+              <div class="row">
+                <div class="col-12 ng-select-wrapper">
+                  <ng-select
+                    [items]="[
+                      { id: '1', name: 'Open' | translate },
+                      { id: '2', name: 'Closed' | translate }
+                    ]"
+                    bindLabel="label"
+                    [placeholder]="'Type' | translate"
+                    bindValue="id"
+                    [ngModel]="selectedAreaRulePlanning.typeSpecificFields.type"
+                    [disabled]="true"
+                    id="planRuleType"
+                  >
+                  </ng-select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12 ng-select-wrapper">
+                  <ng-select
+                    [items]="[
+                      { id: '1', name: 'Yes' | translate },
+                      { id: '2', name: 'No' | translate }
+                    ]"
+                    bindLabel="label"
+                    [placeholder]="'Alarm' | translate"
+                    bindValue="id"
+                    [ngModel]="
+                      selectedAreaRulePlanning.typeSpecificFields.alarm
+                    "
+                    [disabled]="true"
+                    id="planRuleAlarm"
+                  >
+                  </ng-select>
+                </div>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 4">
+              <div class="row">
+                <div class="col-md-3 col-sm-6 col-xs-6">
+                  <div class="md-form" [owlDateTimeTrigger]="dt2">
+                    <input
+                      mdbInput
+                      [owlDateTime]="dt2"
+                      [min]="currentDatePlusTwoWeeks"
+                      [(ngModel)]="
+                        selectedAreaRulePlanning.typeSpecificFields.endDate
+                      "
+                      type="text"
+                      id="planEndDate"
+                      class="form-control"
+                    />
+                    <owl-date-time
+                      [pickerType]="'calendar'"
+                      #dt2
+                    ></owl-date-time>
+                    <label for="planEndDate">{{
+                      'End date' | translate
+                    }}</label>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
           </ng-container>
           <div class="table-responsive">
             <table class="table table-xs table-bordered text-center z-depth-1">

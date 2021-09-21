@@ -88,6 +88,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed
                     CreatedByUserId = 1,
                     UpdatedByUserId = 1,
                     UpdatedAt = DateTime.UtcNow,
+                    Type = p.Type,
                 }
                 );
             dbContext.Areas.AddRange(newAreas);

@@ -8,7 +8,6 @@ export class AreaRuleUpdateModel {
   id: number;
   eformId: number;
   eformName: string;
-  languages: string[];
   translatedNames: CommonDictionaryModel[] = [];
   typeSpecificFields:
     | AreaRuleT1Model

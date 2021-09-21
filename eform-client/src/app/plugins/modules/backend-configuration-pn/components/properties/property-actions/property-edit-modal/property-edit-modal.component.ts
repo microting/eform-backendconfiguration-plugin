@@ -15,8 +15,8 @@ import { PropertyModel, PropertyUpdateModel } from '../../../../models';
 })
 export class PropertyEditModalComponent implements OnInit {
   @ViewChild('frame', { static: false }) frame;
-  @Output() propertyUpdate: EventEmitter<PropertyUpdateModel> =
-    new EventEmitter<PropertyUpdateModel>();
+  @Output()
+  propertyUpdate: EventEmitter<PropertyUpdateModel> = new EventEmitter<PropertyUpdateModel>();
   selectedProperty: PropertyUpdateModel = new PropertyUpdateModel();
   selectedLanguages: { id: number; checked: boolean }[] = [];
 

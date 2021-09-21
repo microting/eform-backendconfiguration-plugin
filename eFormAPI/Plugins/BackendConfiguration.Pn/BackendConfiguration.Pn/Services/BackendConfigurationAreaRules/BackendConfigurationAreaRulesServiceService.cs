@@ -42,18 +42,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
 
     public class BackendConfigurationAreaRulesServiceService : IBackendConfigurationAreaRulesService
     {
-        //private readonly IEFormCoreService _coreHelper;
+        private readonly IEFormCoreService _coreHelper;
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 
         public BackendConfigurationAreaRulesServiceService(
-            //IEFormCoreService coreHelper,
+            IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
         {
-            //_coreHelper = coreHelper;
+            _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
@@ -77,6 +77,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             .Select(y =>y.Name)
                             .FirstOrDefault(),
                         IsDefault = BackendConfigurationSeedAreaRules.AreaRulesSeed.Last().Id >= x.Id,
+                        TypeSpecificFields = new { x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, },
                     })
                     .ToListAsync();
                 return new OperationDataResult<List<AreaRuleSimpleModel>>(true, areaRules);
@@ -93,6 +94,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         {
             try
             {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var languages = await sdkDbContext.Languages.AsNoTracking().ToListAsync();
+
                 var areaRule = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == ruleId)
@@ -102,14 +107,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                         Id = x.Id,
                         EformName = x.EformName,
                         TranslatedNames = x.AreaRuleTranslations
-                            .Select(y => new CommonTranslationsModel
+                            .Select(y => new CommonDictionaryModel
                             {
-                                Id = y.Id,
+                                Id = y.LanguageId,
                                 Name = y.Name,
-                                LanguageId = y.LanguageId,
+                                //Description = languages.First(z => z.Id == y.LanguageId).Name,
                             }).ToList(),
                         IsDefault = BackendConfigurationSeedAreaRules.AreaRulesSeed.Last().Id >= x.Id,
                         EformId = (int)x.EformId,
+                        TypeSpecificFields = new { x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, },
                     })
                     .FirstOrDefaultAsync();
 
@@ -117,6 +123,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 {
                     return new OperationDataResult<AreaRuleModel>(false, _backendConfigurationLocalizationService.GetString("AreaRuleNotFound"));
                 }
+
+                foreach (var areaRuleTranslatedName in areaRule.TranslatedNames)
+                {
+                    areaRuleTranslatedName.Description =
+                        languages.First(z => z.Id == areaRuleTranslatedName.Id).Name;
+                }
+
 
                 return new OperationDataResult<AreaRuleModel>(true, areaRule);
             }
@@ -234,6 +247,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         {
             try
             {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+
                 foreach (var areaRuleCreateModel in createModel.AreaRules)
                 {
                     var areaRule = new AreaRules
@@ -241,28 +257,40 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                         AreaId = createModel.AreaId,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
+                        Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm,
+                        DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek,
+                        Type = areaRuleCreateModel.TypeSpecificFields.Type,
+                        TailBite = areaRuleCreateModel.TypeSpecificFields.TailBite,
+                        ChecklistStable = areaRuleCreateModel.TypeSpecificFields.ChecklistStable,
+                        EformId = areaRuleCreateModel.TypeSpecificFields.EformId,
                     };
-                    if (areaRuleCreateModel.TypeSpecificFields is AreaRuleT1Model ruleT1Model)
-                    {
-                        areaRule.EformId = ruleT1Model.EformId;
-                    }
-                    else if (areaRuleCreateModel.TypeSpecificFields is AreaRuleT2Model ruleT2Model)
-                    {
-                        areaRule.Type = ruleT2Model.Type;
-                        areaRule.Alarm = ruleT2Model.Alarm;
-                    }
-                    else if (areaRuleCreateModel.TypeSpecificFields is AreaRuleT3Model ruleT3Model)
-                    {
-                        areaRule.ChecklistStable = ruleT3Model.ChecklistStable;
-                        areaRule.TailBite = ruleT3Model.TailBite;
-                        areaRule.EformId = ruleT3Model.EformId;
-                    }
-                    else if (areaRuleCreateModel.TypeSpecificFields is AreaRuleT5Model ruleT5Model)
-                    {
-                        areaRule.DayOfWeek = ruleT5Model.DayOfWeek;
-                    }
 
+                    if (areaRuleCreateModel.TypeSpecificFields.EformId.HasValue)
+                    {
+                        var language = await _userService.GetCurrentUserLanguage();
+                        areaRule.EformName = await sdkDbContext.CheckListTranslations
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.CheckListId == areaRuleCreateModel.TypeSpecificFields.EformId)
+                            .Where(x => x.LanguageId == language.Id)
+                            .Select(x => x.Text)
+                            .FirstOrDefaultAsync();
+                    }
+                    
                     await areaRule.Create(_backendConfigurationPnDbContext);
+
+                    var translations = areaRuleCreateModel.TranslatedNames.Select(x => new AreaRuleTranslation
+                    {
+                        AreaRuleId = areaRule.Id,
+                        LanguageId = (int) x.Id,
+                        Name = x.Name,
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                    }).ToList();
+
+                    foreach (var translation in translations)
+                    {
+                        await translation.Create(_backendConfigurationPnDbContext);
+                    }
                 }
                 return new OperationDataResult<AreaRuleModel>(true, _backendConfigurationLocalizationService.GetString("SuccessfullyCreateAreaRule"));
             }

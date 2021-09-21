@@ -35,13 +35,18 @@
                     }}</a>
                   </td>
                   <td class="align-middle">
-                    {{ areaPlanningStatuses[area.status] }}
+                    {{ getAreaPlanningStatus(area) }}
                   </td>
                   <td class="align-middle">
                     <button
                       id="navigateToPropertyArea"
                       class="btn btn-success btn-icon mr-2"
                       mdbTooltip="{{ 'Open area planning' | translate }}"
+                      [routerLink]="[
+                        '../area-rules/',
+                        area.id,
+                        selectedProperty.id
+                      ]"
                     >
                       <fa-icon icon="book-open" [fixedWidth]="true"></fa-icon>
                     </button>

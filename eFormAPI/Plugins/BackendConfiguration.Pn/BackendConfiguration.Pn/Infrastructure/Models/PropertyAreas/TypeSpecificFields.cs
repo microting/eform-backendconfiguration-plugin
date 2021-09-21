@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -22,21 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
+namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 {
-    public class AreaRuleSimpleModel
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
+    public class TypeSpecificFields
     {
-        public int Id { get; set; }
+        public int? EformId { get; set; }
 
-        public string EformName { get; set; }
+        public AreaRuleT2TypesEnum Type { get; set; }
 
-        public string TranslatedName { get; set; }
+        public AreaRuleT2AlarmsEnum Alarm { get; set; }
 
-        public bool IsDefault { get; set; }
+        public bool ChecklistStable { get; set; }
 
-        public bool PlanningStatus { get; set; }
-
-        // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
-        public object TypeSpecificFields { get; set; }
+        public bool TailBite { get; set; }
+        
+        public int DayOfWeek { get; set; }
     }
 }

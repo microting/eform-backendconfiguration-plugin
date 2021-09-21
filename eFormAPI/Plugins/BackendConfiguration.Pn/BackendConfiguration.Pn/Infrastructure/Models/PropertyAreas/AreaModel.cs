@@ -22,21 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
+namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 {
-    public class AreaRuleSimpleModel
+    using System.Collections.Generic;
+    using Microting.eForm.Dto;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+    public class AreaModel
     {
         public int Id { get; set; }
 
-        public string EformName { get; set; }
+        public string Name { get; set; }
 
-        public string TranslatedName { get; set; }
+        public int Type { get; set; }
 
-        public bool IsDefault { get; set; }
+        public List<CommonDictionaryModel> Languages { get; set; }
+            = new();
 
-        public bool PlanningStatus { get; set; }
-
-        // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
-        public object TypeSpecificFields { get; set; }
+        public List<SiteDto> AvailableWorkers { get; set; }
+            = new();
     }
 }
