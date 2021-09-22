@@ -34,7 +34,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     {
         Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request);
 
-        Task<OperationResult> Create(PropertiesCreateModel createModel);
+        Task<OperationResult> Create(PropertyCreateModel createModel);
 
         Task<OperationDataResult<PropertiesModel>> Read(int id);
 

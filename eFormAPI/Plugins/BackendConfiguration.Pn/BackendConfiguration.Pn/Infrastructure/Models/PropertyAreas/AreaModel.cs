@@ -27,6 +27,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
     using System.Collections.Generic;
     using Microting.eForm.Dto;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
     public class AreaModel
     {
@@ -34,7 +35,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 
         public string Name { get; set; }
 
-        public int Type { get; set; }
+        public AreaTypesEnum Type { get; set; }
 
         public List<CommonDictionaryModel> Languages { get; set; }
             = new();

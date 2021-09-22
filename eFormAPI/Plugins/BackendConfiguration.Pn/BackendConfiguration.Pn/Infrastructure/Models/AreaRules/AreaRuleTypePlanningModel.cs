@@ -24,6 +24,7 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
+    using System;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
     public class AreaRuleTypePlanningModel
@@ -36,8 +37,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public AreaRuleT2AlarmsEnum Alarm { get; set; }
 
-        public string EndDate { get; set; }
+        public DateTime? EndDate { get; set; }
 
-        public string DayOfWeek { get; set; }
+        public int DayOfWeek { get; set; }
     }
 }

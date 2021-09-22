@@ -24,17 +24,20 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
+    using System;
     using System.Collections.Generic;
 
     public class AreaRulePlanningModel
     {
+        public int? Id { get; set; }
+
         public int RuleId { get; set; }
 
         public bool Status { get; set; }
 
         public bool SendNotifications { get; set; }
 
-        public string StartDate { get; set; }
+        public DateTime StartDate { get; set; }
 
         public AreaRuleTypePlanningModel TypeSpecificFields { get; set; }
 

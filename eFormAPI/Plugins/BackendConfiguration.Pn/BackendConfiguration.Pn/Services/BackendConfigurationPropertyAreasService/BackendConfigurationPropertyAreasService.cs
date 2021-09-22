@@ -33,12 +33,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Dto;
     using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Data.Entities;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
     public class BackendConfigurationPropertyAreasService : IBackendConfigurationPropertyAreasService
     {
@@ -129,7 +131,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
-                //updateModel.Areas = updateModel.Areas.Where(x => x.Activated).ToList();
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 var assignments = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -145,7 +148,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 var assignmentsForUpdate = updateModel.Areas
                     .Where(x => x.Id.HasValue)
                     .ToList();
-                
+
+                var assignmentsForDelete = assignments
+                    .Where(x => !assignmentsForUpdate.Exists(y => x.Id != y.Id))
+                    .ToList();
+
+
                 foreach (var assignmentForCreate in assignmentsForCreate)
                 {
                     var area = await _backendConfigurationPnDbContext.Areas.FirstOrDefaultAsync(x =>
@@ -160,6 +168,150 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         Checked = assignmentForCreate.Activated,
                     };
                     await newAssignment.Create(_backendConfigurationPnDbContext);
+
+                    var property = await _backendConfigurationPnDbContext.Properties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Id == updateModel.PropertyId)
+                        .FirstAsync();
+                    if(assignmentForCreate.Activated)
+                    {
+                        if (area.Type is not AreaTypesEnum.Type3 or AreaTypesEnum.Type5)
+                        {
+                            var folder = new Folder
+                            {
+                                ParentId = property.FolderId,
+                                FolderTranslations = new List<FolderTranslation>
+                                {
+                                    new() {Name = area.Name, LanguageId = 1}
+                                }
+                            };
+                            await folder.Create(sdkDbContext);
+                            var assignmentWithFolder = new ProperyAreaFolder
+                            {
+                                FolderId = folder.Id,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
+                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                        }
+                        else if (area.Type == AreaTypesEnum.Type3)
+                        {
+                            var folderOne = new Folder
+                            {
+                                ParentId = property.FolderId,
+                                FolderTranslations = new List<FolderTranslation>
+                                {
+                                    new() {Name = "05. Stables", LanguageId = 1}
+                                }
+                            };
+                            var folderTwo = new Folder
+                            {
+                                ParentId = property.FolderId,
+                                FolderTranslations = new List<FolderTranslation>
+                                {
+                                    new() {Name = "24. Tail bite", LanguageId = 1}
+                                }
+                            };
+
+                            var assignmentWithOneFolder = new ProperyAreaFolder
+                            {
+                                FolderId = folderOne.Id,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
+
+                            var assignmentWithTwoFolder = new ProperyAreaFolder
+                            {
+                                FolderId = folderTwo.Id,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
+
+                            await folderOne.Create(sdkDbContext);
+                            await folderTwo.Create(sdkDbContext);
+                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+                            await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
+                        }
+                        else if (area.Type == AreaTypesEnum.Type5)
+                        {
+                            //create 7 folders
+                            var folders = new List<Folder>
+                            {
+                                new()
+                                {
+                                    ParentId = property.FolderId,
+                                    FolderTranslations = new List<FolderTranslation>
+                                    {
+                                        new() {Name = "Monday", LanguageId = 1}
+                                    },
+                                },
+                                new()
+                                {
+                                    ParentId = property.FolderId,
+                                    FolderTranslations = new List<FolderTranslation>
+                                    {
+                                        new() {Name = "Tuesday", LanguageId = 1}
+                                    },
+                                },
+                                new()
+                                {
+                                    ParentId = property.FolderId,
+                                    FolderTranslations = new List<FolderTranslation>
+                                    {
+                                        new() {Name = "Wednesday", LanguageId = 1}
+                                    },
+                                },
+                                new()
+                                {
+                                    ParentId = property.FolderId,
+                                    FolderTranslations = new List<FolderTranslation>
+                                    {
+                                        new() {Name = "Thursday", LanguageId = 1}
+                                    },
+                                },
+                                new()
+                                {
+                                    ParentId = property.FolderId,
+                                    FolderTranslations = new List<FolderTranslation>
+                                    {
+                                        new() {Name = "Friday", LanguageId = 1}
+                                    },
+                                },
+                                new()
+                                {
+                                    ParentId = property.FolderId,
+                                    FolderTranslations = new List<FolderTranslation>
+                                    {
+                                        new() {Name = "Saturday", LanguageId = 1}
+                                    },
+                                },
+                                new()
+                                {
+                                    ParentId = property.FolderId,
+                                    FolderTranslations = new List<FolderTranslation>
+                                    {
+                                        new() {Name = "Sunday", LanguageId = 1}
+                                    },
+                                },
+                            };
+
+                            //folders = folders
+                            //    .Where(x => !x.FolderTranslations
+                            //        .Select(y => y.Name)
+                            //        .Contains(area.Name))
+                            //    .ToList();
+
+                            foreach (var folder in folders)
+                            {
+                                await folder.Create(sdkDbContext);
+
+                                var assignmentWithFolder = new ProperyAreaFolder
+                                {
+                                    FolderId = folder.Id,
+                                    ProperyAreaAsignmentId = newAssignment.Id,
+                                };
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                            }
+                        }
+                    }
+
                 }
 
                 foreach (var areaProperty in assignmentsForUpdate)
@@ -168,6 +320,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     assignmentForUpdate.Checked = areaProperty.Activated;
                     assignmentForUpdate.UpdatedByUserId = _userService.UserId;
                     await assignmentForUpdate.Update(_backendConfigurationPnDbContext);
+                }
+
+                foreach (var areaPropertyForDelete in assignmentsForDelete)
+                {
+                    await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext);
+                    var foldersIdForDelete = _backendConfigurationPnDbContext.ProperyAreaFolders
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.ProperyAreaAsignmentId == areaPropertyForDelete.Id)
+                        .Select(x => x.FolderId)
+                        .ToList();
+
+                    foreach (var folderIdForDelete in foldersIdForDelete)
+                    {
+                        var folder = await sdkDbContext.Folders
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Id == folderIdForDelete)
+                        .FirstAsync();
+                        await folder.Delete(sdkDbContext);
+                    }
                 }
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyUpdatePropertyAreas"));

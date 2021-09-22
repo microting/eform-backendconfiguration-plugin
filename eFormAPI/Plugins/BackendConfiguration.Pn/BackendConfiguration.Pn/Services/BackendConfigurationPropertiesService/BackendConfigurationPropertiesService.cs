@@ -32,6 +32,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     using Infrastructure.Models.Properties;
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Data.Entities;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -41,18 +42,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
     public class BackendConfigurationPropertiesService: IBackendConfigurationPropertiesService
     {
-        //private readonly IEFormCoreService _coreHelper;
+        private readonly IEFormCoreService _coreHelper;
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 
         public BackendConfigurationPropertiesService(
-            //IEFormCoreService coreHelper,
+            IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
         {
-            //_coreHelper = coreHelper;
+            _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
@@ -120,23 +121,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             }
         }
 
-        public async Task<OperationResult> Create(PropertiesCreateModel propertiesCreateModel)
+        public async Task<OperationResult> Create(PropertyCreateModel propertyCreateModel)
         {
             try
             {
-                var newProperty = new Properties
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+                var newProperty = new Property
                 {
-                    Address = propertiesCreateModel.Address,
-                    CHR = propertiesCreateModel.Chr,
-                    Name = propertiesCreateModel.Name,
+                    Address = propertyCreateModel.Address,
+                    CHR = propertyCreateModel.Chr,
+                    Name = propertyCreateModel.Name,
                     CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId,
                 };
                 await newProperty.Create(_backendConfigurationPnDbContext);
 
-                var selectedTranslates = propertiesCreateModel.LanguagesIds
-                    .Select(x => new PropertySelectedLanguages
+                var selectedTranslates = propertyCreateModel.LanguagesIds
+                    .Select(x => new PropertySelectedLanguage
                     {
-                        LanguageId = x, PropertyId = newProperty.Id,
+                        LanguageId = x,
+                        PropertyId = newProperty.Id,
                         CreatedByUserId = _userService.UserId,
                         UpdatedByUserId = _userService.UserId,
                     });
@@ -145,6 +151,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 {
                     await selectedTranslate.Create(_backendConfigurationPnDbContext);
                 }
+
+                var folder = new Folder
+                {
+                    FolderTranslations = new List<FolderTranslation>()
+                    {
+                        new() {Name = propertyCreateModel.Name, LanguageId = 1}
+                    }
+                };
+                await folder.Create(sdkDbContext);
+
+                newProperty.FolderId = folder.Id;
+                await newProperty.Update(_backendConfigurationPnDbContext);
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));
             }
@@ -164,7 +182,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == id)
                     .Include(x => x.SelectedLanguages)
-                    .Select(x => new PropertiesModel()
+                    .Select(x => new PropertiesModel
                     {
                         Id = x.Id,
                         Address = x.Address,
@@ -224,7 +242,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 var selectedLanguagesForCreate = updateModel.LanguagesIds
                     .Where(x => !property.SelectedLanguages.Exists(y => y.LanguageId == x))
-                    .Select(x => new PropertySelectedLanguages
+                    .Select(x => new PropertySelectedLanguage
                     {
                         LanguageId = x,
                         PropertyId = property.Id,

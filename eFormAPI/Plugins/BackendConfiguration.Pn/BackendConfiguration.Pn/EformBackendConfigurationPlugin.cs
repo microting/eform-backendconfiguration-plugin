@@ -35,6 +35,8 @@ namespace BackendConfiguration.Pn
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Data.Entities;
     using Microting.eFormApi.BasePn;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Consts;
@@ -44,6 +46,7 @@ namespace BackendConfiguration.Pn
     using Microting.eFormApi.BasePn.Infrastructure.Settings;
     using Microting.EformBackendConfigurationBase.Infrastructure.Const;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Services.BackendConfigurationAreaRules;
@@ -77,7 +80,6 @@ namespace BackendConfiguration.Pn
             services.AddSingleton<IRebusService, RebusService>();
             services.AddControllers();
             SeedEForms(services);
-            SeedFolders(services);
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
@@ -106,6 +108,9 @@ namespace BackendConfiguration.Pn
             var eforms = BackendConfigurationSeedEforms.EformsSeed;
             var sdkDbContex = core.DbContextHelper.GetDbContext();
 
+            var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
+
+            var eformIds = new List<int>();
             foreach (var eform in eforms)
             {
                 var newTemplate = await core.TemplateFromXml(eform);
@@ -113,37 +118,92 @@ namespace BackendConfiguration.Pn
                 {
                     await core.TemplateCreate(newTemplate);
                 }
+
+                var mainElement = await sdkDbContex.CheckLists.FirstAsync(x => x.OriginalId == newTemplate.OriginalId);
+                eformIds.Add(mainElement.Id);
             }
-        }
-
-        private static async void SeedFolders(IServiceCollection services)
-        {
-            var serviceProvider = services.BuildServiceProvider();
-
-            var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
-            var folders = BackendConfigurationSeedFolders.SeedFolders;
-            var sdkDbContex = core.DbContextHelper.GetDbContext();
-
-            foreach (var folder in folders)
+            // Seed areas
+            for (var i = 0; i < BackendConfigurationSeedAreas.AreasSeed.Count; i++)
             {
-                if (!await sdkDbContex.Folders.AnyAsync(x => x.Id == folder.Id))
+                var newArea = BackendConfigurationSeedAreas.AreasSeed[i];
+                if (!context.Areas.Any(x => x.Id == newArea.Id))
                 {
-                    await folder.Create(sdkDbContex);
-                    var folderTranslations = BackendConfigurationSeedFolders.SeedFolderTranslations
-                        .Where(x => x.FolderId == folder.Id)
-                        .ToList();
-                    foreach (var folderTranslation in folderTranslations)
+                    await newArea.Create(context);
+
+                    // seed rules
+                    foreach (var areaRule in BackendConfigurationSeedAreaRules.AreaRulesSeed
+                        .Where(x => x.AreaId == newArea.Id))
                     {
-                        await folderTranslation.Create(sdkDbContex);
+                        if(context.AreaRules.Any(x => x.Id == areaRule.Id))
+                        {
+                            areaRule.EformId = eformIds[i];
+                            await areaRule.Create(context);
+                        }
                     }
                 }
             }
         }
 
+        //private static async void SeedFolders(IServiceCollection services)
+        //{
+        //    var serviceProvider = services.BuildServiceProvider();
+
+        //    var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
+        //    var sdkDbContex = core.DbContextHelper.GetDbContext();
+
+        //    var lastFolderId = await sdkDbContex.Folders
+        //        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+        //        .MaxAsync(x => x.Id);
+
+        //    var foldersAvailable = await sdkDbContex.FolderTranslations
+        //        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+        //        .Where(x => x.Folder.WorkflowState != Constants.WorkflowStates.Removed)
+        //        .GroupBy(x => x.FolderId)
+        //        .Select(x => new FolderWithTranslations
+        //        {
+        //            FolderId = x.Key,
+        //            Translations = x.Select(y => new TranslationsFolder
+        //            {
+        //                Name = y.Name,
+        //                LanguageId = y.LanguageId,
+        //            }).ToList()
+        //        })
+        //        .ToListAsync();
+
+
+        //    var newFolders = BackendConfigurationSeedFolders.NewFolders;
+        //    var folderId = lastFolderId + 1;
+        //    foreach (var newFolder in newFolders)
+        //    {
+        //        newFolder.Id = folderId;
+        //        // первый шаг - проверить есть ли в системе данный фолдер из foldersAvailable
+        //        // второй шаг - если не существует такого фолдера в системе - то создаем такой же фолдер и получаем его айди
+        //        // третий шаг - создать трайнслейшены в которых будет уже фолдер айди, который создан
+        //        folderId += 1;
+        //    }
+
+        //    //var folders = BackendConfigurationSeedFolders.GetFolders(lastFolderId, foldersAvailable);
+
+        //    foreach (var folder in newFolders)
+        //    {
+        //        if (!await sdkDbContex.Folders.AnyAsync(x => x.Id == folder.Id))
+        //        {
+        //            await folder.Create(sdkDbContex);
+        //            var folderTranslations = BackendConfigurationSeedFolders.SeedFolderTranslations
+        //                .Where(x => x.FolderId == folder.Id)
+        //                .ToList();
+        //            foreach (var folderTranslation in folderTranslations)
+        //            {
+        //                await folderTranslation.Create(sdkDbContex);
+        //            }
+        //        }
+        //    }
+        //}
+
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
         {
             var itemsPlannigConnectionString = connectionString.Replace(
-                "backend-configuration-plugin",
+                "eform-backend-configuration-plugin",
                 "eform-angular-items-planning-plugin");
 
             _connectionString = connectionString;
@@ -169,7 +229,9 @@ namespace BackendConfiguration.Pn
 
             // Seed database
             SeedDatabase(connectionString);
-            
+
+            //SeedEForms(services, connectionString);
+
         }
 
         public void Configure(IApplicationBuilder appBuilder)

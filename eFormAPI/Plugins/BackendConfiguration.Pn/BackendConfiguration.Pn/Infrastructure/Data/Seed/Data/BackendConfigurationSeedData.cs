@@ -32,12 +32,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
         private const string TagBackendConfigurationSettingsName = "BackendConfigurationSettings";
         public PluginConfigurationValue[] Data => new[]
         {
-            new PluginConfigurationValue()
+            new PluginConfigurationValue
             {
                 Name = $"{TagBackendConfigurationSettingsName}:ReportSubHeaderName",
                 Value = ""
             },
-            new PluginConfigurationValue()
+            new PluginConfigurationValue
             {
                 Name = $"{TagBackendConfigurationSettingsName}:ReportHeaderName",
                 Value = ""

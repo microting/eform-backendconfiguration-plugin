@@ -39,6 +39,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+    using Microting.ItemsPlanningBase.Infrastructure.Data;
+    using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+    using Microting.ItemsPlanningBase.Infrastructure.Enums;
+    using PlanningSite = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite;
 
     public class BackendConfigurationAreaRulesServiceService : IBackendConfigurationAreaRulesService
     {
@@ -46,17 +50,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
 
         public BackendConfigurationAreaRulesServiceService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
+            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
         }
 
         public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int areaId)
@@ -252,7 +259,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
 
                 foreach (var areaRuleCreateModel in createModel.AreaRules)
                 {
-                    var areaRule = new AreaRules
+                    var areaRule = new AreaRule
                     {
                         AreaId = createModel.AreaId,
                         UpdatedByUserId = _userService.UserId,
@@ -274,6 +281,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             .Where(x => x.LanguageId == language.Id)
                             .Select(x => x.Text)
                             .FirstOrDefaultAsync();
+                        areaRule.FolderId = _backendConfigurationPnDbContext.ProperyAreaFolders
+                            .Include(x => x.AreaProperty)
+                            .Where(x => x.AreaProperty.AreaId == areaRule.AreaId)
+                            .Select(x => x.FolderId)
+                            .First();
                     }
                     
                     await areaRule.Create(_backendConfigurationPnDbContext);
@@ -306,44 +318,116 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         {
             try
             {
-                var areaRulePlanning = new AreaRulesPlanning
+                if (areaRulePlanningModel.Id.HasValue)
                 {
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId,
-                    EndDate = areaRulePlanningModel.TypeSpecificFields.EndDate,
-                    DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek,
-                    RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery,
-                    RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType,
-                    StartDate = areaRulePlanningModel.StartDate,
-                    Status = areaRulePlanningModel.Status,
-                    SendNotifications = areaRulePlanningModel.SendNotifications,
-                    Alarm = areaRulePlanningModel.TypeSpecificFields.Alarm,
-                    Type = areaRulePlanningModel.TypeSpecificFields.Type,
-                };
+                    var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Id == areaRulePlanningModel.Id)
+                        .FirstAsync();
+                    areaRulePlanning.UpdatedByUserId = _userService.UserId;
+                    areaRulePlanning.EndDate = areaRulePlanningModel.TypeSpecificFields.EndDate;
+                    areaRulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                    areaRulePlanning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
+                    areaRulePlanning.RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType;
+                    areaRulePlanning.StartDate = areaRulePlanningModel.StartDate;
+                    areaRulePlanning.Status = areaRulePlanningModel.Status;
+                    areaRulePlanning.SendNotifications = areaRulePlanningModel.SendNotifications;
+                    areaRulePlanning.Alarm = areaRulePlanningModel.TypeSpecificFields.Alarm;
+                    areaRulePlanning.Type = areaRulePlanningModel.TypeSpecificFields.Type;
+                    areaRulePlanning.AreaRuleId = areaRulePlanningModel.RuleId;
+                    await areaRulePlanning.Update(_backendConfigurationPnDbContext);
 
-                await areaRulePlanning.Create(_backendConfigurationPnDbContext);
+                    var planning = await _itemsPlanningPnDbContext.Plannings
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Id != areaRulePlanning.ItemPlanningId)
+                        .FirstAsync();
 
-                var assignedSites = areaRulePlanningModel.AssignedSites.Select(x => new PlanningSites
+                    planning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
+                    planning.RepeatUntil = areaRulePlanningModel.TypeSpecificFields.EndDate;
+                    planning.RepeatType = (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType;
+                    planning.DayOfWeek = (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                    planning.PushMessageOnDeployment = areaRulePlanningModel.SendNotifications;
+                    planning.StartDate = areaRulePlanningModel.StartDate;
+                    await planning.Update(_itemsPlanningPnDbContext);
+                } 
+                else
                 {
-                    PlanningId = areaRulePlanning.Id,
-                    SiteId = x.SiteId,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId,
-                }).ToList();
+                    var areaRulePlanning = new AreaRulePlanning
+                    {
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                        EndDate = areaRulePlanningModel.TypeSpecificFields.EndDate,
+                        DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek,
+                        RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery,
+                        RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType,
+                        StartDate = areaRulePlanningModel.StartDate,
+                        Status = areaRulePlanningModel.Status,
+                        SendNotifications = areaRulePlanningModel.SendNotifications,
+                        Alarm = areaRulePlanningModel.TypeSpecificFields.Alarm,
+                        Type = areaRulePlanningModel.TypeSpecificFields.Type,
+                        AreaRuleId = areaRulePlanningModel.RuleId,
+                    };
 
-                foreach (var assignedSite in assignedSites)
-                {
-                    await assignedSite.Create(_backendConfigurationPnDbContext);
+                    await areaRulePlanning.Create(_backendConfigurationPnDbContext);
+
+                    var assignedSites = areaRulePlanningModel.AssignedSites.Select(x => new PlanningSite
+                    {
+                        PlanningId = areaRulePlanning.Id,
+                        SiteId = x.SiteId,
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                    }).ToList();
+
+                    foreach (var assignedSite in assignedSites)
+                    {
+                        await assignedSite.Create(_backendConfigurationPnDbContext);
+                    }
+
+                    var areaRule = await _backendConfigurationPnDbContext.AreaRules
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Id == areaRulePlanningModel.RuleId)
+                        .Include(x => x.AreaRuleTranslations)
+                        .FirstOrDefaultAsync();
+
+                    areaRule.UpdatedByUserId = _userService.UserId;
+                    areaRule.PlanningId = areaRulePlanning.Id;
+                    await areaRule.Update(_backendConfigurationPnDbContext);
+
+                    var planning = new Planning
+                    {
+                        CreatedByUserId = _userService.UserId,
+                        RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery,
+                        RepeatUntil = areaRulePlanningModel.TypeSpecificFields.EndDate,
+                        RepeatType = (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType,
+                        DayOfWeek = (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek,
+                        Enabled = true,
+                        RelatedEFormId = (int)areaRule.EformId,
+                        RelatedEFormName = areaRule.EformName,
+                        SdkFolderName = areaRule.FolderName,
+                        SdkFolderId = areaRule.FolderId,
+                        DaysBeforeRedeploymentPushMessageRepeat = false,
+                        DaysBeforeRedeploymentPushMessage = 5,
+                        PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
+                        StartDate = areaRulePlanningModel.StartDate
+                    };
+
+                    await planning.Create(_itemsPlanningPnDbContext);
+                    areaRulePlanning.ItemPlanningId = planning.Id;
+
+                    var planningTranslations = new List<PlanningNameTranslation>();
+                    planningTranslations.AddRange(areaRule.AreaRuleTranslations.Select(
+                        areaRuleAreaRuleTranslation => new PlanningNameTranslation
+                        {
+                            LanguageId = areaRuleAreaRuleTranslation.LanguageId,
+                            Name = areaRuleAreaRuleTranslation.Name,
+                            PlanningId = planning.Id
+                        }));
+
+                    foreach (var planningNameTranslation in planningTranslations)
+                    {
+                        await planningNameTranslation.Create(_itemsPlanningPnDbContext);
+                    }
                 }
-
-                var areaRule = await _backendConfigurationPnDbContext.AreaRules
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Id == areaRulePlanningModel.RuleId)
-                    .FirstOrDefaultAsync();
-
-                areaRule.UpdatedByUserId = _userService.UserId;
-                areaRule.PlanningId = areaRulePlanning.Id;
-                await areaRule.Update(_backendConfigurationPnDbContext);
 
                 return new OperationDataResult<AreaRuleModel>(true, _backendConfigurationLocalizationService.GetString("SuccessfullyUpdatePlanning"));
             }
@@ -364,7 +448,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     .Where(x => x.Id == ruleId)
                     .FirstOrDefaultAsync();
 
-                if (areaRule?.PlanningId == null)
+                if (areaRule == null)
                 {
                     return new OperationDataResult<AreaRulePlanningModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadPlanning"));
                 }
@@ -372,7 +456,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 var assignedSites = _backendConfigurationPnDbContext.PlanningSites
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PlanningId == areaRule.PlanningId)
-                    .Select(x => new AreaRuleAssignedSitesModel {SiteId = x.SiteId})
+                    .Select(x => new AreaRuleAssignedSitesModel {SiteId = x.SiteId, Checked = true})
                     .ToList();
 
                 var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
@@ -380,8 +464,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     .Where(x => x.Id == areaRule.PlanningId)
                     .Select(x => new AreaRulePlanningModel
                     {
+                        Id = x.Id,
                         RuleId = ruleId,
-                        StartDate = x.StartDate,
+                        StartDate = (DateTime) x.StartDate,
                         Status = x.Status,
                         TypeSpecificFields = new AreaRuleTypePlanningModel
                         {

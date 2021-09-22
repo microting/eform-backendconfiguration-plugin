@@ -26,7 +26,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 {
     using System.Collections.Generic;
 
-    public class PropertiesCreateModel
+    public class PropertyCreateModel
     {
         public string Name { get; set; }
         

@@ -52,7 +52,7 @@ namespace BackendConfiguration.Pn.Controllers
         }
         
         [HttpPost]
-        public Task<OperationResult> Create([FromBody] PropertiesCreateModel createModel)
+        public Task<OperationResult> Create([FromBody] PropertyCreateModel createModel)
         {
             return _backendConfigurationPropertiesService.Create(createModel);
         }

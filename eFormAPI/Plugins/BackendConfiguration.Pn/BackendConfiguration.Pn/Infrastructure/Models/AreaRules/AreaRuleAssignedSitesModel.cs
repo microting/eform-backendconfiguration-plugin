@@ -28,8 +28,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
     {
         public int SiteId { get; set; }
 
-        public string Name { get; set; }
-
-        public int SiteUid { get; set; }
+        public bool Checked { get; set; }
     }
 }

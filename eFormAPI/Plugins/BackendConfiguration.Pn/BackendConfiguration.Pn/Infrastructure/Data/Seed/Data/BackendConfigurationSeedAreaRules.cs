@@ -30,10 +30,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 
     public static class BackendConfigurationSeedAreaRules
     {
-        public static IEnumerable<AreaRules> AreaRulesSeed => new[]
+        public static IEnumerable<AreaRule> AreaRulesSeed => new[]
         {
             // Type 1
-            new AreaRules
+            new AreaRule
             {
                 Id = 1,
                 EformId = 0, // TODO: CHANGE
@@ -46,7 +46,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 5,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 2,
                 EformId = 0, // TODO: CHANGE
@@ -59,7 +59,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 5,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 3,
                 EformId = 0, // TODO: CHANGE
@@ -72,7 +72,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 7,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 4,
                 EformId = 0, // TODO: CHANGE
@@ -85,7 +85,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 7,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 5,
                 EformId = 0, // TODO: CHANGE
@@ -98,7 +98,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 7,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 6,
                 EformId = 0, // TODO: CHANGE
@@ -111,7 +111,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 32,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 7,
                 EformId = 0, // TODO: CHANGE
@@ -124,7 +124,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 32,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 8,
                 EformId = 0, // TODO: CHANGE
@@ -137,7 +137,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 33,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 9,
                 EformId = 0, // TODO: CHANGE
@@ -150,7 +150,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 35,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 10,
                 EformId = 0, // TODO: CHANGE
@@ -163,7 +163,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 35,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 11,
                 EformId = 0, // TODO: CHANGE
@@ -176,7 +176,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 36,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 12,
                 EformId = 0, // TODO: CHANGE
@@ -189,7 +189,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 36,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 13,
                 EformId = 0, // TODO: CHANGE
@@ -202,7 +202,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 36,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 13,
                 EformId = 0, // TODO: CHANGE
@@ -215,7 +215,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 34,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 14,
                 EformId = 0, // TODO: CHANGE
@@ -228,7 +228,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 35,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 15,
                 EformId = 0, // TODO: CHANGE
@@ -241,7 +241,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 37,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 16,
                 EformId = 0, // TODO: CHANGE
@@ -254,7 +254,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 37,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 17,
                 EformId = 0, // TODO: CHANGE
@@ -267,7 +267,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 37,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 18,
                 EformId = 0, // TODO: CHANGE
@@ -280,7 +280,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 38,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 19,
                 EformId = 0, // TODO: CHANGE
@@ -293,7 +293,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 38,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 20,
                 EformId = 0, // TODO: CHANGE
@@ -306,7 +306,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PlanningId = null,
                 FolderId = 38,
             },
-            new AreaRules
+            new AreaRule
             {
                 Id = 20,
                 EformId = 0, // TODO: CHANGE
