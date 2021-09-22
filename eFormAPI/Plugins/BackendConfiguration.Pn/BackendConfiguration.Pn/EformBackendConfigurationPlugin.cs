@@ -109,8 +109,7 @@ namespace BackendConfiguration.Pn
             var sdkDbContex = core.DbContextHelper.GetDbContext();
 
             var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
-
-            var eformIds = new List<int>();
+            // seed eforms
             foreach (var eform in eforms)
             {
                 var newTemplate = await core.TemplateFromXml(eform);
@@ -119,86 +118,18 @@ namespace BackendConfiguration.Pn
                     await core.TemplateCreate(newTemplate);
                 }
 
-                var mainElement = await sdkDbContex.CheckLists.FirstAsync(x => x.OriginalId == newTemplate.OriginalId);
-                eformIds.Add(mainElement.Id);
             }
-            // Seed areas
-            for (var i = 0; i < BackendConfigurationSeedAreas.AreasSeed.Count; i++)
+            // Seed areas and rules
+            foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed)
             {
-                var newArea = BackendConfigurationSeedAreas.AreasSeed[i];
                 if (!context.Areas.Any(x => x.Id == newArea.Id))
                 {
-                    await newArea.Create(context);
-
-                    // seed rules
-                    foreach (var areaRule in BackendConfigurationSeedAreaRules.AreaRulesSeed
-                        .Where(x => x.AreaId == newArea.Id))
-                    {
-                        if(context.AreaRules.Any(x => x.Id == areaRule.Id))
-                        {
-                            areaRule.EformId = eformIds[i];
-                            await areaRule.Create(context);
-                        }
-                    }
+                    context.Areas.Add(newArea);
+                    
+                    context.SaveChanges();
                 }
             }
         }
-
-        //private static async void SeedFolders(IServiceCollection services)
-        //{
-        //    var serviceProvider = services.BuildServiceProvider();
-
-        //    var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
-        //    var sdkDbContex = core.DbContextHelper.GetDbContext();
-
-        //    var lastFolderId = await sdkDbContex.Folders
-        //        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-        //        .MaxAsync(x => x.Id);
-
-        //    var foldersAvailable = await sdkDbContex.FolderTranslations
-        //        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-        //        .Where(x => x.Folder.WorkflowState != Constants.WorkflowStates.Removed)
-        //        .GroupBy(x => x.FolderId)
-        //        .Select(x => new FolderWithTranslations
-        //        {
-        //            FolderId = x.Key,
-        //            Translations = x.Select(y => new TranslationsFolder
-        //            {
-        //                Name = y.Name,
-        //                LanguageId = y.LanguageId,
-        //            }).ToList()
-        //        })
-        //        .ToListAsync();
-
-
-        //    var newFolders = BackendConfigurationSeedFolders.NewFolders;
-        //    var folderId = lastFolderId + 1;
-        //    foreach (var newFolder in newFolders)
-        //    {
-        //        newFolder.Id = folderId;
-        //        // первый шаг - проверить есть ли в системе данный фолдер из foldersAvailable
-        //        // второй шаг - если не существует такого фолдера в системе - то создаем такой же фолдер и получаем его айди
-        //        // третий шаг - создать трайнслейшены в которых будет уже фолдер айди, который создан
-        //        folderId += 1;
-        //    }
-
-        //    //var folders = BackendConfigurationSeedFolders.GetFolders(lastFolderId, foldersAvailable);
-
-        //    foreach (var folder in newFolders)
-        //    {
-        //        if (!await sdkDbContex.Folders.AnyAsync(x => x.Id == folder.Id))
-        //        {
-        //            await folder.Create(sdkDbContex);
-        //            var folderTranslations = BackendConfigurationSeedFolders.SeedFolderTranslations
-        //                .Where(x => x.FolderId == folder.Id)
-        //                .ToList();
-        //            foreach (var folderTranslation in folderTranslations)
-        //            {
-        //                await folderTranslation.Create(sdkDbContex);
-        //            }
-        //        }
-        //    }
-        //}
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
         {

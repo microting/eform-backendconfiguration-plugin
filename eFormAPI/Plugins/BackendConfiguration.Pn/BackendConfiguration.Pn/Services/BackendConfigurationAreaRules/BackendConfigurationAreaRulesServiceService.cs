@@ -83,7 +83,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             .Where(y => y.LanguageId == currentUserLanguage.Id)
                             .Select(y =>y.Name)
                             .FirstOrDefault(),
-                        IsDefault = BackendConfigurationSeedAreaRules.AreaRulesSeed.Last().Id >= x.Id,
+                        IsDefault = BackendConfigurationSeedAreas.LastIndexAreaRules >= x.Id,
                         TypeSpecificFields = new { x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, },
                     })
                     .ToListAsync();
@@ -120,7 +120,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                 Name = y.Name,
                                 //Description = languages.First(z => z.Id == y.LanguageId).Name,
                             }).ToList(),
-                        IsDefault = BackendConfigurationSeedAreaRules.AreaRulesSeed.Last().Id >= x.Id,
+                        IsDefault = BackendConfigurationSeedAreas.LastIndexAreaRules >= x.Id,
                         EformId = (int)x.EformId,
                         TypeSpecificFields = new { x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, },
                     })
@@ -163,7 +163,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     return new OperationDataResult<AreaRuleModel>(false, _backendConfigurationLocalizationService.GetString("AreaRuleNotFound"));
                 }
 
-                if (BackendConfigurationSeedAreaRules.AreaRulesSeed.Last().Id >= areaRule.Id)
+                if (BackendConfigurationSeedAreas.LastIndexAreaRules >= areaRule.Id)
                 {
                     return new OperationDataResult<AreaRuleModel>(false, _backendConfigurationLocalizationService.GetString("AreaRuleCan'tBeUpdated"));
                 }
@@ -226,7 +226,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     return new OperationDataResult<AreaRuleModel>(false, _backendConfigurationLocalizationService.GetString("AreaRuleNotFound"));
                 }
 
-                if (BackendConfigurationSeedAreaRules.AreaRulesSeed.Last().Id >= areaRule.Id)
+                if (BackendConfigurationSeedAreas.LastIndexAreaRules >= areaRule.Id)
                 {
                     return new OperationDataResult<AreaRuleModel>(false, _backendConfigurationLocalizationService.GetString("AreaRuleCantBeDeleted"));
                 }

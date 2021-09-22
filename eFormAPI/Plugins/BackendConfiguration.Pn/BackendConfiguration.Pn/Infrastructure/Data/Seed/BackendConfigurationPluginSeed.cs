@@ -30,7 +30,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed
     using Microting.eForm.Infrastructure.Constants;
     using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
     public static class BackendConfigurationPluginSeed
     {
@@ -73,52 +72,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed
             dbContext.PluginPermissions.AddRange(newPermissions);
 
             dbContext.SaveChanges();
-
-            //// Seed areas
-            //var newAreas = BackendConfigurationSeedAreas.AreasSeed
-            //    .Where(p => dbContext.Areas.All(x => x.Name != p.Name))
-            //    .Select(p => new Area
-            //    {
-            //        Id = p.Id,
-            //        Name = p.Name,
-            //        Description = p.Description,
-            //        CreatedAt = DateTime.UtcNow,
-            //        Version = 1,
-            //        WorkflowState = Constants.WorkflowStates.Created,
-            //        CreatedByUserId = 1,
-            //        UpdatedByUserId = 1,
-            //        UpdatedAt = DateTime.UtcNow,
-            //        Type = p.Type,
-            //    }
-            //    );
-            //dbContext.Areas.AddRange(newAreas);
-
-            //dbContext.SaveChanges();
-
-
-            //// Seed area rules
-            //var newAreaRules = BackendConfigurationSeedAreaRules.AreaRulesSeed
-            //    .Where(p => dbContext.AreaRules.All(x => x.AreaId != p.AreaId))
-            //    .Select(p => new AreaRules
-            //    {
-            //        Id = p.Id,
-            //        AreaId = p.AreaId,
-            //        EformId = p.EformId,
-            //        EformName = p.EformName,
-            //        FolderId = p.FolderId,
-            //        FolderName = p.FolderName,
-            //        CreatedAt = DateTime.UtcNow,
-            //        Version = 1,
-            //        WorkflowState = Constants.WorkflowStates.Created,
-            //        CreatedByUserId = 1,
-            //        UpdatedByUserId = 1,
-            //        UpdatedAt = DateTime.UtcNow,
-            //        AreaRuleTranslations = p.AreaRuleTranslations,
-            //    }
-            //    );
-            //dbContext.AreaRules.AddRange(newAreaRules);
-
-            //dbContext.SaveChanges();
         }
     }
 }
