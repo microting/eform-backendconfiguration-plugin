@@ -52,7 +52,7 @@ namespace BackendConfiguration.Pn.Controllers
         }
         
         [HttpPost]
-        public Task<OperationResult> Create([FromBody] PropertiesCreateModel createModel)
+        public Task<OperationResult> Create([FromBody] PropertyCreateModel createModel)
         {
             return _backendConfigurationPropertiesService.Create(createModel);
         }
@@ -64,7 +64,7 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpPut]
-        public Task<OperationResult> Update([FromBody] PropertiesModel updateModel)
+        public Task<OperationResult> Update([FromBody] PropertiesUpdateModel updateModel)
         {
             return _backendConfigurationPropertiesService.Update(updateModel);
         }

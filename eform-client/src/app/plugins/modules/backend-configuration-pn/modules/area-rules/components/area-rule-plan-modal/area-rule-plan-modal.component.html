@@ -1,0 +1,265 @@
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade"
+  #frame="mdbModal"
+>
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{{ 'New rule' | translate }}</h3>
+        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+          <span>×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="container-fluid">
+          <!-- Show all translations for rule -->
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-check form-switch">
+                <input
+                  mdbCheckbox
+                  class="form-check-input"
+                  type="checkbox"
+                  id="planAreaRuleStatusToggle"
+                  [value]="selectedAreaRulePlanning.status"
+                  [checked]="selectedAreaRulePlanning.status"
+                />
+                <label
+                  class="form-check-label"
+                  for="planAreaRuleStatusToggle"
+                  >{{ selectedAreaRule.translatedName }}</label
+                >
+              </div>
+            </div>
+          </div>
+          <ng-container *ngIf="selectedAreaRulePlanning.typeSpecificFields">
+            <div class="row" *ngIf="selectedArea.type === 5">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: 1, name: 'Monday' | translate },
+                    { id: 2, name: 'Tuesday' | translate },
+                    { id: 3, name: 'Wednesday' | translate },
+                    { id: 4, name: 'Thursday' | translate },
+                    { id: 5, name: 'Friday' | translate },
+                    { id: 6, name: 'Saturday' | translate },
+                    { id: 0, name: 'Sunday' | translate }
+                  ]"
+                  bindLabel="name"
+                  [placeholder]="'Day of week' | translate"
+                  bindValue="id"
+                  [ngModel]="
+                    selectedAreaRulePlanning.typeSpecificFields.dayOfWeek
+                  "
+                  [disabled]="true"
+                  id="planAreaDayOfWeek"
+                >
+                </ng-select>
+              </div>
+            </div>
+            <!-- Rule type 1, 2, 3, 5 -->
+            <ng-container *ngIf="selectedArea.type !== 4">
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="form-check form-switch">
+                    <input
+                      mdbCheckbox
+                      class="form-check-input"
+                      type="checkbox"
+                      id="planAreaRuleNotificationsToggle"
+                      [value]="selectedAreaRulePlanning.sendNotifications"
+                      [checked]="selectedAreaRulePlanning.sendNotifications"
+                    />
+                    <label
+                      class="form-check-label"
+                      for="planAreaRuleNotificationsToggle"
+                      >{{ 'Notifications on/off' | translate }}</label
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 col-sm-6 col-xs-6">
+                  <div class="md-form">
+                    <input
+                      mdbInput
+                      [(ngModel)]="
+                        selectedAreaRulePlanning.typeSpecificFields.repeatEvery
+                      "
+                      type="text"
+                      id="planRepeatEvery"
+                      name="createRepeatEvery"
+                      class="form-control"
+                    />
+                    <label for="planRepeatEvery">{{
+                      'Repeat every' | translate
+                    }}</label>
+                  </div>
+                </div>
+                <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+                  <ng-select
+                    [items]="[
+                      { id: 1, name: 'Day' | translate },
+                      { id: 2, name: 'Week' | translate },
+                      { id: 3, name: 'Month' | translate }
+                    ]"
+                    bindLabel="name"
+                    [placeholder]="'Repeat Type' | translate"
+                    bindValue="id"
+                    [(ngModel)]="
+                      selectedAreaRulePlanning.typeSpecificFields.repeatType
+                    "
+                    id="planRepeatType"
+                  >
+                  </ng-select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12">
+                  <div class="md-form" [owlDateTimeTrigger]="dt1">
+                    <input
+                      mdbInput
+                      [owlDateTime]="dt1"
+                      [min]="currentDate"
+                      [(ngModel)]="selectedAreaRulePlanning.startDate"
+                      type="text"
+                      id="planStartFrom"
+                      name="createStartFrom"
+                      class="form-control"
+                    />
+                    <owl-date-time
+                      [pickerType]="'calendar'"
+                      #dt1
+                    ></owl-date-time>
+                    <label for="planStartFrom">{{
+                      'Start date' | translate
+                    }}</label>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 2">
+              <div class="row">
+                <div class="col-12 ng-select-wrapper">
+                  <ng-select
+                    [items]="[
+                      { id: '1', name: 'Open' | translate },
+                      { id: '2', name: 'Closed' | translate }
+                    ]"
+                    bindLabel="label"
+                    [placeholder]="'Type' | translate"
+                    bindValue="id"
+                    [ngModel]="selectedAreaRulePlanning.typeSpecificFields.type"
+                    [disabled]="true"
+                    id="planRuleType"
+                  >
+                  </ng-select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12 ng-select-wrapper">
+                  <ng-select
+                    [items]="[
+                      { id: '1', name: 'Yes' | translate },
+                      { id: '2', name: 'No' | translate }
+                    ]"
+                    bindLabel="label"
+                    [placeholder]="'Alarm' | translate"
+                    bindValue="id"
+                    [ngModel]="
+                      selectedAreaRulePlanning.typeSpecificFields.alarm
+                    "
+                    [disabled]="true"
+                    id="planRuleAlarm"
+                  >
+                  </ng-select>
+                </div>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 4">
+              <div class="row">
+                <div class="col-md-3 col-sm-6 col-xs-6">
+                  <div class="md-form" [owlDateTimeTrigger]="dt2">
+                    <input
+                      mdbInput
+                      [owlDateTime]="dt2"
+                      [min]="currentDatePlusTwoWeeks"
+                      [(ngModel)]="
+                        selectedAreaRulePlanning.typeSpecificFields.endDate
+                      "
+                      type="text"
+                      id="planEndDate"
+                      class="form-control"
+                    />
+                    <owl-date-time
+                      [pickerType]="'calendar'"
+                      #dt2
+                    ></owl-date-time>
+                    <label for="planEndDate">{{
+                      'End date' | translate
+                    }}</label>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+          <div class="table-responsive">
+            <table class="table table-xs table-bordered text-center z-depth-1">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>{{ 'Worker name' | translate }}</th>
+                  <th>{{ 'Check to assign' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody id="pairingModalTableBody">
+                <tr
+                  *ngFor="
+                    let worker of selectedArea.availableWorkers;
+                    let i = index
+                  "
+                >
+                  <td class="align-middle">{{ worker.siteId }}</td>
+                  <td class="align-middle">{{ worker.fullName }}</td>
+                  <td class="align-middle">
+                    <div class="mat-checkbox">
+                      <input
+                        id="CheckboxCreateAssignment{{ i }}"
+                        (change)="addToArray($event, worker.siteId)"
+                        [checked]="getAssignmentBySiteId(worker.siteId)"
+                        [value]="getAssignmentBySiteId(worker.siteId)"
+                        color="primary"
+                        type="checkbox"
+                      />
+                      <label for="CheckboxCreateAssignment{{ i }}"></label>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          (click)="onUpdateAreaRulePlan()"
+          id="updateAreaRulePlanningSaveBtn"
+        >
+          {{ 'Save' | translate }}
+        </button>
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+          id="updateAreaRulePlanningSaveCancelBtn"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

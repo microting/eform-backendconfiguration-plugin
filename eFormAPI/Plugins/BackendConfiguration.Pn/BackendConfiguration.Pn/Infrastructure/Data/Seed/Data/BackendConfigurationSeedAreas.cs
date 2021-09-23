@@ -25,191 +25,432 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 {
     using System.Collections.Generic;
+    using System.Linq;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
     public static class BackendConfigurationSeedAreas
     {
-        public static IEnumerable<Areas> AreasSeed => new[]
+        public static List<Area> AreasSeed => new()
         {
-            new Areas
+            new Area
             {
                 Id = 1,
-                Name = "Environmental Management (kun IE-husdyrbrug)",
+                Name = "01. Environmental Management (kun IE-husdyrbrug)",
                 Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
+                Type = AreaTypesEnum.Type1,
+                AreaRules =new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 1,
+                        EformName = "01. Vandforbrug",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Water consumption" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 2,
+                        EformName = "01. Elforbrug",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Electricity consumption" }
+                        },
+                    },
+                } 
             },
-            new Areas
+            new Area
             {
                 Id = 2,
-                Name = "Contingency",
+                Name = "02. Contingency",
                 Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
+                Type = AreaTypesEnum.Type1,
+                AreaRules = new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 3,
+                        EformName = "02. Brandustyr",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Fire equipment" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 4,
+                        EformName = "02. Sikkerhedsudstyr/værnemidler",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Safety equipment" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 5,
+                        EformName = "02. Førstehjælp",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "First aid" }
+                        },
+                    },
+                }
             },
-            new Areas
+            new Area
             {
                 Id = 3,
-                Name = "Slurry tanks",
+                Name = "03. Slurry tanks",
                 Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                Type = AreaTypesEnum.Type2,
             },
-            new Areas
+            new Area
             {
                 Id = 4,
-                Name = "Feeding documentation (kun IE-husdyrbrug)",
+                Name = "04. Feeding documentation (kun IE-husdyrbrug)",
                 Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 5,
-                Name = "Stable preparations and tail bite documentation",
+                Name = "05. Stable preparations and tail bite documentation",
                 Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
+                Type = AreaTypesEnum.Type3,
             },
-            new Areas
+            new Area
             {
                 Id = 6,
-                Name = "Silos",
+                Name = "06. Silos",
                 Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 7,
-                Name = "Pest control",
+                Name = "07. Pest control",
                 Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
+                Type = AreaTypesEnum.Type1,
+                AreaRules = new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 6,
+                        EformName = "07. Rotter",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Rats" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 7,
+                        EformName = "07. Fluer",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Flies" }
+                        },
+                    },
+                }
             },
-            new Areas
+            new Area
             {
                 Id = 8,
-                Name = "Aircleaning",
+                Name = "08. Aircleaning",
                 Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
+                Type = AreaTypesEnum.Type1,
+                AreaRules = new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 8,
+                        EformName = "08. Luftrensning timer",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Flies" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 9,
+                        EformName = "08. Luftrensning serviceaftale",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Air cleaning service agreement" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 10,
+                        EformName = "08. Luftrensning driftsstop",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Air cleaning downtime" }
+                        },
+                    },
+                }
             },
-            new Areas
+            new Area
             {
                 Id = 9,
-                Name = "Acidification",
+                Name = "09. Acidification",
                 Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
+                Type = AreaTypesEnum.Type1,
+                AreaRules = new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 11,
+                        EformName = "09. Forsuring pH værdi",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Acidification pH value" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 12,
+                        EformName = "09. Forsuring serviceaftale",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Acidification service agreement" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 13,
+                        EformName = "09. Forsuring driftsstop",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Acidification downtime" }
+                        },
+                    },
+                }
             },
-            new Areas
+            new Area
             {
                 Id = 10,
-                Name = "Heat pumps",
+                Name = "10. Heat pumps",
                 Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
+                Type = AreaTypesEnum.Type1,
+                AreaRules = new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 14,
+                        EformName = "10. Varmepumpe timer og energi",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Heat pumps hours and energy" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 15,
+                        EformName = "10. Varmepumpe serviceaftale",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Heat pump service agreement" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 16,
+                        EformName = "10. Varmepumpe driftsstop",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Heat pump downtime" }
+                        },
+                    },
+                }
             },
-            new Areas
+            new Area
             {
                 Id = 11,
-                Name = "Pellot stoves",
+                Name = "11. Pellot stoves",
                 Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
+                Type = AreaTypesEnum.Type1,
+                AreaRules = new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 17,
+                        EformName = "11. Pillefyr",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Pellet stove" }
+                        },
+                    },
+                }
             },
-            new Areas
+            new Area
             {
                 Id = 12,
-                Name = "Environmentally hazardous substances",
+                Name = "12. Environmentally hazardous substances",
                 Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
+                Type = AreaTypesEnum.Type1,
+                AreaRules = new List<AreaRule>()
+                {
+                    new()
+                    {
+                        Id = 18,
+                        EformName = "12. Dieseltank",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Diesel tank" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 19,
+                        EformName = "12. Motor- og spildolie",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Motor oil and waste oil" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 20,
+                        EformName = "12. Kemi",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Chemistry" }
+                        },
+                    },
+                    new()
+                    {
+                        Id = 21,
+                        EformName = "12. Affald og farligt affald",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "Trash" }
+                        },
+                    },
+                }
             },
-            new Areas
+            new Area
             {
                 Id = 13,
-                Name = "Work Place Assesment",
+                Name = "13. Work Place Assesment",
                 Description = @"https://www.microting.dk/eform/landbrug/13-apv",
+                Type = AreaTypesEnum.Type4,
+                AreaRules = new List<AreaRule>
+                {
+                    new()
+                    {
+                        Id = 22,
+                        AreaId = 13,
+                        EformName = "13. APV Medarbejer",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "WPA Agriculture" }
+                        },
+                    },
+                },
             },
-            new Areas
+            new Area
             {
                 Id = 14,
-                Name = "Machines",
+                Name = "14. Machines",
                 Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 15,
-                Name = "Inspection of power tools",
+                Name = "15. Inspection of power tools",
                 Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 16,
-                Name = "Inspection of wagons",
+                Name = "16. Inspection of wagons",
                 Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 17,
-                Name = "Inspection of ladders",
+                Name = "17. Inspection of ladders",
                 Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 18,
-                Name = "Alarm",
+                Name = "18. Alarm",
                 Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 19,
-                Name = "Ventilation",
+                Name = "19. Ventilation",
                 Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
+                Type = AreaTypesEnum.Type1,
             },
-            new Areas
+            new Area
             {
                 Id = 20,
-                Name = "Recurring tasks (mon-sun)",
+                Name = "20. Recurring tasks (mon-sun)",
                 Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
+                Type = AreaTypesEnum.Type5,
             },
-            new Areas
+            new Area
             {
                 Id = 21,
-                Name = "DANISH Standard",
+                Name = "21. DANISH Standard",
                 Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
+                Type = AreaTypesEnum.Type4,
+                AreaRules = new List<AreaRule>
+                {
+                    new()
+                    {
+                        Id = 23,
+                        AreaId = 13,
+                        EformName = "DANISH Produktstandard v. 1.01",
+                        AreaRuleTranslations = new List<AreaRuleTranslation>
+                        {
+                            new() { LanguageId = 1, Name = "DANISH Standard v. 1.01" }
+                        },
+                    },
+                },
             },
-            new Areas
+            new Area
             {
                 Id = 22,
-                Name = "Sieve test",
+                Name = "22. Sieve test",
                 Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
             },
-            new Areas
+            new Area
             {
                 Id = 23,
-                Name = "Water consumption",
+                Name = "23. Water consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
             },
-            new Areas
+            new Area
             {
                 Id = 24,
-                Name = "Electricity consumption",
+                Name = "24. Electricity consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
             },
-            new Areas
+            new Area
             {
                 Id = 25,
-                Name = "Field irrigation consumption",
+                Name = "25. Field irrigation consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
             },
-            new Areas
+            new Area
             {
                 Id = 26,
-                Name = "Environmental Management",
-                Description = @"",
-            },
-            new Areas
-            {
-                Id = 27,
-                Name = "Feeding documentation",
-                Description = @"",
-            },
-            new Areas
-            {
-                Id = 28,
-                Name = "Stable preparations and tail bite",
-                Description = @"",
-            },
-            new Areas
-            {
-                Id = 29,
-                Name = "Slurry cooling",
-                Description = @"",
-            },
-            new Areas
-            {
-                Id = 30,
-                Name = "Miscellaneous",
+                Name = "100. Miscellaneous",
                 Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
             },
         };
+
+        public static int LastIndexAreaRules => AreasSeed.SelectMany(x => x.AreaRules).Count();
     }
 }

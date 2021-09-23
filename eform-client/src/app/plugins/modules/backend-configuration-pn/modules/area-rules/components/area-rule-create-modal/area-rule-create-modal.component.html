@@ -1,0 +1,248 @@
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade overflow-auto"
+  #frame="mdbModal"
+>
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{{ 'New rule' | translate }}</h3>
+        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+          <span>×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="container-fluid">
+          <ng-container *ngIf="newAreaRules.areaRules.length === 0">
+            <div class="row" *ngIf="selectedArea.type === 5">
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: 1, name: 'Monday' | translate },
+                    { id: 2, name: 'Tuesday' | translate },
+                    { id: 3, name: 'Wednesday' | translate },
+                    { id: 4, name: 'Thursday' | translate },
+                    { id: 5, name: 'Friday' | translate },
+                    { id: 6, name: 'Saturday' | translate },
+                    { id: 0, name: 'Sunday' | translate }
+                  ]"
+                  bindLabel="name"
+                  [placeholder]="'Day of week' | translate"
+                  bindValue="id"
+                  [(ngModel)]="newAreaRulesDayOfWeek"
+                  id="createAreasDayOfWeek"
+                >
+                </ng-select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-xs-12 col-md-12">
+                <textarea
+                  [(ngModel)]="newAreaRulesString"
+                  class="form-control"
+                  id="createAreaRulesString"
+                  rows="20"
+                ></textarea>
+              </div>
+            </div>
+            <button
+              mdbBtn
+              class="btn-success btn-small-height"
+              (click)="generateRules()"
+              id="areaRulesGenerateBtn"
+            >
+              {{ 'Create' | translate }}
+            </button>
+          </ng-container>
+          <ng-container *ngIf="newAreaRules.areaRules.length > 0">
+            <!-- Show all area rules generated from previous block -->
+            <ng-container
+              *ngFor="let newAreaRule of newAreaRules.areaRules; let i = index"
+            >
+              <div class="card mb-2">
+                <div class="card-header card-header-simple">
+                  <div
+                    class="d-flex justify-content-between align-items-center"
+                  >
+                    {{ 'Rule' | translate }} {{ i + 1 }}
+                  </div>
+                </div>
+                <div class="card-body">
+                  <ng-container *ngIf="newAreaRule.typeSpecificFields">
+                    <!-- Show all translations for rule -->
+                    <ng-container
+                      *ngFor="
+                        let translation of newAreaRule.translatedNames;
+                        let k = index
+                      "
+                    >
+                      <div class="row">
+                        <div class="col-md-12">
+                          <div class="md-form">
+                            <input
+                              mdbInput
+                              type="text"
+                              [(ngModel)]="translation.name"
+                              class="form-control"
+                              id="createRuleName{{ i }}_{{ k }}"
+                            />
+                            <label for="createRuleName{{ i }}_{{ k }}">{{
+                              translation.description | translate
+                            }}</label>
+                          </div>
+                        </div>
+                      </div>
+                    </ng-container>
+                    <!-- Rule type 1, 5, 3 -->
+                    <ng-container
+                      *ngIf="
+                        selectedArea.type === 1 ||
+                        selectedArea.type === 5 ||
+                        selectedArea.type === 3
+                      "
+                    >
+                      <div class="row">
+                        <div class="col-12 ng-select-wrapper">
+                          <ng-select
+                            [items]="templatesModel.templates"
+                            bindLabel="label"
+                            [placeholder]="'Selected template' | translate"
+                            bindValue="id"
+                            [typeahead]="typeahead"
+                            [(ngModel)]="newAreaRule.typeSpecificFields.eformId"
+                            id="createRuleEformId{{ i }}"
+                          >
+                          </ng-select>
+                        </div>
+                      </div>
+                    </ng-container>
+                    <!-- Rule type 2 -->
+                    <ng-container *ngIf="selectedArea.type === 2">
+                      <div class="row">
+                        <div class="col-12 ng-select-wrapper">
+                          <ng-select
+                            [items]="[
+                              { id: '1', name: 'Open' | translate },
+                              { id: '2', name: 'Closed' | translate }
+                            ]"
+                            bindLabel="label"
+                            [placeholder]="'Type' | translate"
+                            bindValue="id"
+                            [(ngModel)]="newAreaRule.typeSpecificFields.type"
+                            id="createRuleType{{ i }}"
+                          >
+                          </ng-select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 ng-select-wrapper">
+                          <ng-select
+                            [items]="[
+                              { id: '1', name: 'Yes' | translate },
+                              { id: '2', name: 'No' | translate }
+                            ]"
+                            bindLabel="label"
+                            [placeholder]="'Alarm' | translate"
+                            bindValue="id"
+                            [(ngModel)]="newAreaRule.typeSpecificFields.alarm"
+                            id="createRuleAlarm{{ i }}"
+                          >
+                          </ng-select>
+                        </div>
+                      </div>
+                    </ng-container>
+                    <!-- Rule type 3 -->
+                    <ng-container *ngIf="selectedArea.type === 3">
+                      <div class="row">
+                        <div class="col-12 ng-select-wrapper">
+                          <ng-select
+                            [items]="[
+                              { id: '1', name: 'Yes' | translate },
+                              { id: '2', name: 'No' | translate }
+                            ]"
+                            bindLabel="label"
+                            [placeholder]="'Checklist stable' | translate"
+                            bindValue="id"
+                            [(ngModel)]="
+                              newAreaRule.typeSpecificFields.checklistStable
+                            "
+                            id="createRuleChecklistStable{{ i }}"
+                          >
+                          </ng-select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-12 ng-select-wrapper">
+                          <ng-select
+                            [items]="[
+                              { id: '1', name: 'Yes' | translate },
+                              { id: '2', name: 'No' | translate }
+                            ]"
+                            bindLabel="label"
+                            [placeholder]="'Tail bite' | translate"
+                            bindValue="id"
+                            [(ngModel)]="
+                              newAreaRule.typeSpecificFields.tailBite
+                            "
+                            id="createRuleTailBite{{ i }}"
+                          >
+                          </ng-select>
+                        </div>
+                      </div>
+                    </ng-container>
+                    <!-- Rule type 5 -->
+                    <ng-container *ngIf="selectedArea.type === 5">
+                      <div class="row">
+                        <div class="col-12 ng-select-wrapper">
+                          <ng-select
+                            [items]="[
+                              { id: 1, name: 'Monday' | translate },
+                              { id: 2, name: 'Tuesday' | translate },
+                              { id: 3, name: 'Wednesday' | translate },
+                              { id: 4, name: 'Thursday' | translate },
+                              { id: 5, name: 'Friday' | translate },
+                              { id: 6, name: 'Saturday' | translate },
+                              { id: 0, name: 'Sunday' | translate }
+                            ]"
+                            bindLabel="name"
+                            [placeholder]="'Day of week' | translate"
+                            bindValue="id"
+                            [(ngModel)]="
+                              newAreaRule.typeSpecificFields.dayOfWeek
+                            "
+                            id="createAreaDayOfWeek{{ i }}"
+                          >
+                          </ng-select>
+                        </div>
+                      </div>
+                    </ng-container>
+                  </ng-container>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          (click)="onCreateAreaRule()"
+          id="areaRuleCreateSaveBtn"
+          [disabled]="newAreaRules.areaRules.length === 0"
+        >
+          {{ 'Save' | translate }}
+        </button>
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+          id="areaRuleCreateSaveCancelBtn"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

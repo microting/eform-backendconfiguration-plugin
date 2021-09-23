@@ -34,6 +34,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 
         public bool Activated { get; set; }
 
-        public PropertyAreaPlanningStatusesEnum Status { get; set; }
+        public bool Status { get; set; }
     }
 }

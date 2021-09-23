@@ -108,7 +108,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             try
             {
                 foreach (var propertyAssignment in createModel.Assignments
-                    .Select(propertyAssignmentWorkerModel => new PropertyWorkers
+                    .Select(propertyAssignmentWorkerModel => new PropertyWorker
                 {
                     WorkerId = createModel.SiteId,
                     PropertyId = propertyAssignmentWorkerModel.PropertyId,
@@ -147,7 +147,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .ToList();
 
                 foreach (var propertyAssignment in assignmentsForCreate
-                    .Select(propertyAssignmentWorkerModel => new PropertyWorkers
+                    .Select(propertyAssignmentWorkerModel => new PropertyWorker
                     {
                         WorkerId = updateModel.SiteId,
                         PropertyId = propertyAssignmentWorkerModel,

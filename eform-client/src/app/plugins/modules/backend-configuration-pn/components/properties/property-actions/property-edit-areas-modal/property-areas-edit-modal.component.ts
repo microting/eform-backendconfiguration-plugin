@@ -29,12 +29,12 @@ export class PropertyAreasEditModalComponent implements OnInit {
 
   ngOnInit() {}
 
-  get areaPlanningStatuses() {
-    return PropertyAreaPlanningStatusesEnum;
+  getAreaPlanningStatus(area: PropertyAreaModel) {
+    return area.status ? PropertyAreaPlanningStatusesEnum[area.status] : 'OFF';
   }
 
   show(model: PropertyModel, propertyAreas: PropertyAreaModel[]) {
-    this.selectedProperty = { ...model };
+    this.selectedProperty = { ...model, languagesIds: [] };
     this.selectedPropertyAreas = [...propertyAreas];
     this.frame.show();
   }

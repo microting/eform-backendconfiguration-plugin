@@ -1,10 +1,16 @@
-import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
-import {PropertyAreaPlanningStatusesEnum} from '../../../enums';
+import {
+  Component,
+  EventEmitter,
+  OnInit,
+  Output,
+  ViewChild,
+} from '@angular/core';
+import { PropertyAreaPlanningStatusesEnum } from '../../../enums';
 import {
   PropertyAreaModel,
   PropertyAreasUpdateModel,
   PropertyModel,
-  PropertyUpdateModel
+  PropertyUpdateModel,
 } from '../../../models';
 
 @Component({
@@ -17,16 +23,16 @@ export class PropertyAreasViewModalComponent implements OnInit {
   selectedProperty: PropertyUpdateModel = new PropertyUpdateModel();
   selectedPropertyAreas: PropertyAreaModel[] = [];
 
-  get areaPlanningStatuses() {
-    return PropertyAreaPlanningStatusesEnum;
-  }
-
   constructor() {}
 
   ngOnInit() {}
 
+  getAreaPlanningStatus(area: PropertyAreaModel) {
+    return area.status ? PropertyAreaPlanningStatusesEnum[area.status] : 'OFF';
+  }
+
   show(model: PropertyModel, propertyAreas: PropertyAreaModel[]) {
-    this.selectedProperty = { ...model };
+    this.selectedProperty = { ...model, languagesIds: [] };
     this.selectedPropertyAreas = [...propertyAreas];
     this.frame.show();
   }

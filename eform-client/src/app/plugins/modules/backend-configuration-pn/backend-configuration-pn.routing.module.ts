@@ -31,6 +31,14 @@ export const routes: Routes = [
             (m) => m.PropertyWorkersModule
           ),
       },
+      {
+        path: 'area-rules',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/area-rules/area-rules.module').then(
+            (m) => m.AreaRulesModule
+          ),
+      },
     ],
   },
 ];
