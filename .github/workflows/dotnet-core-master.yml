@@ -1,0 +1,104 @@
+name: .NET Master
+
+on:
+  push:
+    branches: [ master, stable ]
+    paths-ignore:
+    - '**.md'
+    - '.github/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: main
+    - name: Upgrade Chrome browser
+      run: |
+        sudo apt-get update
+        sudo apt-get --only-upgrade install google-chrome-stable
+        google-chrome --version
+    - uses: getong/mariadb-action@v1.1
+      with:
+        host port: 3306 # Optional, default value is 3306. The port of host
+        container port: 3306 # Optional, default value is 3306. The port of container
+        character set server: 'utf8' # Optional, default value is 'utf8mb4'. The '--character-set-server' option for mysqld
+        collation server: 'utf8_general_ci' # Optional, default value is 'utf8mb4_general_ci'. The '--collation-server' option for mysqld
+        mariadb version: '10.4.10' # Optional, default value is "latest". The version of the MariaDB
+        mysql database: 'some_test' # Optional, default value is "test". The specified database which will be create
+        mysql root password: 'secretpassword' # Required if "mysql user" is empty, default is empty. The root superuser password
+        mysql user: 'developer' # Required if "mysql root password" is empty, default is empty. The superuser for the specified database. Can use secrets, too
+        mysql password: 'passwordtoo' # Required if "mysql user" exists. The password for the "mysql user"
+    - name: Sleep 15 seconds
+      run: sleep 15
+    - uses: getong/rabbitmq-action@v1.2
+      with:
+        rabbitmq version: '3.8.9-management'
+        host port: 5672
+        rabbitmq user: 'admin'
+        rabbitmq password: 'password'
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.100
+    - name: Use Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14.16.1'
+    - name: Extract branch name
+      id: extract_branch
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+    - name: 'Preparing Frontend checkout'
+      uses: actions/checkout@v2
+      with:
+        repository: microting/eform-angular-frontend
+        ref: ${{ steps.extract_branch.outputs.branch }}
+        path: eform-angular-frontend
+    - name: Install dependencies
+      run: dotnet restore main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3 | cut -d "v" -f 2)
+    - name: Build
+      run: dotnet build main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
+    - name: Unit Tests
+      run: dotnet test --no-restore -c Release -v n main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
+    - name: Copy dependencies
+      run: |
+        cp -av main/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
+        mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
+        cp -av main/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration
+        cd eform-angular-frontend/eform-client && ../../main/testinginstallpn.sh
+    - name: Build frontend
+      run: dotnet build eform-angular-frontend/eFormAPI/eFormAPI.sln
+    - name: NPM install
+      run: cd eform-angular-frontend/eform-client && npm install
+    - name: NPM start
+      run: cd eform-angular-frontend/eform-client && npm start > npm_log 2>&1 &
+    - name: Sleep 75 seconds
+      run: sleep 75
+    - name: Dotnet run
+      run: dotnet run --project eform-angular-frontend/eFormAPI/eFormAPI.Web/eFormAPI.Web.csproj > dotnet_log 2>&1 &
+    - name: Sleep 75 seconds
+      run: sleep 75
+    - name: Configuration testing
+      run: cd eform-angular-frontend/eform-client && npm run testheadless
+    - name: Plugin testing
+      run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin
+    - name: The job has failed
+      if: ${{ failure() }}
+      run: |
+        cat dotnet_log
+        cat eform-angular-frontend/eform-client/npm_log
+        mysql -u root --password=secretpassword -e "show databases" -h localhost
+    - name: Notify slack fail
+      if: ${{ failure() }}
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        message_id: ${{ steps.slack.outputs.message_id }}
+        channel_id: C02EQEMCB08
+        status: FAILED
+        color: danger
