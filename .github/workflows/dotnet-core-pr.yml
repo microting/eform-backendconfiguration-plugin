@@ -84,8 +84,6 @@ jobs:
       run: sleep 75
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
-    - name: Plugin testing
-      run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin
     - name: The job has failed
       if: ${{ failure() }}
       run: |
