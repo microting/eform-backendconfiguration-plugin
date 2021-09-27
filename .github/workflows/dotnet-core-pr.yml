@@ -68,7 +68,7 @@ jobs:
       run: |
         cp -av main/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
         mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
-        cp -av main/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration
+        cp -av main/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn
         cd eform-angular-frontend/eform-client && ../../main/testinginstallpn.sh
     - name: Build frontend
       run: dotnet build eform-angular-frontend/eFormAPI/eFormAPI.sln
