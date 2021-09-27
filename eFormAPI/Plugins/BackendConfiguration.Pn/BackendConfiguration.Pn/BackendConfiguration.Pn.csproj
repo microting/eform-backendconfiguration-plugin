@@ -5,11 +5,11 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <OutputPath>../../../eFormAPI.Web/Plugins/BackendConfiguration</OutputPath>
+      <OutputPath>../../../eFormAPI.Web/Plugins/BackendConfiguration.Pn</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <OutputPath>../../../eFormAPI.Web/Plugins/BackendConfiguration</OutputPath>
+      <OutputPath>../../../eFormAPI.Web/Plugins/BackendConfiguration.Pn</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup>
