@@ -19,7 +19,7 @@ rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Pag
 rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
 
 # Test files cp
-cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Tests/backendconfiguration-settings Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backendconfiguration-settings
-cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Tests/backendconfiguration-general Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backendconfiguration-general
+cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-settings Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
+cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-general Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Page\ objects/BackendConfiguration Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2.conf.js Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
