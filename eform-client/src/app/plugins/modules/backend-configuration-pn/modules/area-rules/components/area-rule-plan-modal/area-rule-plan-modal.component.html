@@ -7,7 +7,7 @@
   <div class="modal-dialog modal-md">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>{{ 'New rule' | translate }}</h3>
+        <h3>{{ 'Plan rule' | translate }}</h3>
         <button class="close" data-dismiss="modal" (click)="frame.hide()">
           <span>×</span>
         </button>
@@ -17,20 +17,17 @@
           <!-- Show all translations for rule -->
           <div class="row">
             <div class="col-md-12">
-              <div class="form-check form-switch">
+              <div class="mat-checkbox">
                 <input
-                  mdbCheckbox
-                  class="form-check-input"
                   type="checkbox"
                   id="planAreaRuleStatusToggle"
                   [value]="selectedAreaRulePlanning.status"
                   [checked]="selectedAreaRulePlanning.status"
+                  [(ngModel)]="selectedAreaRulePlanning.status"
                 />
-                <label
-                  class="form-check-label"
-                  for="planAreaRuleStatusToggle"
-                  >{{ selectedAreaRule.translatedName }}</label
-                >
+                <label for="planAreaRuleStatusToggle">{{
+                  selectedAreaRule.translatedName
+                }}</label>
               </div>
             </div>
           </div>
@@ -63,20 +60,21 @@
             <ng-container *ngIf="selectedArea.type !== 4">
               <div class="row">
                 <div class="col-md-12">
-                  <div class="form-check form-switch">
+                  <div class="mat-checkbox">
                     <input
-                      mdbCheckbox
-                      class="form-check-input"
                       type="checkbox"
                       id="planAreaRuleNotificationsToggle"
                       [value]="selectedAreaRulePlanning.sendNotifications"
                       [checked]="selectedAreaRulePlanning.sendNotifications"
+                      [(ngModel)]="selectedAreaRulePlanning.sendNotifications"
+                      (change)="
+                        selectedAreaRulePlanning.sendNotifications =
+                          $event.target.checked
+                      "
                     />
-                    <label
-                      class="form-check-label"
-                      for="planAreaRuleNotificationsToggle"
-                      >{{ 'Notifications on/off' | translate }}</label
-                    >
+                    <label for="planAreaRuleNotificationsToggle">{{
+                      'Notifications on/off' | translate
+                    }}</label>
                   </div>
                 </div>
               </div>
@@ -145,10 +143,10 @@
                 <div class="col-12 ng-select-wrapper">
                   <ng-select
                     [items]="[
-                      { id: '1', name: 'Open' | translate },
-                      { id: '2', name: 'Closed' | translate }
+                      { id: 1, name: 'Open' | translate },
+                      { id: 2, name: 'Closed' | translate }
                     ]"
-                    bindLabel="label"
+                    bindLabel="name"
                     [placeholder]="'Type' | translate"
                     bindValue="id"
                     [ngModel]="selectedAreaRulePlanning.typeSpecificFields.type"
@@ -162,10 +160,10 @@
                 <div class="col-12 ng-select-wrapper">
                   <ng-select
                     [items]="[
-                      { id: '1', name: 'Yes' | translate },
-                      { id: '2', name: 'No' | translate }
+                      { id: 1, name: 'Yes' | translate },
+                      { id: 2, name: 'No' | translate }
                     ]"
-                    bindLabel="label"
+                    bindLabel="name"
                     [placeholder]="'Alarm' | translate"
                     bindValue="id"
                     [ngModel]="
@@ -222,7 +220,7 @@
                   "
                 >
                   <td class="align-middle">{{ worker.siteId }}</td>
-                  <td class="align-middle">{{ worker.fullName }}</td>
+                  <td class="align-middle">{{ worker.siteName }}</td>
                   <td class="align-middle">
                     <div class="mat-checkbox">
                       <input

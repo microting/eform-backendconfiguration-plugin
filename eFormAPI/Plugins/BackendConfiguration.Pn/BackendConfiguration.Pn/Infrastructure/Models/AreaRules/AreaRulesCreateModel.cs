@@ -28,7 +28,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
     public class AreaRulesCreateModel
     {
-        public int AreaId { get; set; }
+        public int PropertyAreaId { get; set; }
 
         public List<AreaRuleCreateModel> AreaRules { get; set; }
             = new();

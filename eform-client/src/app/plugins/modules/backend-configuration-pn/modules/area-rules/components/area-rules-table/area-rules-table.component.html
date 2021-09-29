@@ -70,7 +70,10 @@
         </ng-container>
         <ng-container *ngIf="selectedArea.type === 5">
           <td id="ruleWeekDay">
-            {{ rule.typeSpecificFields.dayOfWeekName }}
+            {{ getWeekDayName(rule) | translate }}
+          </td>
+          <td id="ruleEformNameT5">
+            {{ rule.eformName }}
           </td>
         </ng-container>
 

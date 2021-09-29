@@ -33,8 +33,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public string EformName { get; set; }
 
-        public int EformId { get; set; }
-
         public bool IsDefault { get; set; }
         
         public List<CommonDictionaryModel> TranslatedNames { get; set; }

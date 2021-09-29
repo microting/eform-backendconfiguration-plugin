@@ -35,6 +35,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
         Task<OperationResult> Update(PropertyAreasUpdateModel updateModel);
 
-        Task<OperationDataResult<AreaModel>> ReadArea(int areaId, int selectedPropertyId);
+        Task<OperationDataResult<AreaModel>> ReadArea(int propertyAreaId);
     }
 }

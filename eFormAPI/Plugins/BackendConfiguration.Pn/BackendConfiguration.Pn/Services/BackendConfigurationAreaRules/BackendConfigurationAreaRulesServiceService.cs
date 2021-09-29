@@ -67,10 +67,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
         }
 
-        public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int areaId)
+        public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId)
         {
             try
             {
+                var areaId = await _backendConfigurationPnDbContext.AreaProperties
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == propertyAreaId)
+                    .Select(x => x.AreaId)
+                    .FirstAsync();
+
                 var currentUserLanguage = await _userService.GetCurrentUserLanguage();
                 var areaRules = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -122,7 +128,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                 //Description = languages.First(z => z.Id == y.LanguageId).Name,
                             }).ToList(),
                         IsDefault = BackendConfigurationSeedAreas.LastIndexAreaRules >= x.Id,
-                        EformId = (int)x.EformId,
                         TypeSpecificFields = new { x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, },
                     })
                     .FirstOrDefaultAsync();
@@ -255,6 +260,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         {
             try
             {
+                var areaId = await _backendConfigurationPnDbContext.AreaProperties
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == createModel.PropertyAreaId)
+                    .Select(x => x.AreaId)
+                    .FirstAsync();
+
                 var core = await _coreHelper.GetCore();
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
 
@@ -262,7 +273,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 {
                     var areaRule = new AreaRule
                     {
-                        AreaId = createModel.AreaId,
+                        AreaId = areaId,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
                         Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm,
@@ -282,11 +293,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             .Where(x => x.LanguageId == language.Id)
                             .Select(x => x.Text)
                             .FirstOrDefaultAsync();
-                        areaRule.FolderId = _backendConfigurationPnDbContext.ProperyAreaFolders
+                        areaRule.FolderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
                             .Include(x => x.AreaProperty)
                             .Where(x => x.AreaProperty.AreaId == areaRule.AreaId)
                             .Select(x => x.FolderId)
-                            .First();
+                            .FirstOrDefaultAsync();
+                        areaRule.FolderName = await sdkDbContext.FolderTranslations
+                            .Where(x => x.FolderId == areaRule.FolderId)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.LanguageId == language.Id)
+                            .Select(x => x.Name)
+                            .FirstOrDefaultAsync();
                     }
                     
                     await areaRule.Create(_backendConfigurationPnDbContext);

@@ -137,8 +137,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 var assignments = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyId == updateModel.PropertyId)
-                    .Include(x => x.Area)
-                    .AsNoTracking()
                     .ToListAsync();
 
                 var assignmentsForCreate = updateModel.Areas
@@ -147,10 +145,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 var assignmentsForUpdate = updateModel.Areas
                     .Where(x => x.Id.HasValue)
+                    .Where(x => assignments.First(y => y.Id == x.Id).Checked != x.Activated)
                     .ToList();
 
                 var assignmentsForDelete = assignments
-                    .Where(x => !assignmentsForUpdate.Exists(y => x.Id != y.Id))
+                    .Where(x => !updateModel.Areas.Where(y => y.Id.HasValue).Select(y => y.Id).Contains(x.Id))
                     .ToList();
 
 
@@ -351,28 +350,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             }
         }
 
-        public async Task<OperationDataResult<AreaModel>> ReadArea(int areaId, int selectedPropertyId)
+        public async Task<OperationDataResult<AreaModel>> ReadArea(int propertyAreaId)
         {
             try
             {
-                var area = await _backendConfigurationPnDbContext.Areas
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Id == areaId)
-                    .FirstOrDefaultAsync();
-
                 var areaProperties = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.AreaId == areaId)
-                    .Where(x => x.PropertyId == selectedPropertyId)
+                    .Where(x => x.Id == propertyAreaId)
                     .Include(x => x.Property)
                     .ThenInclude(x => x.SelectedLanguages)
                     .FirstOrDefaultAsync();
 
+                var area = await _backendConfigurationPnDbContext.Areas
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == areaProperties.AreaId)
+                    .FirstOrDefaultAsync();
+
+
                 var workers = await _backendConfigurationPnDbContext.PropertyWorkers
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.PropertyId == selectedPropertyId)
+                    .Where(x => x.PropertyId == areaProperties.PropertyId)
                     .Select(x => x.WorkerId)
                     .ToListAsync();
+
+                if (!workers.Any())
+                {
+                    return new OperationDataResult<AreaModel>(false, _backendConfigurationLocalizationService.GetString("NotFoundPropertyWorkerAssignments"));
+                }
 
                 var core = await _coreHelper.GetCore();
                 var sdkDbContex = core.DbContextHelper.GetDbContext();

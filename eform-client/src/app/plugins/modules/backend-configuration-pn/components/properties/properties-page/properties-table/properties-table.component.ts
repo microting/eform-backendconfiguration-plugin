@@ -10,6 +10,7 @@ import { Paged, TableHeaderElementModel } from 'src/app/common/models';
 import { BackendConfigurationPnClaims } from '../../../../enums';
 import { PropertyModel } from '../../../../models/properties';
 import { applicationLanguages } from 'src/app/common/const';
+import * as R from 'ramda';
 
 @Component({
   selector: 'app-properties-table',
@@ -71,5 +72,13 @@ export class PropertiesTableComponent implements OnInit {
 
   getLanguageNameById(languageId: number): string {
     return applicationLanguages.find((x) => x.id === languageId).text;
+  }
+
+  getLanguages(property: PropertyModel): string {
+    let languages = [];
+    for (const language of property.languages) {
+      languages = [...languages, this.getLanguageNameById(language.id)];
+    }
+    return R.join(' | ', languages);
   }
 }

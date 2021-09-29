@@ -15,6 +15,7 @@ import {
   AreaRuleSimpleModel,
   AreaRuleUpdateModel,
   AreaModel,
+  AreaRuleT5Model,
 } from '../../../../models';
 import { BackendConfigurationPnAreasService } from '../../../../services/backend-configuration-pn-areas.service';
 
@@ -35,9 +36,8 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   @ViewChild('planAreaRuleModal', { static: false })
   planAreaRuleModal: AreaRulePlanModalComponent;
 
-  areaRulesModel: AreaRuleSimpleModel[] = [];
   selectedArea: AreaModel = new AreaModel();
-  selectedAreaId: number;
+  propertyAreaId: number;
   selectedPropertyId: number;
 
   getAreaRulesSub$: Subscription;
@@ -57,36 +57,39 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.route.params.subscribe((params) => {
-      const selectedAreaId = +params['areaId'];
+      this.propertyAreaId = +params['propertyAreaId'];
       this.selectedPropertyId = +params['propertyId'];
-      this.selectedAreaId = selectedAreaId;
-      this.getAreaRules(selectedAreaId);
-      this.getArea(selectedAreaId, this.selectedPropertyId);
+      this.getAreaRules(this.propertyAreaId);
+      this.getArea(this.propertyAreaId);
     });
   }
 
-  getArea(areaId: number, selectedPropertyId: number) {
+  getArea(propertyAreaId: number) {
     this.getAreaSub$ = this.areasService
-      .getArea(areaId, selectedPropertyId)
-      .subscribe((data) => {
-        this.selectedArea = data.model;
+      .getArea(propertyAreaId)
+      .subscribe((operation) => {
+        if (operation && operation.success) {
+          this.selectedArea = operation.model;
+        }
       });
   }
 
-  getAreaRules(areaId: number) {
+  getAreaRules(propertyAreaId: number) {
     this.getAreaRulesSub$ = this.areasService
-      .getAreaRules(areaId)
-      .subscribe((data) => {
-        this.areaRules = data.model;
+      .getAreaRules(propertyAreaId)
+      .subscribe((operation) => {
+        if (operation && operation.success) {
+          this.areaRules = operation.model;
+        }
       });
   }
 
   showPlanAreaRuleModal(rule: AreaRuleSimpleModel) {
-    if (rule.planningId) {
+    if (rule.id) {
       this.getAreaRulePlanningSub$ = this.areasService
         .getAreaRulePlanning(rule.id)
-        .subscribe((data) => {
-          this.planAreaRuleModal.show(rule, data.model);
+        .subscribe((operation) => {
+          this.planAreaRuleModal.show(rule, operation.model);
         });
     } else {
       this.planAreaRuleModal.show(rule);
@@ -96,8 +99,10 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   showEditAreaRuleModal(rule: AreaRuleSimpleModel) {
     this.getSingleAreaRuleSub$ = this.areasService
       .getSingleAreaRule(rule.id, this.selectedPropertyId)
-      .subscribe((data) => {
-        this.editAreaRuleModal.show(data.model);
+      .subscribe((operation) => {
+        if (operation && operation.success) {
+          this.editAreaRuleModal.show(operation.model);
+        }
       });
   }
 
@@ -111,10 +116,10 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
 
   onCreateAreaRule(model: AreaRulesCreateModel) {
     this.createAreaRuleSub$ = this.areasService
-      .createAreaRules({ ...model, areaId: this.selectedAreaId })
+      .createAreaRules({ ...model, propertyAreaId: this.propertyAreaId })
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.selectedAreaId);
+          this.getAreaRules(this.propertyAreaId);
           this.createAreaRuleModal.hide();
         }
       });
@@ -125,7 +130,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .updateAreaRule(model)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.selectedAreaId);
+          this.getAreaRules(this.propertyAreaId);
           this.editAreaRuleModal.hide();
         }
       });
@@ -136,7 +141,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .deleteAreaRule(areaRuleId)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.selectedAreaId);
+          this.getAreaRules(this.propertyAreaId);
           this.deleteAreaRuleModal.hide();
         }
       });
@@ -147,7 +152,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .updateAreaRulePlanning(rulePlanning)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.selectedAreaId);
+          this.getAreaRules(this.propertyAreaId);
           this.planAreaRuleModal.hide();
         }
       });

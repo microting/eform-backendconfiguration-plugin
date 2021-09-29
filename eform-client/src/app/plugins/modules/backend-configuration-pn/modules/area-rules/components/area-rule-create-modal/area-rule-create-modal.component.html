@@ -123,10 +123,10 @@
                         <div class="col-12 ng-select-wrapper">
                           <ng-select
                             [items]="[
-                              { id: '1', name: 'Open' | translate },
-                              { id: '2', name: 'Closed' | translate }
+                              { id: 1, name: 'Open' | translate },
+                              { id: 2, name: 'Closed' | translate }
                             ]"
-                            bindLabel="label"
+                            bindLabel="name"
                             [placeholder]="'Type' | translate"
                             bindValue="id"
                             [(ngModel)]="newAreaRule.typeSpecificFields.type"
@@ -139,10 +139,10 @@
                         <div class="col-12 ng-select-wrapper">
                           <ng-select
                             [items]="[
-                              { id: '1', name: 'Yes' | translate },
-                              { id: '2', name: 'No' | translate }
+                              { id: 1, name: 'Yes' | translate },
+                              { id: 2, name: 'No' | translate }
                             ]"
-                            bindLabel="label"
+                            bindLabel="name"
                             [placeholder]="'Alarm' | translate"
                             bindValue="id"
                             [(ngModel)]="newAreaRule.typeSpecificFields.alarm"
@@ -158,10 +158,10 @@
                         <div class="col-12 ng-select-wrapper">
                           <ng-select
                             [items]="[
-                              { id: '1', name: 'Yes' | translate },
-                              { id: '2', name: 'No' | translate }
+                              { id: true, name: 'Yes' | translate },
+                              { id: false, name: 'No' | translate }
                             ]"
-                            bindLabel="label"
+                            bindLabel="name"
                             [placeholder]="'Checklist stable' | translate"
                             bindValue="id"
                             [(ngModel)]="
@@ -176,10 +176,10 @@
                         <div class="col-12 ng-select-wrapper">
                           <ng-select
                             [items]="[
-                              { id: '1', name: 'Yes' | translate },
-                              { id: '2', name: 'No' | translate }
+                              { id: true, name: 'Yes' | translate },
+                              { id: false, name: 'No' | translate }
                             ]"
-                            bindLabel="label"
+                            bindLabel="name"
                             [placeholder]="'Tail bite' | translate"
                             bindValue="id"
                             [(ngModel)]="
