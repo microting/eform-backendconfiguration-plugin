@@ -91,6 +91,15 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
+  updateAssignPropertiesToWorker(
+    model: PropertyAssignWorkersModel
+  ): Observable<OperationResult> {
+    return this.apiBaseService.put(
+      BackendConfigurationPnPropertiesMethods.PropertiesAssignment,
+      model
+    );
+  }
+
   getPropertiesAssignments(): Observable<
     OperationDataResult<PropertyAssignWorkersModel[]>
   > {

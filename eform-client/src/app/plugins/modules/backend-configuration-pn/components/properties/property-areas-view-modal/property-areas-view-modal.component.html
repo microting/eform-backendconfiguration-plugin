@@ -1,7 +1,7 @@
 <div
   [config]="{ ignoreBackdropClick: true }"
   mdbModal
-  class="modal fade"
+  class="modal fade overflow-auto"
   #frame="mdbModal"
 >
   <div class="modal-dialog modal-lg">
@@ -17,7 +17,7 @@
           <table class="table table-xs table-bordered text-center z-depth-1">
             <thead>
               <tr>
-                <th>ID</th>
+                <!--<th>ID</th>-->
                 <th>{{ 'Area' | translate }}</th>
                 <th>{{ 'Description' | translate }}</th>
                 <th>{{ 'Status' | translate }}</th>
@@ -27,7 +27,7 @@
             <tbody id="propertyAreasModalTableBody">
               <ng-container *ngFor="let area of selectedPropertyAreas">
                 <tr *ngIf="area.activated">
-                  <td class="align-middle">{{ area.id }}</td>
+                  <!-- <td class="align-middle">{{ area.id }}</td> -->
                   <td class="align-middle">{{ area.name }}</td>
                   <td class="align-middle">
                     <a [href]="area.description" target="_blank">{{

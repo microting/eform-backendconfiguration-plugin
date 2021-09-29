@@ -5,7 +5,7 @@ import { AreaRuleT2Model } from './area-rule-t2.model';
 import { AreaRuleT3Model } from './area-rule-t3.model';
 
 export class AreaRulesCreateModel {
-  areaId: number;
+  propertyAreaId: number;
   areaRules: AreaRuleCreateModel[] = [];
 }
 

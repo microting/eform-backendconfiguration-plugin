@@ -74,7 +74,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
       .updateSingleDeviceUser(this.selectedDeviceUser)
       .subscribe((operation) => {
         if (operation && operation.success) {
-          if (this.assignments && this.assignments.length > 0) {
+          if (this.assignments) {
             this.assignWorkerToProperties();
           } else {
             this.userUpdated.emit();
@@ -86,7 +86,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
 
   assignWorkerToProperties() {
     this.deviceUserAssign$ = this.propertiesService
-      .assignPropertiesToWorker({
+      .updateAssignPropertiesToWorker({
         siteId: this.selectedDeviceUser.id,
         assignments: this.assignments,
       })

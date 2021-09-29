@@ -26,9 +26,7 @@
           {{ property.address }}
         </td>
         <td id="propertyLanguages">
-          <ng-container *ngFor="let language of property.languages">
-            {{ getLanguageNameById(language.id) }} | <span></span>
-          </ng-container>
+          {{ getLanguages(property) }}
         </td>
         <td>
           <div class="d-flex flex-row justify-content-center">

@@ -53,7 +53,14 @@ export class AreaRulePlanModalComponent implements OnInit {
   show(rule: AreaRuleSimpleModel, planning?: AreaRulePlanningModel) {
     this.selectedAreaRulePlanning = planning
       ? planning
-      : new AreaRulePlanningModel();
+      : {
+          ...new AreaRulePlanningModel(),
+          typeSpecificFields: this.generateRulePlanningTypeSpecificFields(),
+          ruleId: rule.id,
+        };
+    if (!planning) {
+      this.generateRulePlanningTypeSpecificFields();
+    }
     this.selectedAreaRule = rule;
     this.frame.show();
   }
@@ -83,14 +90,10 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   getAssignmentBySiteId(siteId: number) {
-    return (
-      this.selectedAreaRulePlanning.assignedSites.find(
-        (x) => x.siteId === siteId
-      ) ?? {
-        siteId,
-        isChecked: false,
-      }
+    const assignedSite = this.selectedAreaRulePlanning.assignedSites.find(
+      (x) => x.siteId === siteId
     );
+    return assignedSite ? assignedSite.checked : false;
   }
 
   generateRulePlanningTypeSpecificFields():

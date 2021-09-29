@@ -11,7 +11,11 @@ import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
 } from 'src/app/plugins/modules/backend-configuration-pn/enums';
-import { AreaModel, AreaRuleSimpleModel } from '../../../../models';
+import {
+  AreaModel,
+  AreaRuleSimpleModel,
+  AreaRuleT5Model,
+} from '../../../../models';
 
 @Component({
   selector: 'app-area-rules-table',
@@ -22,12 +26,12 @@ import { AreaModel, AreaRuleSimpleModel } from '../../../../models';
 export class AreaRulesTableComponent implements OnInit {
   @Input() areaRules: AreaRuleSimpleModel[] = [];
   @Input() selectedArea: AreaModel = new AreaModel();
-  @Output() showPlanAreaRuleModal: EventEmitter<AreaRuleSimpleModel> =
-    new EventEmitter();
-  @Output() showEditRuleModal: EventEmitter<AreaRuleSimpleModel> =
-    new EventEmitter();
-  @Output() showDeleteRuleModal: EventEmitter<AreaRuleSimpleModel> =
-    new EventEmitter();
+  @Output()
+  showPlanAreaRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
+  @Output()
+  showEditRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
+  @Output()
+  showDeleteRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
 
   get areaRuleAlarms() {
     return AreaRuleT2AlarmsEnum;
@@ -93,5 +97,21 @@ export class AreaRulesTableComponent implements OnInit {
 
   onShowDeleteRuleModal(rule: AreaRuleSimpleModel) {
     this.showDeleteRuleModal.emit(rule);
+  }
+
+  getWeekDayName(areaRule: AreaRuleSimpleModel): string {
+    const weekNames = [
+      { id: 1, name: 'Monday' },
+      { id: 2, name: 'Tuesday' },
+      { id: 3, name: 'Wednesday' },
+      { id: 4, name: 'Thursday' },
+      { id: 5, name: 'Friday' },
+      { id: 6, name: 'Saturday' },
+      { id: 0, name: 'Sunday' },
+    ];
+    return weekNames.find((y) => {
+      areaRule.typeSpecificFields = areaRule.typeSpecificFields as AreaRuleT5Model;
+      return y.id === areaRule.typeSpecificFields.dayOfWeek;
+    }).name;
   }
 }

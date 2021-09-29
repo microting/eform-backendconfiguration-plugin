@@ -24,31 +24,27 @@ export let BackendConfigurationPnAreasMethods = {
 export class BackendConfigurationPnAreasService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getArea(
-    areaId: number,
-    selectedPropertyId: number
-  ): Observable<OperationDataResult<AreaModel>> {
+  getArea(propertyAreaId: number): Observable<OperationDataResult<AreaModel>> {
     return this.apiBaseService.get(BackendConfigurationPnAreasMethods.Area, {
-      areaId,
-      selectedPropertyId,
+      propertyAreaId,
     });
   }
 
   getAreaRules(
-    areaId: number
+    propertyAreaId: number
   ): Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRulesIndex,
-      { areaId }
+      { propertyAreaId }
     );
   }
 
   getAreaRulePlanning(
-    areaId: number
+    ruleId: number
   ): Observable<OperationDataResult<AreaRulePlanningModel>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRulePlanning,
-      { areaId }
+      { ruleId }
     );
   }
 
