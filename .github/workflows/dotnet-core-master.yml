@@ -70,7 +70,6 @@ jobs:
         cp -av main/eform-client/e2e/Tests/backend-configuration-settings eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
         cp -av main/eform-client/e2e/Tests/backend-configuration-general eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
         cp -av main/eform-client/e2e/Page\ objects/BackendConfiguration eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
-        cp -av main/eform-client/e2e/Assets eform-angular-frontend/eform-client/e2e/Assets
         cp -av main/eform-client/wdio-headless-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-headless-plugin-step2.conf.js
         cp -av main/eform-client/wdio-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
         mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
