@@ -69,7 +69,7 @@ jobs:
     - name: Build
       run: dotnet build main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
     - name: Build ItemsPlanning
-      run: dotnet build eeform-angular-items-planning-plugin/eFormAPI/Plugins/ItemsPlanning.Pn/ItemsPlanning.Pn.sln
+      run: dotnet build eform-angular-items-planning-plugin/eFormAPI/Plugins/ItemsPlanning.Pn/ItemsPlanning.Pn.sln
     - name: Unit Tests
       run: dotnet test --no-restore -c Release -v n main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
     - name: Copy dependencies
