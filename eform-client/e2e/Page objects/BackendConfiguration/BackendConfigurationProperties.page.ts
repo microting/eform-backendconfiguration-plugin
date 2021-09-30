@@ -369,6 +369,51 @@ export class PropertyRowObject {
       await backendConfigurationPropertiesPage.propertyCreateBtn()
     ).waitForClickable({ timeout: 40000 });
   }
+
+  public async editBindWithAreas(bindAreas?: number[], clickCancel = false) {
+    await this.openBindPropertyWithAreasModal(bindAreas);
+    await this.closeBindPropertyWithAreasModal(clickCancel);
+  }
+
+  public async openBindPropertyWithAreasModal(bindAreas?: number[]) {
+    await this.editPropertyAreasBtn.click();
+    await (
+      await backendConfigurationPropertiesPage.editPropertyAreasViewCloseBtn()
+    ).waitForClickable({ timeout: 40000 });
+    if (bindAreas) {
+      for (let i = 0; i < bindAreas.length; i++) {
+        await (
+          await $(`#checkboxAssignmentEdit${bindAreas[i]}`).$('..')
+        ).click();
+      }
+    }
+  }
+
+  public async closeBindPropertyWithAreasModal(clickCancel = false) {
+    if (clickCancel) {
+      await (
+        await backendConfigurationPropertiesPage.editPropertyAreasViewCloseBtn()
+      ).click();
+    } else {
+      await (
+        await backendConfigurationPropertiesPage.editPropertyAreasViewSaveBtn()
+      ).click();
+    }
+    await (
+      await backendConfigurationPropertiesPage.propertyCreateBtn()
+    ).waitForClickable({ timeout: 40000 });
+  }
+
+  public async getBindAreas() {
+    await this.openBindPropertyWithAreasModal();
+    const checkboxes = await $$(`[id^="checkboxAssignmentEdit"]`);
+    let mas = [];
+    for (let i = 0; i < checkboxes.length; i++) {
+      mas = [...mas, !!(await (await checkboxes[i]).getValue())];
+    }
+    await this.closeBindPropertyWithAreasModal(true);
+    return mas;
+  }
 }
 
 export class PropertyCreateUpdate {
