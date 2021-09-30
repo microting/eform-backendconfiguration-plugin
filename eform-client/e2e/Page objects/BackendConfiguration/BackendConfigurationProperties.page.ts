@@ -111,7 +111,7 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async checkboxEditPropertySelectLanguage(languageId: number) {
     const ele = await $(`#checkboxEditPropertySelectLanguage${languageId}`);
-    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
@@ -301,6 +301,68 @@ export class PropertyRowObject {
     } else {
       await (
         await backendConfigurationPropertiesPage.propertyDeleteDeleteBtn()
+      ).click();
+    }
+    await (
+      await backendConfigurationPropertiesPage.propertyCreateBtn()
+    ).waitForClickable({ timeout: 40000 });
+  }
+
+  public async edit(property: PropertyCreateUpdate, clickCancel = false) {
+    await this.openEditModal(property);
+    await this.closeEditModal(clickCancel);
+  }
+
+  public async openEditModal(property: PropertyCreateUpdate) {
+    await this.editPropertyBtn.click();
+    await (
+      await backendConfigurationPropertiesPage.propertyEditSaveCancelBtn()
+    ).waitForClickable({ timeout: 40000 });
+    if (property) {
+      if (property.name) {
+        await (
+          await backendConfigurationPropertiesPage.editPropertyName()
+        ).setValue(property.name);
+      }
+      if (property.chrNumber) {
+        await (
+          await backendConfigurationPropertiesPage.editCHRNumber()
+        ).setValue(property.chrNumber);
+      }
+      if (property.address) {
+        await (
+          await backendConfigurationPropertiesPage.editPropertyAddress()
+        ).setValue(property.address);
+      }
+      if (property.selectedLanguages) {
+        for (let i = 0; i < property.selectedLanguages.length; i++) {
+          let languageId = 0;
+          if (property.selectedLanguages[i].languageId) {
+            languageId = property.selectedLanguages[i].languageId;
+          } else {
+            languageId = applicationLanguages.find(
+              (x) => x.text === property.selectedLanguages[i].languageName
+            ).id;
+          }
+          const checkboxForClick = await (
+            await backendConfigurationPropertiesPage.checkboxEditPropertySelectLanguage(
+              languageId
+            )
+          ).$('..');
+          await checkboxForClick.click();
+        }
+      }
+    }
+  }
+
+  public async closeEditModal(clickCancel = false) {
+    if (clickCancel) {
+      await (
+        await backendConfigurationPropertiesPage.propertyEditSaveCancelBtn()
+      ).click();
+    } else {
+      await (
+        await backendConfigurationPropertiesPage.propertyEditSaveBtn()
       ).click();
     }
     await (
