@@ -211,7 +211,7 @@ namespace BackendConfiguration.Pn
                         new()
                         {
                              LocaleName = LocaleNames.Danish,
-                             Name = "",//todo
+                             Name = "Backend Konfiguration",
                              Language = LanguageNames.Danish,
                         },
                         new()
@@ -253,7 +253,7 @@ namespace BackendConfiguration.Pn
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
-                                        Name = "",//todo
+                                        Name = "Ejendomme",
                                         Language = LanguageNames.Danish,
                                     },
                                     new()
@@ -275,7 +275,7 @@ namespace BackendConfiguration.Pn
                                 new()
                                 {
                                     LocaleName = LocaleNames.German,
-                                    Name = "",//todo
+                                    Name = "Ejendomme",
                                     Language = LanguageNames.German,
                                 },
                                 new()
@@ -322,7 +322,7 @@ namespace BackendConfiguration.Pn
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
-                                        Name = "",//todo
+                                        Name = "Ejendom arbejdere",
                                         Language = LanguageNames.Danish,
                                     },
                                     new()
@@ -350,7 +350,7 @@ namespace BackendConfiguration.Pn
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
-                                    Name = "",//todo
+                                    Name = "Ejendom arbejdere",
                                     Language = LanguageNames.Danish,
                                 },
                                 new()
@@ -392,7 +392,7 @@ namespace BackendConfiguration.Pn
                     },
                     new()
                     {
-                        Name = localizationService?.GetString("Workers"),
+                        Name = localizationService?.GetString("Property workers"),
                         E2EId = "backend-configuration-workers",
                         Link = "/plugins/backend-configuration/workers",
                         Guards = new List<string>(),
