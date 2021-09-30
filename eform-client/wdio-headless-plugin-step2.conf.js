@@ -12,6 +12,7 @@ exports.config = {
     //
     specs: [
       'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
+      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.create.spec.ts'
     ],
     suites: {
         settings: [

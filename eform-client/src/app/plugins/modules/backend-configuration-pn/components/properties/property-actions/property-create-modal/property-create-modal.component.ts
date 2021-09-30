@@ -16,8 +16,8 @@ import { PropertyCreateModel } from '../../../../models';
 })
 export class PropertyCreateModalComponent implements OnInit {
   @ViewChild('frame', { static: false }) frame;
-  @Output() propertyCreate: EventEmitter<PropertyCreateModel> =
-    new EventEmitter<PropertyCreateModel>();
+  @Output()
+  propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();
   newProperty: PropertyCreateModel = new PropertyCreateModel();
   selectedLanguages: { id: number; checked: boolean }[] = [];
 
@@ -34,8 +34,9 @@ export class PropertyCreateModalComponent implements OnInit {
   }
 
   hide() {
-    this.newProperty = new PropertyCreateModel();
     this.frame.hide();
+    this.newProperty = new PropertyCreateModel();
+    this.selectedLanguages = [];
   }
 
   onCreateProperty() {

@@ -40,8 +40,9 @@ export class PropertyEditModalComponent implements OnInit {
   }
 
   hide() {
-    this.selectedProperty = new PropertyUpdateModel();
     this.frame.hide();
+    this.selectedProperty = new PropertyUpdateModel();
+    this.selectedLanguages = [];
   }
 
   onUpdateProperty() {
