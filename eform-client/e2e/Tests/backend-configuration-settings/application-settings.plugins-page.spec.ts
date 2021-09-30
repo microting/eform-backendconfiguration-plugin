@@ -24,9 +24,9 @@ describe('Application settings page - site header section', function () {
       itemsPlanningPlugin,
       'Items Planning plugin not found or not load'
     ).not.equal(undefined);
-    expect(itemsPlanningPlugin.id).equal(2);
-    expect(itemsPlanningPlugin.name).equal('Microting Items Planning Plugin');
-    expect(itemsPlanningPlugin.version).equal('1.0.0.0');
+    expect(itemsPlanningPlugin.id, 'id is not equal').equal(2);
+    expect(itemsPlanningPlugin.name, 'name is not equal').equal('Microting Items Planning Plugin');
+    expect(itemsPlanningPlugin.version, 'version is not equal').equal('1.0.0.0');
     expect(itemsPlanningPlugin.status, 'status is not equal').eq(false);
   });
 
