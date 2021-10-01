@@ -55,6 +55,12 @@ jobs:
         repository: microting/eform-angular-frontend
         ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-frontend
+    - name: 'Preparing ItemsPlanning checkout'
+      uses: actions/checkout@v2
+      with:
+        repository: microting/eform-angular-items-planning-plugin
+        ref: ${{ steps.extract_branch.outputs.branch }}
+        path: eform-angular-items-planning-plugin
     - name: Install dependencies
       run: dotnet restore main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
     - name: Get the version
@@ -62,18 +68,21 @@ jobs:
       run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3 | cut -d "v" -f 2)
     - name: Build
       run: dotnet build main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
+    - name: Build ItemsPlanning
+      run: dotnet build eform-angular-items-planning-plugin/eFormAPI/Plugins/ItemsPlanning.Pn/ItemsPlanning.Pn.sln
     - name: Unit Tests
       run: dotnet test --no-restore -c Release -v n main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
     - name: Copy dependencies
       run: |
+        cp -av eform-angular-items-planning-plugin/eform-client/src/app/plugins/modules/items-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/items-planning-pn
         cp -av main/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
         cp -av main/eform-client/e2e/Tests/backend-configuration-settings eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
         cp -av main/eform-client/e2e/Tests/backend-configuration-general eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
         cp -av main/eform-client/e2e/Page\ objects/BackendConfiguration eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
-        cp -av main/eform-client/e2e/Assets eform-angular-frontend/eform-client/e2e/Assets
         cp -av main/eform-client/wdio-headless-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-headless-plugin-step2.conf.js
         cp -av main/eform-client/wdio-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
         mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
+        cp -av eform-angular-items-planning-plugin/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning
         cp -av main/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn
         cd eform-angular-frontend/eform-client && ../../main/testinginstallpn.sh
     - name: Build frontend

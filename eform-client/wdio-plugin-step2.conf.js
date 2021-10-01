@@ -10,16 +10,11 @@ exports.config = {
     // directory is where your package.json resides, so `wdio` will be called from there.
     //
   specs: [
-    'e2e/Tests/items-planning-settings/application-settings.plugins-page.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.add.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.edit.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.delete.spec.ts',
-    // 'e2e/Tests/items-planning-general/items-planning.settings.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.sorting.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.multiple-delete.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.tags.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.pairing.spec.ts',
-    'e2e/Tests/items-planning-general/items-planning.import.spec.ts'
+      'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
+      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.create.spec.ts',
+      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.edit.spec.ts',
+      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.delete.spec.ts',
+      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.areas.spec.ts'
   ],
     suites: {
         settings: [
@@ -72,7 +67,7 @@ exports.config = {
     // By default WebdriverIO commands are executed in a synchronous way using
     // the wdio-sync package. If you still want to run your Tests in an async way
     // e.g. using promises you can set the sync option to false.
-    sync: true,
+    sync: false
     //
     // Level of logging verbosity: silent | verbose | command | data | result | error
     logLevel: 'silent',
