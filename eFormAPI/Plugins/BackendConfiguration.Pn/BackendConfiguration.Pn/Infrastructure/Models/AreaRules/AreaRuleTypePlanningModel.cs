@@ -33,9 +33,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public int? RepeatType { get; set; }
 
-        public AreaRuleT2TypesEnum? Type { get; set; }
+        public AreaRuleT2TypesEnum Type { get; set; }
 
-        public AreaRuleT2AlarmsEnum? Alarm { get; set; }
+        public AreaRuleT2AlarmsEnum Alarm { get; set; }
 
         public DateTime? EndDate { get; set; }
 

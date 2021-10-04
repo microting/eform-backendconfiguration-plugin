@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -94,6 +94,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                         TypeSpecificFields = new { x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, },
                     })
                     .ToListAsync();
+
+                foreach (var areaRule in areaRules)
+                {
+                    var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.AreaRuleId == areaRule.Id)
+                        .FirstOrDefaultAsync();
+                    areaRule.PlanningStatus = areaRulePlanning != null && areaRulePlanning.ItemPlanningId != 0;
+                }
+
                 return new OperationDataResult<List<AreaRuleSimpleModel>>(true, areaRules);
             }
             catch (Exception ex)
@@ -364,8 +374,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                         areaRulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                         areaRulePlanning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
                         areaRulePlanning.RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType;
-                        areaRulePlanning.Alarm = (AreaRuleT2AlarmsEnum)areaRulePlanningModel.TypeSpecificFields.Alarm;
-                        areaRulePlanning.Type = (AreaRuleT2TypesEnum) areaRulePlanningModel.TypeSpecificFields.Type;
+                        areaRulePlanning.Alarm = areaRulePlanningModel.TypeSpecificFields.Alarm;
+                        areaRulePlanning.Type = areaRulePlanningModel.TypeSpecificFields.Type;
                     }
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext);
 
@@ -420,8 +430,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                         areaRulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                         areaRulePlanning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
                         areaRulePlanning.RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType;
-                        areaRulePlanning.Alarm = (AreaRuleT2AlarmsEnum) areaRulePlanningModel.TypeSpecificFields.Alarm;
-                        areaRulePlanning.Type = (AreaRuleT2TypesEnum) areaRulePlanningModel.TypeSpecificFields.Type;
+                        areaRulePlanning.Alarm = areaRulePlanningModel.TypeSpecificFields.Alarm;
+                        areaRulePlanning.Type = areaRulePlanningModel.TypeSpecificFields.Type;
                     }
 
                     await areaRulePlanning.Create(_backendConfigurationPnDbContext);
@@ -540,6 +550,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 if (areaRule == null)
                 {
                     return new OperationDataResult<AreaRulePlanningModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadPlanning"));
+                }
+
+                if (areaRule.PlanningId == null)
+                {
+                    return new OperationDataResult<AreaRulePlanningModel>(true); // it's okay
                 }
 
                 var assignedSites = _backendConfigurationPnDbContext.PlanningSites
