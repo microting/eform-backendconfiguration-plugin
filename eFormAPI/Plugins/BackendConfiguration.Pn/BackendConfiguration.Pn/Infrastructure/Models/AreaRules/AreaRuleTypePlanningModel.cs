@@ -29,13 +29,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
     public class AreaRuleTypePlanningModel
     {
-        public int RepeatEvery { get; set; }
+        public int? RepeatEvery { get; set; }
 
-        public int RepeatType { get; set; }
+        public int? RepeatType { get; set; }
 
-        public AreaRuleT2TypesEnum Type { get; set; }
+        public AreaRuleT2TypesEnum? Type { get; set; }
 
-        public AreaRuleT2AlarmsEnum Alarm { get; set; }
+        public AreaRuleT2AlarmsEnum? Alarm { get; set; }
 
         public DateTime? EndDate { get; set; }
 

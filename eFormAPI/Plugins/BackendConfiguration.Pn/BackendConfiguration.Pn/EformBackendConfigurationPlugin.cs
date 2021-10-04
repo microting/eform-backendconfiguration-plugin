@@ -106,28 +106,33 @@ namespace BackendConfiguration.Pn
 
             var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
             var eforms = BackendConfigurationSeedEforms.EformsSeed;
-            var sdkDbContex = core.DbContextHelper.GetDbContext();
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
 
             var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
             // seed eforms
             foreach (var eform in eforms)
             {
                 var newTemplate = await core.TemplateFromXml(eform);
-                if (!await sdkDbContex.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
+                if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
                 {
                     await core.TemplateCreate(newTemplate);
                 }
-
             }
+
             // Seed areas and rules
-            foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed)
+            foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed.Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id)))
             {
-                if (!context.Areas.Any(x => x.Id == newArea.Id))
+                foreach (var areaRule in newArea.AreaRules.Where(areaRule => !areaRule.EformId.HasValue && !string.IsNullOrEmpty(areaRule.EformName)))
                 {
-                    context.Areas.Add(newArea);
-                    
-                    context.SaveChanges();
+                    var eformId = await sdkDbContext.CheckListTranslations
+                        .Where(x => x.Text == areaRule.EformName)
+                        .Select(x => x.CheckListId)
+                        .FirstAsync();
+                    areaRule.EformId = eformId;
                 }
+                context.Areas.Add(newArea);
+                    
+                context.SaveChanges();
             }
         }
 
