@@ -72,7 +72,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Id = 3,
-                        EformName = "02. Brandustyr",
+                        EformName = "02. Brandudstyr",
                         AreaRuleTranslations = new List<AreaRuleTranslation>
                         {
                             new() { LanguageId = 1, Name = "Fire equipment" }
@@ -411,7 +411,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     {
                         Id = 23,
                         AreaId = 13,
-                        EformName = "DANISH Produktstandard v. 1.01",
+                        EformName = "21. DANISH Produktstandard v_1_01",
                         AreaRuleTranslations = new List<AreaRuleTranslation>
                         {
                             new() { LanguageId = 1, Name = "DANISH Standard v. 1.01" }

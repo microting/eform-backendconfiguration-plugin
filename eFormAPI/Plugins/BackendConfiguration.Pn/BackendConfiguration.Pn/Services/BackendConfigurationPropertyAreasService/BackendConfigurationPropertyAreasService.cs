@@ -155,7 +155,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 foreach (var assignmentForCreate in assignmentsForCreate)
                 {
-                    var area = await _backendConfigurationPnDbContext.Areas.FirstOrDefaultAsync(x =>
+                    var area = await _backendConfigurationPnDbContext.Areas
+                        .Include(x => x.AreaRules)
+                        .FirstOrDefaultAsync(x =>
                         x.Name == assignmentForCreate.Name && x.Description == assignmentForCreate.Description);
 
                     var newAssignment = new AreaProperty
@@ -191,6 +193,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
                             await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+
+                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                            {
+                                areaRule.FolderId = folder.Id;
+                                await areaRule.Update(_backendConfigurationPnDbContext);
+                            }
                         }
                         else if (area.Type == AreaTypesEnum.Type3)
                         {
@@ -227,6 +235,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             await folderTwo.Create(sdkDbContext);
                             await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
                             await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
+
+                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                            {
+                                areaRule.FolderId = folderOne.Id;
+                                await areaRule.Update(_backendConfigurationPnDbContext);
+                            }
                         }
                         else if (area.Type == AreaTypesEnum.Type5)
                         {
@@ -291,12 +305,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 },
                             };
 
-                            //folders = folders
-                            //    .Where(x => !x.FolderTranslations
-                            //        .Select(y => y.Name)
-                            //        .Contains(area.Name))
-                            //    .ToList();
-
                             foreach (var folder in folders)
                             {
                                 await folder.Create(sdkDbContext);
@@ -307,6 +315,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     ProperyAreaAsignmentId = newAssignment.Id,
                                 };
                                 await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                            }
+
+                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                            {
+                                areaRule.FolderId = folders.First().Id;
+                                await areaRule.Update(_backendConfigurationPnDbContext);
                             }
                         }
                     }
