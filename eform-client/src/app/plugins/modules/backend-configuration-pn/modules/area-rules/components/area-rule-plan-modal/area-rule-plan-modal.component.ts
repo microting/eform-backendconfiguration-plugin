@@ -58,9 +58,6 @@ export class AreaRulePlanModalComponent implements OnInit {
           typeSpecificFields: this.generateRulePlanningTypeSpecificFields(),
           ruleId: rule.id,
         };
-    if (!planning) {
-      this.generateRulePlanningTypeSpecificFields();
-    }
     this.selectedAreaRule = rule;
     this.frame.show();
   }
@@ -106,14 +103,17 @@ export class AreaRulePlanModalComponent implements OnInit {
     }
     if (this.selectedArea.type === 2) {
       return {
-        type: AreaRuleT2TypesEnum.Closed,
-        alarm: AreaRuleT2AlarmsEnum.No,
+        // type: AreaRuleT2TypesEnum.Closed,
+        // alarm: AreaRuleT2AlarmsEnum.No,
         repeatEvery: 1,
         repeatType: 1,
         startDate: null,
       };
     }
     if (this.selectedArea.type === 3) {
+      return { endDate: null, repeatEvery: 1, repeatType: 1 };
+    }
+    if (this.selectedArea.type === 4) {
       return { endDate: null };
     }
     if (this.selectedArea.type === 5) {

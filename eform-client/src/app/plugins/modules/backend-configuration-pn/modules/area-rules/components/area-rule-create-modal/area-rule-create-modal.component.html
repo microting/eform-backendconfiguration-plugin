@@ -112,6 +112,7 @@
                             [typeahead]="typeahead"
                             [(ngModel)]="newAreaRule.typeSpecificFields.eformId"
                             id="createRuleEformId{{ i }}"
+                            [clearable]="false"
                           >
                           </ng-select>
                         </div>
@@ -131,6 +132,7 @@
                             bindValue="id"
                             [(ngModel)]="newAreaRule.typeSpecificFields.type"
                             id="createRuleType{{ i }}"
+                            [clearable]="false"
                           >
                           </ng-select>
                         </div>
@@ -147,6 +149,7 @@
                             bindValue="id"
                             [(ngModel)]="newAreaRule.typeSpecificFields.alarm"
                             id="createRuleAlarm{{ i }}"
+                            [clearable]="false"
                           >
                           </ng-select>
                         </div>
@@ -168,6 +171,7 @@
                               newAreaRule.typeSpecificFields.checklistStable
                             "
                             id="createRuleChecklistStable{{ i }}"
+                            [clearable]="false"
                           >
                           </ng-select>
                         </div>
@@ -186,6 +190,7 @@
                               newAreaRule.typeSpecificFields.tailBite
                             "
                             id="createRuleTailBite{{ i }}"
+                            [clearable]="false"
                           >
                           </ng-select>
                         </div>
@@ -212,6 +217,7 @@
                               newAreaRule.typeSpecificFields.dayOfWeek
                             "
                             id="createAreaDayOfWeek{{ i }}"
+                            [clearable]="false"
                           >
                           </ng-select>
                         </div>

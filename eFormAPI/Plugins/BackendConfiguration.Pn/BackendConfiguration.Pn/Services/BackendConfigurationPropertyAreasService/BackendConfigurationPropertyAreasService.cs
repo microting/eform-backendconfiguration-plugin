@@ -90,7 +90,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Status = false,
                         })
                         .ToListAsync();
-                    areasForAdd = areas.Where(x => propertyAreas.Find(y => y.Name != x.Name && y.Description != x.Description) == null)
+                    areasForAdd = areas.Where(x => !propertyAreasQuery.Any(y => y.AreaId == x.Id))
                         .Select(x => new PropertyAreaModel
                         {
                             Id = null,
@@ -174,157 +174,110 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.Id == updateModel.PropertyId)
                         .FirstAsync();
-                    if(assignmentForCreate.Activated)
+                    if (assignmentForCreate.Activated)
                     {
-                        if (area.Type is not AreaTypesEnum.Type3 or AreaTypesEnum.Type5)
+                        switch (area.Type)
                         {
-                            var folder = new Folder
-                            {
-                                ParentId = property.FolderId,
-                                FolderTranslations = new List<FolderTranslation>
+                            case AreaTypesEnum.Type3:
                                 {
-                                    new() {Name = area.Name, LanguageId = 1}
+                                    var folderId = await core.FolderCreate(
+                                        new List<KeyValuePair<string, string>>
+                                        {
+                                        new("da", "05. Stables"),
+                                        },
+                                        new List<KeyValuePair<string, string>> { new("da", ""), },
+                                        property.FolderId);
+                                    var assignmentWithOneFolder = new ProperyAreaFolder
+                                    {
+                                        FolderId = folderId,
+                                        ProperyAreaAsignmentId = newAssignment.Id,
+                                    };
+
+                                    var assignmentWithTwoFolder = new ProperyAreaFolder
+                                    {
+                                        FolderId = await core.FolderCreate(
+                                            new List<KeyValuePair<string, string>>
+                                            {
+                                            new("da", "24. Tail bite"),
+                                            },
+                                            new List<KeyValuePair<string, string>>
+                                            {
+                                            new("da", ""),
+                                            },
+                                            property.FolderId),
+                                        ProperyAreaAsignmentId = newAssignment.Id,
+                                    };
+
+                                    await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+                                    await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
+
+                                    foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                                    {
+                                        areaRule.FolderId = folderId;
+                                        await areaRule.Update(_backendConfigurationPnDbContext);
+                                    }
+
+                                    break;
                                 }
-                            };
-                            await folder.Create(sdkDbContext);
-                            var assignmentWithFolder = new ProperyAreaFolder
-                            {
-                                FolderId = folder.Id,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            };
-                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
-
-                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
-                            {
-                                areaRule.FolderId = folder.Id;
-                                await areaRule.Update(_backendConfigurationPnDbContext);
-                            }
-                        }
-                        else if (area.Type == AreaTypesEnum.Type3)
-                        {
-                            var folderOne = new Folder
-                            {
-                                ParentId = property.FolderId,
-                                FolderTranslations = new List<FolderTranslation>
+                            case AreaTypesEnum.Type5:
                                 {
-                                    new() {Name = "05. Stables", LanguageId = 1}
+                                    //create 7 folders
+                                    var folderIds = new List<int>
+                                    {
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Monday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Tuesday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Wednesday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Thursday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Friday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Saturday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Sunday"),}, new List<KeyValuePair<string, string>> {new("da", ""),} ,property.FolderId),
+                                    };
+
+                                    foreach (var assignmentWithFolder in folderIds.Select(folderId => new ProperyAreaFolder
+                                    {
+                                        FolderId = folderId,
+                                        ProperyAreaAsignmentId = newAssignment.Id,
+                                    }))
+                                    {
+                                        await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                                    }
+
+                                    foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                                    {
+                                        areaRule.FolderId = folderIds.First();
+                                        await areaRule.Update(_backendConfigurationPnDbContext);
+                                    }
+                                    break;
                                 }
-                            };
-                            var folderTwo = new Folder
-                            {
-                                ParentId = property.FolderId,
-                                FolderTranslations = new List<FolderTranslation>
+                            default:
                                 {
-                                    new() {Name = "24. Tail bite", LanguageId = 1}
+                                    var folderId = await core.FolderCreate(
+                                        new List<KeyValuePair<string, string>>
+                                        {
+                                        new("da", area.Name),
+                                        },
+                                        new List<KeyValuePair<string, string>>
+                                        {
+                                        new("da", ""),
+                                        },
+                                        property.FolderId);
+                                    var assignmentWithFolder = new ProperyAreaFolder
+                                    {
+                                        FolderId = folderId,
+                                        ProperyAreaAsignmentId = newAssignment.Id,
+                                    };
+                                    await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+
+                                    foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                                    {
+                                        areaRule.FolderId = folderId;
+                                        await areaRule.Update(_backendConfigurationPnDbContext);
+                                    }
+
+                                    break;
                                 }
-                            };
-
-                            var assignmentWithOneFolder = new ProperyAreaFolder
-                            {
-                                FolderId = folderOne.Id,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            };
-
-                            var assignmentWithTwoFolder = new ProperyAreaFolder
-                            {
-                                FolderId = folderTwo.Id,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            };
-
-                            await folderOne.Create(sdkDbContext);
-                            await folderTwo.Create(sdkDbContext);
-                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
-                            await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
-
-                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
-                            {
-                                areaRule.FolderId = folderOne.Id;
-                                await areaRule.Update(_backendConfigurationPnDbContext);
-                            }
-                        }
-                        else if (area.Type == AreaTypesEnum.Type5)
-                        {
-                            //create 7 folders
-                            var folders = new List<Folder>
-                            {
-                                new()
-                                {
-                                    ParentId = property.FolderId,
-                                    FolderTranslations = new List<FolderTranslation>
-                                    {
-                                        new() {Name = "Monday", LanguageId = 1}
-                                    },
-                                },
-                                new()
-                                {
-                                    ParentId = property.FolderId,
-                                    FolderTranslations = new List<FolderTranslation>
-                                    {
-                                        new() {Name = "Tuesday", LanguageId = 1}
-                                    },
-                                },
-                                new()
-                                {
-                                    ParentId = property.FolderId,
-                                    FolderTranslations = new List<FolderTranslation>
-                                    {
-                                        new() {Name = "Wednesday", LanguageId = 1}
-                                    },
-                                },
-                                new()
-                                {
-                                    ParentId = property.FolderId,
-                                    FolderTranslations = new List<FolderTranslation>
-                                    {
-                                        new() {Name = "Thursday", LanguageId = 1}
-                                    },
-                                },
-                                new()
-                                {
-                                    ParentId = property.FolderId,
-                                    FolderTranslations = new List<FolderTranslation>
-                                    {
-                                        new() {Name = "Friday", LanguageId = 1}
-                                    },
-                                },
-                                new()
-                                {
-                                    ParentId = property.FolderId,
-                                    FolderTranslations = new List<FolderTranslation>
-                                    {
-                                        new() {Name = "Saturday", LanguageId = 1}
-                                    },
-                                },
-                                new()
-                                {
-                                    ParentId = property.FolderId,
-                                    FolderTranslations = new List<FolderTranslation>
-                                    {
-                                        new() {Name = "Sunday", LanguageId = 1}
-                                    },
-                                },
-                            };
-
-                            foreach (var folder in folders)
-                            {
-                                await folder.Create(sdkDbContext);
-
-                                var assignmentWithFolder = new ProperyAreaFolder
-                                {
-                                    FolderId = folder.Id,
-                                    ProperyAreaAsignmentId = newAssignment.Id,
-                                };
-                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
-                            }
-
-                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
-                            {
-                                areaRule.FolderId = folders.First().Id;
-                                await areaRule.Update(_backendConfigurationPnDbContext);
-                            }
                         }
                     }
-
                 }
 
                 foreach (var areaProperty in assignmentsForUpdate)

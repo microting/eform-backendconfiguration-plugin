@@ -161,7 +161,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 };
                 await folder.Create(sdkDbContext);
 
-                newProperty.FolderId = folder.Id;
+                newProperty.FolderId = await core.FolderCreate(
+                    new List<KeyValuePair<string, string>>
+                    {
+                        new("da", propertyCreateModel.Name),
+                    },
+                    new List<KeyValuePair<string, string>> { new("da", ""), }, null); ;
                 await newProperty.Update(_backendConfigurationPnDbContext);
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));
