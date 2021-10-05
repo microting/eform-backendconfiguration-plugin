@@ -8,7 +8,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3>{{ 'Plan rule' | translate }}</h3>
-        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+        <button class="close" data-dismiss="modal" (click)="hide()">
           <span>×</span>
         </button>
       </div>
@@ -31,7 +31,7 @@
               </div>
             </div>
           </div>
-          <ng-container *ngIf="selectedAreaRulePlanning.typeSpecificFields">
+          <ng-container *ngIf="selectedAreaRule.typeSpecificFields">
             <div class="row" *ngIf="selectedArea.type === 5">
               <div class="col-12 ng-select-wrapper">
                 <ng-select
@@ -47,9 +47,7 @@
                   bindLabel="name"
                   [placeholder]="'Day of week' | translate"
                   bindValue="id"
-                  [ngModel]="
-                    selectedAreaRulePlanning.typeSpecificFields.dayOfWeek
-                  "
+                  [ngModel]="selectedAreaRule.typeSpecificFields.dayOfWeek"
                   [disabled]="true"
                   id="planAreaDayOfWeek"
                 >
@@ -149,7 +147,7 @@
                     bindLabel="name"
                     [placeholder]="'Type' | translate"
                     bindValue="id"
-                    [ngModel]="selectedAreaRulePlanning.typeSpecificFields.type"
+                    [ngModel]="selectedAreaRule.typeSpecificFields.type"
                     [disabled]="true"
                     id="planRuleType"
                   >
@@ -166,9 +164,7 @@
                     bindLabel="name"
                     [placeholder]="'Alarm' | translate"
                     bindValue="id"
-                    [ngModel]="
-                      selectedAreaRulePlanning.typeSpecificFields.alarm
-                    "
+                    [ngModel]="selectedAreaRule.typeSpecificFields.alarm"
                     [disabled]="true"
                     id="planRuleAlarm"
                   >
