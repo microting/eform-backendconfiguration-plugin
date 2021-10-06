@@ -50,13 +50,18 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   ngOnInit() {}
 
-  show(rule: AreaRuleSimpleModel, planning?: AreaRulePlanningModel) {
+  show(
+    rule: AreaRuleSimpleModel,
+    selectedPropertyId: number,
+    planning?: AreaRulePlanningModel
+  ) {
     this.selectedAreaRulePlanning = planning
-      ? planning
+      ? { ...planning, propertyId: selectedPropertyId }
       : {
           ...new AreaRulePlanningModel(),
           typeSpecificFields: this.generateRulePlanningTypeSpecificFields(),
           ruleId: rule.id,
+          propertyId: selectedPropertyId,
         };
     this.selectedAreaRule = rule;
     this.frame.show();

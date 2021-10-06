@@ -1003,8 +1003,110 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
 
                                 break;
                             }
+                        case AreaTypesEnum.Type5:
+                            {
+                                var folderIds = await _backendConfigurationPnDbContext.ProperyAreaFolders
+                                    .Include(x => x.AreaProperty)
+                                    .Where(x => x.AreaProperty.PropertyId == areaRulePlanningModel.PropertyId)
+                                    .Where(x => x.AreaProperty.AreaId == areaRule.AreaId)
+                                    .Select(x => x.FolderId)
+                                    .Skip(1)
+                                    .ToListAsync();
+                                var planning = new Planning
+                                {
+                                    CreatedByUserId = _userService.UserId,
+                                    Enabled = true,
+                                    RelatedEFormId = (int)areaRule.EformId,
+                                    RelatedEFormName = areaRule.EformName,
+                                    SdkFolderName = areaRule.FolderName,
+                                    SdkFolderId = folderIds[areaRule.DayOfWeek],
+                                    DaysBeforeRedeploymentPushMessageRepeat = false,
+                                    DaysBeforeRedeploymentPushMessage = 5,
+                                    PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
+                                    StartDate = areaRulePlanningModel.StartDate,
+                                    // create translations for planning from translation areaRule
+                                    NameTranslations = areaRule.AreaRuleTranslations.Select(
+                                        areaRuleAreaRuleTranslation => new PlanningNameTranslation
+                                        {
+                                            LanguageId = areaRuleAreaRuleTranslation.LanguageId,
+                                            Name = areaRuleAreaRuleTranslation.Name,
+                                        }).ToList(),
+                                    PlanningSites = areaRulePlanningModel.AssignedSites.Select(x => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                                    {
+                                        SiteId = x.SiteId,
+                                    }).ToList(),
+                                };
+                                if (areaRulePlanningModel.TypeSpecificFields != null)
+                                {
+                                    planning.RepeatUntil = areaRulePlanningModel.TypeSpecificFields?.EndDate;
+                                    planning.DayOfWeek = (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                    if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery is not null)
+                                    {
+                                        planning.RepeatEvery =
+                                            (int)areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
+                                    }
+
+                                    if (areaRulePlanningModel.TypeSpecificFields.RepeatType is not null)
+                                    {
+                                        planning.RepeatType =
+                                            (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType;
+                                    }
+                                }
+
+                                await planning.Create(_itemsPlanningPnDbContext);
+                                var areaRulePlanning = new AreaRulePlanning
+                                {
+                                    CreatedByUserId = _userService.UserId,
+                                    UpdatedByUserId = _userService.UserId,
+                                    StartDate = areaRulePlanningModel.StartDate,
+                                    Status = areaRulePlanningModel.Status,
+                                    SendNotifications = areaRulePlanningModel.SendNotifications,
+                                    AreaRuleId = areaRulePlanningModel.RuleId,
+                                    ItemPlanningId = planning.Id,
+                                };
+                                if (areaRulePlanningModel.TypeSpecificFields != null)
+                                {
+                                    areaRulePlanning.EndDate = areaRulePlanningModel.TypeSpecificFields?.EndDate;
+                                    areaRulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                    areaRulePlanning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
+                                    areaRulePlanning.RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType;
+                                }
+
+                                await areaRulePlanning.Create(_backendConfigurationPnDbContext);
+
+                                var assignedSites = areaRulePlanningModel.AssignedSites.Select(x => new PlanningSite
+                                {
+                                    AreaRulePlanningsId = areaRulePlanning.Id,
+                                    SiteId = x.SiteId,
+                                    CreatedByUserId = _userService.UserId,
+                                    UpdatedByUserId = _userService.UserId,
+                                }).ToList();
+
+                                foreach (var assignedSite in assignedSites)
+                                {
+                                    await assignedSite.Create(_backendConfigurationPnDbContext);
+                                }
+
+                                break;
+                            }
                         default:
                             {
+                                if (areaRule.FolderId == 0)
+                                {
+                                    var folderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
+                                        .Include(x => x.AreaProperty)
+                                        .Where(x => x.AreaProperty.PropertyId == areaRulePlanningModel.PropertyId)
+                                        .Where(x => x.AreaProperty.AreaId == areaRule.AreaId)
+                                        .Select(x => x.FolderId)
+                                        .FirstAsync();
+                                    areaRule.FolderId = folderId;
+                                    areaRule.FolderName = await sdkDbContex.FolderTranslations
+                                        .Where(x => x.FolderId == folderId)
+                                        .Where(x => x.LanguageId == 1) // danish
+                                        .Select(x => x.Name)
+                                        .FirstAsync();
+                                    await areaRule.Update(_backendConfigurationPnDbContext);
+                                }
                                 var planning = new Planning
                                 {
                                     CreatedByUserId = _userService.UserId,
@@ -1024,7 +1126,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                             LanguageId = areaRuleAreaRuleTranslation.LanguageId,
                                             Name = areaRuleAreaRuleTranslation.Name,
                                         }).ToList(),
-                                    PlanningSites = areaRulePlanningModel.AssignedSites.Select(x => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite()
+                                    PlanningSites = areaRulePlanningModel.AssignedSites.Select(x => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
                                     {
                                         SiteId = x.SiteId,
                                     }).ToList(),

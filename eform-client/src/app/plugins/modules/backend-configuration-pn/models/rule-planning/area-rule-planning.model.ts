@@ -9,6 +9,7 @@ export class AreaRulePlanningModel {
   sendNotifications: boolean;
   startDate: string;
   assignedSites: AreaRuleAssignedSitesModel[] = [];
+  propertyId: number;
   typeSpecificFields:
     | AreaRuleT1PlanningModel
     | AreaRuleT2PlanningModel

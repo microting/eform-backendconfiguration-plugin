@@ -39,6 +39,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public DateTime StartDate { get; set; }
 
+        public int PropertyId { get; set; }
+
         public AreaRuleTypePlanningModel TypeSpecificFields { get; set; }
 
         public List<AreaRuleAssignedSitesModel> AssignedSites { get; set; }

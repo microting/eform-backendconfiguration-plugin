@@ -152,15 +152,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     await selectedTranslate.Create(_backendConfigurationPnDbContext);
                 }
 
-                var folder = new Folder
-                {
-                    FolderTranslations = new List<FolderTranslation>()
-                    {
-                        new() {Name = propertyCreateModel.Name, LanguageId = 1}
-                    }
-                };
-                await folder.Create(sdkDbContext);
-
                 newProperty.FolderId = await core.FolderCreate(
                     new List<KeyValuePair<string, string>>
                     {
