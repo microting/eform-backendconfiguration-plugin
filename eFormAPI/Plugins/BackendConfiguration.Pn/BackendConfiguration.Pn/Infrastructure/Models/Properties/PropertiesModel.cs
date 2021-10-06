@@ -38,5 +38,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         public string Address { get; set; }
 
         public List<CommonDictionaryModel> Languages { get; set; }
+
+        public bool IsWorkersAssigned { get; set; }
     }
 }

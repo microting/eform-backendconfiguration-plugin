@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -66,6 +66,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 // get query
                 var propertiesQuery = _backendConfigurationPnDbContext.Properties
                     .Include(x => x.SelectedLanguages)
+                    .Include(x => x.PropertyWorkers)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
                 // add sort
@@ -106,7 +107,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             Languages = x.SelectedLanguages
                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(y => new CommonDictionaryModel {Id = y.LanguageId})
-                                .ToList()
+                                .ToList(),
+                            IsWorkersAssigned = x.PropertyWorkers.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed),
                         }).ToListAsync();
                 }
 
