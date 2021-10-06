@@ -119,13 +119,13 @@ export class AreaRulePlanModalComponent implements OnInit {
       return { endDate: null, repeatEvery: 1, repeatType: 1 };
     }
     if (this.selectedArea.type === 4) {
-      return { endDate: null };
+      return { endDate: null, repeatEvery: 12, repeatType: 3 };
     }
     if (this.selectedArea.type === 5) {
       return {
         dayOfWeek: 1,
         repeatEvery: 1,
-        repeatType: 1,
+        repeatType: 2,
       };
     }
     return null;

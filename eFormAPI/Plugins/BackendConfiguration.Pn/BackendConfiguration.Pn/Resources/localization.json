@@ -358,5 +358,14 @@
       "en-US": "Error while read planning",
       "uk-UA": "" //todo
     }
+  },
+  {
+    "Key": "SuccessfullyCreatedPlanning",
+    "LocalizedValue": {
+      "da": "Succesfuldt oprettet planlægning",
+      "de": "", //todo
+      "en-US": "Successfully created planning",
+      "uk-UA": "" //todo
+    }
   }
 ]

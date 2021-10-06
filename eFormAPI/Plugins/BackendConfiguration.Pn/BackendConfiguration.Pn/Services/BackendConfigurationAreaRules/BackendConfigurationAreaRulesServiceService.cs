@@ -487,6 +487,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                 .Where(x => x.Id == rulePlanning.ItemPlanningId)
                                 .Include(x => x.PlanningSites)
                                 .FirstAsync();
+                            planning.Enabled = areaRulePlanningModel.Status;
                             planning.PushMessageOnDeployment = areaRulePlanningModel.SendNotifications;
                             planning.StartDate = areaRulePlanningModel.StartDate;
                             foreach (var planningSite in planning.PlanningSites
@@ -543,7 +544,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     var planningForType2TypeTankOpen = new Planning
                                     {
                                         CreatedByUserId = _userService.UserId,
-                                        Enabled = true,
+                                        Enabled = areaRulePlanningModel.Status,
                                         RelatedEFormId = eformId,
                                         RelatedEFormName = eformName,
                                         SdkFolderName = areaRule.FolderName,
@@ -624,7 +625,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     var planningForType2AlarmYes = new Planning
                                     {
                                         CreatedByUserId = _userService.UserId,
-                                        Enabled = true,
+                                        Enabled = areaRulePlanningModel.Status,
                                         RelatedEFormId = eformId,
                                         RelatedEFormName = eformName,
                                         SdkFolderName = areaRule.FolderName,
@@ -699,7 +700,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                 var planningForType2 = new Planning
                                 {
                                     CreatedByUserId = _userService.UserId,
-                                    Enabled = true,
+                                    Enabled = areaRulePlanningModel.Status,
                                     RelatedEFormId = (int)areaRule.EformId,
                                     RelatedEFormName = areaRule.EformName, // must be "03. Kontrol konstruktion"
                                     SdkFolderName = areaRule.FolderName,
@@ -785,7 +786,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     var planningForType3ChecklistStable = new Planning
                                     {
                                         CreatedByUserId = _userService.UserId,
-                                        Enabled = true,
+                                        Enabled = areaRulePlanningModel.Status,
                                         RelatedEFormId = (int)areaRule.EformId,
                                         RelatedEFormName = areaRule.EformName,
                                         SdkFolderName = areaRule.FolderName,
@@ -869,7 +870,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     var planningForType3TailBite = new Planning
                                     {
                                         CreatedByUserId = _userService.UserId,
-                                        Enabled = true,
+                                        Enabled = areaRulePlanningModel.Status,
                                         RelatedEFormId = eformId,
                                         RelatedEFormName = eformName,
                                         SdkFolderName = areaRule.FolderName,
@@ -1015,7 +1016,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                 var planning = new Planning
                                 {
                                     CreatedByUserId = _userService.UserId,
-                                    Enabled = true,
+                                    Enabled = areaRulePlanningModel.Status,
                                     RelatedEFormId = (int)areaRule.EformId,
                                     RelatedEFormName = areaRule.EformName,
                                     SdkFolderName = areaRule.FolderName,
@@ -1098,19 +1099,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                         .Where(x => x.AreaProperty.PropertyId == areaRulePlanningModel.PropertyId)
                                         .Where(x => x.AreaProperty.AreaId == areaRule.AreaId)
                                         .Select(x => x.FolderId)
-                                        .FirstAsync();
-                                    areaRule.FolderId = folderId;
-                                    areaRule.FolderName = await sdkDbContex.FolderTranslations
-                                        .Where(x => x.FolderId == folderId)
-                                        .Where(x => x.LanguageId == 1) // danish
-                                        .Select(x => x.Name)
-                                        .FirstAsync();
-                                    await areaRule.Update(_backendConfigurationPnDbContext);
+                                        .FirstOrDefaultAsync();
+                                    if(folderId != 0)
+                                    {
+                                        areaRule.FolderId = folderId;
+                                        areaRule.FolderName = await sdkDbContex.FolderTranslations
+                                            .Where(x => x.FolderId == folderId)
+                                            .Where(x => x.LanguageId == 1) // danish
+                                            .Select(x => x.Name)
+                                            .FirstAsync();
+                                        await areaRule.Update(_backendConfigurationPnDbContext);
+                                    }
                                 }
                                 var planning = new Planning
                                 {
                                     CreatedByUserId = _userService.UserId,
-                                    Enabled = true,
+                                    Enabled = areaRulePlanningModel.Status,
                                     RelatedEFormId = (int)areaRule.EformId,
                                     RelatedEFormName = areaRule.EformName,
                                     SdkFolderName = areaRule.FolderName,
