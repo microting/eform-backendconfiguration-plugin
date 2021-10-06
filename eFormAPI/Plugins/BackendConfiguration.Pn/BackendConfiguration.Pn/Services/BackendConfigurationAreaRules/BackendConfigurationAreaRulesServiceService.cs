@@ -558,12 +558,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                         new()
                                         {
                                             LanguageId = 1, // da
-                                            Name = "Check flydende lag",
+                                            Name = areaRule.AreaRuleTranslations
+                                                .Where(x => x.LanguageId == 1)
+                                                .Select(x => x.Name)
+                                                .FirstOrDefault() + " - Check flydende lag",
                                         },
                                         new()
                                         {
                                             LanguageId = 2, // en
-                                            Name = "Check floating layer",
+                                            Name = areaRule.AreaRuleTranslations
+                                                .Where(x => x.LanguageId == 2)
+                                                .Select(x => x.Name)
+                                                .FirstOrDefault() + " - Check floating layer",
                                         },
                                         // new PlanningNameTranslation
                                         // {
@@ -634,17 +640,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                         DaysBeforeRedeploymentPushMessage = 5,
                                         PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
                                         StartDate = areaRulePlanningModel.StartDate,
-                                        NameTranslations = new List<PlanningNameTranslation>()
+                                        NameTranslations = new List<PlanningNameTranslation>
                                     {
                                         new()
                                         {
                                             LanguageId = 1, // da
-                                            Name = "Tjek alarm",
+                                            Name = areaRule.AreaRuleTranslations
+                                                .Where(x => x.LanguageId == 1)
+                                                .Select(x => x.Name)
+                                                .FirstOrDefault() + " - Tjek alarm",
                                         },
                                         new()
                                         {
                                             LanguageId = 2, // en
-                                            Name = "Check alarm",
+                                            Name = areaRule.AreaRuleTranslations
+                                                .Where(x => x.LanguageId == 2)
+                                                .Select(x => x.Name)
+                                                .FirstOrDefault() + " - Check alarm",
                                         },
                                         // new PlanningNameTranslation
                                         // {
@@ -710,23 +722,29 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
                                     StartDate = areaRulePlanningModel.StartDate,
                                     // create translations for planning from translation areaRule
-                                    NameTranslations = areaRule.AreaRuleTranslations.Select(
-                                        areaRuleAreaRuleTranslation => new PlanningNameTranslation
-                                        {
-                                            LanguageId = areaRuleAreaRuleTranslation.LanguageId,
-                                            Name = areaRuleAreaRuleTranslation.Name,
-                                        }).ToList(),
-                                    /*NameTranslations = new List<PlanningNameTranslation>()
+                                    //NameTranslations = areaRule.AreaRuleTranslations.Select(
+                                    //    areaRuleAreaRuleTranslation => new PlanningNameTranslation
+                                    //    {
+                                    //        LanguageId = areaRuleAreaRuleTranslation.LanguageId,
+                                    //        Name = areaRuleAreaRuleTranslation.Name + (areaRuleAreaRuleTranslation.LanguageId == 1 ? "Kontrol konstruktion" : "Control construction"),
+                                    //    }).ToList(),
+                                    NameTranslations = new List<PlanningNameTranslation>()
                                     {
                                         new()
                                         {
                                             LanguageId = 1, // da
-                                            Name = "Check byggeri",
+                                            Name = areaRule.AreaRuleTranslations
+                                                .Where(x => x.LanguageId == 1)
+                                                .Select(x => x.Name)
+                                                .FirstOrDefault() + " - Kontrol konstruktion",
                                         },
                                         new()
                                         {
                                             LanguageId = 2, // en
-                                            Name = "Check construction",
+                                            Name = areaRule.AreaRuleTranslations
+                                                .Where(x => x.LanguageId == 2)
+                                                .Select(x => x.Name)
+                                                .FirstOrDefault() + " - Check construction",
                                         },
                                         // new PlanningNameTranslation
                                         // {
@@ -738,7 +756,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                         //     LanguageId = 4,// uk-ua
                                         //     Name = "Перевірте конструкцію",
                                         // },
-                                    },*/
+                                    },
                                     RepeatUntil = areaRulePlanningModel.TypeSpecificFields?.EndDate,
                                     DayOfWeek = DayOfWeek.Monday,
                                     RepeatEvery = 12,

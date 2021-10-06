@@ -126,7 +126,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             try
             {
                 var core = await _coreHelper.GetCore();
-                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                //var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 var newProperty = new Property
                 {
