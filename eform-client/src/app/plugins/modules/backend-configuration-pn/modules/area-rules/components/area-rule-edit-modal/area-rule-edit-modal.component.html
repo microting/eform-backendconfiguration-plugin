@@ -64,7 +64,8 @@
                     [placeholder]="'Selected template' | translate"
                     bindValue="id"
                     [typeahead]="typeahead"
-                    [(ngModel)]="selectedAreaRule.typeSpecificFields.eformId"
+                    [ngModel]="selectedAreaRule.eformId"
+                    (ngModelChange)="changeEform($event)"
                     id="editRuleEformId"
                     [clearable]="false"
                   >

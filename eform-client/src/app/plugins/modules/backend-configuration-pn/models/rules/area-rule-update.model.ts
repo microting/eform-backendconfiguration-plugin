@@ -9,9 +9,5 @@ export class AreaRuleUpdateModel {
   eformId: number;
   eformName: string;
   translatedNames: CommonDictionaryModel[] = [];
-  typeSpecificFields:
-    | AreaRuleT1Model
-    | AreaRuleT2Model
-    | AreaRuleT3Model
-    | AreaRuleT5Model;
+  typeSpecificFields: AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model;
 }

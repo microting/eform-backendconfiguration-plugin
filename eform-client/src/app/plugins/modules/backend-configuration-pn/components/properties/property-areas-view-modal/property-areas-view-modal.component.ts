@@ -5,10 +5,8 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import { PropertyAreaPlanningStatusesEnum } from '../../../enums';
 import {
   PropertyAreaModel,
-  PropertyAreasUpdateModel,
   PropertyModel,
   PropertyUpdateModel,
 } from '../../../models';
@@ -28,7 +26,7 @@ export class PropertyAreasViewModalComponent implements OnInit {
   ngOnInit() {}
 
   getAreaPlanningStatus(area: PropertyAreaModel) {
-    return area.status ? PropertyAreaPlanningStatusesEnum[area.status] : 'OFF';
+    return area.status ? 'ON' : 'OFF';
   }
 
   show(model: PropertyModel, propertyAreas: PropertyAreaModel[]) {
