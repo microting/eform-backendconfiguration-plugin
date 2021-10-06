@@ -222,22 +222,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     break;
                                 }
                             case AreaTypesEnum.Type5:
-                                {
+                            {
+                                var folderId = await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", area.Name),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId);
                                     //create 7 folders
                                     var folderIds = new List<int>
                                     {
-                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Monday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
-                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Tuesday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
-                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Wednesday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
-                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Thursday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
-                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Friday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
-                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Saturday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId),
-                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Sunday"),}, new List<KeyValuePair<string, string>> {new("da", ""),} ,property.FolderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Sunday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Monday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Tuesday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Wednesday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Thursday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Friday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                        await core.FolderCreate( new List<KeyValuePair<string, string>> {new("da", "Saturday"),}, new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
                                     };
 
-                                    foreach (var assignmentWithFolder in folderIds.Select(folderId => new ProperyAreaFolder
+                                    await new ProperyAreaFolder
                                     {
                                         FolderId = folderId,
+                                        ProperyAreaAsignmentId = newAssignment.Id,
+                                    }.Create(_backendConfigurationPnDbContext);
+
+                                    foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                                    {
+                                        FolderId = folderIdLocal,
                                         ProperyAreaAsignmentId = newAssignment.Id,
                                     }))
                                     {
@@ -246,7 +254,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                                     foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
                                     {
-                                        areaRule.FolderId = folderIds.First();
+                                        areaRule.FolderId = folderIds[areaRule.DayOfWeek];
                                         await areaRule.Update(_backendConfigurationPnDbContext);
                                     }
                                     break;
