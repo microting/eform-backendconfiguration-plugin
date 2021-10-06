@@ -87,7 +87,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   assignWorkerToProperties() {
     this.deviceUserAssign$ = this.propertiesService
       .updateAssignPropertiesToWorker({
-        siteId: this.selectedDeviceUser.id,
+        siteId: this.selectedDeviceUser.normalId,
         assignments: this.assignments,
       })
       .subscribe((operation) => {

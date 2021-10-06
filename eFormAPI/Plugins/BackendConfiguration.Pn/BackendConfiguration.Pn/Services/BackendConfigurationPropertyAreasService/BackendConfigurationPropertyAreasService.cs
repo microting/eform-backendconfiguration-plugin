@@ -70,7 +70,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyId == propertyId)
-                    .Include(x => x.Area);
+                    .Include(x => x.Area)
+                    .ThenInclude(x => x.AreaRules)
+                    .ThenInclude(x => x.AreaRulesPlannings);
 
                 var areas = _backendConfigurationPnDbContext.Areas
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -87,7 +89,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Activated = x.Checked,
                             Description = x.Area.Description,
                             Name = x.Area.Name,
-                            Status = false,
+                            Status = x.Area.AreaRules.First().AreaRulesPlannings.Any(y => y.Status),
                         })
                         .ToListAsync();
                     areasForAdd = areas.Where(x => !propertyAreasQuery.Any(y => y.AreaId == x.Id))
@@ -351,7 +353,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 foreach (var worker in workers)
                 {
-                    sites.Add(await core.SiteRead(worker));
+                    var site = await sdkDbContex.Sites
+                        .Where(x => x.Id == worker)
+                        .FirstAsync();
+                    sites.Add(new SiteDto(worker, site.Name, "", "", null, null, null, null));
                 }
 
                 var languages = await sdkDbContex.Languages.AsNoTracking().ToListAsync();

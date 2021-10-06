@@ -68,6 +68,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.selectedSimpleSite.userLastName = simpleSiteDto.lastName;
     this.selectedSimpleSite.id = simpleSiteDto.siteUid;
     this.selectedSimpleSite.languageCode = simpleSiteDto.languageCode;
+    this.selectedSimpleSite.normalId = simpleSiteDto.siteId;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteUid

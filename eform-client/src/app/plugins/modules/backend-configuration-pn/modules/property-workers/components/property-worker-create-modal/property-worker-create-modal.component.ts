@@ -67,7 +67,7 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
 
   createDeviceUser() {
     this.deviceUserCreate$ = this.deviceUserService
-      .createSingleDeviceUserWithResponse(this.simpleSiteModel)
+      .createSingleDeviceUser(this.simpleSiteModel)
       .subscribe((operation) => {
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {

@@ -1,15 +1,20 @@
 import {
   ChangeDetectorRef,
   Component,
-  EventEmitter, Input,
+  EventEmitter,
+  Input,
   OnInit,
   Output,
   ViewChild,
 } from '@angular/core';
-import {debounceTime, switchMap} from 'rxjs/operators';
-import {TemplateListModel, TemplateRequestModel} from 'src/app/common/models';
-import {EFormService} from 'src/app/common/services';
-import {AreaModel, AreaRuleModel, AreaRuleUpdateModel} from '../../../../models';
+import { debounceTime, switchMap } from 'rxjs/operators';
+import { TemplateListModel, TemplateRequestModel } from 'src/app/common/models';
+import { EFormService } from 'src/app/common/services';
+import {
+  AreaModel,
+  AreaRuleModel,
+  AreaRuleUpdateModel,
+} from '../../../../models';
 
 @Component({
   selector: 'app-area-rule-edit-modal',
@@ -19,8 +24,8 @@ import {AreaModel, AreaRuleModel, AreaRuleUpdateModel} from '../../../../models'
 export class AreaRuleEditModalComponent implements OnInit {
   @Input() selectedArea: AreaModel = new AreaModel();
   @ViewChild('frame', { static: false }) frame;
-  @Output() updateAreaRule: EventEmitter<AreaRuleUpdateModel> =
-    new EventEmitter<AreaRuleUpdateModel>();
+  @Output()
+  updateAreaRule: EventEmitter<AreaRuleUpdateModel> = new EventEmitter<AreaRuleUpdateModel>();
   selectedAreaRule: AreaRuleUpdateModel = new AreaRuleUpdateModel();
   typeahead = new EventEmitter<string>();
   templatesModel: TemplateListModel = new TemplateListModel();
@@ -47,6 +52,7 @@ export class AreaRuleEditModalComponent implements OnInit {
   ngOnInit() {}
 
   show(model: AreaRuleModel) {
+    // @ts-ignore
     this.selectedAreaRule = { ...model };
     this.frame.show();
   }
@@ -58,5 +64,12 @@ export class AreaRuleEditModalComponent implements OnInit {
 
   onUpdateAreaRule() {
     this.updateAreaRule.emit(this.selectedAreaRule);
+  }
+
+  changeEform(eformId: number) {
+    this.selectedAreaRule.eformId = eformId;
+    this.selectedAreaRule.eformName = this.templatesModel.templates.find(
+      (x) => x.id === eformId
+    ).label;
   }
 }
