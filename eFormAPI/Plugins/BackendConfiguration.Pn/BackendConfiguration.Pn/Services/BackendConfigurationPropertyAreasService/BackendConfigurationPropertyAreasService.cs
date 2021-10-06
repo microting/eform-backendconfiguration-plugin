@@ -119,6 +119,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 propertyAreas.AddRange(areasForAdd);
 
+                propertyAreas = propertyAreas.OrderBy(x => x.Name).ToList();
+
                 return new OperationDataResult<List<PropertyAreaModel>>(true, propertyAreas);
             }
             catch (Exception e)
@@ -157,27 +159,27 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 foreach (var assignmentForCreate in assignmentsForCreate)
                 {
-                    var area = await _backendConfigurationPnDbContext.Areas
-                        .Include(x => x.AreaRules)
-                        .FirstOrDefaultAsync(x =>
-                        x.Name == assignmentForCreate.Name && x.Description == assignmentForCreate.Description);
-
-                    var newAssignment = new AreaProperty
-                    {
-                        CreatedByUserId = _userService.UserId,
-                        UpdatedByUserId = _userService.UserId,
-                        AreaId = area.Id,
-                        PropertyId = updateModel.PropertyId,
-                        Checked = assignmentForCreate.Activated,
-                    };
-                    await newAssignment.Create(_backendConfigurationPnDbContext);
-
-                    var property = await _backendConfigurationPnDbContext.Properties
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.Id == updateModel.PropertyId)
-                        .FirstAsync();
                     if (assignmentForCreate.Activated)
                     {
+                        var area = await _backendConfigurationPnDbContext.Areas
+                            .Include(x => x.AreaRules)
+                            .FirstOrDefaultAsync(x =>
+                            x.Name == assignmentForCreate.Name && x.Description == assignmentForCreate.Description);
+
+                        var newAssignment = new AreaProperty
+                        {
+                            CreatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId,
+                            AreaId = area.Id,
+                            PropertyId = updateModel.PropertyId,
+                            Checked = assignmentForCreate.Activated,
+                        };
+                        await newAssignment.Create(_backendConfigurationPnDbContext);
+
+                        var property = await _backendConfigurationPnDbContext.Properties
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.Id == updateModel.PropertyId)
+                            .FirstAsync();
                         switch (area.Type)
                         {
                             case AreaTypesEnum.Type3:
@@ -222,9 +224,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     break;
                                 }
                             case AreaTypesEnum.Type5:
-                            {
-                                var folderId = await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", area.Name),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId);
+                                {
+                                    var folderId = await core.FolderCreate(new List<KeyValuePair<string, string>> { new("da", area.Name), },
+                                        new List<KeyValuePair<string, string>> { new("da", ""), }, property.FolderId);
                                     //create 7 folders
                                     var folderIds = new List<int>
                                     {
