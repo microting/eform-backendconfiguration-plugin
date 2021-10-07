@@ -556,6 +556,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     {
                         case AreaTypesEnum.Type2:
                             {
+                                var folderId = await core.FolderCreate(
+                                        new List<KeyValuePair<string, string>>
+                                        {
+                                            new("da", areaRule.AreaRuleTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault()),
+                                        },
+                                        new List<KeyValuePair<string, string>> { new("da", ""), }, areaRule.FolderId);
                                 if (areaRule.Type == AreaRuleT2TypesEnum.Open)
                                 {
                                     const string eformName = "03. Kontrol flydelag";
@@ -563,14 +569,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                         .Where(x => x.Text == eformName)
                                         .Select(x => x.CheckListId)
                                         .FirstAsync();
+
                                     var planningForType2TypeTankOpen = new Planning
                                     {
                                         CreatedByUserId = _userService.UserId,
                                         Enabled = areaRulePlanningModel.Status,
                                         RelatedEFormId = eformId,
                                         RelatedEFormName = eformName,
-                                        SdkFolderName = areaRule.FolderName,
-                                        SdkFolderId = areaRule.FolderId,
+                                        SdkFolderName = areaRule.AreaRuleTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault(),
+                                        SdkFolderId = folderId,
                                         DaysBeforeRedeploymentPushMessageRepeat = false,
                                         DaysBeforeRedeploymentPushMessage = 5,
                                         PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
@@ -650,14 +657,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                         .Where(x => x.Text == eformName)
                                         .Select(x => x.CheckListId)
                                         .FirstAsync();
+                                    
                                     var planningForType2AlarmYes = new Planning
                                     {
                                         CreatedByUserId = _userService.UserId,
                                         Enabled = areaRulePlanningModel.Status,
                                         RelatedEFormId = eformId,
                                         RelatedEFormName = eformName,
-                                        SdkFolderName = areaRule.FolderName,
-                                        SdkFolderId = areaRule.FolderId,
+                                        SdkFolderName = areaRule.AreaRuleTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault(),
+                                        SdkFolderId = folderId,
                                         DaysBeforeRedeploymentPushMessageRepeat = false,
                                         DaysBeforeRedeploymentPushMessage = 5,
                                         PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
@@ -737,8 +745,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     Enabled = areaRulePlanningModel.Status,
                                     RelatedEFormId = (int)areaRule.EformId,
                                     RelatedEFormName = areaRule.EformName, // must be "03. Kontrol konstruktion"
-                                    SdkFolderName = areaRule.FolderName,
-                                    SdkFolderId = areaRule.FolderId,
+                                    SdkFolderName = areaRule.AreaRuleTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault(), // name tank
+                                    SdkFolderId = folderId,
                                     DaysBeforeRedeploymentPushMessageRepeat = false,
                                     DaysBeforeRedeploymentPushMessage = 5,
                                     PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,

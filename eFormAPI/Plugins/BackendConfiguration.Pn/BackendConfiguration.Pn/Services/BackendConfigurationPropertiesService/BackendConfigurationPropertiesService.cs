@@ -159,7 +159,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     {
                         new("da", propertyCreateModel.Name),
                     },
-                    new List<KeyValuePair<string, string>> { new("da", ""), }, null); ;
+                    new List<KeyValuePair<string, string>> { new("da", ""), }, null);
                 await newProperty.Update(_backendConfigurationPnDbContext);
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));

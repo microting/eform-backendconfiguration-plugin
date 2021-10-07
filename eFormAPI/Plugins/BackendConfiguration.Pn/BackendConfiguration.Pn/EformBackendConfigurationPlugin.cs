@@ -35,8 +35,6 @@ namespace BackendConfiguration.Pn
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
-    using Microting.eForm.Infrastructure.Constants;
-    using Microting.eForm.Infrastructure.Data.Entities;
     using Microting.eFormApi.BasePn;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Consts;
@@ -46,7 +44,6 @@ namespace BackendConfiguration.Pn
     using Microting.eFormApi.BasePn.Infrastructure.Settings;
     using Microting.EformBackendConfigurationBase.Infrastructure.Const;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Services.BackendConfigurationAreaRules;
@@ -217,7 +214,7 @@ namespace BackendConfiguration.Pn
                         new()
                         {
                              LocaleName = LocaleNames.Danish,
-                             Name = "Backend Konfiguration",
+                             Name = "Konfiguration",
                              Language = LanguageNames.Danish,
                         },
                         new()
@@ -259,7 +256,7 @@ namespace BackendConfiguration.Pn
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
-                                        Name = "Ejendomme",
+                                        Name = "Ejendomme Medarbejdere",
                                         Language = LanguageNames.Danish,
                                     },
                                     new()
@@ -287,7 +284,7 @@ namespace BackendConfiguration.Pn
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
-                                    Name = "Ejendomme",
+                                    Name = "Ejendomme Medarbejdere",
                                     Language = LanguageNames.Danish,
                                 },
                                 new()
