@@ -36,7 +36,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 1,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 1, LanguageId = 1, Name = "00. Working hours",},
+                    new() {FolderId = 1, LanguageId = 1, Name = "00. Arbejdstid",},
+                    new() {FolderId = 1, LanguageId = 2, Name = "00. Working hours",},
+                    new() {FolderId = 1, LanguageId = 3, Name = "00. Arbeitszeit",},
                     new() {FolderId = 1, LanguageId = 4, Name = "00. Робочий час",},
                 }
             },
@@ -45,7 +47,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 2,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 2, LanguageId = 1, Name = "00.01 Create task"},
+                    new() {FolderId = 2, LanguageId = 1, Name = "00.01 Opret opgave"},
+                    new() {FolderId = 2, LanguageId = 2, Name = "00.01 Create task"},
+                    new() {FolderId = 2, LanguageId = 3, Name = "00.01 Aufgabe erstellen"},
                     new() {FolderId = 2, LanguageId = 4, Name = "00.01 Створення завдання"},
                 }
             },
@@ -54,7 +58,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 3,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 3, LanguageId = 1, Name = "00.02 To-do-list"},
+                    new() {FolderId = 3, LanguageId = 1, Name = "00.02 Huskelist"},
+                    new() {FolderId = 3, LanguageId = 2, Name = "00.02 To-do-list"},
+                    new() {FolderId = 3, LanguageId = 3, Name = "00.02 To-do-liste"},
                     new() {FolderId = 3, LanguageId = 4, Name = "00.02 Список справ"},
                 }
             },
@@ -63,7 +69,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 4,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 4, LanguageId = 1, Name = "01. Environmental Management"},
+                    new() {FolderId = 4, LanguageId = 1, Name = "01. Miljøstyring"},
+                    new() {FolderId = 4, LanguageId = 2, Name = "01. Environmental Management"},
+                    new() {FolderId = 4, LanguageId = 3, Name = "01. Umweltmanagement"},
                     new() {FolderId = 4, LanguageId = 4, Name = "01. Управління навколишнім середовищем"},
                 }
             },
@@ -73,7 +81,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 4,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 5, LanguageId = 1, Name = "Water"},
+                    new() {FolderId = 5, LanguageId = 1, Name = "Vand"},
+                    new() {FolderId = 5, LanguageId = 2, Name = "Water"},
+                    new() {FolderId = 5, LanguageId = 3, Name = "Wasser"},
                     new() {FolderId = 5, LanguageId = 4, Name = "Вода"},
                 }
             },
@@ -83,7 +93,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 4,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 6, LanguageId = 1, Name = "Electricity"},
+                    new() {FolderId = 6, LanguageId = 1, Name = "Elektricitet"},
+                    new() {FolderId = 6, LanguageId = 2, Name = "Electricity"},
+                    new() {FolderId = 6, LanguageId = 3, Name = "Elektrizität"},
                     new() {FolderId = 6, LanguageId = 4, Name = "Електрика"},
                 }
             },
@@ -92,7 +104,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 7,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 7, LanguageId = 1, Name = "02. Contingency"},
+                    new() {FolderId = 7, LanguageId = 1, Name = "02. Beredskab"},
+                    new() {FolderId = 7, LanguageId = 2, Name = "02. Contingency"},
+                    new() {FolderId = 7, LanguageId = 3, Name = "02. Kontingenz"},
                     new() {FolderId = 7, LanguageId = 4, Name = "02. Непередбачені обставини"},
                 }
             },
@@ -102,7 +116,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 7,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 8, LanguageId = 1, Name = "Contingency plan (PDF)"},
+                    new() {FolderId = 8, LanguageId = 1, Name = "Beredskabsplan (PDF)"},
+                    new() {FolderId = 8, LanguageId = 2, Name = "Contingency plan (PDF)"},
+                    new() {FolderId = 8, LanguageId = 3, Name = "Notfallplan (PDF)"},
                     new() {FolderId = 8, LanguageId = 4, Name = "План дій у надзвичайних ситуаціях (PDF)"},
                 }
             },
@@ -112,7 +128,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 7,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 9, LanguageId = 1, Name = "Fire equipment"},
+                    new() {FolderId = 9, LanguageId = 1, Name = "Brandustyr"},
+                    new() {FolderId = 9, LanguageId = 2, Name = "Fire equipment"},
+                    new() {FolderId = 9, LanguageId = 3, Name = "Feuer-Ausrüstung"},
                     new() {FolderId = 9, LanguageId = 4, Name = "Пожежне обладнання"},
                 }
             },
@@ -122,7 +140,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 7,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 10, LanguageId = 1, Name = "Safety equipment"},
+                    new() {FolderId = 10, LanguageId = 1, Name = "Sikkerhedsudstyr"},
+                    new() {FolderId = 10, LanguageId = 2, Name = "Safety equipment"},
+                    new() {FolderId = 10, LanguageId = 3, Name = "Sicherheitsausrüstung"},
                     new() {FolderId = 10, LanguageId = 4, Name = "Обладнання для забезпечення безпеки"},
                 }
             },
@@ -132,7 +152,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 7,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 11, LanguageId = 1, Name = "First aid"},
+                    new() {FolderId = 11, LanguageId = 1, Name = "Første hjælp"},
+                    new() {FolderId = 11, LanguageId = 2, Name = "First aid"},
+                    new() {FolderId = 11, LanguageId = 3, Name = "Erste Hilfe"},
                     new() {FolderId = 11, LanguageId = 4, Name = "Перша допомога"},
                 }
             },
@@ -141,8 +163,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 12,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 12, LanguageId = 1, Name = "03 Slurry Tanks"},
-                    new() {FolderId = 12, LanguageId = 4, Name = ""},
+                    new() {FolderId = 12, LanguageId = 1, Name = "03. Gylletanke"},
+                    new() {FolderId = 12, LanguageId = 2, Name = "03. Slurry Tanks"},
+                    new() {FolderId = 12, LanguageId = 3, Name = "03. Gülletanks"},
+                    new() {FolderId = 12, LanguageId = 4, Name = "03. Цистерни для навозу"},
                 }
             },
             new Folder
@@ -286,6 +310,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderTranslations = new List<FolderTranslation>
                 {
                     new() {FolderId = 25, LanguageId = 1, Name = "04. Feeding documentation"},
+                    new() {FolderId = 25, LanguageId = 2, Name = "04. Feeding documentation"},
+                    new() {FolderId = 25, LanguageId = 3, Name = "04. Fütterungsdokumentation"},
                     new() {FolderId = 25, LanguageId = 4, Name = "04. Документація по годівлі"},
                 }
             },
@@ -334,7 +360,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 30,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 30, LanguageId = 1, Name = "05. Stables"},
+                    new() {FolderId = 30, LanguageId = 1, Name = "05. Stalde"},
+                    new() {FolderId = 30, LanguageId = 2, Name = "05. Stables"},
+                    new() {FolderId = 30, LanguageId = 3, Name = "05. Stallungen"},
                     new() {FolderId = 30, LanguageId = 4, Name = "05. Штабельований"},
                 }
             },
@@ -343,7 +371,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 31,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 31, LanguageId = 1, Name = "06. Silos"},
+                    new() {FolderId = 31, LanguageId = 1, Name = "06. Siloer"},
+                    new() {FolderId = 31, LanguageId = 2, Name = "06. Silos"},
+                    new() {FolderId = 31, LanguageId = 3, Name = "06. Silos"},
                     new() {FolderId = 31, LanguageId = 4, Name = "06. Бункер"},
                 }
             },
@@ -352,7 +382,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 32,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 32, LanguageId = 1, Name = "07. Pest control"},
+                    new() {FolderId = 32, LanguageId = 1, Name = "07. Skadedyrsbekæmpelse"},
+                    new() {FolderId = 32, LanguageId = 2, Name = "07. Pest control"},
+                    new() {FolderId = 32, LanguageId = 3, Name = "07. Schädlingsbekämpfung"},
                     new() {FolderId = 32, LanguageId = 4, Name = "07. Боротьба з шкідниками"},
                 }
             },
@@ -361,7 +393,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 33,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 33, LanguageId = 1, Name = "08. Enviromental Technologies"},
+                    new() {FolderId = 33, LanguageId = 1, Name = "08. Miljøteknologier"},
+                    new() {FolderId = 33, LanguageId = 2, Name = "08. Environmental Technologies"},
+                    new() {FolderId = 33, LanguageId = 3, Name = "08. Umwelttechnologien"},
                     new() {FolderId = 33, LanguageId = 4, Name = "08. Екологічні технології"},
                 }
             },
@@ -371,7 +405,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 33,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 34, LanguageId = 1, Name = "Slurry cooling"},
+                    new() {FolderId = 34, LanguageId = 1, Name = "Gyllekøling"},
+                    new() {FolderId = 34, LanguageId = 2, Name = "Slurry cooling"},
+                    new() {FolderId = 34, LanguageId = 3, Name = "Schlammkühlung"},
                     new() {FolderId = 34, LanguageId = 4, Name = "Охолодження гнойової рідини"},
                 }
             },
@@ -381,7 +417,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 33,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 35, LanguageId = 1, Name = "Air Cleaning"},
+                    new() {FolderId = 35, LanguageId = 1, Name = "Luftrensning"},
+                    new() {FolderId = 35, LanguageId = 2, Name = "Air Cleaning"},
+                    new() {FolderId = 35, LanguageId = 3, Name = "Luftreinigung"},
                     new() {FolderId = 35, LanguageId = 4, Name = "Очищення повітря"},
                 }
             },
@@ -391,7 +429,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 33,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 36, LanguageId = 1, Name = "Acidification"},
+                    new() {FolderId = 36, LanguageId = 1, Name = "Ansäuerung"},
+                    new() {FolderId = 36, LanguageId = 2, Name = "Acidification"},
+                    new() {FolderId = 36, LanguageId = 3, Name = "Ansäuerung"},
                     new() {FolderId = 36, LanguageId = 4, Name = "Підкислення"},
                 }
             },
@@ -400,7 +440,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 37,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 37, LanguageId = 1, Name = "10. Heat pumps"},
+                    new() {FolderId = 37, LanguageId = 1, Name = "10. Varmepumper"},
+                    new() {FolderId = 37, LanguageId = 2, Name = "10. Heat pumps"},
+                    new() {FolderId = 37, LanguageId = 3, Name = "10. Wärmepumpen"},
                     new() {FolderId = 37, LanguageId = 4, Name = "10. Теплова помпа"},
                 }
             },
@@ -439,7 +481,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 41,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 41, LanguageId = 1, Name = "11. Pellot stoves"},
+                    new() {FolderId = 41, LanguageId = 1, Name = "11. Pilleovne"},
+                    new() {FolderId = 41, LanguageId = 2, Name = "11. Pellot stoves"},
+                    new() {FolderId = 41, LanguageId = 3, Name = "11. Pelletöfen"},
                     new() {FolderId = 41, LanguageId = 4, Name = "11. Печі-пелети"},
                 }
             },
@@ -478,7 +522,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 45,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 45, LanguageId = 1, Name = "16. Environmentally hazardous substances"},
+                    new() {FolderId = 45, LanguageId = 1, Name = "16. Miljøfarlige stoffer"},
+                    new() {FolderId = 45, LanguageId = 2, Name = "16. Environmentally hazardous substances"},
+                    new() {FolderId = 45, LanguageId = 3, Name = "16. Umweltgefährdende Stoffe"},
                     new() {FolderId = 45, LanguageId = 4, Name = "16. Речовини, небезпечні для навколишнього середовища"},
                 }
             },
@@ -489,6 +535,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderTranslations = new List<FolderTranslation>
                 {
                     new() {FolderId = 46, LanguageId = 1, Name = "Diesel tank"},
+                    new() {FolderId = 46, LanguageId = 2, Name = "Diesel tank"},
+                    new() {FolderId = 46, LanguageId = 3, Name = "Dieseltank"},
                     new() {FolderId = 46, LanguageId = 4, Name = "Дизельний бак"},
                 }
             },
@@ -498,7 +546,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 45,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 47, LanguageId = 1, Name = "Engine and waste oil"},
+                    new() {FolderId = 47, LanguageId = 1, Name = "Motor og spildolie"},
+                    new() {FolderId = 47, LanguageId = 2, Name = "Engine and waste oil"},
+                    new() {FolderId = 47, LanguageId = 3, Name = "Motor- und Altöl"},
                     new() {FolderId = 47, LanguageId = 4, Name = "Двигун і відпрацьоване масло"},
                 }
             },
@@ -508,7 +558,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 45,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 48, LanguageId = 1, Name = "Chemistry"},
+                    new() {FolderId = 48, LanguageId = 1, Name = "Kemi"},
+                    new() {FolderId = 48, LanguageId = 2, Name = "Chemistry"},
+                    new() {FolderId = 48, LanguageId = 3, Name = "Chemie"},
                     new() {FolderId = 48, LanguageId = 4, Name = "Хімія"},
                 }
             },
@@ -518,7 +570,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 45,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 49, LanguageId = 1, Name = "Trash"},
+                    new() {FolderId = 49, LanguageId = 1, Name = "Affald"},
+                    new() {FolderId = 49, LanguageId = 2, Name = "Trash"},
+                    new() {FolderId = 49, LanguageId = 3, Name = "Müll"},
                     new() {FolderId = 49, LanguageId = 4, Name = "Сміття"},
                 }
             },
@@ -527,7 +581,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 50,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 50, LanguageId = 1, Name = "19. Work Place Assesment"},
+                    new() {FolderId = 50, LanguageId = 1, Name = "19. Arbejdspladsvurdering"},
+                    new() {FolderId = 50, LanguageId = 2, Name = "19. Work Place Assesment"},
+                    new() {FolderId = 50, LanguageId = 3, Name = "19. Arbeitsplatzbewertung"},
                     new() {FolderId = 50, LanguageId = 4, Name = "19. Оцінка Робочого Місця"},
                 }
             },
@@ -536,7 +592,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 51,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 51, LanguageId = 1, Name = "20. Machines"},
+                    new() {FolderId = 51, LanguageId = 1, Name = "20. Maskiner"},
+                    new() {FolderId = 51, LanguageId = 2, Name = "20. Machines"},
+                    new() {FolderId = 51, LanguageId = 3, Name = "20. Maschinen"},
                     new() {FolderId = 51, LanguageId = 4, Name = "20. Машини"},
                 }
             },
@@ -546,6 +604,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderTranslations = new List<FolderTranslation>
                 {
                     new() {FolderId = 52, LanguageId = 1, Name = "21. DANISH Standard"},
+                    new() {FolderId = 52, LanguageId = 2, Name = "21. DANISH Standard"},
+                    new() {FolderId = 52, LanguageId = 3, Name = "21. DÄNISCHER Standard"},
                     new() {FolderId = 52, LanguageId = 4, Name = "21. Датський стандарт"},
                 }
             },
@@ -554,7 +614,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 53,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 53, LanguageId = 1, Name = "24. Tale bite"},
+                    new() {FolderId = 53, LanguageId = 1, Name = "24. Halebid"},
+                    new() {FolderId = 53, LanguageId = 2, Name = "24. Tail bite"},
+                    new() {FolderId = 53, LanguageId = 3, Name = "24. Schwanzbiss"},
                     new() {FolderId = 53, LanguageId = 4, Name = "24. Мовний укус"},
                 }
             },
@@ -563,7 +625,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 54,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 54, LanguageId = 1, Name = "26. Sieve test"},
+                    new() {FolderId = 54, LanguageId = 1, Name = "26. Sigttest"},
+                    new() {FolderId = 54, LanguageId = 2, Name = "26. Sieve test"},
+                    new() {FolderId = 54, LanguageId = 3, Name = "26. Siebtest"},
                     new() {FolderId = 54, LanguageId = 4, Name = "26. Випробування на сито"},
                 }
             },
@@ -602,7 +666,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 58,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 58, LanguageId = 1, Name = "27. Recurring tasks (mon-sun)"},
+                    new() {FolderId = 58, LanguageId = 1, Name = "27. Tilbagevendende opgaver (man-søn)"},
+                    new() {FolderId = 58, LanguageId = 2, Name = "27. Recurring tasks (mon-sun)"},
+                    new() {FolderId = 58, LanguageId = 3, Name = "27. Wiederkehrende Aufgaben (Mo-So)"},
                     new() {FolderId = 58, LanguageId = 4, Name = "27. Повторювані завдання (пн-нд)"},
                 }
             },
@@ -612,7 +678,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 58,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 59, LanguageId = 1, Name = "Monday"},
+                    new() {FolderId = 59, LanguageId = 1, Name = "Mandag"},
+                    new() {FolderId = 59, LanguageId = 2, Name = "Monday"},
+                    new() {FolderId = 59, LanguageId = 3, Name = "Montag"},
                     new() {FolderId = 59, LanguageId = 4, Name = "Понеділок"},
                 }
             },
@@ -622,7 +690,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 58,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 60, LanguageId = 1, Name = "Tuesday"},
+                    new() {FolderId = 60, LanguageId = 1, Name = "Tirsdag"},
+                    new() {FolderId = 60, LanguageId = 2, Name = "Tuesday"},
+                    new() {FolderId = 60, LanguageId = 3, Name = "Dienstag"},
                     new() {FolderId = 60, LanguageId = 4, Name = "Вівторок"},
                 }
             },
@@ -632,7 +702,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 58,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 61, LanguageId = 1, Name = "Wednesday"},
+                    new() {FolderId = 61, LanguageId = 1, Name = "Onsdag"},
+                    new() {FolderId = 61, LanguageId = 2, Name = "Wednesday"},
+                    new() {FolderId = 61, LanguageId = 3, Name = "Mittwoch"},
                     new() {FolderId = 61, LanguageId = 4, Name = "Середа"},
                 }
             },
@@ -642,17 +714,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 58,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 65, LanguageId = 1, Name = "Sunday"},
-                    new() {FolderId = 65, LanguageId = 4, Name = "Неділя"},
-                }
-            },
-            new Folder
-            {
-                Id = 62,
-                ParentId = 58,
-                FolderTranslations = new List<FolderTranslation>
-                {
-                    new() {FolderId = 62, LanguageId = 1, Name = "Thursday"},
+                    new() {FolderId = 62, LanguageId = 1, Name = "Torsdag"},
+                    new() {FolderId = 62, LanguageId = 2, Name = "Thursday"},
+                    new() {FolderId = 62, LanguageId = 3, Name = "Donnerstag"},
                     new() {FolderId = 62, LanguageId = 4, Name = "Четвер"},
                 }
             },
@@ -662,7 +726,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 58,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 63, LanguageId = 1, Name = "Friday"},
+                    new() {FolderId = 63, LanguageId = 1, Name = "Fredag"},
+                    new() {FolderId = 63, LanguageId = 2, Name = "Friday"},
+                    new() {FolderId = 63, LanguageId = 3, Name = "Freitag"},
                     new() {FolderId = 63, LanguageId = 4, Name = "П'ятниця"},
                 }
             },
@@ -672,7 +738,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 ParentId = 58,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 64, LanguageId = 1, Name = "Saturday"},
+                    new() {FolderId = 64, LanguageId = 1, Name = "Lørdag"},
+                    new() {FolderId = 64, LanguageId = 2, Name = "Saturday"},
+                    new() {FolderId = 64, LanguageId = 3, Name = "Samstag"},
                     new() {FolderId = 64, LanguageId = 4, Name = "Субота"},
                 }
             },
@@ -681,7 +749,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 65,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 65, LanguageId = 1, Name = "Sunday"},
+                    new() {FolderId = 65, LanguageId = 1, Name = "Søndag"},
+                    new() {FolderId = 65, LanguageId = 2, Name = "Sunday"},
+                    new() {FolderId = 65, LanguageId = 3, Name = "Sonntag"},
                     new() {FolderId = 65, LanguageId = 4, Name = "Неділя"},
                 }
             },
@@ -691,6 +761,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderTranslations = new List<FolderTranslation>
                 {
                     new() {FolderId = 66, LanguageId = 1, Name = "31. Alarm"},
+                    new() {FolderId = 66, LanguageId = 2, Name = "31. Alarm"},
+                    new() {FolderId = 66, LanguageId = 3, Name = "31. Alarm"},
                     new() {FolderId = 66, LanguageId = 4, Name = "31. Тривога"},
                 }
             },
@@ -700,6 +772,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderTranslations = new List<FolderTranslation>
                 {
                     new() {FolderId = 67, LanguageId = 1, Name = "33. Ventilation"},
+                    new() {FolderId = 67, LanguageId = 2, Name = "33. Ventilation"},
+                    new() {FolderId = 67, LanguageId = 3, Name = "33. Belüftung"},
                     new() {FolderId = 67, LanguageId = 4, Name = "33. Вентиляція"},
                 }
             },
@@ -708,7 +782,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 68,
                 FolderTranslations = new List<FolderTranslation>
                 {
-                    new() {FolderId = 68, LanguageId = 1, Name = "34. Inspection of power tools"},
+                    new() {FolderId = 68, LanguageId = 1, Name = "34. Eftersyn af elværktøj"},
+                    new() {FolderId = 68, LanguageId = 2, Name = "34. Inspection of power tools"},
+                    new() {FolderId = 68, LanguageId = 3, Name = "34. Inspektion von Elektrowerkzeugen"},
                     new() {FolderId = 68, LanguageId = 4, Name = "34. Перевірка електроінструментів"},
                 }
             },
@@ -716,11 +792,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 FolderTranslations = new List<FolderTranslation>
                 {
+                    new() {FolderId = 69, LanguageId = 1, Name = "35. Eftersyn af stiger"},
+                    new() {FolderId = 69, LanguageId = 2, Name = "35. Inspection of ladders"},
+                    new() {FolderId = 69, LanguageId = 3, Name = "35. Inspektion von Leitern"},
                     new() {FolderId = 69, LanguageId = 4, Name = "35. Огляд сходів"},
-                    new() {FolderId = 69, LanguageId = 1, Name = "35. Inspection of ladders"},
                 }
             },
         };
-        
+
     }
 }
