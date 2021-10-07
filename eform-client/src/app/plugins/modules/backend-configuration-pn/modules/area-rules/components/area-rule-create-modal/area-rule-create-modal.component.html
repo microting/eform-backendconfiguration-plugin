@@ -105,7 +105,17 @@
                       <div class="row">
                         <div class="col-12 ng-select-wrapper">
                           <ng-select
-                            [items]="templatesModel.templates"
+                            [items]="
+                              templatesModel.templates
+                                ? templatesModel.templates
+                                : [
+                                    {
+                                      id: selectedArea.initialFields.eformId,
+                                      label:
+                                        selectedArea.initialFields.eformName
+                                    }
+                                  ]
+                            "
                             bindLabel="label"
                             [placeholder]="'Selected template' | translate"
                             bindValue="id"

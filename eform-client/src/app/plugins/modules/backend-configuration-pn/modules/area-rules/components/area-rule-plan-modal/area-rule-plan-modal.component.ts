@@ -6,24 +6,19 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
+import { format } from 'date-fns';
 import {
+  AreaInitialFieldsModel,
   AreaModel,
   AreaRuleAssignedSitesModel,
+  AreaRuleInitialFieldsModel,
   AreaRulePlanningModel,
   AreaRuleSimpleModel,
-  AreaRuleT1Model,
   AreaRuleT1PlanningModel,
-  AreaRuleT2Model,
   AreaRuleT2PlanningModel,
-  AreaRuleT3Model,
   AreaRuleT4PlanningModel,
-  AreaRuleT5Model,
   AreaRuleT5PlanningModel,
 } from '../../../../models';
-import {
-  AreaRuleT2AlarmsEnum,
-  AreaRuleT2TypesEnum,
-} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -57,13 +52,8 @@ export class AreaRulePlanModalComponent implements OnInit {
   ) {
     this.selectedAreaRulePlanning = planning
       ? { ...planning, propertyId: selectedPropertyId }
-      : {
-          ...new AreaRulePlanningModel(),
-          typeSpecificFields: this.generateRulePlanningTypeSpecificFields(),
-          ruleId: rule.id,
-          propertyId: selectedPropertyId,
-        };
-    this.selectedAreaRule = rule;
+      : this.generateInitialPlanningObject(rule, selectedPropertyId);
+    this.selectedAreaRule = { ...rule };
     this.frame.show();
   }
 
@@ -85,9 +75,10 @@ export class AreaRulePlanModalComponent implements OnInit {
         assignmentObject,
       ];
     } else {
-      this.selectedAreaRulePlanning.assignedSites = this.selectedAreaRulePlanning.assignedSites.filter(
-        (x) => x.siteId !== siteId
-      );
+      this.selectedAreaRulePlanning.assignedSites =
+        this.selectedAreaRulePlanning.assignedSites.filter(
+          (x) => x.siteId !== siteId
+        );
     }
   }
 
@@ -98,28 +89,60 @@ export class AreaRulePlanModalComponent implements OnInit {
     return assignedSite ? assignedSite.checked : false;
   }
 
-  generateRulePlanningTypeSpecificFields():
+  generateInitialPlanningObject(
+    rule: AreaRuleSimpleModel,
+    propertyId: number
+  ): AreaRulePlanningModel {
+    const initialFields = rule.initialFields
+      ? this.generateRulePlanningTypeSpecificFields(rule.initialFields)
+      : this.generateRulePlanningTypeSpecificFields(
+          this.selectedArea.initialFields
+        );
+
+    return {
+      ...new AreaRulePlanningModel(),
+      typeSpecificFields: { ...initialFields },
+      ruleId: rule.id,
+      propertyId,
+      sendNotifications: rule.initialFields
+        ? rule.initialFields.sendNotifications
+        : this.selectedArea.initialFields.sendNotifications,
+    };
+  }
+
+  generateRulePlanningTypeSpecificFields(
+    initialFields: AreaInitialFieldsModel | AreaRuleInitialFieldsModel
+  ):
     | AreaRuleT1PlanningModel
     | AreaRuleT2PlanningModel
     | AreaRuleT4PlanningModel
     | AreaRuleT5PlanningModel {
     if (this.selectedArea.type === 1) {
-      return { repeatEvery: 1, repeatType: 1 };
+      return {
+        repeatEvery: initialFields.repeatEvery,
+        repeatType: initialFields.repeatType,
+      };
     }
     if (this.selectedArea.type === 2) {
       return {
-        // type: AreaRuleT2TypesEnum.Closed,
-        // alarm: AreaRuleT2AlarmsEnum.No,
         repeatEvery: 1,
         repeatType: 1,
-        startDate: null,
+        startDate: format(new Date(), 'yyyy-MM-dd'),
       };
     }
     if (this.selectedArea.type === 3) {
-      return { endDate: null, repeatEvery: 1, repeatType: 1 };
+      return {
+        endDate: format(new Date(Date.now() + 12096e5), 'yyyy-MM-dd'),
+        repeatEvery: 1,
+        repeatType: 1,
+      };
     }
     if (this.selectedArea.type === 4) {
-      return { endDate: null, repeatEvery: 12, repeatType: 3 };
+      return {
+        endDate: format(new Date(Date.now() + 12096e5), 'yyyy-MM-dd'),
+        repeatEvery: 12,
+        repeatType: 3,
+      };
     }
     if (this.selectedArea.type === 5) {
       return {

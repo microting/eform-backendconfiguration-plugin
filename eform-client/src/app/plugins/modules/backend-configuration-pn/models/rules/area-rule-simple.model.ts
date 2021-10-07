@@ -22,6 +22,7 @@ export class AreaRuleSimpleModel {
     | AreaRuleT3Model
     | AreaRuleT5Model;
   planningId?: number;
+  initialFields?: AreaRuleInitialFieldsModel;
 }
 
 export class AreaRuleModel {
@@ -36,4 +37,16 @@ export class AreaRuleModel {
     | AreaRuleT3Model
     | AreaRuleT5Model;
   planning: AreaRulePlanningModel;
+}
+
+export class AreaRuleInitialFieldsModel {
+  eformId?: number;
+  eformName?: string;
+  sendNotifications?: boolean;
+  repeatEvery?: number;
+  repeatType?: number;
+  dayOfWeek?: number;
+  type?: number;
+  alarm?: number;
+  endDate?: string;
 }
