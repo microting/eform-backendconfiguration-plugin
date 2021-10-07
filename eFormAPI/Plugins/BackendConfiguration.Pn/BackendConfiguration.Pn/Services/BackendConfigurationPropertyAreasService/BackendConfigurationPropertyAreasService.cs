@@ -160,7 +160,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .ToList();
 
                 var core = await _coreHelper.GetCore();
-                //var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 foreach (var assignmentForCreate in assignmentsForCreate)
                 {
@@ -312,6 +311,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 //    await assignmentForUpdate.Update(_backendConfigurationPnDbContext);
                 //}
 
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
                 foreach (var areaPropertyForDelete in assignmentsForDelete)
                 {
                     await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext);
