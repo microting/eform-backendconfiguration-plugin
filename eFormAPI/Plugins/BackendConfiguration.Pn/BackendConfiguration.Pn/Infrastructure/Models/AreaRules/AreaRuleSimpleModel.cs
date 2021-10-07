@@ -36,7 +36,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public bool PlanningStatus { get; set; }
 
-        // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
         public object TypeSpecificFields { get; set; }
+
+        public AreaRuleInitialFields InitialFields { get; set; }
     }
 }

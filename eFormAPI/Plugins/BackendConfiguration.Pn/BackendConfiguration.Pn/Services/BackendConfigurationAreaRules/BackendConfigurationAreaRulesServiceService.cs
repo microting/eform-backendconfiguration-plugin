@@ -82,6 +82,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.AreaId == areaId)
                     .Include(x => x.AreaRuleTranslations)
+                    .Include(x => x.AreaRuleInitialField)
                     .Select(x => new AreaRuleSimpleModel
                     {
                         Id = x.Id,
@@ -92,16 +93,37 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             .FirstOrDefault(),
                         IsDefault = BackendConfigurationSeedAreas.LastIndexAreaRules >= x.Id,
                         TypeSpecificFields = new { x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, },
+                        InitialFields = x.AreaRuleInitialField != null ? new AreaRuleInitialFields
+                        {
+                            RepeatType = x.AreaRuleInitialField.RepeatType,
+                            RepeatEvery = x.AreaRuleInitialField.RepeatEvery,
+                            Type = x.AreaRuleInitialField.Type,
+                            Alarm = x.AreaRuleInitialField.Alarm,
+                            DayOfWeek = x.AreaRuleInitialField.DayOfWeek,
+                            EformName = x.AreaRuleInitialField.EformName,
+                            EndDate = x.AreaRuleInitialField.EndDate,
+                            SendNotifications = x.AreaRuleInitialField.Notifications,
+                        } : null,
                     })
                     .ToListAsync();
 
                 foreach (var areaRule in areaRules)
                 {
+                    var core = await _coreHelper.GetCore();
+                    var sdkDbContext = core.DbContextHelper.GetDbContext();
                     var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.AreaRuleId == areaRule.Id)
                         .FirstOrDefaultAsync();
                     areaRule.PlanningStatus = areaRulePlanning != null && areaRulePlanning.ItemPlanningId != 0;
+
+                    if (areaRule.InitialFields != null && !string.IsNullOrEmpty(areaRule.InitialFields.EformName))
+                    {
+                        areaRule.InitialFields.EformId = await sdkDbContext.CheckListTranslations
+                            .Where(x => x.Text == areaRule.InitialFields.EformName)
+                            .Select(x => x.CheckListId)
+                            .FirstOrDefaultAsync();
+                    }
                 }
 
                 return new OperationDataResult<List<AreaRuleSimpleModel>>(true, areaRules);

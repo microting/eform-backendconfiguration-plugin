@@ -31,7 +31,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 
     public static class BackendConfigurationSeedAreas
     {
-        public static int LastIndexAreaRules => AreasSeed.SelectMany(x => x.AreaRules).Count();
+        public static int LastIndexAreaRules => AreasSeed.SelectMany(x => x.AreaRules).Select(x => x.Id).Max();
 
         public static List<Area> AreasSeed => new()
         {
@@ -41,7 +41,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "01. Environmental Management (kun IE-husdyrbrug)",
                 Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
                 Type = AreaTypesEnum.Type1,
-                AreaRules =new List<AreaRule>
+                AreaRules = new List<AreaRule>
                 {
                     new()
                     {
@@ -49,9 +49,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         EformName = "01. Vandforbrug",
                         AreaRuleTranslations = new List<AreaRuleTranslation>
                         {
-                            new() { LanguageId = 1, Name = "01. Vandforbrug" },
-                            new() { LanguageId = 2, Name = "01. Water consumption" },
-                            new() { LanguageId = 3, Name = "01. Wasserverbrauch" }
+                            new() { LanguageId = 1, Name = "01. Vandforbrug" }, // da
+                            new() { LanguageId = 2, Name = "01. Water consumption" }, // en
+                            new() { LanguageId = 3, Name = "01. Wasserverbrauch" } // ge
                         },
                         AreaRuleInitialField = new AreaRuleInitialField
                         {
@@ -76,26 +76,29 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new() {
-                        AreaId = 1,
                         Name = "01. Environmental Management (kun IE-husdyrbrug)",
                         Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
                         LanguageId = 1
                     },
                     new() {
-                        AreaId = 1,
                         Name = "01. Environmental Management (kun IE-husdyrbrug)",
                         Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
                         LanguageId = 2
                     },
                     new() {
-                        AreaId = 1,
                         Name = "01. Environmental Management (kun IE-husdyrbrug)",
                         Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
                         LanguageId = 3
                     }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "01. Vandforbrug",
+                    RepeatEvery = 1, // one
+                    RepeatType = 3, // month
                 }
             },
             new Area
@@ -155,29 +158,32 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 2,
                         Name = "02. Contingency",
                         Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 2,
                         Name = "02. Contingency",
                         Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 2,
                         Name = "02. Contingency",
                         Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
                         LanguageId = 3
                     }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "02. Brandudstyr",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
                 }
             },
             new Area
@@ -186,29 +192,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "03. Slurry tanks",
                 Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                 Type = AreaTypesEnum.Type2,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 3,
                         Name = "03. Slurry tanks",
                         Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 3,
                         Name = "03. Slurry tanks",
                         Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 3,
                         Name = "03. Slurry tanks",
                         Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                         LanguageId = 3
                     }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "03. Kontrol konstruktion",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                    Alarm = AreaRuleT2AlarmsEnum.No,
+                    Type = AreaRuleT2TypesEnum.Closed,
                 }
             },
             new Area
@@ -217,30 +228,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "04. Feeding documentation (kun IE-husdyrbrug)",
                 Description = @"https://www.microting.dk/eform/landbrug/04-foderdokumentation",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 4,
                         Name = "04. Feeding documentation (kun IE-husdyrbrug)",
                         Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 4,
                         Name = "04. Feeding documentation (kun IE-husdyrbrug)",
                         Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 4,
                         Name = "04. Feeding documentation (kun IE-husdyrbrug)",
                         Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "04. Foderindlægssedler",
+                    Notifications = false,
+                    RepeatEvery = 1, // 1
+                    RepeatType = 1, // day
+                },
             },
             new Area
             {
@@ -248,30 +263,31 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "05. Stable preparations and tail bite documentation",
                 Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
                 Type = AreaTypesEnum.Type3,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 5,
                         Name = "05. Stable preparations and tail bite documentation",
                         Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 5,
                         Name = "05. Stable preparations and tail bite documentation",
                         Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 5,
                         Name = "05. Stable preparations and tail bite documentation",
                         Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "05. Stald_klargøring",
+                },
             },
             new Area
             {
@@ -279,29 +295,33 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "06. Silos",
                 Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 6,
                         Name = "06. Silos",
                         Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 6,
                         Name = "06. Silos",
                         Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 6,
                         Name = "06. Silos",
                         Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
                         LanguageId = 3
                     }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "06. Siloer",
+                    Notifications = true,
+                    RepeatEvery = 1, // 1
+                    RepeatType = 3 // month
                 }
             },
             new Area
@@ -347,29 +367,33 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 7,
                         Name = "07. Pest control",
                         Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 7,
                         Name = "07. Pest control",
                         Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 7,
                         Name = "07. Pest control",
                         Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
                         LanguageId = 3
                     }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "07. Rotter",
+                    Notifications = false,
+                    RepeatEvery = 1, // 1
+                    RepeatType = 1 // day
                 }
             },
             new Area
@@ -432,29 +456,33 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 8,
                         Name = "08. Aircleaning",
                         Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 8,
                         Name = "08. Aircleaning",
                         Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 8,
                         Name = "08. Aircleaning",
                         Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
                         LanguageId = 3
                     }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "08. Luftrensning timer",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                    Notifications = true,
                 }
             },
             new Area
@@ -517,30 +545,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 9,
                         Name = "09. Acidification",
                         Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 9,
                         Name = "09. Acidification",
                         Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 9,
                         Name = "09. Acidification",
                         Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "09. Forsuring pH værdi",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                    Notifications = true,
+                },
             },
             new Area
             {
@@ -602,30 +634,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 11,
                         Name = "10. Heat pumps",
                         Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 11,
                         Name = "10. Heat pumps",
                         Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 11,
                         Name = "10. Heat pumps",
                         Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "10. Varmepumpe timer og energi",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                    Notifications = true,
+                },
             },
             new Area
             {
@@ -634,6 +670,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
                 Type = AreaTypesEnum.Type1,
                 AreaInitialField = new AreaInitialField
+                {
+                    EformName = "11. Pillefyr",
+                    Notifications = false,
+                    RepeatEvery = 1, // 1
+                    RepeatType = 3, // month
+                },
+                /*AreaRules = new List<AreaRule>
                 {
                     new()
                     {
@@ -646,26 +689,23 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                             new() { LanguageId = 3, Name = "11. Pelletofen" }
                         },
                     },
-                },
-                AreaTranslations = new List<AreaTranslation>()
+                },*/
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 11,
                         Name = "11. Pellot stoves",
                         Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 11,
                         Name = "11. Pellot stoves",
                         Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 11,
                         Name = "11. Pellot stoves",
                         Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
                         LanguageId = 3
@@ -746,30 +786,33 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 12,
                         Name = "12. Environmentally hazardous substances",
                         Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 12,
                         Name = "12. Environmentally hazardous substances",
                         Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 12,
                         Name = "12. Environmentally hazardous substances",
                         Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "12. Dieseltank",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -782,40 +825,41 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Id = 22,
-                        AreaId = 13,
                         EformName = "13. APV Medarbejer",
                         AreaRuleTranslations = new List<AreaRuleTranslation>
                         {
                             new() { LanguageId = 1, Name = "13. APV Medarbejer" },
                             new() { LanguageId = 2, Name = "13. WPA Agriculture" },
                             new() { LanguageId = 3, Name = "13. Arbeitsplatz Landwirtschaft" }
-                        },
+                        }
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 13,
                         Name = "13. Work Place Assesment",
                         Description = @"https://www.microting.dk/eform/landbrug/13-apv",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 13,
                         Name = "13. Work Place Assesment",
                         Description = @"https://www.microting.dk/eform/landbrug/13-apv",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 13,
                         Name = "13. Work Place Assesment",
                         Description = @"https://www.microting.dk/eform/landbrug/13-apv",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "13. APV Medarbejer",
+                    Notifications = false,
+                },
             },
             new Area
             {
@@ -823,30 +867,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "14. Machines",
                 Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 14,
                         Name = "14. Machines",
                         Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 14,
                         Name = "14. Machines",
                         Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 14,
                         Name = "14. Machines",
                         Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    EformName = "14. Maskiner",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -854,30 +902,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "15. Inspection of power tools",
                 Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 15,
                         Name = "15. Inspection of power tools",
                         Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 15,
                         Name = "15. Inspection of power tools",
                         Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 15,
                         Name = "15. Inspection of power tools",
                         Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    EformName = "15. Elværktøj",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -885,30 +937,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "16. Inspection of wagons",
                 Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 16,
                         Name = "16. Inspection of wagons",
                         Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 16,
                         Name = "16. Inspection of wagons",
                         Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 16,
                         Name = "16. Inspection of wagons",
                         Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    EformName = "16. Stiger",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -916,30 +972,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "17. Inspection of ladders",
                 Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 17,
                         Name = "17. Inspection of ladders",
                         Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 17,
                         Name = "17. Inspection of ladders",
                         Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 17,
                         Name = "17. Inspection of ladders",
                         Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "17. Vogne",
+                    Notifications = true,
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -947,30 +1007,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "18. Alarm",
                 Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 18,
                         Name = "18. Alarm",
                         Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 18,
                         Name = "18. Alarm",
                         Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 18,
                         Name = "18. Alarm",
                         Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "18. Alarm",
+                    Notifications = true,
+                    RepeatEvery = 1, // 1
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -978,30 +1042,34 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "19. Ventilation",
                 Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
                 Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 19,
                         Name = "19. Ventilation",
                         Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 19,
                         Name = "19. Ventilation",
                         Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 19,
                         Name = "19. Ventilation",
                         Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "19. Ventilation",
+                    Notifications = true,
+                    RepeatEvery = 1, // 1
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -1009,29 +1077,33 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = "20. Recurring tasks (mon-sun)",
                 Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
                 Type = AreaTypesEnum.Type5,
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 20,
                         Name = "20. Recurring tasks (mon-sun)",
                         Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 20,
                         Name = "20. Recurring tasks (mon-sun)",
                         Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 20,
                         Name = "20. Recurring tasks (mon-sun)",
                         Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
                         LanguageId = 3
                     }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    EformName = "20. Arbejdsopgave udført",
+                    RepeatEvery = 7, // 7
+                    RepeatType = 1, // days
                 }
             },
             new Area
@@ -1045,7 +1117,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Id = 23,
-                        AreaId = 13,
                         EformName = "21. DANISH Produktstandard v_1_01",
                         AreaRuleTranslations = new List<AreaRuleTranslation>
                         {
@@ -1061,25 +1132,22 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         },
                     },
                 },
-                AreaTranslations = new List<AreaTranslation>()
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 21,
                         Name = "21. DANISH Standard",
                         Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 21,
                         Name = "21. DANISH Standard",
                         Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 21,
                         Name = "21. DANISH Standard",
                         Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
                         LanguageId = 3
@@ -1091,147 +1159,160 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Id = 22,
                 Name = "22. Sieve test",
                 Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
-                AreaTranslations = new List<AreaTranslation>()
+                Type = AreaTypesEnum.Type1,
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 22,
                         Name = "22. Sieve test",
                         Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 22,
                         Name = "22. Sieve test",
                         Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 22,
                         Name = "22. Sieve test",
                         Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "22. Sigtetest",
+                    Notifications = true,
+                    RepeatEvery = 14, // 14
+                    RepeatType = 1, // days
+                },
             },
             new Area
             {
                 Id = 23,
                 Name = "23. Water consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
-                AreaTranslations = new List<AreaTranslation>()
+                Type = AreaTypesEnum.Type1,
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 23,
                         Name = "23. Water consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 23,
                         Name = "23. Water consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 23,
                         Name = "23. Water consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "01. Vandforbrug"
+                },
             },
             new Area
             {
                 Id = 24,
                 Name = "24. Electricity consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
-                AreaTranslations = new List<AreaTranslation>()
+                Type = AreaTypesEnum.Type1,
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 24,
                         Name = "24. Electricity consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 24,
                         Name = "24. Electricity consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 24,
                         Name = "24. Electricity consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "01. Elforbrug"
+                },
             },
             new Area
             {
                 Id = 25,
                 Name = "25. Field irrigation consumption",
                 Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
-                AreaTranslations = new List<AreaTranslation>()
+                Type = AreaTypesEnum.Type1,
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new()
                     {
-                        AreaId = 25,
                         Name = "25. Field irrigation consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
                         LanguageId = 1
                     },
                     new()
                     {
-                        AreaId = 25,
                         Name = "25. Field irrigation consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
                         LanguageId = 2
                     },
                     new()
                     {
-                        AreaId = 25,
                         Name = "25. Field irrigation consumption",
                         Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "25. Markvandingsforbrug"
+                },
             },
             new Area
             {
                 Id = 26,
                 Name = "100. Miscellaneous",
                 Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
-                AreaTranslations = new List<AreaTranslation>()
+                Type = AreaTypesEnum.Type1,
+                AreaTranslations = new List<AreaTranslation>
                 {
                     new() {
-                        AreaId = 26,
                         Name = "100. Diverse",
                         Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
                         LanguageId = 1
                     },
                     new() {
-                        AreaId = 26,
                         Name = "100. Miscellaneous",
                         Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
                         LanguageId = 2
                     },
                     new() {
-                        AreaId = 26,
                         Name = "100. Sonstig",
                         Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = ""
+                },
             },
         };
     }

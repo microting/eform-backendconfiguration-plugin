@@ -1,4 +1,4 @@
-import {CommonDictionaryModel} from 'src/app/common/models';
+import { CommonDictionaryModel } from 'src/app/common/models';
 
 export class PropertyModel {
   id: number;
@@ -6,4 +6,5 @@ export class PropertyModel {
   chr: string;
   address: string;
   languages: CommonDictionaryModel[] = [];
+  isWorkersAssigned: boolean;
 }

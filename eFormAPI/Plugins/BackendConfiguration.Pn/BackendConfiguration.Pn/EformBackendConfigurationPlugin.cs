@@ -130,9 +130,10 @@ namespace BackendConfiguration.Pn
                         .FirstAsync();
                     areaRule.EformId = eformId;
                 }
-                context.Areas.Add(newArea);
+                //context.Areas.Add(newArea);
                     
-                context.SaveChanges();
+                //context.SaveChanges();
+                await newArea.Create(context);
             }
         }
 

@@ -75,10 +75,9 @@ export class AreaRulePlanModalComponent implements OnInit {
         assignmentObject,
       ];
     } else {
-      this.selectedAreaRulePlanning.assignedSites =
-        this.selectedAreaRulePlanning.assignedSites.filter(
-          (x) => x.siteId !== siteId
-        );
+      this.selectedAreaRulePlanning.assignedSites = this.selectedAreaRulePlanning.assignedSites.filter(
+        (x) => x.siteId !== siteId
+      );
     }
   }
 

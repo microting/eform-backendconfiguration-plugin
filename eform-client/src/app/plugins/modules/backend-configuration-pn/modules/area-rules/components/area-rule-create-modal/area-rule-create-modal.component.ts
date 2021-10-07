@@ -115,7 +115,11 @@ export class AreaRuleCreateModalComponent implements OnInit {
       };
     }
     if (this.selectedArea.type === 5) {
-      return { dayOfWeek: this.newAreaRulesDayOfWeek };
+      return {
+        eformId: this.selectedArea.initialFields.eformId,
+        eformName: this.selectedArea.initialFields.eformName,
+        dayOfWeek: this.newAreaRulesDayOfWeek,
+      };
     }
     return null;
   }

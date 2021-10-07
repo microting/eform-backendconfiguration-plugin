@@ -106,7 +106,8 @@
                         <div class="col-12 ng-select-wrapper">
                           <ng-select
                             [items]="
-                              templatesModel.templates
+                              templatesModel.templates &&
+                              templatesModel.templates.length
                                 ? templatesModel.templates
                                 : [
                                     {
