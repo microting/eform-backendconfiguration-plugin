@@ -770,7 +770,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             new Area
             {
                 Id = 16,
-                Name = "16. Inspection of wagons",
+                Name = "16. Ladders",
                 Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                 Type = AreaTypesEnum.Type1,
                 AreaTranslations = new List<AreaTranslation>()
@@ -785,7 +785,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         AreaId = 16,
-                        Name = "16. Inspection of wagons",
+                        Name = "16. Ladders",
                         Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                         LanguageId = 2
                     },
@@ -801,7 +801,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             new Area
             {
                 Id = 17,
-                Name = "17. Inspection of ladders",
+                Name = "17. Fire extinguishers",
                 Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                 Type = AreaTypesEnum.Type1,
                 AreaTranslations = new List<AreaTranslation>()
@@ -816,7 +816,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         AreaId = 17,
-                        Name = "17. Inspection of ladders",
+                        Name = "17. Fire extinguishers",
                         Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                         LanguageId = 2
                     },
