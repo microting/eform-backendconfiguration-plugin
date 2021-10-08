@@ -1,5 +1,6 @@
 export class AreaRuleT3Model {
-  eformId: number;
+  eformId: number | null;
+  eformName?: string;
   checklistStable: boolean;
   tailBite: boolean;
 }

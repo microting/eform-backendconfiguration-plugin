@@ -4,4 +4,5 @@ export class PropertyAreaModel {
   description: string;
   activated: boolean;
   status: boolean;
+  areaId: number;
 }

@@ -95,7 +95,10 @@ export class AreaRuleCreateModalComponent implements OnInit {
     | AreaRuleT3Model
     | AreaRuleT5Model {
     if (this.selectedArea.type === 1) {
-      return { eformId: null };
+      return {
+        eformId: this.selectedArea.initialFields.eformId,
+        eformName: this.selectedArea.initialFields.eformName,
+      };
     }
     if (this.selectedArea.type === 2) {
       return {
@@ -104,10 +107,19 @@ export class AreaRuleCreateModalComponent implements OnInit {
       };
     }
     if (this.selectedArea.type === 3) {
-      return { checklistStable: false, tailBite: false, eformId: null };
+      return {
+        checklistStable: true,
+        tailBite: true,
+        eformId: this.selectedArea.initialFields.eformId,
+        eformName: this.selectedArea.initialFields.eformName,
+      };
     }
     if (this.selectedArea.type === 5) {
-      return { dayOfWeek: this.newAreaRulesDayOfWeek };
+      return {
+        eformId: this.selectedArea.initialFields.eformId,
+        eformName: this.selectedArea.initialFields.eformName,
+        dayOfWeek: this.newAreaRulesDayOfWeek,
+      };
     }
     return null;
   }

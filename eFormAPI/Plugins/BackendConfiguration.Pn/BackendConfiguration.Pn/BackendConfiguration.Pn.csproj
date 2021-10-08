@@ -39,7 +39,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Infrastructure\Consts\" />
       <Folder Include="Messages\" />
     </ItemGroup>
 

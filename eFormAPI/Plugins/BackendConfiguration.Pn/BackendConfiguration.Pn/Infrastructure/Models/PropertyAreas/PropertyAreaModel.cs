@@ -35,5 +35,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
         public bool Activated { get; set; }
 
         public bool Status { get; set; }
+
+        public int AreaId { get; set; }
     }
 }
