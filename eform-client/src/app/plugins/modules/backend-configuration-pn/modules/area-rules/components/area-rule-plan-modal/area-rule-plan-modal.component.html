@@ -15,7 +15,7 @@
       <div class="modal-body">
         <div class="container-fluid">
           <!-- Show all translations for rule -->
-          <div class="row">
+          <div class="row mb-2">
             <div class="col-md-12">
               <div class="mat-checkbox">
                 <input
@@ -27,11 +27,28 @@
                 />
                 <label for="planAreaRuleStatusToggle">{{
                   selectedAreaRule.translatedName
-                }}</label>
+                  }}</label>
               </div>
             </div>
           </div>
+
           <ng-container *ngIf="selectedAreaRule.typeSpecificFields">
+            <div class="row" *ngIf="selectedArea.type === 6">
+              <div class="col-md-12">
+                <div class="mat-checkbox">
+                  <input
+                    type="checkbox"
+                    id="hoursAndEnergyToggle"
+                    [value]="selectedAreaRulePlanning.status"
+                    [checked]="selectedAreaRulePlanning.status"
+                    [(ngModel)]="selectedAreaRulePlanning.status"
+                  />
+                  <label for="hoursAndEnergyToggle">{{
+                    'Hours and energy' | translate
+                    }}</label>
+                </div>
+              </div>
+            </div>
             <div class="row" *ngIf="selectedArea.type === 5">
               <div class="col-12 ng-select-wrapper">
                 <ng-select
