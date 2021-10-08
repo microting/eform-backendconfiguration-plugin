@@ -1,4 +1,4 @@
-/*
+﻿/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -90,7 +90,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Activated = x.Checked,
                             Description = x.Area.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Description).FirstOrDefault(),
                             Name = x.Area.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name).FirstOrDefault(),
-                            Status = x.Area.AreaRules.First().AreaRulesPlannings.Any(y => y.Status),
+                            Status = x.Area.AreaRules.SelectMany(y => y.AreaRulesPlannings).Any(y => y.Status),
                             AreaId = x.AreaId,
                         })
                         .ToListAsync();
@@ -123,7 +123,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 propertyAreas.AddRange(areasForAdd);
 
-                propertyAreas = propertyAreas.OrderBy(x => x.Name).ToList();
+                propertyAreas = propertyAreas.OrderBy(x => x.AreaId).ToList();
 
                 return new OperationDataResult<List<PropertyAreaModel>>(true, propertyAreas);
             }
@@ -189,9 +189,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             var folderId = await core.FolderCreate(
                                 new List<KeyValuePair<string, string>>
                                 {
-                                    new("da", "05. Stables"),
+                                    new("en-US", "05. Stables"),
+                                    new("da", "05. Stalde"),
+                                    new("de-DE", "05. Stallungen"),
                                 },
-                                new List<KeyValuePair<string, string>> {new("da", ""),},
+                                new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""), },
                                 property.FolderId);
                             var assignmentWithOneFolder = new ProperyAreaFolder
                             {
@@ -204,11 +206,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 FolderId = await core.FolderCreate(
                                     new List<KeyValuePair<string, string>>
                                     {
-                                        new("da", "24. Tail bite"),
+                                        new("da", "24. Halebid"),
+                                        new("en-US", "24. Tail bite"),
+                                        new("de-DE", "24. Schwanzbiss"),
                                     },
                                     new List<KeyValuePair<string, string>>
                                     {
                                         new("da", ""),
+                                        new("en-US", ""),
+                                        new("de-DE", ""),
                                     },
                                     property.FolderId),
                                 ProperyAreaAsignmentId = newAssignment.Id,
@@ -228,26 +234,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         case AreaTypesEnum.Type5:
                         {
                             var folderId = await core.FolderCreate(
-                                new List<KeyValuePair<string, string>> {new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault()),},
-                                new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId);
+                                new List<KeyValuePair<string, string>> {
+                                    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault()),
+                                    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name).FirstOrDefault()),
+                                    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name).FirstOrDefault()),
+                                },
+                                new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""), }, property.FolderId);
                             //create 7 folders
                             var folderIds = new List<int>
                             {
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Sunday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Monday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Tuesday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Søndag"), new("en-US", "Sunday"), new("de-DE", "Sonntag"),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""),}, folderId),
+                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Mandag"), new("en-US", "Monday"), new("de-DE", "Montag"),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""),}, folderId),
+                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Tirsdag"), new("en-US", "Tuesday"), new("de-DE", "Dienstag"),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""),}, folderId),
                                 await core.FolderCreate(
-                                    new List<KeyValuePair<string, string>> {new("da", "Wednesday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Thursday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Friday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Saturday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                    new List<KeyValuePair<string, string>> {new("da", "Onsdag"), new("en-US", "Wednesday"), new("de-DE", "Mittwoch"),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""),}, folderId),
+                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Torsdag"), new("en-US", "Thursday"), new("de-DE", "Donnerstag"),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""),}, folderId),
+                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Fredag"), new("en-US", "Friday"), new("de-DE", "Freitag"),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""),}, folderId),
+                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Lørdag"), new("en-US", "Saturday"), new("de-DE", "Samstag"),},
+                                    new List<KeyValuePair<string, string>> {new("da", ""), new("en-US", ""), new("de-DE", ""),}, folderId),
                             };
 
                             await new ProperyAreaFolder
@@ -279,10 +289,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 new List<KeyValuePair<string, string>>
                                 {
                                     new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault()),
+                                    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name).FirstOrDefault()),
+                                    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name).FirstOrDefault()),
                                 },
                                 new List<KeyValuePair<string, string>>
                                 {
-                                    new("da", ""),
+                                    new("da", ""), new("en-US", ""), new("de-DE", ""),
                                 },
                                 property.FolderId);
                             var assignmentWithFolder = new ProperyAreaFolder

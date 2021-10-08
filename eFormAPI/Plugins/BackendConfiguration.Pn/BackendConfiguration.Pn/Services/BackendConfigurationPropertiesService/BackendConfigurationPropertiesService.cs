@@ -153,13 +153,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 {
                     await selectedTranslate.Create(_backendConfigurationPnDbContext);
                 }
-
                 newProperty.FolderId = await core.FolderCreate(
                     new List<KeyValuePair<string, string>>
                     {
                         new("da", propertyCreateModel.Name),
+                        new("en-US", propertyCreateModel.Name),
+                        new("de-DE", propertyCreateModel.Name),
                     },
-                    new List<KeyValuePair<string, string>> { new("da", ""), }, null);
+                    new List<KeyValuePair<string, string>> { new("da", ""), new("en-US", ""), new("de-DE", ""), }, null);
                 await newProperty.Update(_backendConfigurationPnDbContext);
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));
