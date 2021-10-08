@@ -915,7 +915,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "16. Inspection of wagons",
+                        Name = "16. Ladders",
                         Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
                         LanguageId = 2
                     },
@@ -948,7 +948,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "17. Inspection of ladders",
+                        Name = "17. Fire extinguishers",
                         Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
                         LanguageId = 2
                     },
