@@ -26,20 +26,16 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Magick.NET-Q16-x64" Version="8.3.2" />
-      <PackageReference Include="Microting.eForm" Version="5.2.46" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.0.55" />
+      <PackageReference Include="Magick.NET-Q16-x64" Version="8.3.3" />
+      <PackageReference Include="Microting.eForm" Version="5.2.47" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.0.56" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.7" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.50" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.9" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.51" />
     </ItemGroup>
 
     <ItemGroup>
       <EmbeddedResource Include="Resources\localization.json" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Messages\" />
     </ItemGroup>
 
 </Project>

@@ -41,8 +41,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public int DayOfWeek { get; set; }
 
-        public bool? ChecklistStable { get; set; }
+        //public bool? ChecklistStable { get; set; }
 
-        public bool? TailBite { get; set; }
+        //public bool? TailBite { get; set; }
+
+        public bool HoursAndEnergyEnabled { get; set; }
     }
 }
