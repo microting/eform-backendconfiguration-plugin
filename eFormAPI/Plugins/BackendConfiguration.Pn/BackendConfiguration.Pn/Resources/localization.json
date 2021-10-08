@@ -2,7 +2,7 @@
   {
     "Key": "BackendConfiguration",
     "LocalizedValue": {
-      "da": "", //todo
+      "da": "Konfiguration",
       "de": "", //todo
       "en-US": "Backend Configuration",
       "uk-UA": "Конфігурація серверної частини"
@@ -11,7 +11,7 @@
   {
     "Key": "Properties",
     "LocalizedValue": {
-      "da": "", //todo
+      "da": "Ejendomme Medarbejdere",
       "de": "", //todo
       "en-US": "Properties",
       "uk-UA": "Властивості"
@@ -20,7 +20,7 @@
   {
     "Key": "Property workers",
     "LocalizedValue": {
-      "da": "Ejendom arbejdere", //todo
+      "da": "Ejendom arbejdere",
       "de": "", //todo
       "en-US": "Property workers",
       "uk-UA": "Властивості працівників"

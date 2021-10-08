@@ -25,6 +25,7 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 {
     using System.Collections.Generic;
+    using AreaRules;
     using Microting.eForm.Dto;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -42,5 +43,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 
         public List<SiteDto> AvailableWorkers { get; set; }
             = new();
+
+        public AreaInitialFields InitialFields { get; set; }
     }
 }

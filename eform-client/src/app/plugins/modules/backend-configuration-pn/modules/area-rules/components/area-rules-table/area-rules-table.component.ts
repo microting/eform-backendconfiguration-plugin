@@ -43,7 +43,7 @@ export class AreaRulesTableComponent implements OnInit {
 
   tableHeadersT1: TableHeaderElementModel[] = [
     { name: 'Name', elementId: 'nameTableHeader', sortable: false },
-    { name: 'Eform', elementId: 'eformTableHeader', sortable: false },
+    { name: 'eForm', elementId: 'eformTableHeader', sortable: false },
     { name: 'Status', elementId: 'statusTableHeader', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
@@ -63,7 +63,7 @@ export class AreaRulesTableComponent implements OnInit {
       elementId: 'checklistStableTableHeader',
       sortable: false,
     },
-    { name: 'Eform', elementId: 'eformTableHeader', sortable: false },
+    { name: 'eForm', elementId: 'eformTableHeader', sortable: false },
     { name: 'Tail bite', elementId: 'tailBiteTableHeader', sortable: false },
     { name: 'Status', elementId: 'statusTableHeader', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
@@ -78,7 +78,7 @@ export class AreaRulesTableComponent implements OnInit {
   tableHeadersT5: TableHeaderElementModel[] = [
     { name: 'Name', elementId: 'nameTableHeader', sortable: false },
     { name: 'Week Day', elementId: 'weekDayTableHeader', sortable: false },
-    { name: 'Eform', elementId: 'eformTableHeader', sortable: false },
+    { name: 'eForm', elementId: 'eformTableHeader', sortable: false },
     { name: 'Status', elementId: 'statusTableHeader', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
