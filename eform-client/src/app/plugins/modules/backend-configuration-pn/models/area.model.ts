@@ -3,7 +3,7 @@ import { CommonDictionaryModel, SiteDto } from 'src/app/common/models';
 export class AreaModel {
   id: number;
   name: string;
-  type: 1 | 2 | 3 | 4 | 5;
+  type: 1 | 2 | 3 | 4 | 5 | 6;
   languages: CommonDictionaryModel[] = [];
   availableWorkers: SiteDto[] = [];
   initialFields: AreaInitialFieldsModel;

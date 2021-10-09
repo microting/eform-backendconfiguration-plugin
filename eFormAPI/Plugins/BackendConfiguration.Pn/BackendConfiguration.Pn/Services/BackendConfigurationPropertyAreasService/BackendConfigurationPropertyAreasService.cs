@@ -41,6 +41,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationPropertyAreasService : IBackendConfigurationPropertyAreasService
     {
@@ -88,9 +89,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         {
                             Id = x.Id,
                             Activated = x.Checked,
-                            Description = x.Area.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Description).FirstOrDefault(),
-                            Name = x.Area.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name).FirstOrDefault(),
-                            Status = x.Area.AreaRules.First().AreaRulesPlannings.Any(y => y.Status),
+                            Description = x.Area.AreaTranslations.Where(y => y.LanguageId == language.Id)
+                                .Select(y => y.Description).FirstOrDefault(),
+                            Name = x.Area.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name)
+                                .FirstOrDefault(),
+                            Status = x.Area.AreaRules.SelectMany(y => y.AreaRulesPlannings).Any(y => y.Status),
                             AreaId = x.AreaId,
                         })
                         .ToListAsync();
@@ -99,8 +102,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         {
                             Id = null,
                             Activated = false,
-                            Description = x.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Description).FirstOrDefault(),
-                            Name = x.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name).FirstOrDefault(),
+                            Description = x.AreaTranslations.Where(y => y.LanguageId == language.Id)
+                                .Select(y => y.Description).FirstOrDefault(),
+                            Name = x.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name)
+                                .FirstOrDefault(),
                             Status = false,
                             AreaId = x.Id,
                         })
@@ -113,8 +118,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         {
                             Id = null,
                             Activated = false,
-                            Description = x.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Description).FirstOrDefault(),
-                            Name = x.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name).FirstOrDefault(),
+                            Description = x.AreaTranslations.Where(y => y.LanguageId == language.Id)
+                                .Select(y => y.Description).FirstOrDefault(),
+                            Name = x.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name)
+                                .FirstOrDefault(),
                             Status = false,
                             AreaId = x.Id,
                         })
@@ -123,7 +130,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 propertyAreas.AddRange(areasForAdd);
 
-                propertyAreas = propertyAreas.OrderBy(x => x.Name).ToList();
+                propertyAreas = propertyAreas.OrderBy(x => x.AreaId).ToList();
 
                 return new OperationDataResult<List<PropertyAreaModel>>(true, propertyAreas);
             }
@@ -131,7 +138,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationDataResult<List<PropertyAreaModel>>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadPropertyAreas"));
+                return new OperationDataResult<List<PropertyAreaModel>>(false,
+                    _backendConfigurationLocalizationService.GetString("ErrorWhileReadPropertyAreas"));
             }
         }
 
@@ -139,7 +147,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
-
                 var assignments = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyId == updateModel.PropertyId)
@@ -160,6 +167,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .ToList();
 
                 var core = await _coreHelper.GetCore();
+
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 foreach (var assignmentForCreate in assignmentsForCreate)
                 {
@@ -186,13 +195,27 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     {
                         case AreaTypesEnum.Type3:
                         {
-                            var folderId = await core.FolderCreate(
-                                new List<KeyValuePair<string, string>>
+                            var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
                                 {
-                                    new("da", "05. Stables"),
+                                    LanguageId = 1, // da
+                                    Name = "05. Stalde",
+                                    Description = "",
                                 },
-                                new List<KeyValuePair<string, string>> {new("da", ""),},
-                                property.FolderId);
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "05. Stables",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "05. Stallungen",
+                                    Description = "",
+                                },
+                            }, property.FolderId);
                             var assignmentWithOneFolder = new ProperyAreaFolder
                             {
                                 FolderId = folderId,
@@ -201,14 +224,26 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                             var assignmentWithTwoFolder = new ProperyAreaFolder
                             {
-                                FolderId = await core.FolderCreate(
-                                    new List<KeyValuePair<string, string>>
+                                FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                                     {
-                                        new("da", "24. Tail bite"),
-                                    },
-                                    new List<KeyValuePair<string, string>>
-                                    {
-                                        new("da", ""),
+                                        new()
+                                        {
+                                            LanguageId = 1, // da
+                                            Name = "24. Halebid",
+                                            Description = "",
+                                        },
+                                        new()
+                                        {
+                                            LanguageId = 2, // en
+                                            Name = "24. Tail bite",
+                                            Description = "",
+                                        },
+                                        new()
+                                        {
+                                            LanguageId = 3, // ge
+                                            Name = "24. Schwanzbiss",
+                                            Description = "",
+                                        },
                                     },
                                     property.FolderId),
                                 ProperyAreaAsignmentId = newAssignment.Id,
@@ -227,27 +262,169 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         }
                         case AreaTypesEnum.Type5:
                         {
+                            // create folder with stable name
                             var folderId = await core.FolderCreate(
-                                new List<KeyValuePair<string, string>> {new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault()),},
-                                new List<KeyValuePair<string, string>> {new("da", ""),}, property.FolderId);
+                                new List<KeyValuePair<string, string>>
+                                {
+                                    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name)
+                                        .FirstOrDefault()),
+                                    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name)
+                                        .FirstOrDefault()),
+                                    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name)
+                                        .FirstOrDefault()),
+                                },
+                                new List<KeyValuePair<string, string>>
+                                    {new("da", ""), new("en-US", ""), new("de-DE", ""),}, property.FolderId);
                             //create 7 folders
                             var folderIds = new List<int>
                             {
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Sunday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Monday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Tuesday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(
-                                    new List<KeyValuePair<string, string>> {new("da", "Wednesday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Thursday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Friday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
-                                await core.FolderCreate(new List<KeyValuePair<string, string>> {new("da", "Saturday"),},
-                                    new List<KeyValuePair<string, string>> {new("da", ""),}, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Søndag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Sunday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Sonntag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Mandag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Monday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Montag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Tirsdag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Tuesday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Dienstag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Onsdag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Wednesday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Mittwoch",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Torsdag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Thursday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Donnerstag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Fredag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Friday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Freitag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Lørdag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Saturday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Samstag",
+                                        Description = "",
+                                    },
+                                }, folderId),
                             };
 
                             await new ProperyAreaFolder
@@ -278,11 +455,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             var folderId = await core.FolderCreate(
                                 new List<KeyValuePair<string, string>>
                                 {
-                                    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name).FirstOrDefault()),
+                                    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name)
+                                        .FirstOrDefault()),
+                                    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name)
+                                        .FirstOrDefault()),
+                                    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name)
+                                        .FirstOrDefault()),
                                 },
                                 new List<KeyValuePair<string, string>>
                                 {
-                                    new("da", ""),
+                                    new("da", ""), new("en-US", ""), new("de-DE", ""),
                                 },
                                 property.FolderId);
                             var assignmentWithFolder = new ProperyAreaFolder
@@ -310,8 +492,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 //    assignmentForUpdate.UpdatedByUserId = _userService.UserId;
                 //    await assignmentForUpdate.Update(_backendConfigurationPnDbContext);
                 //}
-
-                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
                 foreach (var areaPropertyForDelete in assignmentsForDelete)
                 {
                     await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext);
@@ -324,20 +504,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     foreach (var folderIdForDelete in foldersIdForDelete)
                     {
                         var folder = await sdkDbContext.Folders
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.Id == folderIdForDelete)
-                        .FirstAsync();
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.Id == folderIdForDelete)
+                            .FirstAsync();
                         await folder.Delete(sdkDbContext);
                     }
                 }
 
-                return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyUpdatePropertyAreas"));
+                return new OperationResult(true,
+                    _backendConfigurationLocalizationService.GetString("SuccessfullyUpdatePropertyAreas"));
             }
             catch (Exception e)
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePropertyAreas"));
+                return new OperationResult(false,
+                    _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePropertyAreas"));
             }
         }
 
@@ -358,21 +540,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .Where(x => x.Property.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
 
-                if (areaProperties.Property.PropertyWorkers.All(x => x.WorkflowState == Constants.WorkflowStates.Removed))
+                if (areaProperties.Property.PropertyWorkers.All(
+                    x => x.WorkflowState == Constants.WorkflowStates.Removed))
                 {
-                    return new OperationDataResult<AreaModel>(false, _backendConfigurationLocalizationService.GetString("NotFoundPropertyWorkerAssignments"));
+                    return new OperationDataResult<AreaModel>(false,
+                        _backendConfigurationLocalizationService.GetString("NotFoundPropertyWorkerAssignments"));
                 }
 
                 if (areaProperties.Area == null)
                 {
-                    return new OperationDataResult<AreaModel>(false, _backendConfigurationLocalizationService.GetString("NotFoundArea"));
+                    return new OperationDataResult<AreaModel>(false,
+                        _backendConfigurationLocalizationService.GetString("NotFoundArea"));
                 }
 
                 var core = await _coreHelper.GetCore();
                 var sdkDbContex = core.DbContextHelper.GetDbContext();
                 var sites = new List<SiteDto>();
 
-                foreach (var worker in areaProperties.Property.PropertyWorkers.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.WorkerId))
+                foreach (var worker in areaProperties.Property.PropertyWorkers
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.WorkerId))
                 {
                     var site = await sdkDbContex.Sites
                         .Where(x => x.Id == worker)
@@ -385,7 +571,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 var areaModel = new AreaModel
                 {
-                    Name = areaProperties.Area.AreaTranslations.Where(x => x.LanguageId == language.Id).Select(x => x.Name).FirstOrDefault(),
+                    Name = areaProperties.Area.AreaTranslations.Where(x => x.LanguageId == language.Id)
+                        .Select(x => x.Name).FirstOrDefault(),
                     Id = areaProperties.AreaId,
                     Languages = areaProperties.Property.SelectedLanguages
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -396,17 +583,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         }).ToList(),
                     AvailableWorkers = sites,
                     Type = areaProperties.Area.Type,
-                    InitialFields = areaProperties.Area.AreaInitialField != null ? new AreaInitialFields
-                    {
-                        Alarm = areaProperties.Area.AreaInitialField.Alarm,
-                        DayOfWeek = areaProperties.Area.AreaInitialField.DayOfWeek,
-                        EformName = areaProperties.Area.AreaInitialField.EformName,
-                        SendNotifications = areaProperties.Area.AreaInitialField.Notifications,
-                        RepeatType = areaProperties.Area.AreaInitialField.RepeatType,
-                        Type = areaProperties.Area.AreaInitialField.Type,
-                        RepeatEvery = areaProperties.Area.AreaInitialField.RepeatEvery,
-                        EndDate = areaProperties.Area.AreaInitialField.EndDate,
-                    } : null,
+                    InitialFields = areaProperties.Area.AreaInitialField != null
+                        ? new AreaInitialFields
+                        {
+                            Alarm = areaProperties.Area.AreaInitialField.Alarm,
+                            DayOfWeek = areaProperties.Area.AreaInitialField.DayOfWeek,
+                            EformName = areaProperties.Area.AreaInitialField.EformName,
+                            SendNotifications = areaProperties.Area.AreaInitialField.Notifications,
+                            RepeatType = areaProperties.Area.AreaInitialField.RepeatType,
+                            Type = areaProperties.Area.AreaInitialField.Type,
+                            RepeatEvery = areaProperties.Area.AreaInitialField.RepeatEvery,
+                            EndDate = areaProperties.Area.AreaInitialField.EndDate,
+                        }
+                        : null,
                 };
                 if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))
                 {
@@ -422,7 +611,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationDataResult<AreaModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadArea"));
+                return new OperationDataResult<AreaModel>(false,
+                    _backendConfigurationLocalizationService.GetString("ErrorWhileReadArea"));
             }
         }
     }

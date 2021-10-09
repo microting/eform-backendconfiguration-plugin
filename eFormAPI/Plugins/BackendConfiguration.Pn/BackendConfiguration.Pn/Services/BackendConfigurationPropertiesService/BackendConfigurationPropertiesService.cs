@@ -39,6 +39,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+    using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationPropertiesService: IBackendConfigurationPropertiesService
     {
@@ -128,7 +129,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             try
             {
                 var core = await _coreHelper.GetCore();
-                //var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 var newProperty = new Property
                 {
@@ -154,12 +155,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     await selectedTranslate.Create(_backendConfigurationPnDbContext);
                 }
 
-                newProperty.FolderId = await core.FolderCreate(
-                    new List<KeyValuePair<string, string>>
-                    {
-                        new("da", propertyCreateModel.Name),
-                    },
-                    new List<KeyValuePair<string, string>> { new("da", ""), }, null);
+                var translatesForFolder = await sdkDbContext.Languages
+                    .Select(
+                        x => new CommonTranslationsModel
+                        {
+                            LanguageId = x.Id,
+                            Name = propertyCreateModel.Name,
+                            Description = ""
+                        })
+                    .ToListAsync();
+                newProperty.FolderId = await core.FolderCreate(translatesForFolder, null);
                 await newProperty.Update(_backendConfigurationPnDbContext);
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));
