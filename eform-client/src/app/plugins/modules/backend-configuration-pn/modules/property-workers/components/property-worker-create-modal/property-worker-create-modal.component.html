@@ -8,7 +8,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3>{{ 'New Device User' | translate }}</h3>
-        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+        <button class="close" data-dismiss="modal" (click)="hide()">
           <span>×</span>
         </button>
       </div>
@@ -48,7 +48,7 @@
             <div class="col-md-12">
               <div class="md-form">
                 <ng-select
-                  id="ProfileLanguageSelector"
+                  id="profileLanguageSelectorCreate"
                   [placeholder]="'Language' | translate"
                   [bindLabel]="'text'"
                   [bindValue]="'locale'"
@@ -75,7 +75,7 @@
                   <td class="align-middle">
                     <div class="mat-checkbox">
                       <input
-                        id="CheckboxCreateAssignment{{ i }}"
+                        id="checkboxCreateAssignment{{ i }}"
                         (change)="
                           addToArray(
                             $event,
@@ -91,7 +91,7 @@
                         color="primary"
                         type="checkbox"
                       />
-                      <label for="CheckboxCreateAssignment{{ i }}"></label>
+                      <label for="checkboxCreateAssignment{{ i }}"></label>
                     </div>
                   </td>
                 </tr>
@@ -116,7 +116,7 @@
           mdbBtn
           class="btn-neutral text-black-50 btn-small-height"
           id="cancelCreateBtn"
-          (click)="frame.hide()"
+          (click)="hide()"
         >
           {{ 'Cancel' | translate }}
         </button>

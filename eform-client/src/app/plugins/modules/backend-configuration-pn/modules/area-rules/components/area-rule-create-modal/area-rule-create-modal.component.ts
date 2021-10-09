@@ -121,6 +121,11 @@ export class AreaRuleCreateModalComponent implements OnInit {
         dayOfWeek: this.newAreaRulesDayOfWeek,
       };
     }
+    if (this.selectedArea.type === 6) {
+      return {
+        eformId: 0,
+      };
+    }
     return null;
   }
 

@@ -56,4 +56,5 @@ export const enUS = {
   'Delete rule': 'Delete rule',
   'Property name': 'Property name',
   'Check to pair': 'Check to pair',
+  'Hours and energy': 'Hours and energy',
 };

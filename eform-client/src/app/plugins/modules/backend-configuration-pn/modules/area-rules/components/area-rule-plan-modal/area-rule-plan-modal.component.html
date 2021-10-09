@@ -27,7 +27,7 @@
                 />
                 <label for="planAreaRuleStatusToggle">{{
                   selectedAreaRule.translatedName
-                  }}</label>
+                }}</label>
               </div>
             </div>
           </div>
@@ -39,13 +39,22 @@
                   <input
                     type="checkbox"
                     id="hoursAndEnergyToggle"
-                    [value]="selectedAreaRulePlanning.status"
-                    [checked]="selectedAreaRulePlanning.status"
-                    [(ngModel)]="selectedAreaRulePlanning.status"
+                    [value]="
+                      selectedAreaRulePlanning.typeSpecificFields
+                        .hoursAndEnergyEnabled
+                    "
+                    [checked]="
+                      selectedAreaRulePlanning.typeSpecificFields
+                        .hoursAndEnergyEnabled
+                    "
+                    [(ngModel)]="
+                      selectedAreaRulePlanning.typeSpecificFields
+                        .hoursAndEnergyEnabled
+                    "
                   />
                   <label for="hoursAndEnergyToggle">{{
                     'Hours and energy' | translate
-                    }}</label>
+                  }}</label>
                 </div>
               </div>
             </div>

@@ -8,7 +8,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3>{{ 'Edit Device User' | translate }}</h3>
-        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+        <button class="close" data-dismiss="modal" (click)="hide()">
           <span>×</span>
         </button>
       </div>
@@ -50,7 +50,7 @@
             <div class="col-md-12">
               <div class="md-form">
                 <ng-select
-                  id="ProfileLanguageSelector"
+                  id="profileLanguageSelector"
                   [placeholder]="'Language' | translate"
                   [bindLabel]="'text'"
                   [bindValue]="'locale'"
@@ -73,11 +73,13 @@
               <tbody id="pairingEditModalTableBody">
                 <tr *ngFor="let property of availableProperties; let i = index">
                   <td class="align-middle">{{ property.id }}</td>
-                  <td class="align-middle">{{ property.name }}</td>
+                  <td class="align-middle" id="propertyName">
+                    {{ property.name }}
+                  </td>
                   <td class="align-middle">
                     <div class="mat-checkbox">
                       <input
-                        id="CheckboxEditAssignment{{ i }}"
+                        id="checkboxEditAssignment{{ i }}"
                         (change)="
                           addToArray(
                             $event,
@@ -93,7 +95,7 @@
                         color="primary"
                         type="checkbox"
                       />
-                      <label for="CheckboxEditAssignment{{ i }}"></label>
+                      <label for="checkboxEditAssignment{{ i }}"></label>
                     </div>
                   </td>
                 </tr>
@@ -119,7 +121,7 @@
           mdbBtn
           id="cancelEditBtn"
           class="btn btn-accent text-black-50 btn-small-height"
-          (click)="frame.hide()"
+          (click)="hide()"
         >
           {{ 'Cancel' | translate }}
         </button>

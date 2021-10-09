@@ -150,6 +150,12 @@ export class AreaRulePlanModalComponent implements OnInit {
         repeatType: 2,
       };
     }
+    if (this.selectedArea.type === 6) {
+      return {
+        repeatEvery: 12,
+        repeatType: 3,
+      };
+    }
     return null;
   }
 }

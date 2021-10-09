@@ -2,10 +2,7 @@ import loginPage from '../../../Page objects/Login.page';
 import backendConfigurationPropertiesPage, {
   PropertyCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationProperties.page';
-import {
-  generateRandmString,
-  getRandomInt,
-} from '../../../Helpers/helper-functions';
+import { generateRandmString } from '../../../Helpers/helper-functions';
 import * as R from 'ramda';
 
 const expect = require('chai').expect;

@@ -273,7 +273,7 @@ export class PropertyRowObject {
           ];
         }
       }
-      this.showPropertyAreasBtn = await this.row.$('#propertyAddress');
+      this.showPropertyAreasBtn = await this.row.$('#showPropertyAreasBtn');
       this.editPropertyAreasBtn = await this.row.$('#editPropertyAreasBtn');
       this.editPropertyBtn = await this.row.$('#editPropertyBtn');
       this.deletePropertyBtn = await this.row.$('#deletePropertyBtn');
