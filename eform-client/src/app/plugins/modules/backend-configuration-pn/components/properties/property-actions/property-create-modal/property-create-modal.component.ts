@@ -63,4 +63,12 @@ export class PropertyCreateModalComponent implements OnInit {
     const language = this.selectedLanguages.find((x) => x.id === languageId);
     return language ? language.checked : false;
   }
+
+  get isDisabledSaveButton(): boolean {
+    if (this.newProperty && this.newProperty.languagesIds) {
+      return (
+        !this.newProperty.name || !this.selectedLanguages.some((x) => x.checked)
+      );
+    }
+  }
 }

@@ -103,7 +103,7 @@
           class="btn-success btn-small-height"
           (click)="onUpdateProperty()"
           id="propertyEditSaveBtn"
-          [disabled]="!selectedProperty.name"
+          [disabled]="isDisabledSaveButton"
         >
           {{ 'Save' | translate }}
         </button>

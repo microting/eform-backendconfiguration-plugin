@@ -56,7 +56,7 @@
                         ? templatesModel.templates
                         : [
                             {
-                              id: selectedAreaRule.typeSpecificFields.eformId,
+                              id: selectedAreaRule.eformId,
                               label: selectedAreaRule.eformName
                             }
                           ]
@@ -65,7 +65,7 @@
                     [placeholder]="'Selected template' | translate"
                     bindValue="id"
                     [typeahead]="typeahead"
-                    [ngModel]="selectedAreaRule.typeSpecificFields.eformId"
+                    [ngModel]="selectedAreaRule.eformId"
                     (ngModelChange)="changeEform($event)"
                     id="editRuleEformId"
                     [clearable]="false"
@@ -168,7 +168,7 @@
                     [placeholder]="'Day of week' | translate"
                     bindValue="id"
                     [(ngModel)]="selectedAreaRule.typeSpecificFields.dayOfWeek"
-                    id="editAreaDayOfWeek"
+                    id="editAreaRuleDayOfWeek"
                     [clearable]="false"
                   >
                   </ng-select>

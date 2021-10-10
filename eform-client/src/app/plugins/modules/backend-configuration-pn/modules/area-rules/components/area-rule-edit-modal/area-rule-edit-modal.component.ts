@@ -13,8 +13,10 @@ import { EFormService } from 'src/app/common/services';
 import {
   AreaModel,
   AreaRuleModel,
+  AreaRuleT3Model,
   AreaRuleUpdateModel,
 } from '../../../../models';
+import * as R from 'ramda';
 
 @Component({
   selector: 'app-area-rule-edit-modal',
@@ -53,7 +55,7 @@ export class AreaRuleEditModalComponent implements OnInit {
 
   show(model: AreaRuleModel) {
     // @ts-ignore
-    this.selectedAreaRule = { ...model };
+    this.selectedAreaRule = R.clone(model);
     this.frame.show();
   }
 

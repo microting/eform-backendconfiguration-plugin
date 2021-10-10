@@ -69,4 +69,13 @@ export class PropertyEditModalComponent implements OnInit {
     const language = this.selectedLanguages.find((x) => x.id === languageId);
     return language ? language.checked : false;
   }
+
+  get isDisabledSaveButton(): boolean {
+    if (this.selectedProperty && this.selectedProperty.languagesIds) {
+      return (
+        !this.selectedProperty.name ||
+        !this.selectedLanguages.some((x) => x.checked)
+      );
+    }
+  }
 }

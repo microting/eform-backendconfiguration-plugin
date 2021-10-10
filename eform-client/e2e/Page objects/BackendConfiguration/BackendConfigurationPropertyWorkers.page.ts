@@ -1,7 +1,7 @@
-import { PageWithNavbarPage } from '../PageWithNavbar.page';
 import backendConfigurationPropertiesPage from './BackendConfigurationProperties.page';
+import Page from '../Page';
 
-class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
+class BackendConfigurationPropertyWorkersPage extends Page {
   constructor() {
     super();
   }

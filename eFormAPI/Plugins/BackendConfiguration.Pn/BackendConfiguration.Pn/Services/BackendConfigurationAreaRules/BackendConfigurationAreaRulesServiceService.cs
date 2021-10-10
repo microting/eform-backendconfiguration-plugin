@@ -167,7 +167,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             }).ToList(),
                         IsDefault = BackendConfigurationSeedAreas.LastIndexAreaRules >= x.Id,
                         TypeSpecificFields = new
-                            {x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek,},
+                            {x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek,},
+                        EformId = x.EformId,
                     })
                     .FirstOrDefaultAsync();
 
