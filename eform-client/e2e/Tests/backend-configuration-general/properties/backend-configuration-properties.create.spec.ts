@@ -39,10 +39,11 @@ describe('Backend Configuration Property - Add', function () {
       property.selectedLanguages
     );
   });
-  it('should create property with only name', async () => {
+  it('should create property with only name and selected one language', async () => {
     const rowNumBeforeCreate = await backendConfigurationPropertiesPage.rowNum();
     const property: PropertyCreateUpdate = {
       name: generateRandmString(),
+      selectedLanguages: [{ languageId: 1, languageName: 'Danish' }],
     };
     await backendConfigurationPropertiesPage.createProperty(property);
     expect(rowNumBeforeCreate + 1, 'property not created').eq(
