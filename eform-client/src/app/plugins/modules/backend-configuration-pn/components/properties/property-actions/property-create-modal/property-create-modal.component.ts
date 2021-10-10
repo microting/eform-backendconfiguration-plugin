@@ -70,5 +70,6 @@ export class PropertyCreateModalComponent implements OnInit {
         !this.newProperty.name || !this.selectedLanguages.some((x) => x.checked)
       );
     }
+    return false;
   }
 }

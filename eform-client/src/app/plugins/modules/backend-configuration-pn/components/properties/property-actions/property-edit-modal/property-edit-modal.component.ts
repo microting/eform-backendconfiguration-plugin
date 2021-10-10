@@ -77,5 +77,6 @@ export class PropertyEditModalComponent implements OnInit {
         !this.selectedLanguages.some((x) => x.checked)
       );
     }
+    return false;
   }
 }
