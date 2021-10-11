@@ -11,7 +11,7 @@
   {
     "Key": "Properties",
     "LocalizedValue": {
-      "da": "Ejendomme Medarbejdere",
+      "da": "Ejendomme",
       "de": "", //todo
       "en-US": "Properties",
       "uk-UA": "Властивості"
@@ -20,10 +20,10 @@
   {
     "Key": "Property workers",
     "LocalizedValue": {
-      "da": "Ejendom arbejdere",
-      "de": "", //todo
-      "en-US": "Property workers",
-      "uk-UA": "Властивості працівників"
+      "da": "Medarbejdere",
+      "de": "Mitarbeiter", //todo
+      "en-US": "Workers",
+      "uk-UA": "Працівники"
     }
   },
   {
