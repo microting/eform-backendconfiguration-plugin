@@ -295,7 +295,7 @@ export class AreaRuleRowObject {
     if (this.row) {
       this.name = await (await this.row.$('#ruleName')).getText();
       this.rulePlanningStatus =
-        (await (await this.row.$('#rulePlanningStatus')).getText()) === 'PÅ';
+        (await (await this.row.$('#rulePlanningStatus')).getText()) === 'Til';
       this.showAreaRulePlanningBtn = await this.row.$(
         '#showAreaRulePlanningBtn'
       );
