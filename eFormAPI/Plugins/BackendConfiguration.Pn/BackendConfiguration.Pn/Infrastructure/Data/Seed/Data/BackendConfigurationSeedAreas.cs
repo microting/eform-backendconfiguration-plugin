@@ -87,7 +87,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2
                     },
                     new() {
-                        Name = "01. Umweltmanagement (kun IE-husdyrbrug)",
+                        Name = "01. Umweltmanagement (nur IE Tierhaltung)",
                         Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
                         LanguageId = 3
                     }
