@@ -208,7 +208,7 @@ namespace BackendConfiguration.Pn
                         new()
                         {
                              LocaleName = LocaleNames.German,
-                             Name = "",//todo
+                             Name = "Aufbau",
                              Language = LanguageNames.German,
                         },
                         new()
@@ -250,13 +250,13 @@ namespace BackendConfiguration.Pn
                                     new()
                                     {
                                         LocaleName = LocaleNames.German,
-                                        Name = "",//todo
+                                        Name = "Eigenschaften",
                                         Language = LanguageNames.German,
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
-                                        Name = "Ejendomme Medarbejdere",
+                                        Name = "Ejendomme",
                                         Language = LanguageNames.Danish,
                                     },
                                     new()
@@ -278,13 +278,13 @@ namespace BackendConfiguration.Pn
                                 new()
                                 {
                                     LocaleName = LocaleNames.German,
-                                    Name = "",//todo
+                                    Name = "Eigenschaften",
                                     Language = LanguageNames.German,
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
-                                    Name = "Ejendomme Medarbejdere",
+                                    Name = "Ejendomme",
                                     Language = LanguageNames.Danish,
                                 },
                                 new()
@@ -313,25 +313,25 @@ namespace BackendConfiguration.Pn
                                     new()
                                     {
                                         LocaleName = LocaleNames.English,
-                                        Name = "Property workers",
+                                        Name = "Workers",
                                         Language = LanguageNames.English,
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.German,
-                                        Name = "",//todo
+                                        Name = "Mitarbeiter",
                                         Language = LanguageNames.German,
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
-                                        Name = "Ejendom arbejdere",
+                                        Name = "Medarbejdere",
                                         Language = LanguageNames.Danish,
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Властивості працівників",
+                                        Name = "працівників",
                                         Language = LanguageNames.Ukrainian,
                                     }
                                 }
@@ -341,25 +341,25 @@ namespace BackendConfiguration.Pn
                                 new()
                                 {
                                     LocaleName = LocaleNames.English,
-                                    Name = "Property workers",
+                                    Name = "Workers",
                                     Language = LanguageNames.English,
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.German,
-                                    Name = "",//todo
+                                    Name = "Mitarbeiter",
                                     Language = LanguageNames.German,
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
-                                    Name = "Ejendom arbejdere",
+                                    Name = "Medarbejdere",
                                     Language = LanguageNames.Danish,
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Властивості працівників",
+                                    Name = "працівників",
                                     Language = LanguageNames.Ukrainian,
                                 }
                             }
