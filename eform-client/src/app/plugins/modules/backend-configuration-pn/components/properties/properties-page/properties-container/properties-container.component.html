@@ -3,11 +3,11 @@
     <button
       mdbBtn
       id="propertyCreateBtn"
-      class="btn-success btn-small-height"
+      class="btn-success btn-icon"
       mdbTooltip="{{ 'Create Property' | translate }}"
       (click)="showPropertyCreateModal()"
     >
-      {{ 'New property' | translate }}
+      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
     </button>
   </div>
 </eform-subheader>

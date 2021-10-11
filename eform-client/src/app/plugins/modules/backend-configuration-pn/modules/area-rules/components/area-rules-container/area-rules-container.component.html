@@ -3,11 +3,11 @@
     <button
       mdbBtn
       id="ruleCreateBtn"
-      class="btn-success btn-small-height"
+      class="btn-success btn-icon"
       mdbTooltip="{{ 'Create rule' | translate }}"
       (click)="showAreaRuleCreateModal()"
     >
-      {{ 'New rule' | translate }}
+      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
     </button>
   </div>
 </eform-subheader>
