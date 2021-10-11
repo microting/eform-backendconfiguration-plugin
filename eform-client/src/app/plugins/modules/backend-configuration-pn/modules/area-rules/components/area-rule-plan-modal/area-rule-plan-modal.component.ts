@@ -103,6 +103,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       typeSpecificFields: { ...initialFields },
       ruleId: rule.id,
       propertyId,
+      status: true,
       sendNotifications: rule.initialFields
         ? rule.initialFields.sendNotifications
         : this.selectedArea.initialFields.sendNotifications,
