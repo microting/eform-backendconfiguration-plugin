@@ -9,7 +9,7 @@
       <div class="modal-header">
         <div>
           <h3>{{ 'Plan rule' | translate }}</h3>
-          <h5>{{ 'Area' | translate }}: {{selectedArea.name}}</h5>
+          <h5>{{ 'Area' | translate }}: {{ selectedArea.name }}</h5>
         </div>
         <button class="close" data-dismiss="modal" (click)="hide()">
           <span>×</span>
@@ -54,6 +54,7 @@
                       selectedAreaRulePlanning.typeSpecificFields
                         .hoursAndEnergyEnabled
                     "
+                    [disabled]="!selectedAreaRulePlanning.status"
                   />
                   <label for="hoursAndEnergyToggle">{{
                     'Hours and energy' | translate
@@ -98,6 +99,7 @@
                         selectedAreaRulePlanning.sendNotifications =
                           $event.target.checked
                       "
+                      [disabled]="!selectedAreaRulePlanning.status"
                     />
                     <label for="planAreaRuleNotificationsToggle">{{
                       'Notifications on/off' | translate
@@ -117,6 +119,7 @@
                       id="planRepeatEvery"
                       name="createRepeatEvery"
                       class="form-control"
+                      [disabled]="!selectedAreaRulePlanning.status"
                     />
                     <label for="planRepeatEvery">{{
                       'Repeat every' | translate
@@ -138,6 +141,7 @@
                     "
                     [clearable]="false"
                     id="planRepeatType"
+                    [disabled]="!selectedAreaRulePlanning.status"
                   >
                   </ng-select>
                 </div>
@@ -154,6 +158,7 @@
                       id="planStartFrom"
                       name="createStartFrom"
                       class="form-control"
+                      [disabled]="!selectedAreaRulePlanning.status"
                     />
                     <owl-date-time
                       [pickerType]="'calendar'"
@@ -216,6 +221,7 @@
                       type="text"
                       id="planEndDate"
                       class="form-control"
+                      [disabled]="!selectedAreaRulePlanning.status"
                     />
                     <owl-date-time
                       [pickerType]="'calendar'"
@@ -256,6 +262,7 @@
                         [value]="getAssignmentBySiteId(worker.siteId)"
                         color="primary"
                         type="checkbox"
+                        [disabled]="!selectedAreaRulePlanning.status"
                       />
                       <label for="CheckboxCreateAssignment{{ i }}"></label>
                     </div>
@@ -278,7 +285,7 @@
         <button
           mdbBtn
           class="btn-accent text-black-50 btn-small-height"
-          (click)="frame.hide()"
+          (click)="hide()"
           id="updateAreaRulePlanningSaveCancelBtn"
         >
           {{ 'Cancel' | translate }}
