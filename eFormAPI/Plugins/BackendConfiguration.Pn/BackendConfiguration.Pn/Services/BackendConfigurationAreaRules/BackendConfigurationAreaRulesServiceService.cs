@@ -167,7 +167,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             }).ToList(),
                         IsDefault = BackendConfigurationSeedAreas.LastIndexAreaRules >= x.Id,
                         TypeSpecificFields = new
-                            {x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek,},
+                            {x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek,},
+                        EformId = x.EformId,
                     })
                     .FirstOrDefaultAsync();
 
@@ -243,7 +244,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
 
                 foreach (var updateModelTranslatedName in updateModel.TranslatedNames)
                 {
-                    if (updateModelTranslatedName.Id is null or 0)
+                    var translateForUpdate = areaRule.AreaRuleTranslations
+                        .Where(x => x.LanguageId == updateModelTranslatedName.Id)
+                        .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+                    if (translateForUpdate is null)
                     {
                         var newTranslate = new AreaRuleTranslation
                         {
@@ -257,11 +261,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     }
                     else
                     {
-                        var translateForUpdate = areaRule.AreaRuleTranslations
-                            .Where(x => x.Id == updateModelTranslatedName.Id)
-                            .Where(x => x.LanguageId == updateModelTranslatedName.LanguageId)
-                            .FirstOrDefault(x => x.Name != updateModelTranslatedName.Name);
-                        if (translateForUpdate != null)
+                        if (translateForUpdate.Name != updateModelTranslatedName.Name)
                         {
                             translateForUpdate.Name = updateModelTranslatedName.Name;
                             await translateForUpdate.Update(_backendConfigurationPnDbContext);

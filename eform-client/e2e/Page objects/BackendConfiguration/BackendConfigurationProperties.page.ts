@@ -1,5 +1,6 @@
 import Page from '../Page';
 import { applicationLanguages } from '../../../src/app/common/const';
+import * as R from 'ramda';
 
 export class BackendConfigurationPropertiesPage extends Page {
   constructor() {
@@ -151,6 +152,13 @@ export class BackendConfigurationPropertiesPage extends Page {
     return ele;
   }
 
+  public async navigateToPropertyArea(i: number) {
+    const ele = await $$(`#navigateToPropertyArea`)[i];
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForDisplayed({ timeout: 40000 });
+    return ele;
+  }
+
   public async goToProperties() {
     const spinnerAnimation = await $('#spinner-animation');
     await (await this.backendConfigurationPnButton()).click();
@@ -251,7 +259,7 @@ export class PropertyRowObject {
   public deletePropertyBtn: WebdriverIO.Element;
 
   public async getRow(rowNum: number): Promise<PropertyRowObject> {
-    this.row = $$('#properiesTableBody tr')[rowNum - 1];
+    this.row = await $$('#properiesTableBody tr')[rowNum - 1];
     if (this.row) {
       this.id = +(await this.row.$('#propertyId')).getText();
       this.name = await (await this.row.$('#propertyName')).getText();
@@ -273,7 +281,7 @@ export class PropertyRowObject {
           ];
         }
       }
-      this.showPropertyAreasBtn = await this.row.$('#propertyAddress');
+      this.showPropertyAreasBtn = await this.row.$('#showPropertyAreasBtn');
       this.editPropertyAreasBtn = await this.row.$('#editPropertyAreasBtn');
       this.editPropertyBtn = await this.row.$('#editPropertyBtn');
       this.deletePropertyBtn = await this.row.$('#deletePropertyBtn');
@@ -370,6 +378,10 @@ export class PropertyRowObject {
     ).waitForClickable({ timeout: 40000 });
   }
 
+  public async bindOrUnbindWithAllAreas(clickCancel = false) {
+    await this.editBindWithAreas(R.times(R.identity, 26), clickCancel);
+  }
+
   public async editBindWithAreas(bindAreas?: number[], clickCancel = false) {
     await this.openBindPropertyWithAreasModal(bindAreas);
     await this.closeBindPropertyWithAreasModal(clickCancel);
@@ -413,6 +425,31 @@ export class PropertyRowObject {
     }
     await this.closeBindPropertyWithAreasModal(true);
     return mas;
+  }
+
+  public async openAreasViewModal(indexAreaForClick: number) {
+    await this.showPropertyAreasBtn.waitForClickable({ timeout: 40000 });
+    await this.showPropertyAreasBtn.click();
+    await (
+      await backendConfigurationPropertiesPage.propertyAreasViewCloseBtn()
+    ).waitForClickable({ timeout: 40000 });
+    await (
+      await backendConfigurationPropertiesPage.navigateToPropertyArea(
+        indexAreaForClick
+      )
+    ).click();
+  }
+
+  public async closeAreasViewModal() {
+    await (
+      await backendConfigurationPropertiesPage.propertyAreasViewCloseBtn()
+    ).waitForClickable({ timeout: 40000 });
+    await (
+      await backendConfigurationPropertiesPage.propertyAreasViewCloseBtn()
+    ).click();
+    await (
+      await backendConfigurationPropertiesPage.propertyCreateBtn()
+    ).waitForClickable({ timeout: 40000 });
   }
 }
 

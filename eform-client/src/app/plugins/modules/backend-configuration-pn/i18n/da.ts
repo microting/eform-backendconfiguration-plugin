@@ -57,4 +57,5 @@ export const da = {
   'Delete rule': 'Slet regel',
   'Property name': 'Ejendomsnavn',
   'Check to pair': 'Kontroller at parre',
+  'Hours and energy': 'Stunden und energie',
 };

@@ -2,7 +2,11 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { OwlDateTimeModule } from '@danielmoncada/angular-datetime-picker';
+import {
+  OwlDateTimeModule,
+  OwlMomentDateTimeModule,
+  OWL_DATE_TIME_FORMATS,
+} from '@danielmoncada/angular-datetime-picker';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TranslateModule } from '@ngx-translate/core';
@@ -18,6 +22,7 @@ import {
   AreaRulesTableComponent,
 } from './components';
 import { AreaRulesRouting } from './area-rules.routing';
+import { MY_MOMENT_FORMATS } from '../../consts/custom-date-time-adapter';
 
 @NgModule({
   declarations: [
@@ -41,6 +46,9 @@ import { AreaRulesRouting } from './area-rules.routing';
     FileUploadModule,
     OwlDateTimeModule,
     AreaRulesRouting,
+    OwlDateTimeModule,
+    OwlMomentDateTimeModule,
   ],
+  providers: [{ provide: OWL_DATE_TIME_FORMATS, useValue: MY_MOMENT_FORMATS }],
 })
 export class AreaRulesModule {}

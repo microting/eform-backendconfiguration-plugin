@@ -31,6 +31,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
     {
         public int Id { get; set; }
 
+        public int? EformId { get; set; }
+
         public string EformName { get; set; }
 
         public bool IsDefault { get; set; }

@@ -103,6 +103,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       typeSpecificFields: { ...initialFields },
       ruleId: rule.id,
       propertyId,
+      status: true,
       sendNotifications: rule.initialFields
         ? rule.initialFields.sendNotifications
         : this.selectedArea.initialFields.sendNotifications,
@@ -148,6 +149,12 @@ export class AreaRulePlanModalComponent implements OnInit {
         dayOfWeek: 1,
         repeatEvery: 1,
         repeatType: 2,
+      };
+    }
+    if (this.selectedArea.type === 6) {
+      return {
+        repeatEvery: 12,
+        repeatType: 3,
       };
     }
     return null;

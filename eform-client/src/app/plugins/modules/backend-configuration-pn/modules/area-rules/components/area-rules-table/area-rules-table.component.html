@@ -36,7 +36,7 @@
       [tableHeaders]="tableHeadersT5"
       [stickyHeader]="true"
     ></thead>
-    <tbody id="tableBody">
+    <tbody id="areaRulesTableBody">
       <tr *ngFor="let rule of areaRules; let i = index">
         <td id="ruleName">
           {{ rule.translatedName }}
@@ -84,8 +84,8 @@
         <td>
           <div class="d-flex flex-row justify-content-center">
             <button
-              id="showPropertyAreasBtn"
-              class="btn btn-success btn-icon mb-2"
+              id="showAreaRulePlanningBtn"
+              class="btn btn-success btn-icon mr-2"
               mdbTooltip="{{ 'Plan' | translate }}"
               (click)="onShowPlanAreaRule(rule)"
             >
