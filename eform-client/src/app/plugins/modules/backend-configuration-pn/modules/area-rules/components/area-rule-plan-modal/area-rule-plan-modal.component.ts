@@ -62,7 +62,7 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   onUpdateAreaRulePlan() {
-    this.updateAreaRulePlan.emit(this.selectedAreaRulePlanning);
+    this.updateAreaRulePlan.emit({ ...this.selectedAreaRulePlanning });
   }
 
   addToArray(e: any, siteId: number) {

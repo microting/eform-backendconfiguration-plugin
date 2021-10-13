@@ -151,10 +151,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async planAreaRuleStatusToggle() {
-    const ele = await $(`#planAreaRuleStatusToggle`);
-    await ele.waitForDisplayed({ timeout: 40000 });
-    // await ele.waitForClickable({ timeout: 40000 });
-    return ele;
+    return $(`#planAreaRuleStatusToggle`);
   }
 
   public async planAreaRuleNotificationsToggle() {
@@ -174,10 +171,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async checkboxCreateAssignment(i: number) {
-    const ele = await $(`#checkboxCreateAssignment${i}`);
-    await ele.waitForDisplayed({ timeout: 40000 });
-    // await ele.waitForClickable({ timeout: 40000 });
-    return ele;
+    return $(`#checkboxCreateAssignment${i}`);
   }
 
   public async getFirstAreaRuleRowObject(): Promise<AreaRuleRowObject> {
@@ -589,7 +583,7 @@ export class AreaRuleRowObject {
       if (areaRulePlanningCreateUpdate.startDate) {
         await (
           await backendConfigurationAreaRulesPage.planStartFrom()
-        ).setValue(areaRulePlanningCreateUpdate.repeatEvery);
+        ).setValue(areaRulePlanningCreateUpdate.startDate);
       }
       if (areaRulePlanningCreateUpdate.workers) {
         for (let i = 0; i < areaRulePlanningCreateUpdate.workers.length; i++) {
@@ -655,8 +649,10 @@ export class AreaRuleRowObject {
       ).isDisplayed()
     ) {
       plan.repeatType = await (
-        await backendConfigurationAreaRulesPage.planRepeatType()
-      ).getValue();
+        await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
+          'input'
+        )
+      ).getText();
     }
     if (
       await (
@@ -668,7 +664,7 @@ export class AreaRuleRowObject {
       ).getValue();
     }
     plan.workers = [];
-    const masWorkers = await $$('pairingModalTableBody > tr');
+    const masWorkers = await $$('#pairingModalTableBody > tr');
     for (let i = 0; i < masWorkers.length; i++) {
       const workerName = await (await masWorkers[i].$$('td')[1]).getText();
       const workerChecked =
