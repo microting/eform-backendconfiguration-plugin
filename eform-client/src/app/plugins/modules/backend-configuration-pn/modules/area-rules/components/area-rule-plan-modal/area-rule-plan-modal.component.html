@@ -19,47 +19,35 @@
         <div class="container-fluid">
           <!-- Show all translations for rule -->
           <div class="row mb-2">
-            <div class="col-md-12">
-              <div class="mat-checkbox">
-                <input
-                  type="checkbox"
-                  id="planAreaRuleStatusToggle"
-                  [value]="selectedAreaRulePlanning.status"
-                  [checked]="selectedAreaRulePlanning.status"
-                  [(ngModel)]="selectedAreaRulePlanning.status"
-                />
-                <label for="planAreaRuleStatusToggle">{{
-                  selectedAreaRule.translatedName
-                }}</label>
-              </div>
+            <div class="col-md-1">
+              <ui-switch
+                [(ngModel)]="selectedAreaRulePlanning.status"
+                id="planAreaRuleStatusToggle"
+                size="small"
+                defaultBoColor="white"
+              ></ui-switch>
+            </div>
+            <div class="col-md-11">
+              <p>{{ selectedAreaRule.translatedName }}</p>
             </div>
           </div>
 
           <ng-container *ngIf="selectedAreaRule.typeSpecificFields">
             <div class="row" *ngIf="selectedArea.type === 6">
-              <div class="col-md-12">
-                <div class="mat-checkbox">
-                  <input
-                    type="checkbox"
-                    id="hoursAndEnergyToggle"
-                    [value]="
-                      selectedAreaRulePlanning.typeSpecificFields
-                        .hoursAndEnergyEnabled
-                    "
-                    [checked]="
-                      selectedAreaRulePlanning.typeSpecificFields
-                        .hoursAndEnergyEnabled
-                    "
-                    [(ngModel)]="
-                      selectedAreaRulePlanning.typeSpecificFields
-                        .hoursAndEnergyEnabled
-                    "
-                    [disabled]="!selectedAreaRulePlanning.status"
-                  />
-                  <label for="hoursAndEnergyToggle">{{
-                    'Hours and energy' | translate
-                  }}</label>
-                </div>
+              <div class="col-md-1">
+                <ui-switch
+                  [(ngModel)]="
+                    selectedAreaRulePlanning.typeSpecificFields
+                      .hoursAndEnergyEnabled
+                  "
+                  id="hoursAndEnergyToggle"
+                  size="small"
+                  defaultBoColor="white"
+                  [disabled]="!selectedAreaRulePlanning.status"
+                ></ui-switch>
+              </div>
+              <div class="col-md-11">
+                <p>{{ 'Hours and energy' | translate }}</p>
               </div>
             </div>
             <div class="row" *ngIf="selectedArea.type === 5">
@@ -87,24 +75,17 @@
             <!-- Rule type 1, 2, 3, 5 -->
             <ng-container *ngIf="selectedArea.type !== 4">
               <div class="row">
-                <div class="col-md-12">
-                  <div class="mat-checkbox">
-                    <input
-                      type="checkbox"
-                      id="planAreaRuleNotificationsToggle"
-                      [value]="selectedAreaRulePlanning.sendNotifications"
-                      [checked]="selectedAreaRulePlanning.sendNotifications"
-                      [(ngModel)]="selectedAreaRulePlanning.sendNotifications"
-                      (change)="
-                        selectedAreaRulePlanning.sendNotifications =
-                          $event.target.checked
-                      "
-                      [disabled]="!selectedAreaRulePlanning.status"
-                    />
-                    <label for="planAreaRuleNotificationsToggle">{{
-                      'Notifications on/off' | translate
-                    }}</label>
-                  </div>
+                <div class="col-md-1">
+                  <ui-switch
+                    [(ngModel)]="selectedAreaRulePlanning.sendNotifications"
+                    id="planAreaRuleNotificationsToggle"
+                    size="small"
+                    defaultBoColor="white"
+                    [disabled]="!selectedAreaRulePlanning.status"
+                  ></ui-switch>
+                </div>
+                <div class="col-md-11">
+                  <p>{{ 'Notifications on/off' | translate }}</p>
                 </div>
               </div>
               <div class="row">
@@ -256,7 +237,7 @@
                   <td class="align-middle">
                     <div class="mat-checkbox">
                       <input
-                        id="CheckboxCreateAssignment{{ i }}"
+                        id="checkboxCreateAssignment{{ i }}"
                         (change)="addToArray($event, worker.siteId)"
                         [checked]="getAssignmentBySiteId(worker.siteId)"
                         [value]="getAssignmentBySiteId(worker.siteId)"
@@ -264,7 +245,7 @@
                         type="checkbox"
                         [disabled]="!selectedAreaRulePlanning.status"
                       />
-                      <label for="CheckboxCreateAssignment{{ i }}"></label>
+                      <label for="checkboxCreateAssignment{{ i }}"></label>
                     </div>
                   </td>
                 </tr>

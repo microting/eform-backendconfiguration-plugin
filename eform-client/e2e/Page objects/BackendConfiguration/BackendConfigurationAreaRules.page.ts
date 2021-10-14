@@ -136,6 +136,44 @@ export class BackendConfigurationAreaRulesPage extends Page {
     return $('#editAreaRuleDayOfWeek');
   }
 
+  public async updateAreaRulePlanningSaveBtn() {
+    const ele = await $(`#updateAreaRulePlanningSaveBtn`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async updateAreaRulePlanningSaveCancelBtn() {
+    const ele = await $(`#updateAreaRulePlanningSaveCancelBtn`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async planAreaRuleStatusToggle() {
+    return $(`#planAreaRuleStatusToggle`);
+  }
+
+  public async planAreaRuleNotificationsToggle() {
+    return $(`#planAreaRuleNotificationsToggle`);
+  }
+
+  public async planRepeatEvery() {
+    return $(`#planRepeatEvery`);
+  }
+
+  public async planRepeatType() {
+    return $(`#planRepeatType`);
+  }
+
+  public async planStartFrom() {
+    return $(`#planStartFrom`);
+  }
+
+  public async checkboxCreateAssignment(i: number) {
+    return $(`#checkboxCreateAssignment${i}`);
+  }
+
   public async getFirstAreaRuleRowObject(): Promise<AreaRuleRowObject> {
     return await new AreaRuleRowObject().getRow(1);
   }
@@ -494,6 +532,153 @@ export class AreaRuleRowObject {
       await backendConfigurationAreaRulesPage.ruleCreateBtn()
     ).waitForClickable({ timeout: 40000 });
   }
+
+  public async createUpdatePlanning(
+    areaRulePlanningCreateUpdate?: AreaRulePlanningCreateUpdate,
+    clickCancel = false
+  ) {
+    await this.openPlanningModal(areaRulePlanningCreateUpdate);
+    await this.closePlanningModal(clickCancel);
+  }
+
+  public async openPlanningModal(
+    areaRulePlanningCreateUpdate?: AreaRulePlanningCreateUpdate
+  ) {
+    await this.showAreaRulePlanningBtn.click();
+    await (
+      await backendConfigurationAreaRulesPage.updateAreaRulePlanningSaveCancelBtn()
+    ).waitForClickable({ timeout: 40000 });
+    if (areaRulePlanningCreateUpdate) {
+      if (areaRulePlanningCreateUpdate.status !== undefined) {
+        await (
+          await (
+            await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
+          ).$('..')
+        ).click();
+      }
+      if (areaRulePlanningCreateUpdate.notification !== undefined) {
+        await (
+          await (
+            await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
+          ).$('..')
+        ).click();
+      }
+      if (areaRulePlanningCreateUpdate.repeatEvery) {
+        await (
+          await backendConfigurationAreaRulesPage.planRepeatEvery()
+        ).setValue(areaRulePlanningCreateUpdate.repeatEvery);
+      }
+      if (areaRulePlanningCreateUpdate.repeatType) {
+        await (
+          await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
+            'input'
+          )
+        ).setValue(areaRulePlanningCreateUpdate.repeatType);
+        const value = await (
+          await backendConfigurationAreaRulesPage.planRepeatType()
+        ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatType}`);
+        value.waitForDisplayed({ timeout: 40000 });
+        await value.click();
+      }
+      if (areaRulePlanningCreateUpdate.startDate) {
+        await (
+          await backendConfigurationAreaRulesPage.planStartFrom()
+        ).setValue(areaRulePlanningCreateUpdate.startDate);
+      }
+      if (areaRulePlanningCreateUpdate.workers) {
+        for (let i = 0; i < areaRulePlanningCreateUpdate.workers.length; i++) {
+          await (
+            await (
+              await backendConfigurationAreaRulesPage.checkboxCreateAssignment(
+                areaRulePlanningCreateUpdate.workers[i].workerNumber
+              )
+            ).$('..')
+          ).click();
+        }
+      }
+    }
+  }
+
+  public async closePlanningModal(clickCancel = false) {
+    if (clickCancel) {
+      await (
+        await backendConfigurationAreaRulesPage.updateAreaRulePlanningSaveCancelBtn()
+      ).click();
+    } else {
+      await (
+        await backendConfigurationAreaRulesPage.updateAreaRulePlanningSaveBtn()
+      ).waitForClickable({ timeout: 40000 });
+      await (
+        await backendConfigurationAreaRulesPage.updateAreaRulePlanningSaveBtn()
+      ).click();
+    }
+    await (
+      await backendConfigurationAreaRulesPage.ruleCreateBtn()
+    ).waitForClickable({ timeout: 40000 });
+  }
+
+  public async readPlanning(): Promise<AreaRulePlanningCreateUpdate> {
+    await this.openPlanningModal();
+    const plan = new AreaRulePlanningCreateUpdate();
+    plan.status =
+      (await (
+        await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
+      ).getValue()) === 'true';
+    if (
+      await (
+        await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
+      ).isDisplayed()
+    ) {
+      plan.notification =
+        (await (
+          await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
+        ).getValue()) === 'true';
+    }
+    if (
+      await (
+        await backendConfigurationAreaRulesPage.planRepeatEvery()
+      ).isDisplayed()
+    ) {
+      plan.repeatEvery = await (
+        await backendConfigurationAreaRulesPage.planRepeatEvery()
+      ).getValue();
+    }
+    if (
+      await (
+        await backendConfigurationAreaRulesPage.planRepeatType()
+      ).isDisplayed()
+    ) {
+      plan.repeatType = await (
+        await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
+          'input'
+        )
+      ).getText();
+    }
+    if (
+      await (
+        await backendConfigurationAreaRulesPage.planStartFrom()
+      ).isDisplayed()
+    ) {
+      plan.startDate = await (
+        await backendConfigurationAreaRulesPage.planStartFrom()
+      ).getValue();
+    }
+    plan.workers = [];
+    const masWorkers = await $$('#pairingModalTableBody > tr');
+    for (let i = 0; i < masWorkers.length; i++) {
+      const workerName = await (await masWorkers[i].$$('td')[1]).getText();
+      const workerChecked =
+        (await (
+          await backendConfigurationAreaRulesPage.checkboxCreateAssignment(i)
+        ).getValue()) === 'true';
+      plan.workers = [
+        ...plan.workers,
+        { name: workerName, checked: workerChecked },
+      ];
+    }
+    await this.closePlanningModal(true);
+    return plan;
+  }
 }
 
 export class AreaRuleCreateUpdate {
@@ -504,4 +689,13 @@ export class AreaRuleCreateUpdate {
   checkListStable?: boolean;
   tailBite?: boolean;
   dayOfWeek?: string;
+}
+
+export class AreaRulePlanningCreateUpdate {
+  status?: boolean;
+  notification?: boolean;
+  repeatEvery?: string;
+  repeatType?: string;
+  startDate?: string;
+  workers?: { workerNumber?: number; name?: string; checked?: boolean }[];
 }
