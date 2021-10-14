@@ -254,6 +254,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     await areaRule.Update(_backendConfigurationPnDbContext);
                                 }
 
+                                var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "");
+                                newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUUID);
+                                await newAssignment.Update(_backendConfigurationPnDbContext);
                                 break;
                             }
                         case AreaTypesEnum.Type5:
@@ -488,12 +491,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     areaRule.FolderId = folderId;
                                     await areaRule.Update(_backendConfigurationPnDbContext);
                                 }
-
-                                if (area.Type == AreaTypesEnum.Type3)
-                                { 
-                                    var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "");
-                                    newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUUID);
-                                }
                                 break;
                             }
                     }
@@ -501,7 +498,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 foreach (var areaPropertyForDelete in assignmentsForDelete)
                 {
-                    if(areaPropertyForDelete.GroupMicrotingUuid != 0)
+                    if (areaPropertyForDelete.GroupMicrotingUuid != 0)
                     {
                         await core.EntityGroupDelete(areaPropertyForDelete.GroupMicrotingUuid.ToString());
                     }
@@ -575,7 +572,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     var site = await sdkDbContex.Sites
                         .Where(x => x.Id == worker)
                         .FirstAsync();
-                    sites.Add(new SiteDto(worker, site.Name, "", "", null, null, null, null));
+                    sites.Add(new SiteDto()
+                    {
+                        SiteId = worker,
+                        SiteName = site.Name,
+                    });
                 }
 
                 var languages = await sdkDbContex.Languages.AsNoTracking().ToListAsync();

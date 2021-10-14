@@ -32,7 +32,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     using Infrastructure.Models.Properties;
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Infrastructure.Constants;
-    using Microting.eForm.Infrastructure.Data.Entities;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -312,6 +311,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             .Include(x => x.Children)
                             .FirstAsync();
                         await folder.Delete(sdkDbContext);
+                    }
+
+                    if (areaProperty.GroupMicrotingUuid != 0)
+                    {
+                        await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString());
                     }
                     areaProperty.UpdatedByUserId = _userService.UserId;
                     await areaProperty.Delete(_backendConfigurationPnDbContext);
