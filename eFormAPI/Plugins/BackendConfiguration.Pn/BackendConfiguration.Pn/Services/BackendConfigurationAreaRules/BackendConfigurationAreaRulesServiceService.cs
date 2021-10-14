@@ -236,7 +236,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                     areaRule.Alarm = updateModel.TypeSpecificFields.Alarm;
                     areaRule.ChecklistStable = updateModel.TypeSpecificFields.ChecklistStable;
                     areaRule.DayOfWeek = updateModel.TypeSpecificFields.DayOfWeek;
-                    areaRule.HoursAndEnergyEnabled = updateModel.TypeSpecificFields.HoursAndEnergyEnabled;
                     areaRule.TailBite = updateModel.TypeSpecificFields.TailBite;
                 }
 
@@ -288,6 +287,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 var areaRule = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == areaId)
+                    .Include(x => x.Area)
                     .Include(x => x.AreaRuleTranslations)
                     .Include(x => x.AreaRulesPlannings)
                     .ThenInclude(x => x.PlanningSites)
@@ -303,6 +303,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 {
                     return new OperationDataResult<AreaRuleModel>(false,
                         _backendConfigurationLocalizationService.GetString("AreaRuleCantBeDeleted"));
+                }
+
+
+                if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
+                {
+                    var core = await _coreHelper.GetCore();
+                    var sdkDbContext = core.DbContextHelper.GetDbContext();
+                    var entityGroupItem = await sdkDbContext.EntityItems.Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync();
+                    if (entityGroupItem != null)
+                    {
+                        await entityGroupItem.Delete(sdkDbContext);
+                    }
                 }
 
                 foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations)
@@ -365,10 +377,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         {
             try
             {
-                var area = await _backendConfigurationPnDbContext.AreaProperties
+                var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == createModel.PropertyAreaId)
-                    .Select(x => x.Area)
+                    .Select(x => new {x.Area, x.GroupMicrotingUuid})
                     .FirstAsync();
 
                 var core = await _coreHelper.GetCore();
@@ -377,9 +389,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 foreach (var areaRuleCreateModel in createModel.AreaRules)
                 {
                     var eformId = areaRuleCreateModel.TypeSpecificFields.EformId;
-                    if (area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6)
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6)
                     {
-                        var eformName = area.Type switch
+                        var eformName = areaProperty.Area.Type switch
                         {
                             AreaTypesEnum.Type2 => "03. Kontrol konstruktion",
                             AreaTypesEnum.Type6 => "10. Varmepumpe serviceaftale",
@@ -393,17 +405,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
 
                     var areaRule = new AreaRule
                     {
-                        AreaId = area.Id,
+                        AreaId = areaProperty.Area.Id,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
                         Alarm = areaRuleCreateModel.TypeSpecificFields?.Alarm,
                         DayOfWeek = (int) areaRuleCreateModel.TypeSpecificFields?.DayOfWeek,
-                        HoursAndEnergyEnabled = (bool) (areaRuleCreateModel.TypeSpecificFields?.HoursAndEnergyEnabled),
                         Type = areaRuleCreateModel.TypeSpecificFields?.Type,
                         TailBite = areaRuleCreateModel.TypeSpecificFields?.TailBite,
                         ChecklistStable = areaRuleCreateModel.TypeSpecificFields?.ChecklistStable,
                         EformId = eformId,
                     };
+
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type3)
+                    {
+                        var entityGroup = await core.EntityGroupRead(areaProperty.GroupMicrotingUuid.ToString());
+                        var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+                        var entityItem = await core.EntitySelectItemCreate(entityGroup.Id, areaRuleCreateModel.TranslatedNames.First().Name, entityGroup.EntityGroupItemLst.Count,
+                                nextItemUid.ToString());
+                        areaRule.GroupItemId = entityItem.Id;
+                    }
 
                     var language = await _userService.GetCurrentUserLanguage();
                     if (eformId != 0)
@@ -491,6 +511,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                         rulePlanning.Status = areaRulePlanningModel.Status;
                         rulePlanning.SendNotifications = areaRulePlanningModel.SendNotifications;
                         rulePlanning.AreaRuleId = areaRulePlanningModel.RuleId;
+                        rulePlanning.HoursAndEnergyEnabled =
+                            areaRulePlanningModel.TypeSpecificFields.HoursAndEnergyEnabled;
                         if (areaRulePlanningModel.TypeSpecificFields != null)
                         {
                             rulePlanning.EndDate = areaRulePlanningModel.TypeSpecificFields?.EndDate;
@@ -879,8 +901,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     {
                                         if (areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled is true)
                                         {
-                                            areaRule.HoursAndEnergyEnabled = true;
-                                            await areaRule.Update(_backendConfigurationPnDbContext);
+                                            areaRule.AreaRulesPlannings[0].HoursAndEnergyEnabled = true;
+                                            areaRule.AreaRulesPlannings[1].HoursAndEnergyEnabled = true;
+                                            areaRule.AreaRulesPlannings[2].HoursAndEnergyEnabled = true;
+                                                await areaRule.Update(_backendConfigurationPnDbContext);
                                             const string eformName = "10. Varmepumpe timer og energi";
                                             var eformId = await sdkDbContext.CheckListTranslations
                                                 .Where(x => x.Text == eformName)
@@ -1282,7 +1306,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             RepeatType = x.RepeatType,
                             Alarm = x.Alarm,
                             Type = x.Type,
-                            HoursAndEnergyEnabled = x.AreaRule.HoursAndEnergyEnabled,
+                            HoursAndEnergyEnabled = x.HoursAndEnergyEnabled,
                         },
                         SendNotifications = x.SendNotifications,
                         AssignedSites = x.PlanningSites
@@ -1939,7 +1963,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                         if (areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled is true &&
                             areaRulePlanningModel.Status)
                         {
-                            areaRule.HoursAndEnergyEnabled = true;
                             await areaRule.Update(_backendConfigurationPnDbContext);
                             const string eformName = "10. Varmepumpe timer og energi";
                             var eformId = await sdkDbContext.CheckListTranslations
@@ -2129,6 +2152,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             SendNotifications = areaRulePlanningModel.SendNotifications,
                             AreaRuleId = areaRulePlanningModel.RuleId,
                             ItemPlanningId = planningForType6HoursAndEnergyEnabledId,
+                            HoursAndEnergyEnabled = (bool)areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled,
                             FolderId = folderId,
                             EndDate = areaRulePlanningModel.TypeSpecificFields?.EndDate,
                             RepeatEvery = areaRulePlanningModel.TypeSpecificFields?.RepeatEvery,
@@ -2147,6 +2171,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             StartDate = areaRulePlanningModel.StartDate,
                             Status = areaRulePlanningModel.Status,
                             SendNotifications = areaRulePlanningModel.SendNotifications,
+                            HoursAndEnergyEnabled = (bool)areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled,
                             AreaRuleId = areaRulePlanningModel.RuleId,
                             Type = (AreaRuleT2TypesEnum)areaRule.Type,
                             Alarm = (AreaRuleT2AlarmsEnum)areaRule.Alarm,
