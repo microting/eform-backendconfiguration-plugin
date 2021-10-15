@@ -563,7 +563,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     var site = await sdkDbContex.Sites
                         .Where(x => x.Id == worker)
                         .FirstAsync();
-                    sites.Add(new SiteDto(worker, site.Name, "", "", null, null, null, null));
+                    sites.Add(new SiteDto()
+                    {
+                        WorkerUid = worker, SiteName = site.Name
+                    });
                 }
 
                 var languages = await sdkDbContex.Languages.AsNoTracking().ToListAsync();
