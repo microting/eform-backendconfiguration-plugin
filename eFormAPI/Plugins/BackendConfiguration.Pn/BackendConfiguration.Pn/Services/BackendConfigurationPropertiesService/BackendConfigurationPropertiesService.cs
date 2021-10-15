@@ -32,7 +32,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     using Infrastructure.Models.Properties;
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Infrastructure.Constants;
-    using Microting.eForm.Infrastructure.Data.Entities;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -283,20 +282,52 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var property = await _backendConfigurationPnDbContext.Properties
                     .Where(x => x.Id == id)
                     .Include(x => x.SelectedLanguages)
+                    .Include(x => x.PropertyWorkers)
+                    .Include(x => x.AreaProperties)
+                    .ThenInclude(x => x.ProperyAreaFolders)
                     .FirstOrDefaultAsync();
 
                 if (property == null)
                 {
                     return new OperationResult(false, _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
                 }
-                
-                property.UpdatedByUserId = _userService.UserId;
+
+                foreach (var propertyWorker in property.PropertyWorkers)
+                {
+                    propertyWorker.UpdatedByUserId = _userService.UserId;
+                    await propertyWorker.Delete(_backendConfigurationPnDbContext);
+                }
+
+                var core = await _coreHelper.GetCore();
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+                foreach (var areaProperty in property.AreaProperties)
+                {
+                    foreach (var properyAreaFolder in areaProperty.ProperyAreaFolders)
+                    {
+                        var folder = await sdkDbContext.Folders
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.Id == properyAreaFolder.FolderId)
+                            .Include(x => x.Children)
+                            .FirstAsync();
+                        await folder.Delete(sdkDbContext);
+                    }
+
+                    if (areaProperty.GroupMicrotingUuid != 0)
+                    {
+                        await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString());
+                    }
+                    areaProperty.UpdatedByUserId = _userService.UserId;
+                    await areaProperty.Delete(_backendConfigurationPnDbContext);
+                }
 
                 foreach (var selectedLanguage in property.SelectedLanguages)
                 {
+                    selectedLanguage.UpdatedByUserId = _userService.UserId;
                     await selectedLanguage.Delete(_backendConfigurationPnDbContext);
                 }
 
+                property.UpdatedByUserId = _userService.UserId;
                 await property.Delete(_backendConfigurationPnDbContext);
 
                 return new OperationResult(true, _backendConfigurationLocalizationService.GetString("SuccessfullyDeleteProperties"));

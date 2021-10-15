@@ -147,20 +147,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
+                updateModel.Areas = updateModel.Areas.Where(x => x.Activated).ToList();
                 var assignments = await _backendConfigurationPnDbContext.AreaProperties
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.PropertyId == updateModel.PropertyId)
-                    .ToListAsync();
+                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                 .Where(x => x.PropertyId == updateModel.PropertyId)
+                 .ToListAsync();
 
                 var assignmentsForCreate = updateModel.Areas
                     .Where(x => x.Id == null)
                     .Where(x => x.Activated)
                     .ToList();
-
-                //var assignmentsForUpdate = updateModel.Areas
-                //    .Where(x => x.Id.HasValue)
-                //    .Where(x => assignments.First(y => y.Id == x.Id).Checked != x.Activated)
-                //    .ToList();
 
                 var assignmentsForDelete = assignments
                     .Where(x => !updateModel.Areas.Where(y => y.Id.HasValue).Select(y => y.Id).Contains(x.Id))
@@ -194,8 +190,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     switch (area.Type)
                     {
                         case AreaTypesEnum.Type3:
-                        {
-                            var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
@@ -216,15 +212,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Description = "",
                                 },
                             }, property.FolderId);
-                            var assignmentWithOneFolder = new ProperyAreaFolder
-                            {
-                                FolderId = folderId,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            };
+                                var assignmentWithOneFolder = new ProperyAreaFolder
+                                {
+                                    FolderId = folderId,
+                                    ProperyAreaAsignmentId = newAssignment.Id,
+                                };
 
-                            var assignmentWithTwoFolder = new ProperyAreaFolder
-                            {
-                                FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                                var assignmentWithTwoFolder = new ProperyAreaFolder
+                                {
+                                    FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                                     {
                                         new()
                                         {
@@ -245,38 +241,48 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                             Description = "",
                                         },
                                     },
-                                    property.FolderId),
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            };
+                                        property.FolderId),
+                                    ProperyAreaAsignmentId = newAssignment.Id,
+                                };
 
-                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
-                            await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
+                                await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+                                await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
 
-                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
-                            {
-                                areaRule.FolderId = folderId;
-                                await areaRule.Update(_backendConfigurationPnDbContext);
-                            }
-
-                            break;
-                        }
-                        case AreaTypesEnum.Type5:
-                        {
-                            // create folder with stable name
-                            var folderId = await core.FolderCreate(
-                                new List<KeyValuePair<string, string>>
+                                foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
                                 {
-                                    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name)
-                                        .FirstOrDefault()),
-                                    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name)
-                                        .FirstOrDefault()),
-                                    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name)
-                                        .FirstOrDefault()),
-                                },
-                                new List<KeyValuePair<string, string>>
-                                    {new("da", ""), new("en-US", ""), new("de-DE", ""),}, property.FolderId);
-                            //create 7 folders
-                            var folderIds = new List<int>
+                                    areaRule.FolderId = folderId;
+                                    await areaRule.Update(_backendConfigurationPnDbContext);
+                                }
+
+                                var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "");
+                                newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUUID);
+                                await newAssignment.Update(_backendConfigurationPnDbContext);
+                                break;
+                            }
+                        case AreaTypesEnum.Type5:
+                            {
+                                // create folder with stable name
+                                var folderId = await core.FolderCreate(
+                                    area.AreaTranslations.Select(x => new CommonTranslationsModel
+                                    {
+                                        Name = x.Name,
+                                        LanguageId = x.LanguageId,
+                                        Description = "",
+                                    }).ToList(),
+                                    //new List<KeyValuePair<string, string>>
+                                    //{
+                                    //    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name)
+                                    //        .FirstOrDefault()),
+                                    //    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name)
+                                    //        .FirstOrDefault()),
+                                    //    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name)
+                                    //        .FirstOrDefault()),
+                                    //},
+                                    //new List<KeyValuePair<string, string>>
+                                    //    {new("da", ""), new("en-US", ""), new("de-DE", ""),},
+                                    property.FolderId);
+                                //create 7 folders
+                                var folderIds = new List<int>
                             {
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
@@ -427,73 +433,76 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 }, folderId),
                             };
 
-                            await new ProperyAreaFolder
-                            {
-                                FolderId = folderId,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            }.Create(_backendConfigurationPnDbContext);
+                                await new ProperyAreaFolder
+                                {
+                                    FolderId = folderId,
+                                    ProperyAreaAsignmentId = newAssignment.Id,
+                                }.Create(_backendConfigurationPnDbContext);
 
-                            foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
-                            {
-                                FolderId = folderIdLocal,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            }))
-                            {
-                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                                foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                                {
+                                    FolderId = folderIdLocal,
+                                    ProperyAreaAsignmentId = newAssignment.Id,
+                                }))
+                                {
+                                    await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                                }
+
+                                foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                                {
+                                    areaRule.FolderId = folderIds[areaRule.DayOfWeek];
+                                    await areaRule.Update(_backendConfigurationPnDbContext);
+                                }
+
+                                break;
                             }
-
-                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
-                            {
-                                areaRule.FolderId = folderIds[areaRule.DayOfWeek];
-                                await areaRule.Update(_backendConfigurationPnDbContext);
-                            }
-
-                            break;
-                        }
                         default:
-                        {
-                            var folderId = await core.FolderCreate(
-                                new List<KeyValuePair<string, string>>
-                                {
-                                    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name)
-                                        .FirstOrDefault()),
-                                    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name)
-                                        .FirstOrDefault()),
-                                    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name)
-                                        .FirstOrDefault()),
-                                },
-                                new List<KeyValuePair<string, string>>
-                                {
-                                    new("da", ""), new("en-US", ""), new("de-DE", ""),
-                                },
-                                property.FolderId);
-                            var assignmentWithFolder = new ProperyAreaFolder
                             {
-                                FolderId = folderId,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            };
-                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                                var folderId = await core.FolderCreate(
+                                    area.AreaTranslations.Select(x => new CommonTranslationsModel
+                                    {
+                                        Name = x.Name,
+                                        LanguageId = x.LanguageId,
+                                        Description = "",
+                                    }).ToList(),
+                                    //new List<KeyValuePair<string, string>>
+                                    //{
+                                    //    new("da", area.AreaTranslations.Where(x => x.LanguageId == 1).Select(x => x.Name)
+                                    //        .FirstOrDefault()),
+                                    //    new("en-US", area.AreaTranslations.Where(x => x.LanguageId == 2).Select(x => x.Name)
+                                    //        .FirstOrDefault()),
+                                    //    new("de-DE", area.AreaTranslations.Where(x => x.LanguageId == 3).Select(x => x.Name)
+                                    //        .FirstOrDefault()),
+                                    //},
+                                    //new List<KeyValuePair<string, string>>
+                                    //{
+                                    //    new("da", ""), new("en-US", ""), new("de-DE", ""),
+                                    //},
+                                    property.FolderId);
+                                var assignmentWithFolder = new ProperyAreaFolder
+                                {
+                                    FolderId = folderId,
+                                    ProperyAreaAsignmentId = newAssignment.Id,
+                                };
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
 
-                            foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
-                            {
-                                areaRule.FolderId = folderId;
-                                await areaRule.Update(_backendConfigurationPnDbContext);
+                                foreach (var areaRule in area.AreaRules.Where(x => x.FolderId != 0))
+                                {
+                                    areaRule.FolderId = folderId;
+                                    await areaRule.Update(_backendConfigurationPnDbContext);
+                                }
+                                break;
                             }
-
-                            break;
-                        }
                     }
                 }
 
-                //foreach (var areaProperty in assignmentsForUpdate)
-                //{
-                //    var assignmentForUpdate = assignments.First(x => x.Id == areaProperty.Id);
-                //    assignmentForUpdate.Checked = areaProperty.Activated;
-                //    assignmentForUpdate.UpdatedByUserId = _userService.UserId;
-                //    await assignmentForUpdate.Update(_backendConfigurationPnDbContext);
-                //}
                 foreach (var areaPropertyForDelete in assignmentsForDelete)
                 {
+                    if (areaPropertyForDelete.GroupMicrotingUuid != 0)
+                    {
+                        await core.EntityGroupDelete(areaPropertyForDelete.GroupMicrotingUuid.ToString());
+                    }
+                    areaPropertyForDelete.UpdatedByUserId = _userService.UserId;
                     await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext);
                     var foldersIdForDelete = _backendConfigurationPnDbContext.ProperyAreaFolders
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -565,7 +574,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .FirstAsync();
                     sites.Add(new SiteDto()
                     {
-                        WorkerUid = worker, SiteName = site.Name
+
+                        SiteId = worker,
+                        SiteName = site.Name,
                     });
                 }
 
