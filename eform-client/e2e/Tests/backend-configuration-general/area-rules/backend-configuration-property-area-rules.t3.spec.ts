@@ -8,6 +8,7 @@ import backendConfigurationPropertyWorkersPage from '../../../Page objects/Backe
 import backendConfigurationAreaRulesPage, {
   AreaRuleCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
+import selectableLists from '../../../Page objects/SelectableLists.page';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),
@@ -49,6 +50,17 @@ describe('Backend Configuration Area Rules Type3', function () {
     expect(areRule.ruleChecklistStable).eq('Ja');
     expect(areRule.ruleTailBite).eq('Ja');
     expect(areRule.rulePlanningStatus).eq(false);
+
+    await selectableLists.Navbar.goToEntitySelect();
+    const selectableList = await selectableLists.getLastSelectableListObject();
+    await selectableList.openEdit();
+    expect(await (await selectableLists.getFirstEntityItemOnEdit()).name).equal(
+      property.name
+    );
+    await selectableList.closeEdit(true);
+    await backendConfigurationPropertiesPage.goToProperties();
+    const lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
+    await lastProperty.openAreasViewModal(0); // go to area rule page
   });
   it('should not edit created area rule type 3', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();

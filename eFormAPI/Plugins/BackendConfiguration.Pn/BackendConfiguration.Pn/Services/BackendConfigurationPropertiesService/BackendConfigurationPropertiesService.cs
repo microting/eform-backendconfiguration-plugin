@@ -279,6 +279,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         {
             try
             {
+                // find property and all links
                 var property = await _backendConfigurationPnDbContext.Properties
                     .Where(x => x.Id == id)
                     .Include(x => x.SelectedLanguages)
@@ -292,6 +293,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     return new OperationResult(false, _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
                 }
 
+                // delete property workers
                 foreach (var propertyWorker in property.PropertyWorkers)
                 {
                     propertyWorker.UpdatedByUserId = _userService.UserId;
@@ -301,18 +303,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var core = await _coreHelper.GetCore();
                 await using var sdkDbContext = core.DbContextHelper.GetDbContext();
 
+                // delete area properties
                 foreach (var areaProperty in property.AreaProperties)
                 {
+                    // delete area property folders
                     foreach (var properyAreaFolder in areaProperty.ProperyAreaFolders)
                     {
                         var folder = await sdkDbContext.Folders
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .Where(x => x.Id == properyAreaFolder.FolderId)
-                            .Include(x => x.Children)
-                            .FirstAsync();
-                        await folder.Delete(sdkDbContext);
+                            .FirstOrDefaultAsync();
+                        if (folder != null) // if folder is not deleted
+                        {
+                            await folder.Delete(sdkDbContext);
+                        }
                     }
 
+                    // delete entity select group. only for type 3(tail bite and stables)
                     if (areaProperty.GroupMicrotingUuid != 0)
                     {
                         await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString());
@@ -321,12 +328,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     await areaProperty.Delete(_backendConfigurationPnDbContext);
                 }
 
+                // delete selected languages
                 foreach (var selectedLanguage in property.SelectedLanguages)
                 {
                     selectedLanguage.UpdatedByUserId = _userService.UserId;
                     await selectedLanguage.Delete(_backendConfigurationPnDbContext);
                 }
 
+                // delete property folder
+                var propertyFolder = await sdkDbContext.Folders
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == property.FolderId)
+                    .FirstOrDefaultAsync();
+                if (propertyFolder != null) // if folder is not deleted
+                {
+                    await propertyFolder.Delete(sdkDbContext);
+                }
+
+                // delete property
                 property.UpdatedByUserId = _userService.UserId;
                 await property.Delete(_backendConfigurationPnDbContext);
 
