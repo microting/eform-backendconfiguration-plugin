@@ -21,6 +21,11 @@ exports.config = {
       'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t2.spec.ts',
       'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t3.spec.ts',
       'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t5.spec.ts',
+      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1.spec.ts',
+      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t2.spec.ts',
+      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t3.spec.ts',
+      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t4.spec.ts',
+      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t5.spec.ts',
     ],
     suites: {
         settings: [

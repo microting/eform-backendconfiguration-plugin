@@ -6,7 +6,6 @@ import { expect } from 'chai';
 import { generateRandmString } from '../../../Helpers/helper-functions';
 import backendConfigurationPropertyWorkersPage from '../../../Page objects/BackendConfiguration/BackendConfigurationPropertyWorkers.page';
 import backendConfigurationAreaRulesPage, {
-  AreaRuleCreateUpdate,
   AreaRulePlanningCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
 import { format, sub } from 'date-fns';
@@ -25,7 +24,7 @@ const workerForCreate = {
   properties: [0],
 };
 
-describe('Backend Configuration Area Rules Planning Type3', function () {
+describe('Backend Configuration Area Rules Planning Type4', function () {
   before(async () => {
     await loginPage.open('/auth');
     await loginPage.login();
@@ -35,29 +34,18 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
     await backendConfigurationPropertiesPage.goToProperties();
     const lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
-    await lastProperty.editBindWithAreas([4]); // bind specific type3
+    await lastProperty.editBindWithAreas([12]); // bind specific type4
     await lastProperty.openAreasViewModal(0); // go to area rule page
   });
   it('should create new planning from default area rule', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(0);
-    const areaRuleForCreate: AreaRuleCreateUpdate = {
-      name: generateRandmString(),
-    };
-    await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
-
+    expect(rowNum, 'have some non-default area rules').eq(1);
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
-      startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
     };
-    await areaRule.createUpdatePlanning(areaRulePlanning);
-    // areaRulePlanning.startDate = format(
-    //   sub(new Date(), { days: 1 }),
-    //   'yyyy/MM/dd'
-    // ); // fix test
-    const areaRulePlanningCreated = await areaRule.readPlanning();
-    expect(areaRulePlanningCreated.startDate).eq(areaRulePlanning.startDate);
+    await areaRule.createUpdatePlanning(areaRulePlanning, false, false);
+    const areaRulePlanningCreated = await areaRule.readPlanning(false);
     expect(areaRulePlanningCreated.workers[0].name).eq(
       `${workerForCreate.name} ${workerForCreate.surname}`
     );
@@ -66,38 +54,24 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     expect(
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
-    ).eq(2);
-    const itemPlannings = await itemsPlanningPlanningPage.getAllPlannings();
-    // first planning
-    expect(itemPlannings[0].eFormName).eq('05. Stald_klargøring');
-    expect(itemPlannings[0].name).eq(areaRule.name);
-    expect(itemPlannings[0].folderName).eq(`${property.name} - 05. Stalde`);
-    expect(itemPlannings[0].repeatEvery).eq(1);
-    expect(itemPlannings[0].repeatType).eq('Dag');
-    let workers = await itemPlannings[0].readPairing();
+    ).eq(1);
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    expect(itemPlanning.eFormName).eq('13. APV Medarbejer');
+    expect(itemPlanning.name).eq(areaRule.name);
+    expect(itemPlanning.folderName).eq(
+      `${property.name} - 13. Arbejdspladsvurdering`
+    );
+    expect(itemPlanning.repeatEvery).eq(12);
+    expect(itemPlanning.repeatType).eq('Måned');
+    const workers = await itemPlanning.readPairing();
     expect([
       {
         workerName: `${workerForCreate.name} ${workerForCreate.surname}`,
         workerValue: true,
       },
     ]).deep.eq(workers);
-    // second planning
-    expect(itemPlannings[1].eFormName).eq('24. Halebid_NEW');
-    expect(itemPlannings[1].name).eq('Hale bid');
-    expect(itemPlannings[1].folderName).eq(`${property.name} - 05. Stalde`);
-    expect(itemPlannings[1].repeatEvery).eq(1);
-    expect(itemPlannings[1].repeatType).eq('Dag');
-    workers = await itemPlannings[1].readPairing();
-    expect([
-      {
-        workerName: `${workerForCreate.name} ${workerForCreate.surname}`,
-        workerValue: true,
-      },
-    ]).deep.eq(workers);
-
     browser.back();
-    await areaRule.createUpdatePlanning({ status: false }); // delete item planning
-    await areaRule.delete();
+    await areaRule.createUpdatePlanning({ status: false }, false, false);
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();

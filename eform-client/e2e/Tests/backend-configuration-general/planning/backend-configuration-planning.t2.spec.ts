@@ -9,7 +9,7 @@ import backendConfigurationAreaRulesPage, {
   AreaRuleCreateUpdate,
   AreaRulePlanningCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
-import { format, sub } from 'date-fns';
+import { format } from 'date-fns';
 import itemsPlanningPlanningPage from '../../../Page objects/ItemsPlanning/ItemsPlanningPlanningPage';
 
 const property: PropertyCreateUpdate = {
@@ -25,7 +25,7 @@ const workerForCreate = {
   properties: [0],
 };
 
-describe('Backend Configuration Area Rules Type2', function () {
+describe('Backend Configuration Area Rules Planning Type2', function () {
   before(async () => {
     await loginPage.open('/auth');
     await loginPage.login();
@@ -50,14 +50,14 @@ describe('Backend Configuration Area Rules Type2', function () {
 
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
-      startDate: format(new Date(), 'MM/dd/yyyy'), // add 2 weeks
+      startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
-    areaRulePlanning.startDate = format(
-      sub(new Date(), { days: 1 }),
-      'MM/dd/yyyy'
-    ); // fix test
+    // areaRulePlanning.startDate = format(
+    //   sub(new Date(), { days: 1 }),
+    //   'yyyy/MM/dd'
+    // ); // fix test
     const areaRulePlanningCreated = await areaRule.readPlanning();
     expect(areaRulePlanningCreated.startDate).eq(areaRulePlanning.startDate);
     expect(areaRulePlanningCreated.workers[0].name).eq(
@@ -119,7 +119,7 @@ describe('Backend Configuration Area Rules Type2', function () {
     ]).deep.eq(workers);
 
     browser.back();
-    await areaRule.createUpdatePlanning({ status: false }); // delete item planning
+    await areaRule.createUpdatePlanning({ status: false }); // dalete item planning
     await areaRule.delete();
   });
   after(async () => {

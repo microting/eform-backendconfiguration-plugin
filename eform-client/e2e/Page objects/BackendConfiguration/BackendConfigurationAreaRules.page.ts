@@ -389,10 +389,10 @@ export class AreaRuleRowObject {
     return this;
   }
 
-  public async delete(clickCancel = false) {
+  public async delete(clickCancel = false, waitCreateBtn = true) {
     if (this.deleteRuleBtn) {
       await this.openDeleteModal();
-      await this.closeDeleteModal(clickCancel);
+      await this.closeDeleteModal(clickCancel, waitCreateBtn);
     }
   }
 
@@ -405,7 +405,7 @@ export class AreaRuleRowObject {
     }
   }
 
-  public async closeDeleteModal(clickCancel = false) {
+  public async closeDeleteModal(clickCancel = false, waitCreateBtn = true) {
     if (clickCancel) {
       await (
         await backendConfigurationAreaRulesPage.areaRuleDeleteCancelBtn()
@@ -415,14 +415,22 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.areaRuleDeleteDeleteBtn()
       ).click();
     }
-    await (
-      await backendConfigurationAreaRulesPage.ruleCreateBtn()
-    ).waitForClickable({ timeout: 40000 });
+    if (waitCreateBtn) {
+      await (
+        await backendConfigurationAreaRulesPage.ruleCreateBtn()
+      ).waitForClickable({ timeout: 40000 });
+    } else {
+      browser.pause(500);
+    }
   }
 
-  public async edit(areaRule: AreaRuleCreateUpdate, clickCancel = false) {
+  public async edit(
+    areaRule: AreaRuleCreateUpdate,
+    clickCancel = false,
+    waitCreateBtn = true
+  ) {
     await this.openEditModal(areaRule);
-    await this.closeEditModal(clickCancel);
+    await this.closeEditModal(clickCancel, waitCreateBtn);
   }
 
   public async openEditModal(areaRule: AreaRuleCreateUpdate) {
@@ -515,7 +523,7 @@ export class AreaRuleRowObject {
     }
   }
 
-  public async closeEditModal(clickCancel = false) {
+  public async closeEditModal(clickCancel = false, waitCreateBtn = true) {
     if (clickCancel) {
       await (
         await backendConfigurationAreaRulesPage.areaRuleEditSaveCancelBtn()
@@ -528,17 +536,22 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.areaRuleEditSaveBtn()
       ).click();
     }
-    await (
-      await backendConfigurationAreaRulesPage.ruleCreateBtn()
-    ).waitForClickable({ timeout: 40000 });
+    if (waitCreateBtn) {
+      await (
+        await backendConfigurationAreaRulesPage.ruleCreateBtn()
+      ).waitForClickable({ timeout: 40000 });
+    } else {
+      browser.pause(500);
+    }
   }
 
   public async createUpdatePlanning(
     areaRulePlanningCreateUpdate?: AreaRulePlanningCreateUpdate,
-    clickCancel = false
+    clickCancel = false,
+    waitCreateBtn = true
   ) {
     await this.openPlanningModal(areaRulePlanningCreateUpdate);
-    await this.closePlanningModal(clickCancel);
+    await this.closePlanningModal(clickCancel, waitCreateBtn);
   }
 
   public async openPlanningModal(
@@ -551,16 +564,12 @@ export class AreaRuleRowObject {
     if (areaRulePlanningCreateUpdate) {
       if (areaRulePlanningCreateUpdate.status !== undefined) {
         await (
-          await (
-            await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
-          ).$('..')
+          await await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
         ).click();
       }
       if (areaRulePlanningCreateUpdate.notification !== undefined) {
         await (
-          await (
-            await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
-          ).$('..')
+          await await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
         ).click();
       }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
@@ -599,7 +608,7 @@ export class AreaRuleRowObject {
     }
   }
 
-  public async closePlanningModal(clickCancel = false) {
+  public async closePlanningModal(clickCancel = false, waitCreateBtn = true) {
     if (clickCancel) {
       await (
         await backendConfigurationAreaRulesPage.updateAreaRulePlanningSaveCancelBtn()
@@ -612,12 +621,18 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.updateAreaRulePlanningSaveBtn()
       ).click();
     }
-    await (
-      await backendConfigurationAreaRulesPage.ruleCreateBtn()
-    ).waitForClickable({ timeout: 40000 });
+    if (waitCreateBtn) {
+      await (
+        await backendConfigurationAreaRulesPage.ruleCreateBtn()
+      ).waitForClickable({ timeout: 40000 });
+    } else {
+      browser.pause(500);
+    }
   }
 
-  public async readPlanning(): Promise<AreaRulePlanningCreateUpdate> {
+  public async readPlanning(
+    waitCreateBtn = true
+  ): Promise<AreaRulePlanningCreateUpdate> {
     await this.openPlanningModal();
     const plan = new AreaRulePlanningCreateUpdate();
     plan.status =
@@ -652,7 +667,7 @@ export class AreaRuleRowObject {
         await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
           'input'
         )
-      ).getText();
+      ).getValue();
     }
     if (
       await (
@@ -676,7 +691,7 @@ export class AreaRuleRowObject {
         { name: workerName, checked: workerChecked },
       ];
     }
-    await this.closePlanningModal(true);
+    await this.closePlanningModal(true, waitCreateBtn);
     return plan;
   }
 }

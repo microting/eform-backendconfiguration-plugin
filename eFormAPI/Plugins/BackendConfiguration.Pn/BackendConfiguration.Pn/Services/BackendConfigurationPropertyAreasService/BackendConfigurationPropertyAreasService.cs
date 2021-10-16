@@ -574,7 +574,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .FirstAsync();
                     sites.Add(new SiteDto()
                     {
-
                         SiteId = worker,
                         SiteName = site.Name,
                     });

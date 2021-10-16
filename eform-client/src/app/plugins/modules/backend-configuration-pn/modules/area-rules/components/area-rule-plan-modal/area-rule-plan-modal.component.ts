@@ -19,6 +19,7 @@ import {
   AreaRuleT4PlanningModel,
   AreaRuleT5PlanningModel,
 } from '../../../../models';
+import { sub, add } from 'date-fns';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -37,8 +38,12 @@ export class AreaRulePlanModalComponent implements OnInit {
     return new Date();
   }
 
+  get previousDayDate() {
+    return sub(this.currentDate, { days: 1 });
+  }
+
   get currentDatePlusTwoWeeks() {
-    return new Date(+new Date() + 1209600000);
+    return add(this.previousDayDate, { weeks: 2 });
   }
 
   constructor() {}
