@@ -27,6 +27,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   @ViewChild('frame', { static: true }) frame;
   selectedDeviceUser: DeviceUserModel = new DeviceUserModel();
+  selectedDeviceUserCopy: DeviceUserModel = new DeviceUserModel();
 
   assignments: PropertyAssignmentWorkerModel[] = [];
 
@@ -45,6 +46,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
     deviceUser: DeviceUserModel,
     assignments: PropertyAssignmentWorkerModel[]
   ) {
+    this.selectedDeviceUserCopy = { ...deviceUser };
     this.selectedDeviceUser = { ...deviceUser };
     this.assignments = [...assignments];
     this.frame.show();
@@ -70,18 +72,32 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   }
 
   updateSingle() {
-    this.deviceUserCreate$ = this.deviceUserService
-      .updateSingleDeviceUser(this.selectedDeviceUser)
-      .subscribe((operation) => {
-        if (operation && operation.success) {
-          if (this.assignments) {
-            this.assignWorkerToProperties();
-          } else {
-            this.userUpdated.emit();
-            this.hide();
+    if (
+      this.selectedDeviceUserCopy.userFirstName !==
+        this.selectedDeviceUser.userFirstName ||
+      this.selectedDeviceUserCopy.userLastName !==
+        this.selectedDeviceUser.userLastName ||
+      this.selectedDeviceUserCopy.language !==
+        this.selectedDeviceUser.language ||
+      this.selectedDeviceUserCopy.languageCode !==
+        this.selectedDeviceUser.languageCode
+    ) {
+      // if fields device user edited
+      this.deviceUserCreate$ = this.deviceUserService
+        .updateSingleDeviceUser(this.selectedDeviceUser)
+        .subscribe((operation) => {
+          if (operation && operation.success) {
+            if (this.assignments) {
+              this.assignWorkerToProperties();
+            } else {
+              this.userUpdated.emit();
+              this.hide();
+            }
           }
-        }
-      });
+        });
+    } else {
+      this.assignWorkerToProperties();
+    }
   }
 
   assignWorkerToProperties() {

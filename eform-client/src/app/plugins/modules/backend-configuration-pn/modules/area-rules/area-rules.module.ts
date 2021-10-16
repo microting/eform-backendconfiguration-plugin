@@ -22,7 +22,7 @@ import {
   AreaRulesTableComponent,
 } from './components';
 import { AreaRulesRouting } from './area-rules.routing';
-import { MY_MOMENT_FORMATS } from '../../consts/custom-date-time-adapter';
+import { MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN } from '../../consts/custom-date-time-adapter';
 // import { UiSwitchModule } from 'ngx-ui-switch';
 
 @NgModule({
@@ -51,6 +51,11 @@ import { MY_MOMENT_FORMATS } from '../../consts/custom-date-time-adapter';
     OwlMomentDateTimeModule,
     // UiSwitchModule,
   ],
-  providers: [{ provide: OWL_DATE_TIME_FORMATS, useValue: MY_MOMENT_FORMATS }],
+  providers: [
+    {
+      provide: OWL_DATE_TIME_FORMATS,
+      useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN,
+    },
+  ],
 })
 export class AreaRulesModule {}

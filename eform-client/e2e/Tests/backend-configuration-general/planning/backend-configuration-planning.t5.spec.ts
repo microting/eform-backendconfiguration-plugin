@@ -49,14 +49,14 @@ describe('Backend Configuration Area Rules Planning Type5', function () {
 
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
-      startDate: format(new Date(), 'MM/dd/yyyy'),
+      startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
-    // areaRulePlanning.startDate = format(
-    //   sub(new Date(), { days: 1 }),
-    //   'MM/dd/yyyy'
-    // ); // fix test
+    areaRulePlanning.startDate = format(
+      sub(new Date(), { days: 1 }),
+      'yyyy/MM/dd'
+    ); // fix test
     const areaRulePlanningCreated = await areaRule.readPlanning();
     expect(areaRulePlanningCreated.startDate).eq(areaRulePlanning.startDate);
     expect(areaRulePlanningCreated.repeatEvery).eq('1');
