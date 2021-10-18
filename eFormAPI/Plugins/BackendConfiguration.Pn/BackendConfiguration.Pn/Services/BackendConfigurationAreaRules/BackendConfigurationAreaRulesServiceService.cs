@@ -1884,6 +1884,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                 DaysBeforeRedeploymentPushMessage = 5,
                                 PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
                                 StartDate = areaRulePlanningModel.StartDate,
+                                DayOfWeek = (DayOfWeek?)areaRule.DayOfWeek,
                                 // create translations for planning from translation areaRule
                                 NameTranslations = areaRule.AreaRuleTranslations.Select(
                                     areaRuleAreaRuleTranslation => new PlanningNameTranslation

@@ -93,7 +93,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .Select(y => y.Description).FirstOrDefault(),
                             Name = x.Area.AreaTranslations.Where(y => y.LanguageId == language.Id).Select(y => y.Name)
                                 .FirstOrDefault(),
-                            Status = x.Area.AreaRules.SelectMany(y => y.AreaRulesPlannings).Any(y => y.Status),
+                            Status = x.Area.AreaRules.SelectMany(y => y.AreaRulesPlannings).Where(y => y.WorkflowState != Constants.WorkflowStates.Removed).Any(y => y.Status),
                             AreaId = x.AreaId,
                         })
                         .ToListAsync();
