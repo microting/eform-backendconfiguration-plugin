@@ -48,7 +48,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
 
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
-      startDate: format(new Date(), 'yyyy/MM/dd'),
+    //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
@@ -57,7 +57,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     //   'yyyy/MM/dd'
     // ); // fix test
     const areaRulePlanningCreated = await areaRule.readPlanning();
-    expect(areaRulePlanningCreated.startDate).eq(areaRulePlanning.startDate);
+    // expect(areaRulePlanningCreated.startDate).eq(areaRulePlanning.startDate);
     expect(areaRulePlanningCreated.workers[0].name).eq(
       `${workerForCreate.name} ${workerForCreate.surname}`
     );

@@ -37,7 +37,6 @@
               </div>
             </div>
           </div>
-
           <ng-container *ngIf="selectedAreaRule.typeSpecificFields">
             <div class="row" *ngIf="selectedArea.type === 6">
               <div class="col-md-12">
@@ -116,45 +115,101 @@
                   </div>
                 </div>
               </div>
-              <div class="row">
-                <div class="col-md-6 col-sm-6 col-xs-6">
-                  <div class="md-form">
-                    <input
-                      mdbInput
-                      [(ngModel)]="
-                        selectedAreaRulePlanning.typeSpecificFields.repeatEvery
-                      "
-                      type="text"
-                      id="planRepeatEvery"
-                      name="createRepeatEvery"
-                      class="form-control"
-                      [disabled]="!selectedAreaRulePlanning.status"
-                    />
-                    <label for="planRepeatEvery">{{
-                      'Repeat every' | translate
-                    }}</label>
+              <ng-container *ngIf="selectedArea.type != 5">
+                <div class="row">
+                  <div class="col-md-6 col-sm-6 col-xs-6">
+                    <div class="md-form">
+                      <input
+                        mdbInput
+                        [(ngModel)]="
+                          selectedAreaRulePlanning.typeSpecificFields
+                            .repeatEvery
+                        "
+                        type="text"
+                        id="planRepeatEvery"
+                        name="createRepeatEvery"
+                        class="form-control"
+                        [disabled]="!selectedAreaRulePlanning.status"
+                      />
+                      <label for="planRepeatEvery">{{
+                        'Repeat every' | translate
+                      }}</label>
+                    </div>
                   </div>
-                </div>
-                <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
-                  <ng-select
-                    [items]="[
-                      { id: 1, name: 'Day' | translate },
-                      { id: 2, name: 'Week' | translate },
-                      { id: 3, name: 'Month' | translate }
-                    ]"
-                    bindLabel="name"
-                    [placeholder]="'Repeat Type' | translate"
-                    bindValue="id"
-                    [(ngModel)]="
-                      selectedAreaRulePlanning.typeSpecificFields.repeatType
+                  <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+                    <ng-select
+                      [items]="[
+                        { id: 1, name: 'Day' | translate },
+                        { id: 2, name: 'Week' | translate },
+                        { id: 3, name: 'Month' | translate }
+                      ]"
+                      bindLabel="name"
+                      [placeholder]="'Repeat Type' | translate"
+                      bindValue="id"
+                      [(ngModel)]="
+                        selectedAreaRulePlanning.typeSpecificFields.repeatType
+                      "
+                      [clearable]="false"
+                      id="planRepeatType"
+                      [disabled]="!selectedAreaRulePlanning.status"
+                    >
+                    </ng-select>
+                  </div>
+                  <ng-template
+                    [ngIf]="
+                      selectedAreaRulePlanning.typeSpecificFields.repeatType ==
+                      2
                     "
-                    [clearable]="false"
-                    id="planRepeatType"
-                    [disabled]="!selectedAreaRulePlanning.status"
                   >
-                  </ng-select>
+                    <div class="col-md-12 col-sm-6 col-xs-6 ng-select-wrapper">
+                      <ng-select
+                        [items]="[
+                          { id: 1, name: 'Monday' | translate },
+                          { id: 2, name: 'Tuesday' | translate },
+                          { id: 3, name: 'Wednesday' | translate },
+                          { id: 4, name: 'Thursday' | translate },
+                          { id: 5, name: 'Friday' | translate },
+                          { id: 6, name: 'Saturday' | translate },
+                          { id: 0, name: 'Sunday' | translate }
+                        ]"
+                        bindLabel="name"
+                        [placeholder]="'Day of week' | translate"
+                        bindValue="id"
+                        [(ngModel)]="
+                          selectedAreaRulePlanning.typeSpecificFields.dayOfWeek
+                        "
+                        id="createDayOfWeek"
+                      >
+                      </ng-select>
+                    </div>
+                  </ng-template>
+                  <ng-template
+                    [ngIf]="
+                      selectedAreaRulePlanning.typeSpecificFields.repeatType ==
+                      3
+                    "
+                  >
+                    <div class="col-md-12 col-sm-6 col-xs-6">
+                      <div class="md-form">
+                        <input
+                          mdbInput
+                          [(ngModel)]="
+                            selectedAreaRulePlanning.typeSpecificFields
+                              .dayOfMonth
+                          "
+                          type="text"
+                          id="createDayOfMonth"
+                          name="createDayOfMonth"
+                          class="form-control"
+                        />
+                        <label for="createDayOfMonth">{{
+                          'Day of month' | translate
+                        }}</label>
+                      </div>
+                    </div>
+                  </ng-template>
                 </div>
-              </div>
+              </ng-container>
               <div class="row">
                 <div class="col-12">
                   <div class="md-form" [owlDateTimeTrigger]="dt1">

@@ -6,5 +6,6 @@ export class AreaRuleT2PlanningModel {
   repeatEvery: number;
   repeatType: number;
   startDate: string;
+  dayOfMonth?: number;
+  dayOfWeek?: number;
 }
-
