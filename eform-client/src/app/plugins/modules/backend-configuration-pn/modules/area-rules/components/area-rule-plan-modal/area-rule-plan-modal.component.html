@@ -216,8 +216,9 @@
                     <input
                       mdbInput
                       [owlDateTime]="dt1"
-                      [min]="previousDayDate"
-                      [(ngModel)]="selectedAreaRulePlanning.startDate"
+                      [min]="currentDate"
+                      [ngModel]="selectedAreaRulePlanning.startDate"
+                      (ngModelChange)="updateStartDate($event)"
                       type="text"
                       id="planStartFrom"
                       name="createStartFrom"
@@ -279,9 +280,10 @@
                       mdbInput
                       [owlDateTime]="dt2"
                       [min]="currentDatePlusTwoWeeks"
-                      [(ngModel)]="
+                      [ngModel]="
                         selectedAreaRulePlanning.typeSpecificFields.endDate
                       "
+                      (ngModelChange)="updateEndDate($event)"
                       type="text"
                       id="planEndDate"
                       class="form-control"

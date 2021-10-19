@@ -1092,7 +1092,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaId = 9,
                 IsDefault = true,
             },
-            new()
+            /*new()
             {
                 EformName = "10. Varmepumpe timer og energi",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
@@ -1146,7 +1146,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaId = 10,
                 IsDefault = true,
             },
-            /*new()
+            new()
             {
                 EformName = "11. Pillefyr",
                 AreaRuleTranslations = new List<AreaRuleTranslation>

@@ -771,7 +771,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                 // },
                                             },
                                             RepeatUntil = areaRulePlanningModel.TypeSpecificFields?.EndDate,
-                                            DayOfWeek = DayOfWeek.Monday,
+                                            DayOfWeek = (DayOfWeek)areaRulePlanningModel.TypeSpecificFields?.DayOfWeek,
                                             RepeatEvery = 12,
                                             RepeatType = RepeatType.Month,
                                             PlanningSites = areaRulePlanningModel.AssignedSites.Select(x =>
@@ -1187,7 +1187,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                         SiteId = x.SiteId,
                                                     }).ToList(),
                                             DayOfMonth = (int)(areaRulePlanningModel.TypeSpecificFields?.DayOfMonth),
-                                            DayOfWeek = (DayOfWeek)(areaRulePlanningModel.TypeSpecificFields?.DayOfWeek)
                                         };
                                         if (areaRulePlanningModel.TypeSpecificFields != null)
                                         {
@@ -1955,8 +1954,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                             if (areaRulePlanningModel.TypeSpecificFields != null)
                             {
                                 planning.RepeatUntil = areaRulePlanningModel.TypeSpecificFields?.EndDate;
-                                planning.DayOfWeek =
-                                    (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
                                 if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery is not null)
                                 {
                                     planning.RepeatEvery =
@@ -2324,11 +2321,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     {
                                         SiteId = x.SiteId,
                                     }).ToList(),
-                                DayOfMonth = (int)(areaRulePlanningModel.TypeSpecificFields?.DayOfMonth),
-                                DayOfWeek = (DayOfWeek)(areaRulePlanningModel.TypeSpecificFields?.DayOfWeek)
                             };
                             if (areaRulePlanningModel.TypeSpecificFields != null)
                             {
+                                planning.DayOfMonth = (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
                                 planning.RepeatUntil = areaRulePlanningModel.TypeSpecificFields?.EndDate;
                                 planning.DayOfWeek =
                                     (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
