@@ -57,7 +57,7 @@ describe('Backend Configuration Area Rules Type2', function () {
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
       type: 'Lukket',
-      alarm: 'Ingen',
+      alarm: 'Nej',
     };
     await oldAreRule.edit(areaRuleForUpdate, true);
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
@@ -73,7 +73,7 @@ describe('Backend Configuration Area Rules Type2', function () {
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
       type: 'Lukket',
-      alarm: 'Ingen',
+      alarm: 'Nej',
     };
     await areRule.edit(areaRuleForUpdate);
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
