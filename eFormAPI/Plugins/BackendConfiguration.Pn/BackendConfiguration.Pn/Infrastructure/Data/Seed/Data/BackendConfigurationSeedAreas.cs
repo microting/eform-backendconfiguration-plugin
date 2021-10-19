@@ -41,17 +41,17 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() {
                         Name = "01. Miljøledelse (kun IE-husdyrbrug)",
-                        Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 1
                     },
                     new() {
                         Name = "01. Environmental Management (kun IE-husdyrbrug)",
-                        Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 2
                     },
                     new() {
                         Name = "01. Umweltmanagement (nur IE Tierhaltung)",
-                        Description = @"https://www.microting.dk/eform/landbrug/01-milj%C3%B8ledelse",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 3
                     }
                 },
@@ -71,19 +71,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "02. Beredskab",
-                        Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.lxbt89gfjmsr",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "02. Contingency",
-                        Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.lxbt89gfjmsr",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "02. Kontingenz",
-                        Description = @"https://www.microting.dk/eform/landbrug/02-beredskab",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.lxbt89gfjmsr",
                         LanguageId = 3
                     }
                 },
@@ -102,20 +102,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "03. Gylletanke",
-                        Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                        Name = "03. Gyllebeholdere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "03. Slurry tanks",
-                        Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "03. Gülletanks",
-                        Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 3
                     }
                 },
@@ -136,20 +136,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "04. Feeding documentation (kun IE-husdyrbrug)",
-                        Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                        Name = "04. Fodringskrav (kun IE-husdyrbrug)",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.4a0a8zqjbwmq",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "04. Feeding documentation (kun IE-livestock only)",
-                        Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.4a0a8zqjbwmq",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "04. Fütterungsdokumentation (nur IE Vieh)",
-                        Description = @"https://www.microting.dk/eform/landbrug/03-gyllebeholdere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.4a0a8zqjbwmq",
                         LanguageId = 3
                     }
                 },
@@ -169,20 +169,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "05. Staldforberedelser og halebid dokumentation",
-                        Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
+                        Name = "05. Klargøring af stalde og dokumentation af halebid",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "05. Barn preparations and tail bite documentation",
-                        Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "05. Stallvorbereitungen und Schwanzbissdokumentation",
-                        Description = @"https://www.microting.dk/eform/landbrug/05-klarg%C3%B8ring-af-stalde-og-dokumentation-af-halebid",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 3
                     }
                 },
@@ -199,20 +199,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "06. Siloer",
-                        Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
+                        Name = "06. Fodersiloer",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.9rbo49l8hwn1",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "06. Silos",
-                        Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.9rbo49l8hwn1",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "06. Silos",
-                        Description = @"https://www.microting.dk/eform/landbrug/06-fodersiloer",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.9rbo49l8hwn1",
                         LanguageId = 3
                     }
                 },
@@ -233,19 +233,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "07. Skadedyrsbekæmpelse",
-                        Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iljrzeutkuw4",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "07. Pest control",
-                        Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iljrzeutkuw4",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "07. Schädlingsbekämpfung",
-                        Description = @"https://www.microting.dk/eform/landbrug/07-skadedyr",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iljrzeutkuw4",
                         LanguageId = 3
                     }
                 },
@@ -266,19 +266,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "08. Luftrensning",
-                        Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.q3puu5rb21t5",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "08. Aircleaning",
-                        Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.q3puu5rb21t5",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "08. Luftreinigung",
-                        Description = @"https://www.microting.dk/eform/landbrug/08-luftrensning",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.q3puu5rb21t5",
                         LanguageId = 3
                     }
                 },
@@ -299,19 +299,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "09. Forsuring",
-                        Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdavny7gjz0n",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "09. Acidification",
-                        Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdavny7gjz0n",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "09. Ansäuerung",
-                        Description = @"https://www.microting.dk/eform/landbrug/09-forsuring",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdavny7gjz0n",
                         LanguageId = 3
                     }
                 },
@@ -332,19 +332,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "10. Varmepumper",
-                        Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.dxezyj6gry62",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "10. Heat pumps",
-                        Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.dxezyj6gry62",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "10. Wärmepumpen",
-                        Description = @"https://www.microting.dk/eform/landbrug/10-varmepumper",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.dxezyj6gry62",
                         LanguageId = 3
                     }
                 },
@@ -372,19 +372,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "11. Pillefyr",
-                        Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "11. Pellet burners",
-                        Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "11. Pelletbrenner",
-                        Description = @"https://www.microting.dk/eform/landbrug/11-pillefyr",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 3
                     }
                 }
@@ -398,19 +398,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "12. Miljøfarlige stoffer",
-                        Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.ocy0eycm3hu7",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "12. Environmentally hazardous substances",
-                        Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.ocy0eycm3hu7",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "12. Umweltgefährdende Stoffe",
-                        Description = @"https://www.microting.dk/eform/landbrug/12-milj%C3%B8farlige-stoffer",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.ocy0eycm3hu7",
                         LanguageId = 3
                     }
                 },
@@ -429,20 +429,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "13. Arbejdspladsvurdering",
-                        Description = @"https://www.microting.dk/eform/landbrug/13-apv",
+                        Name = "13. Arbejdstilsynets Landbrugs APV",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.o3ig9krjpdcb",
                         LanguageId = 1
                     },
                     new()
                     {
-                        Name = "13. Work Place Assesment",
-                        Description = @"https://www.microting.dk/eform/landbrug/13-apv",
+                        Name = "13. The Danish Working Environment Authority's Agricultural APV",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.o3ig9krjpdcb",
                         LanguageId = 2
                     },
                     new()
                     {
-                        Name = "13. Arbeitsplatzbewertung",
-                        Description = @"https://www.microting.dk/eform/landbrug/13-apv",
+                        Name = "13. Landwirtschaftliche APV . der dänischen Arbeitsumweltbehörde",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.o3ig9krjpdcb",
                         LanguageId = 3
                     }
                 },
@@ -461,19 +461,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "14. Maskiner",
-                        Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5t8ueh77brvx",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "14. Machines",
-                        Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5t8ueh77brvx",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "14. Machinen",
-                        Description = @"https://www.microting.dk/eform/landbrug/14-maskiner",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5t8ueh77brvx",
                         LanguageId = 3
                     }
                 },
@@ -493,20 +493,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "15. Eftersyn af elværktøj",
-                        Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
+                        Name = "15. Elværktøj",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3aqslige0sx8",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "15. Inspection of power tools",
-                        Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3aqslige0sx8",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "15. Inspektion von Elektrowerkzeugen",
-                        Description = @"https://www.microting.dk/eform/landbrug/15-elv%C3%A6rkt%C3%B8j",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3aqslige0sx8",
                         LanguageId = 3
                     }
                 },
@@ -527,19 +527,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "16. Stiger",
-                        Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.201m31f6b76t",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "16. Ladders",
-                        Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.201m31f6b76t",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "16. Leitern",
-                        Description = @"https://www.microting.dk/eform/landbrug/16-stiger",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.201m31f6b76t",
                         LanguageId = 3
                     }
                 },
@@ -560,25 +560,25 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "17. Brandslukkere",
-                        Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "17. Fire extinguishers",
-                        Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "17. Feuerlöscher",
-                        Description = @"https://www.microting.dk/eform/landbrug/17-brandslukkere",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 3
                     }
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = "17. Håndildslukkere",
+                    EformName = "17. Brandslukkere",
                     Notifications = true,
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
@@ -593,19 +593,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "18. Alarm",
-                        Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdl5bg82luo9",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "18. Alarm",
-                        Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdl5bg82luo9",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "18. Alarm",
-                        Description = @"https://www.microting.dk/eform/landbrug/18-alarm",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdl5bg82luo9",
                         LanguageId = 3
                     }
                 },
@@ -626,19 +626,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "19. Ventilation",
-                        Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.122yhikalodh",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "19. Ventilation",
-                        Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.122yhikalodh",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "19. Belüftung",
-                        Description = @"https://www.microting.dk/eform/landbrug/19-ventilation",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.122yhikalodh",
                         LanguageId = 3
                     }
                 },
@@ -659,19 +659,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "20. Tilbagevendende opgaver (man-søn)",
-                        Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.7sb10z3swexo",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "20. Recurring tasks (mon-sun)",
-                        Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.7sb10z3swexo",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "20. Wiederkehrende Aufgaben (Mo-So)",
-                        Description = @"https://www.microting.dk/eform/landbrug/20-arbejdsopgaver",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.7sb10z3swexo",
                         LanguageId = 3
                     }
                 },
@@ -692,19 +692,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "21. DANISH Standard",
-                        Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iw36kvdmxgi8",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "21. DANISH Standard",
-                        Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iw36kvdmxgi8",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "21. DANISH Standard",
-                        Description = @"https://www.microting.dk/eform/landbrug/21-danish-produktstandard",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iw36kvdmxgi8",
                         LanguageId = 3
                     }
                 }
@@ -717,20 +717,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "22. Sigttest",
-                        Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
+                        Name = "22. Sigtetest",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xawyj9b4y3rq",
                         LanguageId = 1
                     },
                     new()
                     {
                         Name = "22. Sieve test",
-                        Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xawyj9b4y3rq",
                         LanguageId = 2
                     },
                     new()
                     {
                         Name = "22. Testen mit Sieb", // TODO better german translation
-                        Description = @"https://www.microting.dk/eform/landbrug/22-sigtetest",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xawyj9b4y3rq",
                         LanguageId = 3
                     }
                 },
@@ -840,17 +840,17 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() {
                         Name = "100. Diverse",
-                        Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 1
                     },
                     new() {
                         Name = "100. Miscellaneous",
-                        Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 2
                     },
                     new() {
                         Name = "100. Sonstig",
-                        Description = @"https://www.microting.dk/eform/landbrug/100-diverse",
+                        Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 3
                     }
                 },

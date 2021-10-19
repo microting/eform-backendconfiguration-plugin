@@ -603,7 +603,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 1)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + " - Check flydende lag",
+                                                            .FirstOrDefault() + ": Flydelag",
                                                     },
                                                     new()
                                                     {
@@ -611,7 +611,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 2)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + " - Check floating layer",
+                                                            .FirstOrDefault() + ": Floating layer",
                                                     },
                                                     new()
                                                     {
@@ -619,7 +619,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 2)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + " - Schwimmende Ebene prüfen",
+                                                            .FirstOrDefault() + ": Schwimmende Ebene",
                                                     },
                                                     // new PlanningNameTranslation
                                                     // {
@@ -678,7 +678,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 1)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + " - Tjek alarm",
+                                                            .FirstOrDefault() + ": Alarm",
                                                     },
                                                     new()
                                                     {
@@ -686,7 +686,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 2)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + " - Check alarm",
+                                                            .FirstOrDefault() + ": Alarm",
                                                     },
                                                     new()
                                                     {
@@ -694,7 +694,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 3)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + " - Check alarm",
+                                                            .FirstOrDefault() + ": Alarm",
                                                     },
                                                     // new ()
                                                     // {
@@ -746,7 +746,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                     Name = areaRule.AreaRuleTranslations
                                                         .Where(x => x.LanguageId == 1)
                                                         .Select(x => x.Name)
-                                                        .FirstOrDefault() + " - Kontrol konstruktion",
+                                                        .FirstOrDefault() + ": Konstruktion",
                                                 },
                                                 new()
                                                 {
@@ -754,7 +754,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                     Name = areaRule.AreaRuleTranslations
                                                         .Where(x => x.LanguageId == 2)
                                                         .Select(x => x.Name)
-                                                        .FirstOrDefault() + " - Check construction",
+                                                        .FirstOrDefault() + ": Construction",
                                                 },
                                                 new()
                                                 {
@@ -762,7 +762,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                     Name = areaRule.AreaRuleTranslations
                                                         .Where(x => x.LanguageId == 3)
                                                         .Select(x => x.Name)
-                                                        .FirstOrDefault() + " - Konstruktion prüfen",
+                                                        .FirstOrDefault() + ": Konstruktion",
                                                 },
                                                 // new PlanningNameTranslation
                                                 // {
