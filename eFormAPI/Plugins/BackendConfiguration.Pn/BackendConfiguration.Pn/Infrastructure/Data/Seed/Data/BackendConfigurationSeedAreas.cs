@@ -742,7 +742,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 1, // days
                 },
             },
-            new Area
+            /*new Area
             {
                 Id = 23,
                 Type = AreaTypesEnum.Type1,
@@ -831,7 +831,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     EformName = "25. Markvandingsforbrug"
                 },
-            },
+            },*/
             new Area
             {
                 Id = 26,
