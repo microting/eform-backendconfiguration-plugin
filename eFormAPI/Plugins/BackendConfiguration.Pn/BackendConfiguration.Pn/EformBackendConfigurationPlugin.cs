@@ -119,17 +119,6 @@ namespace BackendConfiguration.Pn
             // Seed areas and rules
             foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed.Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id)))
             {
-                foreach (var areaRule in newArea.AreaRules.Where(areaRule => !areaRule.EformId.HasValue && !string.IsNullOrEmpty(areaRule.EformName)))
-                {
-                    var eformId = await sdkDbContext.CheckListTranslations
-                        .Where(x => x.Text == areaRule.EformName)
-                        .Select(x => x.CheckListId)
-                        .FirstAsync();
-                    areaRule.EformId = eformId;
-                }
-                //context.Areas.Add(newArea);
-                    
-                //context.SaveChanges();
                 await newArea.Create(context);
             }
         }

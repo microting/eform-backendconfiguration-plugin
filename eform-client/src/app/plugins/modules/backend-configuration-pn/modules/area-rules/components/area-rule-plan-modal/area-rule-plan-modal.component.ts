@@ -19,7 +19,7 @@ import {
   AreaRuleT4PlanningModel,
   AreaRuleT5PlanningModel,
 } from '../../../../models';
-import { sub, add } from 'date-fns';
+import { sub, add, set } from 'date-fns';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -35,15 +35,16 @@ export class AreaRulePlanModalComponent implements OnInit {
   selectedAreaRule: AreaRuleSimpleModel = new AreaRuleSimpleModel();
 
   get currentDate() {
-    return new Date();
-  }
-
-  get previousDayDate() {
-    return sub(this.currentDate, { days: 1 });
+    return set(new Date(), {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
   }
 
   get currentDatePlusTwoWeeks() {
-    return add(this.previousDayDate, { weeks: 2 });
+    return add(this.currentDate, { weeks: 2 });
   }
 
   constructor() {}
@@ -67,6 +68,7 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   onUpdateAreaRulePlan() {
+    // this.selectedAreaRulePlanning.startDate = format('yyyy-MM-ddT00:00:00')
     this.updateAreaRulePlan.emit({ ...this.selectedAreaRulePlanning });
   }
 
@@ -109,6 +111,8 @@ export class AreaRulePlanModalComponent implements OnInit {
       ruleId: rule.id,
       propertyId,
       status: true,
+      // @ts-ignore
+      startDate: initialFields.startDate,
       sendNotifications: rule.initialFields
         ? rule.initialFields.sendNotifications
         : this.selectedArea.initialFields.sendNotifications,
@@ -132,19 +136,25 @@ export class AreaRulePlanModalComponent implements OnInit {
       return {
         repeatEvery: 1,
         repeatType: 1,
-        startDate: format(new Date(), 'yyyy-MM-dd'),
+        startDate: format(this.currentDate, `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`),
       };
     }
     if (this.selectedArea.type === 3) {
       return {
-        endDate: format(new Date(Date.now() + 12096e5), 'yyyy-MM-dd'),
+        endDate: format(
+          this.currentDatePlusTwoWeeks,
+          `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+        ),
         repeatEvery: 1,
         repeatType: 1,
       };
     }
     if (this.selectedArea.type === 4) {
       return {
-        endDate: format(new Date(Date.now() + 12096e5), 'yyyy-MM-dd'),
+        endDate: format(
+          this.currentDatePlusTwoWeeks,
+          `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+        ),
         repeatEvery: 12,
         repeatType: 3,
       };
@@ -163,5 +173,38 @@ export class AreaRulePlanModalComponent implements OnInit {
       };
     }
     return null;
+  }
+
+  updateStartDate(e: any) {
+    let date = new Date(e._d);
+    date = set(date, {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
+    this.selectedAreaRulePlanning.startDate = format(
+      date,
+      `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+    );
+  }
+
+  updateEndDate(e: any) {
+    if (
+      this.selectedAreaRulePlanning.typeSpecificFields instanceof
+      AreaRuleT4PlanningModel
+    ) {
+      let date = new Date(e._d);
+      date = set(date, {
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        milliseconds: 0,
+      });
+      this.selectedAreaRulePlanning.typeSpecificFields.endDate = format(
+        date,
+        `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+      );
+    }
   }
 }
