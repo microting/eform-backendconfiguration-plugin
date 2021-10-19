@@ -95,8 +95,8 @@ describe('Backend Configuration Area Rules Type3', function () {
     areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areRule.name).eq(areaRuleForUpdate.name);
     expect(areRule.eform).eq(areaRuleForUpdate.eform);
-    expect(areRule.ruleChecklistStable).eq('Ingen');
-    expect(areRule.ruleTailBite).eq('Ingen');
+    expect(areRule.ruleChecklistStable).eq('Nej');
+    expect(areRule.ruleTailBite).eq('Nej');
     expect(areRule.rulePlanningStatus).eq(false);
   });
   it('should not delete created area rule type 3', async () => {

@@ -4561,7 +4561,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 <Main>
 	<Id>142595</Id>
 	<Repeated>0</Repeated>
-	<Label>17. Håndildslukkere|17. Fire extinguishers</Label>
+	<Label>17. Brandslukkere|17. Fire extinguishers</Label>
 	<StartDate>2021-09-08</StartDate>
 	<EndDate>2031-09-08</EndDate>
 	<Language>da</Language>
@@ -4573,7 +4573,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 	<ElementList>
 		<Element type=""DataElement"">
 			<Id>142595</Id>
-			<Label>17. Håndildslukkere|17. Fire extinguishers</Label>
+			<Label>17. Brandslukkere|17. Fire extinguishers</Label>
 			<Description>
 				<![CDATA[]]>
 			</Description>
