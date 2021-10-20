@@ -126,6 +126,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 3, // month
                     Alarm = AreaRuleT2AlarmsEnum.No,
                     Type = AreaRuleT2TypesEnum.Closed,
+                    Notifications = true,
                 }
             },
             new Area
