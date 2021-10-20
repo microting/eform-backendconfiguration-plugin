@@ -43,7 +43,7 @@ describe('Backend Configuration Area Rules Planning Type2', function () {
     expect(rowNum, 'have some non-default area rules').eq(0);
     const areaRuleForCreate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      type: 'Åbne',
+      type: 'Åben',
       alarm: 'Ja',
     };
     await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);

@@ -23,7 +23,7 @@ const workerForCreate = {
 };
 const areaRuleForCreate: AreaRuleCreateUpdate = {
   name: generateRandmString(),
-  type: 'Åbne',
+  type: 'Åben',
   alarm: 'Ja',
 };
 
