@@ -36,6 +36,12 @@
       [tableHeaders]="tableHeadersT5"
       [stickyHeader]="true"
     ></thead>
+    <thead
+      *ngIf="selectedArea.type === 6"
+      table-headers
+      [tableHeaders]="tableHeadersT6"
+      [stickyHeader]="true"
+    ></thead>
     <tbody id="areaRulesTableBody">
       <tr *ngFor="let rule of areaRules; let i = index">
         <td id="ruleName">

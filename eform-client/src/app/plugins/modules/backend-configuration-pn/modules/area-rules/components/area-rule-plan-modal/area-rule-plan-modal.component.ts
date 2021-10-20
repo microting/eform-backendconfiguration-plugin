@@ -68,7 +68,12 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   onUpdateAreaRulePlan() {
-    // this.selectedAreaRulePlanning.startDate = format('yyyy-MM-ddT00:00:00')
+    if (!this.selectedAreaRulePlanning.startDate) {
+      this.selectedAreaRulePlanning.startDate = format(
+        this.currentDate,
+        `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+      );
+    }
     this.updateAreaRulePlan.emit({ ...this.selectedAreaRulePlanning });
   }
 
@@ -170,6 +175,8 @@ export class AreaRulePlanModalComponent implements OnInit {
       return {
         repeatEvery: 12,
         repeatType: 3,
+        // @ts-ignore
+        hoursAndEnergyEnabled: true,
       };
     }
     return null;
@@ -206,5 +213,9 @@ export class AreaRulePlanModalComponent implements OnInit {
         `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
       );
     }
+  }
+
+  isDisabledSaveBtn() {
+    return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
   }
 }
