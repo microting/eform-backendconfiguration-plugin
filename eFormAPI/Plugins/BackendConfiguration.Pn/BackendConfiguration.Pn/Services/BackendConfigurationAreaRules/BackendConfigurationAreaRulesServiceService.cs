@@ -1251,10 +1251,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                     await rulePlanning.Update(_backendConfigurationPnDbContext);
                                     await planning.Delete(_itemsPlanningPnDbContext);
                                 }
-
                                 break;
                             // update item planning
                             case true when areaRulePlanningModel.Status:
+                                if (areaRule.Area.Type == AreaTypesEnum.Type6 && areaRule.AreaRulesPlannings[0].HoursAndEnergyEnabled == false && areaRule.AreaRulesPlannings[0].ItemPlanningId != 0)
+                                {
+                                    var planningForType6HoursAndEnergyEnabled =
+                                        await _itemsPlanningPnDbContext.Plannings
+                                            .FirstAsync(x =>
+                                                x.Id == areaRule.AreaRulesPlannings[0].ItemPlanningId);
+                                    await planningForType6HoursAndEnergyEnabled.Delete(
+                                        _itemsPlanningPnDbContext);
+                                    areaRule.AreaRulesPlannings[0].ItemPlanningId = 0;
+                                    await areaRule.AreaRulesPlannings[0].Update(_backendConfigurationPnDbContext);
+                                    continue;
+                                }
                                 if (rulePlanning.ItemPlanningId != 0)
                                 {
                                     var planning = await _itemsPlanningPnDbContext.Plannings
@@ -1289,7 +1300,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                             };
                                         await planningSite.Create(_itemsPlanningPnDbContext);
                                     }
-
                                     await planning.Update(_itemsPlanningPnDbContext);
                                 }
 
