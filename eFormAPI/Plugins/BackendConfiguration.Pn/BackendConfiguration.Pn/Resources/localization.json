@@ -3,7 +3,7 @@
     "Key": "BackendConfiguration",
     "LocalizedValue": {
       "da": "Konfiguration",
-      "de": "", //todo
+      "de": "Aufbau",
       "en-US": "Backend Configuration",
       "uk-UA": "Конфігурація серверної частини"
     }
@@ -12,7 +12,7 @@
     "Key": "Properties",
     "LocalizedValue": {
       "da": "Ejendomme",
-      "de": "", //todo
+      "de": "Eigentum",
       "en-US": "Properties",
       "uk-UA": "Властивості"
     }
@@ -21,7 +21,7 @@
     "Key": "Property workers",
     "LocalizedValue": {
       "da": "Medarbejdere",
-      "de": "Mitarbeiter", //todo
+      "de": "Mitarbeiter",
       "en-US": "Workers",
       "uk-UA": "Працівники"
     }
@@ -29,26 +29,26 @@
   {
     "Key": "ErrorWhileObtainingProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while obtaining properties",
-      "uk-UA": "Помилка при отриманні властивостей"
+      "da": "Fejl under hentning af ejendomme",
+      "de": "Fehler beim Abrufen von Eigenschaften",
+      "en-US": "Error retrieving properties",
+      "uk-UA": "Помилка отримання властивостей"
     }
   },
   {
     "Key": "SuccessfullyCreatingProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully creating properties",
-      "uk-UA": "Успішне створення властивостей"
+      "da": "Gemt",
+      "de": "Gerettet",
+      "en-US": "Saved",
+      "uk-UA": "Збережено"
     }
   },
   {
     "Key": "ErrorWhileCreatingProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
+      "da": "Fejl under oprettelse af ejendomme",
+      "de": "Fehler beim Erstellen der Property",
       "en-US": "Error while creating properties",
       "uk-UA": "Помилка при створенні властивостей"
     }
@@ -56,17 +56,17 @@
   {
     "Key": "PropertyNotFound",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Property not found",
-      "uk-UA": "Властивість не знайдені"
+      "da": "Ikke fundet",
+      "de": "Nicht gefunden",
+      "en-US": "Not found",
+      "uk-UA": "Не знайдено"
     }
   },
   {
     "Key": "ErrorWhileReadProperty",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
+      "da": "Ejendommen blev ikke fundet",
+      "de": "Das Objekt wurde nicht gefunden",
       "en-US": "Error while read property",
       "uk-UA": "Помилка при читанні властивості"
     }
@@ -74,298 +74,298 @@
   {
     "Key": "SuccessfullyUpdateProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully update properties",
-      "uk-UA": "Успішно оновлено властивість"
+      "da": "Ændringer gemt",
+      "de": "Änderungen gespeichert",
+      "en-US": "Successfully updated",
+      "uk-UA": "успішно оновлено"
     }
   },
   {
     "Key": "ErrorWhileUpdateProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while update properties",
-      "uk-UA": "Помилка при оновленні властивостей"
+      "da": "Fejl under opdatering",
+      "de": "Fehler beim Aktualisieren",
+      "en-US": "Error while updating",
+      "uk-UA": "Помилка під час оновлення"
     }
   },
   {
     "Key": "SuccessfullyDeleteProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully delete property",
-      "uk-UA": "Успішно видалено властивість"
+      "da": "Slettet",
+      "de": "Gelöscht",
+      "en-US": "Successfully deleted",
+      "uk-UA": "Видалено"
     }
   },
   {
     "Key": "ErrorWhileDeleteProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while delete properties",
-      "uk-UA": "Помилка при видаленні властивостей"
+      "da": "Fejl under sletning",
+      "de": "Fehler beim Löschen",
+      "en-US": "Error while deleting",
+      "uk-UA": "Помилка видалення"
     }
   },
   {
     "Key": "ErrorWhileReadPropertyAreas",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while read property area",
-      "uk-UA": "Помилка при читанні властивості області"
+      "da": "Fejl",
+      "de": "Fehler",
+      "en-US": "Error while read planning",
+      "uk-UA": "Помилка"
     }
   },
   {
     "Key": "SuccessfullyUpdatePropertyAreas",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully updated property areas",
-      "uk-UA": "Успішно оновлено властивості області"
+      "da": "Ændringer gemt",
+      "de": "Änderungen gespeichert",
+      "en-US": "Successfully updated",
+      "uk-UA": "успішно оновлено"
     }
   },
   {
     "Key": "ErrorWhileUpdatePropertyAreas",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while update property areas",
-      "uk-UA": "Помилка при оновленні властивості області"
+      "da": "Fejl under opdatering",
+      "de": "Fehler beim Aktualisieren",
+      "en-US": "Error while updating",
+      "uk-UA": "Помилка під час оновлення"
     }
   },
   {
     "Key": "NotFoundPropertyWorkerAssignments",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Not found property worker assignments",
-      "uk-UA": "Не знайдено зв'язку між працівником і властивістю"
+      "da": "Ikke fundet",
+      "de": "Nicht gefunden",
+      "en-US": "Not found",
+      "uk-UA": "Не знайдено"
     }
   },
   {
     "Key": "ErrorWhileReadArea",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while read area",
-      "uk-UA": "Помилка при читанні області"
+      "da": "Fejl",
+      "de": "Fehler",
+      "en-US": "Error while read planning",
+      "uk-UA": "Помилка"
     }
   },
   {
     "Key": "ErrorWhileObtainingAssignmentsProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while obtaining assignments properties",
-      "uk-UA": "Помилка при отриманні призначених властивостей"
+      "da": "Fejl",
+      "de": "Fehler",
+      "en-US": "Error while read planning",
+      "uk-UA": "Помилка"
     }
   },
   {
     "Key": "SuccessfullyAssignmentsCreatingProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully assignments creating properties",
-      "uk-UA": "Успішне створення призначеної властивості"
+      "da": "Gemt",
+      "de": "Gerettet",
+      "en-US": "Saved",
+      "uk-UA": "Збережено"
     }
   },
   {
     "Key": "ErrorWhileAssignmentsCreatingProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while assignments creating properties",
-      "uk-UA": "" //todo
+      "da": "Fejl under oprettelse",
+      "de": "Fehler beim Erstellen",
+      "en-US": "Error while creating",
+      "uk-UA": "Помилка створення"
     }
   },
   {
     "Key": "SuccessfullyUpdateAssignmentsProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully update assignments properties",
-      "uk-UA": "" //todo
+      "da": "Ændringer gemt",
+      "de": "Änderungen gespeichert",
+      "en-US": "Successfully updated",
+      "uk-UA": "успішно оновлено"
     }
   },
   {
     "Key": "ErrorWhileUpdateAssignmentsProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while update assignments properties",
-      "uk-UA": "" //todo
+      "da": "Fejl under opdatering",
+      "de": "Fehler beim Aktualisieren",
+      "en-US": "Error while updating",
+      "uk-UA": "Помилка під час оновлення"
     }
   },
   {
     "Key": "SuccessfullyDeleteAssignmentsProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully delete assignments properties",
-      "uk-UA": "" //todo
+      "da": "Slettet",
+      "de": "Gelöscht",
+      "en-US": "Successfully deleted",
+      "uk-UA": "Видалено"
     }
   },
   {
     "Key": "ErrorWhilDeleteAssignmentsProperties",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error whil delete assignments properties",
-      "uk-UA": "" //todo
+      "da": "Fejl under sletning",
+      "de": "Fehler beim Löschen",
+      "en-US": "Error while deleting",
+      "uk-UA": "Помилка видалення"
     }
   },
   {
     "Key": "ErrorWhileObtainingAreaRules",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while obtaining area rules",
-      "uk-UA": "" //todo
+      "da": "Fejl",
+      "de": "Fehler",
+      "en-US": "Error while read planning",
+      "uk-UA": "Помилка"
     }
   },
   {
     "Key": "AreaRuleNotFound",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Area rule not found",
-      "uk-UA": "" //todo
+      "da": "Ikke fundet",
+      "de": "Nicht gefunden",
+      "en-US": "Not found",
+      "uk-UA": "Не знайдено"
     }
   },
   {
     "Key": "ErrorWhileReadAreaRule",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while read area rule",
-      "uk-UA": "" //todo
+      "da": "Fejl",
+      "de": "Fehler",
+      "en-US": "Error while read planning",
+      "uk-UA": "Помилка"
     }
   },
   {
     "Key": "AreaRuleCan'tBeUpdated",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Area rule can't be updated",
-      "uk-UA": "" //todo
+      "da": "Fejl under opdatering",
+      "de": "Fehler beim Aktualisieren",
+      "en-US": "Error while updating",
+      "uk-UA": "Помилка під час оновлення"
     }
   },
   {
     "Key": "SuccessfullyUpdateAreaRule",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully update area rule",
-      "uk-UA": "" //todo
+      "da": "Ændringer gemt",
+      "de": "Änderungen gespeichert",
+      "en-US": "Successfully updated",
+      "uk-UA": "успішно оновлено"
     }
   },
   {
     "Key": "ErrorWhileUpdateAreaRule",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while update area rule",
-      "uk-UA": "" //todo
+      "da": "Fejl under opdatering",
+      "de": "Fehler beim Aktualisieren",
+      "en-US": "Error while updating",
+      "uk-UA": "Помилка під час оновлення"
     }
   },
   {
     "Key": "AreaRuleCantBeDeleted",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Area rule can't be deleted",
-      "uk-UA": "" //todo
+      "da": "Fejl under sletning",
+      "de": "Fehler beim Löschen",
+      "en-US": "Error while deleting",
+      "uk-UA": "Помилка видалення"
     }
   },
   {
     "Key": "SuccessfullyDeletedAreaRule",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully deleted area rule",
-      "uk-UA": "" //todo
+      "da": "Slettet",
+      "de": "Gelöscht",
+      "en-US": "Successfully deleted",
+      "uk-UA": "Видалено"
     }
   },
   {
     "Key": "ErrorWhileDeleteAreaRule",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while delete area rule",
-      "uk-UA": "" //todo
+      "da": "Fejl under sletning",
+      "de": "Fehler beim Löschen",
+      "en-US": "Error while deleting",
+      "uk-UA": "Помилка видалення"
     }
   },
   {
     "Key": "SuccessfullyCreateAreaRule",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully create area rule",
-      "uk-UA": "" //todo
+      "da": "Gemt",
+      "de": "Gerettet",
+      "en-US": "Saved",
+      "uk-UA": "Збережено"
     }
   },
   {
     "Key": "ErrorWhileCreateAreaRule",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while create area rule",
-      "uk-UA": "" //todo
+      "da": "Fejl under oprettelse",
+      "de": "Fehler beim Erstellen",
+      "en-US": "Error while creating",
+      "uk-UA": "Помилка створення"
     }
   },
   {
     "Key": "SuccessfullyUpdatePlanning",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Successfully update planning",
-      "uk-UA": "" //todo
+      "da": "Ændringer gemt",
+      "de": "Änderungen gespeichert",
+      "en-US": "Successfully updated",
+      "uk-UA": "успішно оновлено"
     }
   },
   {
     "Key": "ErrorWhileUpdatePlanning",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Error while update planning",
-      "uk-UA": "" //todo
+      "da": "Fejl under opdatering",
+      "de": "Fehler beim Aktualisieren",
+      "en-US": "Error while updating",
+      "uk-UA": "Помилка під час оновлення"
     }
   },
   {
     "Key": "ErrorWhileReadPlanning",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
+      "da": "Fejl",
+      "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "" //todo
+      "uk-UA": "Помилка"
     }
   },
   {
     "Key": "PlanningNotFound",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
-      "en-US": "Planning not found",
-      "uk-UA": "" //todo
+      "da": "Ikke fundet",
+      "de": "Nicht gefunden",
+      "en-US": "Not found",
+      "uk-UA": "Не знайдено"
     }
   },
   {
     "Key": "ErrorWhileReadPlanning",
     "LocalizedValue": {
-      "da": "", //todo
-      "de": "", //todo
+      "da": "Fejl",
+      "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "" //todo
+      "uk-UA": "Помилка"
     }
   },
   {
     "Key": "SuccessfullyCreatedPlanning",
     "LocalizedValue": {
-      "da": "Succesfuldt oprettet planlægning",
-      "de": "", //todo
-      "en-US": "Successfully created planning",
-      "uk-UA": "" //todo
+      "da": "Gemt",
+      "de": "Gerettet",
+      "en-US": "Saved",
+      "uk-UA": "Збережено"
     }
   }
 ]

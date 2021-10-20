@@ -145,7 +145,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<List<PropertyAreaModel>>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileReadPropertyAreas"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadPropertyAreas")}: {e.Message}");
             }
         }
 
@@ -539,7 +539,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationResult(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePropertyAreas"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePropertyAreas")}: {e.Message}");
             }
         }
 
@@ -636,7 +636,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaModel>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileReadArea"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadArea")}: {e.Message}");
             }
         }
     }

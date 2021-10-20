@@ -99,7 +99,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             {
                 Log.LogException(ex.Message);
                 Log.LogException(ex.StackTrace);
-                return new OperationDataResult<List<PropertyAssignWorkersModel>>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAssignmentsProperties"));
+                return new OperationDataResult<List<PropertyAssignWorkersModel>>(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAssignmentsProperties")}: {ex.Message}");
             }
         }
 
@@ -125,7 +126,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileAssignmentsCreatingProperties"));
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileAssignmentsCreatingProperties")}: {e.Message}");
             }
         }
         
@@ -175,7 +177,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdateAssignmentsProperties"));
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileUpdateAssignmentsProperties")}: {e.Message}");
             }
         }
 
@@ -199,7 +202,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties"));
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties")}: {e.Message}");
             }
         }
     }

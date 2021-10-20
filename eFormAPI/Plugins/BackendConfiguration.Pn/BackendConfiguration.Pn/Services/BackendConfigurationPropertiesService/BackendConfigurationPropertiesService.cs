@@ -119,7 +119,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 Log.LogException(ex.Message);
                 Log.LogException(ex.StackTrace);
-                return new OperationDataResult<Paged<PropertiesModel>>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties"));
+                return new OperationDataResult<Paged<PropertiesModel>>(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
             }
         }
 
@@ -172,7 +173,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileCreatingProperties"));
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileCreatingProperties")}: {e.Message}");
             }
         }
 
@@ -208,7 +210,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationDataResult<PropertiesModel>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileReadProperty"));
+                return new OperationDataResult<PropertiesModel>(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadProperty")}: {e.Message}");
             }
         }
 
@@ -271,7 +274,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileUpdateProperties"));
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileUpdateProperties")}: {e.Message}");
             }
         }
 
@@ -355,7 +359,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("ErrorWhileDeleteProperties"));
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileDeleteProperties")}: {e.Message}");
             }
         }
 
@@ -377,7 +382,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             {
                 Log.LogException(ex.Message);
                 Log.LogException(ex.StackTrace);
-                return new OperationDataResult<List<CommonDictionaryModel>>(false, _backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties"));
+                return new OperationDataResult<List<CommonDictionaryModel>>(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
             }
         }
     }

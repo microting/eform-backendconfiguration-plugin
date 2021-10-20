@@ -144,7 +144,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 Log.LogException(ex.Message);
                 Log.LogException(ex.StackTrace);
                 return new OperationDataResult<List<AreaRuleSimpleModel>>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAreaRules"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAreaRules")}: {ex.Message}");
             }
         }
 
@@ -198,7 +198,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaRuleModel>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileReadAreaRule"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadAreaRule")}: {e.Message}");
             }
         }
 
@@ -282,7 +282,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaRuleModel>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileUpdateAreaRule"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileUpdateAreaRule")}: {e.Message}");
             }
         }
 
@@ -375,7 +375,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaRuleModel>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileDeleteAreaRule"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileDeleteAreaRule")}: {e.Message}");
             }
         }
 
@@ -480,7 +480,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaRuleModel>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileCreateAreaRule"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileCreateAreaRule")}: {e.Message}");
             }
         }
 
@@ -1311,7 +1311,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaRuleModel>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePlanning"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileUpdatePlanning")}: {e.Message}");
             }
         }
 
@@ -1378,7 +1378,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaRulePlanningModel>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileReadPlanning"));
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadPlanning")}: {e.Message}");
             }
         }
 
@@ -1445,7 +1445,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                 Name = areaRule.AreaRuleTranslations
                                                     .Where(x => x.LanguageId == 1)
                                                     .Select(x => x.Name)
-                                                    .FirstOrDefault() + " - Check flydende lag",
+                                                    .FirstOrDefault() + ": Flydelag",
                                             },
                                             new()
                                             {
@@ -1453,7 +1453,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                 Name = areaRule.AreaRuleTranslations
                                                     .Where(x => x.LanguageId == 2)
                                                     .Select(x => x.Name)
-                                                    .FirstOrDefault() + " - Check floating layer",
+                                                    .FirstOrDefault() + ": Floating layer",
                                             },
                                             new()
                                             {
@@ -1461,7 +1461,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                 Name = areaRule.AreaRuleTranslations
                                                     .Where(x => x.LanguageId == 3)
                                                     .Select(x => x.Name)
-                                                    .FirstOrDefault() + " - Schwimmende Ebene prüfen",
+                                                    .FirstOrDefault() + ": Schwimmende Ebene",
                                             },
                                             // new PlanningNameTranslation
                                             // {
@@ -1541,7 +1541,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                 Name = areaRule.AreaRuleTranslations
                                                     .Where(x => x.LanguageId == 1)
                                                     .Select(x => x.Name)
-                                                    .FirstOrDefault() + " - Tjek alarm",
+                                                    .FirstOrDefault() + ": Alarm",
                                             },
                                             new()
                                             {
@@ -1549,7 +1549,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                 Name = areaRule.AreaRuleTranslations
                                                     .Where(x => x.LanguageId == 2)
                                                     .Select(x => x.Name)
-                                                    .FirstOrDefault() + " - Check alarm",
+                                                    .FirstOrDefault() + ": Alarm",
                                             },
                                             new()
                                             {
@@ -1557,7 +1557,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                                 Name = areaRule.AreaRuleTranslations
                                                     .Where(x => x.LanguageId == 3)
                                                     .Select(x => x.Name)
-                                                    .FirstOrDefault() + " - Check alarm",
+                                                    .FirstOrDefault() + ": Alarm",
                                             },
                                             // new ()
                                             // {
@@ -1632,7 +1632,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                             Name = areaRule.AreaRuleTranslations
                                                 .Where(x => x.LanguageId == 1)
                                                 .Select(x => x.Name)
-                                                .FirstOrDefault() + " - Kontrol konstruktion",
+                                                .FirstOrDefault() + ": Konstruktion",
                                         },
                                         new()
                                         {
@@ -1640,7 +1640,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                             Name = areaRule.AreaRuleTranslations
                                                 .Where(x => x.LanguageId == 2)
                                                 .Select(x => x.Name)
-                                                .FirstOrDefault() + " - Check construction",
+                                                .FirstOrDefault() + ": Construction",
                                         },
                                         new()
                                         {
@@ -1648,7 +1648,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
                                             Name = areaRule.AreaRuleTranslations
                                                 .Where(x => x.LanguageId == 3)
                                                 .Select(x => x.Name)
-                                                .FirstOrDefault() + " - Konstruktion prüfen",
+                                                .FirstOrDefault() + ": Konstruktion",
                                         },
                                         // new PlanningNameTranslation
                                         // {
