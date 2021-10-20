@@ -25,16 +25,21 @@ namespace BackendConfiguration.Pn.Controllers
     using Infrastructure.Models.AreaRules;
     using Microsoft.AspNetCore.Mvc;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Services.BackendConfigurationAreaRules;
+    using Services.BackendConfigurationAreaRulePlanningsService;
+    using Services.BackendConfigurationAreaRulesService;
 
     [Route("api/backend-configuration-pn/area-rules")]
     public class AreaRulesController : Controller
     {
         private readonly IBackendConfigurationAreaRulesService _backendConfigurationAreaRulesService;
+        private readonly IBackendConfigurationAreaRulePlanningsService _backendConfigurationAreaRulePlanningsService;
 
-        public AreaRulesController(IBackendConfigurationAreaRulesService backendConfigurationAreaRulesService)
+        public AreaRulesController(
+            IBackendConfigurationAreaRulesService backendConfigurationAreaRulesService, 
+            IBackendConfigurationAreaRulePlanningsService backendConfigurationAreaRulePlanningsService)
         {
             _backendConfigurationAreaRulesService = backendConfigurationAreaRulesService;
+            _backendConfigurationAreaRulePlanningsService = backendConfigurationAreaRulePlanningsService;
         }
 
         [HttpGet]
@@ -72,7 +77,7 @@ namespace BackendConfiguration.Pn.Controllers
         [Route("planning")]
         public async Task<OperationResult> UpdatePlanning([FromBody] AreaRulePlanningModel areaRulePlanningModel)
         {
-            return await _backendConfigurationAreaRulesService.UpdatePlanning(areaRulePlanningModel);
+            return await _backendConfigurationAreaRulePlanningsService.UpdatePlanning(areaRulePlanningModel);
         }
 
 
@@ -80,7 +85,7 @@ namespace BackendConfiguration.Pn.Controllers
         [Route("planning")]
         public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId)
         {
-            return await _backendConfigurationAreaRulesService.GetPlanning(ruleId);
+            return await _backendConfigurationAreaRulePlanningsService.GetPlanning(ruleId);
         }
     }
 }

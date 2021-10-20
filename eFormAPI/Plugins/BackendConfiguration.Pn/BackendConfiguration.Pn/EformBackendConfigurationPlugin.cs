@@ -46,7 +46,9 @@ namespace BackendConfiguration.Pn
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
-    using Services.BackendConfigurationAreaRules;
+    using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+    using Services.BackendConfigurationAreaRulePlanningsService;
+    using Services.BackendConfigurationAreaRulesService;
     using Services.BackendConfigurationAssignmentWorkerService;
     using Services.BackendConfigurationLocalizationService;
     using Services.BackendConfigurationPropertiesService;
@@ -73,7 +75,8 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
             services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
             services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
-            services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesServiceService>();
+            services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
+            services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddControllers();
             SeedEForms(services);
@@ -106,6 +109,7 @@ namespace BackendConfiguration.Pn
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
             var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
+            var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
             // seed eforms
             foreach (var eform in eforms)
             {
@@ -119,6 +123,13 @@ namespace BackendConfiguration.Pn
             // Seed areas and rules
             foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed.Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id)))
             {
+                // create tag for area
+                var planningTag = new PlanningTag
+                {
+                    Name = newArea.AreaTranslations.First(x => x.LanguageId == 1).Name, // danish
+                };
+                await planningTag.Create(itemsPlanningContext);
+                newArea.ItemPlanningTagId = planningTag.Id;
                 await newArea.Create(context);
             }
         }

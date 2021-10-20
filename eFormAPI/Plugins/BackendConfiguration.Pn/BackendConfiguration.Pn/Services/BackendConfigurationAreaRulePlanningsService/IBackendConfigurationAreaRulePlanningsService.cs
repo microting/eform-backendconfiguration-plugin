@@ -22,29 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
 {
-    using System;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    using System.Threading.Tasks;
+    using Infrastructure.Models.AreaRules;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
-    public class AreaInitialFields
+    public interface IBackendConfigurationAreaRulePlanningsService
     {
-        public string EformName { get; set; }
+        Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel);
 
-        public int EformId { get; set; }
-
-        public bool SendNotifications { get; set; }
-
-        public int? RepeatEvery { get; set; }
-
-        public int? RepeatType { get; set; }
-
-        public int? DayOfWeek { get; set; }
-
-        public AreaRuleT2TypesEnum? Type { get; set; }
-
-        public AreaRuleT2AlarmsEnum? Alarm { get; set; }
-
-        public DateTime? EndDate { get; set; }
+        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId);
     }
 }

@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
+namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
@@ -40,9 +40,5 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRules
         Task<OperationResult> Delete(int areaId);
 
         Task<OperationResult> Create(AreaRulesCreateModel createModel);
-
-        Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel);
-
-        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId);
     }
 }
