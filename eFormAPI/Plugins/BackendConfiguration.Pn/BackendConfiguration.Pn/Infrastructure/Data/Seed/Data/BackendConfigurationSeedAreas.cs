@@ -40,17 +40,17 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new() {
-                        Name = "01. Miljøledelse (kun IE-husdyrbrug)",
+                        Name = "01. Registreringer til Miljøledelse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 1
                     },
                     new() {
-                        Name = "01. Environmental Management (kun IE-husdyrbrug)",
+                        Name = "01. Registrations to Environmental Management",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 2
                     },
                     new() {
-                        Name = "01. Umweltmanagement (nur IE Tierhaltung)",
+                        Name = "01. Registrierungen zum Umweltmanagement",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 3
                     }

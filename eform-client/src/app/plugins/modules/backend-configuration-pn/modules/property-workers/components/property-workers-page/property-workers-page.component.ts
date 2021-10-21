@@ -37,6 +37,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     { name: 'Last name', sortable: false, elementId: '' },
     { name: 'Device ID', sortable: false, elementId: '' },
     { name: 'Language', sortable: false, elementId: '' },
+    { name: 'Properties', sortable: false, elementId: '' },
     { name: 'Customer no & OTP', sortable: false, elementId: '' },
     this.authStateService.currentUserClaims.deviceUsersDelete ||
     this.authStateService.currentUserClaims.deviceUsersDelete
@@ -121,6 +122,26 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           this.workersAssignments = [...operation.model];
         }
       });
+  }
+
+  getWorkerPropertyNames(siteId: number) {
+    let resultString = '';
+    if (this.workersAssignments !== undefined) {
+      this.workersAssignments.forEach(obj => {
+        if (obj.siteId === siteId) {
+          obj.assignments.forEach(assignment => {
+            if (assignment.isChecked) {
+              if (resultString.length !== 0) {
+                resultString += '<br>';
+              }
+              resultString += this.availableProperties.find(prop => prop.id === assignment.propertyId).name;
+            }
+          });
+        }
+      });
+    }
+
+    return resultString;
   }
 
   ngOnDestroy(): void {}
