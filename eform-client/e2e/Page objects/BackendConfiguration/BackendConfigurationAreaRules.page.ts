@@ -469,7 +469,7 @@ export class AreaRuleRowObject {
         await value.click();
       }
       if (areaRule.checkListStable !== undefined) {
-        const checkListStable = areaRule.checkListStable ? 'Ja' : 'Ingen';
+        const checkListStable = areaRule.checkListStable ? 'Ja' : 'Nej';
         await (
           await (
             await backendConfigurationAreaRulesPage.editRuleChecklistStable()
@@ -482,7 +482,7 @@ export class AreaRuleRowObject {
         await value.click();
       }
       if (areaRule.tailBite !== undefined) {
-        const tailBite = areaRule.checkListStable ? 'Ja' : 'Ingen';
+        const tailBite = areaRule.checkListStable ? 'Ja' : 'Nej';
         await (
           await (await backendConfigurationAreaRulesPage.editRuleTailBite()).$(
             'input'
