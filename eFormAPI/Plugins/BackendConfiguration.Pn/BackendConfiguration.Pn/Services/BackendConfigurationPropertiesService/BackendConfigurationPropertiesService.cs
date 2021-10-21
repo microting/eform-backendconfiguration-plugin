@@ -38,6 +38,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    using Microting.ItemsPlanningBase.Infrastructure.Data;
+    using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
     using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationPropertiesService: IBackendConfigurationPropertiesService
@@ -46,17 +49,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
 
         public BackendConfigurationPropertiesService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
+            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
         }
 
         public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request)
@@ -131,6 +137,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var core = await _coreHelper.GetCore();
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
 
+                var planningTag = new PlanningTag
+                {
+                    Name = propertyCreateModel.Name,
+                };
+                await planningTag.Create(_itemsPlanningPnDbContext);
                 var newProperty = new Property
                 {
                     Address = propertyCreateModel.Address,
@@ -138,6 +149,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     Name = propertyCreateModel.Name,
                     CreatedByUserId = _userService.UserId,
                     UpdatedByUserId = _userService.UserId,
+                    ItemPlanningTagId = planningTag.Id,
                 };
                 await newProperty.Create(_backendConfigurationPnDbContext);
 
@@ -235,6 +247,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 property.Name = updateModel.Name;
                 property.UpdatedByUserId = _userService.UserId;
 
+                var planningTag = await _itemsPlanningPnDbContext.PlanningTags
+                    .Where(x => x.Id == property.ItemPlanningTagId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+                if (planningTag != null)
+                {
+                    planningTag.Name = updateModel.Name;
+                    planningTag.UpdatedByUserId = _userService.UserId;
+                    await planningTag.Update(_itemsPlanningPnDbContext);
+                }
+
                 await property.Update(_backendConfigurationPnDbContext);
 
                 property.SelectedLanguages = property.SelectedLanguages
@@ -265,6 +288,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 foreach (var selectedLanguageForCreate in selectedLanguagesForCreate)
                 {
+                    selectedLanguageForCreate.UpdatedByUserId = _userService.UserId;
+                    selectedLanguageForCreate.CreatedByUserId = _userService.UserId;
                     await selectedLanguageForCreate.Create(_backendConfigurationPnDbContext);
                 }
 
@@ -297,6 +322,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     return new OperationResult(false, _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
                 }
 
+                // delete item planning tag
+                var planningTag = await _itemsPlanningPnDbContext.PlanningTags
+                    .Where(x => x.Id == property.ItemPlanningTagId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+                if(planningTag != null)
+                {
+                    planningTag.UpdatedByUserId = _userService.UserId;
+                    await planningTag.Delete(_itemsPlanningPnDbContext);
+                }
+
                 // delete property workers
                 foreach (var propertyWorker in property.PropertyWorkers)
                 {
@@ -321,6 +357,78 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         {
                             await folder.Delete(sdkDbContext);
                         }
+                    }
+
+                    // get areaRules and select all linked entity for delete
+                    var areaRules = await _backendConfigurationPnDbContext.AreaRules
+                        .Where(x => x.PropertyId == areaProperty.PropertyId)
+                        .Where(x => x.AreaId == areaProperty.AreaId)
+                        .Include(x => x.Area)
+                        .Include(x => x.AreaRuleTranslations)
+                        .Include(x => x.AreaRulesPlannings)
+                        .ThenInclude(x => x.PlanningSites)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync();
+
+                    foreach (var areaRule in areaRules)
+                    {
+                        if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
+                        {
+                            // delete item from selectable list
+                            var entityGroupItem = await sdkDbContext.EntityItems
+                                .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync();
+                            if (entityGroupItem != null)
+                            {
+                                await entityGroupItem.Delete(sdkDbContext);
+                            }
+                        }
+
+                        // delete translations for are rules
+                        foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
+                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
+                        }
+
+                        // delete plannings area rules and items planning
+                        foreach (var areaRulePlanning in areaRule.AreaRulesPlannings
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            foreach (var planningSite in areaRulePlanning.PlanningSites
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                            {
+                                planningSite.UpdatedByUserId = _userService.UserId;
+                                await planningSite.Delete(_backendConfigurationPnDbContext);
+                            }
+
+                            if (areaRulePlanning.ItemPlanningId != 0)
+                            {
+                                var planning = await _itemsPlanningPnDbContext.Plannings
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                                    .Include(x => x.NameTranslations)
+                                    .FirstOrDefaultAsync();
+                                if (planning != null)
+                                {
+                                    foreach (var translation in planning.NameTranslations
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                                    {
+                                        translation.UpdatedByUserId = _userService.UserId;
+                                        await translation.Delete(_itemsPlanningPnDbContext);
+                                    }
+
+                                    planning.UpdatedByUserId = _userService.UserId;
+                                    await planning.Delete(_itemsPlanningPnDbContext);
+                                }
+                            }
+
+                            areaRulePlanning.UpdatedByUserId = _userService.UserId;
+                            await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+                        }
+
+                        // delete area rule
+                        areaRule.UpdatedByUserId = _userService.UserId;
+                        await areaRule.Delete(_backendConfigurationPnDbContext);
                     }
 
                     // delete entity select group. only for type 3(tail bite and stables)
