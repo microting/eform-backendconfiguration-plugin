@@ -70,8 +70,8 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
         workerValue: true,
       },
     ]).deep.eq(workers);
-    browser.back();
-    await areaRule.createUpdatePlanning({ status: false }, false, false);
+    // browser.back();
+    // await areaRule.createUpdatePlanning({ status: false }, false, false);
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();

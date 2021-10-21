@@ -95,9 +95,9 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
       },
     ]).deep.eq(workers);
 
-    browser.back();
-    await areaRule.createUpdatePlanning({ status: false }); // delete item planning
-    await areaRule.delete();
+    // browser.back();
+    // await areaRule.createUpdatePlanning({ status: false }); // delete item planning
+    // await areaRule.delete();
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();

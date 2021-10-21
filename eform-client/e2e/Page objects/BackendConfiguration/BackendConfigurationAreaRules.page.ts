@@ -564,12 +564,12 @@ export class AreaRuleRowObject {
     if (areaRulePlanningCreateUpdate) {
       if (areaRulePlanningCreateUpdate.status !== undefined) {
         await (
-          await await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
+          await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
         ).click();
       }
       if (areaRulePlanningCreateUpdate.notification !== undefined) {
         await (
-          await await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
+          await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
         ).click();
       }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
