@@ -30,7 +30,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using System.Threading.Tasks;
     using BackendConfigurationLocalizationService;
     using Infrastructure.Data.Seed.Data;
-    using Infrastructure.Models.AreaRules;
     using Infrastructure.Models.PropertyAreas;
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Dto;
@@ -253,8 +252,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
                                 await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
 
-                                var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "");
-                                newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUUID);
+                                var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "", false, true);
+                                newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
                                 await newAssignment.Update(_backendConfigurationPnDbContext);
                                 foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                                 {
