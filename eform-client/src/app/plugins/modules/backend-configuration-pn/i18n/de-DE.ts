@@ -57,4 +57,5 @@ export const deDE = {
   'Delete rule': 'Bereich löschen',
   'Property name': 'Name des Anwesens',
   'Check to pair': 'Zum Koppeln ankreuzen',
+  Properties: 'Eigenschaften'
 };

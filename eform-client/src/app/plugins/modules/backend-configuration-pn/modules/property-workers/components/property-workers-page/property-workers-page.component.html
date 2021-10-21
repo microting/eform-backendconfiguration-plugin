@@ -42,6 +42,8 @@
           <td id="deviceUserLanguage">
             {{ siteDto.language }}
           </td>
+          <td [innerHTML]="getWorkerPropertyNames(siteDto.siteId)">
+          </td>
           <td>
             <div class="d-flex flex-row justify-content-center">
               <ng-container *ngIf="siteDto.customerNo && siteDto.otpCode">
