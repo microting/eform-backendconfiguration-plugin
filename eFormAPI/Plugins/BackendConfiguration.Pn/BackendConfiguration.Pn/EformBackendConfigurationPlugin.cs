@@ -116,7 +116,11 @@ namespace BackendConfiguration.Pn
                 var newTemplate = await core.TemplateFromXml(eform);
                 if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
                 {
-                    await core.TemplateCreate(newTemplate);
+                    var clId = await core.TemplateCreate(newTemplate);
+                    var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
+                    cl.IsLocked = true;
+                    cl.IsEditable = false;
+                    await cl.Update(sdkDbContext);
                 }
             }
 
