@@ -59,7 +59,7 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
     expect(itemPlanning.eFormName).eq('13. APV Medarbejer');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 13. Arbejdspladsvurdering`
+      `${property.name} - 13. Arbejdstilsynets Landbrugs APV`
     );
     expect(itemPlanning.repeatEvery).eq(12);
     expect(itemPlanning.repeatType).eq('Måned');
@@ -70,8 +70,8 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
         workerValue: true,
       },
     ]).deep.eq(workers);
-    browser.back();
-    await areaRule.createUpdatePlanning({ status: false }, false, false);
+    // browser.back();
+    // await areaRule.createUpdatePlanning({ status: false }, false, false);
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();

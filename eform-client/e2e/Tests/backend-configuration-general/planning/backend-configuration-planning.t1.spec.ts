@@ -65,7 +65,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.eFormName).eq('01. Vandforbrug');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 01. Environmental Management (kun IE-husdyrbrug)`
+      `${property.name} - 01. Miljøledelse (kun IE-husdyrbrug)`
     );
     expect(itemPlanning.repeatEvery).eq(1);
     expect(itemPlanning.repeatType).eq('Måned');
@@ -76,8 +76,8 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
         workerValue: true,
       },
     ]).deep.eq(workers);
-    browser.back();
-    await areaRule.createUpdatePlanning({ status: false });
+    // browser.back();
+    // await areaRule.createUpdatePlanning({status: false});
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();

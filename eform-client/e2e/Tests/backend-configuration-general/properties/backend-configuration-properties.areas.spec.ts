@@ -15,14 +15,14 @@ const property: PropertyCreateUpdate = {
   ],
 };
 
-describe('Backend Configuration Property - Add', function () {
+describe('Backend Configuration Property - Bind Areas', function () {
   before(async () => {
     await loginPage.open('/auth');
     await loginPage.login();
     await backendConfigurationPropertiesPage.goToProperties();
+    await backendConfigurationPropertiesPage.createProperty(property);
   });
   it('should bind all areas with one property', async () => {
-    await backendConfigurationPropertiesPage.createProperty(property);
     const createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await createdProperty.bindOrUnbindWithAllAreas();
     const binds = await createdProperty.getBindAreas();

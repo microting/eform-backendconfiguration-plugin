@@ -9,10 +9,7 @@ import {
   TableHeaderElementModel,
 } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
-import {
-  PropertyAssignmentWorkerModel,
-  PropertyAssignWorkersModel,
-} from '../../../../models/properties/property-workers-assignment.model';
+import { PropertyAssignWorkersModel } from '../../../../models/properties/property-workers-assignment.model';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 
 @AutoUnsubscribe()
@@ -126,19 +123,20 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   getWorkerPropertyNames(siteId: number) {
     let resultString = '';
-    if (this.workersAssignments !== undefined) {
-      this.workersAssignments.forEach(obj => {
-        if (obj.siteId === siteId) {
-          obj.assignments.forEach(assignment => {
-            if (assignment.isChecked) {
-              if (resultString.length !== 0) {
-                resultString += '<br>';
-              }
-              resultString += this.availableProperties.find(prop => prop.id === assignment.propertyId).name;
+    if (this.workersAssignments) {
+      const obj = this.workersAssignments.find((x) => x.siteId === siteId);
+      if (obj) {
+        obj.assignments
+          .filter((x) => x.isChecked)
+          .forEach((assignment) => {
+            if (resultString.length !== 0) {
+              resultString += '<br>';
             }
+            resultString += this.availableProperties.find(
+              (prop) => prop.id === assignment.propertyId
+            ).name;
           });
-        }
-      });
+      }
     }
 
     return resultString;
