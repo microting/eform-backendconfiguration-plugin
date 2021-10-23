@@ -393,7 +393,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                             if (areaRule.TailBite is true)
                                             {
-                                                const string eformName = "24. Halebid_NEW";
+                                                const string eformName = "05. Halebid";
                                                 var eformId = await sdkDbContext.CheckListTranslations
                                                     .Where(x => x.Text == eformName)
                                                     .Select(x => x.CheckListId)
@@ -1168,7 +1168,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         var planningForType3TailBiteId = 0;
                         if (areaRule.TailBite is true)
                         {
-                            const string eformName = "24. Halebid_NEW";
+                            const string eformName = "05. Halebid";
                             var eformId = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.Text == eformName)
                                 .Select(x => x.CheckListId)

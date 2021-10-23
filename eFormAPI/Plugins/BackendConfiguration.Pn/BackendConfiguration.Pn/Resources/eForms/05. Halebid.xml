@@ -2,7 +2,7 @@
 <Main>
   <Id>142432</Id>
   <Repeated>0</Repeated>
-  <Label>24. Halebid_NEW</Label>
+  <Label>05. Halebid|05. Tail bite</Label>
   <StartDate>2021-06-03</StartDate>
   <EndDate>2031-06-03</EndDate>
   <Language>da</Language>
@@ -14,7 +14,7 @@
   <ElementList>
     <Element type="DataElement">
       <Id>142432</Id>
-      <Label>24. Halebid_NEW</Label>
+      <Label>05. Halebid|05. Tail bite</Label>
       <Description><![CDATA[Dokumentér halebid|Document tail bite]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>

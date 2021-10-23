@@ -233,19 +233,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         new()
                                         {
                                             LanguageId = 1, // da
-                                            Name = "24. Halebid",
+                                            Name = "05. Halebid",
                                             Description = "",
                                         },
                                         new()
                                         {
                                             LanguageId = 2, // en
-                                            Name = "24. Tail bite",
+                                            Name = "05. Tail bite",
                                             Description = "",
                                         },
                                         new()
                                         {
                                             LanguageId = 3, // ge
-                                            Name = "24. Schwanzbiss",
+                                            Name = "05. Schwanzbiss",
                                             Description = "",
                                         },
                                     },
