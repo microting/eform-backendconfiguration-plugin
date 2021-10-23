@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142425</Id>
+  <Repeated>0</Repeated>
+  <Label>19. Ventilation|19. Ventilation</Label>
+  <StartDate>2021-05-27</StartDate>
+  <EndDate>2031-05-27</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142425</Id>
+      <Label>19. Ventilation|19. Ventilation</Label>
+      <Description><![CDATA[Tjek ventilation<br>|<br>Check ventilation]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>373948</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>373949</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Et velfungerende ventilationsanlæg medvirker til at minimere sygdomme og øge dyrevelfærden.<br>|<br>A well-functioning ventilation system helps to minimize diseases and increase animal welfare.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>373950</Id>
+          <Label>Nødopluk OK|Emergency opening OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>373946</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>373945</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>373947</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

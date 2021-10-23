@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142263</Id>
+  <Repeated>0</Repeated>
+  <Label>12. Motor- og spildolie|12. Motor oil and waste oil</Label>
+  <StartDate>2021-01-17</StartDate>
+  <EndDate>2031-01-17</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142263</Id>
+      <Label>12. Motor- og spildolie|12. Motor oil and waste oil</Label>
+      <Description><![CDATA[Kontrolpunkter motor- og spildolie|Checkpoints motor oil and waste oil]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372527</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372528</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Opbevaring af både spildolie og ny motorolie skal ske i dertil egnede beholdere.&nbsp;Alle beholdere skal være placeret på fast gulv uden afløb.&nbsp;<br><br>Beholdere kan være placeret i spildbakke eller lignende, der som minimum kan rumme indholdet af den største beholder.<br><br>Bortskaffelse af spildolie, filtre mm. skal ske efter gældende regler og skal kunne dokumenteres.<br><br>Spildolie ikke må anvendes til smøring etc.<br><br>Vær opmærksom på kommunernes erhvervsaffaldsregulativ i forbindelse med fx bortskaffelseshyppighed mv.&nbsp;<br>|<br>Both waste oil and new engine oil must be stored in suitable containers. All containers must be placed on a solid floor without a drain.<br><br>Containers can be placed in a waste bin or similar, which can at least hold the contents of the largest container.<br><br>Disposal of waste oil, filters etc. must be done according to current rules and must be able to be documented.<br><br>Waste oil must not be used for lubrication etc.<br><br>Pay attention to the municipalities' commercial waste regulations in connection with, for example, disposal frequency, etc.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>372526</Id>
+          <Label>Tankattest OK|Tank certificate OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>372529</Id>
+          <Label>Ingen spild og utætheder|No spills and leaks</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>372531</Id>
+          <Label>Adgang til olieabsorberende materiale|Access to oil absorbent material</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>372524</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372523</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>372525</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142142</Id>
+  <Repeated>0</Repeated>
+  <Label>03. Kontrol flydelag|03. Control floating layer</Label>
+  <StartDate>2020-10-06</StartDate>
+  <EndDate>2030-10-06</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142142</Id>
+      <Label>03. Kontrol flydelag|03. Control floating layer</Label>
+      <Description><![CDATA[Kontrollér flydelag og angiv evt. årsag til manglende flydelag.|Check floating layer and indicate - if necessary - cause of lack of floating layer.<br>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372222</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372223</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Hvis der ikke er fast overdækning på en gyllebeholder, skal der etableres flydelag på gylleoverfladen.&nbsp;<br><br>Det skal altid sikres, at der er et tæt flydelag. Flydelaget begrænser ammoniakfordampningen, hvilket giver en bedre gødningsværdi i gyllen.<br><br>Flydelaget skal dække hele beholderens overflade, dog må der gerne være en brudflade op til 3 m2 ved det dykkede indløb.&nbsp;<br><br>Flydelaget kan etableres med en fast gødning eller fx snittet halm.<br><br>Hvis kommunen konstaterer mangelfuldt flydelag ved to tilsyn indenfor 3 år, skal overdækning påbydes, undtagen i særlige tilfælde, hvis kommunen ud fra en konkret vurdering finder, at overtrædelsen er undskyldelig.<br>|<br>If there is no fixed cover on a slurry tank, floating layers must be established on the slurry surface.<br><br>It must always be ensured that there is a tight floating layer. The floating layer limits the ammonia evaporation, which gives a better fertilizer value in the manure.<br><br>The floating layer must cover the entire surface of the container, however, there may be a breaking surface up to 3 m2 at the submerged inlet.<br><br>The floating layer can be established with a solid fertilizer or, for example, cut straw.<br><br>If the municipality finds a defective floating layer during two inspections within 3 years, cover must be imposed, except in special cases if the municipality, based on a specific assessment, finds that the violation is excusable.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>371625</Id>
+          <Label>Flydelag OK|Floating layer OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>371900</Id>
+          <Label>Vælg årsag til manglende flydelag|Select reason for lack of floating layer</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Beholder omrørt|Slurry tank stirred]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Gylle udbragt|Slurry delivered]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Beholder tom|Slurry tank empty]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>4</Key>
+              <Value><![CDATA[Halm tilført|Straw added]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>4</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>5</Key>
+              <Value><![CDATA[Flyttet til anden beholder|Moved to another slurry tank]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>5</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>6</Key>
+              <Value><![CDATA[Modtaget biogas-gylle|Biogas slurry received]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>6</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>371627</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>371628</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>371629</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

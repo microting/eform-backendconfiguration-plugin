@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142252</Id>
+  <Repeated>0</Repeated>
+  <Label>09. Forsuring serviceaftale|09. Acidification service agreement</Label>
+  <StartDate>2021-01-13</StartDate>
+  <EndDate>2031-01-13</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142252</Id>
+      <Label>09. Forsuring serviceaftale|09. Acidification service agreement</Label>
+      <Description><![CDATA[Billede af serviceaftale/faktura|Picture service agreement/invoice]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372463</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372464</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Forsuringsanlæg skal vedligeholdes i henhold til leverandørens anvisninger, så der kan opnås de i vilkårene angivne ydelser.<br><br>Når du tager et billede af din serviceftale og/eller faktura, er den nem at finde frem på web, når du har brug for at kunne fremvise denne til f.eks. tilsynsmyndighederne.<br>|<br>Acidification systems must be maintained in accordance with the supplier's instructions so that the services specified in the terms can be obtained.<br><br>When you take a picture of your service agreement and / or invoice, it is easy to find on the web when you need to be able to present it to e.g. supervisory authorities.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="Picture">
+          <Id>372462</Id>
+          <Label>Billede serviceaftale|Picture service agreement</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>372460</Id>
+          <Label>Billede faktura|Picture invoice</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372459</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>372461</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

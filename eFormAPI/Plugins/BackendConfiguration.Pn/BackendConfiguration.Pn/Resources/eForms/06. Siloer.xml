@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142226</Id>
+  <Repeated>0</Repeated>
+  <Label>06. Siloer|06. Silos</Label>
+  <StartDate>2020-12-28</StartDate>
+  <EndDate>2030-12-28</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142226</Id>
+      <Label>06. Siloer|06. Silos</Label>
+      <Description><![CDATA[Kontrol af foderspild og rørsamlinger|Control of feed spills and pipe joints<br><br>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372308</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372309</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Opbevaring af foder skal ske på en måde, så tilhold af skadedyr forebygges, og spild ikke giver anledning til punktforurening.  <br><br>Dette forebygges ved at sikre, at foder opbevares i tætte og dertil egnede beholdere.<br><br>Der vil kunne ske spild af foder fx ved utætte samlinger, levering/indblæsning af foder eller lignende. Sker der spild af foder, er det vigtigt, at der løbende bliver samlet op, så fx tilhold af rotter undgås.|<br>Feed must be stored in such a way that pests are prevented and spills do not give rise to point pollution.<br><br>This is prevented by ensuring that feed is stored in tight and suitable containers.<br><br>There may be a waste of feed, for example by leaky joints, delivery / supply of feed or the like. If there is a waste of feed, it is important that it is collected regularly, so that, for example, the presence of rats is avoided.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>372307</Id>
+          <Label>Ingen foderspild|No feed spills</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>372310</Id>
+          <Label>Rørsamlinger tætte|Pipe joints tight</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>372305</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372304</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>372306</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

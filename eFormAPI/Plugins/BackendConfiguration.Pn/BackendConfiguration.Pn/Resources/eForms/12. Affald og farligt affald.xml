@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142265</Id>
+  <Repeated>0</Repeated>
+  <Label>12. Affald og farligt affald|12. Waste and hazardous waste</Label>
+  <StartDate>2021-01-17</StartDate>
+  <EndDate>2031-01-17</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142265</Id>
+      <Label>12. Affald og farligt affald|12. Waste and hazardous waste</Label>
+      <Description><![CDATA[Dokumentation af korrekt bortskaffelse|Documentation of proper disposal]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372544</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372545</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Kommunens erhvervsaffaldsregulativ skal følges.&nbsp;<br><br>Det skal til en hver tid kunne dokumenteres, hvordan affald er blevet bortskaffet. Fx i form af kvitteringer fra skrothandler, genbrugsplads eller lignende.<br><br>For farligt affald skal der være særlig opmærksomhed på opbevaringen indtil bortskaffelse, så det sikres, at der ikke sker miljøbelastning.<br>&nbsp;<br>Opbevaringen af døde dyr må ikke give anledning til uhygiejniske forhold eller risiko for forurening af jord, grundvand eller overfladevand.<br>|<br>The municipality's commercial waste regulations must be followed.<br><br>It must always be possible to document how waste has been disposed of. For example in the form of receipts from scrap dealers, recycling sites or the like.<br><br>For hazardous waste, special attention must be paid to storage until disposal to ensure that there is no environmental impact.<br><br>The storage of dead animals must not give rise to unhygienic conditions or the risk of contamination of soil, groundwater or surface water.<br>]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="Picture">
+          <Id>372541</Id>
+          <Label>Billede kvittering|Picture receipts</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372540</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>372542</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

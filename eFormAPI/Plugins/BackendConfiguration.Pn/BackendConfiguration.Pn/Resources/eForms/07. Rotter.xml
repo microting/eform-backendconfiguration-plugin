@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142270</Id>
+  <Repeated>0</Repeated>
+  <Label>07. Rotter|07. Rats</Label>
+  <StartDate>2021-01-17</StartDate>
+  <EndDate>2031-01-17</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142270</Id>
+      <Label>07. Rotter|07. Rats</Label>
+      <Description><![CDATA[Tag billede af serviceaftale/faktura|Take picture of service agreement/invoice]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372582</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372583</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Effektive virkemidler mod rotter er orden, ryddelighed, fejede gulve, fjernelse af vegetation langs bygninger, reparation af huller/rørgennemføringer, at døre/porte for så vidt muligt holdes lukkede og at oplag af “diverse” sættes på paller og strøer.<br><br>Når du tager et billede af din serviceftale og/eller faktura på rottebekæmpelse, er den nem at finde frem på web, når du har brug for at kunne fremvise denne til f.eks. tilsynsmyndighederne.<br>|<br>Effective measures against rats are order, tidiness, swept floors, removal of vegetation along buildings, repair of holes / pipe penetrations, that doors / gates are kept closed as far as possible and that storage of "miscellaneous" is placed on pallets and joists.<br><br>When you take a picture of your service agreement and / or invoice for rat control, it is easy to find on the web when you need to be able to present it to e.g. supervisory authorities.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="Picture">
+          <Id>372580</Id>
+          <Label>Billede serviceaftale/faktura|Picture service agreement/invoice</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372579</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>372581</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

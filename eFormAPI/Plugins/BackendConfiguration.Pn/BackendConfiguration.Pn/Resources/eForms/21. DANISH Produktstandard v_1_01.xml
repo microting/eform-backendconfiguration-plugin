@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142381</Id>
+  <Repeated>0</Repeated>
+  <Label>21. DANISH Produktstandard v_1_01|21. DANISH Product standard v_1_01</Label>
+  <StartDate>2021-05-07</StartDate>
+  <EndDate>2031-05-07</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142381</Id>
+      <Label>21. DANISH Produktstandard v_1_01|21. DANISH Product standard v_1_01</Label>
+      <Description><![CDATA[Egenkontrolprogram for besætninger, der er certificeret under DANISH Produktstandard.<br>|<br>Self-inspection program for herds certified under DANISH Product Standard.]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>373486</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>373487</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Egenkontrolprogrammet, der er en del af DANISH Produkt-standard, skal som minimum kontrolleres én gang årligt, og underskrives af den ansvarlige for besætningen, hvilket vil blive kontrolleret ved DANISH-besøg. Som vejledning til punkterne vedrørende dyrevelfærd, henvises til "Vejledning om god dyrevelfærd i besætninger med grise".<br>|<br>The self-inspection program, which is part of the DANISH Product Standard, must be inspected at least once a year and signed by the person in charge of the crew, which will be inspected during DANISH visits. For guidance on animal welfare items, please refer to "Vejledning om god dyrevelfærd i besætninger med grise".]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>373488</Id>
+          <Label>Branchekode for god produktionspraksis i primærproduktionen er udfyldt og underskrevet.|Industry code for good production practice in primary production is filled in and signed.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373490</Id>
+          <Label>Der er dokumentation for alle udførte dyrlægebesøg. Besøgsrapporterne gemmes i to år.|There is documentation for all performed veterinary visits. The visit reports are stored for two years.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373491</Id>
+          <Label>Hvis der er indgået en sundheds-rådgivningsaftale, kan denne fremvises, og er der udfærdiget  handlingsplaner i relation til målrettet dyrevelfærdsindsats, kan disse også fremvises.|If a health advisory agreement has been entered into, this can be presented, and if action plans have been drawn up in relation to targeted animal welfare efforts, these can also be presented.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373492</Id>
+          <Label>Alle dyr tilses mindst en gang dagligt.|All animals are inspected at least once a day.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="None">
+          <Id>373493</Id>
+          <Label>Her kontrolleres også at: |Here it is also checked that:</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373494</Id>
+          <Label>a. Alle dyr har vand og foder.|a. All animals have water and food.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373495</Id>
+          <Label>b. Arealkravene er overholdt.|b. The area requirements have been complied with.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373496</Id>
+          <Label>c. Alle dyr kan rejse, lægge og hvile sig uden besvær.|c. All animals can get up, lie down and rest without difficulty.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>8</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373497</Id>
+          <Label>d. Gulvene ikke er glatte eller ujævne.|d. The floors are not slippery or uneven.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373498</Id>
+          <Label>Alt automatiseret eller mekanisk udstyr efterses mindst én gang om dagen.|All automated or mechanical equipment is inspected at least once a day.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>10</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373499</Id>
+          <Label>Det sikres, at alle indgreb (kastration, halekupering, tandslibning og jernbehandling) foretages efter lovgivningen, og at der udvises fornøden omhu og hygiejne.|It is ensured that all procedures (castration, tail docking, tooth grinding and iron treatment) are carried out in accordance with the law, and that the necessary care and hygiene is exercised.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>11</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373500</Id>
+          <Label>Fra 1. januar 2019 er alle halebid registreret.|From 1 January 2019, all tail bites are registered.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>12</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373501</Id>
+          <Label>Fra 1. april 2019 foreligger der en opdateret risikovurdering og handlingsplan.|From 1 April 2019, there will be an updated risk assessment and action plan.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>13</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373502</Id>
+          <Label>Fra 1. juli 2019 er der ved salg af halekuperede smågrise, både i Danmark og udland, indhentet dokumentation fra modtageren eller mellemhandleren om, at der er behov for at modtage halekuperede grise.|From 1 July 2019, when selling tail docking piglets, both in Denmark and abroad, documentation has been obtained from the recipient or middleman that there is a need to receive tail docking pigs.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>14</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373503</Id>
+          <Label>Der foreligger en målsætning med initiativer, der øger pattegrise-overlevelsen. Denne målsætning følges op årligt.|There is an objective with initiatives that increase piglet survival. This objective is followed up annually.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>15</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373504</Id>
+          <Label>Syge, tilskadekomne og aggressive dyr bliver om nødvendigt isoleret, evt. flyttet til sygesti og evt. behandlet. Det sikres, at der er nok sygestier, og at disse er indrettet korrekt. Det sikres, at der føres ekstra tilsyn ved sammenblanding af dyr, for hurtigt at kunne gribe ind.|Sick, injured and aggressive animals are isolated if necessary moved to sick pen and treatment. It is ensured that there are enough sick pens and that these are arranged correctly. It is ensured that extra supervision is carried out when mixing animals, in order to be able to intervene quickly.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>16</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373505</Id>
+          <Label>Ved det daglige tilsyn kontrolleres, om der er tilfælde af halebid og/eller skuldersår. Eventuelle nye tilfælde sættes i behandling.|During the daily inspection, check whether there are cases of tail bites and / or shoulder ulcers. Any new cases are put into treatment.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>17</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373506</Id>
+          <Label>Der forefindes velfungerende boltpistol samt en skarp kniv til afblødning og/eller udstyr til rygmarvsstødning.|There is a well-functioning bolt gun as well as a sharp knife for de-bleeding and / or equipment for spinal cord impact.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>18</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373507</Id>
+          <Label>Det overvåges, at alle grise har permanent adgang til en tilstrækkelig mængde halm eller andet manipulerbart materiale, der kan opfylde deres behov for beskæftigelses- og rodemateriale.|It is monitored that all pigs have permanent access to a sufficient amount of straw or other manipulable material that can meet their need for recreational material.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>19</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373489</Id>
+          <Label>Det sikres, at det kun er transportegnede grise, der flyttes til udleverings-faciliteterne (udleveringsrummet). I tvivlstilfælde flyttes grisene til en særskilt sti, hvor vognmanden, eventuelt en dyrlæge, vurderer dyrenes transportegnethed. Der skal foreligge dokumentation fra dyrlægen om årlig gennemgang af faktaark fra SEGES om transportegnethed.|It is ensured that only transportable pigs are moved to the delivery facilities (delivery room). In case of doubt, the pigs are moved to a separate pen, where the haulier, possibly a veterinarian, assesses the animals' transportability. There must be documentation from the veterinarian about the annual review of fact sheets from SEGES on transport suitability.</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>20</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>373484</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>21</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>373483</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>22</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>373485</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>23</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
