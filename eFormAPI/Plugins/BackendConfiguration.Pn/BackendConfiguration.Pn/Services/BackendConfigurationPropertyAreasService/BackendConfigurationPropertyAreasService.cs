@@ -41,6 +41,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    using Microting.ItemsPlanningBase.Infrastructure.Data;
     using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationPropertyAreasService : IBackendConfigurationPropertyAreasService
@@ -49,16 +50,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
 
         public BackendConfigurationPropertyAreasService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         }
 
@@ -508,12 +512,86 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 foreach (var areaPropertyForDelete in assignmentsForDelete)
                 {
+                    // get areaRules and select all linked entity for delete
+                    var areaRules = await _backendConfigurationPnDbContext.AreaRules
+                        .Where(x => x.PropertyId == areaPropertyForDelete.PropertyId)
+                        .Where(x => x.AreaId == areaPropertyForDelete.AreaId)
+                        .Include(x => x.Area)
+                        .Include(x => x.AreaRuleTranslations)
+                        .Include(x => x.AreaRulesPlannings)
+                        .ThenInclude(x => x.PlanningSites)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync();
+
+                    foreach (var areaRule in areaRules)
+                    {
+                        if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
+                        {
+                            // delete item from selectable list
+                            var entityGroupItem = await sdkDbContext.EntityItems
+                                .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync();
+                            if (entityGroupItem != null)
+                            {
+                                await entityGroupItem.Delete(sdkDbContext);
+                            }
+                        }
+
+                        // delete translations for are rules
+                        foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
+                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
+                        }
+
+                        // delete plannings area rules and items planning
+                        foreach (var areaRulePlanning in areaRule.AreaRulesPlannings
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            foreach (var planningSite in areaRulePlanning.PlanningSites
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                            {
+                                planningSite.UpdatedByUserId = _userService.UserId;
+                                await planningSite.Delete(_backendConfigurationPnDbContext);
+                            }
+
+                            if (areaRulePlanning.ItemPlanningId != 0)
+                            {
+                                var planning = await _itemsPlanningPnDbContext.Plannings
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                                    .Include(x => x.NameTranslations)
+                                    .FirstOrDefaultAsync();
+                                if (planning != null)
+                                {
+                                    foreach (var translation in planning.NameTranslations
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                                    {
+                                        translation.UpdatedByUserId = _userService.UserId;
+                                        await translation.Delete(_itemsPlanningPnDbContext);
+                                    }
+
+                                    planning.UpdatedByUserId = _userService.UserId;
+                                    await planning.Delete(_itemsPlanningPnDbContext);
+                                }
+                            }
+
+                            areaRulePlanning.UpdatedByUserId = _userService.UserId;
+                            await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+                        }
+
+                        // delete area rule
+                        areaRule.UpdatedByUserId = _userService.UserId;
+                        await areaRule.Delete(_backendConfigurationPnDbContext);
+                    }
+
+                    // delete entity select group. only for type 3(tail bite and stables)
                     if (areaPropertyForDelete.GroupMicrotingUuid != 0)
                     {
                         await core.EntityGroupDelete(areaPropertyForDelete.GroupMicrotingUuid.ToString());
                     }
                     areaPropertyForDelete.UpdatedByUserId = _userService.UserId;
                     await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext);
+
                     var foldersIdForDelete = _backendConfigurationPnDbContext.ProperyAreaFolders
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.ProperyAreaAsignmentId == areaPropertyForDelete.Id)

@@ -1,4 +1,4 @@
-﻿namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
 {
     using System;
     using System.Collections.Generic;
@@ -1541,6 +1541,7 @@
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == itemPlanningId)
                     .Include(x => x.PlanningSites)
+                    .Include(x => x.NameTranslations)
                     .FirstAsync();
                 planning.UpdatedByUserId = _userService.UserId;
                 foreach (var planningSite in planning.PlanningSites
@@ -1550,6 +1551,40 @@
                     await planningSite.Delete(_itemsPlanningPnDbContext);
                 }
 
+                var core = await _coreHelper.GetCore();
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var planningCases = await _itemsPlanningPnDbContext.PlanningCases
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == planning.Id)
+                    .ToListAsync();
+
+                foreach (var planningCase in planningCases)
+                {
+                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                        .Where(x => x.PlanningCaseId == planningCase.Id).ToListAsync();
+                    foreach (var planningCaseSite in planningCaseSites
+                        .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                    {
+                        var result = await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                        if (result.MicrotingUid != null)
+                        {
+                            await core.CaseDelete((int)result.MicrotingUid);
+                        }
+                    }
+                    // Delete planning case
+                    await planningCase.Delete(_itemsPlanningPnDbContext);
+                }
+
+                var nameTranslationsPlanning =
+                    planning.NameTranslations
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToList();
+
+                foreach (var translation in nameTranslationsPlanning)
+                {
+                    await translation.Delete(_itemsPlanningPnDbContext);
+                }
                 await planning.Delete(_itemsPlanningPnDbContext);
             }
         }
