@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142352</Id>
+  <Repeated>0</Repeated>
+  <Label>20. Arbejdsopgave udført|20. Task completed</Label>
+  <StartDate>2021-04-05</StartDate>
+  <EndDate>2031-04-05</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142352</Id>
+      <Label>20. Arbejdsopgave udført|20. Task completed</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>373242</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>373243</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Når du har udført opgaven, skal du sætte kryds i <b>Opgave udført</b> og derefter trykke på <b>GEM</b>. Du kan også tage billeder og skrive en kommentar til opgaven, før du gemmer.<br>|<br>When you have completed the task, check<b> Task completed</b> and then press <b>SAVE</b>. You can also take pictures and write a comment on the task before saving.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>373244</Id>
+          <Label>Opgave udført|Task completed</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>11</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>373240</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>12</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>373239</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>13</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>373241</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>14</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

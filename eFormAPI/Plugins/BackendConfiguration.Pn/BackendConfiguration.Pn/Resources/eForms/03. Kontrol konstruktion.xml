@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142060</Id>
+  <Repeated>0</Repeated>
+  <Label>03. Kontrol konstruktion|03. Control construction</Label>
+  <StartDate>2020-08-07</StartDate>
+  <EndDate>2030-08-07</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142060</Id>
+      <Label>03. Kontrol konstruktion|03. Control construction</Label>
+      <Description><![CDATA[Tjek for skader på kablerne, kabelomslutningen og fugemassen.|Check for damage to the cables, cable enclosure and sealant.]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372224</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372225</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Det skal altid sikres, at gyllebeholderne, fortanke og opsamlingsbeholderne har den fornødne styrke og tæthed, så udslip forhindres. Minimum en gang om året kontrolleres beholderne for skader.<br><br>Tjek for skader på kablerne. Kabler under jorden kan kun inspiceres ved at grave, og de bør derfor ikke inspiceres, med mindre der er mistanke om lækage.<br><br>Tjek om der er huller på kabelomslutningen. Det kan oftest ses ved, at fedtet er løbet ud af omslutningen og har skabt mørke pletter på beholderen.<br><br>Fugemassen kan være mørnet, hvilket du også skal tjekke.<br><br>Få udbedret eventuelle skader med det samme af en sagkyndig.<br>|<br>It must always be ensured that the slurry tanks, pre-tanks and collection tanks have the necessary strength and tightness, so that spills are prevented. Check the containers for damage at least once a year.<br><br>Check for damage to the cables. Underground cables can only be inspected by digging and should therefore not be inspected unless leakage is suspected.<br><br>Check for holes in the cable cover. This can most often be seen by the fact that the grease has run out of the enclosure and has created dark spots on the slurry tank.<br><br>The sealant may be softened, which you should also check.<br><br>Have any damage repaired immediately by an expert.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>371011</Id>
+          <Label>Kabler OK|Cables OK</Label>
+          <Description><![CDATA[Der må ikke være synlige skader på kablerne.|There must be no visible damage to the cables.]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>372047</Id>
+          <Label>Kabelomslutning OK|Cable enclosure OK</Label>
+          <Description><![CDATA[Huller på kabelomslutning kan oftest ses ved, at fedtet er løbet ud af omslutningen og har skabt mørke pletter på beholderen.|Holes on the cable enclosure can most often be seen by the grease running out of the enclosure and creating dark stains on the container.]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>372048</Id>
+          <Label>Fugemassen OK|Sealant OK</Label>
+          <Description><![CDATA[Fugemassen må ikke være mørnet.|The sealant must not be softened.]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>371014</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>371015</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>371016</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

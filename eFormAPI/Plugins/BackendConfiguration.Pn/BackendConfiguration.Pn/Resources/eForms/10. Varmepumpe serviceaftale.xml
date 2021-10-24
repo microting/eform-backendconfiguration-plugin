@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142591</Id>
+  <Repeated>0</Repeated>
+  <Label>10. Varmepumpe serviceaftale|10. Heat pump service agreement</Label>
+  <StartDate>2021-09-08</StartDate>
+  <EndDate>2031-09-08</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142591</Id>
+      <Label>10. Varmepumpe serviceaftale|10. Heat pump service agreement</Label>
+      <Description><![CDATA[Billede af serviceaftale/faktura|Picture service agreement/invoice]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>375193</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>375194</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Når du tager et billede af din serviceftale og/eller faktura, er den nem at finde frem på web, når du har brug for at kunne fremvise denne til f.eks. tilsynsmyndighederne.<br>|<br>When you take a picture of your service agreement and / or invoice, it is easy to find on the web when you need to be able to present it to e.g. supervisory authorities.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="Picture">
+          <Id>375192</Id>
+          <Label>Billede serviceaftale|Picture service agreement</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>375190</Id>
+          <Label>Billede faktura|Picture invoice</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375189</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>375191</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

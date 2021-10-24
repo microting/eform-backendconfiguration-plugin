@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142266</Id>
+  <Repeated>0</Repeated>
+  <Label>02. Brandudstyr|02. Fire equipment</Label>
+  <StartDate>2021-01-17</StartDate>
+  <EndDate>2031-01-17</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142266</Id>
+      <Label>02. Brandudstyr|02. Fire equipment</Label>
+      <Description><![CDATA[Kontrolpunkter brandudstyr|Checkpoints fire equipment]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372552</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372553</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Alle skal vide, hvor brandudstyret er placeret, og hvordan det håndteres.<br><br>Der skal løbende foretages en kontrol og vedligeholdelse af brandudstyret, så det altid er funktionsdygtigt.&nbsp;<br>|<br>Everyone needs to know where the fire equipment is located and how it is handled.<br><br>The fire equipment must be checked and maintained on an ongoing basis so that it is always functional.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>372551</Id>
+          <Label>Medarbejder kender placering af brandudstyr|Employee knows the location of fire equipment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>372554</Id>
+          <Label>Relvant brandudstyr til rådighed|Relevant fire equipment available</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>372555</Id>
+          <Label>Brandudstyr er ikke udløbet|Fire equipment has not expired</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>372549</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372548</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>372550</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

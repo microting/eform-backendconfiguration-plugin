@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142207</Id>
+  <Repeated>0</Repeated>
+  <Label>01. Miljøledelse skabelon</Label>
+  <StartDate>2020-12-09</StartDate>
+  <EndDate>2030-12-09</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142207</Id>
+      <Label>01. Miljøledelse skabelon</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>false</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372165</Id>
+          <Label>Læs mere om miljøledelse</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>e8eaf6</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372166</Id>
+              <Label>Overordnet miljøpolitik for bedriften</Label>
+              <Description><![CDATA[Vi opfylder alle lovkrav og sikkerhedsforskrifter på miljøområdet.<br>Vi reviderer politikker og mål en gang årligt.<br>Vi vedligeholder et miljøledelsessystem, følger principperne om godt landmandskab og producerer i respekt for miljø og omgivelser. <br>Vi sikrer, at medarbejdere er informeret omkring vor miljøpræstationer.<br>Vi vil reducere miljøbelastningen ved aktiviteter under hensyntagen til tekniske, økonomiske og forretningsmæssige rammer. <br>Vi ønsker løbende at reducere miljøbelastningen fra landbruget.<br>]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>e2f4fb</Color>
+            </DataItem>
+            <DataItem type="None">
+              <Id>372167</Id>
+              <Label>Bekendtgørelse om tilladelse og godkendelse m.v. af husdyrbrug</Label>
+              <Description><![CDATA[§ 43. IE-husdyrbrug skal have et miljøledelsessystem, der opfylder betingelserne i stk. 2.<br><br>Stk. 2. Den, der er ansvarlig for driften af husdyrbruget, skal gennemføre og overholde et miljøledelsessystem, herunder<br><br>1. formulere en miljøpolitik med afsæt i husdyrbrugets miljøforhold, <br>2. fastsætte miljømål,<br>3. udarbejde handlingsplan for det eller de fastsatte miljømål,<br>4. minimum 1 gang årligt evaluere miljøarbejdet og om nødvendigt foretage justeringer af mål og handlingsplaner og <br>5. minimum 1 gang årligt gennemgå miljøledelsessystemet.<br><br>Stk. 3. De i stk. 2, nr. 1-5, nævnte krav skal kunne dokumenteres enten i form af opbevaring af dokumenter eller ved anden dokumentation, herunder f.eks. i digital form.<br><br><b>Gem alle registreringer i mindst 5 år. De skal forevises ved miljøtilsyn!</b>]]></Description>
+              <DisplayOrder>1</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+            <DataItem type="None">
+              <Id>372168</Id>
+              <Label>Eksempler på steder, du kan spare</Label>
+              <Description><![CDATA[<b>RÅVARER:</b> Foder, Rengøringsmidler, Andre&nbsp;hjælpestoffer, Effektivitet, Sprøjtemidler<br><b>VAND:</b> Drikkevandsspild, Vaskevand,&nbsp;Rengøring af malkeanlæg.<br><b>AFFALD:</b> Nedbringe mængden, Sortering,&nbsp;Genanvendelse.&nbsp;<br><b>ENERGI:</b> Lys, Ventilation Varmelamper,&nbsp;Mælkeanlæg og mælkekøling, Fyring,&nbsp;<br>Varmekilde, Isolering Varmefordeling,&nbsp;Genvinding, Brændstof, Dæktype, Reduceret&nbsp;kørsel, Udskiftning af materiel.]]></Description>
+              <DisplayOrder>2</DisplayOrder>
+              <Color>f0f8db</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="Comment">
+          <Id>372156</Id>
+          <Label>Navn og adresse på bedrift</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372604</Id>
+          <Label>Område</Label>
+          <Description><![CDATA[<br>]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372605</Id>
+          <Label>Mål</Label>
+          <Description><![CDATA[<br>]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372606</Id>
+          <Label>Handlingsplan</Label>
+          <Description><![CDATA[<br>]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372607</Id>
+          <Label>Evaluering af indsats</Label>
+          <Description><![CDATA[<br>]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>375371</Id>
+          <Label>Status</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[Igangværende]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[Ikke igangsat]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[Afsluttet]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>4</Key>
+              <Value><![CDATA[Annulleret]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>4</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
