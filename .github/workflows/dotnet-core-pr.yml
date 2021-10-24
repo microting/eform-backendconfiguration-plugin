@@ -86,6 +86,7 @@ jobs:
         cp -av eform-angular-items-planning-plugin/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning
         cp -av main/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn
         cd eform-angular-frontend/eform-client && ../../main/testinginstallpn.sh
+        ../../eform-angular-items-planning-plugin/testinginstallpn.sh
     - name: Build frontend
       run: dotnet build eform-angular-frontend/eFormAPI/eFormAPI.sln
     - name: NPM install
