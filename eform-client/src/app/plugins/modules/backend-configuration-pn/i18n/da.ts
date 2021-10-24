@@ -59,5 +59,6 @@ export const da = {
   'Check to pair': 'Kontroller at parre',
   'Hours and energy': 'Stunden und energie',
   'New employee': 'Ny medarbejder',
-  'Edit employee': 'Rediger medarbejder'
+  'Edit employee': 'Rediger medarbejder',
+  Properties: 'Ejendomme'
 };

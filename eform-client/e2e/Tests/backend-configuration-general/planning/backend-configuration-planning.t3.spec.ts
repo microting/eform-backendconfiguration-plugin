@@ -82,7 +82,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
       },
     ]).deep.eq(workers);
     // second planning
-    expect(itemPlannings[1].eFormName).eq('24. Halebid_NEW');
+    expect(itemPlannings[1].eFormName).eq('05. Halebid');
     expect(itemPlannings[1].name).eq('Hale bid');
     expect(itemPlannings[1].folderName).eq(`${property.name} - 05. Stalde`);
     expect(itemPlannings[1].repeatEvery).eq(1);
@@ -95,9 +95,9 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
       },
     ]).deep.eq(workers);
 
-    browser.back();
-    await areaRule.createUpdatePlanning({ status: false }); // delete item planning
-    await areaRule.delete();
+    // browser.back();
+    // await areaRule.createUpdatePlanning({ status: false }); // delete item planning
+    // await areaRule.delete();
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();

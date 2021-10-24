@@ -420,7 +420,7 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.ruleCreateBtn()
       ).waitForClickable({ timeout: 40000 });
     } else {
-      browser.pause(500);
+      await browser.pause(500);
     }
   }
 
@@ -469,7 +469,7 @@ export class AreaRuleRowObject {
         await value.click();
       }
       if (areaRule.checkListStable !== undefined) {
-        const checkListStable = areaRule.checkListStable ? 'Ja' : 'Ingen';
+        const checkListStable = areaRule.checkListStable ? 'Ja' : 'Nej';
         await (
           await (
             await backendConfigurationAreaRulesPage.editRuleChecklistStable()
@@ -482,7 +482,7 @@ export class AreaRuleRowObject {
         await value.click();
       }
       if (areaRule.tailBite !== undefined) {
-        const tailBite = areaRule.checkListStable ? 'Ja' : 'Ingen';
+        const tailBite = areaRule.checkListStable ? 'Ja' : 'Nej';
         await (
           await (await backendConfigurationAreaRulesPage.editRuleTailBite()).$(
             'input'
@@ -512,7 +512,7 @@ export class AreaRuleRowObject {
             'input'
           )
         ).setValue(areaRule.eform);
-        browser.pause(500);
+        await browser.pause(500);
         const value = await (
           await backendConfigurationAreaRulesPage.editRuleEformId()
         ).$(`.ng-option=${areaRule.eform}`);
@@ -541,7 +541,7 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.ruleCreateBtn()
       ).waitForClickable({ timeout: 40000 });
     } else {
-      browser.pause(500);
+      await browser.pause(500);
     }
   }
 
@@ -564,12 +564,12 @@ export class AreaRuleRowObject {
     if (areaRulePlanningCreateUpdate) {
       if (areaRulePlanningCreateUpdate.status !== undefined) {
         await (
-          await await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
+          await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
         ).click();
       }
       if (areaRulePlanningCreateUpdate.notification !== undefined) {
         await (
-          await await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
+          await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
         ).click();
       }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
@@ -626,7 +626,7 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.ruleCreateBtn()
       ).waitForClickable({ timeout: 40000 });
     } else {
-      browser.pause(500);
+      await browser.pause(500);
     }
   }
 

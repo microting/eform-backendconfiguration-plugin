@@ -40,17 +40,17 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new() {
-                        Name = "01. Miljøledelse (kun IE-husdyrbrug)",
+                        Name = "01. Registreringer til Miljøledelse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 1
                     },
                     new() {
-                        Name = "01. Environmental Management (kun IE-husdyrbrug)",
+                        Name = "01. Registrations to Environmental Management",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 2
                     },
                     new() {
-                        Name = "01. Umweltmanagement (nur IE Tierhaltung)",
+                        Name = "01. Registrierungen zum Umweltmanagement",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 3
                     }
@@ -60,6 +60,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "01. Vandforbrug",
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
+                    Notifications = true,
                 }
             },
             new Area
@@ -92,7 +93,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "02. Brandudstyr",
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
-                }
+                    Notifications = true,
+                },
             },
             new Area
             {
@@ -127,7 +129,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Alarm = AreaRuleT2AlarmsEnum.No,
                     Type = AreaRuleT2TypesEnum.Closed,
                     Notifications = true,
-                }
+                },
             },
             new Area
             {
@@ -190,6 +192,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaInitialField = new AreaInitialField
                 {
                     EformName = "05. Stald_klargøring",
+                    Notifications = true,
                 },
             },
             new Area
@@ -223,7 +226,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                     RepeatEvery = 1, // 1
                     RepeatType = 3 // month
-                }
+                },
             },
             new Area
             {
@@ -256,7 +259,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = false,
                     RepeatEvery = 1, // 1
                     RepeatType = 1 // day
-                }
+                },
             },
             new Area
             {
@@ -289,7 +292,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                }
+                },
             },
             new Area
             {
@@ -361,13 +364,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 11,
                 Type = AreaTypesEnum.Type1,
-                AreaInitialField = new AreaInitialField
-                {
-                    EformName = "11. Pillefyr",
-                    Notifications = false,
-                    RepeatEvery = 1, // 1
-                    RepeatType = 3, // month
-                },
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -388,7 +384,14 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 3
                     }
-                }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    EformName = "11. Pillefyr",
+                    Notifications = false,
+                    RepeatEvery = 1, // 1
+                    RepeatType = 3, // month
+                },
             },
             new Area
             {
@@ -420,6 +423,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "12. Dieseltank",
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
             },
             new Area
@@ -708,7 +712,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iw36kvdmxgi8",
                         LanguageId = 3
                     }
-                }
+                },
             },
             new Area
             {
@@ -857,7 +861,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = ""
+                    Notifications = true,
                 },
             },
         };
@@ -877,6 +881,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 1,
                 IsDefault = true,
@@ -894,6 +899,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 1,
                 IsDefault = true,
@@ -902,15 +908,16 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "02. Brandudstyr",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "02. Brandudstyr" },
-                            new() { LanguageId = 2, Name = "02. Fire equipment" },
-                            new() { LanguageId = 3, Name = "02. Feuer-Ausrüstung" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "02. Brandudstyr" },
+                    new() { LanguageId = 2, Name = "02. Fire equipment" },
+                    new() { LanguageId = 3, Name = "02. Feuer-Ausrüstung" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 2,
                 IsDefault = true,
@@ -919,15 +926,16 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "02. Sikkerhedsudstyr/værnemidler",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "02. Sikkerhedsudstyr/værnemidler" },
-                            new() { LanguageId = 2, Name = "02. Safety equipment / protective equipment" },
-                            new() { LanguageId = 3, Name = "02. Sicherheitsausrüstung / Schutzausrüstung" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "02. Sikkerhedsudstyr/værnemidler" },
+                    new() { LanguageId = 2, Name = "02. Safety equipment / protective equipment" },
+                    new() { LanguageId = 3, Name = "02. Sicherheitsausrüstung / Schutzausrüstung" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 2,
                 IsDefault = true,
@@ -936,15 +944,16 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "02. Førstehjælp",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "02. Førstehjælp" },
-                            new() { LanguageId = 2, Name = "02. First aid" },
-                            new() { LanguageId = 3, Name = "02. Erste Hilfe" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "02. Førstehjælp" },
+                    new() { LanguageId = 2, Name = "02. First aid" },
+                    new() { LanguageId = 3, Name = "02. Erste Hilfe" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 2,
                 IsDefault = true,
@@ -989,11 +998,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "08. Luftrensning timer",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "08. Luftrensning timer" },
-                            new() { LanguageId = 2, Name = "08. Air cleaning timer" },
-                            new() { LanguageId = 3, Name = "08. Luftreinigungstimer" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "08. Luftrensning timer" },
+                    new() { LanguageId = 2, Name = "08. Air cleaning timer" },
+                    new() { LanguageId = 3, Name = "08. Luftreinigungstimer" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
@@ -1007,11 +1016,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "08. Luftrensning serviceaftale",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "08. Luftrensning serviceaftale" },
-                            new() { LanguageId = 2, Name = "08. Air cleaning service agreement" },
-                            new() { LanguageId = 3, Name = "08. Luftreinigungsservicevertrag" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "08. Luftrensning serviceaftale" },
+                    new() { LanguageId = 2, Name = "08. Air cleaning service agreement" },
+                    new() { LanguageId = 3, Name = "08. Luftreinigungsservicevertrag" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
@@ -1025,11 +1034,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "08. Luftrensning driftsstop",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "08. Luftrensning driftsstop" },
-                            new() { LanguageId = 2, Name = "08. Air cleaning downtime" },
-                            new() { LanguageId = 3, Name = "08. Ausfallzeit der Luftreinigung" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "08. Luftrensning driftsstop" },
+                    new() { LanguageId = 2, Name = "08. Air cleaning downtime" },
+                    new() { LanguageId = 3, Name = "08. Ausfallzeit der Luftreinigung" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 1, // 1
@@ -1043,11 +1052,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "09. Forsuring pH værdi",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "09. Forsuring pH værdi" },
-                            new() { LanguageId = 2, Name = "09. Acidification pH value" },
-                            new() { LanguageId = 3, Name = "09. Ansäuerung pH-Wert" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "09. Forsuring pH værdi" },
+                    new() { LanguageId = 2, Name = "09. Acidification pH value" },
+                    new() { LanguageId = 3, Name = "09. Ansäuerung pH-Wert" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
@@ -1061,11 +1070,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "09. Forsuring serviceaftale",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "09. Forsuring serviceaftale" },
-                            new() { LanguageId = 2, Name = "09. Acidification service agreement" },
-                            new() { LanguageId = 3, Name = "09. Säuerungsservicevertrag" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "09. Forsuring serviceaftale" },
+                    new() { LanguageId = 2, Name = "09. Acidification service agreement" },
+                    new() { LanguageId = 3, Name = "09. Säuerungsservicevertrag" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
@@ -1079,11 +1088,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "09. Forsuring driftsstop",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "09. Forsuring driftsstop" },
-                            new() { LanguageId = 2, Name = "09. Acidification downtime" },
-                            new() { LanguageId = 3, Name = "09. Ausfallzeit der Ansäuerung" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "09. Forsuring driftsstop" },
+                    new() { LanguageId = 2, Name = "09. Acidification downtime" },
+                    new() { LanguageId = 3, Name = "09. Ausfallzeit der Ansäuerung" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 1, // 1
@@ -1163,15 +1172,16 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "12. Dieseltank",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "12. Dieseltank" },
-                            new() { LanguageId = 2, Name = "12. Diesel tank" },
-                            new() { LanguageId = 3, Name = "12. Dieseltank" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "12. Dieseltank" },
+                    new() { LanguageId = 2, Name = "12. Diesel tank" },
+                    new() { LanguageId = 3, Name = "12. Dieseltank" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 12,
                 IsDefault = true,
@@ -1180,15 +1190,16 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "12. Motor- og spildolie",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "12. Motor- og spildolie" },
-                            new() { LanguageId = 2, Name = "12. Motor oil and waste oil" },
-                            new() { LanguageId = 3, Name = "12. Motoröl und Altöl" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "12. Motor- og spildolie" },
+                    new() { LanguageId = 2, Name = "12. Motor oil and waste oil" },
+                    new() { LanguageId = 3, Name = "12. Motoröl und Altöl" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 12,
                 IsDefault = true,
@@ -1197,15 +1208,16 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "12. Kemi",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "12. Kemi" },
-                            new() { LanguageId = 2, Name = "12. Chemistry" },
-                            new() { LanguageId = 3, Name = "12. Chemie" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "12. Kemi" },
+                    new() { LanguageId = 2, Name = "12. Chemistry" },
+                    new() { LanguageId = 3, Name = "12. Chemie" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
+                    Notifications = true,
                 },
                 AreaId = 12,
                 IsDefault = true,
@@ -1214,11 +1226,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 EformName = "12. Affald og farligt affald",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
-                        {
-                            new() { LanguageId = 1, Name = "12. Affald og farligt affald" },
-                            new() { LanguageId = 2, Name = "12. Trash" },
-                            new() { LanguageId = 3, Name = "12. Müll" }
-                        },
+                {
+                    new() { LanguageId = 1, Name = "12. Affald og farligt affald" },
+                    new() { LanguageId = 2, Name = "12. Trash" },
+                    new() { LanguageId = 3, Name = "12. Müll" }
+                },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     RepeatEvery = 1, // 1
@@ -1230,10 +1242,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new()
             {
-                EformName = "13. APV Medarbejer",
+                EformName = "13. APV Medarbejder",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "13. APV Medarbejer" },
+                    new() { LanguageId = 1, Name = "13. APV Medarbejder" },
                     new() { LanguageId = 2, Name = "13. WPA Agriculture" },
                     new() { LanguageId = 3, Name = "13. Arbeitsplatz Landwirtschaft" }
                 },

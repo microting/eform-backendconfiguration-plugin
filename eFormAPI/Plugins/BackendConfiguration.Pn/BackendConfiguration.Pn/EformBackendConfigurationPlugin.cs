@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.IO;
+
 namespace BackendConfiguration.Pn
 {
     using System;
@@ -105,23 +107,41 @@ namespace BackendConfiguration.Pn
             var serviceProvider = services.BuildServiceProvider();
 
             var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
-            var eforms = BackendConfigurationSeedEforms.EformsSeed;
+            var eforms = BackendConfigurationSeedEforms.GetForms();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
             var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
             var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
             // seed eforms
+            var assembly = Assembly.GetExecutingAssembly();
             foreach (var eform in eforms)
             {
-                var newTemplate = await core.TemplateFromXml(eform);
-                if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
+
+                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.{eform.Key}.xml");
+                if (resourceStream == null)
                 {
-                    var clId = await core.TemplateCreate(newTemplate);
-                    var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
-                    cl.IsLocked = true;
-                    cl.IsEditable = false;
-                    await cl.Update(sdkDbContext);
+                    Console.WriteLine(eform.Key);
                 }
+                else
+                {
+                    string contents;
+                    using(var sr = new StreamReader(resourceStream))
+                    {
+                        contents = await sr.ReadToEndAsync();
+                    }
+                    var newTemplate = await core.TemplateFromXml(contents);
+                    if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
+                    {
+                        int clId = await core.TemplateCreate(newTemplate);
+                        var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
+                        cl.IsLocked = true;
+                        cl.IsEditable = false;
+                        cl.ReportH1 = eform.Value[0];
+                        cl.ReportH2 = eform.Value[1];
+                        await cl.Update(sdkDbContext);
+                    }
+                }
+
             }
 
             // Seed areas and rules

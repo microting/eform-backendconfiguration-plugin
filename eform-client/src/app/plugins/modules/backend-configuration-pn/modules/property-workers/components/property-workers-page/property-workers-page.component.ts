@@ -9,10 +9,7 @@ import {
   TableHeaderElementModel,
 } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
-import {
-  PropertyAssignmentWorkerModel,
-  PropertyAssignWorkersModel,
-} from '../../../../models/properties/property-workers-assignment.model';
+import { PropertyAssignWorkersModel } from '../../../../models/properties/property-workers-assignment.model';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 
 @AutoUnsubscribe()
@@ -37,6 +34,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     { name: 'Last name', sortable: false, elementId: '' },
     { name: 'Device ID', sortable: false, elementId: '' },
     { name: 'Language', sortable: false, elementId: '' },
+    { name: 'Properties', sortable: false, elementId: '' },
     { name: 'Customer no & OTP', sortable: false, elementId: '' },
     this.authStateService.currentUserClaims.deviceUsersDelete ||
     this.authStateService.currentUserClaims.deviceUsersDelete
@@ -121,6 +119,27 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           this.workersAssignments = [...operation.model];
         }
       });
+  }
+
+  getWorkerPropertyNames(siteId: number) {
+    let resultString = '';
+    if (this.workersAssignments) {
+      const obj = this.workersAssignments.find((x) => x.siteId === siteId);
+      if (obj) {
+        obj.assignments
+          .filter((x) => x.isChecked)
+          .forEach((assignment) => {
+            if (resultString.length !== 0) {
+              resultString += '<br>';
+            }
+            resultString += this.availableProperties.find(
+              (prop) => prop.id === assignment.propertyId
+            ).name;
+          });
+      }
+    }
+
+    return resultString;
   }
 
   ngOnDestroy(): void {}

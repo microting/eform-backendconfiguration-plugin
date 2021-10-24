@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142242</Id>
+  <Repeated>0</Repeated>
+  <Label>01. Vandforbrug|01. Water comsumption</Label>
+  <StartDate>2021-01-11</StartDate>
+  <EndDate>2031-01-11</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142242</Id>
+      <Label>01. Vandforbrug|01. Water comsumption</Label>
+      <Description><![CDATA[Aflæs vandmåler|Read water meter]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemGroupList>
+        <DataItemGroup type="FieldGroup">
+          <Id>372393</Id>
+          <Label>LÆS MERE|READ MORE</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Value>Closed</Value>
+          <Color>fff6df</Color>
+          <DataItemList>
+            <DataItem type="None">
+              <Id>372394</Id>
+              <Label>INFO|INFO</Label>
+              <Description><![CDATA[Eksempler på vandbesparende foranstaltninger:<br>• Ved rengøring af staldene i blødsættes staldene forud for egentlig vask med højtryksrenser. Både i blødsætning og højtryksrensning er vandbesparende.<br>• Staldene kontrolleres dagligt og ved evt. lækager udføres der straks små reparationer eller der tilkaldes service, hvis der er behov for dette.<br>• Løbende kalibrering af drikkevandsinstallationerne.<br>|<br>Examples of water saving measures:<br>• When cleaning the stables, the stables are soaked prior to actual washing with a high-pressure cleaner. Soaking the stables and high pressure cleaning are water saving.<br>• The stables are checked daily and in the event of any leaks, small repairs are carried out immediately or service is called in if necessary.<br>• Continuous calibration of the drinking water installations.]]></Description>
+              <DisplayOrder>0</DisplayOrder>
+              <Color>fff6df</Color>
+            </DataItem>
+          </DataItemList>
+        </DataItemGroup>
+      </DataItemGroupList>
+      <DataItemList>
+        <DataItem type="Number">
+          <Id>372392</Id>
+          <Label>Vandmåler (m3)|Water meter (m3)</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <MinValue/>
+          <MaxValue/>
+          <Value/>
+          <DecimalCount/>
+          <UnitName/>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>372390</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>372389</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>372391</Id>
+          <Label>Gem registrering|Save registration</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
