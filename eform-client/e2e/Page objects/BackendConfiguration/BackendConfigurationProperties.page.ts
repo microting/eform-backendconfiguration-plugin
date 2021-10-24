@@ -259,9 +259,9 @@ export class PropertyRowObject {
   public deletePropertyBtn: WebdriverIO.Element;
 
   public async getRow(rowNum: number): Promise<PropertyRowObject> {
-    this.row = await $$('#properiesTableBody tr')[rowNum - 1];
+    this.row = (await $$('#properiesTableBody tr'))[rowNum - 1];
     if (this.row) {
-      this.id = +(await this.row.$('#propertyId')).getText();
+      this.id = +await (await this.row.$('#propertyId')).getText();
       this.name = await (await this.row.$('#propertyName')).getText();
       this.chrNumber = await (await this.row.$('#propertyCHR')).getText();
       this.address = await (await this.row.$('#propertyAddress')).getText();
@@ -438,6 +438,8 @@ export class PropertyRowObject {
         indexAreaForClick
       )
     ).click();
+
+    await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
   }
 
   public async closeAreasViewModal() {
