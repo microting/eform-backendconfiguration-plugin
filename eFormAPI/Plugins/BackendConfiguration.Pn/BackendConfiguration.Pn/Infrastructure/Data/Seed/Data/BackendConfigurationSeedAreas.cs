@@ -453,7 +453,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = "13. APV Medarbejer",
+                    EformName = "13. APV Medarbejder",
                     Notifications = false,
                 },
             },
