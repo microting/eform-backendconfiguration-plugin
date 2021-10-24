@@ -414,6 +414,7 @@ export class PropertyRowObject {
     await (
       await backendConfigurationPropertiesPage.propertyCreateBtn()
     ).waitForClickable({ timeout: 40000 });
+    await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
   }
 
   public async getBindAreas() {

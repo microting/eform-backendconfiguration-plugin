@@ -420,7 +420,7 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.ruleCreateBtn()
       ).waitForClickable({ timeout: 40000 });
     } else {
-      browser.pause(500);
+      await browser.pause(500);
     }
   }
 
@@ -512,7 +512,7 @@ export class AreaRuleRowObject {
             'input'
           )
         ).setValue(areaRule.eform);
-        browser.pause(500);
+        await browser.pause(500);
         const value = await (
           await backendConfigurationAreaRulesPage.editRuleEformId()
         ).$(`.ng-option=${areaRule.eform}`);
@@ -541,7 +541,7 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.ruleCreateBtn()
       ).waitForClickable({ timeout: 40000 });
     } else {
-      browser.pause(500);
+      await browser.pause(500);
     }
   }
 
@@ -626,7 +626,7 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.ruleCreateBtn()
       ).waitForClickable({ timeout: 40000 });
     } else {
-      browser.pause(500);
+      await browser.pause(500);
     }
   }
 
