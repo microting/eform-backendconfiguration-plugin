@@ -72,28 +72,30 @@
                 </tr>
               </thead>
               <tbody id="propertyLanguagesModalTableBody">
-                <tr *ngFor="let language of applicationLanguages">
-                  <td class="align-middle">{{ language.text }}</td>
-                  <td class="align-middle">
-                    <div class="mat-checkbox">
-                      <input
-                        id="checkboxCreatePropertySelectLanguage{{
+                <ng-container *ngFor="let language of applicationLanguages">
+                  <tr *ngIf="language.text !== 'German'">
+                    <td class="align-middle">{{ language.text }}</td>
+                    <td class="align-middle">
+                      <div class="mat-checkbox">
+                        <input
+                          id="checkboxCreatePropertySelectLanguage{{
                           language.id
                         }}"
-                        (change)="addToArray($event, language.id)"
-                        [checked]="getLanguageIsChecked(language.id)"
-                        [value]="getLanguageIsChecked(language.id)"
-                        color="primary"
-                        type="checkbox"
-                      />
-                      <label
-                        for="checkboxCreatePropertySelectLanguage{{
+                          (change)="addToArray($event, language.id)"
+                          [checked]="getLanguageIsChecked(language.id)"
+                          [value]="getLanguageIsChecked(language.id)"
+                          color="primary"
+                          type="checkbox"
+                        />
+                        <label
+                          for="checkboxCreatePropertySelectLanguage{{
                           language.id
                         }}"
-                      ></label>
-                    </div>
-                  </td>
-                </tr>
+                        ></label>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
               </tbody>
             </table>
           </div>
