@@ -692,6 +692,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                     .Select(x => x.Name)
                                                     .FirstAsync();
                                                 await areaRule.Update(_backendConfigurationPnDbContext);
+                                                areaRulePlanningModel.TypeSpecificFields ??= new AreaRuleTypePlanningModel(); // if areaRulePlanningModel.TypeSpecificFields == null -> areaRulePlanningModel.TypeSpecificFields = new()
+                                                areaRulePlanningModel.TypeSpecificFields.RepeatEvery = areaRule.RepeatEvery; // repeat every mast be from area rule
                                             }
 
                                             var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName, areaRule.FolderId, areaRulePlanningModel, areaRule);
@@ -1244,6 +1246,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         var planningId = 0;
                         if (areaRulePlanningModel.Status)
                         {
+                            areaRulePlanningModel.TypeSpecificFields ??= new AreaRuleTypePlanningModel(); // if areaRulePlanningModel.TypeSpecificFields == null -> areaRulePlanningModel.TypeSpecificFields = new()
+                            areaRulePlanningModel.TypeSpecificFields.RepeatEvery = areaRule.RepeatEvery; // repeat every mast be from area rule
                             var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName, folderId, areaRulePlanningModel, areaRule);
                             planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
                                 areaRuleAreaRuleTranslation => new PlanningNameTranslation
@@ -1251,7 +1255,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     LanguageId = areaRuleAreaRuleTranslation.LanguageId,
                                     Name = areaRuleAreaRuleTranslation.Name,
                                 }).ToList();
-                            if (areaRulePlanningModel.TypeSpecificFields != null)
+
+                            if (areaRulePlanningModel.TypeSpecificFields != null) // it not need
                             {
                                 if (areaRulePlanningModel.TypeSpecificFields.RepeatType != null)
                                 {

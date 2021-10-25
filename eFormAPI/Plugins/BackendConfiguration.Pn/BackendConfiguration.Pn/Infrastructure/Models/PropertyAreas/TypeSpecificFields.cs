@@ -41,5 +41,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
         public int DayOfWeek { get; set; }
 
         public bool HoursAndEnergyEnabled { get; set; }
+
+        public int RepeatEvery { get; set; }
     }
 }

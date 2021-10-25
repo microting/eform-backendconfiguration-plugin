@@ -56,10 +56,10 @@ export class AreaRulePlanModalComponent implements OnInit {
     selectedPropertyId: number,
     planning?: AreaRulePlanningModel
   ) {
+    this.selectedAreaRule = { ...rule };
     this.selectedAreaRulePlanning = planning
       ? { ...planning, propertyId: selectedPropertyId }
       : this.generateInitialPlanningObject(rule, selectedPropertyId);
-    this.selectedAreaRule = { ...rule };
     this.frame.show();
   }
 
@@ -167,7 +167,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     if (this.selectedArea.type === 5) {
       return {
         dayOfWeek: 1,
-        repeatEvery: 1,
+        repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
         repeatType: 2,
       };
     }

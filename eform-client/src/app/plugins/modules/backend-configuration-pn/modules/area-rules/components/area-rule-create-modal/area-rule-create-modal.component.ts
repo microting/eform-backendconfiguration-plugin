@@ -8,7 +8,6 @@ import {
   ViewChild,
 } from '@angular/core';
 import { debounceTime, switchMap } from 'rxjs/operators';
-import { applicationLanguages } from 'src/app/common/const';
 import { TemplateListModel, TemplateRequestModel } from 'src/app/common/models';
 import { EFormService } from 'src/app/common/services';
 import {
@@ -17,12 +16,8 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/enums';
 import {
   AreaModel,
-  AreaRuleCreateModel,
   AreaRulesCreateModel,
-  AreaRuleT1Model,
-  AreaRuleT2Model,
-  AreaRuleT3Model,
-  AreaRuleT5Model,
+  AreaRuleTypeSpecificFields,
 } from '../../../../models';
 
 @Component({
@@ -39,6 +34,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
   newAreaRulesString: string;
   newAreaRulesDayOfWeek: number | null;
+  newAreaRulesRepeatEvery = 1;
   typeahead = new EventEmitter<string>();
   templatesModel: TemplateListModel = new TemplateListModel();
 
@@ -70,6 +66,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
     this.newAreaRules = new AreaRulesCreateModel();
     this.newAreaRulesString = '';
     this.newAreaRulesDayOfWeek = null;
+    this.newAreaRulesRepeatEvery = 1;
     this.frame.hide();
   }
 
@@ -89,11 +86,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
     // Add weekday for type 4
   }
 
-  generateAreaTypeSpecificFields():
-    | AreaRuleT1Model
-    | AreaRuleT2Model
-    | AreaRuleT3Model
-    | AreaRuleT5Model {
+  generateAreaTypeSpecificFields(): AreaRuleTypeSpecificFields {
     if (this.selectedArea.type === 1) {
       return {
         eformId: this.selectedArea.initialFields.eformId,
@@ -119,6 +112,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
         eformId: this.selectedArea.initialFields.eformId,
         eformName: this.selectedArea.initialFields.eformName,
         dayOfWeek: this.newAreaRulesDayOfWeek,
+        repeatEvery: this.newAreaRulesRepeatEvery,
       };
     }
     if (this.selectedArea.type === 6) {

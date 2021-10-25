@@ -95,7 +95,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .FirstOrDefault(),
                         IsDefault = x.IsDefault,
                         TypeSpecificFields = new
-                            {x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek,},
+                            {x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, x.RepeatEvery},
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields
                             {
@@ -167,7 +167,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             }).ToList(),
                         IsDefault = x.IsDefault,
                         TypeSpecificFields = new
-                            {x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek,},
+                            {x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, x.RepeatEvery },
                         EformId = x.EformId,
                     })
                     .FirstOrDefaultAsync();
@@ -237,6 +237,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     areaRule.ChecklistStable = updateModel.TypeSpecificFields.ChecklistStable;
                     areaRule.DayOfWeek = updateModel.TypeSpecificFields.DayOfWeek;
                     areaRule.TailBite = updateModel.TypeSpecificFields.TailBite;
+                    areaRule.RepeatEvery = updateModel.TypeSpecificFields.RepeatEvery;
                 }
 
                 await areaRule.Update(_backendConfigurationPnDbContext);
@@ -435,14 +436,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         AreaId = areaProperty.Area.Id,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
-                        Alarm = areaRuleCreateModel.TypeSpecificFields?.Alarm,
-                        DayOfWeek = (int) areaRuleCreateModel.TypeSpecificFields?.DayOfWeek,
-                        Type = areaRuleCreateModel.TypeSpecificFields?.Type,
-                        TailBite = areaRuleCreateModel.TypeSpecificFields?.TailBite,
-                        ChecklistStable = areaRuleCreateModel.TypeSpecificFields?.ChecklistStable,
                         EformId = eformId,
                         PropertyId = areaProperty.PropertyId,
                     };
+
+                    if (areaRuleCreateModel.TypeSpecificFields != null)
+                    {
+                        areaRule.ChecklistStable = areaRuleCreateModel.TypeSpecificFields.ChecklistStable;
+                        areaRule.TailBite = areaRuleCreateModel.TypeSpecificFields.TailBite;
+                        areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
+                        areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek;
+                        areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
+                        areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery;
+                    }
 
                     if (areaProperty.Area.Type is AreaTypesEnum.Type3)
                     {

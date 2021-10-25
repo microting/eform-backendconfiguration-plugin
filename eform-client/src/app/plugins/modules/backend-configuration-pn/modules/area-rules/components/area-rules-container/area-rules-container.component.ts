@@ -8,16 +8,15 @@ import {
   AreaRuleDeleteModalComponent,
   AreaRuleEditModalComponent,
   AreaRulePlanModalComponent,
-} from '../index';
+} from '../';
 import {
   AreaRulePlanningModel,
   AreaRulesCreateModel,
   AreaRuleSimpleModel,
   AreaRuleUpdateModel,
   AreaModel,
-  AreaRuleT5Model,
 } from '../../../../models';
-import { BackendConfigurationPnAreasService } from '../../../../services/backend-configuration-pn-areas.service';
+import { BackendConfigurationPnAreasService } from '../../../../services';
 
 @AutoUnsubscribe()
 @Component({
