@@ -924,12 +924,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new()
             {
-                EformName = "02. Sikkerhedsudstyr/værnemidler",
+                EformName = "02. Sikkerhedsudstyr_værnemidler",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "02. Sikkerhedsudstyr/værnemidler" },
-                    new() { LanguageId = 2, Name = "02. Safety equipment / protective equipment" },
-                    new() { LanguageId = 3, Name = "02. Sicherheitsausrüstung / Schutzausrüstung" }
+                    new() { LanguageId = 1, Name = "02. Sikkerhedsudstyr_værnemidler" },
+                    new() { LanguageId = 2, Name = "02. Safety equipment_protective equipment" },
+                    new() { LanguageId = 3, Name = "02. Sicherheitsausrüstung_Schutzausrüstung" }
                 },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
