@@ -310,11 +310,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                 if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
                 {
-                    var entityGroupItem = await sdkDbContext.EntityItems.Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync();
-                    if (entityGroupItem != null)
-                    {
-                        await entityGroupItem.Delete(sdkDbContext);
-                    }
+                    await core.EntityItemDelete(areaRule.GroupItemId);
                 }
 
                 foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations)

@@ -115,7 +115,11 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   }
 
   get languages() {
-    return applicationLanguages;
+    return [
+      { id: 1, locale: 'da', text: 'Danish' },
+      { id: 2, locale: 'en-US', text: 'English' },
+    ];
+    // return applicationLanguages;
   }
 
   getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {

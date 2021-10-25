@@ -1606,6 +1606,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 DaysBeforeRedeploymentPushMessage = 5,
                 PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
                 StartDate = areaRulePlanningModel.StartDate,
+                IsLocked = true,
+                IsEditable = false,
+                IsHidden = true,
                 PlanningSites = areaRulePlanningModel.AssignedSites
                     .Select(x =>
                     new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite

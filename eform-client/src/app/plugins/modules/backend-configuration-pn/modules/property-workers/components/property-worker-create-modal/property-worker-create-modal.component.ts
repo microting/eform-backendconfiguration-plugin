@@ -38,11 +38,15 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.languages = applicationLanguages;
+    // this.languages = applicationLanguages;
+    this.languages = [
+      { id: 1, locale: 'da', text: 'Danish' },
+      { id: 2, locale: 'en-US', text: 'English' },
+  ];
   }
 
   show() {
-    this.simpleSiteModel.languageCode = this.languages[1].locale;
+    this.simpleSiteModel.languageCode = this.languages[0].locale;
     this.frame.show();
   }
 
