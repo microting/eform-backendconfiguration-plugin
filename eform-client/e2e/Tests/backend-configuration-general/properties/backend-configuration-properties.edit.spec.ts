@@ -21,7 +21,7 @@ describe('Backend Configuration Property - Edit', function () {
       selectedLanguages: [
         { languageId: 1, languageName: 'Danish' },
         { languageId: 2, languageName: 'English' },
-        { languageId: 3, languageName: 'German' },
+        // { languageId: 3, languageName: 'German' },
       ],
     };
     const propertyUpdate: PropertyCreateUpdate = {
@@ -30,7 +30,7 @@ describe('Backend Configuration Property - Edit', function () {
       address: generateRandmString(),
       selectedLanguages: [
         { languageId: 2, languageName: 'English' },
-        { languageId: 3, languageName: 'German' },
+        // { languageId: 3, languageName: 'German' },
       ],
     };
     await backendConfigurationPropertiesPage.createProperty(propertyCreate);
@@ -63,7 +63,7 @@ describe('Backend Configuration Property - Edit', function () {
       selectedLanguages: [
         { languageId: 1, languageName: 'Danish' },
         { languageId: 2, languageName: 'English' },
-        { languageId: 3, languageName: 'German' },
+        // { languageId: 3, languageName: 'German' },
       ],
     };
     await backendConfigurationPropertiesPage.createProperty(propertyCreate);
@@ -79,7 +79,7 @@ describe('Backend Configuration Property - Edit', function () {
         selectedLanguages: [
           { languageId: 1, languageName: 'Danish' },
           { languageId: 2, languageName: 'English' },
-          { languageId: 3, languageName: 'German' },
+          // { languageId: 3, languageName: 'German' },
         ],
       },
       true
