@@ -1242,10 +1242,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new()
             {
-                EformName = "13. APV Medarbejer",
+                EformName = "13. APV Medarbejder",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "13. APV Medarbejer" },
+                    new() { LanguageId = 1, Name = "13. APV Medarbejder" },
                     new() { LanguageId = 2, Name = "13. WPA Agriculture" },
                     new() { LanguageId = 3, Name = "13. Arbeitsplatz Landwirtschaft" }
                 },

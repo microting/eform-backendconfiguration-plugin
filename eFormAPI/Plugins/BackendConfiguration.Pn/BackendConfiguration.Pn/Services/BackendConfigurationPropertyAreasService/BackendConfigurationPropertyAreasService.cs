@@ -158,9 +158,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             {
                 updateModel.Areas = updateModel.Areas.Where(x => x.Activated).ToList();
                 var assignments = await _backendConfigurationPnDbContext.AreaProperties
-                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                 .Where(x => x.PropertyId == updateModel.PropertyId)
-                 .ToListAsync();
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PropertyId == updateModel.PropertyId)
+                    .ToListAsync();
 
                 var assignmentsForCreate = updateModel.Areas
                     .Where(x => x.Id == null)
@@ -198,37 +198,37 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     switch (area.Type)
                     {
                         case AreaTypesEnum.Type3:
+                        {
+                            var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
-                                var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                                new()
                                 {
-                                    new()
-                                    {
-                                        LanguageId = 1, // da
-                                        Name = "05. Stalde",
-                                        Description = "",
-                                    },
-                                    new()
-                                    {
-                                        LanguageId = 2, // en
-                                        Name = "05. Stables",
-                                        Description = "",
-                                    },
-                                    new()
-                                    {
-                                        LanguageId = 3, // ge
-                                        Name = "05. Stallungen",
-                                        Description = "",
-                                    },
-                                }, property.FolderId);
-                                var assignmentWithOneFolder = new ProperyAreaFolder
+                                    LanguageId = 1, // da
+                                    Name = "05. Stalde",
+                                    Description = "",
+                                },
+                                new()
                                 {
-                                    FolderId = folderId,
-                                    ProperyAreaAsignmentId = newAssignment.Id,
-                                };
+                                    LanguageId = 2, // en
+                                    Name = "05. Stables",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "05. Stallungen",
+                                    Description = "",
+                                },
+                            }, property.FolderId);
+                            var assignmentWithOneFolder = new ProperyAreaFolder
+                            {
+                                FolderId = folderId,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
 
-                                var assignmentWithTwoFolder = new ProperyAreaFolder
-                                {
-                                    FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            var assignmentWithTwoFolder = new ProperyAreaFolder
+                            {
+                                FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                                     {
                                         new()
                                         {
@@ -249,265 +249,264 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                             Description = "",
                                         },
                                     },
-                                        property.FolderId),
-                                    ProperyAreaAsignmentId = newAssignment.Id,
-                                };
+                                    property.FolderId),
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
 
-                                await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
-                                await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
+                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+                            await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
 
-                                var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "", false, true);
-                                newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
-                                await newAssignment.Update(_backendConfigurationPnDbContext);
-                                foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
+                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "", false, true);
+                            newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
+                            await newAssignment.Update(_backendConfigurationPnDbContext);
+                            foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
+                            {
+                                areaRule.PropertyId = property.Id;
+                                areaRule.FolderId = folderId;
+                                areaRule.CreatedByUserId = _userService.UserId;
+                                areaRule.UpdatedByUserId = _userService.UserId;
+                                if (!string.IsNullOrEmpty(areaRule.EformName))
                                 {
-                                    areaRule.PropertyId = property.Id;
-                                    areaRule.FolderId = folderId;
-                                    areaRule.CreatedByUserId = _userService.UserId;
-                                    areaRule.UpdatedByUserId = _userService.UserId;
-                                    if (!string.IsNullOrEmpty(areaRule.EformName))
-                                    {
-                                        var eformId = await sdkDbContext.CheckListTranslations
-                                            .Where(x => x.Text == areaRule.EformName)
-                                            .Select(x => x.CheckListId)
-                                            .FirstAsync();
-                                        areaRule.EformId = eformId;
-                                    }
-                                    await areaRule.Create(_backendConfigurationPnDbContext);
+                                    var eformId = await sdkDbContext.CheckListTranslations
+                                        .Where(x => x.Text == areaRule.EformName)
+                                        .Select(x => x.CheckListId)
+                                        .FirstAsync();
+                                    areaRule.EformId = eformId;
                                 }
-                                break;
+                                await areaRule.Create(_backendConfigurationPnDbContext);
                             }
+                            break;
+                        }
                         case AreaTypesEnum.Type5:
+                        {
+                            // create folder with stable name
+                            var folderId = await core.FolderCreate(
+                                area.AreaTranslations.Select(x => new CommonTranslationsModel
+                                {
+                                    Name = x.Name,
+                                    LanguageId = x.LanguageId,
+                                    Description = "",
+                                }).ToList(),
+                                property.FolderId);
+                            //create 7 folders
+                            var folderIds = new List<int>
                             {
-                                // create folder with stable name
-                                var folderId = await core.FolderCreate(
-                                    area.AreaTranslations.Select(x => new CommonTranslationsModel
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
                                     {
-                                        Name = x.Name,
-                                        LanguageId = x.LanguageId,
+                                        LanguageId = 1, // da
+                                        Name = "Søndag",
                                         Description = "",
-                                    }).ToList(),
-                                    property.FolderId);
-                                //create 7 folders
-                                var folderIds = new List<int>
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Sunday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Sonntag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
-                                    await core.FolderCreate(new List<CommonTranslationsModel>
+                                    new()
                                     {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "Søndag",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "Sunday",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "Sonntag",
-                                            Description = "",
-                                        },
-                                    }, folderId),
-                                    await core.FolderCreate(new List<CommonTranslationsModel>
+                                        LanguageId = 1, // da
+                                        Name = "Mandag",
+                                        Description = "",
+                                    },
+                                    new()
                                     {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "Mandag",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "Monday",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "Montag",
-                                            Description = "",
-                                        },
-                                    }, folderId),
-                                    await core.FolderCreate(new List<CommonTranslationsModel>
+                                        LanguageId = 2, // en
+                                        Name = "Monday",
+                                        Description = "",
+                                    },
+                                    new()
                                     {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "Tirsdag",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "Tuesday",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "Dienstag",
-                                            Description = "",
-                                        },
-                                    }, folderId),
-                                    await core.FolderCreate(new List<CommonTranslationsModel>
+                                        LanguageId = 3, // ge
+                                        Name = "Montag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
                                     {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "Onsdag",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "Wednesday",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "Mittwoch",
-                                            Description = "",
-                                        },
-                                    }, folderId),
-                                    await core.FolderCreate(new List<CommonTranslationsModel>
+                                        LanguageId = 1, // da
+                                        Name = "Tirsdag",
+                                        Description = "",
+                                    },
+                                    new()
                                     {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "Torsdag",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "Thursday",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "Donnerstag",
-                                            Description = "",
-                                        },
-                                    }, folderId),
-                                    await core.FolderCreate(new List<CommonTranslationsModel>
+                                        LanguageId = 2, // en
+                                        Name = "Tuesday",
+                                        Description = "",
+                                    },
+                                    new()
                                     {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "Fredag",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "Friday",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "Freitag",
-                                            Description = "",
-                                        },
-                                    }, folderId),
-                                    await core.FolderCreate(new List<CommonTranslationsModel>
+                                        LanguageId = 3, // ge
+                                        Name = "Dienstag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
                                     {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "Lørdag",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "Saturday",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "Samstag",
-                                            Description = "",
-                                        },
-                                    }, folderId),
-                                };
+                                        LanguageId = 1, // da
+                                        Name = "Onsdag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Wednesday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Mittwoch",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Torsdag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Thursday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Donnerstag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Fredag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Friday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Freitag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "Lørdag",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "Saturday",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "Samstag",
+                                        Description = "",
+                                    },
+                                }, folderId),
+                            };
 
-                                await new ProperyAreaFolder
-                                {
-                                    FolderId = folderId,
-                                    ProperyAreaAsignmentId = newAssignment.Id,
-                                }.Create(_backendConfigurationPnDbContext);
-
-                                foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
-                                {
-                                    FolderId = folderIdLocal,
-                                    ProperyAreaAsignmentId = newAssignment.Id,
-                                }))
-                                {
-                                    await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
-                                }
-                                foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
-                                {
-                                    areaRule.PropertyId = property.Id;
-                                    areaRule.FolderId = folderId;
-                                    areaRule.CreatedByUserId = _userService.UserId;
-                                    areaRule.UpdatedByUserId = _userService.UserId;
-                                    if (!string.IsNullOrEmpty(areaRule.EformName))
-                                    {
-                                        var eformId = await sdkDbContext.CheckListTranslations
-                                            .Where(x => x.Text == areaRule.EformName)
-                                            .Select(x => x.CheckListId)
-                                            .FirstAsync();
-                                        areaRule.EformId = eformId;
-                                    }
-                                    await areaRule.Create(_backendConfigurationPnDbContext);
-                                }
-                                break;
-                            }
-                        default:
+                            await new ProperyAreaFolder
                             {
-                                var folderId = await core.FolderCreate(
-                                    area.AreaTranslations.Select(x => new CommonTranslationsModel
-                                    {
-                                        Name = x.Name,
-                                        LanguageId = x.LanguageId,
-                                        Description = "",
-                                    }).ToList(),
-                                    property.FolderId);
-                                var assignmentWithFolder = new ProperyAreaFolder
-                                {
-                                    FolderId = folderId,
-                                    ProperyAreaAsignmentId = newAssignment.Id,
-                                };
+                                FolderId = folderId,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            }.Create(_backendConfigurationPnDbContext);
+
+                            foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                            {
+                                FolderId = folderIdLocal,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            }))
+                            {
                                 await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
-                                foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
-                                {
-                                    areaRule.PropertyId = property.Id;
-                                    areaRule.FolderId = folderId;
-                                    areaRule.CreatedByUserId = _userService.UserId;
-                                    areaRule.UpdatedByUserId = _userService.UserId;
-                                    if (!string.IsNullOrEmpty(areaRule.EformName))
-                                    {
-                                        var eformId = await sdkDbContext.CheckListTranslations
-                                            .Where(x => x.Text == areaRule.EformName)
-                                            .Select(x => x.CheckListId)
-                                            .FirstAsync();
-                                        areaRule.EformId = eformId;
-                                    }
-                                    await areaRule.Create(_backendConfigurationPnDbContext);
-                                }
-                                break;
                             }
+                            foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
+                            {
+                                areaRule.PropertyId = property.Id;
+                                areaRule.FolderId = folderId;
+                                areaRule.CreatedByUserId = _userService.UserId;
+                                areaRule.UpdatedByUserId = _userService.UserId;
+                                if (!string.IsNullOrEmpty(areaRule.EformName))
+                                {
+                                    var eformId = await sdkDbContext.CheckListTranslations
+                                        .Where(x => x.Text == areaRule.EformName)
+                                        .Select(x => x.CheckListId)
+                                        .FirstAsync();
+                                    areaRule.EformId = eformId;
+                                }
+                                await areaRule.Create(_backendConfigurationPnDbContext);
+                            }
+                            break;
+                        }
+                        default:
+                        {
+                            var folderId = await core.FolderCreate(
+                                area.AreaTranslations.Select(x => new CommonTranslationsModel
+                                {
+                                    Name = x.Name,
+                                    LanguageId = x.LanguageId,
+                                    Description = "",
+                                }).ToList(),
+                                property.FolderId);
+                            var assignmentWithFolder = new ProperyAreaFolder
+                            {
+                                FolderId = folderId,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
+                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                            foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
+                            {
+                                areaRule.PropertyId = property.Id;
+                                areaRule.FolderId = folderId;
+                                areaRule.CreatedByUserId = _userService.UserId;
+                                areaRule.UpdatedByUserId = _userService.UserId;
+                                if (!string.IsNullOrEmpty(areaRule.EformName))
+                                {
+                                    var eformId = await sdkDbContext.CheckListTranslations
+                                        .Where(x => x.Text == areaRule.EformName)
+                                        .Select(x => x.CheckListId)
+                                        .FirstAsync();
+                                    areaRule.EformId = eformId;
+                                }
+                                await areaRule.Create(_backendConfigurationPnDbContext);
+                            }
+                            break;
+                        }
                     }
-
                 }
 
                 foreach (var areaPropertyForDelete in assignmentsForDelete)

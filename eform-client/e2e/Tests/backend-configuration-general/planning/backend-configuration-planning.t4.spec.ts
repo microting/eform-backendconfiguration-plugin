@@ -56,7 +56,7 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
       'items planning not create or create not correct'
     ).eq(1);
     const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
-    expect(itemPlanning.eFormName).eq('13. APV Medarbejer');
+    expect(itemPlanning.eFormName).eq('13. APV Medarbejder');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
       `${property.name} - 13. Arbejdstilsynets Landbrugs APV`
