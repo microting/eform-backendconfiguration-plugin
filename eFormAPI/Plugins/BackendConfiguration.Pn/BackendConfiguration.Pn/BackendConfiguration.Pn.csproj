@@ -113,7 +113,7 @@
       <PackageReference Include="Microting.eFormApi.BasePn" Version="3.0.62" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.18" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.58" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.60" />
     </ItemGroup>
 
     <ItemGroup>
