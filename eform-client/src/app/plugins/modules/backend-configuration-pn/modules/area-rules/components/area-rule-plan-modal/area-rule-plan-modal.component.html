@@ -68,7 +68,7 @@
               </div>
             </div>
             <div class="row" *ngIf="selectedArea.type === 5">
-              <div class="col-12 ng-select-wrapper">
+              <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
                 <ng-select
                   [items]="[
                     { id: 1, name: 'Monday' | translate },
@@ -85,6 +85,27 @@
                   [ngModel]="selectedAreaRule.typeSpecificFields.dayOfWeek"
                   [disabled]="true"
                   id="planAreaDayOfWeek"
+                >
+                </ng-select>
+              </div>
+              <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: 1, name: 'Weekly' | translate },
+                    { id: 2, name: '2nd. week' | translate },
+                    { id: 3, name: '3rd. week' | translate },
+                    { id: 4, name: 'Monthly' | translate },
+                    { id: 12, name: 'Quarterly' | translate },
+                  ]"
+                  bindLabel="name"
+                  [placeholder]="'Repeat every' | translate"
+                  bindValue="id"
+                  [ngModel]="
+                    selectedAreaRulePlanning.typeSpecificFields.repeatEvery
+                  "
+                  id="planRepeatEveryT5"
+                  [clearable]="false"
+                  [disabled]="true"
                 >
                 </ng-select>
               </div>

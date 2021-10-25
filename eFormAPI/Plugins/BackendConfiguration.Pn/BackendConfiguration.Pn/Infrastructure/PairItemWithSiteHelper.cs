@@ -73,7 +73,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     .FirstAsync();
 
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == planningFolderId);
-                var folderId = folder.MicrotingUid.ToString();
+                var folderMicrotingId = folder.MicrotingUid.ToString();
 
                 // get planning cases
                 var planningCase = await _itemsPlanningPnDbContext.PlanningCases
@@ -95,11 +95,10 @@ namespace BackendConfiguration.Pn.Infrastructure
                 }
 
                 var casesToDelete = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.PlanningId == planning.Id
-                                && x.MicrotingSdkSiteId == assignmentSiteId
-                                && x.WorkflowState !=
-                                Constants.WorkflowStates.Retracted)
+                    .Where(x => x.PlanningId == planning.Id)
+                    .Where(x => x.MicrotingSdkSiteId == assignmentSiteId)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
                     .ToListAsync();
 
                 foreach (var caseToDelete in casesToDelete)
@@ -121,7 +120,7 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                     if (planningCaseSite == null)
                     {
-                        planningCaseSite = new PlanningCaseSite()
+                        planningCaseSite = new PlanningCaseSite
                         {
                             MicrotingSdkSiteId = assignmentSiteId,
                             MicrotingSdkeFormId = relatedEFormId,
@@ -137,11 +136,13 @@ namespace BackendConfiguration.Pn.Infrastructure
                     planningCaseSite.WorkflowState = Constants.WorkflowStates.Retracted;
                     await planningCaseSite.Update(_itemsPlanningPnDbContext);
                 }
-
-                if (planningCase.Status != 100)
+                else
                 {
-                    var translation = _itemsPlanningPnDbContext.PlanningNameTranslation
-                        .Single(x => x.LanguageId == language.Id && x.PlanningId == planning.Id).Name;
+                    var translation = planning.NameTranslations
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.LanguageId == language.Id)
+                        .Select(x => x.Name)
+                        .FirstOrDefault();
 
                     mainElement.Label = string.IsNullOrEmpty(planning.PlanningNumber)
                         ? ""
@@ -171,7 +172,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                         mainElement.ElementList[0].Label = mainElement.Label;
                     }
 
-                    mainElement.CheckListFolderName = folderId;
+                    mainElement.CheckListFolderName = folderMicrotingId;
                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                     // mainElement.PushMessageBody = mainElement.Label;
@@ -184,15 +185,16 @@ namespace BackendConfiguration.Pn.Infrastructure
                     // }
 
                     var planningCaseSite =
-                        await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x =>
-                            x.PlanningCaseId == planningCase.Id
-                            && x.MicrotingSdkSiteId == assignmentSiteId
-                            && x.WorkflowState != Constants.WorkflowStates.Retracted
-                            && x.WorkflowState != Constants.WorkflowStates.Removed);
+                        await _itemsPlanningPnDbContext.PlanningCaseSites
+                            .Where(x => x.PlanningCaseId == planningCase.Id)
+                            .Where(x => x.MicrotingSdkSiteId == assignmentSiteId)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync();
 
                     if (planningCaseSite == null)
                     {
-                        planningCaseSite = new PlanningCaseSite()
+                        planningCaseSite = new PlanningCaseSite
                         {
                             MicrotingSdkSiteId = assignmentSiteId,
                             MicrotingSdkeFormId = relatedEFormId,

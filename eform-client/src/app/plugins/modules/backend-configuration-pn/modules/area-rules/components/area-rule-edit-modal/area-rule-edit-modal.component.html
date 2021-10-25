@@ -173,6 +173,26 @@
                   >
                   </ng-select>
                 </div>
+                <div class="col-12 ng-select-wrapper">
+                  <ng-select
+                    [items]="[
+                      { id: 1, name: 'Weekly' | translate },
+                      { id: 2, name: '2nd. week' | translate },
+                      { id: 3, name: '3rd. week' | translate },
+                      { id: 4, name: 'Monthly' | translate },
+                      { id: 12, name: 'Quarterly' | translate },
+                    ]"
+                    bindLabel="name"
+                    [placeholder]="'Repeat every' | translate"
+                    bindValue="id"
+                    [(ngModel)]="
+                      selectedAreaRule.typeSpecificFields.repeatEvery
+                    "
+                    id="editRepeatEvery"
+                    [clearable]="false"
+                  >
+                  </ng-select>
+                </div>
               </div>
             </ng-container>
           </ng-container>
