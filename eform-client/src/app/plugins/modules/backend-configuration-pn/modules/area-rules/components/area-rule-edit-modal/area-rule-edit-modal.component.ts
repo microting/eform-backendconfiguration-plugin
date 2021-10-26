@@ -13,7 +13,6 @@ import { EFormService } from 'src/app/common/services';
 import {
   AreaModel,
   AreaRuleModel,
-  AreaRuleT3Model,
   AreaRuleUpdateModel,
 } from '../../../../models';
 import * as R from 'ramda';

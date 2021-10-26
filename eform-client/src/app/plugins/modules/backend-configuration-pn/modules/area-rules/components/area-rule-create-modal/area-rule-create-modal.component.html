@@ -35,6 +35,24 @@
                 >
                 </ng-select>
               </div>
+              <div class="col-12 ng-select-wrapper">
+                <ng-select
+                  [items]="[
+                    { id: 1, name: 'Weekly' | translate },
+                    { id: 2, name: '2nd. week' | translate },
+                    { id: 3, name: '3rd. week' | translate },
+                    { id: 4, name: 'Monthly' | translate },
+                    { id: 12, name: 'Quarterly' | translate },
+                  ]"
+                  bindLabel="name"
+                  [placeholder]="'Repeat every' | translate"
+                  bindValue="id"
+                  [(ngModel)]="newAreaRulesRepeatEvery"
+                  id="createRepeatEvery"
+                  [clearable]="false"
+                >
+                </ng-select>
+              </div>
             </div>
             <div class="row">
               <div class="form-group col-xs-12 col-md-12">
@@ -228,6 +246,26 @@
                               newAreaRule.typeSpecificFields.dayOfWeek
                             "
                             id="createAreaDayOfWeek{{ i }}"
+                            [clearable]="false"
+                          >
+                          </ng-select>
+                        </div>
+                        <div class="col-12 ng-select-wrapper">
+                          <ng-select
+                            [items]="[
+                              { id: 1, name: 'Weekly' | translate },
+                              { id: 2, name: '2nd. week' | translate },
+                              { id: 3, name: '3rd. week' | translate },
+                              { id: 4, name: 'Monthly' | translate },
+                              { id: 12, name: 'Quarterly' | translate },
+                            ]"
+                            bindLabel="name"
+                            [placeholder]="'Repeat every' | translate"
+                            bindValue="id"
+                            [(ngModel)]="
+                              newAreaRule.typeSpecificFields.repeatEvery
+                            "
+                            id="createRepeatEvery{{ i }}"
                             [clearable]="false"
                           >
                           </ng-select>

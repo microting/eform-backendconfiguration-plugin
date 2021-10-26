@@ -11,11 +11,7 @@ import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
 } from 'src/app/plugins/modules/backend-configuration-pn/enums';
-import {
-  AreaModel,
-  AreaRuleSimpleModel,
-  AreaRuleT5Model,
-} from '../../../../models';
+import { AreaModel, AreaRuleSimpleModel } from '../../../../models';
 
 @Component({
   selector: 'app-area-rules-table',
@@ -120,9 +116,7 @@ export class AreaRulesTableComponent implements OnInit {
       { id: 6, name: 'Saturday' },
       { id: 0, name: 'Sunday' },
     ];
-    return weekNames.find((y) => {
-      areaRule.typeSpecificFields = areaRule.typeSpecificFields as AreaRuleT5Model;
-      return y.id === areaRule.typeSpecificFields.dayOfWeek;
-    }).name;
+    return weekNames.find((y) => y.id === areaRule.typeSpecificFields.dayOfWeek)
+      .name;
   }
 }
