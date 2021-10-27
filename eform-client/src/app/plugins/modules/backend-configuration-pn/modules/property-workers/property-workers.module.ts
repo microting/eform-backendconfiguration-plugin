@@ -14,6 +14,7 @@ import {
 import { PropertyWorkersRouting } from './property-workers.routing';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { DeviceUsersPersistProvider } from 'src/app/modules/device-users/components/store';
 
 @NgModule({
   imports: [
@@ -33,5 +34,6 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
     PropertyWorkerCreateModalComponent,
     PropertyWorkerEditModalComponent,
   ],
+  providers: [DeviceUsersPersistProvider],
 })
 export class PropertyWorkersModule {}
