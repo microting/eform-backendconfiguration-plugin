@@ -12,7 +12,7 @@ import { Subscription } from 'rxjs';
 import { CommonDictionaryModel } from 'src/app/common/models';
 import { DeviceUserModel } from 'src/app/common/models/device-users';
 import { DeviceUserService } from 'src/app/common/services/device-users';
-import { applicationLanguages } from 'src/app/common/const/application-languages.const';
+import {applicationLanguages, applicationLanguages2} from 'src/app/common/const/application-languages.const';
 import { PropertyAssignmentWorkerModel } from '../../../../models/properties/property-workers-assignment.model';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 
@@ -115,12 +115,9 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   }
 
   get languages() {
-    return [
-      { id: 1, locale: 'da', text: 'Danish' },
-      { id: 2, locale: 'en-US', text: 'English' },
-    ];
-    // return applicationLanguages;
+    return applicationLanguages2;
   }
+
 
   getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
     const assignment = this.assignments.find(
