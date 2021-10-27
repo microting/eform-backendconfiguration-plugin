@@ -1,16 +1,17 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
-import { DeviceUserModel } from 'src/app/common/models/device-users';
-import { SiteDto } from 'src/app/common/models/dto';
-import { DeviceUserService } from 'src/app/common/services/device-users';
+import { DeviceUserService } from 'src/app/common/services';
 import {
   CommonDictionaryModel,
+  SiteDto,
   TableHeaderElementModel,
+  DeviceUserModel,
 } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
-import { PropertyAssignWorkersModel } from '../../../../models/properties/property-workers-assignment.model';
+import { PropertyAssignWorkersModel } from '../../../../models';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
+import { DeviceUsersStateService } from 'src/app/modules/device-users/components/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -53,11 +54,12 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   constructor(
     private deviceUsersService: DeviceUserService,
     private authStateService: AuthStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService
+    private propertiesService: BackendConfigurationPnPropertiesService,
+    public deviceUsersStateService: DeviceUsersStateService
   ) {}
 
   ngOnInit() {
-    this.loadAllSimpleSites();
+    this.getDeviceUsersFiltered();
     this.getPropertiesDictionary();
   }
 
@@ -90,16 +92,16 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.deleteDeviceUserModal.show();
   }
 
-  loadAllSimpleSites() {
-    this.getSites$ = this.deviceUsersService
-      .getAllDeviceUsers()
-      .subscribe((operation) => {
-        if (operation && operation.success) {
-          this.sitesDto = operation.model;
-          this.getWorkerPropertiesAssignments();
-        }
-      });
-  }
+  // loadAllSimpleSites() {
+  //   this.getSites$ = this.deviceUsersService
+  //     .getAllDeviceUsers()
+  //     .subscribe((operation) => {
+  //       if (operation && operation.success) {
+  //         this.sitesDto = operation.model;
+  //         this.getWorkerPropertiesAssignments();
+  //       }
+  //     });
+  // }
 
   getPropertiesDictionary() {
     this.getPropertiesDictionary$ = this.propertiesService
@@ -140,6 +142,22 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     }
 
     return resultString;
+  }
+
+  onSearchChanged(name: string) {
+    this.deviceUsersStateService.updateNameFilter(name);
+    this.getDeviceUsersFiltered();
+  }
+
+  getDeviceUsersFiltered() {
+    this.getSites$ = this.deviceUsersStateService
+      .getDeviceUsersFiltered()
+      .subscribe((data) => {
+        if (data && data.model) {
+          this.sitesDto = data.model;
+          this.getWorkerPropertiesAssignments();
+        }
+      });
   }
 
   ngOnDestroy(): void {}
