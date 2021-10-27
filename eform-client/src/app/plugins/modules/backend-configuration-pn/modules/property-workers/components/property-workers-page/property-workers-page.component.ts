@@ -155,6 +155,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.model) {
           this.sitesDto = data.model;
+          this.getWorkerPropertiesAssignments();
         }
       });
   }
