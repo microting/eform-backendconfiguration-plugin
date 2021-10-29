@@ -22,6 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.IO;
+using System.Reflection;
+using eFormCore;
+using Microting.eForm.Infrastructure;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
 {
     using System;
@@ -257,6 +262,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
 
                             var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "", true, false);
+                            // TODO load tailbite eForm and seed it.
+                            await SeedTailBite(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
                             newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
                             await newAssignment.Update(_backendConfigurationPnDbContext);
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
@@ -713,6 +720,34 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaModel>(false,
                     $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadArea")}: {e.Message}");
+            }
+        }
+
+        private async Task SeedTailBite(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
+        {
+            string text = $"05. Halebid - {propertyName}";
+            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.05. Halebid.xml");
+
+                string contents;
+                using(var sr = new StreamReader(resourceStream))
+                {
+                    contents = await sr.ReadToEndAsync();
+                }
+
+                contents = contents.Replace("SOURCE_REPLACE_ME", entityGroupId);
+                var mainElement = await core.TemplateFromXml(contents);
+                mainElement.Label = text;
+
+                int clId = await core.TemplateCreate(mainElement);
+                var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
+                cl.IsLocked = true;
+                cl.IsEditable = false;
+                cl.ReportH1 = "05. Klargøring af stalde og dokumentation af halebid";
+                cl.ReportH2 = "05.01 Halebid";
+                await cl.Update(sdkDbContext);
             }
         }
     }

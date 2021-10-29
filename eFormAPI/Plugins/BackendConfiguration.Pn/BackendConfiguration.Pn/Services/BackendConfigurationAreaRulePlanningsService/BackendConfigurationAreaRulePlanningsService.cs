@@ -1,3 +1,5 @@
+using Microting.eForm.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
 {
     using System;
@@ -393,73 +395,74 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                             if (areaRule.TailBite is true)
                                             {
-                                                const string eformName = "05. Halebid";
+                                                // TODO add the deploy eform
+                                                var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
+                                                foreach (int siteId in sites)
+                                                {
+                                                    Property property =
+                                                        await _backendConfigurationPnDbContext.Properties
+                                                            .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
+                                                    string eformName = $"05. Halebid - {property.Name}";
+                                                    var eformId = await sdkDbContext.CheckListTranslations
+                                                        .Where(x => x.Text == eformName)
+                                                        .Select(x => x.CheckListId)
+                                                        .FirstAsync();
+                                                    Site site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
+                                                    Language language =
+                                                        await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
+                                                    if (!sdkDbContext.CheckListSites.Any(x =>
+                                                        x.CheckListId == eformId &&
+                                                        x.WorkflowState != Constants.WorkflowStates.Removed))
+                                                    {
+                                                        var mainElement = await core.ReadeForm(eformId, language);
+                                
+                                                        var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId);
+                                                        var folderMicrotingId = folder.MicrotingUid.ToString();
+                                                        mainElement.Repeated = -1;
+                                                        mainElement.CheckListFolderName = folderMicrotingId;
+                                                        mainElement.StartDate = DateTime.Now.ToUniversalTime();
+                                                        mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                                                        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folder.Id);    
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // TODO add the remove check
+                                                Property property =
+                                                    await _backendConfigurationPnDbContext.Properties
+                                                        .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
+                                                string eformName = $"05. Halebid - {property.Name}";
                                                 var eformId = await sdkDbContext.CheckListTranslations
                                                     .Where(x => x.Text == eformName)
                                                     .Select(x => x.CheckListId)
                                                     .FirstAsync();
-                                                var planningForType3TailBite = await CreateItemPlanningObject(eformId, eformName, areaRule.FolderId, areaRulePlanningModel, areaRule);
-                                                planningForType3TailBite.NameTranslations =
-                                                    new List<PlanningNameTranslation>
-                                                    {
-                                                        new()
-                                                        {
-                                                            LanguageId = 1, // da
-                                                            Name = "Hale bid",
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 2, // en
-                                                            Name = "Tail bite",
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 3, // ge
-                                                            Name = "Schwanzbiss",
-                                                        },
-                                                        // new PlanningNameTranslation
-                                                        // {
-                                                        //     LanguageId = 4,// uk-ua
-                                                        //     Name = "Укус за хвіст",
-                                                        // },
-                                                    };
 
-                                                if (areaRulePlanningModel.TypeSpecificFields is not null)
+                                                var numRules = _backendConfigurationPnDbContext.AreaRules
+                                                    .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
+                                                        areaRule => areaRule.Id,
+                                                        areaRulePlanningModel => areaRulePlanningModel.AreaRuleId, (rule, planning) =>
+                                                            new
+                                                            {
+                                                                rule.PropertyId,
+                                                                rule.AreaId,
+                                                                planning.Status,
+                                                                planning.WorkflowState,
+                                                                RuleWorkflowState = rule.WorkflowState
+                                                            })
+                                                    .Where(x => x.PropertyId == property.Id)
+                                                    .Where(x => x.AreaId == areaRule.AreaId)
+                                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                                    .Where(x => x.RuleWorkflowState != Constants.WorkflowStates.Removed)
+                                                    .Count(x => x.Status == true);
+                                                // .Where(x =>
+                                                // x.TailBite == true && x.PropertyId == areaRule.PropertyId);
+                                                if (numRules == 0)
                                                 {
-                                                    if (areaRulePlanningModel.TypeSpecificFields.RepeatType != null)
+                                                    foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x => x.CheckListId == eformId))
                                                     {
-                                                        planningForType3TailBite.RepeatType =
-                                                            (RepeatType)areaRulePlanningModel.TypeSpecificFields
-                                                                .RepeatType;
+                                                        await core.CaseDelete(checkListSite.MicrotingUid);
                                                     }
-                                                    if (areaRulePlanningModel.TypeSpecificFields?.RepeatEvery != null)
-                                                    {
-                                                        planningForType3TailBite.RepeatEvery =
-                                                            (int)areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
-                                                    }
-                                                    planningForType3TailBite.DayOfMonth =
-                                                        areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                                                    planningForType3TailBite.DayOfWeek =
-                                                        (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
-                                                }
-
-                                                await planningForType3TailBite.Create(_itemsPlanningPnDbContext);
-                                                await _pairItemWichSiteHelper.Pair(rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(), eformId,
-                                                    planningForType3TailBite.Id,
-                                                    areaRule.FolderId);
-                                                areaRule.AreaRulesPlannings[1].DayOfMonth = (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
-                                                areaRule.AreaRulesPlannings[1].DayOfWeek = (int)areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
-                                                areaRule.AreaRulesPlannings[1].ItemPlanningId = planningForType3TailBite.Id;
-                                                await areaRule.AreaRulesPlannings[1]
-                                                    .Update(_backendConfigurationPnDbContext);
-                                            }
-                                            else
-                                            {
-                                                if (areaRule.AreaRulesPlannings[1].ItemPlanningId != 0)
-                                                {
-                                                    await DeleteItemPlanning(areaRule.AreaRulesPlannings[1].ItemPlanningId);
-                                                    areaRule.AreaRulesPlannings[1].ItemPlanningId = 0;
-                                                    await areaRule.AreaRulesPlannings[1].Update(_backendConfigurationPnDbContext);
                                                 }
                                             }
 
@@ -740,6 +743,45 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     await DeleteItemPlanning(rulePlanning.ItemPlanningId);
                                     rulePlanning.ItemPlanningId = 0;
                                     await rulePlanning.Update(_backendConfigurationPnDbContext);
+                                }
+
+                                if (areaRule.Area.Type == AreaTypesEnum.Type3)
+                                {
+                                    Property property =
+                                        await _backendConfigurationPnDbContext.Properties
+                                            .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
+                                    string eformName = $"05. Halebid - {property.Name}";
+                                    var eformId = await sdkDbContext.CheckListTranslations
+                                        .Where(x => x.Text == eformName)
+                                        .Select(x => x.CheckListId)
+                                        .FirstAsync();
+
+                                    var numRules = _backendConfigurationPnDbContext.AreaRules
+                                        .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
+                                            areaRule => areaRule.Id,
+                                            areaRulePlanningModel => areaRulePlanningModel.AreaRuleId, (rule, planning) =>
+                                                new
+                                                {
+                                                    rule.PropertyId,
+                                                    rule.AreaId,
+                                                    planning.Status,
+                                                    planning.WorkflowState,
+                                                    RuleWorkflowState = rule.WorkflowState
+                                                })
+                                        .Where(x => x.PropertyId == property.Id)
+                                        .Where(x => x.AreaId == areaRule.AreaId)
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .Where(x => x.RuleWorkflowState != Constants.WorkflowStates.Removed)
+                                        .Count(x => x.Status == true);
+                                    // .Where(x =>
+                                    // x.TailBite == true && x.PropertyId == areaRule.PropertyId);
+                                    if (numRules == 0)
+                                    {
+                                        foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x => x.CheckListId == eformId))
+                                        {
+                                            await core.CaseDelete(checkListSite.MicrotingUid);
+                                        }
+                                    }
                                 }
                                 break;
                             // update item planning
@@ -1167,70 +1209,102 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                         await areaRulePlanningForType3ChecklistStable.Create(_backendConfigurationPnDbContext);
 
-                        var planningForType3TailBiteId = 0;
+                        // var planningForType3TailBiteId = 0;
                         if (areaRule.TailBite is true)
                         {
-                            const string eformName = "05. Halebid";
+                            Property property =
+                                await _backendConfigurationPnDbContext.Properties.SingleOrDefaultAsync(x =>
+                                    x.Id == areaRule.PropertyId);
+                            string eformName = $"05. Halebid - {property.Name}";
                             var eformId = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.Text == eformName)
                                 .Select(x => x.CheckListId)
                                 .FirstAsync();
+                            
+                            var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
                             if (areaRulePlanningModel.Status)
                             {
-                                var planningForType3TailBite = await CreateItemPlanningObject(eformId, eformName, areaRule.FolderId, areaRulePlanningModel, areaRule);
-                                planningForType3TailBite.NameTranslations = new List<PlanningNameTranslation>
+                                foreach (int siteId in sites)
                                 {
-                                    new()
+                                    Site site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
+                                    Language language =
+                                        await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
+                                    if (!sdkDbContext.CheckListSites.Any(x =>
+                                        x.CheckListId == eformId &&
+                                        x.WorkflowState != Constants.WorkflowStates.Removed))
                                     {
-                                        LanguageId = 1, // da
-                                        Name = "Hale bid",
-                                    },
-                                    new()
-                                    {
-                                        LanguageId = 2, // en
-                                        Name = "Tail bite",
-                                    },
-                                    new()
-                                    {
-                                        LanguageId = 3, // ge
-                                        Name = "Schwanzbiss",
-                                    },
-                                    // new PlanningNameTranslation
-                                    // {
-                                    //     LanguageId = 4,// uk-ua
-                                    //     Name = "Укус за хвіст",
-                                    // },
-                                };
-                                if (areaRulePlanningModel.TypeSpecificFields != null)
-                                {
-                                    if (areaRulePlanningModel.TypeSpecificFields.RepeatType != null)
-                                    {
-                                        planningForType3TailBite.RepeatType =
-                                            (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType;
+                                        var mainElement = await core.ReadeForm(eformId, language);
+                                    
+                                        var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId);
+                                        var folderMicrotingId = folder.MicrotingUid.ToString();
+                                        mainElement.Repeated = -1;
+                                        mainElement.CheckListFolderName = folderMicrotingId;
+                                        mainElement.StartDate = DateTime.Now.ToUniversalTime();
+                                        mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                                        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folder.Id);    
                                     }
-
-                                    if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery != null)
-                                    {
-                                        planningForType3TailBite.RepeatEvery =
-                                            (int)areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
-                                    }
-                                    planningForType3TailBite.DayOfWeek =
-                                        (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
-                                    planningForType3TailBite.DayOfMonth =
-                                        areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                 }
-                                await planningForType3TailBite.Create(_itemsPlanningPnDbContext);
-                                planningForType3TailBiteId = planningForType3TailBite.Id;
+
+                                
+                                // await _pairItemWichSiteHelper.Pair(, (int)areaRule.EformId,
+                                // planning.Id,
+                                // areaRule.FolderId);
+                                // var caseId = await core.CaseCreate();
+                                // var planningForType3TailBite = await CreateItemPlanningObject(eformId, eformName, areaRule.FolderId, areaRulePlanningModel, areaRule);
+                                // planningForType3TailBite.NameTranslations = new List<PlanningNameTranslation>
+                                // {
+                                //     new()
+                                //     {
+                                //         LanguageId = 1, // da
+                                //         Name = "Hale bid",
+                                //     },
+                                //     new()
+                                //     {
+                                //         LanguageId = 2, // en
+                                //         Name = "Tail bite",
+                                //     },
+                                //     new()
+                                //     {
+                                //         LanguageId = 3, // ge
+                                //         Name = "Schwanzbiss",
+                                //     },
+                                //     // new PlanningNameTranslation
+                                //     // {
+                                //     //     LanguageId = 4,// uk-ua
+                                //     //     Name = "Укус за хвіст",
+                                //     // },
+                                // };
+                                // if (areaRulePlanningModel.TypeSpecificFields != null)
+                                // {
+                                //     if (areaRulePlanningModel.TypeSpecificFields.RepeatType != null)
+                                //     {
+                                //         planningForType3TailBite.RepeatType =
+                                //             (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType;
+                                //     }
+                                //
+                                //     if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery != null)
+                                //     {
+                                //         planningForType3TailBite.RepeatEvery =
+                                //             (int)areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
+                                //     }
+                                //     planningForType3TailBite.DayOfWeek =
+                                //         (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                //     planningForType3TailBite.DayOfMonth =
+                                //         areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                // }
+                                // await planningForType3TailBite.Create(_itemsPlanningPnDbContext);
+                                // planningForType3TailBiteId = planningForType3TailBite.Id;
                             }
+                            
                         }
 
-                        var areaRulePlanningForType3TailBite = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningForType3TailBiteId,
-                            areaRule.FolderId);
-                        await areaRulePlanningForType3TailBite.Create(_backendConfigurationPnDbContext);
+                        // var areaRulePlanningForType3TailBite = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningForType3TailBiteId,
+                            // areaRule.FolderId);
+                        // await areaRulePlanningForType3TailBite.Create(_backendConfigurationPnDbContext);
                         // todo not sure, it's need or no...
-                        var areaRulePlanningForType3 = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, 0,
-                            areaRule.FolderId);
-                        await areaRulePlanningForType3.Create(_backendConfigurationPnDbContext);
+                        // var areaRulePlanningForType3 = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, 0,
+                            // areaRule.FolderId);
+                        // await areaRulePlanningForType3.Create(_backendConfigurationPnDbContext);
                         break;
                     }
                 case AreaTypesEnum.Type5: // recuring tasks(mon-sun)
