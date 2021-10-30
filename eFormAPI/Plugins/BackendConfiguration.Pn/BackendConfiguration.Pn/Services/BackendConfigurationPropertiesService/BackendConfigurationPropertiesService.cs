@@ -386,16 +386,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         }
 
                         string eformName = $"05. Halebid - {property.Name}";
-                        var eformId = await sdkDbContext.CheckListTranslations
+                        var eForm = await sdkDbContext.CheckListTranslations
                             .Where(x => x.Text == eformName)
-                            .Select(x => x.CheckListId)
-                            .FirstAsync();
-                        foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
-                            x.CheckListId == eformId))
+                            .FirstOrDefaultAsync();
+                        if (eForm != null)
                         {
-                            await core.CaseDelete(checkListSite.MicrotingUid);
+                            foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
+                                x.CheckListId == eForm.CheckListId))
+                            {
+                                await core.CaseDelete(checkListSite.MicrotingUid);
+                            }
                         }
-
                         // delete translations for are rules
                         foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
