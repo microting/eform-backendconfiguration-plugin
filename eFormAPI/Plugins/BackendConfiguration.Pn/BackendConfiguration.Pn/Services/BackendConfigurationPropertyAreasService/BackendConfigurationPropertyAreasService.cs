@@ -26,6 +26,7 @@ using System.IO;
 using System.Reflection;
 using eFormCore;
 using Microting.eForm.Infrastructure;
+using Microting.eForm.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
 {
@@ -539,6 +540,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             if (entityGroupItem != null)
                             {
                                 await entityGroupItem.Delete(sdkDbContext);
+                            }
+                            Property property =
+                                await _backendConfigurationPnDbContext.Properties
+                                    .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
+                            string eformName = $"05. Halebid - {property.Name}";
+                            var eformId = await sdkDbContext.CheckListTranslations
+                                .Where(x => x.Text == eformName)
+                                .Select(x => x.CheckListId)
+                                .FirstAsync();
+                            foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
+                                x.CheckListId == eformId))
+                            {
+                                await core.CaseDelete(checkListSite.MicrotingUid);
                             }
                         }
 

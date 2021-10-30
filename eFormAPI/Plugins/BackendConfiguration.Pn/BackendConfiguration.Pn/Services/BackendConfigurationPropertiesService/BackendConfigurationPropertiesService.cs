@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.eForm.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 {
     using System;
@@ -381,6 +383,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             {
                                 await entityGroupItem.Delete(sdkDbContext);
                             }
+                        }
+
+                        string eformName = $"05. Halebid - {property.Name}";
+                        var eformId = await sdkDbContext.CheckListTranslations
+                            .Where(x => x.Text == eformName)
+                            .Select(x => x.CheckListId)
+                            .FirstAsync();
+                        foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
+                            x.CheckListId == eformId))
+                        {
+                            await core.CaseDelete(checkListSite.MicrotingUid);
                         }
 
                         // delete translations for are rules

@@ -452,14 +452,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                         await sdkDbContext.Folders.SingleAsync(x =>
                                                             x.Id == areaRule.FolderId);
                                                     var folderMicrotingId = folder.MicrotingUid.ToString();
+                                                    mainElement.Label =
+                                                        mainElement.Label.Replace($" - {property.Name}", "");
                                                     mainElement.Repeated = -1;
                                                     mainElement.CheckListFolderName = folderMicrotingId;
                                                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                                                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                                                    mainElement.DisplayOrder = 10000000;
                                                     var caseId = await core.CaseCreate(mainElement, "",
                                                         (int) site.MicrotingUid, folder.Id);
                                                 }
                                             }
+                                            var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
+                                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                                .Where(x => x.AreaId == areaRule.AreaId)
+                                                .Where(x => x.PropertyId == areaRule.PropertyId)
+                                                .Select(x => new {x.Area, x.GroupMicrotingUuid, x.PropertyId})
+                                                .FirstAsync();
+                                            var entityGroup = await core.EntityGroupRead(areaProperty.GroupMicrotingUuid.ToString());
+                                            var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+                                            var entityItem = await core.EntitySelectItemCreate(entityGroup.Id,
+                                                areaRule.AreaRuleTranslations.First().Name, entityGroup.EntityGroupItemLst.Count,
+                                                nextItemUid.ToString());
+                                            areaRule.GroupItemId = entityItem.Id;
+                                            await areaRule.Update(_backendConfigurationPnDbContext);
                                         }
                                         else
                                         {
@@ -500,6 +516,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 {
                                                     await core.CaseDelete(checkListSite.MicrotingUid);
                                                 }
+                                            }
+
+                                            if (areaRule.GroupItemId == 0)
+                                            {
+                                                await core.EntityItemDelete(areaRule.GroupItemId);
+                                                areaRule.GroupItemId = 0;
                                             }
                                         }
 
@@ -848,6 +870,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         {
                                             await core.CaseDelete(checkListSite.MicrotingUid);
                                         }
+                                    }
+
+                                    if (areaRule.GroupItemId != 0)
+                                    {
+                                        await core.EntityItemDelete(areaRule.GroupItemId);
+                                        areaRule.GroupItemId = 0;
                                     }
                                 }
 
@@ -1314,6 +1342,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             .Select(x => x.CheckListId)
                             .FirstAsync();
 
+                        var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.AreaId == areaRule.AreaId)
+                            .Where(x => x.PropertyId == areaRule.PropertyId)
+                            .Select(x => new {x.Area, x.GroupMicrotingUuid, x.PropertyId})
+                            .FirstAsync();
+                        var entityGroup = await core.EntityGroupRead(areaProperty.GroupMicrotingUuid.ToString());
+                        var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+                        var entityItem = await core.EntitySelectItemCreate(entityGroup.Id,
+                            areaRule.AreaRuleTranslations.First().Name, entityGroup.EntityGroupItemLst.Count,
+                            nextItemUid.ToString());
+                        areaRule.GroupItemId = entityItem.Id;
+                        await areaRule.Update(_backendConfigurationPnDbContext);
+
                         var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
                         if (areaRulePlanningModel.Status)
                         {
@@ -1334,6 +1376,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     mainElement.CheckListFolderName = folderMicrotingId;
                                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                                    mainElement.DisplayOrder = 10000000;
                                     var caseId = await core.CaseCreate(mainElement, "", (int) site.MicrotingUid,
                                         folder.Id);
                                 }

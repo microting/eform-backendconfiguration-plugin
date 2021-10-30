@@ -240,40 +240,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     areaRule.RepeatEvery = updateModel.TypeSpecificFields.RepeatEvery;
                 }
 
-                if (updateModel.TypeSpecificFields.TailBite)
+                if (areaRule.GroupItemId != 0)
                 {
-                    if (areaRule.GroupItemId == 0)
-                    {
-                        var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Where(x => x.AreaId == areaRule.AreaId)
-                            .Where(x => x.PropertyId == areaRule.PropertyId)
-                            .Select(x => new {x.Area, x.GroupMicrotingUuid, x.PropertyId})
-                            .FirstAsync();
-
-                        var entityGroup = await core.EntityGroupRead(areaProperty.GroupMicrotingUuid.ToString());
-                        var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-                        var entityItem = await core.EntitySelectItemCreate(entityGroup.Id,
-                            updateModel.TranslatedNames.First().Name, entityGroup.EntityGroupItemLst.Count,
-                            nextItemUid.ToString());
-                        areaRule.GroupItemId = entityItem.Id;
-                    }
-                    else
-                    {
-                        var entityItem =
-                            await sdkDbContext.EntityItems.SingleOrDefaultAsync(x => x.Id == areaRule.GroupItemId);
-                        await core.EntityItemUpdate(areaRule.GroupItemId, updateModel.TranslatedNames.First().Name,
-                            entityItem.Description,
-                            entityItem.EntityItemUid, entityItem.DisplayIndex);
-                    }
-                }
-                else
-                {
-                    if (areaRule.GroupItemId != 0)
-                    {
-                        await core.EntityItemDelete(areaRule.GroupItemId);
-                        areaRule.GroupItemId = 0;
-                    }
+                    await core.EntityItemDelete(areaRule.GroupItemId);
+                    areaRule.GroupItemId = 0;
                 }
 
                 await areaRule.Update(_backendConfigurationPnDbContext);
@@ -487,19 +457,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek;
                         areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
                         areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery;
-                    }
-
-                    if (areaProperty.Area.Type is AreaTypesEnum.Type3)
-                    {
-                        if (areaRuleCreateModel.TypeSpecificFields.TailBite)
-                        {
-                            var entityGroup = await core.EntityGroupRead(areaProperty.GroupMicrotingUuid.ToString());
-                            var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-                            var entityItem = await core.EntitySelectItemCreate(entityGroup.Id,
-                                areaRuleCreateModel.TranslatedNames.First().Name, entityGroup.EntityGroupItemLst.Count,
-                                nextItemUid.ToString());
-                            areaRule.GroupItemId = entityItem.Id;
-                        }
                     }
 
                     var language = await _userService.GetCurrentUserLanguage();
