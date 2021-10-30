@@ -28,8 +28,8 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async propertyCreateBtn() {
     const ele = await $('#propertyCreateBtn');
-    await ele.waitForDisplayed({ timeout: 40000 });
-    await ele.waitForClickable({ timeout: 40000 });
+    await ele.waitForDisplayed({ timeout: 200000 });
+    await ele.waitForClickable({ timeout: 200000 });
     return ele;
   }
 
