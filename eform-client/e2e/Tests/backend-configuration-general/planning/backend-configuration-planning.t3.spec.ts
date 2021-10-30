@@ -66,7 +66,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     expect(
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
-    ).eq(2);
+    ).eq(1);
     const itemPlannings = await itemsPlanningPlanningPage.getAllPlannings();
     // first planning
     expect(itemPlannings[0].eFormName).eq('05. Stald_klargøring');
@@ -74,30 +74,13 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     expect(itemPlannings[0].folderName).eq(`${property.name} - 05. Stalde`);
     expect(itemPlannings[0].repeatEvery).eq(1);
     expect(itemPlannings[0].repeatType).eq('Dag');
-    let workers = await itemPlannings[0].readPairing();
+    const workers = await itemPlannings[0].readPairing();
     expect([
       {
         workerName: `${workerForCreate.name} ${workerForCreate.surname}`,
         workerValue: true,
       },
     ]).deep.eq(workers);
-    // second planning
-    expect(itemPlannings[1].eFormName).eq('05. Halebid');
-    expect(itemPlannings[1].name).eq('Hale bid');
-    expect(itemPlannings[1].folderName).eq(`${property.name} - 05. Stalde`);
-    expect(itemPlannings[1].repeatEvery).eq(1);
-    expect(itemPlannings[1].repeatType).eq('Dag');
-    workers = await itemPlannings[1].readPairing();
-    expect([
-      {
-        workerName: `${workerForCreate.name} ${workerForCreate.surname}`,
-        workerValue: true,
-      },
-    ]).deep.eq(workers);
-
-    // browser.back();
-    // await areaRule.createUpdatePlanning({ status: false }); // delete item planning
-    // await areaRule.delete();
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();
