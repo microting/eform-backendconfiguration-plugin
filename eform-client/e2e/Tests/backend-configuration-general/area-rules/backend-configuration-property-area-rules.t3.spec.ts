@@ -68,7 +68,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     const oldAreRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '05. Halebid',
+      eform: '22. Sigtetest',
       checkListStable: false,
       tailBite: false,
     };
@@ -86,7 +86,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     let areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '05. Halebid',
+      eform: '22. Sigtetest',
       checkListStable: false,
       tailBite: false,
     };
