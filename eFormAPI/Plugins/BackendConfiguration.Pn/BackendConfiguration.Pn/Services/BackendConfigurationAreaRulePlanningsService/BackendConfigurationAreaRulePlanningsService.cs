@@ -1376,6 +1376,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     mainElement.CheckListFolderName = folderMicrotingId;
                                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                                    mainElement.Label =
+                                        mainElement.Label.Replace($" - {property.Name}", "");
                                     mainElement.DisplayOrder = 10000000;
                                     var caseId = await core.CaseCreate(mainElement, "", (int) site.MicrotingUid,
                                         folder.Id);
