@@ -24,6 +24,7 @@
                   name="editPropertyName"
                   class="form-control"
                   id="editPropertyName"
+                  disabled
                 />
                 <label for="editPropertyName">{{ 'Name' | translate }}</label>
               </div>
@@ -82,6 +83,7 @@
                           (change)="addToArray($event, language.id)"
                           [checked]="getLanguageIsChecked(language.id)"
                           [value]="getLanguageIsChecked(language.id)"
+                          [disabled]="getLanguageIsChecked(language.id)"
                           color="primary"
                           type="checkbox"
                         />
