@@ -232,35 +232,35 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
 
-                            var assignmentWithTwoFolder = new ProperyAreaFolder
-                            {
-                                FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
-                                    {
-                                        new()
-                                        {
-                                            LanguageId = 1, // da
-                                            Name = "05. Halebid",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 2, // en
-                                            Name = "05. Tail bite",
-                                            Description = "",
-                                        },
-                                        new()
-                                        {
-                                            LanguageId = 3, // ge
-                                            Name = "05. Schwanzbiss",
-                                            Description = "",
-                                        },
-                                    },
-                                    property.FolderId),
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            };
+                            // var assignmentWithTwoFolder = new ProperyAreaFolder
+                            // {
+                            //     FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            //         {
+                            //             new()
+                            //             {
+                            //                 LanguageId = 1, // da
+                            //                 Name = "05. Halebid",
+                            //                 Description = "",
+                            //             },
+                            //             new()
+                            //             {
+                            //                 LanguageId = 2, // en
+                            //                 Name = "05. Tail bite",
+                            //                 Description = "",
+                            //             },
+                            //             new()
+                            //             {
+                            //                 LanguageId = 3, // ge
+                            //                 Name = "05. Schwanzbiss",
+                            //                 Description = "",
+                            //             },
+                            //         },
+                            //         property.FolderId),
+                            //     ProperyAreaAsignmentId = newAssignment.Id,
+                            // };
 
                             await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
-                            await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
+                            // await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
 
                             var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "", true, false);
                             // TODO load tailbite eForm and seed it.
