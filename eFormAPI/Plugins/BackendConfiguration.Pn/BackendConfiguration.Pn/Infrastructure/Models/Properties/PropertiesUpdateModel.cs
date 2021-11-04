@@ -37,5 +37,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         public string Address { get; set; }
 
         public List<int> LanguagesIds { get; set; }
+
+        public string FullName()
+        {
+            return $"00. {Name} - {Address}";
+        }
     }
 }

@@ -141,7 +141,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 var planningTag = new PlanningTag
                 {
-                    Name = propertyCreateModel.Name,
+                    Name = propertyCreateModel.FullName(),
                 };
                 await planningTag.Create(_itemsPlanningPnDbContext);
                 var newProperty = new Property
@@ -255,7 +255,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .FirstOrDefaultAsync();
                 if (planningTag != null)
                 {
-                    planningTag.Name = updateModel.Name;
+                    planningTag.Name = updateModel.FullName();
                     planningTag.UpdatedByUserId = _userService.UserId;
                     await planningTag.Update(_itemsPlanningPnDbContext);
                 }
