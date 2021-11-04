@@ -32,10 +32,19 @@ describe('Application settings page - site header section', function () {
 
   it('should activate the plugin', async () => {
     let plugin = await pluginPage.getFirstPluginRowObj();
-    await plugin.enableOrDisablePlugin();
-
-    plugin = await pluginPage.getPluginRowObjByIndex(2);
-    await plugin.enableOrDisablePlugin();
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      await plugin.enableOrDisablePlugin();
+    } else {
+      plugin = await pluginPage.getPluginRowObjByIndex(2);
+      await plugin.enableOrDisablePlugin();
+    }
+    plugin = await pluginPage.getFirstPluginRowObj();
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      plugin = await pluginPage.getPluginRowObjByIndex(2);
+      await plugin.enableOrDisablePlugin();
+    } else {
+      await plugin.enableOrDisablePlugin();
+    }
 
     plugin = await pluginPage.getFirstPluginRowObj();
     if (plugin.name === 'Microting Items Planning Plugin') {
