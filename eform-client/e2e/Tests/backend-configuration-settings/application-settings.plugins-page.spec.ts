@@ -21,7 +21,6 @@ describe('Application settings page - site header section', function () {
     }
     expect(plugin.version).equal('1.0.0.0');
 
-
     plugin = await pluginPage.getPluginRowObjByIndex(2);
     if (plugin.name === 'Microting Items Planning Plugin') {
       expect(plugin.name).equal('Microting Items Planning Plugin');
