@@ -85,9 +85,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         {
                             rulePlanning.HoursAndEnergyEnabled =
                                 areaRulePlanningModel.TypeSpecificFields.HoursAndEnergyEnabled;
-                            rulePlanning.DayOfMonth = areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                            rulePlanning.DayOfMonth = areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                ? 1
+                                : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                             rulePlanning.EndDate = areaRulePlanningModel.TypeSpecificFields.EndDate;
-                            rulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                            rulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                ? 1
+                                : areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                             rulePlanning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
                             rulePlanning.RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType;
                         }
@@ -185,9 +189,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 planningForType2TypeTankOpen.RepeatUntil =
                                                     areaRulePlanningModel.TypeSpecificFields.EndDate;
                                                 planningForType2TypeTankOpen.DayOfWeek =
-                                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                        ? DayOfWeek.Monday
+                                                        : (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                                 planningForType2TypeTankOpen.DayOfMonth =
-                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                        ? 1
+                                                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             }
 
                                             await planningForType2TypeTankOpen.Create(_itemsPlanningPnDbContext);
@@ -196,7 +204,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 planningForType2TypeTankOpen.Id,
                                                 areaRule.AreaRulesPlannings[0].FolderId);
                                             areaRule.AreaRulesPlannings[0].DayOfMonth =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                                (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             areaRule.AreaRulesPlannings[0].ItemPlanningId =
                                                 planningForType2TypeTankOpen.Id;
                                             await areaRule.AreaRulesPlannings[0]
@@ -267,9 +277,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 planningForType2AlarmYes.RepeatUntil =
                                                     areaRulePlanningModel.TypeSpecificFields.EndDate;
                                                 planningForType2AlarmYes.DayOfWeek =
-                                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                        ? DayOfWeek.Monday
+                                                        : (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                                 planningForType2AlarmYes.DayOfMonth =
-                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                        ? 1
+                                                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             }
 
                                             await planningForType2AlarmYes.Create(_itemsPlanningPnDbContext);
@@ -278,7 +292,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 planningForType2AlarmYes.Id,
                                                 areaRule.AreaRulesPlannings[1].FolderId);
                                             areaRule.AreaRulesPlannings[1].DayOfMonth =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                                (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             areaRule.AreaRulesPlannings[1].ItemPlanningId = planningForType2AlarmYes.Id;
                                             await areaRule.AreaRulesPlannings[1]
                                                 .Update(_backendConfigurationPnDbContext);
@@ -340,9 +356,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             planningForType2.RepeatUntil =
                                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
                                             planningForType2.DayOfWeek =
-                                                (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                    ? DayOfWeek.Monday
+                                                    : (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             planningForType2.DayOfMonth =
-                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                         }
 
                                         await planningForType2.Create(_itemsPlanningPnDbContext);
@@ -353,7 +373,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             areaRule.AreaRulesPlannings[2].FolderId);
                                         areaRule.AreaRulesPlannings[2].ItemPlanningId = planningForType2.Id;
                                         areaRule.AreaRulesPlannings[2].DayOfMonth =
-                                            (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                            (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                        ;
                                         await areaRule.AreaRulesPlannings[2].Update(_backendConfigurationPnDbContext);
                                         i = areaRule.AreaRulesPlannings.Count;
                                         break;
@@ -391,9 +412,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 }
 
                                                 planningForType3ChecklistStable.DayOfMonth =
-                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                        ? 1
+                                                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 planningForType3ChecklistStable.DayOfWeek =
-                                                    (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                    (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                        ? DayOfWeek.Monday
+                                                        : (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields
+                                                            .DayOfWeek;
                                             }
 
                                             await planningForType3ChecklistStable.Create(_itemsPlanningPnDbContext);
@@ -405,9 +431,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             areaRule.AreaRulesPlannings[0].ItemPlanningId =
                                                 planningForType3ChecklistStable.Id;
                                             areaRule.AreaRulesPlannings[0].DayOfMonth =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                                (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             areaRule.AreaRulesPlannings[0].DayOfWeek =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
+                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             await areaRule.AreaRulesPlannings[0]
                                                 .Update(_backendConfigurationPnDbContext);
                                         }
@@ -536,17 +566,29 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             areaRule.AreaRulesPlannings[1].HoursAndEnergyEnabled = true;
                                             areaRule.AreaRulesPlannings[2].HoursAndEnergyEnabled = true;
                                             areaRule.AreaRulesPlannings[0].DayOfMonth =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                                (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             areaRule.AreaRulesPlannings[0].DayOfWeek =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
+                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             areaRule.AreaRulesPlannings[1].DayOfMonth =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                                (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             areaRule.AreaRulesPlannings[1].DayOfWeek =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
+                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             areaRule.AreaRulesPlannings[2].DayOfMonth =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                                (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             areaRule.AreaRulesPlannings[2].DayOfWeek =
-                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
+                                                (int) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             await areaRule.Update(_backendConfigurationPnDbContext);
                                             const string eformName = "10. Varmepumpe timer og energi";
                                             var eformId = await sdkDbContext.CheckListTranslations
@@ -601,9 +643,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 }
 
                                                 planningForType6HoursAndEnergyEnabled.DayOfMonth =
-                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                        ? 1
+                                                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 planningForType6HoursAndEnergyEnabled.DayOfWeek =
-                                                    (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                    (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                        ? DayOfWeek.Monday
+                                                        : (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields
+                                                            .DayOfWeek;
                                             }
 
                                             await planningForType6HoursAndEnergyEnabled.Create(
@@ -704,15 +751,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         if (areaRulePlanningModel.TypeSpecificFields is not null)
                                         {
                                             planningForType6One.DayOfMonth =
-                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             planningForType6One.DayOfWeek =
-                                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                    ? DayOfWeek.Monday
+                                                    : (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             planningForType6One.RepeatUntil =
                                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
                                             planningForType6Two.DayOfMonth =
-                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             planningForType6Two.DayOfWeek =
-                                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                    ? DayOfWeek.Monday
+                                                    : (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             planningForType6Two.RepeatUntil =
                                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
                                         }
@@ -791,9 +846,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         if (areaRulePlanningModel.TypeSpecificFields is not null)
                                         {
                                             planning.DayOfMonth =
-                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                                    ? 1
+                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                             planning.DayOfWeek =
-                                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                                (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                                    ? DayOfWeek.Monday
+                                                    : (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                             planning.RepeatUntil =
                                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
                                             if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery is not null)
@@ -910,15 +969,31 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     planning.Enabled = areaRulePlanningModel.Status;
                                     planning.PushMessageOnDeployment = areaRulePlanningModel.SendNotifications;
                                     planning.StartDate = areaRulePlanningModel.StartDate;
-                                    planning.DayOfMonth = (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                                    planning.DayOfMonth = (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                        ? 1
+                                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                     planning.DayOfWeek =
-                                        (DayOfWeek) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
+                                        (DayOfWeek) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == 0 ? DayOfWeek.Friday : (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                     foreach (var planningSite in planning.PlanningSites
                                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                                     {
                                         if (siteIdsForDelete.Contains(planningSite.SiteId))
                                         {
                                             await planningSite.Delete(_itemsPlanningPnDbContext);
+                                            var someList = await _itemsPlanningPnDbContext.PlanningCaseSites
+                                                .Where(x => x.PlanningId == planning.Id)
+                                                .Where(x => x.MicrotingSdkSiteId == planningSite.SiteId)
+                                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                                .ToListAsync();
+
+                                            foreach (PlanningCaseSite planningCaseSite in someList)
+                                            {
+                                                var _core = await _coreHelper.GetCore();
+                                                var _case = await _core.DbContextHelper.GetDbContext().Cases
+                                                    .SingleOrDefaultAsync(x =>
+                                                        x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                                await _core.CaseDelete((int)_case.MicrotingUid);
+                                            }
                                         }
                                     }
 
@@ -933,6 +1008,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 UpdatedByUserId = _userService.UserId,
                                             };
                                         await planningSite.Create(_itemsPlanningPnDbContext);
+                                    }
+                                    if (sitesForCreate.Count > 0) {
+                                        await _pairItemWichSiteHelper.Pair(
+                                            sitesForCreate.Select(x => x.SiteId).ToList(), planning.RelatedEFormId,
+                                            planning.Id,
+                                            (int)planning.SdkFolderId);
                                     }
 
                                     await planning.Update(_itemsPlanningPnDbContext);
@@ -1115,9 +1196,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                 planningForType2TypeTankOpen.RepeatUntil =
                                     areaRulePlanningModel.TypeSpecificFields.EndDate;
                                 planningForType2TypeTankOpen.DayOfWeek =
-                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                    (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                        ? DayOfWeek.Monday
+                                        : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                 planningForType2TypeTankOpen.DayOfMonth =
-                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                             }
 
                             await planningForType2TypeTankOpen.Create(_itemsPlanningPnDbContext);
@@ -1191,9 +1274,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                 planningForType2AlarmYes.RepeatUntil =
                                     areaRulePlanningModel.TypeSpecificFields.EndDate;
                                 planningForType2AlarmYes.DayOfWeek =
-                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday :
+                                        (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                                 planningForType2AlarmYes.DayOfMonth =
-                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                             }
 
                             await planningForType2AlarmYes.Create(_itemsPlanningPnDbContext);
@@ -1258,9 +1342,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             planningForType2.RepeatUntil =
                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
                             planningForType2.DayOfWeek =
-                                (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday :
+                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                             planningForType2.DayOfMonth =
-                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                         }
 
                         await planningForType2.Create(_itemsPlanningPnDbContext);
@@ -1309,9 +1394,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                 planningForType3ChecklistStable.RepeatUntil =
                                     areaRulePlanningModel.TypeSpecificFields.EndDate;
                                 planningForType3ChecklistStable.DayOfWeek =
-                                    (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                    (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                        ? DayOfWeek.Monday
+                                        : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                 planningForType3ChecklistStable.DayOfMonth =
-                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                             }
 
                             await planningForType3ChecklistStable.Create(_itemsPlanningPnDbContext);
@@ -1383,66 +1470,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         folder.Id);
                                 }
                             }
-
-
-                            // await _pairItemWichSiteHelper.Pair(, (int)areaRule.EformId,
-                            // planning.Id,
-                            // areaRule.FolderId);
-                            // var caseId = await core.CaseCreate();
-                            // var planningForType3TailBite = await CreateItemPlanningObject(eformId, eformName, areaRule.FolderId, areaRulePlanningModel, areaRule);
-                            // planningForType3TailBite.NameTranslations = new List<PlanningNameTranslation>
-                            // {
-                            //     new()
-                            //     {
-                            //         LanguageId = 1, // da
-                            //         Name = "Hale bid",
-                            //     },
-                            //     new()
-                            //     {
-                            //         LanguageId = 2, // en
-                            //         Name = "Tail bite",
-                            //     },
-                            //     new()
-                            //     {
-                            //         LanguageId = 3, // ge
-                            //         Name = "Schwanzbiss",
-                            //     },
-                            //     // new PlanningNameTranslation
-                            //     // {
-                            //     //     LanguageId = 4,// uk-ua
-                            //     //     Name = "Укус за хвіст",
-                            //     // },
-                            // };
-                            // if (areaRulePlanningModel.TypeSpecificFields != null)
-                            // {
-                            //     if (areaRulePlanningModel.TypeSpecificFields.RepeatType != null)
-                            //     {
-                            //         planningForType3TailBite.RepeatType =
-                            //             (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType;
-                            //     }
-                            //
-                            //     if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery != null)
-                            //     {
-                            //         planningForType3TailBite.RepeatEvery =
-                            //             (int)areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
-                            //     }
-                            //     planningForType3TailBite.DayOfWeek =
-                            //         (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
-                            //     planningForType3TailBite.DayOfMonth =
-                            //         areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                            // }
-                            // await planningForType3TailBite.Create(_itemsPlanningPnDbContext);
-                            // planningForType3TailBiteId = planningForType3TailBite.Id;
                         }
                     }
-
-                    // var areaRulePlanningForType3TailBite = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningForType3TailBiteId,
-                    // areaRule.FolderId);
-                    // await areaRulePlanningForType3TailBite.Create(_backendConfigurationPnDbContext);
-                    // todo not sure, it's need or no...
-                    // var areaRulePlanningForType3 = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, 0,
-                    // areaRule.FolderId);
-                    // await areaRulePlanningForType3.Create(_backendConfigurationPnDbContext);
                     break;
                 }
                 case AreaTypesEnum.Type5: // recuring tasks(mon-sun)
@@ -1488,9 +1517,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             planning.RepeatUntil =
                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
                             planning.DayOfWeek =
-                                (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday : (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                             planning.DayOfMonth =
-                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                         }
 
                         await planning.Create(_itemsPlanningPnDbContext);
@@ -1565,9 +1594,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         if (areaRulePlanningModel.TypeSpecificFields != null)
                         {
                             planningForType6HoursAndEnergyEnabled.DayOfWeek =
-                                (DayOfWeek) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                                    ? DayOfWeek.Monday
+                                    : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                             planningForType6HoursAndEnergyEnabled.DayOfMonth =
-                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                         }
 
                         await planningForType6HoursAndEnergyEnabled.Create(_itemsPlanningPnDbContext);
@@ -1655,16 +1686,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         if (areaRulePlanningModel.TypeSpecificFields is not null)
                         {
                             planningForType6One.DayOfMonth =
-                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                             planningForType6One.DayOfWeek =
-                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday : (DayOfWeek?)  areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                             planningForType6One.RepeatUntil =
                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
 
                             planningForType6Two.DayOfMonth =
-                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                             planningForType6Two.DayOfWeek =
-                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday : (DayOfWeek?)  areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                             planningForType6Two.RepeatUntil =
                                 areaRulePlanningModel.TypeSpecificFields.EndDate;
                         }
@@ -1733,10 +1764,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             }).ToList();
                         if (areaRulePlanningModel.TypeSpecificFields != null)
                         {
-                            planning.DayOfMonth = (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
+                            planning.DayOfMonth = (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                ? 1
+                                : (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth;
                             planning.RepeatUntil = areaRulePlanningModel.TypeSpecificFields?.EndDate;
                             planning.DayOfWeek =
-                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
+                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek == 0
+                                    ? DayOfWeek.Monday
+                                    : (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields?.DayOfWeek;
                             if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery is not null)
                             {
                                 planning.RepeatEvery =
@@ -1887,8 +1922,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
             };
             if (areaRulePlanningModel.TypeSpecificFields != null)
             {
-                areaRulePlanning.DayOfMonth = areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                areaRulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                areaRulePlanning.DayOfMonth = areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                    ? 1
+                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                areaRulePlanning.DayOfWeek = areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+                    ? 1
+                    : areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                 areaRulePlanning.HoursAndEnergyEnabled = areaRulePlanningModel.TypeSpecificFields.HoursAndEnergyEnabled;
                 areaRulePlanning.EndDate = areaRulePlanningModel.TypeSpecificFields.EndDate;
                 areaRulePlanning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
