@@ -27,7 +27,7 @@ describe('Backend Configuration Property - Edit', function () {
     const propertyUpdate: PropertyCreateUpdate = {
       // name: generateRandmString(),
       chrNumber: generateRandmString(),
-      address: generateRandmString(),
+      // address: generateRandmString(),
       // selectedLanguages: [
       //   { languageId: 1, languageName: 'Danish' },
       //   { languageId: 2, languageName: 'English' },
@@ -48,9 +48,9 @@ describe('Backend Configuration Property - Edit', function () {
     expect(updatedProperty.chrNumber, 'chrNumber is incorrect').eq(
       propertyUpdate.chrNumber
     );
-    expect(updatedProperty.address, 'address is incorrect').eq(
-      propertyUpdate.address
-    );
+    // expect(updatedProperty.address, 'address is incorrect').eq(
+    //   propertyUpdate.address
+    // );
     // expect(updatedProperty.languages, 'languages is incorrect').deep.eq(
     //   propertyUpdate.selectedLanguages
     // );
@@ -76,7 +76,7 @@ describe('Backend Configuration Property - Edit', function () {
       {
         // name: generateRandmString(),
         chrNumber: generateRandmString(),
-        address: generateRandmString(),
+        // address: generateRandmString(),
         // selectedLanguages: [
         //   { languageId: 1, languageName: 'Danish' },
         //   { languageId: 2, languageName: 'English' },
@@ -90,9 +90,9 @@ describe('Backend Configuration Property - Edit', function () {
     expect(updatedProperty.chrNumber, 'chrNumber is incorrect').eq(
       createdProperty.chrNumber
     );
-    expect(updatedProperty.address, 'address is incorrect').eq(
-      createdProperty.address
-    );
+    // expect(updatedProperty.address, 'address is incorrect').eq(
+    //   createdProperty.address
+    // );
     // expect(updatedProperty.languages, 'languages is incorrect').deep.eq(
     //   createdProperty.languages
     // );

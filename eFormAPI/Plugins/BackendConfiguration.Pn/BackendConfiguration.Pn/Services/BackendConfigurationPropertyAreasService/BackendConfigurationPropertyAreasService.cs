@@ -27,6 +27,7 @@ using System.Reflection;
 using eFormCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
 {
@@ -231,33 +232,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 FolderId = folderId,
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
-
-                            // var assignmentWithTwoFolder = new ProperyAreaFolder
-                            // {
-                            //     FolderId = await core.FolderCreate(new List<CommonTranslationsModel>
-                            //         {
-                            //             new()
-                            //             {
-                            //                 LanguageId = 1, // da
-                            //                 Name = "05. Halebid",
-                            //                 Description = "",
-                            //             },
-                            //             new()
-                            //             {
-                            //                 LanguageId = 2, // en
-                            //                 Name = "05. Tail bite",
-                            //                 Description = "",
-                            //             },
-                            //             new()
-                            //             {
-                            //                 LanguageId = 3, // ge
-                            //                 Name = "05. Schwanzbiss",
-                            //                 Description = "",
-                            //             },
-                            //         },
-                            //         property.FolderId),
-                            //     ProperyAreaAsignmentId = newAssignment.Id,
-                            // };
 
                             await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
                             // await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
@@ -592,6 +566,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                                     planning.UpdatedByUserId = _userService.UserId;
                                     await planning.Delete(_itemsPlanningPnDbContext);
+
+                                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                                        .Where(x => x.PlanningId == planning.Id)
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .ToListAsync();
+                                    foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
+                                    {
+                                        planningCaseSite.UpdatedByUserId = _userService.UserId;
+                                        await planningCaseSite.Delete(_itemsPlanningPnDbContext);
+                                        var result =
+                                            await sdkDbContext.Cases.SingleAsync(x =>
+                                                x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                        if (result.MicrotingUid != null)
+                                        {
+                                            await core.CaseDelete((int)result.MicrotingUid);
+                                        }
+                                    }
                                 }
                             }
 

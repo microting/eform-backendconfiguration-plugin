@@ -1833,10 +1833,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 foreach (var planningCase in planningCases)
                 {
                     var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
-                        .Where(x => x.PlanningCaseId == planningCase.Id).ToListAsync();
-                    foreach (var planningCaseSite in planningCaseSites
+                        .Where(x => x.PlanningCaseId == planningCase.Id)
                         .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync();
+                    foreach (var planningCaseSite in planningCaseSites)
                     {
                         var result =
                             await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);

@@ -433,6 +433,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                                     planning.UpdatedByUserId = _userService.UserId;
                                     await planning.Delete(_itemsPlanningPnDbContext);
+
+                                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                                        .Where(x => x.PlanningId == planning.Id)
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .ToListAsync();
+                                    foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
+                                    {
+                                        planningCaseSite.UpdatedByUserId = _userService.UserId;
+                                        await planningCaseSite.Delete(_itemsPlanningPnDbContext);
+                                        var result =
+                                            await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                        if (result.MicrotingUid != null)
+                                        {
+                                            await core.CaseDelete((int) result.MicrotingUid);
+                                        }
+                                    }
                                 }
                             }
 
