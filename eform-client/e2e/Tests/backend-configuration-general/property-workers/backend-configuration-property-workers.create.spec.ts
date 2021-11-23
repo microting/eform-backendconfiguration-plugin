@@ -39,7 +39,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     expect(worker.firstName).eq(workerForCreate.name);
     const properties = await worker.getAssignedProperties();
     expect(properties).deep.eq([
-      { propertyName: property.name, checked: true },
+      { propertyName: property.cvrNumber + ' - ' + property.chrNumber + ' - ' + property.name, checked: true },
     ]);
   });
   it('should edit worker and unpair from property', async () => {
@@ -47,7 +47,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     await worker.edit({ properties: [0] });
     const properties = await worker.getAssignedProperties();
     expect(properties).deep.eq([
-      { propertyName: property.name, checked: false },
+      { propertyName: property.cvrNumber + ' - ' + property.chrNumber + ' - ' + property.name, checked: false },
     ]);
   });
   it('should check modals', async () => {
@@ -63,7 +63,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     worker = await backendConfigurationPropertyWorkersPage.getLastRowObject();
     const properties = await worker.getAssignedProperties();
     expect(properties).deep.eq([
-      { propertyName: property.name, checked: false },
+      { propertyName: property.cvrNumber + ' - ' + property.chrNumber + ' - ' + property.name, checked: false },
     ]);
     expect(worker.firstName).eq(workerForCreate.name);
     expect(worker.lastName).eq(workerForCreate.surname);
