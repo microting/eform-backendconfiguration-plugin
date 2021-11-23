@@ -20,12 +20,29 @@
                 <input
                   mdbInput
                   type="text"
+                  [(ngModel)]="newProperty.cvr"
+                  name="createCVRNumber"
+                  class="form-control"
+                  id="createCVRNumber"
+                />
+                <label for="createCHRNumber">{{
+                  'CVR Number' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="md-form">
+                <input
+                  mdbInput
+                  type="text"
                   [(ngModel)]="newProperty.name"
                   name="createPropertyName"
                   class="form-control"
                   id="createPropertyName"
                 />
-                <label for="createPropertyName">{{ 'Name' | translate }}</label>
+                <label for="createPropertyName">{{ 'CHR Name' | translate }}</label>
               </div>
             </div>
           </div>
@@ -58,7 +75,7 @@
                   id="createPropertyAddress"
                 />
                 <label for="createPropertyAddress">{{
-                  'Address' | translate
+                  'CHR Address' | translate
                 }}</label>
               </div>
             </div>

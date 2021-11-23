@@ -4,6 +4,7 @@ export const deDE = {
   Area: 'Gebiet',
   'Read more': 'Weiterlesen',
   'CHR Number': 'CHR nummer',
+  'CVR Number': 'CVR nummer',
   Address: 'Die Anschrift',
   Languages: 'Sprache',
   'View property areas': 'Ausgewählte Bereiche anzeigen',

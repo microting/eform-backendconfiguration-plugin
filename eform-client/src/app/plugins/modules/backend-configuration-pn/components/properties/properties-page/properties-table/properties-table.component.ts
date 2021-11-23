@@ -33,6 +33,11 @@ export class PropertiesTableComponent implements OnInit {
     { name: 'Id', elementId: 'idTableHeader', sortable: false },
     { name: 'Name', elementId: 'nameTableHeader', sortable: false },
     {
+      name: 'CVR Number',
+      elementId: 'cvrNumberTableHeader',
+      sortable: false,
+    },
+    {
       name: 'CHR Number',
       elementId: 'chrNumberTableHeader',
       sortable: false,

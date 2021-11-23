@@ -4,6 +4,7 @@ export const enUS = {
   Area: 'Area',
   'Read more': 'Read more',
   'CHR Number': 'CHR Number',
+  'CVR Number': 'CVR Number',
   Address: 'Address',
   Languages: 'Languages',
   'View property areas': 'View property areas',

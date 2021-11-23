@@ -20,13 +20,29 @@
                 <input
                   mdbInput
                   type="text"
+                  [(ngModel)]="selectedProperty.cvr"
+                  name="editCVRNumber"
+                  class="form-control"
+                  id="editCVRNumber"
+                />
+                <label for="editCHRNumber">{{'CVR Number' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="md-form">
+                <input
+                  mdbInput
+                  type="text"
                   [(ngModel)]="selectedProperty.name"
                   name="editPropertyName"
                   class="form-control"
                   id="editPropertyName"
                   disabled
                 />
-                <label for="editPropertyName">{{ 'Name' | translate }}</label>
+                <label for="editPropertyName">{{ 'CHR Name' | translate }}</label>
               </div>
             </div>
           </div>
@@ -60,7 +76,7 @@
                   disabled
                 />
                 <label for="editPropertyAddress">{{
-                  'Address' | translate
+                  'CHR Address' | translate
                 }}</label>
               </div>
             </div>
