@@ -28,7 +28,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
     using BackendConfigurationLocalizationService;
@@ -72,7 +71,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         {
             try
             {
-                Debugger.Break();
                 var propertiesQuery = _backendConfigurationPnDbContext.Properties
                     .Include(x => x.SelectedLanguages)
                     .Include(x => x.PropertyWorkers)
