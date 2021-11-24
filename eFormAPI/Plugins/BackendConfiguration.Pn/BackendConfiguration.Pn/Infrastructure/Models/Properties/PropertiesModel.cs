@@ -32,7 +32,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         public int Id { get; set; }
 
         public string Name { get; set; }
-        
+
         public string Chr { get; set; }
 
         public string Address { get; set; }
@@ -40,5 +40,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         public List<CommonDictionaryModel> Languages { get; set; }
 
         public bool IsWorkersAssigned { get; set; }
+
+        public string Cvr { get; set; }
+
     }
 }

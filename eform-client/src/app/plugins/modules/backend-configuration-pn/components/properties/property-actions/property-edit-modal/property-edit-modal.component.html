@@ -20,12 +20,29 @@
                 <input
                   mdbInput
                   type="text"
+                  [(ngModel)]="selectedProperty.cvr"
+                  name="editCVRNumber"
+                  class="form-control"
+                  id="editCVRNumber"
+                />
+                <label for="editCHRNumber">{{'CVR Number' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="md-form">
+                <input
+                  mdbInput
+                  type="text"
                   [(ngModel)]="selectedProperty.name"
                   name="editPropertyName"
                   class="form-control"
                   id="editPropertyName"
+                  disabled
                 />
-                <label for="editPropertyName">{{ 'Name' | translate }}</label>
+                <label for="editPropertyName">{{ 'CHR Name' | translate }}</label>
               </div>
             </div>
           </div>
@@ -56,9 +73,10 @@
                   name="editPropertyAddress"
                   class="form-control"
                   id="editPropertyAddress"
+                  disabled
                 />
                 <label for="editPropertyAddress">{{
-                  'Address' | translate
+                  'CHR Address' | translate
                 }}</label>
               </div>
             </div>
@@ -82,13 +100,12 @@
                           (change)="addToArray($event, language.id)"
                           [checked]="getLanguageIsChecked(language.id)"
                           [value]="getLanguageIsChecked(language.id)"
+                          [disabled]="getLanguageIsChecked(language.id)"
                           color="primary"
                           type="checkbox"
                         />
                         <label
-                          for="checkboxEditPropertySelectLanguage{{
-                          language.id
-                        }}"
+                          for="checkboxEditPropertySelectLanguage{{language.id}}"
                         ></label>
                       </div>
                     </td>

@@ -42,6 +42,16 @@
         </DataItemGroup>
       </DataItemGroupList>
       <DataItemList>
+        <DataItem type="SingleSelectSearch">
+          <Id>374955</Id>
+          <Label>Vælg stald|Choose barn</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Source>SOURCE_REPLACE_ME</Source>
+          <KeyValuePairList/>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
         <DataItem type="SingleSelect">
           <Id>374091</Id>
           <Label>Sti|Pen:</Label>

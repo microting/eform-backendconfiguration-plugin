@@ -48,6 +48,7 @@
                         (change)="updateArea($event, area)"
                         color="primary"
                         type="checkbox"
+                        [disabled]="area.activated"
                       />
                       <label for="checkboxAssignmentEdit{{ i }}"></label>
                     </div>

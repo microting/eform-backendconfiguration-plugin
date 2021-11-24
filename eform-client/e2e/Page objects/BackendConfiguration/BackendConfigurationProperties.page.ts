@@ -28,8 +28,8 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async propertyCreateBtn() {
     const ele = await $('#propertyCreateBtn');
-    await ele.waitForDisplayed({ timeout: 40000 });
-    await ele.waitForClickable({ timeout: 40000 });
+    await ele.waitForDisplayed({ timeout: 200000 });
+    await ele.waitForClickable({ timeout: 200000 });
     return ele;
   }
 
@@ -42,6 +42,13 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async createCHRNumber() {
     const ele = await $('#createCHRNumber');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async createCVRNumber() {
+    const ele = await $('#createCVRNumber');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -98,6 +105,13 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async editCHRNumber() {
     const ele = await $('#editCHRNumber');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async editCVRNumber() {
+    const ele = await $('#editCVRNumber');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -187,6 +201,9 @@ export class BackendConfigurationPropertiesPage extends Page {
       if (property.chrNumber) {
         await (await this.createCHRNumber()).setValue(property.chrNumber);
       }
+      if (property.cvrNumber) {
+        await (await this.createCVRNumber()).setValue(property.cvrNumber);
+      }
       if (property.address) {
         await (await this.createPropertyAddress()).setValue(property.address);
       }
@@ -251,6 +268,7 @@ export class PropertyRowObject {
   public id: number;
   public name: string;
   public chrNumber: string;
+  public cvrNumber: string;
   public address: string;
   public languages: { languageId: number; languageName: string }[];
   public showPropertyAreasBtn: WebdriverIO.Element;
@@ -264,6 +282,7 @@ export class PropertyRowObject {
       this.id = +await (await this.row.$('#propertyId')).getText();
       this.name = await (await this.row.$('#propertyName')).getText();
       this.chrNumber = await (await this.row.$('#propertyCHR')).getText();
+      this.cvrNumber = await (await this.row.$('#propertyCVR')).getText();
       this.address = await (await this.row.$('#propertyAddress')).getText();
       const languages = (
         await (await this.row.$('#propertyLanguages')).getText()
@@ -336,6 +355,11 @@ export class PropertyRowObject {
         await (
           await backendConfigurationPropertiesPage.editCHRNumber()
         ).setValue(property.chrNumber);
+      }
+      if (property.cvrNumber) {
+        await (
+          await backendConfigurationPropertiesPage.editCVRNumber()
+        ).setValue(property.cvrNumber);
       }
       if (property.address) {
         await (
@@ -459,6 +483,7 @@ export class PropertyRowObject {
 export class PropertyCreateUpdate {
   name?: string;
   chrNumber?: string;
+  cvrNumber?: string;
   address?: string;
   selectedLanguages?: { languageId?: number; languageName?: string }[];
 }

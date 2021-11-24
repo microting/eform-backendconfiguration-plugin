@@ -91,12 +91,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("04. Foderindlægssedler", headers);
 			theList.Add(item);
-			headers = new List<string>
-			{
-				"05. Klargøring af stalde og dokumentation af halebid","05.01 Halebid"
-			};
-			item = new KeyValuePair<string, List<string>>("05. Halebid", headers);
-			theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"05. Klargøring af stalde og dokumentation af halebid","05.01 Halebid"
+			// };
+			// item = new KeyValuePair<string, List<string>>("05. Halebid", headers);
+			// theList.Add(item);
 			headers = new List<string>
 			{
 				"05. Klargøring af stalde og dokumentation af halebid","05.02 Klargøring af stalde"

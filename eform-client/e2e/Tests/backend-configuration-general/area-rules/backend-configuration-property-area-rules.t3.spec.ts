@@ -51,14 +51,14 @@ describe('Backend Configuration Area Rules Type3', function () {
     expect(areaRule.ruleTailBite).eq('Ja');
     expect(areaRule.rulePlanningStatus).eq(false);
 
-    await selectableLists.Navbar.goToEntitySelect();
-    const selectableList = await selectableLists.getLastSelectableListObject();
-    expect(property.name).eq(selectableList.name);
-    await selectableList.openEdit();
-    expect(await (await selectableLists.getFirstEntityItemOnEdit()).name).equal(
-      areaRule.name
-    );
-    await selectableList.closeEdit(true);
+    // await selectableLists.Navbar.goToEntitySelect();
+    // const selectableList = await selectableLists.getLastSelectableListObject();
+    // expect(property.name).eq(selectableList.name);
+    // await selectableList.openEdit();
+    // expect(await (await selectableLists.getFirstEntityItemOnEdit()).name).equal(
+    //   areaRule.name
+    // );
+    // await selectableList.closeEdit(true);
     await backendConfigurationPropertiesPage.goToProperties();
     const lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await lastProperty.openAreasViewModal(0); // go to area rule page
@@ -68,7 +68,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     const oldAreRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '05. Halebid',
+      eform: '22. Sigtetest',
       checkListStable: false,
       tailBite: false,
     };
@@ -86,7 +86,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     let areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '05. Halebid',
+      eform: '22. Sigtetest',
       checkListStable: false,
       tailBite: false,
     };

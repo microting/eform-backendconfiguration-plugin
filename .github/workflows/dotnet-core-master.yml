@@ -41,7 +41,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 5.0.100
+        dotnet-version: 6.0.x
     - name: Use Node.js
       uses: actions/setup-node@v1
       with:
@@ -104,18 +104,7 @@ jobs:
     - name: Plugin testing
       run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin
     - name: The job has failed
-      if: ${{ failure() }}
+      if: always()
       run: |
         cat dotnet_log
         cat eform-angular-frontend/eform-client/npm_log
-        mysql -u root --password=secretpassword -e "show databases" -h localhost
-    - name: Notify slack fail
-      if: ${{ failure() }}
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        message_id: ${{ steps.slack.outputs.message_id }}
-        channel_id: C02EQEMCB08
-        status: FAILED
-        color: danger

@@ -13,49 +13,55 @@ describe('Application settings page - site header section', function () {
     await myEformsPage.Navbar.goToPluginsPage();
     await (await $('#plugin-name')).waitForDisplayed({ timeout: 50000 });
 
-    const backendPlugin = await pluginPage.getFirstPluginRowObj();
-    expect(backendPlugin.id).equal(1);
-    expect(backendPlugin.name).equal('Microting Items Planning Plugin');
-    expect(backendPlugin.version).equal('1.0.0.0');
-    expect(backendPlugin.status, 'status is not equal').eq(false);
+    let plugin = await pluginPage.getFirstPluginRowObj();
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      expect(plugin.name).equal('Microting Items Planning Plugin');
+    } else {
+      expect(plugin.name).equal('Microting Backend Configuration Plugin');
+    }
+    expect(plugin.version).equal('1.0.0.0');
 
-    const itemsPlanningPlugin = await pluginPage.getPluginRowObjByIndex(2);
-    expect(
-      itemsPlanningPlugin,
-      'Items Planning plugin not found or not load'
-    ).not.equal(undefined);
-    expect(itemsPlanningPlugin.id, 'id is not equal').equal(2);
-    expect(itemsPlanningPlugin.name, 'name is not equal').equal(
-      'Microting Backend Configuration Plugin'
-    );
-    expect(itemsPlanningPlugin.version, 'version is not equal').equal(
-      '1.0.0.0'
-    );
-    expect(itemsPlanningPlugin.status, 'status is not equal').eq(false);
+    plugin = await pluginPage.getPluginRowObjByIndex(2);
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      expect(plugin.name).equal('Microting Items Planning Plugin');
+    } else {
+      expect(plugin.name).equal('Microting Backend Configuration Plugin');
+    }
+    expect(plugin.version).equal('1.0.0.0');
   });
 
   it('should activate the plugin', async () => {
-    let backendPlugin = await pluginPage.getFirstPluginRowObj();
-    await backendPlugin.enableOrDisablePlugin();
+    let plugin = await pluginPage.getFirstPluginRowObj();
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      await plugin.enableOrDisablePlugin();
+    } else {
+      plugin = await pluginPage.getPluginRowObjByIndex(2);
+      await plugin.enableOrDisablePlugin();
+    }
+    plugin = await pluginPage.getFirstPluginRowObj();
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      plugin = await pluginPage.getPluginRowObjByIndex(2);
+      await plugin.enableOrDisablePlugin();
+    } else {
+      await plugin.enableOrDisablePlugin();
+    }
 
-    backendPlugin = await pluginPage.getFirstPluginRowObj();
-    expect(backendPlugin.id).equal(1);
-    expect(backendPlugin.name).equal('Microting Items Planning Plugin');
-    expect(backendPlugin.version).equal('1.0.0.0');
-    expect(backendPlugin.status, 'itemsPlanningPlugin is not enabled').eq(true);
+    plugin = await pluginPage.getFirstPluginRowObj();
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      expect(plugin.name).equal('Microting Items Planning Plugin');
+      expect(plugin.status, 'Microting Items Planning Plugin is not enabled').eq(true);
+    } else {
+      expect(plugin.name).equal('Microting Backend Configuration Plugin');
+      expect(plugin.status, 'Microting Backend Configuration Plugin is not enabled').eq(true);
+    }
 
-    let itemsPlanningPlugin = await pluginPage.getPluginRowObjByIndex(2);
-    await itemsPlanningPlugin.enableOrDisablePlugin();
-
-    itemsPlanningPlugin = await pluginPage.getPluginRowObjByIndex(2);
-    expect(itemsPlanningPlugin.id).equal(2);
-    expect(itemsPlanningPlugin.name).equal(
-      'Microting Backend Configuration Plugin'
-    );
-    expect(itemsPlanningPlugin.version).equal('1.0.0.0');
-    expect(
-      itemsPlanningPlugin.status,
-      'backendConfigurationPlugin is not enabled'
-    ).eq(true);
+    plugin = await pluginPage.getPluginRowObjByIndex(2);
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      expect(plugin.name).equal('Microting Items Planning Plugin');
+      expect(plugin.status, 'Microting Items Planning Plugin is not enabled').eq(true);
+    } else {
+      expect(plugin.name).equal('Microting Backend Configuration Plugin');
+      expect(plugin.status, 'Microting Backend Configuration Plugin is not enabled').eq(true);
+    }
   });
 });

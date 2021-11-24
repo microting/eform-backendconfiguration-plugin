@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.eForm.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 {
     using System;
@@ -110,6 +112,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             Address = x.Address,
                             Chr = x.CHR,
                             Name = x.Name,
+                            Cvr = x.CVR,
                             Languages = x.SelectedLanguages
                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(y => new CommonDictionaryModel {Id = y.LanguageId})
@@ -139,13 +142,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 var planningTag = new PlanningTag
                 {
-                    Name = propertyCreateModel.Name,
+                    Name = propertyCreateModel.FullName(),
                 };
                 await planningTag.Create(_itemsPlanningPnDbContext);
                 var newProperty = new Property
                 {
                     Address = propertyCreateModel.Address,
                     CHR = propertyCreateModel.Chr,
+                    CVR = propertyCreateModel.Cvr,
                     Name = propertyCreateModel.Name,
                     CreatedByUserId = _userService.UserId,
                     UpdatedByUserId = _userService.UserId,
@@ -203,6 +207,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         Id = x.Id,
                         Address = x.Address,
                         Chr = x.CHR,
+                        Cvr = x.CVR,
                         Name = x.Name,
                         Languages = x.SelectedLanguages
                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -244,6 +249,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 property.Address = updateModel.Address;
                 property.CHR = updateModel.Chr;
+                property.CVR = updateModel.Cvr;
                 property.Name = updateModel.Name;
                 property.UpdatedByUserId = _userService.UserId;
 
@@ -253,7 +259,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .FirstOrDefaultAsync();
                 if (planningTag != null)
                 {
-                    planningTag.Name = updateModel.Name;
+                    planningTag.Name = updateModel.FullName();
                     planningTag.UpdatedByUserId = _userService.UserId;
                     await planningTag.Update(_itemsPlanningPnDbContext);
                 }
@@ -383,6 +389,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             }
                         }
 
+                        string eformName = $"05. Halebid - {property.Name}";
+                        var eForm = await sdkDbContext.CheckListTranslations
+                            .Where(x => x.Text == eformName)
+                            .FirstOrDefaultAsync();
+                        if (eForm != null)
+                        {
+                            foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
+                                x.CheckListId == eForm.CheckListId))
+                            {
+                                await core.CaseDelete(checkListSite.MicrotingUid);
+                            }
+                        }
                         // delete translations for are rules
                         foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
@@ -419,6 +437,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                                     planning.UpdatedByUserId = _userService.UserId;
                                     await planning.Delete(_itemsPlanningPnDbContext);
+
+                                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                                        .Where(x => x.PlanningId == planning.Id)
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .ToListAsync();
+                                    foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
+                                    {
+                                        planningCaseSite.UpdatedByUserId = _userService.UserId;
+                                        await planningCaseSite.Delete(_itemsPlanningPnDbContext);
+                                        var result =
+                                            await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                        if (result.MicrotingUid != null)
+                                        {
+                                            await core.CaseDelete((int) result.MicrotingUid);
+                                        }
+                                    }
                                 }
                             }
 
@@ -481,7 +515,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Select(x => new CommonDictionaryModel
                     {
                         Id = x.Id,
-                        Name = x.Name,
+                        Name = $"{x.CVR} - {x.CHR} - {x.Name}",
                         Description = "",
                     }).ToListAsync();
                 return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
