@@ -34,14 +34,6 @@ export class PropertiesStateService {
     return this.query.selectSort$;
   }
 
-  // getSort(): Observable<string> {
-  //   return this.query.selectSort$;
-  // }
-  //
-  // getIsSortDsc(): Observable<boolean> {
-  //   return this.query.selectIsSortDsc$;
-  // }
-
   getNameFilter(): Observable<string> {
     return this.query.selectNameFilter$;
   }
@@ -133,15 +125,6 @@ export class PropertiesStateService {
         },
       }));
     }
-  }
-
-  updateDescriptionFilter(newDescriptionFilter: string) {
-    this.store.update((state) => ({
-      filters: {
-        ...state.filters,
-        descriptionFilter: newDescriptionFilter,
-      },
-    }));
   }
 
   getPagination(): Observable<PaginationModel> {

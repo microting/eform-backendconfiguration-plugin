@@ -11,6 +11,7 @@ import { BackendConfigurationPnClaims } from '../../../../enums';
 import { PropertyModel } from '../../../../models/properties';
 import { applicationLanguages } from 'src/app/common/const';
 import * as R from 'ramda';
+import { PropertiesStateService } from 'src/app/plugins/modules/backend-configuration-pn/components/properties/store';
 
 @Component({
   selector: 'app-properties-table',
@@ -28,26 +29,30 @@ export class PropertiesTableComponent implements OnInit {
   showPropertyAreasModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   @Output()
   showDeletePropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
+  @Output()
+  sortUpdated: EventEmitter<void> = new EventEmitter<void>();
 
   tableHeaders: TableHeaderElementModel[] = [
-    { name: 'Id', elementId: 'idTableHeader', sortable: false },
-    { name: 'Name', elementId: 'nameTableHeader', sortable: false },
+    { name: 'Id', elementId: 'idTableHeader', sortable: true },
+    { name: 'Name', elementId: 'nameTableHeader', sortable: true },
     {
-      name: 'CVR Number',
+      name: 'CVR',
+      visibleName: 'CVR Number',
       elementId: 'cvrNumberTableHeader',
-      sortable: false,
+      sortable: true,
     },
     {
-      name: 'CHR Number',
+      name: 'CHR',
+      visibleName: 'CHR Number',
       elementId: 'chrNumberTableHeader',
-      sortable: false,
+      sortable: true,
     },
     {
       name: 'Address',
       elementId: 'addressTableHeader',
-      sortable: false,
+      sortable: true,
     },
-    { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
+    { name: 'Languages', elementId: 'languagesTableHeader', sortable: true },
     { name: 'Actions', elementId: '', sortable: false },
   ];
 
@@ -55,7 +60,7 @@ export class PropertiesTableComponent implements OnInit {
     return BackendConfigurationPnClaims;
   }
 
-  constructor() {}
+  constructor(public propertiesStateService: PropertiesStateService) {}
 
   ngOnInit(): void {}
 
@@ -85,5 +90,10 @@ export class PropertiesTableComponent implements OnInit {
       languages = [...languages, this.getLanguageNameById(language.id)];
     }
     return R.join(' | ', languages);
+  }
+
+  sortTable(sort: string) {
+    this.propertiesStateService.onSortTable(sort);
+    this.sortUpdated.emit();
   }
 }

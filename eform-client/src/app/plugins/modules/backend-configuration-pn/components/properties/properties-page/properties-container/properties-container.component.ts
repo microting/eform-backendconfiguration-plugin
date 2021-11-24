@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { Paged } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import { PropertyAreasViewModalComponent } from 'src/app/plugins/modules/backend-configuration-pn/components';
@@ -20,6 +20,7 @@ import {
 } from '../../../../models';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import { PropertiesStateService } from '../../store';
+import { debounceTime } from 'rxjs/operators';
 
 @AutoUnsubscribe()
 @Component({
@@ -40,7 +41,7 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   editPropertyAreasModal: PropertyAreasEditModalComponent;
 
   // descriptionSearchSubject = new Subject();
-  // nameSearchSubject = new Subject();
+  nameSearchSubject = new Subject();
   propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
 
   getPropertiesSub$: Subscription;
@@ -55,10 +56,10 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
     public propertiesStateService: PropertiesStateService,
     public authStateService: AuthStateService
   ) {
-    // this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
-    //   this.propertiesStateService.updateNameFilter(val.toString());
-    //   this.getProperties();
-    // });
+    this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
+      this.propertiesStateService.updateNameFilter(val.toString());
+      this.getProperties();
+    });
   }
 
   get backendConfigurationPnClaims() {
@@ -167,7 +168,7 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   //   this.getProperties();
   // }
 
-  // onNameFilterChanged(name: string) {
-  //   this.nameSearchSubject.next(name);
-  // }
+  onNameFilterChanged(name: string) {
+    this.nameSearchSubject.next(name);
+  }
 }

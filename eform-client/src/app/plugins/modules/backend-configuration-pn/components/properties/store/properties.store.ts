@@ -21,7 +21,7 @@ function createInitialState(): PropertiesState {
     },
     filters: {
       nameFilter: '',
-      tagIds: [],
+      // tagIds: [],
     },
     totalProperties: 0,
   };
