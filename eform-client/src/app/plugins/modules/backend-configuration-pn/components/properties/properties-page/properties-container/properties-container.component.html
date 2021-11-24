@@ -14,12 +14,28 @@
 </eform-subheader>
 
 <div class="container-fluid">
+  <div class="row pl-1">
+    <div class="col-md-2">
+      <div class="md-form">
+        <input
+          mdbInput
+          (ngModelChange)="onNameFilterChanged($event)"
+          [ngModel]="propertiesStateService.getNameFilter() | async"
+          type="text"
+          class="form-control"
+          id="nameInput"
+        />
+        <label for="nameInput">{{ 'Search' | translate }}</label>
+      </div>
+    </div>
+  </div>
   <app-properties-table
     [propertiesModel]="propertiesModel"
     (showDeletePropertyModal)="showDeletePropertyModal($event)"
     (showEditPropertyModal)="showEditPropertyModal($event)"
     (showEditPropertyAreasModal)="showEditPropertyAreasModal($event)"
     (showPropertyAreasModal)="showViewPropertyAreasModal($event)"
+    (sortUpdated)="getProperties()"
   ></app-properties-table>
   <!--  <div class="row justify-content-between mr-2 ml-2">-->
   <!--    <div class="col-md-1 col-sm-3">-->
