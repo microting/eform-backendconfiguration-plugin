@@ -26,12 +26,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 {
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-    public class ProperiesRequesModel : PaginationModel
+    public class ProperiesRequesModel : FilterAndSortModel
     {
-        public string Sort { get; set; }
+        public int PageIndex { get; set; }
 
-        public bool IsSortDsc { get; set; }
+        public int PageSize { get; set; }
 
-        public string NameFilter { get; set; }
+        public int Offset { get; set; }
     }
 }

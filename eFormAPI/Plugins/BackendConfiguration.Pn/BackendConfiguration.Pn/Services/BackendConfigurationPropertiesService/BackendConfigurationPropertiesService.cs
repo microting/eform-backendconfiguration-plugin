@@ -28,6 +28,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
     using BackendConfigurationLocalizationService;
@@ -71,26 +72,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         {
             try
             {
-                // get query
+                Debugger.Break();
                 var propertiesQuery = _backendConfigurationPnDbContext.Properties
                     .Include(x => x.SelectedLanguages)
                     .Include(x => x.PropertyWorkers)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-                // add sort
-                //propertiesQuery = QueryHelper.AddSortToQuery(propertiesQuery, request.Sort, request.IsSortDsc);
-
-                // add filtering
-                //if (!string.IsNullOrEmpty(request.NameFilter))
-                //{
-                //    propertiesQuery = QueryHelper
-                //        .AddFilterToQuery(propertiesQuery, new List<string>
-                //        {
-                //            "Name",
-                //            "CHR",
-                //            "Address",
-                //        }, request.NameFilter);
-                //}
+                var nameFields = new List<string> { "Name", "CHR", "Address", "CVR" };
+                propertiesQuery = QueryHelper.AddFilterAndSortToQuery(propertiesQuery, request, nameFields);
 
                 // get total
                 var total = await propertiesQuery.Select(x => x.Id).CountAsync();
@@ -100,9 +89,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 if (total > 0)
                 {
                     // pagination
-                    //propertiesQuery = propertiesQuery
-                    //    .Skip(request.Offset)
-                    //    .Take(request.PageSize);
+                    //propertiesquery = propertiesquery
+                    //    .skip(request.offset)
+                    //    .take(request.pagesize);
 
                     // add select to query and get from db
                     properties = await propertiesQuery
