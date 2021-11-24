@@ -87,9 +87,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 if (total > 0)
                 {
                     // pagination
-                    //propertiesquery = propertiesquery
-                    //    .skip(request.offset)
-                    //    .take(request.pagesize);
+                    //propertiesQuery = propertiesQuery
+                    //    .Skip(request.Offset)
+                    //    .Take(request.PageSize);
 
                     // add select to query and get from db
                     properties = await propertiesQuery
