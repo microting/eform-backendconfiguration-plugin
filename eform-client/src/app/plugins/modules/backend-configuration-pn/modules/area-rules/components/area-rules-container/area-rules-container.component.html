@@ -1,4 +1,8 @@
-<eform-subheader [title]="selectedArea.name" [forceStaticTitle]="true">
+<eform-subheader
+  [title]="selectedArea.name"
+  [forceStaticTitle]="true"
+  [breadcrumbs]="breadcrumbs"
+>
   <div class="p-3" *ngIf="selectedArea.type !== 4">
     <button
       mdbBtn

@@ -121,4 +121,11 @@ export class BackendConfigurationPnPropertiesService {
       { propertyId: propertyId }
     );
   }
+
+  readProperty(id: number): Observable<OperationDataResult<PropertyModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.Properties,
+      { id: id }
+    );
+  }
 }

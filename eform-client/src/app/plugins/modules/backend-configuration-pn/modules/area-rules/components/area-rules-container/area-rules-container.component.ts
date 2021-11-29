@@ -15,8 +15,13 @@ import {
   AreaRuleSimpleModel,
   AreaRuleUpdateModel,
   AreaModel,
+  PropertyModel,
 } from '../../../../models';
-import { BackendConfigurationPnAreasService } from '../../../../services';
+import {
+  BackendConfigurationPnAreasService,
+  BackendConfigurationPnPropertiesService,
+} from '../../../../services';
+import { TranslateService } from '@ngx-translate/core';
 
 @AutoUnsubscribe()
 @Component({
@@ -25,7 +30,6 @@ import { BackendConfigurationPnAreasService } from '../../../../services';
   styleUrls: ['./area-rules-container.component.scss'],
 })
 export class AreaRulesContainerComponent implements OnInit, OnDestroy {
-  areaRules: AreaRuleSimpleModel[] = [];
   @ViewChild('createAreaRuleModal', { static: false })
   createAreaRuleModal: AreaRuleCreateModalComponent;
   @ViewChild('editAreaRuleModal', { static: false })
@@ -35,9 +39,19 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   @ViewChild('planAreaRuleModal', { static: false })
   planAreaRuleModal: AreaRulePlanModalComponent;
 
+  areaRules: AreaRuleSimpleModel[] = [];
   selectedArea: AreaModel = new AreaModel();
   propertyAreaId: number;
   selectedPropertyId: number;
+  selectedProperty: PropertyModel;
+  breadcrumbs = [
+    {
+      name: '',
+      href: '/plugins/backend-configuration-pn/properties',
+    },
+    { name: '' },
+    { name: '' },
+  ];
 
   getAreaRulesSub$: Subscription;
   getAreaRulePlanningSub$: Subscription;
@@ -47,17 +61,26 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   editAreaRuleSub$: Subscription;
   deleteAreaRuleSub$: Subscription;
   planAreaRuleSub$: Subscription;
+  getAllPropertiesDictionarySub$: Subscription;
+  getTranslateSub$: Subscription;
+  routerSub$: Subscription;
 
   constructor(
     private areasService: BackendConfigurationPnAreasService,
     public authStateService: AuthStateService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
+    private translateService: TranslateService
   ) {}
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.routerSub$ = this.route.params.subscribe((params) => {
+      this.getTranslateSub$ = this.translateService
+        .get('Properties')
+        .subscribe((translate) => (this.breadcrumbs[0].name = translate));
       this.propertyAreaId = +params['propertyAreaId'];
       this.selectedPropertyId = +params['propertyId'];
+      this.getProperty(this.selectedPropertyId);
       this.getAreaRules(this.propertyAreaId);
       this.getArea(this.propertyAreaId);
     });
@@ -69,6 +92,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.selectedArea = operation.model;
+          this.breadcrumbs[2] = { name: this.selectedArea.name };
         }
       });
   }
@@ -157,6 +181,17 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
         if (data && data.success) {
           this.getAreaRules(this.propertyAreaId);
           this.planAreaRuleModal.hide();
+        }
+      });
+  }
+
+  private getProperty(selectedPropertyId: number) {
+    this.getAllPropertiesDictionarySub$ = this.backendConfigurationPnPropertiesService
+      .readProperty(selectedPropertyId)
+      .subscribe((data) => {
+        if (data && data.success) {
+          this.selectedProperty = data.model;
+          this.breadcrumbs[1] = { name: this.selectedProperty.name };
         }
       });
   }
