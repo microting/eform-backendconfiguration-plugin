@@ -564,7 +564,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "17. Brandslukkere",
+                        Name = "17. Håndildslukkere",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 1
                     },
@@ -583,7 +583,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = "17. Brandslukkere",
+                    EformName = "17. Håndildslukkere",
                     Notifications = true,
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
