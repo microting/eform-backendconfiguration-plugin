@@ -36,7 +36,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
     const worker = await backendConfigurationPropertyWorkersPage.getLastRowObject();
-    expect(worker.firstName).eq(workerForCreate.name);
+    expect(worker.fullName).eq(workerForCreate.name + ' ' + workerForCreate.surname);
     const properties = await worker.getAssignedProperties();
     expect(properties).deep.eq([
       { propertyName: property.cvrNumber + ' - ' + property.chrNumber + ' - ' + property.name, checked: true },
@@ -65,8 +65,8 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     expect(properties).deep.eq([
       { propertyName: property.cvrNumber + ' - ' + property.chrNumber + ' - ' + property.name, checked: false },
     ]);
-    expect(worker.firstName).eq(workerForCreate.name);
-    expect(worker.lastName).eq(workerForCreate.surname);
+    expect(worker.fullName).eq(workerForCreate.name + ' ' + workerForCreate.surname);
+    // expect(worker.lastName).eq(workerForCreate.surname);
     expect(worker.language).eq(workerForCreate.language);
     // check inputs
     await worker.openEditModal(null);

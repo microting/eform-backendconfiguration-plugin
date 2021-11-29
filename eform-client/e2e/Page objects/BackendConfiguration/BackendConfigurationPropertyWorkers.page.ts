@@ -151,7 +151,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   async getDeviceUserByName(name: string): Promise<PropertyWorkerRowObject> {
     for (let i = 1; i < (await this.rowNum()) + 1; i++) {
       const deviceUser = await this.getDeviceUser(i);
-      if (deviceUser.firstName === name) {
+      if (deviceUser.fullName === name) {
         return deviceUser;
       }
     }
@@ -235,24 +235,18 @@ export class PropertyWorkerRowObject {
   constructor() {}
 
   siteId: number;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   language: string;
   editBtn: WebdriverIO.Element;
   deleteBtn: WebdriverIO.Element;
 
   async getRow(rowNum: number) {
     if ((await $$('#deviceUserId'))[rowNum - 1]) {
-      this.siteId = +(await (await $$('#deviceUserId')[rowNum - 1]).getText());
+      this.siteId = +await (await $$('#deviceUserId'))[rowNum - 1].getText();
       try {
-        this.firstName = await (
-          await $$('#deviceUserFirstName')[rowNum - 1]
-        ).getText();
-      } catch (e) {}
-      try {
-        this.lastName = await (
-          await $$('#deviceUserLastName')[rowNum - 1]
-        ).getText();
+        this.fullName = await
+          (await $$('#deviceUserFullName'))[rowNum - 1]
+        .getText();
       } catch (e) {}
       this.language = await (await $$('#deviceUserLanguage'))[
         rowNum - 1
