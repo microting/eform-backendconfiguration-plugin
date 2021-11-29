@@ -60,6 +60,12 @@ export class AreaRulePlanModalComponent implements OnInit {
     this.selectedAreaRulePlanning = planning
       ? { ...planning, propertyId: selectedPropertyId }
       : this.generateInitialPlanningObject(rule, selectedPropertyId);
+    if (this.selectedArea.type === 5) {
+      this.selectedAreaRulePlanning.typeSpecificFields = <AreaRuleT5PlanningModel> this.selectedAreaRulePlanning.typeSpecificFields;
+        if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek !== rule.typeSpecificFields.dayOfWeek) {
+          this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = rule.typeSpecificFields.dayOfWeek;
+        }
+    }
     this.frame.show();
   }
 
@@ -166,7 +172,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     }
     if (this.selectedArea.type === 5) {
       return {
-        dayOfWeek: 1,
+        dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
         repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
         repeatType: 2,
       };
