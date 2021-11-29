@@ -4,6 +4,7 @@ export const da = {
   Area: 'Område',
   'Read more': 'Læs mere',
   'CHR Number': 'CHR nummer',
+  'CVR Number': 'CVR nummer',
   Address: 'Adresse',
   Languages: 'Sprog',
   'View property areas': 'Vis valgte områder',

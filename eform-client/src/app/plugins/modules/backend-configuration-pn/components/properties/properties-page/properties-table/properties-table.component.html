@@ -1,4 +1,4 @@
-<div class="row p-1 mt-4 table-responsive no-gutters">
+<div class="row p-1 mt-1 table-responsive no-gutters">
   <table
     mdbTable
     striped="true"
@@ -9,7 +9,8 @@
     <thead
       table-headers
       [tableHeaders]="tableHeaders"
-      [stickyHeader]="true"
+      [sort]="propertiesStateService.getSort() | async"
+      (sortChanged)="sortTable($event)"
     ></thead>
     <tbody id="properiesTableBody">
       <tr *ngFor="let property of propertiesModel.entities; let i = index">
@@ -18,6 +19,9 @@
         </td>
         <td id="propertyName">
           {{ property.name }}
+        </td>
+        <td id="propertyCVR">
+          {{ property.cvr }}
         </td>
         <td id="propertyCHR">
           {{ property.chr }}

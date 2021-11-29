@@ -71,26 +71,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         {
             try
             {
-                // get query
                 var propertiesQuery = _backendConfigurationPnDbContext.Properties
                     .Include(x => x.SelectedLanguages)
                     .Include(x => x.PropertyWorkers)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-                // add sort
-                //propertiesQuery = QueryHelper.AddSortToQuery(propertiesQuery, request.Sort, request.IsSortDsc);
-
-                // add filtering
-                //if (!string.IsNullOrEmpty(request.NameFilter))
-                //{
-                //    propertiesQuery = QueryHelper
-                //        .AddFilterToQuery(propertiesQuery, new List<string>
-                //        {
-                //            "Name",
-                //            "CHR",
-                //            "Address",
-                //        }, request.NameFilter);
-                //}
+                var nameFields = new List<string> { "Name", "CHR", "Address", "CVR" };
+                propertiesQuery = QueryHelper.AddFilterAndSortToQuery(propertiesQuery, request, nameFields);
 
                 // get total
                 var total = await propertiesQuery.Select(x => x.Id).CountAsync();
@@ -112,6 +99,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             Address = x.Address,
                             Chr = x.CHR,
                             Name = x.Name,
+                            Cvr = x.CVR,
                             Languages = x.SelectedLanguages
                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(y => new CommonDictionaryModel {Id = y.LanguageId})
@@ -148,6 +136,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 {
                     Address = propertyCreateModel.Address,
                     CHR = propertyCreateModel.Chr,
+                    CVR = propertyCreateModel.Cvr,
                     Name = propertyCreateModel.Name,
                     CreatedByUserId = _userService.UserId,
                     UpdatedByUserId = _userService.UserId,
@@ -205,6 +194,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         Id = x.Id,
                         Address = x.Address,
                         Chr = x.CHR,
+                        Cvr = x.CVR,
                         Name = x.Name,
                         Languages = x.SelectedLanguages
                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -246,6 +236,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 property.Address = updateModel.Address;
                 property.CHR = updateModel.Chr;
+                property.CVR = updateModel.Cvr;
                 property.Name = updateModel.Name;
                 property.UpdatedByUserId = _userService.UserId;
 
@@ -511,7 +502,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Select(x => new CommonDictionaryModel
                     {
                         Id = x.Id,
-                        Name = x.Name,
+                        Name = $"{x.CVR} - {x.CHR} - {x.Name}",
                         Description = "",
                     }).ToListAsync();
                 return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);

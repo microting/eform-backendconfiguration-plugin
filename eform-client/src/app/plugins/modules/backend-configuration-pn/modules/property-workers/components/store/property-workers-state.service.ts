@@ -1,34 +1,24 @@
 import { Injectable } from '@angular/core';
-import { PropertiesStore, PropertiesQuery } from './';
+import { PropertyWorkersStore, PropertyWorkersQuery } from './';
 import { Observable } from 'rxjs';
-import {
-  OperationDataResult,
-  Paged,
-  PaginationModel,
-  SortModel,
-} from 'src/app/common/models';
-import { updateTableSort } from 'src/app/common/helpers';
-import { getOffset } from 'src/app/common/helpers/pagination.helper';
+import { OperationDataResult, SiteDto, SortModel } from 'src/app/common/models';
+import { updateTableSort, getOffset } from 'src/app/common/helpers';
 import { map } from 'rxjs/operators';
-import { PropertyModel } from '../../../models';
-import { BackendConfigurationPnPropertiesService } from '../../../services';
-import { arrayToggle } from '@datorama/akita';
+import { BackendConfigurationPnPropertiesService } from '../../../../services';
+import { DeviceUserService } from 'src/app/common/services';
 
 @Injectable({ providedIn: 'root' })
-export class PropertiesStateService {
+export class PropertyWorkersStateService {
   constructor(
-    private store: PropertiesStore,
+    private store: PropertyWorkersStore,
     private service: BackendConfigurationPnPropertiesService,
-    private query: PropertiesQuery
+    private query: PropertyWorkersQuery,
+    private deviceUserService: DeviceUserService
   ) {}
 
-  // getOffset(): Observable<number> {
-  //   return this.query.selectOffset$;
+  // getPageSize(): Observable<number> {
+  //   return this.query.selectPageSize$;
   // }
-
-  getPageSize(): Observable<number> {
-    return this.query.selectPageSize$;
-  }
 
   getSort(): Observable<SortModel> {
     return this.query.selectSort$;
@@ -38,20 +28,14 @@ export class PropertiesStateService {
     return this.query.selectNameFilter$;
   }
 
-  getAllProperties(): Observable<OperationDataResult<Paged<PropertyModel>>> {
-    return this.service
-      .getAllProperties({
-        ...this.query.pageSetting.pagination,
+  getDeviceUsersFiltered(): Observable<OperationDataResult<SiteDto[]>> {
+    return this.deviceUserService
+      .getDeviceUsersFiltered({
         ...this.query.pageSetting.filters,
-        pageIndex: 0,
+        ...this.query.pageSetting.pagination,
       })
       .pipe(
         map((response) => {
-          if (response && response.success && response.model) {
-            this.store.update(() => ({
-              totalProperties: response.model.total,
-            }));
-          }
           return response;
         })
       );
@@ -70,24 +54,24 @@ export class PropertiesStateService {
     }));
   }
 
-  updatePageSize(pageSize: number) {
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        pageSize: pageSize,
-      },
-    }));
-    this.checkOffset();
-  }
-
-  changePage(offset: number) {
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        offset: offset,
-      },
-    }));
-  }
+  // updatePageSize(pageSize: number) {
+  //   this.store.update((state) => ({
+  //     pagination: {
+  //       ...state.pagination,
+  //       pageSize: pageSize,
+  //     },
+  //   }));
+  //   this.checkOffset();
+  // }
+  //
+  // changePage(offset: number) {
+  //   this.store.update((state) => ({
+  //     pagination: {
+  //       ...state.pagination,
+  //       offset: offset,
+  //     },
+  //   }));
+  // }
 
   onDelete() {
     this.store.update((state) => ({
@@ -127,7 +111,7 @@ export class PropertiesStateService {
     }
   }
 
-  getPagination(): Observable<PaginationModel> {
-    return this.query.selectPagination$;
-  }
+  // getPagination(): Observable<PaginationModel> {
+  //   return this.query.selectPagination$;
+  // }
 }

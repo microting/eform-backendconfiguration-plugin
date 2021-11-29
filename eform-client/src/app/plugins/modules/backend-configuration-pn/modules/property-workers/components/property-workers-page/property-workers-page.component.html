@@ -21,7 +21,7 @@
         <input
           mdbInput
           (ngModelChange)="onSearchChanged($event)"
-          [ngModel]="deviceUsersStateService.getNameFilter() | async"
+          [ngModel]="propertyWorkersStateService.getNameFilter() | async"
           type="text"
           class="form-control"
           id="labelInput"
@@ -38,17 +38,18 @@
       small="true"
       class="z-depth-1 text-center"
     >
-      <thead table-headers [tableHeaders]="tableHeaders"></thead>
+      <thead
+        table-headers
+        [tableHeaders]="tableHeaders"
+        [sort]="propertyWorkersStateService.getSort() | async"
+        (sortChanged)="sortTable($event)"
+      ></thead>
       <tbody id="tableBody">
         <tr *ngFor="let siteDto of sitesDto">
           <td id="deviceUserId">{{ siteDto.siteUid }}</td>
-          <td id="deviceUserFirstName">
-            {{ siteDto.firstName }}
-            <ng-container *ngIf="!siteDto.firstName"> N/A</ng-container>
-          </td>
-          <td id="deviceUserLastName">
-            {{ siteDto.lastName }}
-            <ng-container *ngIf="!siteDto.lastName"> N/A</ng-container>
+          <td id="deviceUserFullName">
+            {{ siteDto.siteName }}
+            <ng-container *ngIf="!siteDto.siteName"> N/A</ng-container>
           </td>
           <td>
             {{ siteDto.unitId }}

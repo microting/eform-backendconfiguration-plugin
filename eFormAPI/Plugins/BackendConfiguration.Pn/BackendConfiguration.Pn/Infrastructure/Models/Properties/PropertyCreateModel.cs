@@ -29,12 +29,14 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
     public class PropertyCreateModel
     {
         public string Name { get; set; }
-        
+
         public string Chr { get; set; }
 
         public string Address { get; set; }
 
         public List<int> LanguagesIds { get; set; }
+
+        public string Cvr { get; set; }
 
         public string FullName()
         {

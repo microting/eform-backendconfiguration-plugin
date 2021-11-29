@@ -5,19 +5,19 @@ import {
   CommonPaginationState,
 } from 'src/app/common/models';
 
-export interface PropertiesState {
+export interface PropertyWorkersState {
   pagination: CommonPaginationState;
   filters: FiltrationStateModel;
   totalProperties: number;
 }
 
-function createInitialState(): PropertiesState {
-  return <PropertiesState>{
+function createInitialState(): PropertyWorkersState {
+  return <PropertyWorkersState>{
     pagination: {
-      pageSize: 10,
-      sort: 'Id',
+      // pageSize: 10,
+      sort: 'MicrotingUid',
       isSortDsc: false,
-      offset: 0,
+      // offset: 0,
     },
     filters: {
       nameFilter: '',
@@ -27,10 +27,10 @@ function createInitialState(): PropertiesState {
   };
 }
 
-const propertiesPersistStorage = persistState({
-  include: ['properties'],
+const propertyWorkersPersistStorage = persistState({
+  include: ['propertyWorkers'],
   key: 'backendConfigurationPn',
-  preStorageUpdate(storeName, state: PropertiesState) {
+  preStorageUpdate(storeName, state: PropertyWorkersState) {
     return {
       pagination: state.pagination,
       filters: state.filters,
@@ -39,15 +39,15 @@ const propertiesPersistStorage = persistState({
 });
 
 @Injectable({ providedIn: 'root' })
-@StoreConfig({ name: 'properties', resettable: true })
-export class PropertiesStore extends Store<PropertiesState> {
+@StoreConfig({ name: 'propertyWorkers', resettable: true })
+export class PropertyWorkersStore extends Store<PropertyWorkersState> {
   constructor() {
     super(createInitialState());
   }
 }
 
-export const propertiesPersistProvider = {
+export const propertyWorkersPersistProvider = {
   provide: 'persistStorage',
-  useValue: propertiesPersistStorage,
+  useValue: propertyWorkersPersistStorage,
   multi: true,
 };

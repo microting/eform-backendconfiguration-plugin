@@ -11,7 +11,7 @@ import {
 import { AuthStateService } from 'src/app/common/store';
 import { PropertyAssignWorkersModel } from '../../../../models';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
-import { DeviceUsersStateService } from 'src/app/modules/device-users/components/store';
+import { PropertyWorkersStateService } from '../store';
 
 @AutoUnsubscribe()
 @Component({
@@ -30,11 +30,20 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   workersAssignments: PropertyAssignWorkersModel[];
 
   tableHeaders: TableHeaderElementModel[] = [
-    { name: 'Site ID', sortable: false, elementId: '' },
-    { name: 'First name', sortable: false, elementId: '' },
-    { name: 'Last name', sortable: false, elementId: '' },
+    {
+      name: 'MicrotingUid',
+      visibleName: 'Site ID',
+      sortable: true,
+      elementId: '',
+    },
+    { name: 'Name', sortable: true, elementId: '' },
     { name: 'Device ID', sortable: false, elementId: '' },
-    { name: 'Language', sortable: false, elementId: '' },
+    {
+      name: 'LanguageId',
+      visibleName: 'Language',
+      sortable: true,
+      elementId: '',
+    },
     { name: 'Properties', sortable: false, elementId: '' },
     { name: 'Customer no & OTP', sortable: false, elementId: '' },
     this.authStateService.currentUserClaims.deviceUsersDelete ||
@@ -55,7 +64,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     private deviceUsersService: DeviceUserService,
     private authStateService: AuthStateService,
     private propertiesService: BackendConfigurationPnPropertiesService,
-    public deviceUsersStateService: DeviceUsersStateService
+    public propertyWorkersStateService: PropertyWorkersStateService
   ) {}
 
   ngOnInit() {
@@ -145,12 +154,17 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   }
 
   onSearchChanged(name: string) {
-    this.deviceUsersStateService.updateNameFilter(name);
+    this.propertyWorkersStateService.updateNameFilter(name);
+    this.getDeviceUsersFiltered();
+  }
+
+  sortTable(sort: string) {
+    this.propertyWorkersStateService.onSortTable(sort);
     this.getDeviceUsersFiltered();
   }
 
   getDeviceUsersFiltered() {
-    this.getSites$ = this.deviceUsersStateService
+    this.getSites$ = this.propertyWorkersStateService
       .getDeviceUsersFiltered()
       .subscribe((data) => {
         if (data && data.model) {
