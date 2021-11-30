@@ -23,6 +23,7 @@ SOFTWARE.
 */
 namespace BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index
 {
+    using System;
 
     public class CompliancesModel
     {
@@ -32,7 +33,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index
         
         public string Item { get; set; }
 
-        public string Deadline { get; set; }
+        public DateTime Deadline { get; set; }
 
         public string Responsible { get; set; }
 
