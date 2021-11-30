@@ -37,19 +37,10 @@
             <button
               id="showPropertyAreasBtn"
               class="btn btn-success btn-icon mr-2"
-              mdbTooltip="{{ 'View property areas' | translate }}"
-              [disabled]="!property.isWorkersAssigned"
-              (click)="onShowPropertyAreasModal(property)"
+              mdbTooltip="{{ 'View areas' | translate }}"
+              [routerLink]="'../property-areas/' + property.id"
             >
               <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
-            </button>
-            <button
-              id="editPropertyAreasBtn"
-              class="btn btn-accent text-black-50 btn-icon mb-2"
-              mdbTooltip="{{ 'Configure property areas' | translate }}"
-              (click)="onShowEditPropertyAreasModal(property)"
-            >
-              <fa-icon icon="cogs" size="lg" [fixedWidth]="true"></fa-icon>
             </button>
             <button
               id="editPropertyBtn"
