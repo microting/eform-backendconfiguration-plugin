@@ -49,7 +49,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       name: '',
       href: '/plugins/backend-configuration-pn/properties',
     },
-    { name: '' },
+    { name: '', href: '' },
     { name: '' },
   ];
 
@@ -191,7 +191,10 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.success) {
           this.selectedProperty = data.model;
-          this.breadcrumbs[1] = { name: this.selectedProperty.name };
+          this.breadcrumbs[1] = {
+            name: this.selectedProperty.name,
+            href: `/plugins/backend-configuration-pn/property-areas/${this.selectedProperty.id}`,
+          };
         }
       });
   }
