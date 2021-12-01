@@ -98,8 +98,8 @@ export class PropertiesTableComponent implements OnInit {
         return 'bg-danger';
       case PropertyCompliancesColorBadgesEnum.Warning:
         return 'bg-warning';
-      // default:
-      //   return 'bg-success';
+      default:
+        return 'bg-success';
     }
   }
 }
