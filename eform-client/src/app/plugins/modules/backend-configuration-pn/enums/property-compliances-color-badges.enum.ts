@@ -1,5 +1,5 @@
 export enum PropertyCompliancesColorBadgesEnum {
-  Success,
+  Success = 1,
   Warning,
   Danger,
 }
