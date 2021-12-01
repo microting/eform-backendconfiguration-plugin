@@ -1,4 +1,5 @@
 import { CommonDictionaryModel } from 'src/app/common/models';
+import { PropertyCompliancesColorBadgesEnum } from '../../enums';
 
 export class PropertyModel {
   id: number;
@@ -8,4 +9,5 @@ export class PropertyModel {
   address: string;
   languages: CommonDictionaryModel[] = [];
   isWorkersAssigned: boolean;
+  compliance: PropertyCompliancesColorBadgesEnum;
 }
