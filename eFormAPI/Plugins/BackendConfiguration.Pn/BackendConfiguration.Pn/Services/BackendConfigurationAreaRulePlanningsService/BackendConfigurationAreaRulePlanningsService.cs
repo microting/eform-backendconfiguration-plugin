@@ -474,6 +474,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                         x.Id == site.LanguageId);
                                                 if (!sdkDbContext.CheckListSites.Any(x =>
                                                     x.CheckListId == eformId &&
+                                                    x.SiteId == siteId &&
                                                     x.WorkflowState != Constants.WorkflowStates.Removed))
                                                 {
                                                     var mainElement = await core.ReadeForm(eformId, language);
@@ -1453,6 +1454,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
                                 if (!sdkDbContext.CheckListSites.Any(x =>
                                     x.CheckListId == eformId &&
+                                    x.SiteId == siteId &&
                                     x.WorkflowState != Constants.WorkflowStates.Removed))
                                 {
                                     var mainElement = await core.ReadeForm(eformId, language);
