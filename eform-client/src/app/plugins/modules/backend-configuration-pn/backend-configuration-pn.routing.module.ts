@@ -47,6 +47,14 @@ export const routes: Routes = [
             (m) => m.AreaRulesModule
           ),
       },
+      {
+        path: 'compliances',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/compliance/compliance.module').then(
+            (m) => m.CompliancesModule
+          ),
+      },
     ],
   },
 ];

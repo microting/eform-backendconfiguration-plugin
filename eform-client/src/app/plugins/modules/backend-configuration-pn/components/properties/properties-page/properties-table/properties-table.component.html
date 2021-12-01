@@ -38,6 +38,15 @@
         <td>
           <div class="d-flex flex-row justify-content-center">
             <button
+              id="showCompliancesBtn"
+              class="btn btn-success btn-icon mr-2"
+              mdbTooltip="{{ 'View compliances' | translate }}"
+              [routerLink]="'../compliances/' + property.id"
+              [disabled]="!property.isWorkersAssigned"
+            >
+              <fa-icon icon="eye" [fixedWidth]="true"></fa-icon>
+            </button>
+            <button
               id="showPropertyAreasBtn"
               class="btn btn-success btn-icon mr-2"
               mdbTooltip="{{ 'View areas' | translate }}"
