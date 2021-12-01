@@ -39,6 +39,7 @@
               class="btn btn-success btn-icon mr-2"
               mdbTooltip="{{ 'View areas' | translate }}"
               [routerLink]="'../property-areas/' + property.id"
+              [disabled]="!property.isWorkersAssigned"
             >
               <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
             </button>
