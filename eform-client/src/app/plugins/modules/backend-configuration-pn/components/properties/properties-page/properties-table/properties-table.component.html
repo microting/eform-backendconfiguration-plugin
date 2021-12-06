@@ -13,67 +13,85 @@
       (sortChanged)="sortTable($event)"
     ></thead>
     <tbody id="properiesTableBody">
-      <tr *ngFor="let property of propertiesModel.entities; let i = index">
-        <td id="propertyId">
-          {{ property.id }}
-        </td>
-        <td id="propertyName">
-          {{ property.name }}
-        </td>
-        <td id="propertyCVR">
-          {{ property.cvr }}
-        </td>
-        <td id="propertyCHR">
-          {{ property.chr }}
-        </td>
-        <td id="propertyAddress">
-          {{ property.address }}
-        </td>
-        <td id="propertyLanguages">
-          {{ getLanguages(property) }}
-        </td>
-        <td id="propertyCompliance">
-          <span class="badge" [class]="getColorBadge(property)"></span>
-        </td>
-        <td>
-          <div class="d-flex flex-row justify-content-center">
-            <button
-              id="showCompliancesBtn"
-              class="btn btn-success btn-icon mr-2"
-              mdbTooltip="{{ 'View compliances' | translate }}"
-              [routerLink]="'../compliances/' + property.id"
-              [disabled]="!property.isWorkersAssigned"
-            >
-              <fa-icon icon="eye" [fixedWidth]="true"></fa-icon>
-            </button>
-            <button
-              id="showPropertyAreasBtn"
-              class="btn btn-success btn-icon mr-2"
-              mdbTooltip="{{ 'View areas' | translate }}"
-              [routerLink]="'../property-areas/' + property.id"
-              [disabled]="!property.isWorkersAssigned"
-            >
-              <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
-            </button>
-            <button
-              id="editPropertyBtn"
-              class="btn btn-accent text-black-50 btn-icon mb-2"
-              mdbTooltip="{{ 'Edit property' | translate }}"
-              (click)="onShowEditPropertyModal(property)"
-            >
-              <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-            </button>
-            <button
-              id="deletePropertyBtn"
-              class="btn btn-danger btn-icon mb-2"
-              mdbTooltip="{{ 'Delete property' | translate }}"
-              (click)="onShowDeletePropertyModal(property)"
-            >
-              <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
-            </button>
-          </div>
-        </td>
-      </tr>
+      <ng-container
+        *ngFor="
+          let property of propertiesModel.entities;
+          let i = index;
+          first as isFirst;
+          last as isLast
+        "
+      >
+        <tr *ngIf="(i + 1) % 5 === 0 && !isFirst && !isLast">
+          <td *ngFor="let tableHeader of tableHeaders">
+            {{ tableHeader.visibleName || tableHeader.name | translate }}
+          </td>
+        </tr>
+        <tr>
+          <td id="propertyId">
+            {{ property.id }}
+          </td>
+          <td id="propertyName">
+            {{ property.name }}
+          </td>
+          <td id="propertyCVR">
+            {{ property.cvr }}
+          </td>
+          <td id="propertyCHR">
+            {{ property.chr }}
+          </td>
+          <td id="propertyAddress">
+            {{ property.address }}
+          </td>
+          <td id="propertyLanguages">
+            {{ getLanguages(property) }}
+          </td>
+          <td id="propertyCompliance">
+            <span class="badge" [class]="getColorBadge(property)"></span>
+          </td>
+          <td>
+            <div class="d-flex flex-row justify-content-center">
+              <button
+                id="showCompliancesBtn"
+                class="btn btn-success btn-icon mr-2"
+                mdbTooltip="{{ 'View compliances' | translate }}"
+                [routerLink]="'../compliances/' + property.id"
+                [disabled]="!property.isWorkersAssigned"
+              >
+                <fa-icon icon="eye" [fixedWidth]="true"></fa-icon>
+              </button>
+              <button
+                id="showPropertyAreasBtn"
+                class="btn btn-success btn-icon mr-2"
+                mdbTooltip="{{ 'View areas' | translate }}"
+                [routerLink]="'../property-areas/' + property.id"
+                [disabled]="!property.isWorkersAssigned"
+              >
+                <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
+              </button>
+              <button
+                id="editPropertyBtn"
+                class="btn btn-accent text-black-50 btn-icon mb-2"
+                mdbTooltip="{{ 'Edit property' | translate }}"
+                (click)="onShowEditPropertyModal(property)"
+              >
+                <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+              </button>
+              <button
+                id="deletePropertyBtn"
+                class="btn btn-danger btn-icon mb-2"
+                mdbTooltip="{{ 'Delete property' | translate }}"
+                (click)="onShowDeletePropertyModal(property)"
+              >
+                <fa-icon
+                  icon="trash-alt"
+                  size="lg"
+                  [fixedWidth]="true"
+                ></fa-icon>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-container>
     </tbody>
   </table>
 </div>
