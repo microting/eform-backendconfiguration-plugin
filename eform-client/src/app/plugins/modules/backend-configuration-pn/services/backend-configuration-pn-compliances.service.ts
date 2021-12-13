@@ -5,7 +5,7 @@ import { CompliancesModel, CompliancesRequestModel } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationPnCompliancesMethods = {
-  Compliances: 'api/backend-configuration-pn/compliances',
+  Compliances: 'api/backend-configuration-pn/compliances/index',
 };
 
 @Injectable({

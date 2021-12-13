@@ -5,7 +5,6 @@ import { Subscription } from 'rxjs';
 import { AuthStateService } from 'src/app/common/store';
 import { CompliancesModel, PropertyModel } from '../../../../models';
 import {
-  BackendConfigurationPnAreasService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import { TranslateService } from '@ngx-translate/core';
