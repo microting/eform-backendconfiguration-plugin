@@ -42,6 +42,16 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Name = $"{TagBackendConfigurationSettingsName}:ReportHeaderName",
                 Value = ""
             },
+            new PluginConfigurationValue
+            {
+                Name = $"{TagBackendConfigurationSettingsName}:MaxChrNumbers",
+                Value = "1"
+            },
+            new PluginConfigurationValue
+            {
+                Name = $"{TagBackendConfigurationSettingsName}:MaxCvrNumbers",
+                Value = "1"
+            },
         };
     }
 }

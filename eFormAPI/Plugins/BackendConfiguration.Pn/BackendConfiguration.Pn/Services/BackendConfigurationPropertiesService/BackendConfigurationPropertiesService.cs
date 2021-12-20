@@ -22,7 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using Microting.eForm.Infrastructure.Data.Entities;
+using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 {
@@ -52,19 +54,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
+        private readonly IPluginDbOptions<BackendConfigurationBaseSettings> _options;
 
         public BackendConfigurationPropertiesService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-            ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext, IPluginDbOptions<BackendConfigurationBaseSettings> options)
         {
             _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
+            _options = options;
         }
 
         public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request)
@@ -122,6 +126,31 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
         public async Task<OperationResult> Create(PropertyCreateModel propertyCreateModel)
         {
+
+            int maxCvrNumbers = _options.Value.MaxCvrNumbers;
+            int maxChrNumbers = _options.Value.MaxChrNumbers;
+            var currentListOfCvrNumbers = await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CVR).ToListAsync();
+            var currentListOfChrNumbers = await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CHR).ToListAsync();
+            if (_backendConfigurationPnDbContext.Properties.Any(x => x.CHR == propertyCreateModel.Chr && x.WorkflowState != Constants.WorkflowStates.Removed && x.CVR == propertyCreateModel.Cvr))
+            {
+                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("PropertyAlreadyExists"));
+            }
+            if (!currentListOfChrNumbers.Contains(propertyCreateModel.Chr))
+            {
+                if (currentListOfChrNumbers.Count >= maxChrNumbers)
+                {
+                    return new OperationResult(false,
+                        $"{_backendConfigurationLocalizationService.GetString("MaxChrNumbersReached")}");
+                }
+            }
+            if (!currentListOfCvrNumbers.Contains(propertyCreateModel.Cvr))
+            {
+                if (currentListOfCvrNumbers.Count >= maxCvrNumbers)
+                {
+                    return new OperationResult(false,
+                        $"{_backendConfigurationLocalizationService.GetString("MaxCvrNumbersReached")}");
+                }
+            }
             try
             {
                 var core = await _coreHelper.GetCore();
