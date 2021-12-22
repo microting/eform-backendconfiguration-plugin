@@ -1,0 +1,13 @@
+<eform-subheader
+  [title]="'Compliance' | translate"
+  [forceStaticTitle]="true"
+  [breadcrumbs]="breadcrumbs"
+>
+</eform-subheader>
+
+<div class="container-fluid">
+  <app-compliances-table
+    [compliances]="compliances"
+    (updateTable)="getCompliances(selectedProperty.id)"
+  ></app-compliances-table>
+</div>

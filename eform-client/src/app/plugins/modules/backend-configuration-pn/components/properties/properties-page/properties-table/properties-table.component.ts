@@ -7,11 +7,11 @@ import {
   Output,
 } from '@angular/core';
 import { Paged, TableHeaderElementModel } from 'src/app/common/models';
-import { BackendConfigurationPnClaims } from '../../../../enums';
 import { PropertyModel } from '../../../../models/properties';
 import { applicationLanguages } from 'src/app/common/const';
 import * as R from 'ramda';
-import { PropertiesStateService } from 'src/app/plugins/modules/backend-configuration-pn/components/properties/store';
+import { PropertiesStateService } from '../../store';
+import { PropertyCompliancesColorBadgesEnum } from 'src/app/plugins/modules/backend-configuration-pn/enums';
 
 @Component({
   selector: 'app-properties-table',
@@ -53,11 +53,12 @@ export class PropertiesTableComponent implements OnInit {
       sortable: true,
     },
     { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
+    { name: 'Compliance', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
 
-  get backendConfigurationPnClaims() {
-    return BackendConfigurationPnClaims;
+  get propertyCompliancesColorBadgesEnum() {
+    return PropertyCompliancesColorBadgesEnum;
   }
 
   constructor(public propertiesStateService: PropertiesStateService) {}
@@ -70,14 +71,6 @@ export class PropertiesTableComponent implements OnInit {
 
   onShowEditPropertyModal(planning: PropertyModel) {
     this.showEditPropertyModal.emit(planning);
-  }
-
-  onShowEditPropertyAreasModal(planning: PropertyModel) {
-    this.showEditPropertyAreasModal.emit(planning);
-  }
-
-  onShowPropertyAreasModal(planning: PropertyModel) {
-    this.showPropertyAreasModal.emit(planning);
   }
 
   getLanguageNameById(languageId: number): string {
@@ -95,5 +88,18 @@ export class PropertiesTableComponent implements OnInit {
   sortTable(sort: string) {
     this.propertiesStateService.onSortTable(sort);
     this.sortUpdated.emit();
+  }
+
+  getColorBadge(property: PropertyModel): string {
+    switch (property.compliance) {
+      case PropertyCompliancesColorBadgesEnum.Success:
+        return 'bg-success';
+      case PropertyCompliancesColorBadgesEnum.Danger:
+        return 'bg-danger';
+      case PropertyCompliancesColorBadgesEnum.Warning:
+        return 'bg-warning';
+      default:
+        return 'bg-success';
+    }
   }
 }

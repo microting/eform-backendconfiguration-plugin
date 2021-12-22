@@ -1,7 +1,10 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard, PermissionGuard } from 'src/app/common/guards';
-import { PropertiesContainerComponent } from './components';
+import {
+  PropertiesContainerComponent,
+  PropertyAreasComponent,
+} from './components';
 import { BackendConfigurationPnClaims } from './enums';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 
@@ -24,6 +27,11 @@ export const routes: Routes = [
         component: PropertiesContainerComponent,
       },
       {
+        path: 'property-areas/:propertyId',
+        canActivate: [AuthGuard],
+        component: PropertyAreasComponent,
+      },
+      {
         path: 'property-workers',
         canActivate: [AuthGuard],
         loadChildren: () =>
@@ -37,6 +45,14 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modules/area-rules/area-rules.module').then(
             (m) => m.AreaRulesModule
+          ),
+      },
+      {
+        path: 'compliances',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/compliance/compliance.module').then(
+            (m) => m.CompliancesModule
           ),
       },
     ],

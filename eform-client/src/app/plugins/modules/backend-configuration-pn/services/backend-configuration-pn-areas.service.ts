@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { OperationDataResult, OperationResult } from 'src/app/common/models';
 import { ApiBaseService } from 'src/app/common/services';
-import { AreaModel } from 'src/app/plugins/modules/backend-configuration-pn/models/area.model';
 import {
   AreaRuleSimpleModel,
   AreaRulePlanningModel,
   AreaRulesCreateModel,
   AreaRuleModel,
   AreaRuleUpdateModel,
+  AreaModel,
 } from '../models';
 
 export let BackendConfigurationPnAreasMethods = {

@@ -7,17 +7,14 @@ import {
   Paged,
 } from 'src/app/common/models';
 import {
-  PropertyAssignmentWorkerModel,
-  PropertyAssignWorkersModel,
-} from '../models/properties/property-workers-assignment.model';
-import {
   PropertyCreateModel,
   PropertyModel,
   PropertiesRequestModel,
   PropertyUpdateModel,
   PropertyAreaModel,
   PropertyAreasUpdateModel,
-} from '../models/properties';
+  PropertyAssignWorkersModel,
+} from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationPnPropertiesMethods = {
@@ -119,6 +116,13 @@ export class BackendConfigurationPnPropertiesService {
     return this.apiBaseService.delete(
       BackendConfigurationPnPropertiesMethods.Properties,
       { propertyId: propertyId }
+    );
+  }
+
+  readProperty(id: number): Observable<OperationDataResult<PropertyModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.Properties,
+      { id: id }
     );
   }
 }

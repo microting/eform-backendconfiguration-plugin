@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { OperationDataResult, OperationResult } from 'src/app/common/models';
-import { BackendConfigurationBaseSettingsModel } from '../models/backend-configuration-base-settings.model';
+import { BackendConfigurationBaseSettingsModel } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationSettingsMethods = {

@@ -1,0 +1,72 @@
+<eform-subheader
+  [breadcrumbs]="breadcrumbs"
+  [forceStaticTitle]="true"
+  [title]="selectedProperty.name + ' - ' + ('areas' | translate)"
+>
+  <div class="p-3">
+    <button
+      mdbBtn
+      id="configurePropertyAreasBtn"
+      class="btn-success btn-small-height"
+      (click)="showConfigurePropertyAreas()"
+    >
+      {{ 'Configure areas' | translate }}
+    </button>
+  </div>
+</eform-subheader>
+<div class="container-fluid">
+  <div class="row p-1 table-responsive no-gutters">
+    <table
+      mdbTable
+      striped="true"
+      hover="true"
+      small="true"
+      class="z-depth-1 text-center"
+    >
+      <thead>
+        <tr>
+          <!--<th>ID</th>-->
+          <th>{{ 'Area' | translate }}</th>
+          <th>{{ 'Description' | translate }}</th>
+          <th>{{ 'Status' | translate }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="propertyAreasModalTableBody">
+        <ng-container *ngFor="let area of selectedPropertyAreas">
+          <tr *ngIf="area.activated">
+            <!-- <td class="align-middle">{{ area.id }}</td> -->
+            <td class="align-middle">{{ area.name }}</td>
+            <td class="align-middle">
+              <a [href]="area.description" target="_blank">{{
+                (area.description ? 'Read more' : '') | translate
+              }}</a>
+            </td>
+            <td class="align-middle">
+              {{ getAreaPlanningStatus(area) | translate }}
+            </td>
+            <td class="align-middle">
+              <button
+                id="navigateToPropertyArea"
+                class="btn btn-success btn-icon mr-2"
+                mdbTooltip="{{ 'Open area planning' | translate }}"
+                [routerLink]="[
+                  '../../area-rules/',
+                  area.id,
+                  selectedProperty.id
+                ]"
+              >
+                <fa-icon icon="book-open" [fixedWidth]="true"></fa-icon>
+              </button>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-property-edit-areas-modal
+  #editPropertyAreasModal
+  (updatePropertyAreas)="onUpdatePropertyAreas($event)"
+></app-property-edit-areas-modal>

@@ -1,0 +1,48 @@
+<div class="row p-1 mt-4 table-responsive no-gutters">
+  <table
+    mdbTable
+    striped="true"
+    hover="true"
+    small="true"
+    class="z-depth-1 text-center"
+  >
+    <thead
+      table-headers
+      [tableHeaders]="tableHeaders"
+      [sort]="compliancesStateService.getSort() | async"
+      (sortChanged)="sortTable($event)"
+    ></thead>
+    <tbody id="complianceTableBody">
+      <tr *ngFor="let compliance of compliances; let i = index">
+        <td id="id">
+          {{ compliance.id }}
+        </td>
+        <td id="controlArea">
+          {{ compliance.controlArea }}
+        </td>
+        <td id="itemName">
+          {{ compliance.itemName }}
+        </td>
+        <td id="deadline">
+          {{ compliance.deadline }}
+        </td>
+        <td id="responsibles">
+          {{ getResponsibles(compliance.responsibles) }}
+        </td>
+        <td id="compliance">
+          <span
+            class="badge"
+            [class]="getColorBadge(compliance.compliance)"
+          ></span>
+        </td>
+        <td>
+          <!--actions-->
+          <div class="d-flex flex-row justify-content-center">
+            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit case' | translate}}</a>
+            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit planning' | translate}}</a>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

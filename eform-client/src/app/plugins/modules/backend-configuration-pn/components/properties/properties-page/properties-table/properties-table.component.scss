@@ -1,0 +1,6 @@
+.badge{
+  padding: 1.2em 1.2em;
+  &:empty {
+  display: inline-block;
+  }
+}
