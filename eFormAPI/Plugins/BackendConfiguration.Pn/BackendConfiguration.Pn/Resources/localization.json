@@ -367,5 +367,32 @@
       "en-US": "Saved",
       "uk-UA": "Збережено"
     }
+  },
+  {
+    "Key": "PropertyAlreadyExists",
+    "LocalizedValue": {
+      "da": "Ejendommen findes allered",
+      "de":"Die Immobilie ist schon da",
+      "en": "Property already exits",
+      "uk-UA": "Майно вже є"
+    }
+  },
+  {
+    "Key": "MaxChrNumbersReached",
+    "LocalizedValue": {
+      "da": "Maks antal CHR numre oprettet",
+      "de": "Maximale Anzahl erstellter CHR-Nummern",
+      "en": "Maximum number of CHR numbers reached",
+      "Uk-UA": "Максимальна кількість створених номерів CHR"
+    }
+  },
+  {
+    "Key": "MaxCvrNumbersReached",
+    "LocalizedValue": {
+      "da": "Maks antal CVR numre oprettet",
+      "de": "Maximale Anzahl erstellter CVR-Nummern",
+      "en": "Maximum number of CVR numbers reached",
+      "Uk-UA": "Максимальна кількість створених номерів CVR"
+    }
   }
 ]

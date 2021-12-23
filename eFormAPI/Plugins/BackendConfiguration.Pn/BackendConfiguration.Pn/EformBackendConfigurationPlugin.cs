@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 using System.IO;
+using BackendConfiguration.Pn.Infrastructure.Models.Settings;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
 
 namespace BackendConfiguration.Pn
 {
@@ -98,8 +100,8 @@ namespace BackendConfiguration.Pn
             IServiceCollection services,
             IConfiguration configuration)
         {
-            //services.ConfigurePluginDbOptions<BackendConfigurationsBaseSettings>(
-            //    configuration.GetSection("BackendConfigurationsBaseSettings"));
+            services.ConfigurePluginDbOptions<BackendConfigurationBaseSettings>(
+                configuration.GetSection("BackendConfigurationSettings"));
         }
 
         private static async void SeedEForms(IServiceCollection services)
