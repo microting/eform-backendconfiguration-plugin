@@ -7,10 +7,12 @@
     <button
       mdbBtn
       id="configurePropertyAreasBtn"
-      class="btn-success btn-small-height"
+      class="btn-success btn-icon"
       (click)="showConfigurePropertyAreas()"
+      mdbTooltip="{{ 'Edit' | translate }} {{ selectedProperty.name }} - {{ 'areas' | translate }}"
+      [placement]="'left'"
     >
-      {{ 'Configure areas' | translate }}
+      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
     </button>
   </div>
 </eform-subheader>

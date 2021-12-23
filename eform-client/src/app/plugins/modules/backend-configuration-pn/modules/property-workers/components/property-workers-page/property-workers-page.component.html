@@ -1,14 +1,15 @@
-<eform-subheader [breadcrumbs]="[{ name: 'Workers' | translate }]">
+<eform-subheader>
   <div class="p-3">
     <button
       mdbBtn
-      class="btn-success btn-small-height"
+      class="btn-success btn-icon"
       id="newDeviceUserBtn"
       *ngIf="userClaims.deviceUsersCreate"
       mdbTooltip="{{ 'Create new employee' | translate }}"
       (click)="createNewUserModal.show()"
+      [placement]="'left'"
     >
-      {{ 'New employee' | translate }}
+      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
     </button>
   </div>
 </eform-subheader>
