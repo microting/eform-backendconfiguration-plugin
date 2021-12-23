@@ -166,6 +166,13 @@ export class BackendConfigurationPropertiesPage extends Page {
     return ele;
   }
 
+  public async configurePropertyAreasBtn() {
+    const ele = await $('#configurePropertyAreasBtn');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
   public async navigateToPropertyArea(i: number) {
     const ele = await $$(`#navigateToPropertyArea`)[i];
     await ele.waitForDisplayed({ timeout: 40000 });
@@ -271,7 +278,6 @@ export class PropertyRowObject {
   public cvrNumber: string;
   public address: string;
   public languages: { languageId: number; languageName: string }[];
-  public showPropertyAreasBtn: WebdriverIO.Element;
   public editPropertyAreasBtn: WebdriverIO.Element;
   public editPropertyBtn: WebdriverIO.Element;
   public deletePropertyBtn: WebdriverIO.Element;
@@ -300,8 +306,7 @@ export class PropertyRowObject {
           ];
         }
       }
-      this.showPropertyAreasBtn = await this.row.$('#showPropertyAreasBtn');
-      this.editPropertyAreasBtn = await this.row.$('#editPropertyAreasBtn');
+      this.editPropertyAreasBtn = await this.row.$('#showPropertyAreasBtn');
       this.editPropertyBtn = await this.row.$('#editPropertyBtn');
       this.deletePropertyBtn = await this.row.$('#deletePropertyBtn');
     }
@@ -413,6 +418,7 @@ export class PropertyRowObject {
 
   public async openBindPropertyWithAreasModal(bindAreas?: number[]) {
     await this.editPropertyAreasBtn.click();
+    await (await backendConfigurationPropertiesPage.configurePropertyAreasBtn()).click();
     await (
       await backendConfigurationPropertiesPage.editPropertyAreasViewCloseBtn()
     ).waitForClickable({ timeout: 40000 });
@@ -435,6 +441,7 @@ export class PropertyRowObject {
         await backendConfigurationPropertiesPage.editPropertyAreasViewSaveBtn()
       ).click();
     }
+    await backendConfigurationPropertiesPage.goToProperties();
     await (
       await backendConfigurationPropertiesPage.propertyCreateBtn()
     ).waitForClickable({ timeout: 40000 });
@@ -453,11 +460,11 @@ export class PropertyRowObject {
   }
 
   public async openAreasViewModal(indexAreaForClick: number) {
-    await this.showPropertyAreasBtn.waitForClickable({ timeout: 40000 });
-    await this.showPropertyAreasBtn.click();
+    await this.editPropertyAreasBtn.waitForClickable({ timeout: 40000 });
+    await this.editPropertyAreasBtn.click();
     await (
-      await backendConfigurationPropertiesPage.propertyAreasViewCloseBtn()
-    ).waitForClickable({ timeout: 40000 });
+      await backendConfigurationPropertiesPage.configurePropertyAreasBtn()
+    )
     await (
       await backendConfigurationPropertiesPage.navigateToPropertyArea(
         indexAreaForClick

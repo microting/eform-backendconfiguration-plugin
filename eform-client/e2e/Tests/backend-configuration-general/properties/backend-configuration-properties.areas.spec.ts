@@ -3,6 +3,7 @@ import backendConfigurationPropertiesPage, {
   PropertyCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationProperties.page';
 import { generateRandmString } from '../../../Helpers/helper-functions';
+import backendConfigurationPropertyWorkersPage from '../../../Page objects/BackendConfiguration/BackendConfigurationPropertyWorkers.page';
 
 const expect = require('chai').expect;
 const property: PropertyCreateUpdate = {
@@ -14,6 +15,12 @@ const property: PropertyCreateUpdate = {
     { languageId: 2, languageName: 'English' },
   ],
 };
+const workerForCreate = {
+  name: generateRandmString(),
+  surname: generateRandmString(),
+  language: 'Danish',
+  properties: [0],
+};
 
 describe('Backend Configuration Property - Bind Areas', function () {
   before(async () => {
@@ -23,6 +30,9 @@ describe('Backend Configuration Property - Bind Areas', function () {
     await backendConfigurationPropertiesPage.createProperty(property);
   });
   it('should bind all areas with one property', async () => {
+    await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
+    await backendConfigurationPropertyWorkersPage.create(workerForCreate);
+    await backendConfigurationPropertiesPage.goToProperties();
     const createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await createdProperty.bindOrUnbindWithAllAreas();
     const binds = await createdProperty.getBindAreas();
@@ -58,5 +68,7 @@ describe('Backend Configuration Property - Bind Areas', function () {
   // });
   after(async () => {
     await backendConfigurationPropertiesPage.clearTable();
+    await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
+    await backendConfigurationPropertyWorkersPage.clearTable();
   });
 });
