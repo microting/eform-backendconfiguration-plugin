@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142633</Id>
+  <Repeated>0</Repeated>
+  <Label>23.02.04 Varme-, køle- og ventilationssystemer</Label>
+  <StartDate>2021-11-01</StartDate>
+  <EndDate>2031-11-01</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142633</Id>
+      <Label>23.02.04 Varme-, køle- og ventilationssystemer</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>375445</Id>
+          <Label>23.02.04 Varmekøle- og ventilationssystemer</Label>
+          <Description><![CDATA[Beskrivelse af eventuelle reparationer og service på Varme-, køle- og ventilationssystemer samt temperaturfølere, herunder optimering og optimeret styring heraf, og en dato herfor. Hvis du har fakturaer eller lignende, kan du tage billeder af dem, så bliver de automatisk vedhæftet din indrapportering. Beskriv også rutinerne for løbende eftersyn af anlægget.]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>375446</Id>
+          <Label>Billeder</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375447</Id>
+          <Label>Tekst</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>375448</Id>
+          <Label>Gem</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Value>GEM</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
