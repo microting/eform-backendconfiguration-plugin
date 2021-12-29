@@ -113,5 +113,7 @@ export const da = {
   '49th week': '49. uge',
   '50th week': '50. uge',
   '51st week': '51. uge',
-  '52nd week': '52. uge'
+  '52nd week': '52. uge',
+  'Create new employee': 'Ny medarbejder',
+  'View areas': 'Vis områder',
 };
