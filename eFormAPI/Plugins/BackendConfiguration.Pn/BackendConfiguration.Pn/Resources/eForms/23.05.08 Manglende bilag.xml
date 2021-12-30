@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>A142642</Id>
+  <Id>H142642</Id>
   <Repeated>0</Repeated>
-  <Label>23.05.01 Manglende bilag</Label>
+  <Label>23.05.08 Manglende bilag</Label>
   <StartDate>2021-11-02</StartDate>
   <EndDate>2031-11-02</EndDate>
   <Language>da</Language>
@@ -14,7 +14,7 @@
   <ElementList>
     <Element type="DataElement">
       <Id>142642</Id>
-      <Label>23.05.01 Manglende bilag</Label>
+      <Label>23.05.08 Manglende bilag</Label>
       <Description><![CDATA[]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
@@ -25,7 +25,7 @@
       <DataItemList>
         <DataItem type="None">
           <Id>375481</Id>
-          <Label>23.05.01 Manglende bilag</Label>
+          <Label>23.05.08 Manglende bilag</Label>
           <Description><![CDATA[Vælg område for manglende bilag og tag billeder af bilag som du ønsker at indsende.]]></Description>
           <DisplayOrder>0</DisplayOrder>
           <Color>fff6df</Color>
