@@ -393,9 +393,57 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag",""
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.01Manglende bilag"
 			};
 			item = new KeyValuePair<string, List<string>>("23.05.01 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.02Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.02 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.03Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.03 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.04Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.04 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.05Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.05 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.06Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.06 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.07Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.07 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.08Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.08 Manglende bilag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.09Manglende bilag"
+			};
+			item = new KeyValuePair<string, List<string>>("23.05.09 Manglende bilag", headers);
 			theList.Add(item);
 
 			return theList;

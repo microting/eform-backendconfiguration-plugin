@@ -147,6 +147,22 @@
       <EmbeddedResource Include="Resources\eForms\23.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
       <None Remove="Resources\eForms\23.05.01 Manglende bilag.xml" />
       <EmbeddedResource Include="Resources\eForms\23.05.01 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.02 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.02 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.03 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.03 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.04 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.04 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.05 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.05 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.06 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.06 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.07 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.07 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.08 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.08 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.05.09 Manglende bilag.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.05.09 Manglende bilag.xml" />
     </ItemGroup>
 
     <ItemGroup>

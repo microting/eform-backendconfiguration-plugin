@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142642</Id>
+  <Repeated>0</Repeated>
+  <Label>23.05.04 Manglende bilag</Label>
+  <StartDate>2021-11-02</StartDate>
+  <EndDate>2031-11-02</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142642</Id>
+      <Label>23.05.04 Manglende bilag</Label>
+      <Description><![CDATA[]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>375481</Id>
+          <Label>23.05.04 Manglende bilag</Label>
+          <Description><![CDATA[Vælg område for manglende bilag og tag billeder af bilag som du ønsker at indsende.]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="SingleSelect">
+          <Id>375485</Id>
+          <Label>Område for manglende bilag</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <KeyValuePairList>
+            <KeyValuePair>
+              <Key>1</Key>
+              <Value><![CDATA[23.01.02 Gyllekøling]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>1</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>2</Key>
+              <Value><![CDATA[23.01.03 Forsuring]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>2</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>3</Key>
+              <Value><![CDATA[23.01.04 Ugentlig udslusning af gylle]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>3</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>4</Key>
+              <Value><![CDATA[23.01.05 Punktudsugning i slagtesvinestalde]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>4</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>5</Key>
+              <Value><![CDATA[23.01.06 Varmevekslere til traditionelle slagtekyllingestalde]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>5</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>6</Key>
+              <Value><![CDATA[23.01.07 Gødningsbånd til æglæggende høns]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>6</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>7</Key>
+              <Value><![CDATA[23.01.08 Biologisk luftrensning]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>7</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>8</Key>
+              <Value><![CDATA[23.01.09 Kemisk luftrensning]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>8</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>9</Key>
+              <Value><![CDATA[23.02.01 Årlig visuel kontrol af gyllebeholdere]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>9</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>10</Key>
+              <Value><![CDATA[23.02.02 Gyllepumper mm.]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>10</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>11</Key>
+              <Value><![CDATA[23.02.03 Forsyningssystemer til vand og foder]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>11</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>12</Key>
+              <Value><![CDATA[23.02.04 Varme-, køle- og ventilationssystemer]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>12</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>13</Key>
+              <Value><![CDATA[23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>13</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>14</Key>
+              <Value><![CDATA[23.02.06 Luftrensningssystemer]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>14</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>15</Key>
+              <Value><![CDATA[23.02.07 Udstyr til drikkevand]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>15</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>16</Key>
+              <Value><![CDATA[23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>16</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>17</Key>
+              <Value><![CDATA[23.03.01 Skabelon Miljøledelse]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>17</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>18</Key>
+              <Value><![CDATA[23.04.01 Fasefodring]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>18</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>19</Key>
+              <Value><![CDATA[23.04.02 Reduceret indhold af råprotein]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>19</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>20</Key>
+              <Value><![CDATA[23.04.03 Tilsætningsstoffer i foder (Fytase eller andet)]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>20</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
+              <Key>21</Key>
+              <Value><![CDATA[23.05.00 Andet område]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>21</DisplayOrder>
+            </KeyValuePair>
+          </KeyValuePairList>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375486</Id>
+          <Label>Andet område for manglende bilag</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>375482</Id>
+          <Label>Billeder manglende bilag</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375483</Id>
+          <Label>Tekst</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>375484</Id>
+          <Label>Gem</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Value>GEM</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
