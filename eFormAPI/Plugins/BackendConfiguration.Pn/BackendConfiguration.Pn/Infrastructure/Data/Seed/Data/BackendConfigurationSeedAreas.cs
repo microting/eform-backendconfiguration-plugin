@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -25,7 +25,6 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 {
     using System.Collections.Generic;
-    using System.Linq;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
@@ -846,17 +845,17 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new() {
                         Name = "100. Diverse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
-                        LanguageId = 1
+                        LanguageId = 1,
                     },
                     new() {
                         Name = "100. Miscellaneous",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
-                        LanguageId = 2
+                        LanguageId = 2, // en
                     },
                     new() {
                         Name = "100. Sonstig",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
-                        LanguageId = 3
+                        LanguageId = 3,
                     }
                 },
                 AreaInitialField = new AreaInitialField
