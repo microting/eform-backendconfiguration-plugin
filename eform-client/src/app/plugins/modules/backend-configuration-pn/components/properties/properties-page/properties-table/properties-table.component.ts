@@ -12,6 +12,7 @@ import { applicationLanguages } from 'src/app/common/const';
 import * as R from 'ramda';
 import { PropertiesStateService } from '../../store';
 import { PropertyCompliancesColorBadgesEnum } from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {AuthStateService} from 'src/app/common/store';
 
 @Component({
   selector: 'app-properties-table',
@@ -53,7 +54,7 @@ export class PropertiesTableComponent implements OnInit {
       sortable: true,
     },
     { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
-    // { name: 'Compliance', sortable: false },
+    { name: 'Compliance', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
 
@@ -61,7 +62,8 @@ export class PropertiesTableComponent implements OnInit {
     return PropertyCompliancesColorBadgesEnum;
   }
 
-  constructor(public propertiesStateService: PropertiesStateService) {}
+  constructor(public propertiesStateService: PropertiesStateService,
+  public authStateService: AuthStateService) {}
 
   ngOnInit(): void {}
 
