@@ -59,7 +59,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
         if (data && data.success) {
           this.selectedProperty = data.model;
           this.breadcrumbs[1] = {
-            name: this.selectedProperty.cvr,
+            name: this.selectedProperty.name,
             href: `/plugins/backend-configuration-pn/property-areas/${this.selectedProperty.id}`,
           };
           this.breadcrumbs[2] = {

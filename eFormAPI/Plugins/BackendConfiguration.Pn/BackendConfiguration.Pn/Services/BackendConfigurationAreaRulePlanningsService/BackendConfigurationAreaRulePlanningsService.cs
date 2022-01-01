@@ -1908,6 +1908,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
         {
             var areaRulePlanning = new AreaRulePlanning
             {
+                AreaId = areaRule.AreaId,
                 CreatedByUserId = _userService.UserId,
                 UpdatedByUserId = _userService.UserId,
                 StartDate = areaRulePlanningModel.StartDate,
@@ -1916,6 +1917,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 AreaRuleId = areaRulePlanningModel.RuleId,
                 ItemPlanningId = planningId,
                 FolderId = folderId,
+                PropertyId = areaRulePlanningModel.PropertyId,
                 PlanningSites = areaRulePlanningModel.AssignedSites.Select(x => new PlanningSite
                 {
                     SiteId = x.SiteId,

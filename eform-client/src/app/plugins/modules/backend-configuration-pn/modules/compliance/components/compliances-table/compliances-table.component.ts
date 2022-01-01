@@ -23,9 +23,10 @@ export class CompliancesTableComponent implements OnInit {
     { name: 'Id', sortable: false },
     { name: 'ControlArea', visibleName: 'Control area', sortable: false },
     { name: 'Deadline', sortable: true },
+    { name: 'ItemName', sortable: true },
     { name: 'Responsible', sortable: false },
-    { name: 'Compliance', sortable: true },
-    { name: 'Actions', elementId: '', sortable: false },
+    // { name: 'Compliance', sortable: true },
+    // { name: 'Actions', elementId: '', sortable: false },
   ];
   @Input() compliances: CompliancesModel[];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
@@ -48,7 +49,8 @@ export class CompliancesTableComponent implements OnInit {
   }
 
   getResponsibles(responsibles: string[]) {
-    return R.join(' - ', responsibles);
+    debugger;
+    return responsibles;
   }
 
   sortTable(sort: string) {
