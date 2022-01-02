@@ -43,5 +43,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public string Cvr { get; set; }
 
+        public int ComplianceStatus { get; set; }
+
     }
 }

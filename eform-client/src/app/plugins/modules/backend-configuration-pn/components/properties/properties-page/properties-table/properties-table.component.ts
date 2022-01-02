@@ -1,18 +1,18 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-} from '@angular/core';
-import { Paged, TableHeaderElementModel } from 'src/app/common/models';
-import { PropertyModel } from '../../../../models/properties';
-import { applicationLanguages } from 'src/app/common/const';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,} from '@angular/core';
+import {Paged, TableHeaderElementModel} from 'src/app/common/models';
+import {PropertyModel} from '../../../../models/properties';
+import {applicationLanguages} from 'src/app/common/const';
 import * as R from 'ramda';
-import { PropertiesStateService } from '../../store';
-import { PropertyCompliancesColorBadgesEnum } from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {PropertiesStateService} from '../../store';
+import {PropertyCompliancesColorBadgesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 import {AuthStateService} from 'src/app/common/store';
+import {CompliancesStateService} from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components/store';
+import {
+  BackendConfigurationPnCompliancesMethods,
+  BackendConfigurationPnCompliancesService,
+  BackendConfigurationPnPropertiesService
+} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {Observable, Subscription} from 'rxjs';
 
 @Component({
   selector: 'app-properties-table',
@@ -63,7 +63,8 @@ export class PropertiesTableComponent implements OnInit {
   }
 
   constructor(public propertiesStateService: PropertiesStateService,
-  public authStateService: AuthStateService) {}
+  public authStateService: AuthStateService,
+              private complianceService: BackendConfigurationPnCompliancesService) {}
 
   ngOnInit(): void {}
 
@@ -92,16 +93,32 @@ export class PropertiesTableComponent implements OnInit {
     this.sortUpdated.emit();
   }
 
-  getColorBadge(property: PropertyModel): string {
-    switch (property.compliance) {
-      case PropertyCompliancesColorBadgesEnum.Success:
-        return 'bg-success';
-      case PropertyCompliancesColorBadgesEnum.Danger:
-        return 'bg-danger';
-      case PropertyCompliancesColorBadgesEnum.Warning:
-        return 'bg-warning';
-      default:
-        return 'bg-success';
-    }
-  }
+  // getColorBadge(property: PropertyModel): string {
+  //   let complianceStatusBadge = 'badge bg-warning';
+  //   this.complianceService
+  //     .getComplianceStatus(property.id)
+  //     .subscribe((data) => {
+  //       if (data && data.success) {
+  //         console.log('badge is ' + data.model + ' for property ' + property.name);
+  //         // this.compliances = data.model.entities;
+  //         switch (data.model) {
+  //           case PropertyCompliancesColorBadgesEnum.Waiting:
+  //             return complianceStatusBadge = 'badge bg-warning';
+  //             break;
+  //           case PropertyCompliancesColorBadgesEnum.Success:
+  //             return complianceStatusBadge = 'badge bg-success';
+  //             break;
+  //           case PropertyCompliancesColorBadgesEnum.Danger:
+  //             return complianceStatusBadge = 'badge bg-danger';
+  //             break;
+  //           case PropertyCompliancesColorBadgesEnum.Warning:
+  //             return complianceStatusBadge = 'badge bg-warning';
+  //             break;
+  //           default:
+  //             return complianceStatusBadge = 'badge bg-success';
+  //             break;
+  //         }
+  //       }
+  //     });
+  // }
 }

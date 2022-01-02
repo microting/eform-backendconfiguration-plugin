@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microsoft.AspNetCore.Routing;
+
 namespace BackendConfiguration.Pn.Controllers
 {
     using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
@@ -48,6 +50,13 @@ namespace BackendConfiguration.Pn.Controllers
         public Task<OperationDataResult<Paged<CompliancesModel>>> Index([FromBody] CompliancesRequestModel request)
         {
             return _backendConfigurationCompliancesService.Index(request);
+        }
+
+        [HttpGet]
+        [Route("compliance")]
+        public Task<OperationDataResult<int>> Compliance(int propertyId)
+        {
+            return _backendConfigurationCompliancesService.ComplianceStatus(propertyId);
         }
     }
 }

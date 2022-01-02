@@ -130,7 +130,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         Id = planning.Id,
                         ItemName = planningNameTranslation.Name,
                         PlanningId = planningCase.PlanningId,
-                        Responsible = responsible
+                        Responsible = responsible,
                     };
                     preList.Add(complianceModel);
                 }
@@ -141,6 +141,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
             }
 
             return new OperationDataResult<Paged<CompliancesModel>>(true, result);
+        }
+
+        public async Task<OperationDataResult<int>> ComplianceStatus(int propertyId)
+        {
+            var compliance = await Index(new CompliancesRequestModel
+            {
+                PropertyId = propertyId
+            });
+
+            if (compliance.Model.Entities.Count == 0)
+            {
+                return new OperationDataResult<int>(true, 0);
+            } else {
+                return new OperationDataResult<int>(true, 1);
+            }
         }
     }
 }

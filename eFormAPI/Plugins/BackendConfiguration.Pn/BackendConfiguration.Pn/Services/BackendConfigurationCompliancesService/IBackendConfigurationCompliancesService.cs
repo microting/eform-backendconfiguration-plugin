@@ -31,5 +31,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
     public interface IBackendConfigurationCompliancesService
     {
         Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request);
+        Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
     }
 }
