@@ -21,10 +21,10 @@ import { CompliancesStateService } from '../store';
 export class CompliancesTableComponent implements OnInit {
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Id', sortable: false },
-    { name: 'ControlArea', visibleName: 'Control area', sortable: false },
-    { name: 'Deadline', sortable: true },
-    { name: 'ItemName', sortable: true },
-    { name: 'Responsible', sortable: false },
+    { name: 'ControlArea', visibleName: 'areas', sortable: false },
+    { name: 'Deadline', sortable: false },
+    { name: 'Task', sortable: false },
+    { name: 'Responsible', visibleName: 'Assigned to', sortable: false },
     // { name: 'Compliance', sortable: true },
     // { name: 'Actions', elementId: '', sortable: false },
   ];

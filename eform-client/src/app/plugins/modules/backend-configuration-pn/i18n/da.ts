@@ -116,4 +116,6 @@ export const da = {
   '52nd week': '52. uge',
   'Create new employee': 'Ny medarbejder',
   'View areas': 'Vis områder',
+  Task: 'Opgave',
+  'Assigned to': 'Tildelt til',
 };
