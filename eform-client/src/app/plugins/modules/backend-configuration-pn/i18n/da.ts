@@ -118,4 +118,5 @@ export const da = {
   'View areas': 'Vis områder',
   Task: 'Opgave',
   'Assigned to': 'Tildelt til',
+  'View compliance': 'Vis compliance',
 };

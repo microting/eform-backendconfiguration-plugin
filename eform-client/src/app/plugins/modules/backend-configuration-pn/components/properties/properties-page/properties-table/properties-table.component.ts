@@ -93,6 +93,20 @@ export class PropertiesTableComponent implements OnInit {
     this.sortUpdated.emit();
   }
 
+
+  getColorBadge(compliance: PropertyCompliancesColorBadgesEnum): string {
+    switch (compliance) {
+      case PropertyCompliancesColorBadgesEnum.Success:
+        return 'btn-success';
+      case PropertyCompliancesColorBadgesEnum.Danger:
+        return 'btn-danger';
+      case PropertyCompliancesColorBadgesEnum.Warning:
+        return 'btn-warning';
+      default:
+        return 'btn-success';
+    }
+  }
+
   // getColorBadge(property: PropertyModel): string {
   //   let complianceStatusBadge = 'badge bg-warning';
   //   this.complianceService

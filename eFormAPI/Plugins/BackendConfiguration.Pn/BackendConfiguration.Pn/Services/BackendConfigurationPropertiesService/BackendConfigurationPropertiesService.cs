@@ -109,7 +109,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Select(y => new CommonDictionaryModel {Id = y.LanguageId})
                                 .ToList(),
                             IsWorkersAssigned = x.PropertyWorkers.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed),
-                            ComplianceStatus = -1,
+                            ComplianceStatus = x.ComplianceStatus,
                         }).ToListAsync();
                 }
 
