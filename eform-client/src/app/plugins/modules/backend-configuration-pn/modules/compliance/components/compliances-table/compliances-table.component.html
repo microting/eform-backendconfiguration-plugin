@@ -17,11 +17,11 @@
         <td id="id">
           {{ compliance.id }}
         </td>
+        <td id="deadline">
+          {{ compliance.deadline | date: 'dd.MM.yyyy' }}
+        </td>
         <td id="controlArea">
           {{ compliance.controlArea }}
-        </td>
-        <td id="deadline">
-          {{ compliance.deadline }}
         </td>
         <td id="itemName">
           {{ compliance.itemName }}

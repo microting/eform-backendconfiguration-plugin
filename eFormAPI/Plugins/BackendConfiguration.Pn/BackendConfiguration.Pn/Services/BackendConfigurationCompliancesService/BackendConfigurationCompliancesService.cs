@@ -93,12 +93,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     var planning =
                         await _itemsPlanningPnDbContext.Plannings.Where(x =>
                             x.Id == planningCase.PlanningId)
-                            .Where(x => x.RepeatEvery != 1 && x.RepeatType != RepeatType.Day)
-                            .Where(x => x.RepeatEvery != 0 && x.RepeatType != RepeatType.Day)
+                            // .Where(x => x.RepeatEvery != 1 && x.RepeatType != RepeatType.Day)
+                            .Where(x => x.RepeatEvery != 0)
                             .Where(x => x.StartDate < DateTime.UtcNow)
                             .SingleOrDefaultAsync();
 
                     if (planning == null)
+                    {
+                        continue;
+                    }
+
+                    if (planning.RepeatEvery == 1 && planning.RepeatType == RepeatType.Day)
                     {
                         continue;
                     }
