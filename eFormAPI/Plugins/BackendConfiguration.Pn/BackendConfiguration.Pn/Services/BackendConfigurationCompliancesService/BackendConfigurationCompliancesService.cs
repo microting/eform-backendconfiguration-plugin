@@ -69,80 +69,57 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 Entities = new List<CompliancesModel>()
             };
 
-            var backendPlannings = await _backendConfigurationPnDbContext.AreaRulePlannings.Where(x => x.PropertyId == request.PropertyId).ToListAsync();
-
-            result.Total = backendPlannings.Count;
+            // var backendPlannings = await _backendConfigurationPnDbContext.AreaRulePlannings.Where(x => x.PropertyId == request.PropertyId).ToListAsync();
+            //
+            // result.Total = backendPlannings.Count;
 
             var core = await _coreHelper.GetCore();
             await using var dbContext = core.DbContextHelper.GetDbContext();
 
             var preList = new List<CompliancesModel>();
 
-            foreach (AreaRulePlanning areaRulePlanning in backendPlannings)
-            {
-                var planningCases =
-                    await _itemsPlanningPnDbContext.PlanningCases
-                        .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
-                        .Where(x => x.Status != 100)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .ToListAsync();
+            var complianceList = await _backendConfigurationPnDbContext.Compliances.AsNoTracking()
+                .Where(x => x.PropertyId == request.PropertyId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(x => x.Deadline)
+                .ToListAsync();
 
-                foreach (PlanningCase planningCase in planningCases)
+            foreach (Compliance compliance in complianceList)
+            {
+                var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
+
+                if (planningNameTranslation == null)
                 {
-                    var planning =
-                        await _itemsPlanningPnDbContext.Plannings.Where(x =>
-                            x.Id == planningCase.PlanningId)
-                            // .Where(x => x.RepeatEvery != 1 && x.RepeatType != RepeatType.Day)
-                            .Where(x => x.RepeatEvery != 0)
-                            .Where(x => x.StartDate < DateTime.UtcNow)
-                            .SingleOrDefaultAsync();
-
-                    if (planning == null)
-                    {
-                        continue;
-                    }
-
-                    if (planning.RepeatEvery == 1 && planning.RepeatType == RepeatType.Day)
-                    {
-                        continue;
-                    }
-
-                    var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x => x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
-
-                    if (planningNameTranslation == null)
-                    {
-                        continue;
-                    }
-
-                    var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations.SingleOrDefaultAsync(x => x.AreaId == areaRulePlanning.AreaId && x.LanguageId == language.Id);
-
-                    var planningSites = await _backendConfigurationPnDbContext.PlanningSites
-                        .Where(x => x.AreaRulePlanningsId == areaRulePlanning.Id && x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => x.SiteId).ToListAsync();
-
-                    var responsible = String.Join("<br>", dbContext.Sites.Where(x => planningSites.Contains(x.Id)).Select(x => x.Name).ToList());
-
-                    // var site = await dbContext.Sites.SingleOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkSiteId);
-
-                    CompliancesModel complianceModel = new CompliancesModel
-                    {
-                        CaseId = planningCase.MicrotingSdkCaseId,
-                        Deadline = planning.NextExecutionTime?.AddDays(-1),
-                        ComplianceTypeId = null,
-                        ControlArea = areaTranslation.Name,
-                        EformId = planningCase.MicrotingSdkeFormId,
-                        Id = planning.Id,
-                        ItemName = planningNameTranslation.Name,
-                        PlanningId = planningCase.PlanningId,
-                        Responsible = responsible,
-                    };
-                    preList.Add(complianceModel);
+                    continue;
                 }
-            }
-            foreach (CompliancesModel compliancesModel in preList.OrderBy(x => x.Deadline))
-            {
-                result.Entities.Add(compliancesModel);
+                var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);
+
+                if (areaTranslation == null)
+                {
+                    continue;
+                }
+
+                var planningSites = await _itemsPlanningPnDbContext.PlanningSites
+                .Where(x => x.PlanningId == compliance.PlanningId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.SiteId).Distinct().ToListAsync();
+
+                var responsible = String.Join("<br>", dbContext.Sites.Where(x => planningSites.Contains(x.Id)).Select(x => x.Name).ToList());
+
+                CompliancesModel complianceModel = new CompliancesModel
+                {
+                    CaseId = compliance.MicrotingSdkCaseId,
+                    Deadline = compliance.Deadline.AddDays(-1),
+                    ComplianceTypeId = null,
+                    ControlArea = areaTranslation.Name,
+                    EformId = compliance.MicrotingSdkeFormId,
+                    Id = compliance.PlanningId,
+                    ItemName = planningNameTranslation.Name,
+                    PlanningId = compliance.PlanningId,
+                    Responsible = responsible,
+                };
+                // preList.Add(complianceModel);
+                result.Entities.Add(complianceModel);
             }
 
             return new OperationDataResult<Paged<CompliancesModel>>(true, result);
