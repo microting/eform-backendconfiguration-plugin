@@ -127,29 +127,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         public async Task<OperationResult> Create(PropertyCreateModel propertyCreateModel)
         {
 
-            int maxCvrNumbers = _options.Value.MaxCvrNumbers;
-            int maxChrNumbers = _options.Value.MaxChrNumbers;
+            var maxCvrNumbers = _options.Value.MaxCvrNumbers;
+            var maxChrNumbers = _options.Value.MaxChrNumbers;
             var currentListOfCvrNumbers = await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CVR).ToListAsync();
             var currentListOfChrNumbers = await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CHR).ToListAsync();
             if (_backendConfigurationPnDbContext.Properties.Any(x => x.CHR == propertyCreateModel.Chr && x.WorkflowState != Constants.WorkflowStates.Removed && x.CVR == propertyCreateModel.Cvr))
             {
                 return new OperationResult(false, _backendConfigurationLocalizationService.GetString("PropertyAlreadyExists"));
             }
-            if (!currentListOfChrNumbers.Contains(propertyCreateModel.Chr))
+            if (!currentListOfChrNumbers.Contains(propertyCreateModel.Chr) && currentListOfChrNumbers.Count >= maxChrNumbers)
             {
-                if (currentListOfChrNumbers.Count >= maxChrNumbers)
-                {
-                    return new OperationResult(false,
-                        $"{_backendConfigurationLocalizationService.GetString("MaxChrNumbersReached")}");
-                }
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("MaxChrNumbersReached")}");
             }
-            if (!currentListOfCvrNumbers.Contains(propertyCreateModel.Cvr))
+            if (!currentListOfCvrNumbers.Contains(propertyCreateModel.Cvr) && currentListOfCvrNumbers.Count >= maxCvrNumbers)
             {
-                if (currentListOfCvrNumbers.Count >= maxCvrNumbers)
-                {
-                    return new OperationResult(false,
-                        $"{_backendConfigurationLocalizationService.GetString("MaxCvrNumbersReached")}");
-                }
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("MaxCvrNumbersReached")}");
             }
             try
             {

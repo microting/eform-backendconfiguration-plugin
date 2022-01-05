@@ -30,12 +30,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 	{
 		public static List<KeyValuePair<string, List<string>>> GetForms()
 		{
-			List<KeyValuePair<string, List<string>>> theList = new List<KeyValuePair<string, List<string>>>();
-			List<string> headers = new List<string>
+			var theList = new List<KeyValuePair<string, List<string>>>();
+			var headers = new List<string>
 			{
 				"01. Aflæsning Miljøledelse","01.01 Elforbrug"
 			};
-			KeyValuePair<string, List<string>> item = new KeyValuePair<string, List<string>>("01. Elforbrug", headers);
+			var item = new KeyValuePair<string, List<string>>("01. Elforbrug", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{

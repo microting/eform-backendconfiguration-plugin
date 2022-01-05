@@ -14,6 +14,8 @@ import {
 export let BackendConfigurationPnAreasMethods = {
   Area: 'api/backend-configuration-pn/area',
   AreaRules: 'api/backend-configuration-pn/area-rules',
+  AreaRulesMultipleDelete: 'api/backend-configuration-pn/area-rules/multiple-delete',
+  AreaRulesForType7: 'api/backend-configuration-pn/area-rules/type-7',
   AreaRulesIndex: 'api/backend-configuration-pn/area-rules/index',
   AreaRulePlanning: 'api/backend-configuration-pn/area-rules/planning',
 };
@@ -21,7 +23,7 @@ export let BackendConfigurationPnAreasMethods = {
 @Injectable({
   providedIn: 'root',
 })
-export class BackendConfigurationPnAreasService {
+  export class BackendConfigurationPnAreasService {
   constructor(private apiBaseService: ApiBaseService) {}
 
   getArea(propertyAreaId: number): Observable<OperationDataResult<AreaModel>> {
@@ -85,6 +87,19 @@ export class BackendConfigurationPnAreasService {
     return this.apiBaseService.delete(
       BackendConfigurationPnAreasMethods.AreaRules,
       { areaId }
+    );
+  }
+
+  deleteAreaRules(areaRuleIds: number[]): Observable<OperationResult> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnAreasMethods.AreaRulesMultipleDelete,
+      areaRuleIds
+    );
+  }
+
+  getAreaRulesForType7(): Observable<OperationDataResult<{ folderName: string, areaRuleNames: string[] }[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.AreaRulesForType7
     );
   }
 }

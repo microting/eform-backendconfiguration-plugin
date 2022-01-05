@@ -24,20 +24,12 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
-    public class AreaRuleSimpleModel
+    using System.Collections.Generic;
+
+    public class AreaRulesForType7
     {
-        public int Id { get; set; }
+        public string FolderName { get; set; }
 
-        public string EformName { get; set; }
-
-        public string TranslatedName { get; set; }
-
-        public bool IsDefault { get; set; }
-
-        public bool PlanningStatus { get; set; }
-
-        public TypeSpecificField TypeSpecificFields { get; set; }
-
-        public AreaRuleInitialFields InitialFields { get; set; }
+        public List<string> AreaRuleNames { get; set; }
     }
 }

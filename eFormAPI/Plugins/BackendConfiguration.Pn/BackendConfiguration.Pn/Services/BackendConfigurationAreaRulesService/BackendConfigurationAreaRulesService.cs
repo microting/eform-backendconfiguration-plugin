@@ -28,6 +28,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Infrastructure.Data.Seed.Data;
     using BackendConfigurationLocalizationService;
     using Infrastructure.Models.AreaRules;
     using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
+    using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRulesService
     {
@@ -67,10 +69,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
         {
             try
             {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == propertyAreaId)
-                    .Select(x => new {x.AreaId, x.PropertyId})
+                    .Select(x => new {x.AreaId, x.PropertyId, x.Area.Type})
                     .FirstAsync();
 
                 var currentUserLanguage = await _userService.GetCurrentUserLanguage();
@@ -84,18 +88,26 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     .Include(x => x.AreaRuleInitialField)
                     .AsQueryable();
 
-                var areaRules = await query
+                var queryWithSelect = query
                     .Select(x => new AreaRuleSimpleModel
                     {
                         Id = x.Id,
-                        EformName = x.EformName,
+                        // EformName = x.EformName,
                         TranslatedName = x.AreaRuleTranslations
                             .Where(y => y.LanguageId == currentUserLanguage.Id)
                             .Select(y => y.Name)
                             .FirstOrDefault(),
                         IsDefault = x.IsDefault,
-                        TypeSpecificFields = new
-                            {x.EformId, x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, x.RepeatEvery},
+                        TypeSpecificFields = new TypeSpecificField
+                            {
+                                EformId = x.EformId,
+                                Type = x.Type,
+                                Alarm = x.Alarm,
+                                ChecklistStable = x.ChecklistStable,
+                                TailBite = x.TailBite,
+                                DayOfWeek = x.DayOfWeek,
+                                RepeatEvery = x.RepeatEvery
+                            },
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields
                             {
@@ -109,13 +121,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 SendNotifications = x.AreaRuleInitialField.Notifications,
                             }
                             : null,
-                    })
+                    });
+
+                if (areaProperty.Type == AreaTypesEnum.Type7)
+                {
+                    queryWithSelect = queryWithSelect.OrderBy(x => x.TranslatedName);
+                }
+
+                var areaRules = await queryWithSelect
                     .ToListAsync();
 
                 foreach (var areaRule in areaRules)
                 {
-                    var core = await _coreHelper.GetCore();
-                    var sdkDbContext = core.DbContextHelper.GetDbContext();
+                    // add translate eform name
+                    areaRule.EformName = await sdkDbContext.CheckListTranslations
+                        .Where(x => x.CheckListId == areaRule.TypeSpecificFields.EformId)
+                        .Where(x => x.LanguageId == currentUserLanguage.Id)
+                        .Select(x => x.Text)
+                        .FirstOrDefaultAsync();
+                    // add has plannings and initial fields
                     var areaRulePlannings = await _backendConfigurationPnDbContext.AreaRulePlannings
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.AreaRuleId == areaRule.Id)
@@ -417,7 +441,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == createModel.PropertyAreaId)
-                    .Select(x => new {x.Area, x.GroupMicrotingUuid, x.PropertyId})
+                    .Select(x => new {x.Area, x.GroupMicrotingUuid, x.PropertyId, x.ProperyAreaFolders})
                     .FirstAsync();
 
                 var core = await _coreHelper.GetCore();
@@ -425,13 +449,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                 foreach (var areaRuleCreateModel in createModel.AreaRules)
                 {
+                    var areaRuleType7 = new AreaRule();
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type7)
+                    {
+                        areaRuleType7 = BackendConfigurationSeedAreas.AreaRulesForType7
+                            .First(x => x.AreaRuleTranslations
+                                .Select(y => y.Name)
+                                .Contains(areaRuleCreateModel.TranslatedNames[0].Name));
+                    }
                     var eformId = areaRuleCreateModel.TypeSpecificFields.EformId;
-                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6)
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7)
                     {
                         var eformName = areaProperty.Area.Type switch
                         {
                             AreaTypesEnum.Type2 => "03. Kontrol konstruktion",
                             AreaTypesEnum.Type6 => "10. Varmepumpe serviceaftale",
+                            AreaTypesEnum.Type7 => areaRuleType7.EformName,
                             _ => ""
                         };
                         eformId = await sdkDbContext.CheckListTranslations
@@ -439,7 +472,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .Select(x => x.CheckListId)
                             .FirstAsync();
                     }
-
+                    
                     var areaRule = new AreaRule
                     {
                         AreaId = areaProperty.Area.Id,
@@ -448,6 +481,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         EformId = eformId,
                         PropertyId = areaProperty.PropertyId,
                     };
+
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type7)
+                    {
+                        areaRule.IsDefault = areaRuleType7.IsDefault;
+                        // create folder
+                        var pairedFolderToPropertyArea = areaProperty.ProperyAreaFolders.Select(x => x.FolderId).ToList();
+                        var parentFolderId = await sdkDbContext.FolderTranslations
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.LanguageId == 2) // en
+                            .Where(x => pairedFolderToPropertyArea.Contains(x.FolderId))
+                            .Where(x => x.Name == areaRuleType7.FolderName)
+                            .Select(x => x.FolderId)
+                            .FirstAsync();
+                        areaRule.FolderId = await core.FolderCreate(areaRuleType7.AreaRuleTranslations
+                            .Select(x => new CommonTranslationsModel
+                            {
+                                LanguageId = x.LanguageId,
+                                Name = x.Name,
+                                Description = "",
+                            })
+                            .ToList(), parentFolderId);
+                    }
 
                     if (areaRuleCreateModel.TypeSpecificFields != null)
                     {
@@ -470,11 +525,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .FirstOrDefaultAsync();
                     }
 
-                    areaRule.FolderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
-                        .Include(x => x.AreaProperty)
-                        .Where(x => x.AreaProperty.Id == createModel.PropertyAreaId)
-                        .Select(x => x.FolderId)
-                        .FirstOrDefaultAsync();
+                    if(areaProperty.Area.Type != AreaTypesEnum.Type7)
+                    {
+                        areaRule.FolderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
+                            .Include(x => x.AreaProperty)
+                            .Where(x => x.AreaProperty.Id == createModel.PropertyAreaId)
+                            .Select(x => x.FolderId)
+                            .FirstOrDefaultAsync();
+                    }
                     areaRule.FolderName = await sdkDbContext.FolderTranslations
                         .Where(x => x.FolderId == areaRule.FolderId)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -484,15 +542,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                     await areaRule.Create(_backendConfigurationPnDbContext);
 
-                    var translations = areaRuleCreateModel.TranslatedNames
-                        .Select(x => new AreaRuleTranslation
-                        {
-                            AreaRuleId = areaRule.Id,
-                            LanguageId = (int) x.Id,
-                            Name = x.Name,
-                            CreatedByUserId = _userService.UserId,
-                            UpdatedByUserId = _userService.UserId,
-                        }).ToList();
+                    var translations = new List<AreaRuleTranslation>();
+
+                    if (areaProperty.Area.Type != AreaTypesEnum.Type7)
+                    {
+                        translations = areaRuleCreateModel.TranslatedNames
+                            .Select(x => new AreaRuleTranslation
+                            {
+                                AreaRuleId = areaRule.Id,
+                                LanguageId = (int)x.Id,
+                                Name = x.Name,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId,
+                            }).ToList();
+                    }
+
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type7)
+                    {
+                        translations = areaRuleType7.AreaRuleTranslations
+                            .Select(x => new AreaRuleTranslation
+                            {
+                                AreaRuleId = areaRule.Id,
+                                LanguageId = x.LanguageId,
+                                Name = x.Name,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId,
+                            }).ToList();
+                    }
 
                     foreach (var translation in translations)
                     {
@@ -509,6 +585,151 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<AreaRuleModel>(false,
                     $"{_backendConfigurationLocalizationService.GetString("ErrorWhileCreateAreaRule")}: {e.Message}");
+            }
+        }
+
+        public async Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7()
+        {
+            try
+            {
+                var curentLanguage = await _userService.GetCurrentUserLanguage();
+                var model = BackendConfigurationSeedAreas.AreaRulesForType7
+                    .GroupBy(x => x.FolderName)
+                    .Select(x => new AreaRulesForType7
+                    {
+                        FolderName = x.Key,
+                        AreaRuleNames = x.Select(y => y)
+                            .Where(y => y.FolderName == x.Key)
+                            .SelectMany(y => y.AreaRuleTranslations
+                                .Where(z => z.LanguageId == curentLanguage.Id)
+                                .Select(z => z.Name))
+                            .ToList(),
+                    })
+                    .ToList();
+                return new OperationDataResult<List<AreaRulesForType7>>(true, model);
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationDataResult<List<AreaRulesForType7>>(false);
+            }
+        }
+
+        public async Task<OperationResult> Delete(List<int> areaRuleIds)
+        {
+            try
+            {
+                foreach (var areaRuleId in areaRuleIds)
+                {
+                    var core = await _coreHelper.GetCore();
+                    await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+                    var areaRule = await _backendConfigurationPnDbContext.AreaRules
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Id == areaRuleId)
+                        .Include(x => x.Area)
+                        .Include(x => x.AreaRuleTranslations)
+                        .Include(x => x.AreaRulesPlannings)
+                        .ThenInclude(x => x.PlanningSites)
+                        .FirstOrDefaultAsync();
+
+                    if (areaRule == null)
+                    {
+                        continue; // todo maybe need throw
+                    }
+
+                    if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
+                    {
+                        await core.EntityItemDelete(areaRule.GroupItemId);
+                    }
+
+                    foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations)
+                    {
+                        areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
+                        await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
+                    }
+
+                    foreach (var areaRulePlanning in areaRule.AreaRulesPlannings
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                    {
+                        foreach (var planningSite in areaRulePlanning.PlanningSites
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            planningSite.UpdatedByUserId = _userService.UserId;
+                            await planningSite.Delete(_backendConfigurationPnDbContext);
+                        }
+
+                        if (areaRulePlanning.ItemPlanningId != 0)
+                        {
+                            var planning = await _itemsPlanningPnDbContext.Plannings
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                                .Include(x => x.NameTranslations)
+                                .Include(x => x.PlanningCases)
+                                .Include(x => x.PlanningSites)
+                                .FirstOrDefaultAsync();
+                            if (planning != null)
+                            {
+                                foreach (var translation in planning.NameTranslations
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                                {
+                                    translation.UpdatedByUserId = _userService.UserId;
+                                    await translation.Delete(_itemsPlanningPnDbContext);
+                                }
+
+                                foreach (var planningSite in planning.PlanningSites
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                                {
+                                    planningSite.UpdatedByUserId = _userService.UserId;
+                                    await planningSite.Delete(_itemsPlanningPnDbContext);
+                                }
+
+                                var planningCases = planning.PlanningCases
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToList();
+
+                                foreach (var planningCase in planningCases)
+                                {
+                                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                                        .Where(x => x.PlanningCaseId == planningCase.Id)
+                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        .ToListAsync();
+                                    foreach (var planningCaseSite in planningCaseSites
+                                        .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0))
+                                    {
+                                        var result = await sdkDbContext.Cases.SingleAsync(x =>
+                                            x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                        if (result.MicrotingUid != null)
+                                        {
+                                            await core.CaseDelete((int)result.MicrotingUid);
+                                        }
+                                    }
+
+                                    // Delete planning case
+                                    await planningCase.Delete(_itemsPlanningPnDbContext);
+                                }
+
+                                planning.UpdatedByUserId = _userService.UserId;
+                                await planning.Delete(_itemsPlanningPnDbContext);
+                            }
+                        }
+
+                        areaRulePlanning.UpdatedByUserId = _userService.UserId;
+                        await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+                    }
+
+                    areaRule.UpdatedByUserId = _userService.UserId;
+                    await areaRule.Delete(_backendConfigurationPnDbContext);
+                }
+                return new OperationDataResult<AreaRuleModel>(true,
+                _backendConfigurationLocalizationService.GetString("SuccessfullyDeletedAreaRules"));
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationDataResult<AreaRuleModel>(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileDeleteAreaRules")}: {e.Message}");
             }
         }
     }

@@ -187,6 +187,12 @@ export class AreaRulePlanModalComponent implements OnInit {
         hoursAndEnergyEnabled: true,
       };
     }
+    if (this.selectedArea.type === 7) {
+      // @ts-ignore
+      return {
+        startDate: format(this.currentDate, `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`),
+      };
+    }
     return null;
   }
 

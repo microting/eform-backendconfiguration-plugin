@@ -21,7 +21,9 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Controllers
 {
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
+    using Infrastructure.Data.Seed.Data;
     using Infrastructure.Models.AreaRules;
     using Microsoft.AspNetCore.Mvc;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -68,6 +70,13 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpPost]
+        [Route("multiple-delete")]
+        public async Task<OperationResult> Delete([FromBody]List<int> areaRuleIds)
+        {
+            return await _backendConfigurationAreaRulesService.Delete(areaRuleIds);
+        }
+
+        [HttpPost]
         public async Task<OperationResult> Create([FromBody] AreaRulesCreateModel createModel)
         {
             return await _backendConfigurationAreaRulesService.Create(createModel);
@@ -80,12 +89,18 @@ namespace BackendConfiguration.Pn.Controllers
             return await _backendConfigurationAreaRulePlanningsService.UpdatePlanning(areaRulePlanningModel);
         }
 
-
         [HttpGet]
         [Route("planning")]
         public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId)
         {
             return await _backendConfigurationAreaRulePlanningsService.GetPlanning(ruleId);
+        }
+
+        [HttpGet]
+        [Route("type-7")]
+        public async Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7()
+        {
+            return await _backendConfigurationAreaRulesService.GetAreaRulesForType7();
         }
     }
 }
