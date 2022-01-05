@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
+
 namespace BackendConfiguration.Pn.Infrastructure
 {
     using System;
@@ -247,6 +249,32 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
                             await planningCaseSite.Update(_itemsPlanningPnDbContext);
                         }
+
+                        var now = DateTime.UtcNow;
+                        var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id);
+                        switch (dbPlanning.RepeatType)
+                        {
+                            case RepeatType.Day:
+                                dbPlanning.NextExecutionTime = now.AddDays(dbPlanning.RepeatEvery);
+                                break;
+                            case RepeatType.Week:
+                                var startOfWeek =
+                                    new DateTime(now.Year, now.Month, now.Day, 0, 0, 0).StartOfWeek(
+                                        (DayOfWeek) dbPlanning.DayOfWeek);
+                                dbPlanning.NextExecutionTime = startOfWeek.AddDays(dbPlanning.RepeatEvery * 7);
+                                break;
+                            case RepeatType.Month:
+                                dbPlanning.DayOfMonth ??= 1;
+                                if (dbPlanning.DayOfMonth == 0)
+                                {
+                                    dbPlanning.DayOfMonth = 1;
+                                }
+                                var startOfMonth = new DateTime(now.Year, now.Month, (int) dbPlanning.DayOfMonth, 0, 0, 0);
+                                dbPlanning.NextExecutionTime = startOfMonth.AddMonths(dbPlanning.RepeatEvery);
+                                break;
+                        }
+                        dbPlanning.LastExecutedTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
+                        await dbPlanning.Update(_itemsPlanningPnDbContext);
                     }
                 }
             }
@@ -260,6 +288,16 @@ namespace BackendConfiguration.Pn.Infrastructure
                 result = await GetTopFolder((int)result.ParentId, dbContext);
             }
             return result;
+        }
+    }
+
+
+    public static class DateTimeExtensions
+    {
+        public static DateTime StartOfWeek(this DateTime dt, DayOfWeek startOfWeek)
+        {
+            int diff = (7 + (dt.DayOfWeek - startOfWeek)) % 7;
+            return dt.AddDays(-1 * diff).Date;
         }
     }
 }

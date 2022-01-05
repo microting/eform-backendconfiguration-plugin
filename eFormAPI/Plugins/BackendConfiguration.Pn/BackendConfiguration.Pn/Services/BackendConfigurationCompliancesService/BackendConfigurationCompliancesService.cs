@@ -21,6 +21,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
+using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService
 {
     using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
@@ -34,9 +45,99 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
     public class BackendConfigurationCompliancesService : IBackendConfigurationCompliancesService
     {
-        public Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request)
+
+        private readonly IEFormCoreService _coreHelper;
+        private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
+        private readonly IUserService _userService;
+        private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
+
+        public BackendConfigurationCompliancesService(ItemsPlanningPnDbContext itemsPlanningPnDbContext, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IUserService userService, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, IEFormCoreService coreHelper)
         {
-            throw new NotImplementedException();
+            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
+            _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
+            _userService = userService;
+            _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+            _coreHelper = coreHelper;
+        }
+
+        public async Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request)
+        {
+            var language = await _userService.GetCurrentUserLanguage();
+            Paged<CompliancesModel> result = new Paged<CompliancesModel>
+            {
+                Entities = new List<CompliancesModel>()
+            };
+
+            // var backendPlannings = await _backendConfigurationPnDbContext.AreaRulePlannings.Where(x => x.PropertyId == request.PropertyId).ToListAsync();
+            //
+            // result.Total = backendPlannings.Count;
+
+            var core = await _coreHelper.GetCore();
+            await using var dbContext = core.DbContextHelper.GetDbContext();
+
+            var preList = new List<CompliancesModel>();
+
+            var complianceList = await _backendConfigurationPnDbContext.Compliances.AsNoTracking()
+                .Where(x => x.PropertyId == request.PropertyId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(x => x.Deadline)
+                .ToListAsync();
+
+            foreach (Compliance compliance in complianceList)
+            {
+                var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
+
+                if (planningNameTranslation == null)
+                {
+                    continue;
+                }
+                var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);
+
+                if (areaTranslation == null)
+                {
+                    continue;
+                }
+
+                var planningSites = await _itemsPlanningPnDbContext.PlanningSites
+                .Where(x => x.PlanningId == compliance.PlanningId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => x.SiteId).Distinct().ToListAsync();
+
+                var responsible = String.Join("<br>", dbContext.Sites.Where(x => planningSites.Contains(x.Id)).Select(x => x.Name).ToList());
+
+                CompliancesModel complianceModel = new CompliancesModel
+                {
+                    CaseId = compliance.MicrotingSdkCaseId,
+                    Deadline = compliance.Deadline.AddDays(-1),
+                    ComplianceTypeId = null,
+                    ControlArea = areaTranslation.Name,
+                    EformId = compliance.MicrotingSdkeFormId,
+                    Id = compliance.PlanningId,
+                    ItemName = planningNameTranslation.Name,
+                    PlanningId = compliance.PlanningId,
+                    Responsible = responsible,
+                };
+                // preList.Add(complianceModel);
+                result.Entities.Add(complianceModel);
+            }
+
+            return new OperationDataResult<Paged<CompliancesModel>>(true, result);
+        }
+
+        public async Task<OperationDataResult<int>> ComplianceStatus(int propertyId)
+        {
+            var compliance = await Index(new CompliancesRequestModel
+            {
+                PropertyId = propertyId
+            });
+
+            if (compliance.Model.Entities.Count == 0)
+            {
+                return new OperationDataResult<int>(true, 0);
+            } else {
+                return new OperationDataResult<int>(true, 1);
+            }
         }
     }
 }

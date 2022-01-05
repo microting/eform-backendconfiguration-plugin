@@ -13,9 +13,10 @@ import {
   PropertyModel,
   PropertyUpdateModel,
 } from '../../../../models';
-import { BackendConfigurationPnPropertiesService } from '../../../../services';
+import {BackendConfigurationPnCompliancesService, BackendConfigurationPnPropertiesService} from '../../../../services';
 import { PropertiesStateService } from '../../store';
 import { debounceTime } from 'rxjs/operators';
+import {PropertyCompliancesColorBadgesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 
 @AutoUnsubscribe()
 @Component({

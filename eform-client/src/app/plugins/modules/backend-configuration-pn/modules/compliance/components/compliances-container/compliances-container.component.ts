@@ -22,7 +22,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
       name: '',
       href: '/plugins/backend-configuration-pn/properties',
     },
-    { name: '', href: '' },
+    // { name: '', href: '' },
     { name: '' },
   ];
   selectedProperty: PropertyModel;
@@ -58,13 +58,10 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.success) {
           this.selectedProperty = data.model;
-          this.breadcrumbs[1] = {
-            name: this.selectedProperty.cvr,
-            href: `/plugins/backend-configuration-pn/property-areas/${this.selectedProperty.id}`,
-          };
-          this.breadcrumbs[2] = {
-            name: this.selectedProperty.chr,
-          };
+          this.breadcrumbs[1] = { name: this.selectedProperty.name };
+          // this.breadcrumbs[2] = {
+          //   name: this.selectedProperty.chr,
+          // };
         }
       });
   }

@@ -6,6 +6,7 @@ import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationPnCompliancesMethods = {
   Compliances: 'api/backend-configuration-pn/compliances/index',
+  ComplianceStatus: 'api/backend-configuration-pn/compliances/compliance',
 };
 
 @Injectable({
@@ -20,6 +21,14 @@ export class BackendConfigurationPnCompliancesService {
     return this.apiBaseService.post(
       BackendConfigurationPnCompliancesMethods.Compliances,
       model
+    );
+  }
+
+  getComplianceStatus(
+    propertyId: number
+  ): Observable<OperationDataResult<number>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnCompliancesMethods.ComplianceStatus + '?propertyId=' + propertyId
     );
   }
 }

@@ -30,14 +30,14 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index
         public int Id { get; set; }
 
         public string ControlArea { get; set; }
-        
-        public string Item { get; set; }
 
-        public DateTime Deadline { get; set; }
+        public string ItemName { get; set; }
+
+        public DateTime? Deadline { get; set; }
 
         public string Responsible { get; set; }
 
-        public int ComplianceTypeId { get; set; }
+        public int? ComplianceTypeId { get; set; }
 
         public int PlanningId { get; set; }
 

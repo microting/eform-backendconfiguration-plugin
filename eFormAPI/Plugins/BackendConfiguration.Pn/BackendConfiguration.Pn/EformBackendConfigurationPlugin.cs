@@ -24,7 +24,9 @@ SOFTWARE.
 
 using System.IO;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
+using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn
 {
@@ -81,6 +83,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
             services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
             services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
+            services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddControllers();
             SeedEForms(services);
@@ -157,6 +160,18 @@ namespace BackendConfiguration.Pn
                 await planningTag.Create(itemsPlanningContext);
                 newArea.ItemPlanningTagId = planningTag.Id;
                 await newArea.Create(context);
+            }
+
+            // Upgrade AreaRules
+            var areaRulePlannings = await context.AreaRulePlannings.Where(x => x.PropertyId == 0).ToListAsync();
+
+            foreach (AreaRulePlanning areaRulePlanning in areaRulePlannings)
+            {
+                var areaRule = await context.AreaRules.SingleOrDefaultAsync(x => x.Id == areaRulePlanning.AreaRuleId);
+                areaRulePlanning.PropertyId = areaRule.PropertyId;
+                areaRulePlanning.AreaId = areaRule.AreaId;
+
+                await areaRulePlanning.Update(context);
             }
         }
 
@@ -448,5 +463,7 @@ namespace BackendConfiguration.Pn
 
             return new PluginPermissionsManager(context);
         }
+
+
     }
 }

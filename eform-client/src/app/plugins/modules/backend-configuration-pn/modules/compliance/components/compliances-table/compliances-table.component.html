@@ -17,31 +17,31 @@
         <td id="id">
           {{ compliance.id }}
         </td>
+        <td id="deadline">
+          {{ compliance.deadline | date: 'dd.MM.yyyy' }}
+        </td>
         <td id="controlArea">
           {{ compliance.controlArea }}
         </td>
         <td id="itemName">
           {{ compliance.itemName }}
         </td>
-        <td id="deadline">
-          {{ compliance.deadline }}
-        </td>
         <td id="responsibles">
-          {{ getResponsibles(compliance.responsibles) }}
+          <span [innerHTML]="compliance.responsible"></span>
         </td>
-        <td id="compliance">
-          <span
-            class="badge"
-            [class]="getColorBadge(compliance.compliance)"
-          ></span>
-        </td>
-        <td>
-          <!--actions-->
-          <div class="d-flex flex-row justify-content-center">
-            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit case' | translate}}</a>
-            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit planning' | translate}}</a>
-          </div>
-        </td>
+<!--        <td id="compliance">-->
+<!--          <span-->
+<!--            class="badge"-->
+<!--            [class]="getColorBadge(compliance.compliance)"-->
+<!--          ></span>-->
+<!--        </td>-->
+<!--        <td>-->
+<!--          &lt;!&ndash;actions&ndash;&gt;-->
+<!--          <div class="d-flex flex-row justify-content-center">-->
+<!--            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit case' | translate}}</a>-->
+<!--            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit planning' | translate}}</a>-->
+<!--          </div>-->
+<!--        </td>-->
       </tr>
     </tbody>
   </table>
