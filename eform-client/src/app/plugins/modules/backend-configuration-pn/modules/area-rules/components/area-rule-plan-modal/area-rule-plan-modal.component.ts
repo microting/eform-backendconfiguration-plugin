@@ -19,7 +19,8 @@ import {
   AreaRuleT4PlanningModel,
   AreaRuleT5PlanningModel,
 } from '../../../../models';
-import { sub, add, set } from 'date-fns';
+import { add, set } from 'date-fns';
+import * as R from 'ramda';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -33,6 +34,7 @@ export class AreaRulePlanModalComponent implements OnInit {
   updateAreaRulePlan: EventEmitter<AreaRulePlanningModel> = new EventEmitter<AreaRulePlanningModel>();
   selectedAreaRulePlanning: AreaRulePlanningModel = new AreaRulePlanningModel();
   selectedAreaRule: AreaRuleSimpleModel = new AreaRuleSimpleModel();
+  days: number[] = R.range(1, 29);
 
   get currentDate() {
     return set(new Date(), {
@@ -183,6 +185,12 @@ export class AreaRulePlanModalComponent implements OnInit {
         repeatType: 3,
         // @ts-ignore
         hoursAndEnergyEnabled: true,
+      };
+    }
+    if (this.selectedArea.type === 7) {
+      // @ts-ignore
+      return {
+        startDate: format(this.currentDate, `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`),
       };
     }
     return null;

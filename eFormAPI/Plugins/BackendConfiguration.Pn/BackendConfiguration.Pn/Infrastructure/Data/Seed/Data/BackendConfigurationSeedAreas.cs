@@ -25,7 +25,6 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 {
     using System.Collections.Generic;
-    using System.Linq;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
@@ -39,17 +38,20 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Type = AreaTypesEnum.Type1,
                 AreaTranslations = new List<AreaTranslation>
                 {
-                    new() {
+                    new()
+                    {
                         Name = "01. Registreringer til Miljøledelse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 1
                     },
-                    new() {
+                    new()
+                    {
                         Name = "01. Registrations to Environmental Management",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 2
                     },
-                    new() {
+                    new()
+                    {
                         Name = "01. Registrierungen zum Umweltmanagement",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 3
@@ -749,7 +751,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             /*new Area
             {
-                Id = 23,
+                Id = 27,
                 Type = AreaTypesEnum.Type1,
                 AreaTranslations = new List<AreaTranslation>
                 {
@@ -843,20 +845,23 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 Type = AreaTypesEnum.Type1,
                 AreaTranslations = new List<AreaTranslation>
                 {
-                    new() {
+                    new()
+                    {
                         Name = "100. Diverse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
-                        LanguageId = 1
+                        LanguageId = 1,
                     },
-                    new() {
+                    new()
+                    {
                         Name = "100. Miscellaneous",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
-                        LanguageId = 2
+                        LanguageId = 2, // en
                     },
-                    new() {
+                    new()
+                    {
                         Name = "100. Sonstig",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
-                        LanguageId = 3
+                        LanguageId = 3,
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -864,6 +869,37 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                 },
             },
+            new Area
+            {
+                Id = 23,
+                Type = AreaTypesEnum.Type7,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "23. IE Reporting", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 1, // da
+                    },
+                    new()
+                    {
+                        Name = "23. IE Reporting",
+                        Description = "", // todo add link
+                        LanguageId = 2, // en
+                    },
+                    new()
+                    {
+                        Name = "23. IE Reporting", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 3, // ge
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    RepeatType = 1, // days
+                },
+            }
         };
 
         public static List<AreaRule> AreaRules => new()
@@ -1269,6 +1305,276 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 21,
                 IsDefault = true,
+            },
+        };
+
+        public static List<AreaRule> AreaRulesForType7 => new()
+        {
+            new AreaRule
+            {
+                EformName = "23.01.02 Gyllekøling",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.02 Gyllekøling" }, // da
+                    new() { LanguageId = 2, Name = "23.01.02 Slurry cooling" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.03 Forsuring",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.03 Forsuring" }, // da
+                    new() { LanguageId = 2, Name = "23.01.03 Acidification" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.04 Ugentlig udslusning af gylle",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.04 Ugentlig udslusning af gylle" }, // da
+                    new() { LanguageId = 2, Name = "23.01.04 Weekly slurry disposal of manure" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.05 Punktudsugning i slagtesvinestalde",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.05 Punktudsugning i slagtesvinestalde" }, // da
+                    new() { LanguageId = 2, Name = "23.01.05 Point extraction in finisher barns" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.06 Varmevekslere til traditionelle slagtekyllingestalde",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new()
+                    {
+                        LanguageId = 1, Name = "23.01.06 Varmevekslere til traditionelle slagtekyllingestalde"
+                    }, // da
+                    new() { LanguageId = 2, Name = "23.01.06 Heat exchangers for traditional broilers" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.07 Gødningsbånd til æglæggende høns",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.07 Gødningsbånd til æglæggende høns" }, // da
+                    new() { LanguageId = 2, Name = "23.01.07 Manure belt for laying hens" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.08 Biologisk luftrensning",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.08 Biologisk luftrensning" }, // da
+                    new() { LanguageId = 2, Name = "23.01.08 Biological air purification" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.09 Kemisk luftrensning",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.09 Kemisk luftrensning" }, // da
+                    new() { LanguageId = 2, Name = "23.01.09 Chemical air purification" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.01 Årlig visuel kontrol af gyllebeholdere",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.02.01 Årlig visuel kontrol af gyllebeholdere" }, // da
+                    new() { LanguageId = 2, Name = "23.02.01 Annual visual inspection of slurry tanks" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.02 Gyllepumper mm.",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.02.02 Gyllepumper mm" }, // da
+                    new() { LanguageId = 2, Name = "23.02.02 Slurry pumps etc." }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.03 Forsyningssystemer til vand og foder",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.02.03 Forsyningssystemer til vand og foder" }, // da
+                    new() { LanguageId = 2, Name = "23.02.03 Water and feed supply systems" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.04 Varme-, køle- og ventilationssystemer",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.02.04 Varme-, køle- og ventilationssystemer" }, // da
+                    new() { LanguageId = 2, Name = "23.02.04 Heating, cooling and ventilation systems" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new()
+                    {
+                        LanguageId = 1, Name = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv"
+                    }, // da
+                    new() { LanguageId = 2, Name = "23.02.05 Silos and equipment in transport equipment in connection with feeding systems (Pipes, augers, etc.)" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.06 Luftrensningssystemer",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.02.06 Luftrensningssystemer" }, // da
+                    new() { LanguageId = 2, Name = "23.02.06 Air purification systems" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.07 Udstyr til drikkevand",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.02.07 Udstyr til drikkevand" }, // da
+                    new() { LanguageId = 2, Name = "23.02.07 Equipment for drinking water" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme" }, // da
+                    new() { LanguageId = 2, Name = "23.02.08 Machines for application of livestock manure and dosing mechanism" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.02 Documentation of completed inspections",
+            },
+            new AreaRule
+            {
+                EformName = "23.03.01 Skabelon Miljøledelse",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.03.01 Skabelon Miljøledelse" }, // da
+                    new() { LanguageId = 2, Name = "23.03.01 Template Environmental Management" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.03 Documentation for environmental management",
+            },
+            new AreaRule
+            {
+                EformName = "23.04.01 Fasefodring",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.04.01 Fasefodring" }, // da
+                    new() { LanguageId = 2, Name = "23.04.01 Phase feeding" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.04 Compliance with feeding requirements",
+            },
+            new AreaRule
+            {
+                EformName = "23.04.02 Reduceret indhold af råprotei",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.04.02 Reduceret indhold af råprotei" }, // da
+                    new() { LanguageId = 2, Name = "23.04.02 Reduced content of crude protein" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.04 Compliance with feeding requirements",
+            },
+            new AreaRule
+            {
+                EformName = "23.04.03 Tilsætningsstoffer i foder - fytase eller andet",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.04.03 Tilsætningsstoffer i foder - fytase eller andet" }, // da
+                    new() { LanguageId = 2, Name = "23.04.03 Additives in feed (Phytase or other)" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.04 Compliance with feeding requirements",
             },
         };
     }

@@ -119,13 +119,13 @@ namespace BackendConfiguration.Pn
             var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
             // seed eforms
             var assembly = Assembly.GetExecutingAssembly();
-            foreach (var eform in eforms)
+            foreach (var (eformName, eform) in eforms)
             {
 
-                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.{eform.Key}.xml");
+                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.{eformName}.xml");
                 if (resourceStream == null)
                 {
-                    Console.WriteLine(eform.Key);
+                    Console.WriteLine(eformName);
                 }
                 else
                 {
@@ -141,15 +141,15 @@ namespace BackendConfiguration.Pn
                         var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
                         cl.IsLocked = true;
                         cl.IsEditable = false;
-                        cl.ReportH1 = eform.Value[0];
-                        cl.ReportH2 = eform.Value[1];
+                        cl.ReportH1 = eform[0];
+                        cl.ReportH2 = eform[1];
                         await cl.Update(sdkDbContext);
                     }
                 }
 
             }
 
-            // Seed areas and rules
+            // Seed areas
             foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed.Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id)))
             {
                 // create tag for area

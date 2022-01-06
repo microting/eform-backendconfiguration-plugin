@@ -40,5 +40,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
         Task<OperationResult> Delete(int areaId);
 
         Task<OperationResult> Create(AreaRulesCreateModel createModel);
+
+        Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7();
+
+        Task<OperationResult> Delete(List<int> areaRuleIds);
     }
 }

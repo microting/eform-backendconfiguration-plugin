@@ -199,5 +199,17 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
-  ngOnDestroy(): void {}
+  onDeleteAreaRules(areaRuleIds: number[]) {
+    this.deleteAreaRulesSub$ = this.areasService
+      .deleteAreaRules(areaRuleIds)
+      .subscribe((data) => {
+        if (data && data.success) {
+          this.getAreaRules(this.propertyAreaId);
+          this.createAreaRuleModal.hide();
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+  }
 }

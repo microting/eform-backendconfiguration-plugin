@@ -35,7 +35,9 @@
 <app-area-rule-create-modal
   #createAreaRuleModal
   [selectedArea]="selectedArea"
+  [areaRules]="areaRules"
   (createAreaRule)="onCreateAreaRule($event)"
+  (deleteAreaRule)="onDeleteAreaRules($event)"
 ></app-area-rule-create-modal>
 
 <app-area-rule-edit-modal
