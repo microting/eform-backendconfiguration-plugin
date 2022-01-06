@@ -77,6 +77,8 @@ export class AreaRuleCreateModalComponent implements OnInit {
         });
       this.areaRules.forEach(x => this.newAreaRulesForType7 = [...this.newAreaRulesForType7, x.translatedName]);
       this.frame.show();
+    } else {
+      this.frame.show();
     }
   }
 
