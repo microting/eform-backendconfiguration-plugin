@@ -69,22 +69,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 Entities = new List<CompliancesModel>()
             };
 
-            // var backendPlannings = await _backendConfigurationPnDbContext.AreaRulePlannings.Where(x => x.PropertyId == request.PropertyId).ToListAsync();
-            //
-            // result.Total = backendPlannings.Count;
-
             var core = await _coreHelper.GetCore();
             await using var dbContext = core.DbContextHelper.GetDbContext();
 
-            var preList = new List<CompliancesModel>();
-
-            var complianceList = await _backendConfigurationPnDbContext.Compliances.AsNoTracking()
+            var complianceList = _backendConfigurationPnDbContext.Compliances
                 .Where(x => x.PropertyId == request.PropertyId)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (request.Days > 0)
+            {
+                complianceList = complianceList.Where(x => x.Deadline <= DateTime.Now.AddDays(request.Days));
+            }
+
+            var theList = await complianceList.AsNoTracking()
                 .OrderBy(x => x.Deadline)
                 .ToListAsync();
 
-            foreach (Compliance compliance in complianceList)
+            foreach (Compliance compliance in theList)
             {
                 var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
 
@@ -104,7 +105,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.SiteId).Distinct().ToListAsync();
 
-                var responsible = String.Join("<br>", dbContext.Sites.Where(x => planningSites.Contains(x.Id)).Select(x => x.Name).ToList());
+                List<KeyValuePair<int, string>> responsible = new List<KeyValuePair<int, string>>();
+
+                var sitesList = await dbContext.Sites.Where(x => planningSites.Contains(x.Id)).ToListAsync();
+
+                foreach (var site in sitesList)
+                {
+                    var kvp = new KeyValuePair<int,string>(site.Id, site.Name);
+                    responsible.Add(kvp);
+                }
 
                 CompliancesModel complianceModel = new CompliancesModel
                 {
@@ -118,7 +127,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     PlanningId = compliance.PlanningId,
                     Responsible = responsible,
                 };
-                // preList.Add(complianceModel);
                 result.Entities.Add(complianceModel);
             }
 

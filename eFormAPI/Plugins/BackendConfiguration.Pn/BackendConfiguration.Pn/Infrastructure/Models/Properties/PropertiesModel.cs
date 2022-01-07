@@ -45,5 +45,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public int ComplianceStatus { get; set; }
 
+        public int ComplianceStatusThirty { get; set; }
+
     }
 }

@@ -10,5 +10,6 @@ export class PropertyModel {
   languages: CommonDictionaryModel[] = [];
   isWorkersAssigned: boolean;
   complianceStatus: PropertyCompliancesColorBadgesEnum;
+  complianceStatusThirty: PropertyCompliancesColorBadgesEnum;
   complianceStatusBadge: string;
 }

@@ -31,13 +31,13 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   tableHeaders: TableHeaderElementModel[] = [
     {
-      name: 'MicrotingUid',
-      visibleName: 'Site ID',
+      name: 'Id',
+      visibleName: 'ID',
       sortable: true,
       elementId: '',
     },
     { name: 'Name', sortable: true, elementId: '' },
-    { name: 'Device ID', sortable: false, elementId: '' },
+    // { name: 'Device ID', sortable: false, elementId: '' },
     {
       name: 'LanguageId',
       visibleName: 'Language',
