@@ -27,6 +27,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
   ];
   selectedProperty: PropertyModel;
   compliances: CompliancesModel[] = [];
+  isComplianceThirtyDays: boolean;
 
   getAllPropertiesDictionarySub$: Subscription;
   getTranslateSub$: Subscription;
@@ -49,6 +50,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
       const selectedPropertyId = +params['propertyId'];
       this.getProperty(selectedPropertyId);
       if (params['complianceStatusThirty'] !== undefined) {
+        this.isComplianceThirtyDays = true;
         this.getCompliances(selectedPropertyId, true);
       } else {
         this.getCompliances(selectedPropertyId, false);

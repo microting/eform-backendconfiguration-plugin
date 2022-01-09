@@ -59,7 +59,7 @@
           <td id="propertyComplianceThirty">
             <button *ngIf="authStateService.isAdmin"
                     id="showComplianceThirtyBtn"
-                    class="btn {{getColorBadge(property.complianceStatus)}} btn-icon mr-2"
+                    class="btn {{getColorBadge(property.complianceStatusThirty)}} btn-icon mr-2"
                     mdbTooltip="{{ 'View compliance 30 days' | translate }}"
                     [routerLink]="['../compliances', property.id, property.complianceStatusThirty]"
                     [disabled]="!property.isWorkersAssigned"
