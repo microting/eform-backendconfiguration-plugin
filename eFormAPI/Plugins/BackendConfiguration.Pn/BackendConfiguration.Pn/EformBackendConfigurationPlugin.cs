@@ -141,19 +141,21 @@ namespace BackendConfiguration.Pn
                         var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
                         cl.IsLocked = true;
                         cl.IsEditable = false;
-                        cl.ReportH1 = eform.Value[0];
-                        cl.ReportH2 = eform.Value[1];
-                        cl.ReportH3 = eform.Value[2];
+                        cl.ReportH1 = eform[0];
+                        cl.ReportH2 = eform[1];
+                        cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
+                        cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
                         await cl.Update(sdkDbContext);
                     }
                     else
                     {
-                        var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.OriginalId == newTemplate.OriginalId);
+                        var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.OriginalId == newTemplate.OriginalId && x.ParentId == null);
                         cl.IsLocked = true;
                         cl.IsEditable = false;
-                        cl.ReportH1 = eform.Value[0];
-                        cl.ReportH2 = eform.Value[1];
-                        cl.ReportH3 = eform.Value[2];
+                        cl.ReportH1 = eform[0];
+                        cl.ReportH2 = eform[1];
+                        cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
+                        cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
                         await cl.Update(sdkDbContext);
                     }
                 }
