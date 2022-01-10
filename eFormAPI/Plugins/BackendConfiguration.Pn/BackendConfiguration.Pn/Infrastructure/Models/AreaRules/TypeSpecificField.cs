@@ -1,7 +1,7 @@
 ﻿/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2022 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
+public class TypeSpecificField
 {
-    using System.Collections.Generic;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    public int? EformId { get; set; }
 
-    public class PropertiesModel
-    {
-        public int Id { get; set; }
+    public AreaRuleT2TypesEnum? Type { get; set; }
 
-        public string Name { get; set; }
+    public AreaRuleT2AlarmsEnum? Alarm { get; set; }
 
-        public string Chr { get; set; }
+    public bool? ChecklistStable { get; set; }
 
-        public string Address { get; set; }
+    public bool? TailBite { get; set; }
 
-        public List<CommonDictionaryModel> Languages { get; set; }
+    public int? DayOfWeek { get; set; }
 
-        public bool IsWorkersAssigned { get; set; }
-
-        public string Cvr { get; set; }
-
-        public int ComplianceStatus { get; set; }
-
-        public int ComplianceStatusThirty { get; set; }
-
-    }
+    public int? RepeatEvery { get; set; }
 }

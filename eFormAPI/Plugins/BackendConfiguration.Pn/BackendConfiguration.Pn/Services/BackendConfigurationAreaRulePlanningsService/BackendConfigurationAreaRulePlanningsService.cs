@@ -374,7 +374,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         areaRule.AreaRulesPlannings[2].ItemPlanningId = planningForType2.Id;
                                         areaRule.AreaRulesPlannings[2].DayOfMonth =
                                             (int) areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                                        ;
                                         await areaRule.AreaRulesPlannings[2].Update(_backendConfigurationPnDbContext);
                                         i = areaRule.AreaRulesPlannings.Count;
                                         break;
@@ -490,7 +489,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                                                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                                                     mainElement.DisplayOrder = 10000000;
-                                                    var caseId = await core.CaseCreate(mainElement, "",
+                                                    /*var caseId = */await core.CaseCreate(mainElement, "",
                                                         (int) site.MicrotingUid, folder.Id);
                                                 }
                                             }
@@ -522,8 +521,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                             var numRules = _backendConfigurationPnDbContext.AreaRules
                                                 .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
-                                                    areaRule => areaRule.Id,
-                                                    areaRulePlanningModel => areaRulePlanningModel.AreaRuleId,
+                                                    rule => rule.Id,
+                                                    rulePlanningModel => rulePlanningModel.AreaRuleId,
                                                     (rule, planning) =>
                                                         new
                                                         {
@@ -905,8 +904,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                     var numRules = _backendConfigurationPnDbContext.AreaRules
                                         .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
-                                            areaRule => areaRule.Id,
-                                            areaRulePlanningModel => areaRulePlanningModel.AreaRuleId,
+                                            rule => rule.Id,
+                                            rulePlanningModel => rulePlanningModel.AreaRuleId,
                                             (rule, planning) =>
                                                 new
                                                 {
@@ -989,11 +988,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                             foreach (PlanningCaseSite planningCaseSite in someList)
                                             {
-                                                var _core = await _coreHelper.GetCore();
-                                                var _case = await _core.DbContextHelper.GetDbContext().Cases
+                                                var microtingCase = await sdkDbContext.Cases
                                                     .SingleOrDefaultAsync(x =>
                                                         x.Id == planningCaseSite.MicrotingSdkCaseId);
-                                                await _core.CaseDelete((int)_case.MicrotingUid);
+                                                await core.CaseDelete((int)microtingCase.MicrotingUid);
                                             }
                                         }
                                     }
@@ -1090,7 +1088,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             .Select(y => new AreaRuleAssignedSitesModel {SiteId = y.SiteId, Checked = true})
                             .ToList()
                     }).FirstOrDefaultAsync();
-
 
                 if (areaRulePlanning == null)
                 {
@@ -1468,7 +1465,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     mainElement.Label =
                                         mainElement.Label.Replace($" - {property.Name}", "");
                                     mainElement.DisplayOrder = 10000000;
-                                    var caseId = await core.CaseCreate(mainElement, "", (int) site.MicrotingUid,
+                                    /*var caseId = */await core.CaseCreate(mainElement, "", (int) site.MicrotingUid,
                                         folder.Id);
                                 }
                             }

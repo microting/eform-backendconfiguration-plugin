@@ -259,23 +259,19 @@
                       3
                     "
                   >
-                    <div class="col-md-12 col-sm-6 col-xs-6">
-                      <div class="md-form">
-                        <input
-                          mdbInput
+                    <div class="col-md-12 col-sm-6 col-xs-6 ng-select-wrapper">
+
+                        <ng-select
+                          [items]="days"
+                          [placeholder]="'Day of month' | translate"
                           [(ngModel)]="
                             selectedAreaRulePlanning.typeSpecificFields
                               .dayOfMonth
                           "
-                          type="text"
                           id="createDayOfMonth"
                           name="createDayOfMonth"
-                          class="form-control"
-                        />
-                        <label for="createDayOfMonth">{{
-                          'Day of month' | translate
-                        }}</label>
-                      </div>
+                        >
+                        </ng-select>
                     </div>
                   </ng-template>
                 </div>

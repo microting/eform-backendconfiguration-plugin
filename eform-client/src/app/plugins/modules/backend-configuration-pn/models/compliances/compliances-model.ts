@@ -5,7 +5,7 @@ export class CompliancesModel {
   controlArea: string;
   itemName: string;
   deadline: Date;
-  responsible: string;
+  responsible: Array<ResponsibleModel>;
   compliance: PropertyCompliancesColorBadgesEnum;
   planningId: number;
   eformId: number;
@@ -18,4 +18,9 @@ export class CompliancesModel {
   get linkToPlanning(): string {
     return `/plugins/items-planning-pn/plannings/edit/${this.planningId}`;
   }
+}
+
+export class ResponsibleModel {
+  key: number;
+  value: string;
 }

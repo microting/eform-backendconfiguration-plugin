@@ -22,30 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
     using System.Collections.Generic;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-    public class PropertiesModel
+    public class AreaRulesForType7
     {
-        public int Id { get; set; }
+        public string FolderName { get; set; }
 
-        public string Name { get; set; }
-
-        public string Chr { get; set; }
-
-        public string Address { get; set; }
-
-        public List<CommonDictionaryModel> Languages { get; set; }
-
-        public bool IsWorkersAssigned { get; set; }
-
-        public string Cvr { get; set; }
-
-        public int ComplianceStatus { get; set; }
-
-        public int ComplianceStatusThirty { get; set; }
-
+        public List<string> AreaRuleNames { get; set; }
     }
 }

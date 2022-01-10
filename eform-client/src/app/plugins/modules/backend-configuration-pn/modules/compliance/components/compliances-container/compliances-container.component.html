@@ -1,5 +1,11 @@
-<eform-subheader
+<eform-subheader *ngIf="!isComplianceThirtyDays"
   [title]="'Compliance' | translate"
+  [forceStaticTitle]="true"
+  [breadcrumbs]="breadcrumbs"
+>
+</eform-subheader>
+<eform-subheader *ngIf="isComplianceThirtyDays"
+  [title]="'Compliance 30 days' | translate"
   [forceStaticTitle]="true"
   [breadcrumbs]="breadcrumbs"
 >

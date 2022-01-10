@@ -55,6 +55,7 @@ export class PropertiesTableComponent implements OnInit {
     },
     { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
     { name: 'Compliance', sortable: false },
+    { name: 'Compliance 30', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
 

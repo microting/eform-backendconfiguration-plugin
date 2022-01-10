@@ -10,7 +10,7 @@ export const da = {
   'View property areas': 'Vis valgte områder',
   'Configure property areas': 'Vis alle områder',
   'Edit property': 'Rediger ejendom',
-  'Edit': 'Rediger',
+  Edit: 'Rediger',
   'Delete property': 'Slet ejendom',
   'Create Property': 'Ny ejendom',
   'New property': 'Ny ejendom',
@@ -119,4 +119,6 @@ export const da = {
   Task: 'Opgave',
   'Assigned to': 'Tildelt til',
   'View compliance': 'Vis compliance',
+  'View compliance 30 days': 'Vis compliance 30 dage',
+  'Compliance 30 days': 'Compliance 30 dage'
 };

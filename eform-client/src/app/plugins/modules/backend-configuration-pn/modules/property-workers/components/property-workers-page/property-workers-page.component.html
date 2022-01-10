@@ -47,15 +47,15 @@
       ></thead>
       <tbody id="tableBody">
         <tr *ngFor="let siteDto of sitesDto">
-          <td id="deviceUserId">{{ siteDto.siteUid }}</td>
+          <td id="deviceUserId">{{ siteDto.siteId }}</td>
           <td id="deviceUserFullName">
             {{ siteDto.siteName }}
             <ng-container *ngIf="!siteDto.siteName"> N/A</ng-container>
           </td>
-          <td>
-            {{ siteDto.unitId }}
-            <ng-container *ngIf="!siteDto.unitId"> N/A</ng-container>
-          </td>
+<!--          <td>-->
+<!--            {{ siteDto.unitId }}-->
+<!--            <ng-container *ngIf="!siteDto.unitId"> N/A</ng-container>-->
+<!--          </td>-->
           <td id="deviceUserLanguage">
             {{ siteDto.language }}
           </td>

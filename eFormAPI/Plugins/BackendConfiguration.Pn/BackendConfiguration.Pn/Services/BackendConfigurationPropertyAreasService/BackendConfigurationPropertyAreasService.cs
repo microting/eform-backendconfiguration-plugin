@@ -454,6 +454,138 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             }
                             break;
                         }
+                        case AreaTypesEnum.Type7:
+                        {
+                            // create folder with ie reporting name
+                            var folderId = await core.FolderCreate(
+                                area.AreaTranslations.Select(x => new CommonTranslationsModel
+                                {
+                                    Name = x.Name,
+                                    LanguageId = x.LanguageId,
+                                    Description = "",
+                                }).ToList(),
+                                property.FolderId);
+                            //create 4 folders
+                            var folderIds = new List<int>
+                            {
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "23.01 logbøger for alle miljøteknologier", // todo
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "23.01 Logbooks for any environmental technologies",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "23.01 Fahrtenbücher für alle Umwelttechnologien", // todo
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "23.02 dokumentation af afsluttede inspektioner", // todo
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "23.02 Documentation of completed inspections",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "23.02 Dokumentation abgeschlossener Inspektionen", // todo
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "23.03 dokumentation for miljøledelse", // todo
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "23.03 Documentation for environmental management",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "23.03 Dokumentation für das Umweltmanagement", // todo
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "23.04 overholdelse af fodringskrav", // todo
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "23.04 Compliance with feeding requirements",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "23.04 Einhaltung der Fütterungsanforderungen", // todo
+                                        Description = "",
+                                    },
+                                }, folderId),
+                            };
+
+                            await new ProperyAreaFolder
+                            {
+                                FolderId = folderId,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            }.Create(_backendConfigurationPnDbContext);
+
+                            foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                            {
+                                FolderId = folderIdLocal,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            }))
+                            {
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                            }
+                            foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
+                            {
+                                areaRule.PropertyId = property.Id;
+                                areaRule.FolderId = folderId;
+                                areaRule.CreatedByUserId = _userService.UserId;
+                                areaRule.UpdatedByUserId = _userService.UserId;
+                                if (!string.IsNullOrEmpty(areaRule.EformName))
+                                {
+                                    var eformId = await sdkDbContext.CheckListTranslations
+                                        .Where(x => x.Text == areaRule.EformName)
+                                        .Select(x => x.CheckListId)
+                                        .FirstAsync();
+                                    areaRule.EformId = eformId;
+                                }
+                                await areaRule.Create(_backendConfigurationPnDbContext);
+                            }
+                            break;
+                        }
                         default:
                         {
                             var folderId = await core.FolderCreate(

@@ -7,18 +7,19 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import { debounceTime, switchMap } from 'rxjs/operators';
-import { TemplateListModel, TemplateRequestModel } from 'src/app/common/models';
-import { EFormService } from 'src/app/common/services';
+import {debounceTime, switchMap} from 'rxjs/operators';
+import {TemplateListModel, TemplateRequestModel} from 'src/app/common/models';
+import {EFormService} from 'src/app/common/services';
 import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
-} from 'src/app/plugins/modules/backend-configuration-pn/enums';
+} from '../../../../enums';
 import {
   AreaModel,
-  AreaRulesCreateModel,
+  AreaRulesCreateModel, AreaRuleSimpleModel,
   AreaRuleTypeSpecificFields,
 } from '../../../../models';
+import {BackendConfigurationPnAreasService} from '../../../../services';
 
 @Component({
   selector: 'app-area-rule-create-modal',
@@ -27,9 +28,12 @@ import {
 })
 export class AreaRuleCreateModalComponent implements OnInit {
   @Input() selectedArea: AreaModel = new AreaModel();
-  @ViewChild('frame', { static: false }) frame;
+  @Input() areaRules: AreaRuleSimpleModel[] = [];
+  @ViewChild('frame', {static: false}) frame;
   @Output()
   createAreaRule: EventEmitter<AreaRulesCreateModel> = new EventEmitter<AreaRulesCreateModel>();
+  @Output()
+  deleteAreaRule: EventEmitter<number[]> = new EventEmitter<number[]>();
   newAreaRules: AreaRulesCreateModel = new AreaRulesCreateModel();
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
   newAreaRulesString: string;
@@ -37,10 +41,13 @@ export class AreaRuleCreateModalComponent implements OnInit {
   newAreaRulesRepeatEvery = 1;
   typeahead = new EventEmitter<string>();
   templatesModel: TemplateListModel = new TemplateListModel();
+  areaRulesForType7: { folderName: string; areaRuleNames: string[] }[] = [];
+  newAreaRulesForType7: string[] = [];
 
   constructor(
     private eFormService: EFormService,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
+    private backendConfigurationPnAreasService: BackendConfigurationPnAreasService
   ) {
     this.typeahead
       .pipe(
@@ -56,10 +63,23 @@ export class AreaRuleCreateModalComponent implements OnInit {
       });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+  }
 
   show() {
-    this.frame.show();
+    if (this.selectedArea.type === 7) {
+      this.backendConfigurationPnAreasService
+        .getAreaRulesForType7()
+        .subscribe((data) => {
+          if (data.success) {
+            this.areaRulesForType7 = data.model;
+          }
+        });
+      this.areaRules.forEach(x => this.newAreaRulesForType7 = [...this.newAreaRulesForType7, x.translatedName]);
+      this.frame.show();
+    } else {
+      this.frame.show();
+    }
   }
 
   hide() {
@@ -67,6 +87,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
     this.newAreaRulesString = '';
     this.newAreaRulesDayOfWeek = null;
     this.newAreaRulesRepeatEvery = 1;
+    this.newAreaRulesForType7 = [];
     this.frame.hide();
   }
 
@@ -78,7 +99,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
         {
           typeSpecificFields: this.generateAreaTypeSpecificFields(),
           translatedNames: this.selectedArea.languages.map((x) => {
-            return { name: lines[i], id: x.id, description: x.name };
+            return {name: lines[i], id: x.id, description: x.name};
           }),
         },
       ];
@@ -124,6 +145,51 @@ export class AreaRuleCreateModalComponent implements OnInit {
   }
 
   onCreateAreaRule() {
-    this.createAreaRule.emit(this.newAreaRules);
+    if (this.selectedArea.type === 7) {
+      const areaRuleNamesForCreate = this.newAreaRulesForType7
+        .filter(x => !this.areaRules.some(y => y.translatedName === x));
+      const areaRuleIdsForDelete = this.areaRules
+        .filter(x => !this.newAreaRulesForType7.some(y => y === x.translatedName))
+        .map(x => x.id);
+      let areaRulesForCreate = new AreaRulesCreateModel();
+      for (let i = 0; i < areaRuleNamesForCreate.length; i++) {
+        areaRulesForCreate.areaRules = [
+          ...areaRulesForCreate.areaRules,
+          {
+            typeSpecificFields: {},
+            translatedNames: [{name: areaRuleNamesForCreate[i], id: 0, description: ''}]
+          },
+        ];
+      }
+      if (areaRulesForCreate.areaRules.length > 0) {
+        this.createAreaRule.emit(areaRulesForCreate);
+      }
+      if (areaRuleIdsForDelete.length > 0) {
+        this.deleteAreaRule.emit(areaRuleIdsForDelete);
+      }
+    } else {
+      this.createAreaRule.emit(this.newAreaRules);
+    }
+  }
+
+  addOrRemoveAreaRuleName(areaRuleName: string, e: Event) {
+    // @ts-ignore
+    if (e.target.checked) {
+      this.newAreaRulesForType7 = [...this.newAreaRulesForType7, areaRuleName];
+    } else {
+      this.newAreaRulesForType7 = this.newAreaRulesForType7.filter(x => x !== areaRuleName);
+    }
+  }
+
+  getChecked(areaRuleName: string): boolean {
+    return this.newAreaRulesForType7.find(x => x === areaRuleName) !== undefined;
+  }
+
+  getIsSaveButtonDisabled(): boolean {
+    if (this.selectedArea.type === 7) {
+      return this.newAreaRulesForType7.length === 0;
+    } else {
+      return this.newAreaRules.areaRules.length === 0;
+    }
   }
 }

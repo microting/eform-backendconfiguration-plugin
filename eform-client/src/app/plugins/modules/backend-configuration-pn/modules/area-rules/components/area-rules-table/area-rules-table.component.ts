@@ -90,6 +90,13 @@ export class AreaRulesTableComponent implements OnInit {
     { name: 'Actions', elementId: '', sortable: false },
   ];
 
+  tableHeadersT7: TableHeaderElementModel[] = [
+    { name: 'Name', elementId: 'nameTableHeader', sortable: false },
+    { name: 'eForm', elementId: 'eformTableHeader', sortable: false },
+    { name: 'Status', elementId: 'statusTableHeader', sortable: false },
+    { name: 'Actions', elementId: '', sortable: false },
+  ];
+
   constructor() {}
 
   ngOnInit(): void {}
