@@ -163,6 +163,8 @@
       <EmbeddedResource Include="Resources\eForms\23.05.08 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.09 Manglende bilag.xml" />
       <EmbeddedResource Include="Resources\eForms\23.05.09 Manglende bilag.xml" />
+      <None Remove="Resources\eForms\23.01.01 Fast overdækning gyllebeholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\23.01.01 Fast overdækning gyllebeholder.xml" />
     </ItemGroup>
 
     <ItemGroup>

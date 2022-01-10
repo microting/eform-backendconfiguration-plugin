@@ -138,11 +138,22 @@ namespace BackendConfiguration.Pn
                     if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
                     {
                         int clId = await core.TemplateCreate(newTemplate);
-                        var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
+                        var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
                         cl.IsLocked = true;
                         cl.IsEditable = false;
                         cl.ReportH1 = eform.Value[0];
                         cl.ReportH2 = eform.Value[1];
+                        cl.ReportH3 = eform.Value[2];
+                        await cl.Update(sdkDbContext);
+                    }
+                    else
+                    {
+                        var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.OriginalId == newTemplate.OriginalId);
+                        cl.IsLocked = true;
+                        cl.IsEditable = false;
+                        cl.ReportH1 = eform.Value[0];
+                        cl.ReportH2 = eform.Value[1];
+                        cl.ReportH3 = eform.Value[2];
                         await cl.Update(sdkDbContext);
                     }
                 }
