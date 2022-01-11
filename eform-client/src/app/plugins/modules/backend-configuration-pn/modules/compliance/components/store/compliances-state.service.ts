@@ -33,14 +33,14 @@ export class CompliancesStateService {
   //   return this.query.selectNameFilter$;
   // }
 
-  getAllCompliances(
-    propertyId: number
-  ): Observable<OperationDataResult<Paged<CompliancesModel>>> {
+  getAllCompliances(propertyId: number, thirtyDays: boolean = false):
+    Observable<OperationDataResult<Paged<CompliancesModel>>> {
     return this.service
       .getAllCompliances({
         ...this.query.pageSetting.pagination,
         // ...this.query.pageSetting.filters,
         propertyId: propertyId,
+        days: thirtyDays ? 30 : 0,
       })
       .pipe(
         map((response) => {

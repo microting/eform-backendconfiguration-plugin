@@ -33,5 +33,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index
         public int PageSize { get; set; }
 
         public int Offset { get; set; }
+
+        public int Days { get; set; }
     }
 }

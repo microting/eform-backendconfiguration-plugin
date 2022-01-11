@@ -445,6 +445,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("23.05.09 Manglende bilag", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.01Fast overdækning gyllebeholder"
+			};
+			item = new KeyValuePair<string, List<string>>("23.01.01 Fast overdækning gyllebeholder", headers);
+			theList.Add(item);
 
 			return theList;
 		}

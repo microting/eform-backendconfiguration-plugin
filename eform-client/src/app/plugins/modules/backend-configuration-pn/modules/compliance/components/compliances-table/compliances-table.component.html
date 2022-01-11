@@ -27,7 +27,14 @@
           {{ compliance.itemName }}
         </td>
         <td id="responsibles">
-          <span [innerHTML]="compliance.responsible"></span>
+          <ng-container *ngIf="compliance.responsible">
+            <span *ngFor="let responsible of compliance.responsible">
+              {{ responsible.value }}
+              <small style="color: var(--blue-400);">({{ responsible.key }})</small>
+              <br />
+            </span>
+          </ng-container>
+<!--          <span [innerHTML]="compliance.responsible"></span>-->
         </td>
 <!--        <td id="compliance">-->
 <!--          <span-->

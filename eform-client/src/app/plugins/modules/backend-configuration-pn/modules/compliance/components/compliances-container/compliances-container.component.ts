@@ -27,6 +27,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
   ];
   selectedProperty: PropertyModel;
   compliances: CompliancesModel[] = [];
+  isComplianceThirtyDays: boolean;
 
   getAllPropertiesDictionarySub$: Subscription;
   getTranslateSub$: Subscription;
@@ -48,7 +49,12 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
         .subscribe((translate) => (this.breadcrumbs[0].name = translate));
       const selectedPropertyId = +params['propertyId'];
       this.getProperty(selectedPropertyId);
-      this.getCompliances(selectedPropertyId);
+      if (params['complianceStatusThirty'] !== undefined) {
+        this.isComplianceThirtyDays = true;
+        this.getCompliances(selectedPropertyId, true);
+      } else {
+        this.getCompliances(selectedPropertyId, false);
+      }
     });
   }
 
@@ -66,9 +72,9 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
-  getCompliances(selectedPropertyId: number) {
+  getCompliances(selectedPropertyId: number, thirtyDays: boolean = false) {
     this.getAllCompliancesSub$ = this.compliancesStateService
-      .getAllCompliances(selectedPropertyId)
+      .getAllCompliances(selectedPropertyId, thirtyDays)
       .subscribe((data) => {
         if (data && data.success) {
           this.compliances = data.model.entities;

@@ -62,6 +62,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   deleteAreaRuleSub$: Subscription;
   planAreaRuleSub$: Subscription;
   getAllPropertiesDictionarySub$: Subscription;
+  deleteAreaRulesSub$: Subscription;
   getTranslateSub$: Subscription;
   routerSub$: Subscription;
 

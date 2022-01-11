@@ -25,6 +25,7 @@ SOFTWARE.
 using System.IO;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
+using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
@@ -138,12 +139,33 @@ namespace BackendConfiguration.Pn
                     if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
                     {
                         int clId = await core.TemplateCreate(newTemplate);
-                        var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
+                        var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
                         cl.IsLocked = true;
                         cl.IsEditable = false;
                         cl.ReportH1 = eform[0];
                         cl.ReportH2 = eform[1];
+                        cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
+                        cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
                         await cl.Update(sdkDbContext);
+                    }
+                    else
+                    {
+                        try {
+                            var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
+                                x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
+                                x.WorkflowState != Constants.WorkflowStates.Removed);
+                            cl.IsLocked = true;
+                            cl.IsEditable = false;
+                            cl.ReportH1 = eform[0];
+                            cl.ReportH2 = eform[1];
+                            cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
+                            cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
+                            await cl.Update(sdkDbContext);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
+                        }
                     }
                 }
 

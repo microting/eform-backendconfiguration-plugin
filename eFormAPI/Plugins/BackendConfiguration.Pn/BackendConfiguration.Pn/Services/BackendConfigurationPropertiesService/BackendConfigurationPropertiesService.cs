@@ -110,6 +110,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .ToList(),
                             IsWorkersAssigned = x.PropertyWorkers.Any(y => y.WorkflowState != Constants.WorkflowStates.Removed),
                             ComplianceStatus = x.ComplianceStatus,
+                            ComplianceStatusThirty = x.ComplianceStatusThirty
                         }).ToListAsync();
                 }
 
