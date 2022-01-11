@@ -151,7 +151,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
       const areaRuleIdsForDelete = this.areaRules
         .filter(x => !this.newAreaRulesForType7.some(y => y === x.translatedName))
         .map(x => x.id);
-      let areaRulesForCreate = new AreaRulesCreateModel();
+      const areaRulesForCreate = new AreaRulesCreateModel();
       for (let i = 0; i < areaRuleNamesForCreate.length; i++) {
         areaRulesForCreate.areaRules = [
           ...areaRulesForCreate.areaRules,

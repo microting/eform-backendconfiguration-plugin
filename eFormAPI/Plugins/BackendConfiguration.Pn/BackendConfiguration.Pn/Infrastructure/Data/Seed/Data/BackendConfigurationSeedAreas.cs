@@ -1312,6 +1312,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
         {
             new AreaRule
             {
+                EformName = "23.01.01 Fast overdækning gyllebeholder",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.01 Fast overdækning gyllebeholder" }, // da
+                    new() { LanguageId = 2, Name = "23.01.01 Fixed cover slurry tank" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
                 EformName = "23.01.02 Gyllekøling",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
