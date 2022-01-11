@@ -558,7 +558,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         i = areaRule.AreaRulesPlannings.Count;
                                         break;
                                     }
-                                    case AreaTypesEnum.Type6: // head pumps
+                                    case AreaTypesEnum.Type6: // heat pumps
                                     {
                                         if (areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled is true)
                                         {
@@ -1566,9 +1566,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                     break;
                 }
-                case AreaTypesEnum.Type6: // head pumps
+                case AreaTypesEnum.Type6: // heat pumps
                 {
-                    // create folder with name head pump
+                    // create folder with name heat pump
                     var translatesForFolder = areaRule.AreaRuleTranslations
                         .Select(x => new CommonTranslationsModel
                         {
@@ -1711,7 +1711,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     .FirstOrDefault() + ": Logbook",
                             },
                         };
-                        planningForType6Two.RepeatEvery = 1;
+                        planningForType6Two.RepeatEvery = 0;
                         planningForType6Two.RepeatType = RepeatType.Day;
                         if (areaRulePlanningModel.TypeSpecificFields is not null)
                         {
