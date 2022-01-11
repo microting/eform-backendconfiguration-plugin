@@ -111,7 +111,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   showPlanAreaRuleModal(rule: AreaRuleSimpleModel) {
     if (rule.id) {
       this.getAreaRulePlanningSub$ = this.areasService
-        .getAreaRulePlanning(rule.id)
+        .getAreaRulePlanningByRuleId(rule.id)
         .subscribe((operation) => {
           this.planAreaRuleModal.show(
             rule,

@@ -55,6 +55,14 @@ export const routes: Routes = [
             (m) => m.CompliancesModule
           ),
       },
+      {
+        path: 'task-worker-assignments',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/task-worker-assignments/task-worker-assignments.module').then(
+            (m) => m.TaskWorkerAssignmentsModule
+          ),
+      },
     ],
   },
 ];

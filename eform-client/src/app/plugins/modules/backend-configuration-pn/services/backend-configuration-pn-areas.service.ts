@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { OperationDataResult, OperationResult } from 'src/app/common/models';
+import {CommonPaginationState, OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
 import { ApiBaseService } from 'src/app/common/services';
 import {
   AreaRuleSimpleModel,
@@ -8,7 +8,7 @@ import {
   AreaRulesCreateModel,
   AreaRuleModel,
   AreaRuleUpdateModel,
-  AreaModel,
+  AreaModel, TaskWorkerModel,
 } from '../models';
 
 export let BackendConfigurationPnAreasMethods = {
@@ -18,6 +18,8 @@ export let BackendConfigurationPnAreasMethods = {
   AreaRulesForType7: 'api/backend-configuration-pn/area-rules/type-7',
   AreaRulesIndex: 'api/backend-configuration-pn/area-rules/index',
   AreaRulePlanning: 'api/backend-configuration-pn/area-rules/planning',
+  AreaRulePlanningById: 'api/backend-configuration-pn/area-rules/planning-by-id',
+  WorkerPlannings: 'api/backend-configuration-pn/area-rules/worker-plannings',
 };
 
 @Injectable({
@@ -41,7 +43,7 @@ export let BackendConfigurationPnAreasMethods = {
     );
   }
 
-  getAreaRulePlanning(
+  getAreaRulePlanningByRuleId(
     ruleId: number
   ): Observable<OperationDataResult<AreaRulePlanningModel>> {
     return this.apiBaseService.get(
@@ -102,4 +104,19 @@ export let BackendConfigurationPnAreasMethods = {
       BackendConfigurationPnAreasMethods.AreaRulesForType7
     );
   }
+
+  getAreaRulePlanningByPlanningId(
+    planningId: number
+  ): Observable<OperationDataResult<AreaRulePlanningModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.AreaRulePlanning,
+      { planningId }
+    );
+  }
+
+  getTaskWorkerAssignments(siteId: number, pagination: CommonPaginationState): Observable<OperationDataResult<Paged<TaskWorkerModel>>>{
+    return this.apiBaseService.get(
+    BackendConfigurationPnAreasMethods.WorkerPlannings,
+    { siteId: siteId, ...pagination }
+  );}
 }

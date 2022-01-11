@@ -1,7 +1,7 @@
 ﻿/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2022 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+public class TaskWorkerModel
 {
-    using System.Threading.Tasks;
-    using Infrastructure.Models.AreaRules;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    /// <summary>
+    /// id area rule planning (translated)
+    /// </summary>
+    public int Id { get; set; }
 
-    public interface IBackendConfigurationAreaRulePlanningsService
-    {
-        Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel);
+    public string PropertyName { get; set; }
 
-        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId);
+    /// <summary>
+    /// name area - name area rule (all translated)
+    /// </summary>
+    public string Path { get; set; }
 
-        Task<OperationDataResult<Paged<TaskWorkerModel>>> GetPlanningsBySiteId(int siteId, FilterAndSortModel filterAndSortModel);
-
-        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningById(int planningId);
-    }
+    /// <summary>
+    /// name item planning (translated)
+    /// </summary>
+    public string ItemName { get; set; }
 }
