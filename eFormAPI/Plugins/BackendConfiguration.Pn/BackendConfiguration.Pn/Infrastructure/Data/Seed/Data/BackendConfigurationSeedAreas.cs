@@ -1484,12 +1484,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new AreaRule
             {
-                EformName = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv",
+                EformName = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new()
                     {
-                        LanguageId = 1, Name = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv"
+                        LanguageId = 1, Name = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv."
                     }, // da
                     new() { LanguageId = 2, Name = "23.02.05 Silos and equipment in transport equipment in connection with feeding systems (Pipes, augers, etc.)" }, // en
                     new() { LanguageId = 3, Name = "" } // ge todo
@@ -1565,10 +1565,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new AreaRule
             {
-                EformName = "23.04.02 Reduceret indhold af råprotei",
+                EformName = "23.04.02 Reduceret indhold af råprotein",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "23.04.02 Reduceret indhold af råprotei" }, // da
+                    new() { LanguageId = 1, Name = "23.04.02 Reduceret indhold af råprotein" }, // da
                     new() { LanguageId = 2, Name = "23.04.02 Reduced content of crude protein" }, // en
                     new() { LanguageId = 3, Name = "" } // ge todo
                 },
