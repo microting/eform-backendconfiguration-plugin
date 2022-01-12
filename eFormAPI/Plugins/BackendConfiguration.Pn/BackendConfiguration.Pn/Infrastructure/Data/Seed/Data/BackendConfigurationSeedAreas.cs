@@ -1312,6 +1312,32 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
         {
             new AreaRule
             {
+                EformName = "23.00.01 Aflæsning vand",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.00.01 Aflæsning vand" }, // da
+                    new() { LanguageId = 2, Name = "23.00.01 Water" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.00 Readings environmental management",
+            },
+            new AreaRule
+            {
+                EformName = "23.00.02 Aflæsning el",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.00.02 Aflæsning el" }, // da
+                    new() { LanguageId = 2, Name = "23.00.02 Electricity" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.00 Readings environmental management",
+            },
+            new AreaRule
+            {
                 EformName = "23.01.01 Fast overdækning gyllebeholder",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {

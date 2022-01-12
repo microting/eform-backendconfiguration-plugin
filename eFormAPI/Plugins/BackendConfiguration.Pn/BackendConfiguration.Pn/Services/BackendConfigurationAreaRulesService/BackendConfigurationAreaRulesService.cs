@@ -472,7 +472,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .Select(x => x.CheckListId)
                             .FirstAsync();
                     }
-                    
+
                     var areaRule = new AreaRule
                     {
                         AreaId = areaProperty.Area.Id,
@@ -593,6 +593,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
             try
             {
                 var curentLanguage = await _userService.GetCurrentUserLanguage();
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var model = BackendConfigurationSeedAreas.AreaRulesForType7
                     .GroupBy(x => x.FolderName)
                     .Select(x => new AreaRulesForType7
@@ -606,6 +608,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .ToList(),
                     })
                     .ToList();
+
+                foreach (AreaRulesForType7 areaRulesForType7 in model)
+                {
+                    var folderTranslation = await
+                        sdkDbContext.FolderTranslations.Where(x => x.Name == areaRulesForType7.FolderName && x.WorkflowState != Constants.WorkflowStates.Removed).OrderBy(x => x.Id).LastAsync();
+                    areaRulesForType7.FolderName = sdkDbContext.FolderTranslations.Single(x => x.FolderId == folderTranslation.FolderId && x.LanguageId == curentLanguage.Id).Name;
+                }
+
                 return new OperationDataResult<List<AreaRulesForType7>>(true, model);
             }
             catch (Exception e)

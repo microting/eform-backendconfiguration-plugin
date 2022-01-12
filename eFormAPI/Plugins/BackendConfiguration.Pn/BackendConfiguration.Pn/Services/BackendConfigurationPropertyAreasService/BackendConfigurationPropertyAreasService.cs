@@ -473,6 +473,27 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
+                                        Name = "23.00 Aflæsninger miljøledelse", // todo
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "23.00 Readings environmental management",
+                                        Description = "",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "23.00 Messungen Umweltmanagement", // todo
+                                        Description = "",
+                                    },
+                                }, folderId),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
                                         Name = "23.01 logbøger for alle miljøteknologier", // todo
                                         Description = "",
                                     },

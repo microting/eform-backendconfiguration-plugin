@@ -45,12 +45,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             new PluginConfigurationValue
             {
                 Name = $"{TagBackendConfigurationSettingsName}:MaxChrNumbers",
-                Value = "1"
+                Value = "10"
             },
             new PluginConfigurationValue
             {
                 Name = $"{TagBackendConfigurationSettingsName}:MaxCvrNumbers",
-                Value = "1"
+                Value = "10"
             },
         };
     }
