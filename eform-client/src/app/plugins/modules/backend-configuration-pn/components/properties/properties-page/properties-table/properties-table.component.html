@@ -46,8 +46,7 @@
             {{ getLanguages(property) }}
           </td>
           <td id="propertyCompliance">
-            <button *ngIf="authStateService.isAdmin"
-                    id="showCompliancesBtn"
+            <button id="showCompliancesBtn"
                     class="btn {{getColorBadge(property.complianceStatus)}} btn-icon mr-2"
                     mdbTooltip="{{ 'View compliance' | translate }}"
                     [routerLink]="['../compliances/', property.id]"
@@ -57,8 +56,7 @@
             </button>
           </td>
           <td id="propertyComplianceThirty">
-            <button *ngIf="authStateService.isAdmin"
-                    id="showComplianceThirtyBtn"
+            <button id="showComplianceThirtyBtn"
                     class="btn {{getColorBadge(property.complianceStatusThirty)}} btn-icon mr-2"
                     mdbTooltip="{{ 'View compliance 30 days' | translate }}"
                     [routerLink]="['../compliances', property.id, property.complianceStatusThirty]"
