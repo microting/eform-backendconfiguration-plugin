@@ -1312,6 +1312,45 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
         {
             new AreaRule
             {
+                EformName = "23.00.01 Aflæsning vand",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.00.01 Aflæsning vand" }, // da
+                    new() { LanguageId = 2, Name = "23.00.01 Water" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.00 Readings environmental management",
+            },
+            new AreaRule
+            {
+                EformName = "23.00.02 Aflæsning el",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.00.02 Aflæsning el" }, // da
+                    new() { LanguageId = 2, Name = "23.00.02 Electricity" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.00 Readings environmental management",
+            },
+            new AreaRule
+            {
+                EformName = "23.01.01 Fast overdækning gyllebeholder",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "23.01.01 Fast overdækning gyllebeholder" }, // da
+                    new() { LanguageId = 2, Name = "23.01.01 Fixed cover slurry tank" }, // en
+                    new() { LanguageId = 3, Name = "" } // ge todo
+                },
+                AreaId = 23,
+                IsDefault = true,
+                FolderName = "23.01 Logbooks for any environmental technologies",
+            },
+            new AreaRule
+            {
                 EformName = "23.01.02 Gyllekøling",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
@@ -1471,12 +1510,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new AreaRule
             {
-                EformName = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv",
+                EformName = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new()
                     {
-                        LanguageId = 1, Name = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv"
+                        LanguageId = 1, Name = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv."
                     }, // da
                     new() { LanguageId = 2, Name = "23.02.05 Silos and equipment in transport equipment in connection with feeding systems (Pipes, augers, etc.)" }, // en
                     new() { LanguageId = 3, Name = "" } // ge todo
@@ -1552,10 +1591,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new AreaRule
             {
-                EformName = "23.04.02 Reduceret indhold af råprotei",
+                EformName = "23.04.02 Reduceret indhold af råprotein",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "23.04.02 Reduceret indhold af råprotei" }, // da
+                    new() { LanguageId = 1, Name = "23.04.02 Reduceret indhold af råprotein" }, // da
                     new() { LanguageId = 2, Name = "23.04.02 Reduced content of crude protein" }, // en
                     new() { LanguageId = 3, Name = "" } // ge todo
                 },

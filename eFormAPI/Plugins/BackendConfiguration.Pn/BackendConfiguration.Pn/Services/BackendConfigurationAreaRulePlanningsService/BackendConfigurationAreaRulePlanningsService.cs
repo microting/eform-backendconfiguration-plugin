@@ -57,6 +57,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 areaRulePlanningModel.AssignedSites =
                     areaRulePlanningModel.AssignedSites.Where(x => x.Checked).ToList();
 
+                if (areaRulePlanningModel.TypeSpecificFields != null)
+                {
+                    if (areaRulePlanningModel.TypeSpecificFields.RepeatType == 1 && areaRulePlanningModel.TypeSpecificFields.RepeatEvery == 1)
+                    {
+                        areaRulePlanningModel.TypeSpecificFields.RepeatEvery = 0;
+                    }
+                }
+
                 if (areaRulePlanningModel.Id.HasValue) // update planning
                 {
                     var areaRule = await _backendConfigurationPnDbContext.AreaRules
@@ -560,7 +568,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             i = areaRule.AreaRulesPlannings.Count;
                                             break;
                                         }
-                                    case AreaTypesEnum.Type6: // head pumps
+
+                                        i = areaRule.AreaRulesPlannings.Count;
+                                        break;
+                                    }
+                                    case AreaTypesEnum.Type6: // heat pumps
+                                    {
+                                        if (areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled is true)
                                         {
                                             if (areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled is true)
                                             {
@@ -1019,6 +1033,37 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     }
 
                                     await planning.Update(_itemsPlanningPnDbContext);
+
+                                    if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                                    {
+                                        var compliance = await _backendConfigurationPnDbContext.Compliances
+                                            .SingleOrDefaultAsync(x => x.PlanningId == planning.Id);
+                                        if (compliance != null)
+                                        {
+                                            await compliance.Delete(_backendConfigurationPnDbContext);
+                                            var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
+                                            if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
+                                            {
+                                                property.ComplianceStatusThirty = 2;
+                                                property.ComplianceStatus = 2;
+                                            } else
+                                            {
+                                                if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                                                {
+                                                    property.ComplianceStatusThirty = _backendConfigurationPnDbContext.Compliances.Any(x =>
+                                                        x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
+                                                        x.WorkflowState != Constants.WorkflowStates.Removed) ? 1 : 0;
+                                                    property.ComplianceStatus = 1;
+                                                }
+                                                else
+                                                {
+                                                    property.ComplianceStatusThirty = 0;
+                                                    property.ComplianceStatus = 0;
+                                                }
+                                            }
+                                            property.Update(_backendConfigurationPnDbContext).GetAwaiter().GetResult();
+                                        }
+                                    }
                                 }
 
                                 break;
@@ -1540,17 +1585,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                         break;
                     }
-                case AreaTypesEnum.Type6: // head pumps
-                    {
-                        // create folder with name head pump
-                        var translatesForFolder = areaRule.AreaRuleTranslations
-                            .Select(x => new CommonTranslationsModel
-                            {
-                                LanguageId = x.LanguageId,
-                                Description = "",
-                                Name = x.Name,
-                            }).ToList();
-                        var folderId = await core.FolderCreate(translatesForFolder, areaRule.FolderId);
+
+                    var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningId,
+                        folderId);
+                    await areaRulePlanning.Create(_backendConfigurationPnDbContext);
+
+                    break;
+                }
+                case AreaTypesEnum.Type6: // heat pumps
+                {
+                    // create folder with name heat pump
+                    var translatesForFolder = areaRule.AreaRuleTranslations
+                        .Select(x => new CommonTranslationsModel
+                        {
+                            LanguageId = x.LanguageId,
+                            Description = "",
+                            Name = x.Name,
+                        }).ToList();
+                    var folderId = await core.FolderCreate(translatesForFolder, areaRule.FolderId);
 
                         var planningForType6HoursAndEnergyEnabledId = 0;
                         var planningForType6IdOne = 0;
@@ -1685,16 +1737,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     .FirstOrDefault() + ": Logbook",
                             },
                         };
-                            planningForType6Two.RepeatEvery = 1;
-                            planningForType6Two.RepeatType = RepeatType.Day;
-                            if (areaRulePlanningModel.TypeSpecificFields is not null)
-                            {
-                                planningForType6One.DayOfMonth =
-                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                                planningForType6One.DayOfWeek =
-                                    (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday : (DayOfWeek?)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
-                                planningForType6One.RepeatUntil =
-                                    areaRulePlanningModel.TypeSpecificFields.EndDate;
+                        planningForType6Two.RepeatEvery = 0;
+                        planningForType6Two.RepeatType = RepeatType.Day;
+                        if (areaRulePlanningModel.TypeSpecificFields is not null)
+                        {
+                            planningForType6One.DayOfMonth =
+                                areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                            planningForType6One.DayOfWeek =
+                                (DayOfWeek?) areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday : (DayOfWeek?)  areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                            planningForType6One.RepeatUntil =
+                                areaRulePlanningModel.TypeSpecificFields.EndDate;
 
                                 planningForType6Two.DayOfMonth =
                                     areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
@@ -1866,6 +1918,37 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 }
 
                 await planning.Delete(_itemsPlanningPnDbContext);
+
+                if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                {
+                    var compliance = await _backendConfigurationPnDbContext.Compliances
+                        .SingleOrDefaultAsync(x => x.PlanningId == planning.Id);
+                    if (compliance != null)
+                    {
+                        await compliance.Delete(_backendConfigurationPnDbContext);
+                        var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
+                        if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            property.ComplianceStatusThirty = 2;
+                            property.ComplianceStatus = 2;
+                        } else
+                        {
+                            if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                            {
+                                property.ComplianceStatusThirty = _backendConfigurationPnDbContext.Compliances.Any(x =>
+                                    x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
+                                    x.WorkflowState != Constants.WorkflowStates.Removed) ? 1 : 0;
+                                property.ComplianceStatus = 1;
+                            }
+                            else
+                            {
+                                property.ComplianceStatusThirty = 0;
+                                property.ComplianceStatus = 0;
+                            }
+                        }
+                        property.Update(_backendConfigurationPnDbContext).GetAwaiter().GetResult();
+                    }
+                }
             }
         }
 
