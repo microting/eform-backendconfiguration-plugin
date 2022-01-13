@@ -56,6 +56,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 areaRulePlanningModel.AssignedSites =
                     areaRulePlanningModel.AssignedSites.Where(x => x.Checked).ToList();
 
+                if (areaRulePlanningModel.TypeSpecificFields != null)
+                {
+                    if (areaRulePlanningModel.TypeSpecificFields.RepeatType == 1 && areaRulePlanningModel.TypeSpecificFields.RepeatEvery == 1)
+                    {
+                        areaRulePlanningModel.TypeSpecificFields.RepeatEvery = 0;
+                    }
+                }
+
                 if (areaRulePlanningModel.Id.HasValue) // update planning
                 {
                     var areaRule = await _backendConfigurationPnDbContext.AreaRules
@@ -1900,29 +1908,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     if (compliance != null)
                     {
                         await compliance.Delete(_backendConfigurationPnDbContext);
-                    }
-
-                    var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
-                    if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
-                    {
-                        property.ComplianceStatusThirty = 2;
-                        property.ComplianceStatus = 2;
-                    } else
-                    {
-                        if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                        var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
+                        if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
-                            property.ComplianceStatusThirty = _backendConfigurationPnDbContext.Compliances.Any(x =>
-                                x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
-                                x.WorkflowState != Constants.WorkflowStates.Removed) ? 1 : 0;
-                            property.ComplianceStatus = 1;
-                        }
-                        else
+                            property.ComplianceStatusThirty = 2;
+                            property.ComplianceStatus = 2;
+                        } else
                         {
-                            property.ComplianceStatusThirty = 0;
-                            property.ComplianceStatus = 0;
+                            if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                            {
+                                property.ComplianceStatusThirty = _backendConfigurationPnDbContext.Compliances.Any(x =>
+                                    x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
+                                    x.WorkflowState != Constants.WorkflowStates.Removed) ? 1 : 0;
+                                property.ComplianceStatus = 1;
+                            }
+                            else
+                            {
+                                property.ComplianceStatusThirty = 0;
+                                property.ComplianceStatus = 0;
+                            }
                         }
+                        property.Update(_backendConfigurationPnDbContext).GetAwaiter().GetResult();
                     }
-                    property.Update(_backendConfigurationPnDbContext).GetAwaiter().GetResult();
                 }
             }
         }
