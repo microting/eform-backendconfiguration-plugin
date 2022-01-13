@@ -172,8 +172,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
     }
   }
 
-  addOrRemoveAreaRuleName(areaRuleName: string, e: Event) {
-    // @ts-ignore
+  addOrRemoveAreaRuleName(areaRuleName: string, e: any) {
     if (e.target.checked) {
       this.newAreaRulesForType7 = [...this.newAreaRulesForType7, areaRuleName];
     } else {

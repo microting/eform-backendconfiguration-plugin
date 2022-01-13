@@ -11,14 +11,14 @@ import {
   AreaInitialFieldsModel,
   AreaModel,
   AreaRuleAssignedSitesModel,
-  AreaRuleInitialFieldsModel,
+  AreaRuleInitialFieldsModel, AreaRuleNameAndTypeSpecificFields,
   AreaRulePlanningModel,
   AreaRuleSimpleModel,
   AreaRuleT1PlanningModel,
   AreaRuleT2PlanningModel,
   AreaRuleT4PlanningModel,
   AreaRuleT5PlanningModel,
-} from '../../../../models';
+} from '../../models';
 import { add, set } from 'date-fns';
 import * as R from 'ramda';
 
@@ -28,12 +28,12 @@ import * as R from 'ramda';
   styleUrls: ['./area-rule-plan-modal.component.scss'],
 })
 export class AreaRulePlanModalComponent implements OnInit {
-  @Input() selectedArea: AreaModel = new AreaModel();
   @ViewChild('frame', { static: false }) frame;
   @Output()
   updateAreaRulePlan: EventEmitter<AreaRulePlanningModel> = new EventEmitter<AreaRulePlanningModel>();
+  selectedArea: AreaModel = new AreaModel();
   selectedAreaRulePlanning: AreaRulePlanningModel = new AreaRulePlanningModel();
-  selectedAreaRule: AreaRuleSimpleModel = new AreaRuleSimpleModel();
+  selectedAreaRule: AreaRuleNameAndTypeSpecificFields = new AreaRuleNameAndTypeSpecificFields();
   days: number[] = R.range(1, 29);
 
   get currentDate() {
@@ -54,14 +54,24 @@ export class AreaRulePlanModalComponent implements OnInit {
   ngOnInit() {}
 
   show(
-    rule: AreaRuleSimpleModel,
+    rule: AreaRuleSimpleModel | AreaRuleNameAndTypeSpecificFields,
     selectedPropertyId: number,
+    selectedArea: AreaModel,
     planning?: AreaRulePlanningModel
   ) {
+    this.selectedArea = {...selectedArea};
     this.selectedAreaRule = { ...rule };
-    this.selectedAreaRulePlanning = planning
-      ? { ...planning, propertyId: selectedPropertyId }
-      : this.generateInitialPlanningObject(rule, selectedPropertyId);
+    if (planning) {
+      this.selectedAreaRulePlanning = {...planning, propertyId: selectedPropertyId};
+    }
+    if (!planning){
+      this.selectedAreaRulePlanning = this.generateInitialPlanningObject({
+        eformName: '',
+        id: 0,
+        isDefault: false,
+        planningStatus: false,
+        ...rule}, selectedPropertyId);
+    }
     if (this.selectedArea.type === 5) {
       this.selectedAreaRulePlanning.typeSpecificFields = <AreaRuleT5PlanningModel> this.selectedAreaRulePlanning.typeSpecificFields;
         if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek !== rule.typeSpecificFields.dayOfWeek) {
@@ -72,6 +82,9 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   hide() {
+    this.selectedArea = new AreaModel();
+    this.selectedAreaRulePlanning = new AreaRulePlanningModel();
+    this.selectedAreaRule = new AreaRuleNameAndTypeSpecificFields();
     this.frame.hide();
   }
 
@@ -164,10 +177,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     }
     if (this.selectedArea.type === 4) {
       return {
-        endDate: format(
-          this.currentDatePlusTwoWeeks,
-          `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
-        ),
+        startDate: format(this.currentDate, `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`),
         repeatEvery: 12,
         repeatType: 3,
       };

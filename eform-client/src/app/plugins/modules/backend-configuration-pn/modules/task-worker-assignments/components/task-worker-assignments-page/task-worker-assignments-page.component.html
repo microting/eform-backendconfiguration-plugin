@@ -37,6 +37,7 @@
                 mdbTooltip="{{ 'Show planning' | translate }}"
                 mdbWavesEffect
                 id="showPlanningBtn"
+                (click)="openAreaRulePlanModal(taskWorkerAssignments)"
               >
                 <fa-icon icon="eye" [fixedWidth]="true" size="lg"></fa-icon>
               </button>
@@ -47,3 +48,9 @@
     </table>
   </div>
 </div>
+
+<app-area-rule-plan-modal
+  #areaRulePlanModal
+  (updateAreaRulePlan)="onUpdateAreaRulePlan($event)"
+>
+</app-area-rule-plan-modal>

@@ -7,7 +7,6 @@ import {
   AreaRuleCreateModalComponent,
   AreaRuleDeleteModalComponent,
   AreaRuleEditModalComponent,
-  AreaRulePlanModalComponent,
 } from '../';
 import {
   AreaRulePlanningModel,
@@ -22,6 +21,7 @@ import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import { TranslateService } from '@ngx-translate/core';
+import {AreaRulePlanModalComponent} from '../../../../components';
 
 @AutoUnsubscribe()
 @Component({
@@ -89,7 +89,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
 
   getArea(propertyAreaId: number) {
     this.getAreaSub$ = this.areasService
-      .getArea(propertyAreaId)
+      .getAreaByPropertyAreaId(propertyAreaId)
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.selectedArea = operation.model;
@@ -116,11 +116,12 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
           this.planAreaRuleModal.show(
             rule,
             this.selectedPropertyId,
+            this.selectedArea,
             operation.model
           );
         });
     } else {
-      this.planAreaRuleModal.show(rule, this.selectedPropertyId);
+      this.planAreaRuleModal.show(rule, this.selectedPropertyId, this.selectedArea);
     }
   }
 

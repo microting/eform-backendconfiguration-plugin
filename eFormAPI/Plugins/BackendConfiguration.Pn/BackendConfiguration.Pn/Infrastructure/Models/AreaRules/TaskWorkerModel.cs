@@ -33,6 +33,8 @@ public class TaskWorkerModel
 
     public string PropertyName { get; set; }
 
+    public int PropertyId { get; set; }
+
     /// <summary>
     /// name area - name area rule (all translated)
     /// </summary>
@@ -42,4 +44,6 @@ public class TaskWorkerModel
     /// name item planning (translated)
     /// </summary>
     public string ItemName { get; set; }
+
+    public AreaRuleNameAndTypeSpecificFields AreaRule{ get; set; }
 }

@@ -24,19 +24,15 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
-    public class AreaRuleSimpleModel
+    public class AreaRuleSimpleModel: AreaRuleNameAndTypeSpecificFields
     {
         public int Id { get; set; }
 
         public string EformName { get; set; }
 
-        public string TranslatedName { get; set; }
-
         public bool IsDefault { get; set; }
 
         public bool PlanningStatus { get; set; }
-
-        public TypeSpecificField TypeSpecificFields { get; set; }
 
         public AreaRuleInitialFields InitialFields { get; set; }
     }

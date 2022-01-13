@@ -1,13 +1,17 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
+import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   Paged,
   TableHeaderElementModel,
 } from 'src/app/common/models';
 import {TaskWorkerAssignmentsStateService} from '../store';
-import {TaskWorkerModel} from '../../../../models';
-import {ActivatedRoute, Router} from '@angular/router';
+import {AreaRulePlanningModel, TaskWorkerModel} from '../../../../models';
+import {ActivatedRoute} from '@angular/router';
 import {SitesService} from 'src/app/common/services';
+import {AreaRulePlanModalComponent} from '../../../../components';
+import {BackendConfigurationPnAreasService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {Subscription} from 'rxjs';
+import {area} from 'd3';
 
 @AutoUnsubscribe()
 @Component({
@@ -15,6 +19,7 @@ import {SitesService} from 'src/app/common/services';
   templateUrl: './task-worker-assignments-page.component.html',
 })
 export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
+  @ViewChild('areaRulePlanModal') areaRulePlanModal: AreaRulePlanModalComponent;
   tableHeaders: TableHeaderElementModel[] = [
     {
       name: 'Id',
@@ -33,10 +38,14 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
   taskWorkerAssignments: Paged<TaskWorkerModel>;
   siteName: string;
 
+  planAreaRuleSub$: Subscription;
+
   constructor(
     public taskWorkerAssignmentsStateService: TaskWorkerAssignmentsStateService,
     private activatedRoute: ActivatedRoute,
     private sitesService: SitesService,
+    private backendConfigurationPnAreasService: BackendConfigurationPnAreasService,
+    private areasService: BackendConfigurationPnAreasService,
   ) {
   }
 
@@ -57,7 +66,7 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
     this.taskWorkerAssignmentsStateService
       .getTaskWorkerAssignments()
       .subscribe((data) => {
-        if (data && data.success && data.model){
+        if (data && data.success && data.model) {
           this.taskWorkerAssignments = data.model;
         }
       })
@@ -67,11 +76,37 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
     this.sitesService
       .getSingleSite(this.taskWorkerAssignmentsStateService.siteId)
       .subscribe((data) => {
-        if (data && data.success && data.model){
+        if (data && data.success && data.model) {
           this.siteName = data.model.siteName;
         }
       })
   }
 
-  ngOnDestroy(): void {}
+  openAreaRulePlanModal(taskWorkerAssignments: TaskWorkerModel) {
+    this.backendConfigurationPnAreasService.getAreaRulePlanningByPlanningId(taskWorkerAssignments.id)
+      .subscribe((areaRulePlan) => {
+        if (areaRulePlan && areaRulePlan.success && areaRulePlan.model) {
+          this.backendConfigurationPnAreasService.getAreaByRuleId(areaRulePlan.model.ruleId)
+            .subscribe((area) => {
+              if (area && area.success && area.model) {
+                this.areaRulePlanModal
+                  .show(taskWorkerAssignments.areaRule, taskWorkerAssignments.propertyId, area.model, areaRulePlan.model);
+              }
+            });
+        }
+      });
+  }
+
+  onUpdateAreaRulePlan(rulePlanning: AreaRulePlanningModel) {
+    this.planAreaRuleSub$ = this.areasService
+      .updateAreaRulePlanning(rulePlanning)
+      .subscribe((data) => {
+        if (data && data.success) {
+          this.areaRulePlanModal.hide();
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+  }
 }

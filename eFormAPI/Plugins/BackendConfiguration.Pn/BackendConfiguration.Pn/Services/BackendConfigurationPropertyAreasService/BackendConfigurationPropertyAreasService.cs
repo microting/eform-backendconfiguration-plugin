@@ -763,10 +763,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             }
         }
 
-        public async Task<OperationDataResult<AreaModel>> ReadArea(int propertyAreaId)
+        public async Task<OperationDataResult<AreaModel>> ReadAreaByPropertyAreaId(int propertyAreaId)
         {
             try
             {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContex = core.DbContextHelper.GetDbContext();
                 var areaProperties = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == propertyAreaId)
@@ -793,8 +795,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         _backendConfigurationLocalizationService.GetString("NotFoundArea"));
                 }
 
-                var core = await _coreHelper.GetCore();
-                var sdkDbContex = core.DbContextHelper.GetDbContext();
                 var sites = new List<SiteDto>();
 
                 foreach (var worker in areaProperties.Property.PropertyWorkers
@@ -838,6 +838,96 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Type = areaProperties.Area.AreaInitialField.Type,
                             RepeatEvery = areaProperties.Area.AreaInitialField.RepeatEvery,
                             EndDate = areaProperties.Area.AreaInitialField.EndDate,
+                        }
+                        : null,
+                };
+                if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))
+                {
+                    areaModel.InitialFields.EformId = await sdkDbContex.CheckListTranslations
+                        .Where(x => x.Text == areaModel.InitialFields.EformName)
+                        .Select(x => x.CheckListId)
+                        .FirstOrDefaultAsync();
+                }
+
+                return new OperationDataResult<AreaModel>(true, areaModel);
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationDataResult<AreaModel>(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileReadArea")}: {e.Message}");
+            }
+        }
+
+        public async Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContex = core.DbContextHelper.GetDbContext();
+
+                var languages = await sdkDbContex.Languages.Select(x => new { x.Id, x.Name }).ToListAsync();
+                var language = await _userService.GetCurrentUserLanguage();
+
+                var areaRule = await _backendConfigurationPnDbContext.AreaRules
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == areaRuleId)
+                    .Include(x => x.Area)
+                    .ThenInclude(x => x.AreaInitialField)
+                    .Include(x => x.Area.AreaTranslations)
+                    .Where(x => x.Area.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Include(x => x.Property)
+                    .ThenInclude(x => x.SelectedLanguages)
+                    .Include(x => x.Property.PropertyWorkers)
+                    .Where(x => x.Property.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync();
+
+                if (areaRule == null)
+                {
+                    return new OperationDataResult<AreaModel>(false,
+                        _backendConfigurationLocalizationService.GetString("AreaRuleNotFound"));
+                }
+                var sites = new List<SiteDto>();
+
+                foreach (var worker in areaRule.Property.PropertyWorkers
+                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.WorkerId))
+                {
+                    var site = await sdkDbContex.Sites
+                        .Where(x => x.Id == worker)
+                        .FirstAsync();
+                    sites.Add(new SiteDto()
+                    {
+                        SiteId = worker,
+                        SiteName = site.Name,
+                    });
+                }
+
+                var areaModel = new AreaModel
+                {
+                    Name = areaRule.Area.AreaTranslations.Where(x => x.LanguageId == language.Id)
+                        .Select(x => x.Name).FirstOrDefault(),
+                    Id = areaRule.AreaId,
+                    Type = areaRule.Area.Type,
+                    Languages = areaRule.Property.SelectedLanguages
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => new CommonDictionaryModel
+                        {
+                            Id = x.LanguageId,
+                            Name = languages.First(y => y.Id == x.LanguageId).Name,
+                        }).ToList(),
+                    AvailableWorkers = sites,
+                    InitialFields = areaRule.Area.AreaInitialField != null
+                        ? new AreaInitialFields
+                        {
+                            Alarm = areaRule.Area.AreaInitialField.Alarm,
+                            DayOfWeek = areaRule.Area.AreaInitialField.DayOfWeek,
+                            EformName = areaRule.Area.AreaInitialField.EformName,
+                            SendNotifications = areaRule.Area.AreaInitialField.Notifications,
+                            RepeatType = areaRule.Area.AreaInitialField.RepeatType,
+                            Type = areaRule.Area.AreaInitialField.Type,
+                            RepeatEvery = areaRule.Area.AreaInitialField.RepeatEvery,
+                            EndDate = areaRule.Area.AreaInitialField.EndDate,
                         }
                         : null,
                 };

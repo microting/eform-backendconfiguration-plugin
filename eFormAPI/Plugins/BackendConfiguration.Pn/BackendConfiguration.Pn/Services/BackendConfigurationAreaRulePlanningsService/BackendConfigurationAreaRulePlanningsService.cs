@@ -1964,40 +1964,72 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Status)
                     .Where(x => x.PlanningSites.Select(y => y.SiteId).Contains(siteId))
-                    .Select(x => new { x.Id, x.ItemPlanningId, x.PropertyId, x.AreaRuleId, x.AreaId })
+                    .Include(x => x.AreaRule.AreaRuleTranslations)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.ItemPlanningId,
+                        x.PropertyId,
+                        x.AreaRuleId,
+                        x.AreaId,
+                        x.AreaRule,
+                    })
                     .ToListAsync();
                 // var total = sitePlannings.Count;
                 foreach (var sitePlanning in sitePlannings)
                 {
                     var areaName = await _backendConfigurationPnDbContext.AreaTranslations
                         .Where(x => x.AreaId == sitePlanning.AreaId)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.LanguageId == language.Id)
                         .Select(x => x.Name)
                         .FirstOrDefaultAsync();
 
                     var areaRuleName = await _backendConfigurationPnDbContext.AreaRuleTranslations
                         .Where(x => x.AreaRuleId == sitePlanning.AreaRuleId)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.LanguageId == language.Id)
                         .Select(x => x.Name)
                         .FirstOrDefaultAsync();
 
                     var propertyName = await _backendConfigurationPnDbContext.Properties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.Id == sitePlanning.PropertyId)
                         .Select(x => x.Name)
                         .FirstOrDefaultAsync();
 
                     var itemPlanningName = await _itemsPlanningPnDbContext.PlanningNameTranslation
                         .Where(x => x.PlanningId == sitePlanning.ItemPlanningId)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.LanguageId == language.Id)
                         .Select(x => x.Name)
                         .FirstOrDefaultAsync();
 
-                    listTaskWorker.Add(new TaskWorkerModel()
+                    listTaskWorker.Add(new TaskWorkerModel
                     {
                         Id = sitePlanning.Id,
                         Path = $"{areaName} - {areaRuleName}",
                         PropertyName = propertyName,
                         ItemName = itemPlanningName,
+                        PropertyId = sitePlanning.PropertyId,
+                        AreaRule = new AreaRuleNameAndTypeSpecificFields
+                        {
+                            TranslatedName = sitePlanning.AreaRule.AreaRuleTranslations
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.LanguageId == language.Id)
+                                .Select(x => x.Name)
+                                .FirstOrDefault(),
+                            TypeSpecificFields = new TypeSpecificField
+                            {
+                                EformId = sitePlanning.AreaRule.EformId,
+                                Type = sitePlanning.AreaRule.Type,
+                                Alarm = sitePlanning.AreaRule.Alarm,
+                                ChecklistStable = sitePlanning.AreaRule.ChecklistStable,
+                                TailBite = sitePlanning.AreaRule.TailBite,
+                                DayOfWeek = sitePlanning.AreaRule.DayOfWeek,
+                                RepeatEvery = sitePlanning.AreaRule.RepeatEvery,
+                            },
+                        }
                     });
                 }
                 if (listTaskWorker.Any())

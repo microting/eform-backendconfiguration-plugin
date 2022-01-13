@@ -13,6 +13,7 @@ import {
 
 export let BackendConfigurationPnAreasMethods = {
   Area: 'api/backend-configuration-pn/area',
+  AreaByRuleId: 'api/backend-configuration-pn/area-by-rule-id',
   AreaRules: 'api/backend-configuration-pn/area-rules',
   AreaRulesMultipleDelete: 'api/backend-configuration-pn/area-rules/multiple-delete',
   AreaRulesForType7: 'api/backend-configuration-pn/area-rules/type-7',
@@ -28,7 +29,7 @@ export let BackendConfigurationPnAreasMethods = {
   export class BackendConfigurationPnAreasService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getArea(propertyAreaId: number): Observable<OperationDataResult<AreaModel>> {
+  getAreaByPropertyAreaId(propertyAreaId: number): Observable<OperationDataResult<AreaModel>> {
     return this.apiBaseService.get(BackendConfigurationPnAreasMethods.Area, {
       propertyAreaId,
     });
@@ -109,7 +110,7 @@ export let BackendConfigurationPnAreasMethods = {
     planningId: number
   ): Observable<OperationDataResult<AreaRulePlanningModel>> {
     return this.apiBaseService.get(
-      BackendConfigurationPnAreasMethods.AreaRulePlanning,
+      BackendConfigurationPnAreasMethods.AreaRulePlanningById,
       { planningId }
     );
   }
@@ -119,4 +120,10 @@ export let BackendConfigurationPnAreasMethods = {
     BackendConfigurationPnAreasMethods.WorkerPlannings,
     { siteId: siteId, ...pagination }
   );}
+
+  getAreaByRuleId(areaRuleId: number): Observable<OperationDataResult<AreaModel>> {
+    return this.apiBaseService.get(BackendConfigurationPnAreasMethods.AreaByRuleId, {
+      areaRuleId,
+    });
+  }
 }
