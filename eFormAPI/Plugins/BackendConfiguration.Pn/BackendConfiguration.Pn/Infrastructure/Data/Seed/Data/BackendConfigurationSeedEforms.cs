@@ -273,13 +273,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.00 miljøledelse",""
+				"23.Indberetning IE Husdyrbrug","23.00Aflæsninger",""
 			};
 			item = new KeyValuePair<string, List<string>>("23.00.01 Aflæsning vand", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.00 miljøledelse",""
+				"23.Indberetning IE Husdyrbrug","23.00Aflæsninger",""
 			};
 			item = new KeyValuePair<string, List<string>>("23.00.02 Aflæsning el", headers);
 			theList.Add(item);
