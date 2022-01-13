@@ -494,7 +494,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "23.01 logbøger for alle miljøteknologier", // todo
+                                        Name = "23.01 Logbøger for alle miljøteknologier", // todo
                                         Description = "",
                                     },
                                     new()
@@ -515,7 +515,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "23.02 dokumentation af afsluttede inspektioner", // todo
+                                        Name = "23.02 Dokumentation af afsluttede inspektioner", // todo
                                         Description = "",
                                     },
                                     new()
@@ -536,7 +536,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "23.03 dokumentation for miljøledelse", // todo
+                                        Name = "23.03 Dokumentation for miljøledelse", // todo
                                         Description = "",
                                     },
                                     new()
@@ -557,7 +557,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "23.04 overholdelse af fodringskrav", // todo
+                                        Name = "23.04 Overholdelse af fodringskrav", // todo
                                         Description = "",
                                     },
                                     new()
