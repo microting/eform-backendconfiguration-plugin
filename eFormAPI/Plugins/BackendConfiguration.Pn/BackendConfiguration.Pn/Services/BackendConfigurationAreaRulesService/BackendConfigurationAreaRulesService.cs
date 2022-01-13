@@ -494,14 +494,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .Where(x => x.Name == areaRuleType7.FolderName)
                             .Select(x => x.FolderId)
                             .FirstAsync();
-                        areaRule.FolderId = await core.FolderCreate(areaRuleType7.AreaRuleTranslations
-                            .Select(x => new CommonTranslationsModel
-                            {
-                                LanguageId = x.LanguageId,
-                                Name = x.Name,
-                                Description = "",
-                            })
-                            .ToList(), parentFolderId);
+                        areaRule.FolderId = parentFolderId;
                     }
 
                     if (areaRuleCreateModel.TypeSpecificFields != null)
