@@ -877,7 +877,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "23. IE Reporting", // todo need beter translate
+                        Name = "23. IE-indberetning", // todo need beter translate
                         Description = "", // todo add link
                         LanguageId = 1, // da
                     },
@@ -889,7 +889,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "23. IE Reporting", // todo need beter translate
+                        Name = "23. IE-Berichterstattung", // todo need beter translate
                         Description = "", // todo add link
                         LanguageId = 3, // ge
                     }
