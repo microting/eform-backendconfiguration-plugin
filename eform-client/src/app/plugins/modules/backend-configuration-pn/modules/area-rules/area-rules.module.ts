@@ -17,12 +17,11 @@ import {
   AreaRuleCreateModalComponent,
   AreaRuleDeleteModalComponent,
   AreaRuleEditModalComponent,
-  AreaRulePlanModalComponent,
   AreaRulesContainerComponent,
   AreaRulesTableComponent,
 } from './components';
 import { AreaRulesRouting } from './area-rules.routing';
-import { MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN } from '../../consts/custom-date-time-adapter';
+import {AreaRulePlanModalModule} from '../../components/area-rule-plan-modal.module';
 // import { UiSwitchModule } from 'ngx-ui-switch';
 
 @NgModule({
@@ -32,7 +31,6 @@ import { MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN } from '../../const
     AreaRuleCreateModalComponent,
     AreaRuleEditModalComponent,
     AreaRuleDeleteModalComponent,
-    AreaRulePlanModalComponent,
   ],
   imports: [
     CommonModule,
@@ -49,13 +47,8 @@ import { MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN } from '../../const
     AreaRulesRouting,
     OwlDateTimeModule,
     OwlMomentDateTimeModule,
+    AreaRulePlanModalModule,
     // UiSwitchModule,
-  ],
-  providers: [
-    {
-      provide: OWL_DATE_TIME_FORMATS,
-      useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN,
-    },
   ],
 })
 export class AreaRulesModule {}

@@ -345,11 +345,11 @@
                     <input
                       mdbInput
                       [owlDateTime]="dt2"
-                      [min]="currentDatePlusTwoWeeks"
+                      [min]="currentDate"
                       [ngModel]="
-                        selectedAreaRulePlanning.typeSpecificFields.endDate
+                        selectedAreaRulePlanning.startDate
                       "
-                      (ngModelChange)="updateEndDate($event)"
+                      (ngModelChange)="updateStartDate($event)"
                       type="text"
                       id="planEndDate"
                       class="form-control"
@@ -360,7 +360,7 @@
                       #dt2
                     ></owl-date-time>
                     <label for="planEndDate">{{
-                      'End date' | translate
+                      'Start date' | translate
                     }}</label>
                   </div>
                 </div>

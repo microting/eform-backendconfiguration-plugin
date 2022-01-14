@@ -86,6 +86,16 @@
               <button
                 mdbBtn
                 class="btn-accent text-black-50 btn-icon mb-2"
+                mdbTooltip="{{ 'Edit assignments' | translate }}"
+                mdbWavesEffect
+                id="editAssignmentsBtn"
+                [routerLink]="['/plugins/backend-configuration-pn/task-worker-assignments/' + siteDto.siteId]"
+              >
+                <fa-icon icon="eye" [fixedWidth]="true" size="lg"></fa-icon>
+              </button>
+              <button
+                mdbBtn
+                class="btn-accent text-black-50 btn-icon mb-2"
                 *ngIf="userClaims.deviceUsersUpdate"
                 mdbTooltip="{{ 'Edit Device User' | translate }}"
                 mdbWavesEffect

@@ -55,9 +55,16 @@ namespace BackendConfiguration.Pn.Controllers
 
         [HttpGet]
         [Route("area")]
-        public Task<OperationDataResult<AreaModel>> ReadArea(int propertyAreaId)
+        public Task<OperationDataResult<AreaModel>> ReadAreaByPropertyAreaId(int propertyAreaId)
         {
-            return _backendConfigurationPropertyAreasService.ReadArea(propertyAreaId);
+            return _backendConfigurationPropertyAreasService.ReadAreaByPropertyAreaId(propertyAreaId);
+        }
+        
+        [HttpGet]
+        [Route("area-by-rule-id")]
+        public Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId)
+        {
+            return _backendConfigurationPropertyAreasService.ReadAreaByAreaRuleId(areaRuleId);
         }
     }
 }

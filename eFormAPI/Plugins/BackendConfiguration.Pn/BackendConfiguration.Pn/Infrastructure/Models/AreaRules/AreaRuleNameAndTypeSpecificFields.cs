@@ -1,7 +1,7 @@
-﻿/*
+/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2022 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+public class AreaRuleNameAndTypeSpecificFields
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.PropertyAreas;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    public string TranslatedName { get; set; }
 
-    public interface IBackendConfigurationPropertyAreasService
-    {
-        Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId);
-
-        Task<OperationResult> Update(PropertyAreasUpdateModel updateModel);
-
-        Task<OperationDataResult<AreaModel>> ReadAreaByPropertyAreaId(int propertyAreaId);
-
-        Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId);
-    }
+    public TypeSpecificField TypeSpecificFields { get; set; }
 }

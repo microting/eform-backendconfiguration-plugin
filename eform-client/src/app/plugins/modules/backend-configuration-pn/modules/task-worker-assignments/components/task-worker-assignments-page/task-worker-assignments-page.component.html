@@ -1,0 +1,56 @@
+<eform-subheader [title]="('Assigned tasks - ' | translate) + siteName" [forceStaticTitle]="true">
+</eform-subheader>
+
+<!--Here you can choose approach as you like: container-row, or flex, or just element with required styles and markup-->
+<div class="container-fluid">
+  <div class="row p-1 table-responsive no-gutters">
+    <table
+      mdbTable
+      striped="true"
+      hover="true"
+      small="true"
+      class="z-depth-1 text-center"
+    >
+      <thead
+        table-headers
+        [tableHeaders]="tableHeaders"
+        [sort]="taskWorkerAssignmentsStateService.getSort() | async"
+        (sortChanged)="sortTable($event)"
+      ></thead>
+      <tbody id="tableBody" *ngIf="taskWorkerAssignments && taskWorkerAssignments.entities">
+        <tr *ngFor="let taskWorkerAssignments of taskWorkerAssignments.entities">
+          <td id="taskWorkerAssignmentsId">{{ taskWorkerAssignments.id }}</td>
+          <td id="propertyName">
+            {{ taskWorkerAssignments.propertyName }}
+          </td>
+          <td id="path">
+            {{ taskWorkerAssignments.path }}
+          </td>
+          <td id="itemName">
+            {{ taskWorkerAssignments.itemName }}
+          </td>
+          <td>
+            <div class="d-flex flex-row justify-content-center">
+              <button
+                mdbBtn
+                class="btn-success btn-icon"
+                mdbTooltip="{{ 'Show planning' | translate }}"
+                mdbWavesEffect
+                id="showPlanningBtn"
+                (click)="openAreaRulePlanModal(taskWorkerAssignments)"
+              >
+                <fa-icon icon="eye" [fixedWidth]="true" size="lg"></fa-icon>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-area-rule-plan-modal
+  #areaRulePlanModal
+  (updateAreaRulePlan)="onUpdateAreaRulePlan($event)"
+>
+</app-area-rule-plan-modal>

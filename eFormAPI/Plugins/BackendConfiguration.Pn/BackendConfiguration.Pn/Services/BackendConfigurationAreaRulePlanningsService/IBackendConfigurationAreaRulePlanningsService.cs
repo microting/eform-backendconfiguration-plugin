@@ -27,11 +27,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
     using System.Threading.Tasks;
     using Infrastructure.Models.AreaRules;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
     public interface IBackendConfigurationAreaRulePlanningsService
     {
         Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel);
 
-        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId);
+        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId);
+
+        Task<OperationDataResult<Paged<TaskWorkerModel>>> GetPlanningsBySiteId(int siteId, FilterAndSortModel filterAndSortModel);
+
+        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningById(int planningId);
     }
 }
