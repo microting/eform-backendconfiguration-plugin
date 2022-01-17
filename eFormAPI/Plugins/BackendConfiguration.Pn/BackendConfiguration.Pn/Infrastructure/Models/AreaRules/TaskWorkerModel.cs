@@ -1,7 +1,7 @@
 ﻿/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2022 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+public class TaskWorkerModel
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.PropertyAreas;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    /// <summary>
+    /// id area rule planning (translated)
+    /// </summary>
+    public int Id { get; set; }
 
-    public interface IBackendConfigurationPropertyAreasService
-    {
-        Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId);
+    public string PropertyName { get; set; }
 
-        Task<OperationResult> Update(PropertyAreasUpdateModel updateModel);
+    public int PropertyId { get; set; }
 
-        Task<OperationDataResult<AreaModel>> ReadAreaByPropertyAreaId(int propertyAreaId);
+    /// <summary>
+    /// name area - name area rule (all translated)
+    /// </summary>
+    public string Path { get; set; }
 
-        Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId);
-    }
+    /// <summary>
+    /// name item planning (translated)
+    /// </summary>
+    public string ItemName { get; set; }
+
+    public AreaRuleNameAndTypeSpecificFields AreaRule{ get; set; }
 }

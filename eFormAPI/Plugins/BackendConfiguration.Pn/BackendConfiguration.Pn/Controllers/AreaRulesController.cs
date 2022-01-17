@@ -27,6 +27,7 @@ namespace BackendConfiguration.Pn.Controllers
     using Infrastructure.Models.AreaRules;
     using Microsoft.AspNetCore.Mvc;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Services.BackendConfigurationAreaRulePlanningsService;
     using Services.BackendConfigurationAreaRulesService;
 
@@ -91,9 +92,9 @@ namespace BackendConfiguration.Pn.Controllers
 
         [HttpGet]
         [Route("planning")]
-        public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanning(int ruleId)
+        public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId)
         {
-            return await _backendConfigurationAreaRulePlanningsService.GetPlanning(ruleId);
+            return await _backendConfigurationAreaRulePlanningsService.GetPlanningByRuleId(ruleId);
         }
 
         [HttpGet]
@@ -101,6 +102,21 @@ namespace BackendConfiguration.Pn.Controllers
         public async Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7()
         {
             return await _backendConfigurationAreaRulesService.GetAreaRulesForType7();
+        }
+
+        [HttpGet]
+        [Route("worker-plannings")]
+        public async Task<OperationDataResult<Paged<TaskWorkerModel>>> GetPlanningsBySiteId(int siteId, FilterAndSortModel filterAndSortModel)
+        {
+            return await _backendConfigurationAreaRulePlanningsService.GetPlanningsBySiteId(siteId, filterAndSortModel);
+        }
+
+
+        [HttpGet]
+        [Route("planning-by-id")]
+        public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningById(int planningId)
+        {
+            return await _backendConfigurationAreaRulePlanningsService.GetPlanningById(planningId);
         }
     }
 }

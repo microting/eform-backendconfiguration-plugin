@@ -2,13 +2,16 @@ import { CommonDictionaryModel } from 'src/app/common/models';
 import { AreaRuleTypeSpecificFields } from './';
 import { AreaRulePlanningModel } from '../rule-planning/area-rule-planning.model';
 
-export class AreaRuleSimpleModel {
+export class AreaRuleNameAndTypeSpecificFields {
+  translatedName: string;
+  typeSpecificFields: AreaRuleTypeSpecificFields;
+}
+
+export class AreaRuleSimpleModel extends AreaRuleNameAndTypeSpecificFields {
   id: number;
   eformName: string;
-  translatedName: string;
   isDefault: boolean;
   planningStatus: boolean;
-  typeSpecificFields: AreaRuleTypeSpecificFields;
   planningId?: number;
   initialFields?: AreaRuleInitialFieldsModel;
 }

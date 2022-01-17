@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { OwlDateTimeModule } from '@danielmoncada/angular-datetime-picker';
+import { OwlDateTimeModule, /*OWL_DATE_TIME_FORMATS*/ } from '@danielmoncada/angular-datetime-picker';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TranslateModule } from '@ngx-translate/core';
@@ -28,6 +28,7 @@ import {
   BackendConfigurationPnSettingsService,
 } from './services';
 import { backendConfigurationStoreProviders } from './store-providers.config';
+// import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from './consts/custom-date-time-adapter';
 
 @NgModule({
   imports: [
@@ -61,7 +62,7 @@ import { backendConfigurationStoreProviders } from './store-providers.config';
     BackendConfigurationPnSettingsService,
     BackendConfigurationPnPropertiesService,
     ...backendConfigurationStoreProviders,
+    // { provide: OWL_DATE_TIME_FORMATS, useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN },
   ],
-  exports: [PropertyCreateModalComponent],
 })
 export class BackendConfigurationPnModule {}

@@ -184,6 +184,20 @@ namespace BackendConfiguration.Pn
                 await newArea.Create(context);
             }
 
+            if (context.AreaTranslations.Any(x => x.Name == "23. IE Reporting" && x.LanguageId == 1))
+            {
+                var planningTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "23. IE Reporting");
+                if (planningTag != null)
+                {
+                    planningTag.Name = "23. IE-indberetning";
+                    await planningTag.Update(itemsPlanningContext);
+                }
+
+                var areaTranslation = context.AreaTranslations.Single(x => x.Name == "23. IE Reporting" && x.LanguageId == 1);
+                areaTranslation.Name = "23. IE-indberetning";
+                await areaTranslation.Update(context);
+            }
+
             // Upgrade AreaRules
             var areaRulePlannings = await context.AreaRulePlannings.Where(x => x.PropertyId == 0).ToListAsync();
 
