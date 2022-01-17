@@ -370,26 +370,26 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "11. Pillefyr",
+                        Name = "11. Varmekilder",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 1
                     },
                     new()
                     {
-                        Name = "11. Pellet burners",
+                        Name = "11. Heat sources",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 2
                     },
                     new()
                     {
-                        Name = "11. Pelletbrenner",
+                        Name = "11. Wärmequellen",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 3
                     }
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = "11. Pillefyr",
+                    EformName = "11. Varmkilder",
                     Notifications = false,
                     RepeatEvery = 1, // 1
                     RepeatType = 3, // month
