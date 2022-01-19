@@ -458,12 +458,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     {
                                         planningCaseSite.UpdatedByUserId = _userService.UserId;
                                         await planningCaseSite.Delete(_itemsPlanningPnDbContext);
-                                        var result =
-                                            await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
-                                        if (result.MicrotingUid != null)
+                                        if (planningCaseSite.MicrotingSdkCaseId != 0)
                                         {
-                                            await core.CaseDelete((int) result.MicrotingUid);
+                                            var result =
+                                                await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                            if (result.MicrotingUid != null)
+                                            {
+                                                await core.CaseDelete((int) result.MicrotingUid);
+                                            }
                                         }
+                                        else
+                                        {
+                                            var result = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
+                                                x.Id == planningCaseSite.MicrotingCheckListSitId);
+                                            if (result.MicrotingUid != null)
+                                            {
+                                                await core.CaseDelete((int) result.MicrotingUid);
+                                            }
+                                        }
+
                                     }
                                 }
                             }
