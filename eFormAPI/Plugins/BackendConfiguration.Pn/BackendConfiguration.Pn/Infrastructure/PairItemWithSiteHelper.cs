@@ -70,7 +70,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     .Select(x => new
                     {
                         x.Id, x.Type, x.PlanningNumber, x.BuildYear, x.StartDate, x.PushMessageOnDeployment,
-                        x.SdkFolderId, x.NameTranslations
+                        x.SdkFolderId, x.NameTranslations, x.RepeatEvery, x.RepeatType
                     })
                     .FirstAsync();
 
@@ -240,6 +240,10 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                             mainElement.PushMessageBody = body;
                             mainElement.PushMessageTitle = planningNameTranslation?.Name;
+                            if (planning.RepeatEvery == 0 && planning.RepeatType == RepeatType.Day)
+                            {
+                                mainElement.Repeated = 0;
+                            }
                         }
 
                         var caseId = await sdkCore.CaseCreate(mainElement, "", (int)sdkSite.MicrotingUid, null);
