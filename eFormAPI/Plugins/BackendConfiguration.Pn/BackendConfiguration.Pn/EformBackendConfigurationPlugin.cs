@@ -184,6 +184,28 @@ namespace BackendConfiguration.Pn
                 await newArea.Create(context);
             }
 
+            if (context.AreaTranslations.Any(x => x.Name == "11. Pillefyr" && x.LanguageId == 1))
+            {
+                var planningTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "11. Pillefyr");
+                if (planningTag != null)
+                {
+                    planningTag.Name = "11. Varmekilder";
+                    await planningTag.Update(itemsPlanningContext);
+                }
+
+                var areaTranslation = context.AreaTranslations.Single(x => x.Name == "11. Pillefyr" && x.LanguageId == 1);
+                areaTranslation.Name = "11. Varmekilder";
+                await areaTranslation.Update(context);
+
+                areaTranslation = context.AreaTranslations.Single(x => x.Name == "11. Pellet burners" && x.LanguageId == 2);
+                areaTranslation.Name = "11. Heat sources";
+                await areaTranslation.Update(context);
+
+                areaTranslation = context.AreaTranslations.Single(x => x.Name == "11. Pelletbrenner" && x.LanguageId == 3);
+                areaTranslation.Name = "11. Wärmequellen";
+                await areaTranslation.Update(context);
+            }
+
             if (context.AreaTranslations.Any(x => x.Name == "23. IE Reporting" && x.LanguageId == 1))
             {
                 var planningTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "23. IE Reporting");

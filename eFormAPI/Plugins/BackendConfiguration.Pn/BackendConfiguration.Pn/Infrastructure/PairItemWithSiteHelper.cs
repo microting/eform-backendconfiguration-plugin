@@ -70,7 +70,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     .Select(x => new
                     {
                         x.Id, x.Type, x.PlanningNumber, x.BuildYear, x.StartDate, x.PushMessageOnDeployment,
-                        x.SdkFolderId, x.NameTranslations
+                        x.SdkFolderId, x.NameTranslations, x.RepeatEvery, x.RepeatType
                     })
                     .FirstAsync();
 
@@ -232,7 +232,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 var folderTranslation =
                                     await sdkDbContext.FolderTranslations.SingleOrDefaultAsync(x =>
                                         x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId);
-                                body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:d, M yyyy})";
+                                body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:dd.MM.yyyy})";
                             }
 
                             var planningNameTranslation =
@@ -240,13 +240,25 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                             mainElement.PushMessageBody = body;
                             mainElement.PushMessageTitle = planningNameTranslation?.Name;
+                            if (planning.RepeatEvery == 0 && planning.RepeatType == RepeatType.Day)
+                            {
+                                mainElement.Repeated = 0;
+                            }
                         }
 
-                        var caseId = await sdkCore.CaseCreate(mainElement, "", (int)sdkSite.MicrotingUid, null);
+                        var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null);
                         if (caseId != null)
                         {
-                            planningCaseSite.MicrotingSdkCaseId =
-                                sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
+                            if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
+                            {
+                                planningCaseSite.MicrotingSdkCaseId =
+                                    sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
+                            }
+                            else
+                            {
+                                planningCaseSite.MicrotingCheckListSitId =
+                                    sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId).Id;
+                            }
                             await planningCaseSite.Update(_itemsPlanningPnDbContext);
                         }
 
