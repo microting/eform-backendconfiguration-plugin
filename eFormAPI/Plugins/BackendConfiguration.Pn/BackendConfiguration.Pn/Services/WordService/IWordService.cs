@@ -1,7 +1,7 @@
 ﻿/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2022 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Services.WordService
 {
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    using System;
+    using System.IO;
+    using System.Threading.Tasks;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
-    public class PropertyAreaModel
+    public interface IWordService
     {
-        public int? Id { get; set; }
-
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public bool Activated { get; set; }
-
-        public bool Status { get; set; }
-
-        public int AreaId { get; set; }
-
-        public AreaTypesEnum Type { get; set; }
+        Task<OperationDataResult<Stream>> GenerateReport(int propertyId, int areaId, int year);
     }
 }

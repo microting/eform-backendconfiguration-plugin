@@ -602,11 +602,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     })
                     .ToList();
 
-                foreach (AreaRulesForType7 areaRulesForType7 in model)
+                foreach (var areaRulesForType7 in model)
                 {
-                    var folderTranslation = await
-                        sdkDbContext.FolderTranslations.Where(x => x.Name == areaRulesForType7.FolderName && x.WorkflowState != Constants.WorkflowStates.Removed).OrderBy(x => x.Id).LastAsync();
-                    areaRulesForType7.FolderName = sdkDbContext.FolderTranslations.Single(x => x.FolderId == folderTranslation.FolderId && x.LanguageId == curentLanguage.Id).Name;
+                    areaRulesForType7.FolderName = await sdkDbContext.FolderTranslations
+                        .OrderBy(x => x.Id)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Name == areaRulesForType7.FolderName)
+                        .SelectMany(x => x.Folder.FolderTranslations)
+                        .Where(x => x.LanguageId == curentLanguage.Id)
+                        .Select(x => x.Name)
+                        .LastOrDefaultAsync();
                 }
 
                 return new OperationDataResult<List<AreaRulesForType7>>(true, model);

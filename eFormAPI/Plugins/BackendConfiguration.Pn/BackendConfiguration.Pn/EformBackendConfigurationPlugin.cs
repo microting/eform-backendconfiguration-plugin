@@ -61,6 +61,7 @@ namespace BackendConfiguration.Pn
     using Services.BackendConfigurationPropertiesService;
     using Services.BackendConfigurationPropertyAreasService;
     using Services.RebusService;
+    using Services.WordService;
 
     public class EformBackendConfigurationPlugin : IEformPlugin
     {
@@ -86,6 +87,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
             services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
             services.AddSingleton<IRebusService, RebusService>();
+            services.AddTransient<IWordService, WordService> ();
             services.AddControllers();
             SeedEForms(services);
         }

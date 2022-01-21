@@ -21,6 +21,7 @@ import {
   PropertiesTableComponent,
   PropertyAreasEditModalComponent,
   PropertyAreasComponent,
+  PropertyDocxReportModalComponent,
 } from './components';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 import {
@@ -54,6 +55,7 @@ import { backendConfigurationStoreProviders } from './store-providers.config';
     PropertyCreateModalComponent,
     PropertyEditModalComponent,
     PropertyDeleteModalComponent,
+    PropertyDocxReportModalComponent,
     PropertiesTableComponent,
     PropertyAreasEditModalComponent,
     PropertyAreasComponent,

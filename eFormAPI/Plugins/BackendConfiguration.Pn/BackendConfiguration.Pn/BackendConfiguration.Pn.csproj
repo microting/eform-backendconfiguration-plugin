@@ -169,6 +169,10 @@
       <EmbeddedResource Include="Resources\eForms\23.00.01 Aflæsning vand.xml" />
       <None Remove="Resources\eForms\23.00.02 Aflæsning el.xml" />
       <EmbeddedResource Include="Resources\eForms\23.00.02 Aflæsning el.xml" />
+      <None Remove="Resources\Templates\WordExport\file.docx" />
+      <EmbeddedResource Include="Resources\Templates\WordExport\file.docx" />
+      <None Remove="Resources\Templates\WordExport\page.html" />
+      <EmbeddedResource Include="Resources\Templates\WordExport\page.html" />
     </ItemGroup>
 
     <ItemGroup>
@@ -177,6 +181,7 @@
       <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.19" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.52" />
+      <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.84" />
     </ItemGroup>
 
