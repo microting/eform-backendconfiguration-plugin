@@ -255,6 +255,22 @@ namespace BackendConfiguration.Pn
                 clTranslation.Text = "23.04.03 Tilsætningsstoffer i foder - fytase eller andet";
                 await clTranslation.Update(sdkDbContext);
             }
+
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.01 Gyllebeholdere").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "23.02.01 Årlig visuel kontrol af gyllebeholdere";
+                await clTranslation.Update(sdkDbContext);
+            }
+
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.01.01 Fast overdækning af gyllebeholder").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "23.01.01 Fast overdækning gyllebeholder";
+                await clTranslation.Update(sdkDbContext);
+            }
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
