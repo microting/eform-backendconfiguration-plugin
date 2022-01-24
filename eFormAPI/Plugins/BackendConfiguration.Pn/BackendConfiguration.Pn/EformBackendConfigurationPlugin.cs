@@ -231,6 +231,30 @@ namespace BackendConfiguration.Pn
 
                 await areaRulePlanning.Update(context);
             }
+
+            var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.";
+                await clTranslation.Update(sdkDbContext);
+            }
+
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.04 Varmekøle- og ventilationssystemer").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "23.02.04 Varme-, køle- og ventilationssystemer";
+                await clTranslation.Update(sdkDbContext);
+            }
+
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.04.03 Tilsætningsstoffer i foder (Fytase eller andet)").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "23.04.03 Tilsætningsstoffer i foder - fytase eller andet";
+                await clTranslation.Update(sdkDbContext);
+            }
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
