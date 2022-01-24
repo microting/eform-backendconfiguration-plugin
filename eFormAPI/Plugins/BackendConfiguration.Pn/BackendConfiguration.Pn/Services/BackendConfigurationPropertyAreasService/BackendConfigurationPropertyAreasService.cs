@@ -111,6 +111,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Any(y => y.Status),
                             AreaId = x.AreaId,
+                            Type = x.Area.Type,
                         })
                         .ToListAsync();
                     areasForAdd = areas.Where(x => !propertyAreasQuery.Any(y => y.AreaId == x.Id))
@@ -124,6 +125,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .FirstOrDefault(),
                             Status = false,
                             AreaId = x.Id,
+                            Type = x.Type,
                         })
                         .ToList();
                 }
@@ -140,6 +142,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .FirstOrDefault(),
                             Status = false,
                             AreaId = x.Id,
+                            Type = x.Type,
                         })
                         .ToList();
                 }

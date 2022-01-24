@@ -77,6 +77,18 @@
                 <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
               </button>
               <button
+                id="docxReportBtn"
+                class="btn btn-success btn-icon"
+                mdbTooltip="{{ 'Docx report' | translate }}"
+                (click)="onShowDocxReportModal(property.id)"
+              >
+                <fa-icon
+                  icon="file-word"
+                  size="lg"
+                  [fixedWidth]="true"
+                ></fa-icon>
+              </button>
+              <button
                 id="editPropertyBtn"
                 class="btn btn-accent text-black-50 btn-icon mb-2"
                 mdbTooltip="{{ 'Edit property' | translate }}"
