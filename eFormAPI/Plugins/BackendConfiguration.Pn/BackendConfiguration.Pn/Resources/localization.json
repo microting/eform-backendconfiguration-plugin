@@ -372,7 +372,7 @@
     "Key": "PropertyAlreadyExists",
     "LocalizedValue": {
       "da": "Ejendommen findes allered",
-      "de":"Die Immobilie ist schon da",
+      "de": "Die Immobilie ist schon da",
       "en": "Property already exits",
       "uk-UA": "Майно вже є"
     }
@@ -393,6 +393,13 @@
       "de": "Maximale Anzahl erstellter CVR-Nummern",
       "en": "Maximum number of CVR numbers reached",
       "Uk-UA": "Максимальна кількість створених номерів CVR"
+    }
+  },
+  {
+    "Key": "Controlplan IE-reporting",
+    "LocalizedValue": {
+      "da": "Kontrolplan IE-indberetning",
+      "en-US": "Controlplan IE-reporting" // todo maybe need add more translates
     }
   }
 ]

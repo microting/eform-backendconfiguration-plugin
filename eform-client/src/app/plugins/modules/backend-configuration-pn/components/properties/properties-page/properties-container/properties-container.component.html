@@ -34,6 +34,7 @@
     (showDeletePropertyModal)="showDeletePropertyModal($event)"
     (showEditPropertyModal)="showEditPropertyModal($event)"
     (sortUpdated)="getProperties()"
+    (showDocxReportModal)="onShowDocxReportModal($event)"
   ></app-properties-table>
   <!--  <div class="row justify-content-between mr-2 ml-2">-->
   <!--    <div class="col-md-1 col-sm-3">-->
@@ -65,3 +66,6 @@
   #editPropertyModal
   (propertyUpdate)="onPropertyUpdate($event)"
 ></app-property-edit-modal>
+
+<app-property-docx-report-modal #docxReportModal>
+</app-property-docx-report-modal>

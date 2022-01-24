@@ -5,7 +5,7 @@ import { Paged } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import {
   PropertyCreateModalComponent,
-  PropertyDeleteModalComponent,
+  PropertyDeleteModalComponent, PropertyDocxReportModalComponent,
   PropertyEditModalComponent,
 } from '../../property-actions';
 import {
@@ -13,10 +13,9 @@ import {
   PropertyModel,
   PropertyUpdateModel,
 } from '../../../../models';
-import {BackendConfigurationPnCompliancesService, BackendConfigurationPnPropertiesService} from '../../../../services';
+import { BackendConfigurationPnPropertiesService} from '../../../../services';
 import { PropertiesStateService } from '../../store';
 import { debounceTime } from 'rxjs/operators';
-import {PropertyCompliancesColorBadgesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 
 @AutoUnsubscribe()
 @Component({
@@ -31,6 +30,8 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   editPropertyModal: PropertyEditModalComponent;
   @ViewChild('deletePropertyModal', { static: false })
   deletePropertyModal: PropertyDeleteModalComponent;
+  @ViewChild('docxReportModal', { static: false })
+  docxReportModal: PropertyDocxReportModalComponent;
 
   nameSearchSubject = new Subject();
   propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
@@ -110,6 +111,10 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
           this.deletePropertyModal.hide();
         }
       });
+  }
+
+  onShowDocxReportModal(propertyId: number) {
+    this.docxReportModal.show(propertyId);
   }
 
   ngOnDestroy(): void {}

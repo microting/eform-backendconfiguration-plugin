@@ -32,6 +32,8 @@ export class PropertiesTableComponent implements OnInit {
   showDeletePropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   @Output()
   sortUpdated: EventEmitter<void> = new EventEmitter<void>();
+  @Output()
+  showDocxReportModal: EventEmitter<number> = new EventEmitter<number>();
 
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Id', elementId: 'idTableHeader', sortable: true },
@@ -106,6 +108,10 @@ export class PropertiesTableComponent implements OnInit {
       default:
         return 'btn-success';
     }
+  }
+
+  onShowDocxReportModal(propertyId: number){
+    this.showDocxReportModal.emit(propertyId);
   }
 
   // getColorBadge(property: PropertyModel): string {

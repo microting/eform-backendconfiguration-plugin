@@ -6,7 +6,6 @@ import {
   ViewChild,
 } from '@angular/core';
 import { applicationLanguages } from 'src/app/common/const';
-import { PropertyAssignmentWorkerModel } from 'src/app/plugins/modules/backend-configuration-pn/models/properties/property-workers-assignment.model';
 import { PropertyCreateModel } from '../../../../models';
 
 @Component({
