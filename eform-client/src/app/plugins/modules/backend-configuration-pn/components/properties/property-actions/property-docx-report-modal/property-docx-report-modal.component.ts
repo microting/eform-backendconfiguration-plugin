@@ -31,23 +31,24 @@ export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
   constructor(
     private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
     private reportService: BackendConfigurationPnReportService,
-    private toastrService: ToastrService,
+    private toasterService: ToastrService,
   ) {}
 
   ngOnInit() {
     const currentYear = new Date().getFullYear();
-    this.years = R.range(currentYear, currentYear + 10);}
+    this.years = R.range(currentYear - 1, currentYear + 10);
+  }
 
   show(propertyId: number) {
     this.propertyId = propertyId;
     this.getPropertyAreasSub$ = this.backendConfigurationPnPropertiesService
       .getPropertyAreas(propertyId)
       .subscribe((data) => {
-        if(data && data.success && data.model){
-          this.areasList = data.model.filter(x => x.activated);
+        if (data && data.success && data.model) {
+          this.areasList = data.model.filter(x => x.activated && x.name === '23. IE-indberetning');
           this.frame.show();
         }
-      })
+      });
   }
 
   hide() {
@@ -65,7 +66,7 @@ export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
           saveAs(data, this.selectedArea.name + '_' + this.selectedYear + '_report.docx');
         },
         (data) => {
-          this.toastrService.error('Error downloading report');
+          this.toasterService.error('Error downloading report');
         }
       );
   }
