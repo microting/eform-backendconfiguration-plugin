@@ -61,8 +61,8 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
     expect(itemPlanning.folderName).eq(
       `${property.name} - 13. Arbejdstilsynets Landbrugs APV`
     );
-    expect(itemPlanning.repeatEvery).eq(12);
-    expect(itemPlanning.repeatType).eq('Måned');
+    expect(itemPlanning.repeatEvery).eq(0);
+    expect(itemPlanning.repeatType).eq('Dag');
     const workers = await itemPlanning.readPairing();
     expect([
       {
