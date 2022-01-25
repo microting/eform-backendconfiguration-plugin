@@ -26,6 +26,7 @@ using System.IO;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
@@ -272,6 +273,44 @@ namespace BackendConfiguration.Pn
             {
                 clTranslation.Text = "23.01.01 Fast overdækning gyllebeholder";
                 await clTranslation.Update(sdkDbContext);
+            }
+
+            var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Brandslukkere");
+            if (areaTranslation2 != null)
+            {
+                areaTranslation2.Name = "17. Håndildslukkere";
+                await areaTranslation2.Update(context);
+                // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
+
+                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "17. Brandslukkere").ToListAsync();
+
+                foreach (var folderTranslation2 in folderTranslations)
+                {
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                    var folderTranslationList = new List<CommonTranslationsModel>();
+                    var folderTranslation = new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 1,
+                        Name = "17. Håndildslukkere",
+                    };
+                    folderTranslationList.Add(folderTranslation);
+
+                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+                }
+
+                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
+
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "17. Håndildslukkere")?.CheckListId;
+
+                foreach (var areaRule in areaRules)
+                {
+                    areaRule.EformId = eFormId;
+                    areaRule.EformName = "17. Håndildslukkere";
+                    await areaRule.Update(context);
+                }
+
+
             }
         }
 
