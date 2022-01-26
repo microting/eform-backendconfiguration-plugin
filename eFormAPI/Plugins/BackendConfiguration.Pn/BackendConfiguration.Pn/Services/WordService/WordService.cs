@@ -180,30 +180,30 @@ namespace BackendConfiguration.Pn.Services.WordService
             var docxFileStream = new MemoryStream();
             await docxFileResourceStream.CopyToAsync(docxFileStream);
 
-            var word = new WordProcessor(docxFileStream);
-
             var itemsHtml = new StringBuilder();
-            itemsHtml.Append("<body>");
-            //itemsHtml.Append(@"<p style='display:flex;align-content:center;justify-content:center;flex-wrap:wrap;'>"); // add invisible 8 enters for vertical center
-            //for (var i = 0; i < 8; i++)
-            //{
-            //    itemsHtml.Append(@"<p style='font-size:24px;text-align:center;color:#fff;'>Enter</p>");
-            //}
-            itemsHtml.Append($@"<p style='font-size:10px;text-align:left;font-weight:bold;'>{_localizationService.GetString("Controlplan IE-reporting")}</p>");
-            itemsHtml.Append($@"<p style='font-size:10px;text-align:left;'>{_localizationService.GetString("Year")}: {year}</p>");
-            itemsHtml.Append($@"<p style='font-size:10px;text-align:left;'>{_localizationService.GetString("Name")}: {property.Name}</p>");
-            itemsHtml.Append($@"<p style='font-size:10px;text-align:left;'>{_localizationService.GetString("Address")}: {property.Address}</p>");
-            itemsHtml.Append($@"<p style='font-size:10px;text-align:left;'>{_localizationService.GetString("CVR-no")}.: {property.CVR}</p>");
-            itemsHtml.Append($@"<p style='font-size:10px;text-align:left;'>{_localizationService.GetString("CHR-no")}.: {property.CHR}</p>");
-            // moving the cursor to the end of the page
-            //for (var i = 0; i < 5; i++)
-            //{
-            //    itemsHtml.Append(@"<p style='font-size:24px;text-align:center;color:#fff;'>Enter</p>");
-            //}
+            itemsHtml.Append(@"<body style='font-family:Calibri;'>");
+            itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>{_localizationService.GetString("Controlplan IE-reporting")}</p>");
             itemsHtml.Append(@"<table width=""100%"" border=""1"">");
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Year")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CVR-no")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CHR-no")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Name")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Address")}</td>");
+            itemsHtml.Append(@"</tr>");
+            itemsHtml.Append(@"<tr style='font-size:11pt;'>");
+            itemsHtml.Append($@"<td>{year}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.CVR) ? "" : property.CVR)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.CHR) ? "" : property.CHR)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.Name) ? "" : property.Name)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.Address) ? "" : property.Address)}</td>");
+            itemsHtml.Append(@"</tr>");
+            itemsHtml.Append(@"</table>");
+            itemsHtml.Append(@"<p></p>"); // enter
 
+            itemsHtml.Append(@"<table width=""100%"" border=""1"">");
             // Table header
-            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:8px;'>");
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:9pt;'>");
             itemsHtml.Append(@"<td></td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
@@ -211,7 +211,7 @@ namespace BackendConfiguration.Pn.Services.WordService
 
             foreach (var areaRuleForType7 in areaRulesForType7)
             {
-                itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:8px;'>");
+                itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
                 itemsHtml.Append($@"<td>{areaRuleForType7.FolderName}</td>");
                 itemsHtml.Append(@"<td></td>");
                 itemsHtml.Append(@"<td></td>");
@@ -223,7 +223,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         .Select(x => x.AreaRule)
                         .SelectMany(x => x.AreaRulesPlannings)
                         .FirstOrDefault();
-                    itemsHtml.Append(@"<tr style='font-size:8px;'>");
+                    itemsHtml.Append(@"<tr style='font-size:9pt;'>");
                     itemsHtml.Append($@"<td>{areaRuleName}</td>");
                     if (areaRulePlanning == null)
                     {
@@ -236,7 +236,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         // ReSharper disable once PossibleInvalidOperationException
                         itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {(RepeatType)areaRulePlanning.RepeatType}</td>");
                     }
-                    itemsHtml.Append(@"<tr></tr>");
+                    //itemsHtml.Append(@"<tr><td></td><td></td><td></td></tr>");
                 }
                 itemsHtml.Append(@"</tr>");
             }
@@ -245,6 +245,7 @@ namespace BackendConfiguration.Pn.Services.WordService
 
             html = html.Replace("{%ItemList%}", itemsHtml.ToString());
 
+            var word = new WordProcessor(docxFileStream);
             word.AddHtml(html);
             word.Dispose();
             docxFileStream.Position = 0;
