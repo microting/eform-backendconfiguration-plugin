@@ -50,6 +50,7 @@
     ></thead>
     <tbody id="areaRulesTableBody">
       <tr *ngFor="let rule of areaRules; let i = index">
+        <td>{{ rule.id }}</td>
         <td id="ruleName">
           {{ rule.translatedName }}
         </td>

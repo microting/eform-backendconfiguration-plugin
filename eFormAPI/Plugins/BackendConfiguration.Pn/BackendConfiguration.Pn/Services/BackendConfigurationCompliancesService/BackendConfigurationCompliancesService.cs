@@ -115,19 +115,27 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     responsible.Add(kvp);
                 }
 
-                CompliancesModel complianceModel = new CompliancesModel
+                if (result.Entities.Any(x => x.PlanningId == compliance.PlanningId && x.Deadline == compliance.Deadline.AddDays(-1)))
                 {
-                    CaseId = compliance.MicrotingSdkCaseId,
-                    Deadline = compliance.Deadline.AddDays(-1),
-                    ComplianceTypeId = null,
-                    ControlArea = areaTranslation.Name,
-                    EformId = compliance.MicrotingSdkeFormId,
-                    Id = compliance.PlanningId,
-                    ItemName = planningNameTranslation.Name,
-                    PlanningId = compliance.PlanningId,
-                    Responsible = responsible,
-                };
-                result.Entities.Add(complianceModel);
+                    var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
+                    await dbCompliance.Delete(_backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    CompliancesModel complianceModel = new CompliancesModel
+                    {
+                        CaseId = compliance.MicrotingSdkCaseId,
+                        Deadline = compliance.Deadline.AddDays(-1),
+                        ComplianceTypeId = null,
+                        ControlArea = areaTranslation.Name,
+                        EformId = compliance.MicrotingSdkeFormId,
+                        Id = compliance.PlanningId,
+                        ItemName = planningNameTranslation.Name,
+                        PlanningId = compliance.PlanningId,
+                        Responsible = responsible,
+                    };
+                    result.Entities.Add(complianceModel);
+                }
             }
 
             return new OperationDataResult<Paged<CompliancesModel>>(true, result);

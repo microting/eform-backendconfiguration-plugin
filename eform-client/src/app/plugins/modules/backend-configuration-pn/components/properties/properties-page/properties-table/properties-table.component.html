@@ -76,7 +76,7 @@
               >
                 <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
               </button>
-              <button
+              <button *ngIf="authStateService.isAdmin"
                 id="docxReportBtn"
                 class="btn btn-success btn-icon"
                 mdbTooltip="{{ 'Docx report' | translate }}"

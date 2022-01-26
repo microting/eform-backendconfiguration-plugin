@@ -887,6 +887,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 }
                                             }
 
+                                            if (planning.NameTranslations.Any(x => x.Name == "13. APV Medarbejder"))
+                                            {
+                                                planning.RepeatEvery = 0;
+                                                planning.RepeatType = RepeatType.Day;
+                                            }
+
                                             await planning.Create(_itemsPlanningPnDbContext);
                                             await _pairItemWichSiteHelper.Pair(
                                                 rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
@@ -1834,6 +1840,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     planning.RepeatType =
                                         (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType;
                                 }
+                            }
+
+                            if (planning.NameTranslations.Any(x => x.Name == "13. APV Medarbejder"))
+                            {
+                                planning.RepeatEvery = 0;
+                                planning.RepeatType = RepeatType.Day;
                             }
 
                             await planning.Create(_itemsPlanningPnDbContext);
