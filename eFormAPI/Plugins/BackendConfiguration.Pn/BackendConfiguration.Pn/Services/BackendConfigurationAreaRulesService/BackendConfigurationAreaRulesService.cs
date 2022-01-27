@@ -119,6 +119,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 EformName = x.AreaRuleInitialField.EformName,
                                 EndDate = x.AreaRuleInitialField.EndDate,
                                 SendNotifications = x.AreaRuleInitialField.Notifications,
+                                ComplianceEnabled = x.AreaRuleInitialField.ComplianceEnabled,
                             }
                             : null,
                     });

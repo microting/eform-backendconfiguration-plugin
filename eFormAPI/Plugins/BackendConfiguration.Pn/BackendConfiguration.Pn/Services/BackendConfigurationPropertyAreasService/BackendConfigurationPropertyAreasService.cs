@@ -862,6 +862,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Type = areaProperties.Area.AreaInitialField.Type,
                             RepeatEvery = areaProperties.Area.AreaInitialField.RepeatEvery,
                             EndDate = areaProperties.Area.AreaInitialField.EndDate,
+                            ComplianceEnabled = areaProperties.Area.AreaInitialField.ComplianceEnabled,
                         }
                         : null,
                 };
@@ -952,6 +953,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Type = areaRule.Area.AreaInitialField.Type,
                             RepeatEvery = areaRule.Area.AreaInitialField.RepeatEvery,
                             EndDate = areaRule.Area.AreaInitialField.EndDate,
+                            ComplianceEnabled = areaRule.Area.AreaInitialField.ComplianceEnabled,
                         }
                         : null,
                 };

@@ -19,4 +19,5 @@ export class AreaInitialFieldsModel {
   type?: number;
   alarm?: number;
   endDate?: string;
+  complianceEnabled?: boolean;
 }
