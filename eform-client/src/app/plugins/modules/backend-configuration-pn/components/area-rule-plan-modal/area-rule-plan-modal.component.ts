@@ -142,6 +142,9 @@ export class AreaRulePlanModalComponent implements OnInit {
       sendNotifications: rule.initialFields
         ? rule.initialFields.sendNotifications
         : this.selectedArea.initialFields.sendNotifications,
+      complianceEnabled: (rule.initialFields || this.selectedArea.initialFields) ?
+        (rule.initialFields || this.selectedArea.initialFields).complianceEnabled :
+        true,
     };
   }
 

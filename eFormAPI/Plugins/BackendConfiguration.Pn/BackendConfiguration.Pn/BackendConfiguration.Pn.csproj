@@ -180,7 +180,7 @@
       <PackageReference Include="Microting.eForm" Version="5.4.2" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.19" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.52" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.55" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.84" />
     </ItemGroup>

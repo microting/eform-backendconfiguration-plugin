@@ -46,5 +46,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
         public AreaRuleT2AlarmsEnum? Alarm { get; set; }
 
         public DateTime? EndDate { get; set; }
+
+        public bool ComplianceEnabled { get; set; }
     }
 }

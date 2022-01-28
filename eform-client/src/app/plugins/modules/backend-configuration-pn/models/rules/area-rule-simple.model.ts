@@ -36,4 +36,5 @@ export class AreaRuleInitialFieldsModel {
   type?: number;
   alarm?: number;
   endDate?: string;
+  complianceEnabled: boolean;
 }

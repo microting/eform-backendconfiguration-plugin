@@ -45,5 +45,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public List<AreaRuleAssignedSitesModel> AssignedSites { get; set; }
             = new ();
+
+        public bool ComplianceEnabled { get; set; }
     }
 }

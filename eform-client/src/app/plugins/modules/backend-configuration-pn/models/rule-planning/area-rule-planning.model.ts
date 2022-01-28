@@ -17,6 +17,7 @@ export class AreaRulePlanningModel {
     | AreaRuleT4PlanningModel
     | AreaRuleT5PlanningModel
     | AreaRuleT6PlanningModel;
+  complianceEnabled: boolean;
 }
 
 export class AreaRuleAssignedSitesModel {
