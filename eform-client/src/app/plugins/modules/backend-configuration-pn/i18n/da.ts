@@ -120,5 +120,6 @@ export const da = {
   'Assigned to': 'Tildelt til',
   'View compliance': 'Vis compliance',
   'View compliance 30 days': 'Vis compliance 30 dage',
-  'Compliance 30 days': 'Compliance 30 dage'
+  'Compliance 30 days': 'Compliance 30 dage',
+  'Compliance enable': 'Compliance on/off'
 };

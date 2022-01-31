@@ -110,5 +110,6 @@ export const deDE = {
   '49th week': '49. Woche',
   '50th week': '50. Woche',
   '51st week': '51. Woche',
-  '52nd week': '52. Woche'
+  '52nd week': '52. Woche',
+  'Compliance enable': 'Compliance on/off',
 };
