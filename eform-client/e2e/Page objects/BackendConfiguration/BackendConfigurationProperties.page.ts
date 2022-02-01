@@ -1,5 +1,5 @@
 import Page from '../Page';
-import { applicationLanguages } from '../../../src/app/common/const';
+import {applicationLanguages, applicationLanguagesTranslated} from '../../../src/app/common/const';
 import * as R from 'ramda';
 
 export class BackendConfigurationPropertiesPage extends Page {
@@ -297,7 +297,7 @@ export class PropertyRowObject {
       this.languages = [];
       if (languages.length > 0 && languages[0] !== '') {
         for (let i = 0; i < languages.length; i++) {
-          const language = applicationLanguages.find(
+          const language = applicationLanguagesTranslated.find(
             (x) => x.text === languages[i]
           );
           this.languages = [
@@ -424,6 +424,7 @@ export class PropertyRowObject {
     ).waitForClickable({ timeout: 40000 });
     if (bindAreas) {
       for (let i = 0; i < bindAreas.length; i++) {
+        await (await $(`#checkboxAssignmentEdit${bindAreas[i]}`).scrollIntoView());
         await (
           await $(`#checkboxAssignmentEdit${bindAreas[i]}`).$('..')
         ).click();

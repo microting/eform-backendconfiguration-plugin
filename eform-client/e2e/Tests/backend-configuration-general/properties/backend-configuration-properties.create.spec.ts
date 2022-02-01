@@ -19,8 +19,8 @@ describe('Backend Configuration Property - Add', function () {
       chrNumber: generateRandmString(),
       address: generateRandmString(),
       selectedLanguages: [
-        { languageId: 1, languageName: 'Danish' },
-        { languageId: 2, languageName: 'English' },
+        { languageId: 1, languageName: 'Dansk' },
+        { languageId: 2, languageName: 'Engelsk' },
       ],
     };
     await backendConfigurationPropertiesPage.createProperty(property);
@@ -43,7 +43,7 @@ describe('Backend Configuration Property - Add', function () {
     const rowNumBeforeCreate = await backendConfigurationPropertiesPage.rowNum();
     const property: PropertyCreateUpdate = {
       name: generateRandmString(),
-      selectedLanguages: [{ languageId: 1, languageName: 'Danish' }],
+      selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
     };
     await backendConfigurationPropertiesPage.createProperty(property);
     expect(rowNumBeforeCreate + 1, 'property not created').eq(
@@ -58,8 +58,8 @@ describe('Backend Configuration Property - Add', function () {
       chrNumber: generateRandmString(),
       address: generateRandmString(),
       selectedLanguages: [
-        { languageId: 1, languageName: 'Danish' },
-        { languageId: 2, languageName: 'English' },
+        { languageId: 1, languageName: 'Dansk' },
+        { languageId: 2, languageName: 'Engelsk' },
       ],
     };
     await backendConfigurationPropertiesPage.openCreatePropertyModal(property);

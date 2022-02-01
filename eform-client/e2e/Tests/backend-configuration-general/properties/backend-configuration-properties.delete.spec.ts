@@ -19,8 +19,8 @@ describe('Backend Configuration Property - Delete', function () {
       chrNumber: generateRandmString(),
       address: generateRandmString(),
       selectedLanguages: [
-        { languageId: 1, languageName: 'Danish' },
-        { languageId: 2, languageName: 'English' },
+        { languageId: 1, languageName: 'Dansk' },
+        { languageId: 2, languageName: 'Engelsk' },
         // { languageId: 3, languageName: 'German' },
       ],
     };

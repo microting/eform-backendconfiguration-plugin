@@ -19,8 +19,8 @@ describe('Backend Configuration Property - Edit', function () {
       chrNumber: generateRandmString(),
       address: generateRandmString(),
       selectedLanguages: [
-        { languageId: 1, languageName: 'Danish' },
-        { languageId: 2, languageName: 'English' },
+        { languageId: 1, languageName: 'Dansk' },
+        { languageId: 2, languageName: 'Engelsk' },
         // { languageId: 3, languageName: 'German' },
       ],
     };
@@ -41,7 +41,7 @@ describe('Backend Configuration Property - Edit', function () {
     const createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await createdProperty.edit(propertyUpdate);
     propertyUpdate.selectedLanguages = [
-      { languageId: 1, languageName: 'Danish' },
+      { languageId: 1, languageName: 'Dansk' },
     ];
     const updatedProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     // expect(updatedProperty.name, 'name is incorrect').eq(propertyUpdate.name);
@@ -62,8 +62,8 @@ describe('Backend Configuration Property - Edit', function () {
       chrNumber: generateRandmString(),
       address: generateRandmString(),
       selectedLanguages: [
-        { languageId: 1, languageName: 'Danish' },
-        { languageId: 2, languageName: 'English' },
+        { languageId: 1, languageName: 'Dansk' },
+        { languageId: 2, languageName: 'Engelsk' },
         // { languageId: 3, languageName: 'German' },
       ],
     };
