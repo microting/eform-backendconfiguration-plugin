@@ -43,6 +43,7 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
       workers: [{ workerNumber: 0 }],
+      enableCompliance: false,
     };
     await areaRule.createUpdatePlanning(areaRulePlanning, false, false);
     const areaRulePlanningCreated = await areaRule.readPlanning(false);
@@ -50,6 +51,7 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
       `${workerForCreate.name} ${workerForCreate.surname}`
     );
     expect(areaRulePlanningCreated.workers[0].checked).eq(true);
+    expect(areaRulePlanningCreated.enableCompliance).eq(areaRulePlanning.enableCompliance);
     await itemsPlanningPlanningPage.goToPlanningsPage();
     expect(
       await itemsPlanningPlanningPage.rowNum(),

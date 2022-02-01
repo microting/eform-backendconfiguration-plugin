@@ -158,6 +158,10 @@ export class BackendConfigurationAreaRulesPage extends Page {
     return $(`#planAreaRuleNotificationsToggle`);
   }
 
+  public async planAreaRuleComplianceEnableToggle() {
+    return $(`#planAreaRuleComplianceEnableToggle`);
+  }
+
   public async planRepeatEvery() {
     return $(`#planRepeatEvery`);
   }
@@ -572,6 +576,15 @@ export class AreaRuleRowObject {
           await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
         ).click();
       }
+      if(areaRulePlanningCreateUpdate.enableCompliance !== undefined) {
+        if(await (
+          await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+        ).getValue() !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
+          await (
+            await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+          ).click();
+        }
+      }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
         await (
           await backendConfigurationAreaRulesPage.planRepeatEvery()
@@ -651,6 +664,16 @@ export class AreaRuleRowObject {
     }
     if (
       await (
+        await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+      ).isDisplayed()
+    ) {
+      plan.enableCompliance =
+        (await (
+          await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+        ).getValue()) === 'true';
+    }
+    if (
+      await (
         await backendConfigurationAreaRulesPage.planRepeatEvery()
       ).isDisplayed()
     ) {
@@ -707,6 +730,7 @@ export class AreaRuleCreateUpdate {
 }
 
 export class AreaRulePlanningCreateUpdate {
+  enableCompliance?: boolean;
   status?: boolean;
   notification?: boolean;
   repeatEvery?: string;
