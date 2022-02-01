@@ -92,7 +92,7 @@
               <tbody id="propertyLanguagesModalTableBody">
                 <ng-container *ngFor="let language of applicationLanguages">
                   <tr *ngIf="language.text !== 'German'">
-                    <td class="align-middle">{{ language.text }}</td>
+                    <td class="align-middle">{{ language.text | translate }}</td>
                     <td class="align-middle">
                       <div class="mat-checkbox">
                         <input

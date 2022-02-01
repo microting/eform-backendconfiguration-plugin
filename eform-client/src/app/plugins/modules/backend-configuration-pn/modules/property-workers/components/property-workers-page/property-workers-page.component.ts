@@ -44,7 +44,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       sortable: true,
       elementId: '',
     },
-    { name: 'Properties', sortable: false, elementId: '' },
+    { name: 'Property', sortable: false, elementId: '' },
     { name: 'Customer no & OTP', sortable: false, elementId: '' },
     this.authStateService.currentUserClaims.deviceUsersDelete ||
     this.authStateService.currentUserClaims.deviceUsersDelete
