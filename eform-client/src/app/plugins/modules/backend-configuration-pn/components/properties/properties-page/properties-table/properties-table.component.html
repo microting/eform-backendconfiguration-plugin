@@ -43,7 +43,7 @@
             {{ property.address }}
           </td>
           <td id="propertyLanguages">
-            {{ getLanguages(property) }}
+            {{ getLanguages(property) | translate}}
           </td>
           <td id="propertyCompliance">
             <button id="showCompliancesBtn"
@@ -54,8 +54,6 @@
             >
               <fa-icon icon="eye" [fixedWidth]="true"></fa-icon>
             </button>
-          </td>
-          <td id="propertyComplianceThirty">
             <button id="showComplianceThirtyBtn"
                     class="btn {{getColorBadge(property.complianceStatusThirty)}} btn-icon mr-2"
                     mdbTooltip="{{ 'View compliance 30 days' | translate }}"
@@ -74,7 +72,7 @@
                 [routerLink]="'../property-areas/' + property.id"
                 [disabled]="!property.isWorkersAssigned"
               >
-                <fa-icon icon="warehouse" [fixedWidth]="true"></fa-icon>
+                <fa-icon icon="toolbox" [fixedWidth]="true"></fa-icon>
               </button>
               <button *ngIf="authStateService.isAdmin"
                 id="docxReportBtn"

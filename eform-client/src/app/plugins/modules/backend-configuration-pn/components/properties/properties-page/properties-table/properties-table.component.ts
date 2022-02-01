@@ -37,7 +37,8 @@ export class PropertiesTableComponent implements OnInit {
 
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Id', elementId: 'idTableHeader', sortable: true },
-    { name: 'Name', elementId: 'nameTableHeader', sortable: true },
+    { name: 'Name', elementId: 'nameTableHeader', sortable: true,
+      visibleName: 'Property name' },
     {
       name: 'CVR',
       visibleName: 'CVR Number',
@@ -52,12 +53,13 @@ export class PropertiesTableComponent implements OnInit {
     },
     {
       name: 'Address',
+      visibleName: 'Property address',
       elementId: 'addressTableHeader',
       sortable: true,
     },
     { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
     { name: 'Compliance', sortable: false },
-    { name: 'Compliance 30', sortable: false },
+    // { name: 'Compliance 30', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
 
