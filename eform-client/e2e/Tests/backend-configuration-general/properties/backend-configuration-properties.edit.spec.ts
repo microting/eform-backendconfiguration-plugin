@@ -29,7 +29,7 @@ describe('Backend Configuration Property - Edit', function () {
       chrNumber: generateRandmString(),
       // address: generateRandmString(),
       // selectedLanguages: [
-      //   { languageId: 1, languageName: 'Danish' },
+      //   { languageId: 1, languageName: 'Dansk' },
       //   { languageId: 2, languageName: 'English' },
       //   // { languageId: 3, languageName: 'German' },
       // ],
@@ -78,7 +78,7 @@ describe('Backend Configuration Property - Edit', function () {
         chrNumber: generateRandmString(),
         // address: generateRandmString(),
         // selectedLanguages: [
-        //   { languageId: 1, languageName: 'Danish' },
+        //   { languageId: 1, languageName: 'Dansk' },
         //   { languageId: 2, languageName: 'English' },
         //   // { languageId: 3, languageName: 'German' },
         // ],
