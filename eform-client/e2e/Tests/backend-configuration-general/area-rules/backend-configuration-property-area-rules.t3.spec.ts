@@ -19,7 +19,7 @@ const property: PropertyCreateUpdate = {
 const workerForCreate = {
   name: generateRandmString(),
   surname: generateRandmString(),
-  language: 'Danish',
+  language: 'Dansk',
   properties: [0],
 };
 const areaRuleForCreate: AreaRuleCreateUpdate = {

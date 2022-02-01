@@ -57,7 +57,7 @@
 <!--            <ng-container *ngIf="!siteDto.unitId"> N/A</ng-container>-->
 <!--          </td>-->
           <td id="deviceUserLanguage">
-            {{ siteDto.language }}
+            {{ siteDto.language | translate }}
           </td>
           <td [innerHTML]="getWorkerPropertyNames(siteDto.siteId)"></td>
           <td>
