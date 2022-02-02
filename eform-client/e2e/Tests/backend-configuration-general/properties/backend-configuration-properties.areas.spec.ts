@@ -11,14 +11,14 @@ const property: PropertyCreateUpdate = {
   chrNumber: generateRandmString(),
   address: generateRandmString(),
   selectedLanguages: [
-    { languageId: 1, languageName: 'Danish' },
-    { languageId: 2, languageName: 'English' },
+    { languageId: 1, languageName: 'Dansk' },
+    { languageId: 2, languageName: 'Engelsk' },
   ],
 };
 const workerForCreate = {
   name: generateRandmString(),
   surname: generateRandmString(),
-  language: 'Danish',
+  language: 'Dansk',
   properties: [0],
 };
 

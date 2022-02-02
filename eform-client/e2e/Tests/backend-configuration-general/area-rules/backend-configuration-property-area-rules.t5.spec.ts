@@ -13,12 +13,12 @@ const property: PropertyCreateUpdate = {
   name: generateRandmString(),
   chrNumber: generateRandmString(),
   address: generateRandmString(),
-  selectedLanguages: [{ languageId: 1, languageName: 'Danish' }],
+  selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
 };
 const workerForCreate = {
   name: generateRandmString(),
   surname: generateRandmString(),
-  language: 'Danish',
+  language: 'Dansk',
   properties: [0],
 };
 const areaRuleForCreate: AreaRuleCreateUpdate = {
