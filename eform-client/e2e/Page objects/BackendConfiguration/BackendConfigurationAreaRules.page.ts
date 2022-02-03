@@ -655,7 +655,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.notification =
         (await (
@@ -665,7 +665,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.enableCompliance =
         (await (
@@ -675,7 +675,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planRepeatEvery()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.repeatEvery = await (
         await backendConfigurationAreaRulesPage.planRepeatEvery()
@@ -684,7 +684,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planRepeatType()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.repeatType = await (
         await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
@@ -695,7 +695,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planStartFrom()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.startDate = await (
         await backendConfigurationAreaRulesPage.planStartFrom()
