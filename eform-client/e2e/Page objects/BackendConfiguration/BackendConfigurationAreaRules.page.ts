@@ -581,7 +581,8 @@ export class AreaRuleRowObject {
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
         ).getValue() !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
           await (
-            await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+            await (await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle())
+              .$('..')
           ).click();
         }
       }
