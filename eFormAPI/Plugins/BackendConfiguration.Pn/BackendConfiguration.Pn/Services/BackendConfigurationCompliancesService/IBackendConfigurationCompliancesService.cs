@@ -21,6 +21,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
+using Microting.eForm.Infrastructure.Models;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService
 {
     using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
@@ -32,5 +36,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
     {
         Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request);
         Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
+        Task<OperationDataResult<ReplyElement>> Read(int id);
+        Task<OperationResult> Update(ReplyRequest model);
     }
 }

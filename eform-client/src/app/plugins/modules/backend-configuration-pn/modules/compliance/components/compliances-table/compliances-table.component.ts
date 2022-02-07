@@ -11,6 +11,7 @@ import { CompliancesModel } from '../../../../models';
 import { PropertyCompliancesColorBadgesEnum } from '../../../../enums';
 import * as R from 'ramda';
 import { CompliancesStateService } from '../store';
+import {AuthStateService} from 'src/app/common/store';
 
 @Component({
   selector: 'app-compliances-table',
@@ -26,12 +27,15 @@ export class CompliancesTableComponent implements OnInit {
     { name: 'Task', sortable: false },
     { name: 'Responsible', visibleName: 'Assigned to', sortable: false },
     // { name: 'Compliance', sortable: true },
-    // { name: 'Actions', elementId: '', sortable: false },
+    { name: 'Actions', elementId: '', sortable: false },
   ];
   @Input() compliances: CompliancesModel[];
+  @Input() propertyId: number;
+  @Input() isComplianceThirtyDays: boolean;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
 
-  constructor(public compliancesStateService: CompliancesStateService) {}
+  constructor(public compliancesStateService: CompliancesStateService,
+  public authStateService: AuthStateService) {}
 
   ngOnInit(): void {}
 

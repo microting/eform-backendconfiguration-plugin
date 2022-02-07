@@ -12,6 +12,13 @@ export const routes: Routes = [
     path: ':propertyId/:complianceStatusThirty',
     component: CompliancesContainerComponent,
   },
+  {
+    path: 'case',
+    loadChildren: () =>
+      import('./components/compliance-case/compliance-case.module').then(
+        (m) => m.ComplianceCaseModule
+      ),
+  },
 ];
 
 @NgModule({
