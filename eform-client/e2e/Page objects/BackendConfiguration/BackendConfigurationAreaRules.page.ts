@@ -158,6 +158,10 @@ export class BackendConfigurationAreaRulesPage extends Page {
     return $(`#planAreaRuleNotificationsToggle`);
   }
 
+  public async planAreaRuleComplianceEnableToggle() {
+    return $(`#planAreaRuleComplianceEnableToggle`);
+  }
+
   public async planRepeatEvery() {
     return $(`#planRepeatEvery`);
   }
@@ -572,6 +576,15 @@ export class AreaRuleRowObject {
           await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
         ).click();
       }
+      if(areaRulePlanningCreateUpdate.enableCompliance !== undefined) {
+        if(await (
+          await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+        ).getValue() !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
+          await (
+            await $('label[for=planAreaRuleComplianceEnableToggle]')
+          ).click();
+        }
+      }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
         await (
           await backendConfigurationAreaRulesPage.planRepeatEvery()
@@ -642,7 +655,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.notification =
         (await (
@@ -651,8 +664,18 @@ export class AreaRuleRowObject {
     }
     if (
       await (
+        await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+      ).isExisting()
+    ) {
+      plan.enableCompliance =
+        (await (
+          await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+        ).getValue()) === 'true';
+    }
+    if (
+      await (
         await backendConfigurationAreaRulesPage.planRepeatEvery()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.repeatEvery = await (
         await backendConfigurationAreaRulesPage.planRepeatEvery()
@@ -661,7 +684,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planRepeatType()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.repeatType = await (
         await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
@@ -672,7 +695,7 @@ export class AreaRuleRowObject {
     if (
       await (
         await backendConfigurationAreaRulesPage.planStartFrom()
-      ).isDisplayed()
+      ).isExisting()
     ) {
       plan.startDate = await (
         await backendConfigurationAreaRulesPage.planStartFrom()
@@ -707,6 +730,7 @@ export class AreaRuleCreateUpdate {
 }
 
 export class AreaRulePlanningCreateUpdate {
+  enableCompliance?: boolean;
   status?: boolean;
   notification?: boolean;
   repeatEvery?: string;

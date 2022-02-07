@@ -51,6 +51,7 @@ describe('Backend Configuration Area Rules Planning Type5', function () {
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
+      enableCompliance: true,
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
     areaRulePlanning.startDate = format(
@@ -65,6 +66,7 @@ describe('Backend Configuration Area Rules Planning Type5', function () {
       `${workerForCreate.name} ${workerForCreate.surname}`
     );
     expect(areaRulePlanningCreated.workers[0].checked).eq(true);
+    expect(areaRulePlanningCreated.enableCompliance).eq(areaRulePlanning.enableCompliance);
     await itemsPlanningPlanningPage.goToPlanningsPage();
     expect(
       await itemsPlanningPlanningPage.rowNum(),
