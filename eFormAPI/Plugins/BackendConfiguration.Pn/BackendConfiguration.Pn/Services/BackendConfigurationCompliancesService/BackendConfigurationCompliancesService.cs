@@ -141,9 +141,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     };
                     if (complianceModel.CaseId == 0 && complianceModel.Deadline < DateTime.Now)
                     {
+                        if (dbCompliance.MicrotingSdkeFormId == 0)
+                        {
+                            var planning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == complianceModel.PlanningId);
+                            dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
+                        }
                         Case caseEntity = new Case()
                         {
-                            CheckListId = complianceModel.EformId,
+                            CheckListId = dbCompliance.MicrotingSdkeFormId,
                         };
 
                         await caseEntity.Create(sdkDbContext);

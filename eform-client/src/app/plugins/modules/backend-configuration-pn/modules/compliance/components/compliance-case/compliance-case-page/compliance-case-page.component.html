@@ -10,12 +10,45 @@
   </div>
   <div class="row">
     <div class="col-md-9 col-xs-12">
+      <!-- Done at user editable -->
+      <mdb-card
+        class="mt-4"
+        style="width: 100%"
+        *ngIf="currenteForm.isDoneAtEditable"
+      >
+        <mdb-card-header>
+          <p class="h4">{{ 'Done at' | translate }}</p>
+        </mdb-card-header>
+        <mdb-card-body>
+          <div class="md-form md-form-case-elem" [owlDateTimeTrigger]="dt1">
+            <div class="md-form" [owlDateTimeTrigger]="dt1">
+              <i class="material-icons prefix">calendar_today</i>
+              <input
+                mdbInput
+                [owlDateTime]="dt1"
+                [(ngModel)]="replyElement.doneAt"
+                type="text"
+                id="doneAt"
+                name="doneAt"
+                class="form-control"
+              />
+              <label for="doneAt">{{
+                'Select date' | translate
+                }}</label>
+              <owl-date-time [pickerType]="'calendar'" #dt1></owl-date-time>
+            </div>
+          </div>
+        </mdb-card-body>
+      </mdb-card>
+
+      <!-- Elements loop -->
       <app-case-edit-element
         [element]="elem"
         *ngFor="let elem of replyElement.elementList"
       ></app-case-edit-element>
     </div>
     <div class="col-md-3">
+
       <mdb-card class="sticky-top mb-4 mt-4" style="width: 100%; z-index: 1">
         <mdb-card-header>
           <!--          {{selectedRentableItemModel.fullName}}-->

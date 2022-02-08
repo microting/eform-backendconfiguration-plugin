@@ -136,5 +136,14 @@ export const da = {
   'German': 'Tysk',
   'Danish | English': 'Dansk | Engelsk',
   'Control areas': 'Kontrolområder',
-  'Control area': 'Kontrolområde'
+  'Control area': 'Kontrolområde',
+  'Done at': 'Udført dato',
+  'Select date': 'Vælg dato',
+  'Sun': 'Søn',
+  'Mon': 'Man',
+  'Tue': 'Tir',
+  'Wed': 'Ons',
+  'Thu': 'Tor',
+  'Fri': 'Fre',
+  'Sat': 'Lør'
 };

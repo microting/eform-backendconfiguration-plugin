@@ -19,28 +19,30 @@ import {
 import {
   ComplianceCasePageComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components/compliance-case/compliance-case-page/compliance-case-page.component';
+import {OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 
 @NgModule({
   declarations: [
     ComplianceCaseHeaderComponent,
     ComplianceCasePageComponent
   ],
-  imports: [
-    TranslateModule,
-    MDBBootstrapModule,
-    EformSharedModule,
-    ComplianceCaseRoutingModule,
-    CommonModule,
-    NgSelectModule,
-    EformImportedModule,
-    GallerizeModule,
-    LightboxModule,
-    GalleryModule,
-    FormsModule,
-    FontAwesomeModule,
-    CasesModule,
-    EformCasesModule
-  ]
+    imports: [
+        TranslateModule,
+        MDBBootstrapModule,
+        EformSharedModule,
+        ComplianceCaseRoutingModule,
+        CommonModule,
+        NgSelectModule,
+        EformImportedModule,
+        GallerizeModule,
+        LightboxModule,
+        GalleryModule,
+        FormsModule,
+        FontAwesomeModule,
+        CasesModule,
+        EformCasesModule,
+        OwlDateTimeModule
+    ]
 })
 export class ComplianceCaseModule {
 }

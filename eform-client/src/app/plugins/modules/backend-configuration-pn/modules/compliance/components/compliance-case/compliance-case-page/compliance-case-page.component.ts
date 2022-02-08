@@ -76,6 +76,7 @@ export class ComplianceCasePageComponent implements OnInit {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = operation.model;
+          this.replyElement.doneAt = parseISO(this.deadline);
         }
       });
   }
@@ -100,7 +101,7 @@ export class ComplianceCasePageComponent implements OnInit {
     this.replyRequest.id = this.id;
     this.replyRequest.label = this.replyElement.label;
     this.replyRequest.elementList = this.requestModels;
-    this.replyRequest.doneAt = parseISO(this.deadline);
+    this.replyRequest.doneAt = this.replyElement.doneAt;
     this.replyRequest.extraId = this.complianceId;
     this.backendConfigurationPnCompliancesService
       .updateCase(this.replyRequest, this.currenteForm.id)
