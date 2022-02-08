@@ -229,6 +229,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
             try
             {
+                var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.Id == model.ExtraId);
+                if (compliance != null)
+                {
+                    await compliance.Delete(_backendConfigurationPnDbContext);
+                }
+                else
+                {
+                    return new OperationResult(false, $"{_localizationService.GetString("CaseCouldNotBeUpdated")}");
+                }
+
+
                 await core.CaseUpdate(model.Id, fieldValueList, checkListValueList);
                 await core.CaseUpdateFieldValues(model.Id, language);
 
@@ -261,16 +272,66 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             func.DynamicInvoke(model.Id);
                         }
                     }
+                    if (compliance.PlanningCaseSiteId != 0)
+                    {
+                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId);
+                        if (planningCaseSite != null)
+                        {
+                            planningCaseSite.Status = 100;
+                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
+
+                            planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                            planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
+                            planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
+
+                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
+                            if (planningCase.Status != 100)
+                            {
+                                planningCase.Status = 100;
+                                planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                                planningCase.MicrotingSdkCaseId = foundCase.Id;
+                                planningCase.DoneByUserId = (int)foundCase.SiteId;
+                                planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
+                                planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+
+                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language);
+                                await planningCase.Update(_itemsPlanningPnDbContext);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId);
+                        if (planningCaseSite != null)
+                        {
+                            planningCaseSite.Status = 100;
+                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
+
+                            planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                            planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
+                            planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
+
+                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
+                            if (planningCase.Status != 100)
+                            {
+                                planningCase.Status = 100;
+                                planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                                planningCase.MicrotingSdkCaseId = foundCase.Id;
+                                planningCase.DoneByUserId = (int)foundCase.SiteId;
+                                planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
+                                planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+
+                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language);
+                                await planningCase.Update(_itemsPlanningPnDbContext);
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
-                }
-
-                var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.Id == model.ExtraId);
-                if (compliance != null)
-                {
-                    await compliance.Delete(_backendConfigurationPnDbContext);
                 }
 
                 var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
@@ -335,6 +396,62 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 Log.LogException(ex.StackTrace);
                 return new OperationResult(false, _localizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
             }
+        }
+
+        private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, int caseId, Language language)
+        {
+            var planning = _itemsPlanningPnDbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
+            var caseIds = new List<int>
+            {
+                planningCaseSite.MicrotingSdkCaseId
+            };
+
+            var core = await _coreHelper.GetCore();
+            var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language);
+
+            if (planning == null) return planningCaseSite;
+            if (planning.NumberOfImagesEnabled)
+            {
+                planningCaseSite.NumberOfImages = 0;
+                foreach (var fieldValue in fieldValues)
+                {
+                    if (fieldValue.FieldType == Constants.FieldTypes.Picture)
+                    {
+                        if (fieldValue.UploadedData != null)
+                        {
+                            planningCaseSite.NumberOfImages += 1;
+                        }
+                    }
+                }
+            }
+
+            return planningCaseSite;
+        }
+
+        private async Task<PlanningCase> SetFieldValue(PlanningCase planningCase, int caseId, Language language)
+        {
+            var core = await _coreHelper.GetCore();
+            var planning = await _itemsPlanningPnDbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
+            var caseIds = new List<int> { planningCase.MicrotingSdkCaseId };
+            var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language).ConfigureAwait(false);
+
+            if (planning == null) return planningCase;
+            if (planning.NumberOfImagesEnabled)
+            {
+                planningCase.NumberOfImages = 0;
+                foreach (var fieldValue in fieldValues)
+                {
+                    if (fieldValue.FieldType == Constants.FieldTypes.Picture)
+                    {
+                        if (fieldValue.UploadedData != null)
+                        {
+                            planningCase.NumberOfImages += 1;
+                        }
+                    }
+                }
+            }
+
+            return planningCase;
         }
     }
 }
