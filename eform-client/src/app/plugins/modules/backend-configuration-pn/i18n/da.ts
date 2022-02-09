@@ -145,5 +145,8 @@ export const da = {
   'Wed': 'Ons',
   'Thu': 'Tor',
   'Fri': 'Fre',
-  'Sat': 'Lør'
+  'Sat': 'Lør',
+  'Assigned tasks - ': 'Tildelt til - ',
+  'Show planning': 'Vis planlægning',
+  'Checkpoint': 'Kontrolpunkt'
 };

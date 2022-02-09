@@ -1186,7 +1186,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 return new OperationDataResult<AreaRuleModel>(true,
                     _backendConfigurationLocalizationService.GetString("AreaRuleNotFound"));
             }
-            
+
             switch (areaRule.Area.Type)
             {
                 case AreaTypesEnum.Type2: // tanks
@@ -1278,11 +1278,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                 await planning.Delete(_itemsPlanningPnDbContext);
 
+
                 if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
-                    var compliance = await _backendConfigurationPnDbContext.Compliances
-                        .SingleOrDefaultAsync(x => x.PlanningId == planning.Id);
-                    if (compliance != null)
+                    var complianceList = await _backendConfigurationPnDbContext.Compliances
+                        .Where(x => x.PlanningId == planning.Id).ToListAsync();
+                    foreach (var compliance in complianceList)
                     {
                         await compliance.Delete(_backendConfigurationPnDbContext);
                         var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
