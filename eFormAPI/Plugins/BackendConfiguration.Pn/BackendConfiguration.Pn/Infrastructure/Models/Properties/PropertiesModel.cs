@@ -47,5 +47,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public int ComplianceStatusThirty { get; set; }
 
+        public bool WorkorderEnable { get; set; }
     }
 }

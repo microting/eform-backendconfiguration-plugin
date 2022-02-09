@@ -12,4 +12,5 @@ export class PropertyModel {
   complianceStatus: PropertyCompliancesColorBadgesEnum;
   complianceStatusThirty: PropertyCompliancesColorBadgesEnum;
   complianceStatusBadge: string;
+  workorderEnable: boolean;
 }
