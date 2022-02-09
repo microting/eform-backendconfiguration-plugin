@@ -174,6 +174,12 @@
       <EmbeddedResource Include="Resources\Templates\WordExport\file.docx" />
       <None Remove="Resources\Templates\WordExport\page.html" />
       <EmbeddedResource Include="Resources\Templates\WordExport\page.html" />
+      <None Remove="Resources\eForms\00. Opret opgave.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Ny opgave.xml" />
+      <None Remove="Resources\eForms\02. Igangværende opgave.xml" />
+      <EmbeddedResource Include="Resources\eForms\02. Igangværende opgave.xml" />
+      <None Remove="Resources\eForms\03. Afslutted opgave.xml" />
+      <EmbeddedResource Include="Resources\eForms\03. Afslutted opgave.xml" />
     </ItemGroup>
 
     <ItemGroup>
