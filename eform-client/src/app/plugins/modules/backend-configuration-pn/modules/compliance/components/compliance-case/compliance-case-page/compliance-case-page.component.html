@@ -35,7 +35,10 @@
               <label for="doneAt">{{
                 'Select date' | translate
                 }}</label>
-              <owl-date-time [pickerType]="'calendar'" #dt1></owl-date-time>
+              <owl-date-time [pickerType]="'calendar'"
+                             #dt1
+                             [firstDayOfWeek]="1"
+              ></owl-date-time>
             </div>
           </div>
         </mdb-card-body>
@@ -78,7 +81,7 @@
             <div>
               <button
                 mdbBtn
-                class="btn-ar btn-success"
+                class="btn-ar btn-success btn-sm"
                 (click)="saveCase()"
                 id="submit_form"
               >

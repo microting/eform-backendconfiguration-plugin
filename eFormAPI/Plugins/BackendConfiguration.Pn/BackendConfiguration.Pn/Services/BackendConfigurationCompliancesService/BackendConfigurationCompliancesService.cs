@@ -280,7 +280,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             planningCaseSite.Status = 100;
                             planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
 
-                            planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                            planningCaseSite.MicrotingSdkCaseDoneAt = newDoneAt;
                             planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
                             planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
                             await planningCaseSite.Update(_itemsPlanningPnDbContext);
@@ -289,7 +289,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             if (planningCase.Status != 100)
                             {
                                 planningCase.Status = 100;
-                                planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
+                                planningCase.MicrotingSdkCaseDoneAt = newDoneAt;
                                 planningCase.MicrotingSdkCaseId = foundCase.Id;
                                 planningCase.DoneByUserId = (int)foundCase.SiteId;
                                 planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
@@ -308,6 +308,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             planningCaseSite.Status = 100;
                             planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
 
+                            planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
                             planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
                             planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
                             planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";

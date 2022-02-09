@@ -22,13 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microsoft.AspNetCore.Routing;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 
 namespace BackendConfiguration.Pn.Controllers
 {
-    using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
-    using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
+    using Infrastructure.Models.Compliances.Index;
+    using Services.BackendConfigurationCompliancesService;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;

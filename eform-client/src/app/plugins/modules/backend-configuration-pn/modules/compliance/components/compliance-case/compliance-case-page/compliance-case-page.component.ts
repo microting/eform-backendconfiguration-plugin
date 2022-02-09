@@ -20,6 +20,7 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components/compliance-case/compliance-case.module';
 import {BackendConfigurationPnCompliancesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 import {parseISO} from 'date-fns';
+import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 
 @Component({
   selector: 'app-installation-case-page',
@@ -47,6 +48,7 @@ export class ComplianceCasePageComponent implements OnInit {
   }
 
   constructor(
+    dateTimeAdapter: DateTimeAdapter<any>,
     private activateRoute: ActivatedRoute,
     private backendConfigurationPnCompliancesService: BackendConfigurationPnCompliancesService,
     private eFormService: EFormService,
@@ -60,6 +62,7 @@ export class ComplianceCasePageComponent implements OnInit {
       this.deadline = params['deadline'];
       this.thirtyDays = params['thirtyDays'];
       this.complianceId = +params['complianceId'];
+      dateTimeAdapter.setLocale(authStateService.currentUserLocale);
     });
   }
 
