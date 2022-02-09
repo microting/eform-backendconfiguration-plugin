@@ -1450,32 +1450,35 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         .Select(x => x.Name)
                         .FirstOrDefaultAsync();
 
-                    listTaskWorker.Add(new TaskWorkerModel
+                    if (itemPlanningName != null)
                     {
-                        Id = sitePlanning.Id,
-                        Path = $"{areaName} - {areaRuleName}",
-                        PropertyName = propertyName,
-                        ItemName = itemPlanningName,
-                        PropertyId = sitePlanning.PropertyId,
-                        AreaRule = new AreaRuleNameAndTypeSpecificFields
+                        listTaskWorker.Add(new TaskWorkerModel
                         {
-                            TranslatedName = sitePlanning.AreaRule.AreaRuleTranslations
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Where(x => x.LanguageId == language.Id)
-                                .Select(x => x.Name)
-                                .FirstOrDefault(),
-                            TypeSpecificFields = new TypeSpecificField
+                            Id = sitePlanning.Id,
+                            Path = $"{areaName} - {areaRuleName}",
+                            PropertyName = propertyName,
+                            ItemName = itemPlanningName,
+                            PropertyId = sitePlanning.PropertyId,
+                            AreaRule = new AreaRuleNameAndTypeSpecificFields
                             {
-                                EformId = sitePlanning.AreaRule.EformId,
-                                Type = sitePlanning.AreaRule.Type,
-                                Alarm = sitePlanning.AreaRule.Alarm,
-                                ChecklistStable = sitePlanning.AreaRule.ChecklistStable,
-                                TailBite = sitePlanning.AreaRule.TailBite,
-                                DayOfWeek = sitePlanning.AreaRule.DayOfWeek,
-                                RepeatEvery = sitePlanning.AreaRule.RepeatEvery,
-                            },
-                        }
-                    });
+                                TranslatedName = sitePlanning.AreaRule.AreaRuleTranslations
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .Where(x => x.LanguageId == language.Id)
+                                    .Select(x => x.Name)
+                                    .FirstOrDefault(),
+                                TypeSpecificFields = new TypeSpecificField
+                                {
+                                    EformId = sitePlanning.AreaRule.EformId,
+                                    Type = sitePlanning.AreaRule.Type,
+                                    Alarm = sitePlanning.AreaRule.Alarm,
+                                    ChecklistStable = sitePlanning.AreaRule.ChecklistStable,
+                                    TailBite = sitePlanning.AreaRule.TailBite,
+                                    DayOfWeek = sitePlanning.AreaRule.DayOfWeek,
+                                    RepeatEvery = sitePlanning.AreaRule.RepeatEvery,
+                                },
+                            }
+                        });
+                    }
                 }
                 if (listTaskWorker.Any())
                 {
