@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>142663</Id>
+    <Repeated>0</Repeated>
+    <Label>01. Ny opgave|01. New task</Label>
+    <StartDate>2022-02-09</StartDate>
+    <EndDate>2032-02-09</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>142663</Id>
+            <Label>01. Ny opgave|01. New task</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>true</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type="None">
+                    <Id>375722</Id>
+                    <Label>Lokation: Property 1|Location: Property 1</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="SingleSelectSearch">
+                    <Id>375723</Id>
+                    <Label>Område|Area</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Source>5497</Source>
+                    <KeyValuePairList/>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Picture">
+                    <Id>375724</Id>
+                    <Label>Billede|Picture</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>2</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Comment">
+                    <Id>375725</Id>
+                    <Label>Beskrivelse|Description</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>3</DisplayOrder>
+                    <Multi>1</Multi>
+                    <GeolocationEnabled>false</GeolocationEnabled>
+                    <Split>false</Split>
+                    <Value/>
+                    <ReadOnly>false</ReadOnly>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Text">
+                    <Id>375726</Id>
+                    <Label>Oprettet af|Created by</Label>
+                    <Description><![CDATA[Skriv dit navn, hvis denne mobiltelefon bruges af dine øvrige kollegaer|Write your name if this mobile phone is used by your other colleagues]]></Description>
+                    <DisplayOrder>4</DisplayOrder>
+                    <Multi>0</Multi>
+                    <GeolocationEnabled>false</GeolocationEnabled>
+                    <Split>false</Split>
+                    <Value/>
+                    <ReadOnly>false</ReadOnly>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SingleSelectSearch">
+                    <Id>375727</Id>
+                    <Label>Tildel til|Assign to</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>5</DisplayOrder>
+                    <Source>5497</Source>
+                    <KeyValuePairList/>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SaveButton">
+                    <Id>375728</Id>
+                    <Label>Tryk for at oprette opgave|Create task</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>6</DisplayOrder>
+                    <Value>Opret|Create</Value>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>
