@@ -36,32 +36,34 @@
       </thead>
       <tbody id="propertyAreasModalTableBody">
         <ng-container *ngFor="let area of selectedPropertyAreas">
-          <tr *ngIf="area.activated">
-            <!-- <td class="align-middle">{{ area.id }}</td> -->
-            <td class="align-middle">{{ area.name }}</td>
-            <td class="align-middle">
-              <a [href]="area.description" target="_blank">{{
-                (area.description ? 'Read more' : '') | translate
-              }}</a>
-            </td>
-            <td class="align-middle">
-              {{ getAreaPlanningStatus(area) | translate }}
-            </td>
-            <td class="align-middle">
-              <button
-                id="navigateToPropertyArea"
-                class="btn btn-success btn-icon mr-2"
-                mdbTooltip="{{ 'Open area planning' | translate }}"
-                [routerLink]="[
+          <ng-container *ngIf="(area.name != '13. Arbejdstilsynets Landbrugs APV' || authStateService.isAdmin) && (area.name != '05. Klargøring af stalde og dokumentation af halebid' || authStateService.isAdmin)">
+            <tr *ngIf="area.activated">
+              <!-- <td class="align-middle">{{ area.id }}</td> -->
+              <td class="align-middle">{{ area.name }}</td>
+              <td class="align-middle">
+                <a [href]="area.description" target="_blank">{{
+                  (area.description ? 'Read more' : '') | translate
+                  }}</a>
+              </td>
+              <td class="align-middle">
+                {{ getAreaPlanningStatus(area) | translate }}
+              </td>
+              <td class="align-middle">
+                <button
+                  id="navigateToPropertyArea"
+                  class="btn btn-success btn-icon mr-2"
+                  mdbTooltip="{{ 'Open area planning' | translate }}"
+                  [routerLink]="[
                   '../../area-rules/',
                   area.id,
                   selectedProperty.id
                 ]"
-              >
-                <fa-icon icon="book-open" [fixedWidth]="true"></fa-icon>
-              </button>
-            </td>
-          </tr>
+                >
+                  <fa-icon icon="book-open" [fixedWidth]="true"></fa-icon>
+                </button>
+              </td>
+            </tr>
+          </ng-container>
         </ng-container>
       </tbody>
     </table>

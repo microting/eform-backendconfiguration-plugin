@@ -25,35 +25,35 @@
               </tr>
             </thead>
             <tbody id="editPropertyAreasModalTableBody">
-              <ng-container
-                *ngFor="let area of selectedPropertyAreas; let i = index"
-              >
-                <tr>
-                  <!--                  <td class="align-middle">{{ area.id }}</td>-->
-                  <td class="align-middle">{{ area.name }}</td>
-                  <td class="align-middle">
-                    <a [href]="area.description" target="_blank">{{
-                      (area.description ? 'Read more' : '') | translate
-                    }}</a>
-                  </td>
-<!--                  <td class="align-middle">-->
-<!--                    {{ getAreaPlanningStatus(area) | translate }}-->
-<!--                  </td>-->
-                  <td class="align-middle">
-                    <div class="mat-checkbox">
-                      <input
-                        id="checkboxAssignmentEdit{{ i }}"
-                        [checked]="area.activated"
-                        [value]="area.activated"
-                        (change)="updateArea($event, area)"
-                        color="primary"
-                        type="checkbox"
-                        [disabled]="area.activated"
-                      />
-                      <label for="checkboxAssignmentEdit{{ i }}"></label>
-                    </div>
-                  </td>
-                </tr>
+              <ng-container *ngFor="let area of selectedPropertyAreas; let i = index">
+                <ng-container *ngIf="(area.name != '13. Arbejdstilsynets Landbrugs APV' || authStateService.isAdmin) && (area.name != '05. Klargøring af stalde og dokumentation af halebid' || authStateService.isAdmin)">
+                  <tr>
+                    <!--                  <td class="align-middle">{{ area.id }}</td>-->
+                    <td class="align-middle">{{ area.name }}</td>
+                    <td class="align-middle">
+                      <a [href]="area.description" target="_blank">{{
+                        (area.description ? 'Read more' : '') | translate
+                        }}</a>
+                    </td>
+                    <!--                  <td class="align-middle">-->
+                    <!--                    {{ getAreaPlanningStatus(area) | translate }}-->
+                    <!--                  </td>-->
+                    <td class="align-middle">
+                      <div class="mat-checkbox">
+                        <input
+                          id="checkboxAssignmentEdit{{ i }}"
+                          [checked]="area.activated"
+                          [value]="area.activated"
+                          (change)="updateArea($event, area)"
+                          color="primary"
+                          type="checkbox"
+                          [disabled]="area.activated"
+                        />
+                        <label for="checkboxAssignmentEdit{{ i }}"></label>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
               </ng-container>
             </tbody>
           </table>

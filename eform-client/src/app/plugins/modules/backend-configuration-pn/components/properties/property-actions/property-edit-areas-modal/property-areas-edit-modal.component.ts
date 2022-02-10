@@ -11,6 +11,7 @@ import {
   PropertyUpdateModel,
 } from '../../../../models';
 import { PropertyAreasUpdateModel } from '../../../../models';
+import {AuthStateService} from 'src/app/common/store';
 
 @Component({
   selector: 'app-property-edit-areas-modal',
@@ -24,7 +25,8 @@ export class PropertyAreasEditModalComponent implements OnInit {
   selectedProperty: PropertyUpdateModel = new PropertyUpdateModel();
   selectedPropertyAreas: PropertyAreaModel[] = [];
 
-  constructor() {}
+  constructor(
+    public authStateService: AuthStateService) {}
 
   ngOnInit() {}
 
