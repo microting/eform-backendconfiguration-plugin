@@ -430,7 +430,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .FirstAsync();
                 var eformIdForComplitedTasks = await sdkDbContext.CheckListTranslations
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "03. Complited task")
+                    .Where(x => x.Text == "03. Completed task")
                     .Select(x => x.CheckListId)
                     .FirstAsync();
 
