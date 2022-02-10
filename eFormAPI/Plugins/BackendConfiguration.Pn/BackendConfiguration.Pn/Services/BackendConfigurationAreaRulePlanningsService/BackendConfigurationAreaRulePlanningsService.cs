@@ -1385,7 +1385,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 var sitePlannings = await _backendConfigurationPnDbContext.AreaRulePlannings
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Status)
-                    .Where(x => x.PlanningSites.Select(y => y.SiteId).Contains(siteId))
+                    .Where(x => x.PlanningSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(y => y.SiteId).Contains(siteId))
                     .Include(x => x.AreaRule.AreaRuleTranslations)
                     .Select(x => new
                     {
