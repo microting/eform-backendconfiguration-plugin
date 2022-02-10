@@ -341,7 +341,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     },
                                     new()
                                     {
-                                        Name = "01. New task",
+                                        Name = "01. New tasks",
                                         LanguageId = 2, // en
                                         Description = "",
                                     },
@@ -352,7 +352,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //    Description = "",
                                     //},
                                 };
-                                folderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask, property.FolderIdForTasks);
+                                folderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
+                                    property.FolderIdForTasks);
 
                                 var translateFolderForOngoingTask = new List<CommonTranslationsModel>
                                 {
@@ -405,7 +406,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 folderIdForNewTasks = await sdkDbContext.Folders
                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                     .Where(x => x.ParentId == property.FolderIdForTasks)
-                                    .Where(x => x.FolderTranslations.Any(y => y.Name == "00. Tasks"))
+                                    .Where(x => x.Children.Any(y => y.Name == "01. New tasks"))
                                     .Select(x => x.Id)
                                     .FirstAsync();
                             }
@@ -420,14 +421,27 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToList();
 
-                            await DeployEform(propertyWorkerIds, eformId, folderIdForNewTasks, $"<strong>Location:</strong> {property.Name}");
+                            await DeployEform(propertyWorkerIds, eformId, folderIdForNewTasks,
+                                $"<strong>Location:</strong> {property.Name}");
                             break;
                         }
                         case false:
                         {
-                            var eformId = await sdkDbContext.CheckListTranslations
+                            var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.Text == "01. New task")
+                                .Select(x => x.CheckListId)
+                                .FirstAsync();
+
+                            var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.Text == "02. Ongoing task")
+                                .Select(x => x.CheckListId)
+                                .FirstAsync();
+
+                            var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.Text == "03. Completed task")
                                 .Select(x => x.CheckListId)
                                 .FirstAsync();
 
@@ -435,7 +449,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToList();
 
-                            await RetractEform(propertyWorkerIds, eformId);
+                            await RetractEform(propertyWorkerIds, eformIdForNewTasks);
+                            await RetractEform(propertyWorkerIds, eformIdForOngoingTasks);
+                            await RetractEform(propertyWorkerIds, eformIdForCompletedTasks);
                             break;
                         }
                     }
@@ -519,7 +535,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     await planningTag.Delete(_itemsPlanningPnDbContext);
                 }
 
-                // todo add retrive eform from workers
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                // retract eforms
+                if (property.WorkorderEnable)
+                {
+                    var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Text == "01. New task")
+                        .Select(x => x.CheckListId)
+                        .FirstAsync();
+
+                    var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Text == "02. Ongoing task")
+                        .Select(x => x.CheckListId)
+                        .FirstAsync();
+
+                    var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Text == "03. Completed task")
+                        .Select(x => x.CheckListId)
+                        .FirstAsync();
+
+                    await RetractEform(property.PropertyWorkers, eformIdForNewTasks);
+                    await RetractEform(property.PropertyWorkers, eformIdForOngoingTasks);
+                    await RetractEform(property.PropertyWorkers, eformIdForCompletedTasks);
+                }
 
                 // delete property workers
                 foreach (var propertyWorker in property.PropertyWorkers)
@@ -527,9 +569,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     propertyWorker.UpdatedByUserId = _userService.UserId;
                     await propertyWorker.Delete(_backendConfigurationPnDbContext);
                 }
-
-                var core = await _coreHelper.GetCore();
-                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 // delete area properties
                 foreach (var areaProperty in property.AreaProperties)
@@ -735,7 +774,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             }
         }
 
-        private async Task DeployEform(List<PropertyWorker> propertyWorkers, int eformId, int? folderId, string description)
+        private async Task DeployEform(List<PropertyWorker> propertyWorkers, int eformId, int? folderId,
+            string description)
         {
             var core = await _coreHelper.GetCore();
             await using var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -765,6 +805,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 {
                     CaseId = (int)caseId,
                     PropertyWorkerId = propertyWorker.Id,
+                    CaseStatusesEnum = CaseStatusesEnum.NewTask,
                 }.Create(_backendConfigurationPnDbContext);
             }
         }
