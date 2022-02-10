@@ -1044,11 +1044,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                     await planning.Update(_itemsPlanningPnDbContext);
 
-                                    if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                                    if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed) || !rulePlanning.ComplianceEnabled)
                                     {
-                                        var compliance = await _backendConfigurationPnDbContext.Compliances
-                                            .SingleOrDefaultAsync(x => x.PlanningId == planning.Id);
-                                        if (compliance != null)
+                                        var complianceList = await _backendConfigurationPnDbContext.Compliances
+                                            .Where(x => x.PlanningId == planning.Id)
+                                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                            .ToListAsync();
+                                        foreach (var compliance in complianceList)
                                         {
                                             await compliance.Delete(_backendConfigurationPnDbContext);
                                             var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
