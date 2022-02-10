@@ -42,6 +42,7 @@ export class ComplianceCasePageComponent implements OnInit {
   reverseRoute: string;
   requestModels: Array<CaseEditRequest> = [];
   replyRequest: ReplyRequest = new ReplyRequest();
+  maxDate: Date;
 
   get userClaims() {
     return this.authStateService.currentUserClaims;
@@ -68,6 +69,7 @@ export class ComplianceCasePageComponent implements OnInit {
 
   ngOnInit() {
     this.loadTemplateInfo();
+    this.maxDate = new Date();
   }
 
   loadCase() {

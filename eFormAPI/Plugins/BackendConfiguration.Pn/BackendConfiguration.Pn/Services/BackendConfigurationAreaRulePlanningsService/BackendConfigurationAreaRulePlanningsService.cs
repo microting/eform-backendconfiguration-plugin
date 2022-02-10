@@ -1044,11 +1044,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                     await planning.Update(_itemsPlanningPnDbContext);
 
-                                    if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                                    if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed) || !rulePlanning.ComplianceEnabled)
                                     {
-                                        var compliance = await _backendConfigurationPnDbContext.Compliances
-                                            .SingleOrDefaultAsync(x => x.PlanningId == planning.Id);
-                                        if (compliance != null)
+                                        var complianceList = await _backendConfigurationPnDbContext.Compliances
+                                            .Where(x => x.PlanningId == planning.Id)
+                                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                            .ToListAsync();
+                                        foreach (var compliance in complianceList)
                                         {
                                             await compliance.Delete(_backendConfigurationPnDbContext);
                                             var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
@@ -1240,31 +1242,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                 var core = await _coreHelper.GetCore();
                 await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-                var planningCases = await _itemsPlanningPnDbContext.PlanningCases
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.PlanningId == planning.Id)
-                    .ToListAsync();
-
-                foreach (var planningCase in planningCases)
-                {
-                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
-                        .Where(x => x.PlanningCaseId == planningCase.Id)
-                        .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0)
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .ToListAsync();
-                    foreach (var planningCaseSite in planningCaseSites)
-                    {
-                        var result =
-                            await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
-                        if (result.MicrotingUid != null)
-                        {
-                            await core.CaseDelete((int)result.MicrotingUid);
-                        }
-                    }
-
-                    // Delete planning case
-                    await planningCase.Delete(_itemsPlanningPnDbContext);
-                }
 
                 var nameTranslationsPlanning =
                     planning.NameTranslations

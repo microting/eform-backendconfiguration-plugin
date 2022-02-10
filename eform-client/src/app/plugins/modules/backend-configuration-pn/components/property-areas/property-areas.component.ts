@@ -10,6 +10,7 @@ import { BackendConfigurationPnPropertiesService } from '../../services';
 import { TranslateService } from '@ngx-translate/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { PropertyAreasEditModalComponent } from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -37,6 +38,7 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
   updatePropertyAreasSub$: Subscription;
 
   constructor(
+    public authStateService: AuthStateService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private route: ActivatedRoute,
     private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
