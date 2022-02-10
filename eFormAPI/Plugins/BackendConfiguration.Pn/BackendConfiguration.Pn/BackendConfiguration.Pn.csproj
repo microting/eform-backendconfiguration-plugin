@@ -174,16 +174,22 @@
       <EmbeddedResource Include="Resources\Templates\WordExport\file.docx" />
       <None Remove="Resources\Templates\WordExport\page.html" />
       <EmbeddedResource Include="Resources\Templates\WordExport\page.html" />
+      <None Remove="Resources\eForms\00. Opret opgave.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Ny opgave.xml" />
+      <None Remove="Resources\eForms\02. Igangværende opgave.xml" />
+      <EmbeddedResource Include="Resources\eForms\02. Igangværende opgave.xml" />
+      <None Remove="Resources\eForms\03. Afslutted opgave.xml" />
+      <EmbeddedResource Include="Resources\eForms\03. Afslutted opgave.xml" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Magick.NET-Q16-x64" Version="9.0.0" />
-      <PackageReference Include="Microting.eForm" Version="5.4.4" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.22" />
+      <PackageReference Include="Magick.NET-Q16-x64" Version="9.1.1" />
+      <PackageReference Include="Microting.eForm" Version="5.4.26" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.29" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.55" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.62" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.87" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.93" />
     </ItemGroup>
 
     <ItemGroup>

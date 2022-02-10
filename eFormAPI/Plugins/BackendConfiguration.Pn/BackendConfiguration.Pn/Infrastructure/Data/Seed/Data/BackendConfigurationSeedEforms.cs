@@ -463,6 +463,24 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("23.01.01 Fast overdækning gyllebeholder", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("01. Ny opgave", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("02. Igangværende opgave", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("03. Afslutted opgave", headers);
+			theList.Add(item);
 
 			return theList;
 		}

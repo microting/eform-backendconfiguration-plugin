@@ -26,11 +26,11 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
       visibleName: 'ID',
       sortable: true,
     },
-    {name: 'PropertyName', visibleName: 'Property', sortable: true},
-    {name: 'Path', sortable: true},
+    {name: 'PropertyName', visibleName: 'Property name', sortable: true},
+    {name: 'Path', visibleName: 'Control area', sortable: true},
     {
       name: 'ItemName',
-      visibleName: 'Item name',
+      visibleName: 'Checkpoint',
       sortable: true,
     },
     {name: 'Actions', sortable: false}

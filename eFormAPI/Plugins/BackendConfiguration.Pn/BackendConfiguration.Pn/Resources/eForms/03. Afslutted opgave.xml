@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>142665</Id>
+    <Repeated>0</Repeated>
+    <Label>03. Afsluttede opgave|03. Completed task</Label>
+    <StartDate>2022-02-09</StartDate>
+    <EndDate>2032-02-09</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>142665</Id>
+            <Label>03. Afsluttede opgave|03. Completed task</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>false</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type="None">
+                    <Id>375736</Id>
+                    <Label>Info|Info</Label>
+                    <Description><![CDATA[Lokation: Ejendom 1<br>Tildelt til: UnitName (sort 1)<br>Område: Område A (vises kun &gt; 0)<br>Beskriv opgave: Lorem ipsum&nbsp;<br><br><br>Oprettet af: UnitName<br>Oprettet af: Navn X (vises kun &gt; 0)<br>Oprettet dato: 01.01.2022 (sort 2)<br><br><br>Senest opdateret af: UnitName<br>Senest opdateret dato: 22.01.2022<br><br><br>Status: Afsluttet|Location: Property 1<br>Assigned to: DeviceUser (sort 1)<br>Area: Area A (shown only&gt; 0)<br>Description: Lorem ipsum<br><br><br>Created by: DeviceUser<br>Created by: Name X (show only&gt; 0)<br>Created date: 01.01.2022 (sort 2)<br><br><br>Last updated by: DeviceUser<br>Last updated date: 17.01.2022<br><br><br>Status: Completed]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="ShowPDF">
+                    <Id>375737</Id>
+                    <Label>Tryk på PDF for at se billeder af opgaven|Click on PDF to see pictures of task</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Value>12345678901234567890123456789012</Value>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>

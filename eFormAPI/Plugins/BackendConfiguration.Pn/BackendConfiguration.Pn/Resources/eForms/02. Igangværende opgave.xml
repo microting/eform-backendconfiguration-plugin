@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>142664</Id>
+    <Repeated>0</Repeated>
+    <Label>02. Igangværende opgave|02. Ongoing task</Label>
+    <StartDate>2022-02-09</StartDate>
+    <EndDate>2032-02-09</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>142664</Id>
+            <Label>02. Igangværende opgave|02. Ongoing task</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>true</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type="None">
+                    <Id>375729</Id>
+                    <Label>Info</Label>
+                    <Description><![CDATA[Lokation: Ejendom 1<br>Tildelt til: UnitName (sort 1)<br>Område: Område A (vises kun &gt; 0)<br>Beskriv opgave: Lorem&nbsp;<br><br><br>Oprettet af: UnitName<br>Oprettet af:&nbsp;Navn X (vises kun &gt; 0)<br>Oprettet dato: 01.01.2022 (sort 2)<br><br><br>Status: Igangværende|Location: Property 1<br>Assigned to: DeviceUser (sort 1)<br>Area: Area A (shown only&gt; 0)<br>Description: Lorem<br><br><br>Created by: DeviceUser<br>Created by: Name X (show only&gt; 0)<br>Created date: 01.01.2022 (sort 2)<br><br><br>Status: Ongoing]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="ShowPDF">
+                    <Id>375730</Id>
+                    <Label>Tryk på PDF for at se billeder af opgaven|Click on PDF to see pictures of task</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Value>12345678901234567890123456789012</Value>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Picture">
+                    <Id>375731</Id>
+                    <Label>Billede|Picture</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>2</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Comment">
+                    <Id>375732</Id>
+                    <Label>Kommentar|Comment</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>3</DisplayOrder>
+                    <Multi>1</Multi>
+                    <GeolocationEnabled>false</GeolocationEnabled>
+                    <Split>false</Split>
+                    <Value/>
+                    <ReadOnly>false</ReadOnly>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SingleSelectSearch">
+                    <Id>375733</Id>
+                    <Label>Tildel del|Assaign to</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>4</DisplayOrder>
+                    <Source>5497</Source>
+                    <KeyValuePairList/>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SingleSelect">
+                    <Id>375734</Id>
+                    <Label>Status|Status</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>5</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[Igangværende|Ongoing]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Færdig|Done]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SaveButton">
+                    <Id>375735</Id>
+                    <Label>Tryk for at opdatere|Update</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>6</DisplayOrder>
+                    <Value>Opdatér|Update</Value>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>

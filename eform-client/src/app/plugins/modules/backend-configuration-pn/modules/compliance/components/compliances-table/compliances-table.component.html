@@ -42,13 +42,36 @@
 <!--            [class]="getColorBadge(compliance.compliance)"-->
 <!--          ></span>-->
 <!--        </td>-->
-<!--        <td>-->
-<!--          &lt;!&ndash;actions&ndash;&gt;-->
-<!--          <div class="d-flex flex-row justify-content-center">-->
-<!--            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit case' | translate}}</a>-->
-<!--            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit planning' | translate}}</a>-->
-<!--          </div>-->
-<!--        </td>-->
+        <td>
+          <!--actions-->
+          <ng-container *ngIf="authStateService.isAdmin && compliance.caseId !== 0">
+<!--            <div class="d-flex flex-row justify-content-center">-->
+<!--              <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit case' | translate}}</a>-->
+<!--              &lt;!&ndash;            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit planning' | translate}}</a>&ndash;&gt;-->
+<!--            </div>-->
+            <button
+              mdbBtn
+              class="btn-success btn-icon mb-2"
+              [routerLink]="[
+              '/plugins/backend-configuration-pn/compliances/case/' +
+                compliance.caseId +
+                '/' +
+                compliance.eformId +
+                '/' +
+                propertyId +
+                '/' +
+                compliance.deadline+
+                '/' +
+                (isComplianceThirtyDays === undefined ? 'false' : 'true')+
+                '/' +
+                compliance.id
+            ]"
+              mdbTooltip="{{ 'Edit Case' | translate }}"
+            >
+              <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+            </button>
+          </ng-container>
+        </td>
       </tr>
     </tbody>
   </table>

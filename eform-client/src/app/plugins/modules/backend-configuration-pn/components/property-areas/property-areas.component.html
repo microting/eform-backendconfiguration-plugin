@@ -1,7 +1,7 @@
 <eform-subheader
   [breadcrumbs]="breadcrumbs"
   [forceStaticTitle]="true"
-  [title]="selectedProperty.name + ' - ' + ('areas' | translate)"
+  [title]="selectedProperty.name + ' - ' + ('Control area' | translate)"
 >
   <div class="p-3">
     <button
@@ -9,7 +9,7 @@
       id="configurePropertyAreasBtn"
       class="btn-success btn-icon"
       (click)="showConfigurePropertyAreas()"
-      mdbTooltip="{{ 'Edit' | translate }} {{ selectedProperty.name }} - {{ 'areas' | translate }}"
+      mdbTooltip="{{ 'Edit' | translate }} {{ selectedProperty.name }} - {{ 'Control areas' | translate }}"
       [placement]="'left'"
     >
       <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
@@ -28,7 +28,7 @@
       <thead>
         <tr>
           <!--<th>ID</th>-->
-          <th>{{ 'Area' | translate }}</th>
+          <th>{{ 'Control area' | translate }}</th>
           <th>{{ 'Description' | translate }}</th>
           <th>{{ 'Status' | translate }}</th>
           <th></th>

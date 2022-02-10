@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microsoft.AspNetCore.Routing;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 
 namespace BackendConfiguration.Pn.Controllers
 {
-    using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
-    using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
+    using Infrastructure.Models.Compliances.Index;
+    using Services.BackendConfigurationCompliancesService;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -57,6 +57,34 @@ namespace BackendConfiguration.Pn.Controllers
         public Task<OperationDataResult<int>> Compliance(int propertyId)
         {
             return _backendConfigurationCompliancesService.ComplianceStatus(propertyId);
+        }
+
+        [HttpGet]
+        // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseRead)]
+        [Route("cases")]
+        public async Task<IActionResult> Read(int id, int templateId)
+        {
+            // if (! await _permissionsService.CheckEform(templateId,
+                    // AuthConsts.EformClaims.CasesClaims.CaseRead))
+            // {
+                // return Forbid();
+            // }
+
+            return Ok(await _backendConfigurationCompliancesService.Read(id));
+        }
+
+        [HttpPut]
+        [Route("cases")]
+        // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseUpdate)]
+        public async Task<IActionResult> Update([FromBody] ReplyRequest model)
+        {
+            // if (!await _permissionsService.CheckEform(templateId,
+            //         AuthConsts.EformClaims.CasesClaims.CaseUpdate))
+            // {
+            //     return Forbid();
+            // }
+
+            return Ok(await _backendConfigurationCompliancesService.Update(model));
         }
     }
 }

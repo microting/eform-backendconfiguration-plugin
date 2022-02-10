@@ -149,6 +149,7 @@ namespace BackendConfiguration.Pn
                         cl.ReportH2 = eform[1];
                         cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
                         cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
+                        cl.IsDoneAtEditable = true;
                         await cl.Update(sdkDbContext);
                     }
                     else
@@ -163,6 +164,7 @@ namespace BackendConfiguration.Pn
                             cl.ReportH2 = eform[1];
                             cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
                             cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
+                            cl.IsDoneAtEditable = true;
                             await cl.Update(sdkDbContext);
                         }
                         catch (Exception ex)

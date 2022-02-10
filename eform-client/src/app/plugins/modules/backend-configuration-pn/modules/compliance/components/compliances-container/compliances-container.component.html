@@ -11,9 +11,11 @@
 >
 </eform-subheader>
 
-<div class="container-fluid">
+<div class="container-fluid" *ngIf="selectedProperty">
   <app-compliances-table
-    [compliances]="compliances"
+    [compliances]="complianceList"
+    [propertyId]="selectedProperty.id"
+    [isComplianceThirtyDays]="isComplianceThirtyDays"
     (updateTable)="getCompliances(selectedProperty.id)"
   ></app-compliances-table>
 </div>

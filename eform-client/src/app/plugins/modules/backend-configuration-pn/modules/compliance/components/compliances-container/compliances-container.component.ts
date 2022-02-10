@@ -26,7 +26,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
     { name: '' },
   ];
   selectedProperty: PropertyModel;
-  compliances: CompliancesModel[] = [];
+  complianceList: CompliancesModel[] = [];
   isComplianceThirtyDays: boolean;
 
   getAllPropertiesDictionarySub$: Subscription;
@@ -77,7 +77,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
       .getAllCompliances(selectedPropertyId, thirtyDays)
       .subscribe((data) => {
         if (data && data.success) {
-          this.compliances = data.model.entities;
+          this.complianceList = data.model.entities;
         }
       });
   }
