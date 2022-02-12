@@ -80,6 +80,24 @@
               </div>
             </div>
           </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="custom-control custom-switch" style="margin-bottom: 2rem;">
+                <input
+                  type="checkbox"
+                  id="propertyCreateWorkorderFlowEnableToggle"
+                  [value]="newProperty.workorderEnable"
+                  [checked]="newProperty.workorderEnable"
+                  [(ngModel)]="newProperty.workorderEnable"
+                  class="custom-control-input"
+                />
+                <label
+                  class="custom-control-label"
+                  for="propertyCreateWorkorderFlowEnableToggle"
+                >{{ "Workorder flow enable" | translate }}</label>
+              </div>
+            </div>
+          </div>
           <div class="table-responsive">
             <table class="table table-xs table-bordered text-center z-depth-1">
               <thead>

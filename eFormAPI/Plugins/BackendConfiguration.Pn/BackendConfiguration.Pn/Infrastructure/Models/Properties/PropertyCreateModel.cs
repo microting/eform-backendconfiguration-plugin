@@ -38,6 +38,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public string Cvr { get; set; }
 
+        public bool WorkorderEnable { get; set; }
+
         public string FullName()
         {
             return $"00. {Name} - {Address}";

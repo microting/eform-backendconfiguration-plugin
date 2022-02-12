@@ -3,5 +3,6 @@ export class PropertyCreateModel {
   chr: string;
   cvr: string;
   address: string;
+  workorderEnable: boolean = false;
   languagesIds: number[] = [];
 }

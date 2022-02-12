@@ -311,8 +311,6 @@ namespace BackendConfiguration.Pn
                     areaRule.EformName = "17. Håndildslukkere";
                     await areaRule.Update(context);
                 }
-
-
             }
         }
 
