@@ -439,6 +439,7 @@ export class AreaRuleRowObject {
 
   public async openEditModal(areaRule: AreaRuleCreateUpdate) {
     await this.editRuleBtn.click();
+    await browser.pause(500);
     await (
       await backendConfigurationAreaRulesPage.areaRuleEditSaveCancelBtn()
     ).waitForClickable({ timeout: 40000 });
