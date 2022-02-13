@@ -138,8 +138,7 @@
       <EmbeddedResource Include="Resources\eForms\23.02.07 Udstyr til drikkevand.xml" />
       <None Remove="Resources\eForms\23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml" />
       <EmbeddedResource Include="Resources\eForms\23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml" />
-      <None Remove="Resources\eForms\23.03.01 Skabelon Miljøledelse.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.03.01 Skabelon Miljøledelse.xml" />
+      <None Remove="Resources\eForms\23.03.01 Miljøledelse.xml" />
       <None Remove="Resources\eForms\23.04.01 Fasefodring.xml" />
       <EmbeddedResource Include="Resources\eForms\23.04.01 Fasefodring.xml" />
       <None Remove="Resources\eForms\23.04.02 Reduceret indhold af råprotein.xml" />
@@ -194,6 +193,10 @@
 
     <ItemGroup>
       <EmbeddedResource Include="Resources\localization.json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Resources\eForms\23.03.01 Miljøledelse.xml" />
     </ItemGroup>
 
 </Project>

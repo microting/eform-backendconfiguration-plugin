@@ -381,9 +381,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.03Dokumentation for miljøledelse","23.03.01Skabelon Miljøledelse"
+				"23.Indberetning IE Husdyrbrug","23.03Dokumentation for miljøledelse","23.03.01Miljøledelse"
 			};
-			item = new KeyValuePair<string, List<string>>("23.03.01 Skabelon Miljøledelse", headers);
+			item = new KeyValuePair<string, List<string>>("23.03.01 Miljøledelse", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{

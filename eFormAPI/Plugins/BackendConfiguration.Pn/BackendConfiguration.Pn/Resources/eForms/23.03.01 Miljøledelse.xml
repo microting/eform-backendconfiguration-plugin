@@ -2,7 +2,7 @@
 <Main>
   <Id>142638</Id>
   <Repeated>0</Repeated>
-  <Label>23.03.01 Skabelon Miljøledelse</Label>
+  <Label>23.03.01 Miljøledelse</Label>
   <StartDate>2021-11-01</StartDate>
   <EndDate>2031-11-01</EndDate>
   <Language>da</Language>
@@ -14,7 +14,7 @@
   <ElementList>
     <Element type="DataElement">
       <Id>142638</Id>
-      <Label>23.03.01 Skabelon Miljøledelse</Label>
+      <Label>23.03.01 Miljøledelse</Label>
       <Description><![CDATA[]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
@@ -25,7 +25,7 @@
       <DataItemList>
         <DataItem type="None">
           <Id>375465</Id>
-          <Label>23.03.01 Skabelon Miljøledelse</Label>
+          <Label>23.03.01 Miljøledelse</Label>
           <Description><![CDATA[Billeder af skema med fokusområde, mål, status og opfølgning. Du kan anvende miljøstyrelsens miljøledelsesskabelon eller noget tilsvarende.]]></Description>
           <DisplayOrder>0</DisplayOrder>
           <Color>fff6df</Color>

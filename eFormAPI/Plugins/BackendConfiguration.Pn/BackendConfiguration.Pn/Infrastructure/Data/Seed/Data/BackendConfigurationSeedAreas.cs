@@ -1684,10 +1684,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new AreaRule
             {
-                EformName = "23.03.01 Skabelon Miljøledelse",
+                EformName = "23.03.01 Miljøledelse",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "23.03.01 Skabelon Miljøledelse" }, // da
+                    new() { LanguageId = 1, Name = "23.03.01 Miljøledelse" }, // da
                     new() { LanguageId = 2, Name = "23.03.01 Template Environmental Management" }, // en
                     new() { LanguageId = 3, Name = "" } // ge todo
                 },
