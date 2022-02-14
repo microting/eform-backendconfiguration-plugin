@@ -137,7 +137,7 @@ export const da = {
   'Danish | English': 'Dansk | Engelsk',
   'Control areas': 'Kontrolområder',
   'Control area': 'Kontrolområde',
-  'Done at': 'Udført dato',
+  'Done at': 'Dato',
   'Select date': 'Vælg dato',
   'Sun': 'Søn',
   'Mon': 'Man',
