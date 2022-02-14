@@ -237,6 +237,22 @@ namespace BackendConfiguration.Pn
                 await areaRulePlanning.Update(context);
             }
 
+            var areaRuleTranslations = await context.AreaRuleTranslations.Where(x => x.Name == "23.03.01 Skabelon Miljøledelse").ToListAsync();
+
+            foreach (var areaRuleTranslation in areaRuleTranslations)
+            {
+                areaRuleTranslation.Name = "23.03.01 Miljøledelse";
+                await areaRuleTranslation.Update(context);
+            }
+
+            areaRuleTranslations = await context.AreaRuleTranslations.Where(x => x.Name == "23.03.01 Template Environmental Management").ToListAsync();
+
+            foreach (var areaRuleTranslation in areaRuleTranslations)
+            {
+                areaRuleTranslation.Name = "23.03.01 Environmental Management";
+                await areaRuleTranslation.Update(context);
+            }
+
             var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)").ToListAsync();
 
             foreach (var clTranslation in clTranslations)
@@ -277,6 +293,14 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.03.01 Skabelon Miljøledelse").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "23.03.01 Miljøledelse";
+                await clTranslation.Update(sdkDbContext);
+            }
+
             var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Brandslukkere");
             if (areaTranslation2 != null)
             {
@@ -311,6 +335,86 @@ namespace BackendConfiguration.Pn
                     areaRule.EformName = "17. Håndildslukkere";
                     await areaRule.Update(context);
                 }
+            }
+
+            var ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.00 Aflæsninger miljøledelse").ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "23.00 Aflæsninger",
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.01 Logbøger for alle miljøteknologier" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "23.01 Logbøger miljøteknologier",
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.02 Dokumentation af afsluttede inspektioner" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "23.02 Dokumentation afsluttede inspektioner",
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.03 Dokumentation for miljøledelse" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "23.03 Dokumentation Miljøledelse",
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.04 Overholdelse af fodringskrav" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "23.04 Overholdelse fodringskrav",
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
         }
 

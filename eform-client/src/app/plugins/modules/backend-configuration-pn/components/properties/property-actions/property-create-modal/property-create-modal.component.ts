@@ -7,6 +7,8 @@ import {
 } from '@angular/core';
 import { applicationLanguages } from 'src/app/common/const';
 import { PropertyCreateModel } from '../../../../models';
+import {AuthService} from 'src/app/common/services';
+import {AuthStateService} from 'src/app/common/store';
 
 @Component({
   selector: 'app-property-create-modal',
@@ -24,7 +26,9 @@ export class PropertyCreateModalComponent implements OnInit {
     return applicationLanguages;
   }
 
-  constructor() {}
+  constructor(
+    public authStateService: AuthStateService) {
+  }
 
   ngOnInit() {}
 

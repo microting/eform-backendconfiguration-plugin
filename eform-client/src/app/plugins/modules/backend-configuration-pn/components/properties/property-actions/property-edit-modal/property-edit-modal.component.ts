@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { applicationLanguages } from 'src/app/common/const';
 import { PropertyModel, PropertyUpdateModel } from '../../../../models';
+import {AuthStateService} from 'src/app/common/store';
 
 @Component({
   selector: 'app-property-edit-modal',
@@ -24,7 +25,8 @@ export class PropertyEditModalComponent implements OnInit {
     return applicationLanguages;
   }
 
-  constructor() {}
+  constructor(
+    public authStateService: AuthStateService) {}
 
   ngOnInit() {}
 

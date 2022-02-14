@@ -439,6 +439,7 @@ export class AreaRuleRowObject {
 
   public async openEditModal(areaRule: AreaRuleCreateUpdate) {
     await this.editRuleBtn.click();
+    await browser.pause(500);
     await (
       await backendConfigurationAreaRulesPage.areaRuleEditSaveCancelBtn()
     ).waitForClickable({ timeout: 40000 });
@@ -641,6 +642,10 @@ export class AreaRuleRowObject {
     } else {
       await browser.pause(500);
     }
+    await (await $('#spinner-animation')).waitForDisplayed({
+      timeout: 120000,
+      reverse: true,
+    });
   }
 
   public async readPlanning(

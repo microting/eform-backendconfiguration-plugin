@@ -1242,6 +1242,31 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                 var core = await _coreHelper.GetCore();
                 await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var planningCases = await _itemsPlanningPnDbContext.PlanningCases
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == planning.Id)
+                    .ToListAsync();
+
+                foreach (var planningCase in planningCases)
+                {
+                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                        .Where(x => x.PlanningCaseId == planningCase.Id)
+                        .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync();
+                    foreach (var planningCaseSite in planningCaseSites)
+                    {
+                        var result =
+                            await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                        if (result.MicrotingUid != null)
+                        {
+                            await core.CaseDelete((int)result.MicrotingUid);
+                        }
+                    }
+
+                    // Delete planning case
+                    // await planningCase.Delete(_itemsPlanningPnDbContext);
+                }
 
                 var nameTranslationsPlanning =
                     planning.NameTranslations
@@ -1385,7 +1410,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 var sitePlannings = await _backendConfigurationPnDbContext.AreaRulePlannings
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Status)
-                    .Where(x => x.PlanningSites.Select(y => y.SiteId).Contains(siteId))
+                    .Where(x => x.PlanningSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(y => y.SiteId).Contains(siteId))
                     .Include(x => x.AreaRule.AreaRuleTranslations)
                     .Select(x => new
                     {
