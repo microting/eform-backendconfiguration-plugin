@@ -289,11 +289,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             foreach (var propertyId in propertyIds)
             {
                 var property = await _backendConfigurationPnDbContext.Properties
+                    .Where(x => x.WorkorderEnable)
                     .Where(x => x.Id == propertyId)
                     .Include(x => x.PropertyWorkers)
                     .ThenInclude(x => x.WorkorderCases)
                     .ThenInclude(x => x.ParentWorkorderCase)
-                    .FirstAsync();
+                    .FirstOrDefaultAsync();
+
+                if (property == null)
+                {
+                    continue;
+                }
 
                 int? folderIdForNewTasks;
                 int? folderIdForOngoingTasks;
