@@ -421,8 +421,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToList();
 
+                            // todo need change language to site language for correct translates and change back after end translate
                             await DeployEform(propertyWorkerIds, eformId, folderIdForNewTasks,
-                                $"<strong>Location:</strong> {property.Name}");
+                                $"<strong>{_backendConfigurationLocalizationService.GetString("Locations")}:</strong> {property.Name}");
                             break;
                         }
                         case false:

@@ -330,6 +330,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     property.FolderIdForTasks =
                         await core.FolderCreate(translatesFolderForTasks, property.FolderId);
 
+                    await property.Update(_backendConfigurationPnDbContext);
+
                     var translateFolderForNewTask = new List<CommonTranslationsModel>
                     {
                         new()
@@ -547,30 +549,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     var assignedTo = fieldValues[3].Value;
                     var status = fieldValues[4].Value;
                     var createdBy = fieldValuesWithCreatedBy[4].Value;
-
-                    var label = $"<strong>Location:</strong>{property.Name}<br>" +
-                                $"<strong>Assigned to:</strong> {assignedTo}<br>" +
+                    // todo need change language to site language for correct translates and change back after end translate
+                    var label = $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong>{property.Name}<br>" +
+                                $"<strong>{_backendConfigurationLocalizationService.GetString("Assigned to")}:</strong> {assignedTo}<br>" +
                                 (string.IsNullOrEmpty(area)
-                                    ? $"<strong>Area:</strong> {area}<br>"
+                                    ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {area}<br>"
                                     : "") +
-                                $"<strong>Description:</strong> {descriptionFromCase}<br><br>" +
-                                $"<strong>Created by:</strong> {assignedTo}<br>" +
+                                $"<strong>{_backendConfigurationLocalizationService.GetString("Description")}:</strong> {descriptionFromCase}<br><br>" +
+                                $"<strong>{_backendConfigurationLocalizationService.GetString("Created by")}:</strong> {assignedTo}<br>" +
                                 (string.IsNullOrEmpty(createdBy)
-                                    ? $"<strong>Created by:</strong> {createdBy}<br>"
+                                    ? $"<strong>{_backendConfigurationLocalizationService.GetString("Created by")}:</strong> {createdBy}<br>"
                                     : "") +
-                                $"<strong>Created date:</strong> {caseWithCreatedBy.DoneAt: dd.MM.yyyy}<br><br>" +
+                                $"<strong>{_backendConfigurationLocalizationService.GetString("Created date")}:</strong> {caseWithCreatedBy.DoneAt: dd.MM.yyyy}<br><br>" +
                                 (lastOngoingCase == null
                                     ? ""
-                                    : $"<strong>Last updated by:</strong>{lastOngoingCase.Site.Name}<br>") +
+                                    : $"<strong>{_backendConfigurationLocalizationService.GetString("Last updated by")}:</strong>{lastOngoingCase.Site.Name}<br>") +
                                 (lastOngoingCase == null
                                     ? ""
-                                    : $"<strong>Last updated date:</strong>{lastOngoingCase.DoneAt: dd.MM.yyyy}<br><br>") +
-                                $"<strong>Status:</strong> {status};";
+                                    : $"<strong>{_backendConfigurationLocalizationService.GetString("Last updated date")}:</strong>{lastOngoingCase.DoneAt: dd.MM.yyyy}<br><br>") +
+                                $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {status};";
                     await DeployEform(propertyWorkers, eformIdForOngoingTasks, folderIdForOngoingTasks, label);
                 }
 
                 await DeployEform(propertyWorkers, eformIdForNewTasks, folderIdForNewTasks,
-                    $"<strong>Location:</strong> {property.Name}");
+                    $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}");
             }
         }
 
