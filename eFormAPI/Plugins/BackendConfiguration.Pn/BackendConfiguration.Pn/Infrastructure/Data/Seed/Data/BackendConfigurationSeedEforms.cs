@@ -177,7 +177,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"11. Pillefyr",""
+				"11. Varmekilder",""
 			};
 			item = new KeyValuePair<string, List<string>>("11. Pillefyr", headers);
 			theList.Add(item);
@@ -381,25 +381,25 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.03Dokumentation for miljøledelse","23.03.01Miljøledelse"
+				"23.Indberetning IE Husdyrbrug","23.03Dokumentation miljøledelse","23.03.01Miljøledelse"
 			};
 			item = new KeyValuePair<string, List<string>>("23.03.01 Miljøledelse", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.04Overholdelse af fodringskrav","23.04.01Fasefodring"
+				"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.01Fasefodring"
 			};
 			item = new KeyValuePair<string, List<string>>("23.04.01 Fasefodring", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.04Overholdelse af fodringskrav","23.04.02Reduceret indhold af råprotein"
+				"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.02Reduceret indhold af råprotein"
 			};
 			item = new KeyValuePair<string, List<string>>("23.04.02 Reduceret indhold af råprotein", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"23.Indberetning IE Husdyrbrug","23.04Overholdelse af fodringskrav","23.04.03Tilsætningsstoffer i foder (Fytase eller andet)"
+				"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.03Tilsætningsstoffer i foder (Fytase eller andet)"
 			};
 			item = new KeyValuePair<string, List<string>>("23.04.03 Tilsætningsstoffer i foder - fytase eller andet", headers);
 			theList.Add(item);
