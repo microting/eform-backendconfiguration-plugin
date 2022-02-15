@@ -398,8 +398,50 @@
   {
     "Key": "Controlplan IE-reporting",
     "LocalizedValue": {
-      "da": "Kontrolplan IE-indberetning",
+      "da": "Kontrolplan",
       "en-US": "Controlplan IE-reporting" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Year",
+    "LocalizedValue": {
+      "da": "År",
+      "en-US": "Year" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "CVR-no",
+    "LocalizedValue": {
+      "da": "CVR-nr.",
+      "en-US": "CVR-no" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "CHR-no",
+    "LocalizedValue": {
+      "da": "CHR-nr.",
+      "en-US": "CHR-no" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Name",
+    "LocalizedValue": {
+      "da": "Ejendomsnavn",
+      "en-US": "Name" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Address",
+    "LocalizedValue": {
+      "da": "Adresse",
+      "en-US": "Address" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Location",
+    "LocalizedValue": {
+      "da": "Beliggenhed",
+      "en-US": "Location" // todo maybe need add more translates
     }
   }
 ]
