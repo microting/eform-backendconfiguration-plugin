@@ -182,13 +182,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Magick.NET-Q16-x64" Version="9.1.1" />
-      <PackageReference Include="Microting.eForm" Version="5.4.27" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.31" />
+      <PackageReference Include="Magick.NET-Q16-x64" Version="9.1.2" />
+      <PackageReference Include="Microting.eForm" Version="5.4.29" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.33" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.64" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.66" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.94" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.96" />
     </ItemGroup>
 
     <ItemGroup>
