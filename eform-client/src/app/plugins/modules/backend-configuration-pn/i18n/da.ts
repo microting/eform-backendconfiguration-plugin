@@ -148,5 +148,9 @@ export const da = {
   'Sat': 'Lør',
   'Assigned tasks - ': 'Tildelt til - ',
   'Show planning': 'Vis planlægning',
-  'Checkpoint': 'Kontrolpunkt'
+  'Checkpoint': 'Kontrolpunkt',
+  'Select report': 'Vælg rapport',
+  'Select area': 'Vælg område',
+  'Year': 'År',
+  'Download': 'Hent'
 };

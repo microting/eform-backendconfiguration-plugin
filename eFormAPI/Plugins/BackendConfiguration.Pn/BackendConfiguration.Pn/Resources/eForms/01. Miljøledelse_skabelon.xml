@@ -2,7 +2,7 @@
 <Main>
   <Id>142207</Id>
   <Repeated>0</Repeated>
-  <Label>01. Miljøledelse skabelon</Label>
+  <Label>01. Miljøledelse</Label>
   <StartDate>2020-12-09</StartDate>
   <EndDate>2030-12-09</EndDate>
   <Language>da</Language>
@@ -14,7 +14,7 @@
   <ElementList>
     <Element type="DataElement">
       <Id>142207</Id>
-      <Label>01. Miljøledelse skabelon</Label>
+      <Label>01. Miljøledelse</Label>
       <Description><![CDATA[]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>

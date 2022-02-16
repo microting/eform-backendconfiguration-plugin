@@ -301,6 +301,14 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "01. Miljøledelse skabelon").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "01. Miljøledelse";
+                await clTranslation.Update(sdkDbContext);
+            }
+
             var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Brandslukkere");
             if (areaTranslation2 != null)
             {

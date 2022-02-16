@@ -7,7 +7,7 @@
   <div class="modal-dialog modal-md">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>{{ 'Docx report' | translate }}</h3>
+        <h3>{{ 'Select report' | translate }}</h3>
         <button class="close" data-dismiss="modal" (click)="hide()">
           <span>×</span>
         </button>
@@ -33,7 +33,7 @@
                 class="custom"
                 dropdownPosition="'bottom'"
                 [(ngModel)]="selectedYear"
-                [placeholder]="'Select year' | translate"
+                [placeholder]="'Year' | translate"
                 [items]="years"
                 id="yearSelector"
                 [clearable]="false"
