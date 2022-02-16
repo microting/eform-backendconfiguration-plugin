@@ -684,7 +684,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                         {
                                             var result = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
                                                 x.Id == planningCaseSite.MicrotingCheckListSitId);
-                                            await core.CaseDelete(result.MicrotingUid);
+                                            if (result != null)
+                                            {
+                                                await core.CaseDelete(result.MicrotingUid);
+                                            }
                                         }
                                     }
                                 }
