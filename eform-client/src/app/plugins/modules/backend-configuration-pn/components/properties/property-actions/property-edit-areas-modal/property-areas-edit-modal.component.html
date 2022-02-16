@@ -26,7 +26,10 @@
             </thead>
             <tbody id="editPropertyAreasModalTableBody">
               <ng-container *ngFor="let area of selectedPropertyAreas; let i = index">
-                <ng-container *ngIf="(area.name != '13. Arbejdstilsynets Landbrugs APV' || authStateService.isAdmin) && (area.name != '05. Klargøring af stalde og dokumentation af halebid' || authStateService.isAdmin)">
+                <ng-container *ngIf="(area.name != '13. Arbejdstilsynets Landbrugs APV' || authStateService.isAdmin)
+                && (area.name != '05. Klargøring af stalde og dokumentation af halebid' || authStateService.isAdmin)
+                && (area.name != '21. DANISH Standard' || authStateService.isAdmin)
+                && (area.name != '100. Diverse' || authStateService.isAdmin)">
                   <tr>
                     <!--                  <td class="align-middle">{{ area.id }}</td>-->
                     <td class="align-middle">{{ area.name }}</td>

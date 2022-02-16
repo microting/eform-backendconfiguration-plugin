@@ -1251,21 +1251,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 {
                     var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
                         .Where(x => x.PlanningCaseId == planningCase.Id)
-                        .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0)
+                        .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 || planningCaseSite.MicrotingCheckListSitId != 0)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .ToListAsync();
                     foreach (var planningCaseSite in planningCaseSites)
                     {
                         var result =
-                            await sdkDbContext.Cases.SingleAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
-                        if (result.MicrotingUid != null)
+                            await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                        if (result is {MicrotingUid: { }})
                         {
                             await core.CaseDelete((int)result.MicrotingUid);
                         }
-                    }
+                        else
+                        {
+                            var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                x.Id == planningCaseSite.MicrotingCheckListSitId);
 
-                    // Delete planning case
-                    // await planningCase.Delete(_itemsPlanningPnDbContext);
+                            await core.CaseDelete(clSites.MicrotingUid);
+                        }
+                    }
                 }
 
                 var nameTranslationsPlanning =

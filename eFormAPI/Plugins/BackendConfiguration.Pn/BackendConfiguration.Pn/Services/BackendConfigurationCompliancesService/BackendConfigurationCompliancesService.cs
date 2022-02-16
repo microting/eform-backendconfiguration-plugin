@@ -252,9 +252,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
                 if(foundCase != null) {
                     var now = DateTime.UtcNow;
-                    var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month,
+                    var newDoneAt = new DateTime(model.DoneAt.AddDays(1).Year, model.DoneAt.AddDays(1).Month,
                         model.DoneAt.AddDays(1).Day, now.Hour, now.Minute,
-                        now.Second);
+                        now.Second, DateTimeKind.Utc);
                     foundCase.DoneAtUserModifiable = newDoneAt;
                     foundCase.DoneAt = newDoneAt;
 
