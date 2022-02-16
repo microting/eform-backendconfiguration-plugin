@@ -21,6 +21,8 @@ import {
 } from '../../models';
 import { add, set } from 'date-fns';
 import * as R from 'ramda';
+import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
+import {AuthStateService} from 'src/app/common/store';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -49,7 +51,10 @@ export class AreaRulePlanModalComponent implements OnInit {
     return add(this.currentDate, { weeks: 2 });
   }
 
-  constructor() {}
+  constructor(
+    dateTimeAdapter: DateTimeAdapter<any>, private authStateService: AuthStateService) {
+    dateTimeAdapter.setLocale(authStateService.currentUserLocale);
+  }
 
   ngOnInit() {}
 
