@@ -453,6 +453,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Ongoing)
                     .Where(x => workorderCasesCompleted.All(y => y.ParentWorkorderCaseId != x.ParentWorkorderCaseId))
                     .ToList();
+
+                var areasGroupUid = await sdkDbContext.EntityGroups
+                    .Where(x => x.Id == property.EntitySelectListAreas)
+                    .Select(x => x.MicrotingUid)
+                    .FirstAsync();
+
+                var deviceUsersGroupUid = await sdkDbContext.EntityGroups
+                    .Where(x => x.Id == property.EntitySelectListDeviceUsers)
+                    .Select(x => x.MicrotingUid)
+                    .FirstAsync();
+
+                var deviceUsersGroup = await core.EntityGroupRead(deviceUsersGroupUid);
+                var nextItemUid = deviceUsersGroup.EntityGroupItemLst.Count;
+                for (var i = 0; i < propertyWorkers.Count; i++)
+                {
+                    var propertyWorker = propertyWorkers[i];
+                    var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
+                        .FirstAsync();
+                    await core.EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, i, nextItemUid.ToString());
+                    nextItemUid++;
+                }
+
                 foreach (var workorderCaseCompleted in workorderCasesCompleted)
                 {
                     var cls = await sdkDbContext.Cases
@@ -498,7 +520,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                 $"<strong>Last updated by:</strong>{cls.Site.Name}<br>" +
                                 $"<strong>Last updated date:</strong>{DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                                 $"<strong>Status:</strong> {status};";
-                    await DeployEform(propertyWorkers, eformIdForComplitedTasks, folderIdForCompletedTasks, label);
+                    await DeployEform(propertyWorkers, eformIdForComplitedTasks, folderIdForCompletedTasks, label, null, null);
                 }
 
                 foreach (var workorderCaseOngoing in workorderCasesOngoing
@@ -568,16 +590,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     ? ""
                                     : $"<strong>{_backendConfigurationLocalizationService.GetString("Last updated date")}:</strong>{lastOngoingCase.DoneAt: dd.MM.yyyy}<br><br>") +
                                 $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {status};";
-                    await DeployEform(propertyWorkers, eformIdForOngoingTasks, folderIdForOngoingTasks, label);
+                    await DeployEform(propertyWorkers, eformIdForOngoingTasks, folderIdForOngoingTasks, label, null, int.Parse(deviceUsersGroupUid));
                 }
 
                 await DeployEform(propertyWorkers, eformIdForNewTasks, folderIdForNewTasks,
-                    $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}");
+                    $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid));
             }
         }
 
         private async Task DeployEform(List<PropertyWorker> propertyWorkers, int eformId, int? folderId,
-            string description)
+            string description, int? areasGroupUid, int? deviceUsersGroupId)
         {
             var core = await _coreHelper.GetCore();
             await using var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -598,6 +620,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 if (!string.IsNullOrEmpty(description))
                 {
                     ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+                }
+
+                if (areasGroupUid != null && deviceUsersGroupId != null)
+                {
+                    ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = (int)areasGroupUid;
+                    ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source =
+                        (int)deviceUsersGroupId;
+                }
+                else if (areasGroupUid == null && deviceUsersGroupId != null)
+                {
+                    ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
+                        (int)deviceUsersGroupId;
                 }
 
                 mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
