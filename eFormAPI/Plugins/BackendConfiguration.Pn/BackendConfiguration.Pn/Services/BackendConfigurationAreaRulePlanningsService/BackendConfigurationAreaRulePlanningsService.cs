@@ -1411,10 +1411,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
             {
                 var language = await _userService.GetCurrentUserLanguage();
                 var listTaskWorker = new List<TaskWorkerModel>();
+
+                var propertyIds = await _backendConfigurationPnDbContext.PropertyWorkers
+                    .Where(x =>
+                        x.WorkerId == siteId
+                        && x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.PropertyId).ToListAsync();
+
                 var sitePlannings = await _backendConfigurationPnDbContext.AreaRulePlannings
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Status)
-                    .Where(x => x.PlanningSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(y => y.SiteId).Contains(siteId))
+                    .Where(x => propertyIds.Contains(x.PropertyId))
+                    .Where(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == siteId).Select(y => y.SiteId).Any())
                     .Include(x => x.AreaRule.AreaRuleTranslations)
                     .Select(x => new
                     {
@@ -1424,6 +1431,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         x.AreaRuleId,
                         x.AreaId,
                         x.AreaRule,
+                        x.Status
                     })
                     .ToListAsync();
                 // var total = sitePlannings.Count;

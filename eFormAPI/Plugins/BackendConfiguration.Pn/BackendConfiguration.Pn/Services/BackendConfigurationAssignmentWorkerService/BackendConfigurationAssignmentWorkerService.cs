@@ -210,6 +210,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 {
                     propertyAssignment.UpdatedByUserId = _userService.UserId;
                     await propertyAssignment.Delete(_backendConfigurationPnDbContext);
+                    if (propertyAssignment.EntityItemId != null)
+                    {
+                        await core.EntityItemDelete((int)propertyAssignment.EntityItemId);
+                    }
                 }
 
                 if(assignmentsForDelete.Any())
@@ -300,10 +304,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 {
                     continue;
                 }
-
-                int? folderIdForNewTasks;
-                int? folderIdForOngoingTasks;
-                int? folderIdForCompletedTasks;
                 if (property.FolderIdForTasks == null)
                 {
                     var translatesFolderForTasks = new List<CommonTranslationsModel>
@@ -353,7 +353,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         //    Description = "",
                         //},
                     };
-                    folderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
+                    property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
                         property.FolderIdForTasks);
 
                     var translateFolderForOngoingTask = new List<CommonTranslationsModel>
@@ -377,7 +377,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         //    Description = "",
                         //},
                     };
-                    folderIdForOngoingTasks =
+                    property.FolderIdForOngoingTasks =
                         await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks);
 
                     var translateFolderForCompletedTask = new List<CommonTranslationsModel>
@@ -401,29 +401,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         //    Description = "",
                         //},
                     };
-                    folderIdForCompletedTasks =
+                    property.FolderIdForCompletedTasks =
                         await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks);
-                }
-                else
-                {
-                    folderIdForNewTasks = await sdkDbContext.Folders
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.ParentId == property.FolderIdForTasks)
-                        .Where(x => x.Children.Any(y => y.Name == "01. New tasks"))
-                        .Select(x => x.Id)
-                        .FirstAsync();
-                    folderIdForOngoingTasks = await sdkDbContext.Folders
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.ParentId == property.FolderIdForTasks)
-                        .Where(x => x.Children.Any(y => y.Name == "02. Ongoing tasks"))
-                        .Select(x => x.Id)
-                        .FirstAsync();
-                    folderIdForCompletedTasks = await sdkDbContext.Folders
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.ParentId == property.FolderIdForTasks)
-                        .Where(x => x.Children.Any(y => y.Name == "03. Completed tasks"))
-                        .Select(x => x.Id)
-                        .FirstAsync();
                 }
 
                 var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
@@ -454,15 +433,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(x => workorderCasesCompleted.All(y => y.ParentWorkorderCaseId != x.ParentWorkorderCaseId))
                     .ToList();
 
+                if (property.EntitySelectListAreas != null && property.EntitySelectListDeviceUsers != null)
+                {
+
+                }
+
                 var areasGroupUid = await sdkDbContext.EntityGroups
                     .Where(x => x.Id == property.EntitySelectListAreas)
                     .Select(x => x.MicrotingUid)
-                    .FirstAsync();
+                    .SingleAsync();
 
                 var deviceUsersGroupUid = await sdkDbContext.EntityGroups
                     .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                     .Select(x => x.MicrotingUid)
-                    .FirstAsync();
+                    .SingleAsync();
 
                 var deviceUsersGroup = await core.EntityGroupRead(deviceUsersGroupUid);
                 var nextItemUid = deviceUsersGroup.EntityGroupItemLst.Count;
@@ -471,7 +455,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     var propertyWorker = propertyWorkers[i];
                     var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
                         .FirstAsync();
-                    await core.EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, i, nextItemUid.ToString());
+                    var entityItem = await core.EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, i, nextItemUid.ToString());
+                    propertyWorker.EntityItemId = entityItem.Id;
+                    await propertyWorker.Update(_backendConfigurationPnDbContext);
                     nextItemUid++;
                 }
 
@@ -520,7 +506,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                 $"<strong>Last updated by:</strong>{cls.Site.Name}<br>" +
                                 $"<strong>Last updated date:</strong>{DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                                 $"<strong>Status:</strong> {status};";
-                    await DeployEform(propertyWorkers, eformIdForComplitedTasks, folderIdForCompletedTasks, label, null, null);
+                    await DeployEform(propertyWorkers, eformIdForComplitedTasks, property.FolderIdForCompletedTasks, label, null, null);
                 }
 
                 foreach (var workorderCaseOngoing in workorderCasesOngoing
@@ -590,10 +576,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     ? ""
                                     : $"<strong>{_backendConfigurationLocalizationService.GetString("Last updated date")}:</strong>{lastOngoingCase.DoneAt: dd.MM.yyyy}<br><br>") +
                                 $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {status};";
-                    await DeployEform(propertyWorkers, eformIdForOngoingTasks, folderIdForOngoingTasks, label, null, int.Parse(deviceUsersGroupUid));
+                    await DeployEform(propertyWorkers, eformIdForOngoingTasks, property.FolderIdForOngoingTasks, label, null, int.Parse(deviceUsersGroupUid));
                 }
 
-                await DeployEform(propertyWorkers, eformIdForNewTasks, folderIdForNewTasks,
+                await DeployEform(propertyWorkers, eformIdForNewTasks, property.FolderIdForNewTasks,
                     $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid));
             }
         }
@@ -620,6 +606,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 if (!string.IsNullOrEmpty(description))
                 {
                     ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+                    ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
                 }
 
                 if (areasGroupUid != null && deviceUsersGroupId != null)

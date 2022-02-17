@@ -372,7 +372,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //    Description = "",
                                     //},
                                 };
-                                folderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
+                                property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
                                     property.FolderIdForTasks);
 
                                 var translateFolderForOngoingTask = new List<CommonTranslationsModel>
@@ -396,7 +396,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //    Description = "",
                                     //},
                                 };
-                                await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks);
+                                property.FolderIdForOngoingTasks = await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks);
 
                                 var translateFolderForCompletedTask = new List<CommonTranslationsModel>
                                 {
@@ -419,16 +419,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //    Description = "",
                                     //},
                                 };
-                                await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks);
-                            }
-                            else
-                            {
-                                folderIdForNewTasks = await sdkDbContext.Folders
-                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                    .Where(x => x.ParentId == property.FolderIdForTasks)
-                                    .Where(x => x.Children.Any(y => y.Name == "01. New tasks"))
-                                    .Select(x => x.Id)
-                                    .FirstAsync();
+                                property.FolderIdForCompletedTasks = await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks);
                             }
 
                             var eformId = await sdkDbContext.CheckListTranslations
@@ -443,12 +434,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                             // create area select list filled manually
                             var areasGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
-                                $"eForm Backend Configurations - {property.Name} - Areas", "", false, true);
+                                $"{property.Name} - Areas", "", true, true);
                             property.EntitySelectListAreas = areasGroup.Id;
                             // create device users select list filled automatically by workers bound to property
                             var deviceUsersGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
-                                $"eForm Backend Configurations - {property.Name} - Device Users", "", true, false);
-                            property.EntitySelectListAreas = deviceUsersGroup.Id;
+                                $"{property.Name} - Device Users", "", true, false);
+                            property.EntitySelectListDeviceUsers = deviceUsersGroup.Id;
 
                             // read and fill list
                             var entityGroup = await core.EntityGroupRead(deviceUsersGroup.MicrotingUid);
@@ -458,13 +449,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 var propertyWorker = propertyWorkers[i];
                                 var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
                                     .FirstAsync();
-                                await core.EntitySelectItemCreate(entityGroup.Id, site.Name, i, nextItemUid.ToString());
+                                var entityItem = await core.EntitySelectItemCreate(entityGroup.Id, site.Name, i, nextItemUid.ToString());
                                 nextItemUid++;
+                                propertyWorker.EntityItemId = entityItem.Id;
+                                await propertyWorker.Update(_backendConfigurationPnDbContext);
                             }
 
                             // todo need change language to site language for correct translates and change back after end translate
-                            await DeployEform(propertyWorkers, eformId, folderIdForNewTasks,
-                                $"<strong>{_backendConfigurationLocalizationService.GetString("Locations")}:</strong> {property.Name}",
+                            await DeployEform(propertyWorkers, eformId, property.FolderIdForNewTasks,
+                                $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
                                 int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid));
                             break;
                         }
@@ -501,15 +494,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.Id == property.EntitySelectListAreas)
                                 //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(x => x.MicrotingUid)
-                                .FirstAsync();
-                            await core.EntityGroupDelete(areaGroupUid);
+                                .FirstOrDefaultAsync();
+                            if (areaGroupUid != null)
+                            {
+                                await core.EntityGroupDelete(areaGroupUid);
+                            }
 
                             var deviceUserGroupUid = await sdkDbContext.EntityGroups
-                                .Where(x => x.Id == property.EntitySelectListAreas)
+                                .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                                 //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(x => x.MicrotingUid)
-                                .FirstAsync();
-                            await core.EntityGroupDelete(deviceUserGroupUid);
+                                .FirstOrDefaultAsync();
+                            if (deviceUserGroupUid != null)
+                            {
+                                await core.EntityGroupDelete(deviceUserGroupUid);
+                            }
                             property.EntitySelectListAreas = null;
                             property.EntitySelectListDeviceUsers = null;
                             break;
@@ -743,7 +742,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                         {
                                             var result = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
                                                 x.Id == planningCaseSite.MicrotingCheckListSitId);
-                                            await core.CaseDelete(result.MicrotingUid);
+                                            if (result != null)
+                                            {
+                                                await core.CaseDelete(result.MicrotingUid);
+                                            }
                                         }
                                     }
                                 }
@@ -856,6 +858,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 if (!string.IsNullOrEmpty(description))
                 {
                     ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+                    ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
                 }
 
                 ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = areasGroupUid;
