@@ -30,6 +30,12 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
     },
     { name: '' },
   ];
+  disabledAreas: string[] = [
+    '13. Arbejdstilsynets Landbrugs APV',
+    '05. Klargøring af stalde og dokumentation af halebid',
+    '21. DANISH Standard',
+    '100. Diverse',
+  ]
 
   getTranslateSub$: Subscription;
   routerSub$: Subscription;

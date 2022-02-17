@@ -4,12 +4,10 @@ import {FormsModule} from '@angular/forms';
 import {NgSelectModule} from '@ng-select/ng-select';
 import {TranslateModule} from '@ngx-translate/core';
 import { MDBBootstrapModule } from 'angular-bootstrap-md';
-import {
-  AreaRulePlanModalComponent
-} from './';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
-import { MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN } from '../consts/custom-date-time-adapter';
+import { MY_MOMENT_FORMATS_FOR_AREA_RULES_PLAN } from '../consts';
+import {AreaRulePlanModalComponent} from './area-rule-plan-modal/area-rule-plan-modal.component';
 
 @NgModule({
   imports: [
@@ -26,7 +24,7 @@ import { MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN } from '../consts/c
   providers: [
     {
       provide: OWL_DATE_TIME_FORMATS,
-      useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN,
+      useValue: MY_MOMENT_FORMATS_FOR_AREA_RULES_PLAN,
     },
   ],
 })

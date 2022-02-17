@@ -1,7 +1,6 @@
 import {
   Component,
   EventEmitter,
-  Input,
   OnInit,
   Output,
   ViewChild,
@@ -11,7 +10,8 @@ import {
   AreaInitialFieldsModel,
   AreaModel,
   AreaRuleAssignedSitesModel,
-  AreaRuleInitialFieldsModel, AreaRuleNameAndTypeSpecificFields,
+  AreaRuleInitialFieldsModel,
+  AreaRuleNameAndTypeSpecificFields,
   AreaRulePlanningModel,
   AreaRuleSimpleModel,
   AreaRuleT1PlanningModel,
@@ -37,6 +37,7 @@ export class AreaRulePlanModalComponent implements OnInit {
   selectedAreaRulePlanning: AreaRulePlanningModel = new AreaRulePlanningModel();
   selectedAreaRule: AreaRuleNameAndTypeSpecificFields = new AreaRuleNameAndTypeSpecificFields();
   days: number[] = R.range(1, 29);
+  private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
 
   get currentDate() {
     return set(new Date(), {
@@ -97,7 +98,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     if (!this.selectedAreaRulePlanning.startDate) {
       this.selectedAreaRulePlanning.startDate = format(
         this.currentDate,
-        `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+        this.standartDateTimeFormat
       );
     }
     this.updateAreaRulePlan.emit({ ...this.selectedAreaRulePlanning });
@@ -170,14 +171,14 @@ export class AreaRulePlanModalComponent implements OnInit {
       return {
         repeatEvery: 1,
         repeatType: 1,
-        startDate: format(this.currentDate, `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`),
+        startDate: format(this.currentDate, this.standartDateTimeFormat),
       };
     }
     if (this.selectedArea.type === 3) {
       return {
         endDate: format(
           this.currentDatePlusTwoWeeks,
-          `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+          this.standartDateTimeFormat
         ),
         repeatEvery: 1,
         repeatType: 1,
@@ -185,7 +186,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     }
     if (this.selectedArea.type === 4) {
       return {
-        startDate: format(this.currentDate, `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`),
+        startDate: format(this.currentDate, this.standartDateTimeFormat),
         repeatEvery: 12,
         repeatType: 3,
       };
@@ -208,7 +209,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     if (this.selectedArea.type === 7) {
       // @ts-ignore
       return {
-        startDate: format(this.currentDate, `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`),
+        startDate: format(this.currentDate, this.standartDateTimeFormat),
       };
     }
     return null;
@@ -224,7 +225,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     });
     this.selectedAreaRulePlanning.startDate = format(
       date,
-      `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+      this.standartDateTimeFormat
     );
   }
 
@@ -242,7 +243,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       });
       this.selectedAreaRulePlanning.typeSpecificFields.endDate = format(
         date,
-        `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
+        this.standartDateTimeFormat
       );
     }
   }
