@@ -707,7 +707,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "20. Arbejdsopgave udført",
                     RepeatEvery = 7, // 7
                     RepeatType = 1, // days
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = false,
                 }
             },
             new Area
