@@ -770,99 +770,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = true,
                 },
             },
-            /*new Area
-            {
-                Id = 27,
-                Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>
-                {
-                    new()
-                    {
-                        Name = "23. Vandforbrug",
-                        Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
-                        LanguageId = 1
-                    },
-                    new()
-                    {
-                        Name = "23. Water consumption",
-                        Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
-                        LanguageId = 2
-                    },
-                    new()
-                    {
-                        Name = "23. Wasserverbrauch",
-                        Description = @"https://www.microting.dk/eform/landbrug/23-vandforbrug",
-                        LanguageId = 3
-                    }
-                },
-                AreaInitialField = new AreaInitialField
-                {
-                    EformName = "01. Vandforbrug",
-                    ComplianceEnabled = true,
-                },
-            },
-            new Area
-            {
-                Id = 24,
-                Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>
-                {
-                    new()
-                    {
-                        Name = "24. Elforbrug",
-                        Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
-                        LanguageId = 1
-                    },
-                    new()
-                    {
-                        Name = "24. Electricity consumption",
-                        Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
-                        LanguageId = 2
-                    },
-                    new()
-                    {
-                        Name = "24. Stromverbrauch",
-                        Description = @"https://www.microting.dk/eform/landbrug/24-elforbrug",
-                        LanguageId = 3
-                    }
-                },
-                AreaInitialField = new AreaInitialField
-                {
-                    EformName = "01. Elforbrug",
-                    ComplianceEnabled = true,
-                },
-            },
-            new Area
-            {
-                Id = 25,
-                Type = AreaTypesEnum.Type1,
-                AreaTranslations = new List<AreaTranslation>
-                {
-                    new()
-                    {
-                        Name = "25. Forbrug af markvanding",
-                        Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
-                        LanguageId = 1
-                    },
-                    new()
-                    {
-                        Name = "25. Field irrigation consumption",
-                        Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
-                        LanguageId = 2
-                    },
-                    new()
-                    {
-                        Name = "25. Verbrauch der Feldbewässerung",
-                        Description = @"https://www.microting.dk/eform/landbrug/25-markvandingsforbrug",
-                        LanguageId = 3
-                    }
-                },
-                AreaInitialField = new AreaInitialField
-                {
-                    EformName = "25. Markvandingsforbrug",
-                    ComplianceEnabled = true,
-                },
-            },*/
             new Area
             {
                 Id = 26,
@@ -903,19 +810,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "23. IE-indberetning", // todo need beter translate
-                        Description = "", // todo add link
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 1, // da
                     },
                     new()
                     {
                         Name = "23. IE Reporting",
-                        Description = "", // todo add link
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 2, // en
                     },
                     new()
                     {
                         Name = "23. IE-Berichterstattung", // todo need beter translate
-                        Description = "", // todo add link
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 3, // ge
                     }
                 },
