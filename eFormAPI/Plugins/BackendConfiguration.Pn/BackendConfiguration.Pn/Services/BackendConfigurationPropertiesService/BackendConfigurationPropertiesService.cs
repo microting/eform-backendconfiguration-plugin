@@ -318,6 +318,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     await planningTag.Update(_itemsPlanningPnDbContext);
                 }
 
+                var translatesForFolder = await sdkDbContext.Languages
+                    .Select(
+                        x => new CommonTranslationsModel
+                        {
+                            LanguageId = x.Id,
+                            Name = property.Name,
+                            Description = ""
+                        })
+                    .ToListAsync();
+
+                await core.FolderUpdate((int)property.FolderId, translatesForFolder, null);
+
                 if (property.WorkorderEnable != updateModel.WorkorderEnable)
                 {
                     switch (updateModel.WorkorderEnable)

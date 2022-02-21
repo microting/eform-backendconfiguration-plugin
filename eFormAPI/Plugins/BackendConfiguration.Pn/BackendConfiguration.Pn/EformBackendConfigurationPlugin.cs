@@ -322,7 +322,7 @@ namespace BackendConfiguration.Pn
                 "375237"
             };
 
-            var fields = await sdkDbContext.Fields.Where(x => fieldOriginalIds.Contains(x.OriginalId)).ToListAsync();
+            var fields = await sdkDbContext.Fields.Where(x => fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
 
             foreach (var field in fields)
             {
