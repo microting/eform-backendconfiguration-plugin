@@ -281,6 +281,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
                 }
 
+                if (_backendConfigurationPnDbContext.Properties.Any(x =>
+                        x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.CHR == updateModel.Chr
+                        && x.CVR == updateModel.Cvr
+                        && x.Name == updateModel.Name
+                        && x.Address == updateModel.Address
+                        && x.Id != updateModel.Id))
+                {
+                    return new OperationResult(false,
+                        _backendConfigurationLocalizationService.GetString("PropertyAlreadyExists"));
+                }
+
+
                 if (property.Name != updateModel.Name && property.WorkorderEnable)
                 {
                     var areaGroupUid = await sdkDbContext.EntityGroups
