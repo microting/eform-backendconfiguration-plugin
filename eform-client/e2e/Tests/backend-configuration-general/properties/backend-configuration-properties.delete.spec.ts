@@ -18,11 +18,11 @@ describe('Backend Configuration Property - Delete', function () {
       name: generateRandmString(),
       chrNumber: generateRandmString(),
       address: generateRandmString(),
-      selectedLanguages: [
-        { languageId: 1, languageName: 'Dansk' },
-        { languageId: 2, languageName: 'Engelsk' },
-        // { languageId: 3, languageName: 'German' },
-      ],
+      // selectedLanguages: [
+      //   { languageId: 1, languageName: 'Dansk' },
+      //   { languageId: 2, languageName: 'Engelsk' },
+      //   // { languageId: 3, languageName: 'German' },
+      // ],
     };
     await backendConfigurationPropertiesPage.createProperty(propertyCreate);
     expect(rowNumBeforeCreate + 1, 'Property not created').eq(

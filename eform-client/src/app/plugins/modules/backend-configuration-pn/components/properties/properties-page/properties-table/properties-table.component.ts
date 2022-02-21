@@ -57,7 +57,7 @@ export class PropertiesTableComponent implements OnInit {
       elementId: 'addressTableHeader',
       sortable: true,
     },
-    { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
+    // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
     { name: 'Compliance', sortable: false },
     // { name: 'Compliance 30', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
@@ -68,8 +68,7 @@ export class PropertiesTableComponent implements OnInit {
   }
 
   constructor(public propertiesStateService: PropertiesStateService,
-  public authStateService: AuthStateService,
-              private complianceService: BackendConfigurationPnCompliancesService) {}
+              public authStateService: AuthStateService,) {}
 
   ngOnInit(): void {}
 
@@ -81,17 +80,17 @@ export class PropertiesTableComponent implements OnInit {
     this.showEditPropertyModal.emit(planning);
   }
 
-  getLanguageNameById(languageId: number): string {
-    return applicationLanguages.find((x) => x.id === languageId).text;
-  }
-
-  getLanguages(property: PropertyModel): string {
-    let languages = [];
-    for (const language of property.languages) {
-      languages = [...languages, this.getLanguageNameById(language.id)];
-    }
-    return R.join(' | ', languages);
-  }
+  // getLanguageNameById(languageId: number): string {
+  //   return applicationLanguages.find((x) => x.id === languageId).text;
+  // }
+  //
+  // getLanguages(property: PropertyModel): string {
+  //   let languages = [];
+  //   for (const language of property.languages) {
+  //     languages = [...languages, this.getLanguageNameById(language.id)];
+  //   }
+  //   return R.join(' | ', languages);
+  // }
 
   sortTable(sort: string) {
     this.propertiesStateService.onSortTable(sort);

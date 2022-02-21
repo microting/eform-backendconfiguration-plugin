@@ -5,9 +5,8 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import { applicationLanguages } from 'src/app/common/const';
+import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const';
 import { PropertyCreateModel } from '../../../../models';
-import {AuthService} from 'src/app/common/services';
 import {AuthStateService} from 'src/app/common/store';
 
 @Component({
@@ -45,22 +44,22 @@ export class PropertyCreateModalComponent implements OnInit {
   onCreateProperty() {
     this.propertyCreate.emit({
       ...this.newProperty,
-      languagesIds: this.selectedLanguages.map((x) => x.id),
+      languagesIds: applicationLanguagesTranslated.map((x) => x.id),
     });
   }
 
-  addToArray(e: any, languageId: number) {
-    if (e.target.checked) {
-      this.selectedLanguages = [
-        ...this.selectedLanguages,
-        { id: languageId, checked: true },
-      ];
-    } else {
-      this.selectedLanguages = this.selectedLanguages.filter(
-        (x) => x.id !== languageId
-      );
-    }
-  }
+  // addToArray(e: any, languageId: number) {
+  //   if (e.target.checked) {
+  //     this.selectedLanguages = [
+  //       ...this.selectedLanguages,
+  //       { id: languageId, checked: true },
+  //     ];
+  //   } else {
+  //     this.selectedLanguages = this.selectedLanguages.filter(
+  //       (x) => x.id !== languageId
+  //     );
+  //   }
+  // }
 
   getLanguageIsChecked(languageId: number): boolean {
     const language = this.selectedLanguages.find((x) => x.id === languageId);
@@ -68,9 +67,9 @@ export class PropertyCreateModalComponent implements OnInit {
   }
 
   get isDisabledSaveButton(): boolean {
-    if (this.newProperty && this.newProperty.languagesIds) {
+    if (this.newProperty /*&& this.newProperty.languagesIds*/) {
       return (
-        !this.newProperty.name || !this.selectedLanguages.some((x) => x.checked)
+        !this.newProperty.name/* || !this.selectedLanguages.some((x) => x.checked)*/
       );
     }
     return false;

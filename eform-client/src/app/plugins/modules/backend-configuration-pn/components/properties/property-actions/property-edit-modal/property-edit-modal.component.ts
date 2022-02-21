@@ -54,18 +54,18 @@ export class PropertyEditModalComponent implements OnInit {
     });
   }
 
-  addToArray(e: any, languageId: number) {
-    if (e.target.checked) {
-      this.selectedLanguages = [
-        ...this.selectedLanguages,
-        { id: languageId, checked: true },
-      ];
-    } else {
-      this.selectedLanguages = this.selectedLanguages.filter(
-        (x) => x.id !== languageId
-      );
-    }
-  }
+  // addToArray(e: any, languageId: number) {
+  //   if (e.target.checked) {
+  //     this.selectedLanguages = [
+  //       ...this.selectedLanguages,
+  //       { id: languageId, checked: true },
+  //     ];
+  //   } else {
+  //     this.selectedLanguages = this.selectedLanguages.filter(
+  //       (x) => x.id !== languageId
+  //     );
+  //   }
+  // }
 
   getLanguageIsChecked(languageId: number): boolean {
     const language = this.selectedLanguages.find((x) => x.id === languageId);
@@ -73,10 +73,10 @@ export class PropertyEditModalComponent implements OnInit {
   }
 
   get isDisabledSaveButton(): boolean {
-    if (this.selectedProperty && this.selectedProperty.languagesIds) {
+    if (this.selectedProperty/* && this.selectedProperty.languagesIds*/) {
       return (
-        !this.selectedProperty.name ||
-        !this.selectedLanguages.some((x) => x.checked)
+        !this.selectedProperty.name/* ||
+        !this.selectedLanguages.some((x) => x.checked)*/
       );
     }
     return false;

@@ -15,7 +15,7 @@ const property: PropertyCreateUpdate = {
   name: generateRandmString(),
   chrNumber: generateRandmString(),
   address: generateRandmString(),
-  selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
+  // selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
 };
 const workerForCreate = {
   name: generateRandmString(),
