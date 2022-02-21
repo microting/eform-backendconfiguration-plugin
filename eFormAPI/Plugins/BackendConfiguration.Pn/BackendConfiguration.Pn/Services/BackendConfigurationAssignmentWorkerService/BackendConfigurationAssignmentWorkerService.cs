@@ -595,6 +595,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
                 var mainElement = await core.ReadeForm(eformId, language);
                 mainElement.Repeated = 0;
+                mainElement.ElementList[0].QuickSyncEnabled = true;
+                mainElement.EnableQuickSync = true;
                 if (folderId != null)
                 {
                     mainElement.CheckListFolderName = await sdkDbContext.Folders
