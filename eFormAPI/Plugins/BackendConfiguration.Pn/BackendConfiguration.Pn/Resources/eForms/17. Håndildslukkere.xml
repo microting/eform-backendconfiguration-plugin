@@ -22,25 +22,6 @@
       <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
       <DoneButtonDisabled>true</DoneButtonDisabled>
       <ApprovalEnabled>false</ApprovalEnabled>
-      <DataItemGroupList>
-        <DataItemGroup type="FieldGroup">
-          <Id>375236</Id>
-          <Label>LÆS MERE|READ MORE</Label>
-          <Description><![CDATA[]]></Description>
-          <DisplayOrder>0</DisplayOrder>
-          <Value>Closed</Value>
-          <Color>fff6df</Color>
-          <DataItemList>
-            <DataItem type="None">
-              <Id>375237</Id>
-              <Label>INFO|INFO</Label>
-              <Description><![CDATA[Tilpas evt. tjeklisten i <b><i>Microting eForm Editor</i></b>, med baggrund i anvisninger for eftersyn af den aktuelle ildslukker og i henhold til de informationer leverandøren har anført i ildslukkerens brugsanvisning.<br>|<br>Adjust - if necessary - the checklist in the <b><i>Microting eForm Editor</i></b>, based on instructions for inspecting the current fire extinguisher and according to the information provided by the supplier in the manual of the fire extinguisher.]]></Description>
-              <DisplayOrder>0</DisplayOrder>
-              <Color>fff6df</Color>
-            </DataItem>
-          </DataItemList>
-        </DataItemGroup>
-      </DataItemGroupList>
       <DataItemList>
         <DataItem type="CheckBox">
           <Id>375244</Id>

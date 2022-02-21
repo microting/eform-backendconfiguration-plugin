@@ -25,7 +25,9 @@ SOFTWARE.
 using System.IO;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
+using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -307,6 +309,24 @@ namespace BackendConfiguration.Pn
             {
                 clTranslation.Text = "01. Miljøledelse";
                 await clTranslation.Update(sdkDbContext);
+            }
+
+            // Removing the old info fields for eForm 15,16,17
+            var fieldOriginalIds = new List<string>
+            {
+                "375221",
+                "375220",
+                "375208",
+                "375209",
+                "375236",
+                "375237"
+            };
+
+            var fields = await sdkDbContext.Fields.Where(x => fieldOriginalIds.Contains(x.OriginalId)).ToListAsync();
+
+            foreach (var field in fields)
+            {
+                await field.Delete(sdkDbContext);
             }
 
             var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Brandslukkere");
