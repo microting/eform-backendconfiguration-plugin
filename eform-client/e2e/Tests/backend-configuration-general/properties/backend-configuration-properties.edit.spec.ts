@@ -18,11 +18,11 @@ describe('Backend Configuration Property - Edit', function () {
       name: generateRandmString(),
       chrNumber: generateRandmString(),
       address: generateRandmString(),
-      selectedLanguages: [
-        { languageId: 1, languageName: 'Dansk' },
-        { languageId: 2, languageName: 'Engelsk' },
-        // { languageId: 3, languageName: 'German' },
-      ],
+      // selectedLanguages: [
+      //   { languageId: 1, languageName: 'Dansk' },
+      //   { languageId: 2, languageName: 'Engelsk' },
+      //   // { languageId: 3, languageName: 'German' },
+      // ],
     };
     const propertyUpdate: PropertyCreateUpdate = {
       // name: generateRandmString(),
@@ -40,9 +40,9 @@ describe('Backend Configuration Property - Edit', function () {
     );
     const createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await createdProperty.edit(propertyUpdate);
-    propertyUpdate.selectedLanguages = [
-      { languageId: 1, languageName: 'Dansk' },
-    ];
+    // propertyUpdate.selectedLanguages = [
+    //   { languageId: 1, languageName: 'Dansk' },
+    // ];
     const updatedProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     // expect(updatedProperty.name, 'name is incorrect').eq(propertyUpdate.name);
     expect(updatedProperty.chrNumber, 'chrNumber is incorrect').eq(
@@ -61,11 +61,11 @@ describe('Backend Configuration Property - Edit', function () {
       name: generateRandmString(),
       chrNumber: generateRandmString(),
       address: generateRandmString(),
-      selectedLanguages: [
-        { languageId: 1, languageName: 'Dansk' },
-        { languageId: 2, languageName: 'Engelsk' },
-        // { languageId: 3, languageName: 'German' },
-      ],
+      // selectedLanguages: [
+      //   { languageId: 1, languageName: 'Dansk' },
+      //   { languageId: 2, languageName: 'Engelsk' },
+      //   // { languageId: 3, languageName: 'German' },
+      // ],
     };
     await backendConfigurationPropertiesPage.createProperty(propertyCreate);
     expect(rowNumBeforeCreate + 1, 'Property not created').eq(
