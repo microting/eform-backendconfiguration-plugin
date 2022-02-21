@@ -173,7 +173,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             new Area
             {
                 Id = 5,
-                Type = AreaTypesEnum.Type3,
+                Type = AreaTypesEnum.Type1,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()

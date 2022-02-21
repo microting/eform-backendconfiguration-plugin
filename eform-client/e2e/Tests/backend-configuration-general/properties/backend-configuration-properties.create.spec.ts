@@ -18,10 +18,10 @@ describe('Backend Configuration Property - Add', function () {
       name: generateRandmString(),
       chrNumber: generateRandmString(),
       address: generateRandmString(),
-      selectedLanguages: [
-        { languageId: 1, languageName: 'Dansk' },
-        { languageId: 2, languageName: 'Engelsk' },
-      ],
+      // selectedLanguages: [
+      //   { languageId: 1, languageName: 'Dansk' },
+      //   { languageId: 2, languageName: 'Engelsk' },
+      // ],
     };
     await backendConfigurationPropertiesPage.createProperty(property);
     expect(rowNumBeforeCreate + 1, 'Property not created').eq(
@@ -35,15 +35,15 @@ describe('Backend Configuration Property - Add', function () {
     expect(createdProperty.address, 'address is incorrect').eq(
       property.address
     );
-    expect(createdProperty.languages, 'languages is incorrect').deep.eq(
-      property.selectedLanguages
-    );
+    // expect(createdProperty.languages, 'languages is incorrect').deep.eq(
+    //   property.selectedLanguages
+    // );
   });
-  it('should create property with only name and selected one language', async () => {
+  it('should create property with only name' /* and selected one language*/, async () => {
     const rowNumBeforeCreate = await backendConfigurationPropertiesPage.rowNum();
     const property: PropertyCreateUpdate = {
       name: generateRandmString(),
-      selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
+      // selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
     };
     await backendConfigurationPropertiesPage.createProperty(property);
     expect(rowNumBeforeCreate + 1, 'property not created').eq(
@@ -57,10 +57,10 @@ describe('Backend Configuration Property - Add', function () {
     const property: PropertyCreateUpdate = {
       chrNumber: generateRandmString(),
       address: generateRandmString(),
-      selectedLanguages: [
-        { languageId: 1, languageName: 'Dansk' },
-        { languageId: 2, languageName: 'Engelsk' },
-      ],
+      // selectedLanguages: [
+      //   { languageId: 1, languageName: 'Dansk' },
+      //   { languageId: 2, languageName: 'Engelsk' },
+      // ],
     };
     await backendConfigurationPropertiesPage.openCreatePropertyModal(property);
     expect(

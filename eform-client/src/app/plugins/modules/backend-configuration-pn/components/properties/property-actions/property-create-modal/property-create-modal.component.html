@@ -98,42 +98,42 @@
               </div>
             </div>
           </div>
-          <div class="table-responsive">
-            <table class="table table-xs table-bordered text-center z-depth-1">
-              <thead>
-                <tr>
-                  <th>{{ 'Language' | translate }}</th>
-                  <th>{{ 'Check to enable (at least one)' | translate }}</th>
-                </tr>
-              </thead>
-              <tbody id="propertyLanguagesModalTableBody">
-                <ng-container *ngFor="let language of applicationLanguages">
-                  <tr *ngIf="language.text !== 'German'">
-                    <td class="align-middle">{{ language.text | translate}}</td>
-                    <td class="align-middle">
-                      <div class="mat-checkbox">
-                        <input
-                          id="checkboxCreatePropertySelectLanguage{{
-                          language.id
-                        }}"
-                          (change)="addToArray($event, language.id)"
-                          [checked]="getLanguageIsChecked(language.id)"
-                          [value]="getLanguageIsChecked(language.id)"
-                          color="primary"
-                          type="checkbox"
-                        />
-                        <label
-                          for="checkboxCreatePropertySelectLanguage{{
-                          language.id
-                        }}"
-                        ></label>
-                      </div>
-                    </td>
-                  </tr>
-                </ng-container>
-              </tbody>
-            </table>
-          </div>
+<!--          <div class="table-responsive">-->
+<!--            <table class="table table-xs table-bordered text-center z-depth-1">-->
+<!--              <thead>-->
+<!--                <tr>-->
+<!--                  <th>{{ 'Language' | translate }}</th>-->
+<!--                  <th>{{ 'Check to enable (at least one)' | translate }}</th>-->
+<!--                </tr>-->
+<!--              </thead>-->
+<!--              <tbody id="propertyLanguagesModalTableBody">-->
+<!--                <ng-container *ngFor="let language of applicationLanguages">-->
+<!--                  <tr *ngIf="language.text !== 'German'">-->
+<!--                    <td class="align-middle">{{ language.text | translate}}</td>-->
+<!--                    <td class="align-middle">-->
+<!--                      <div class="mat-checkbox">-->
+<!--                        <input-->
+<!--                          id="checkboxCreatePropertySelectLanguage{{-->
+<!--                          language.id-->
+<!--                        }}"-->
+<!--                          (change)="addToArray($event, language.id)"-->
+<!--                          [checked]="getLanguageIsChecked(language.id)"-->
+<!--                          [value]="getLanguageIsChecked(language.id)"-->
+<!--                          color="primary"-->
+<!--                          type="checkbox"-->
+<!--                        />-->
+<!--                        <label-->
+<!--                          for="checkboxCreatePropertySelectLanguage{{-->
+<!--                          language.id-->
+<!--                        }}"-->
+<!--                        ></label>-->
+<!--                      </div>-->
+<!--                    </td>-->
+<!--                  </tr>-->
+<!--                </ng-container>-->
+<!--              </tbody>-->
+<!--            </table>-->
+<!--          </div>-->
         </div>
       </div>
       <div class="modal-footer">

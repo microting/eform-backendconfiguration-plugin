@@ -214,22 +214,22 @@ export class BackendConfigurationPropertiesPage extends Page {
       if (property.address) {
         await (await this.createPropertyAddress()).setValue(property.address);
       }
-      if (property.selectedLanguages) {
-        for (let i = 0; i < property.selectedLanguages.length; i++) {
-          let languageId = 0;
-          if (property.selectedLanguages[i].languageId) {
-            languageId = property.selectedLanguages[i].languageId;
-          } else {
-            languageId = applicationLanguages.find(
-              (x) => x.text === property.selectedLanguages[i].languageName
-            ).id;
-          }
-          const checkboxForClick = await (
-            await this.checkboxCreatePropertySelectLanguage(languageId)
-          ).$('..');
-          await checkboxForClick.click();
-        }
-      }
+      // if (property.selectedLanguages) {
+      //   for (let i = 0; i < property.selectedLanguages.length; i++) {
+      //     let languageId = 0;
+      //     if (property.selectedLanguages[i].languageId) {
+      //       languageId = property.selectedLanguages[i].languageId;
+      //     } else {
+      //       languageId = applicationLanguages.find(
+      //         (x) => x.text === property.selectedLanguages[i].languageName
+      //       ).id;
+      //     }
+      //     const checkboxForClick = await (
+      //       await this.checkboxCreatePropertySelectLanguage(languageId)
+      //     ).$('..');
+      //     await checkboxForClick.click();
+      //   }
+      // }
     }
   }
 
@@ -278,7 +278,7 @@ export class PropertyRowObject {
   public chrNumber: string;
   public cvrNumber: string;
   public address: string;
-  public languages: { languageId: number; languageName: string }[];
+  // public languages: { languageId: number; languageName: string }[];
   public editPropertyAreasBtn: WebdriverIO.Element;
   public editPropertyBtn: WebdriverIO.Element;
   public deletePropertyBtn: WebdriverIO.Element;
@@ -291,22 +291,22 @@ export class PropertyRowObject {
       this.chrNumber = await (await this.row.$('#propertyCHR')).getText();
       this.cvrNumber = await (await this.row.$('#propertyCVR')).getText();
       this.address = await (await this.row.$('#propertyAddress')).getText();
-      const languages = (
-        await (await this.row.$('#propertyLanguages')).getText()
-      ).split(' | ');
-
-      this.languages = [];
-      if (languages.length > 0 && languages[0] !== '') {
-        for (let i = 0; i < languages.length; i++) {
-          const language = applicationLanguagesTranslated.find(
-            (x) => x.text === languages[i]
-          );
-          this.languages = [
-            ...this.languages,
-            { languageName: language.text, languageId: language.id },
-          ];
-        }
-      }
+      // const languages = (
+      //   await (await this.row.$('#propertyLanguages')).getText()
+      // ).split(' | ');
+      //
+      // this.languages = [];
+      // if (languages.length > 0 && languages[0] !== '') {
+      //   for (let i = 0; i < languages.length; i++) {
+      //     const language = applicationLanguagesTranslated.find(
+      //       (x) => x.text === languages[i]
+      //     );
+      //     this.languages = [
+      //       ...this.languages,
+      //       { languageName: language.text, languageId: language.id },
+      //     ];
+      //   }
+      // }
       this.editPropertyAreasBtn = await this.row.$('#showPropertyAreasBtn');
       this.editPropertyBtn = await this.row.$('#editPropertyBtn');
       this.deletePropertyBtn = await this.row.$('#deletePropertyBtn');
@@ -372,24 +372,24 @@ export class PropertyRowObject {
           await backendConfigurationPropertiesPage.editPropertyAddress()
         ).setValue(property.address);
       }
-      if (property.selectedLanguages) {
-        for (let i = 0; i < property.selectedLanguages.length; i++) {
-          let languageId = 0;
-          if (property.selectedLanguages[i].languageId) {
-            languageId = property.selectedLanguages[i].languageId;
-          } else {
-            languageId = applicationLanguages.find(
-              (x) => x.text === property.selectedLanguages[i].languageName
-            ).id;
-          }
-          const checkboxForClick = await (
-            await backendConfigurationPropertiesPage.checkboxEditPropertySelectLanguage(
-              languageId
-            )
-          ).$('..');
-          await checkboxForClick.click();
-        }
-      }
+      // if (property.selectedLanguages) {
+      //   for (let i = 0; i < property.selectedLanguages.length; i++) {
+      //     let languageId = 0;
+      //     if (property.selectedLanguages[i].languageId) {
+      //       languageId = property.selectedLanguages[i].languageId;
+      //     } else {
+      //       languageId = applicationLanguages.find(
+      //         (x) => x.text === property.selectedLanguages[i].languageName
+      //       ).id;
+      //     }
+      //     const checkboxForClick = await (
+      //       await backendConfigurationPropertiesPage.checkboxEditPropertySelectLanguage(
+      //         languageId
+      //       )
+      //     ).$('..');
+      //     await checkboxForClick.click();
+      //   }
+      // }
     }
   }
 
@@ -494,5 +494,5 @@ export class PropertyCreateUpdate {
   chrNumber?: string;
   cvrNumber?: string;
   address?: string;
-  selectedLanguages?: { languageId?: number; languageName?: string }[];
+  // selectedLanguages?: { languageId?: number; languageName?: string }[];
 }
