@@ -73,10 +73,10 @@ export class PropertyEditModalComponent implements OnInit {
   }
 
   get isDisabledSaveButton(): boolean {
-    if (this.selectedProperty && this.selectedProperty.languagesIds) {
+    if (this.selectedProperty/* && this.selectedProperty.languagesIds*/) {
       return (
-        !this.selectedProperty.name ||
-        !this.selectedLanguages.some((x) => x.checked)
+        !this.selectedProperty.name/* ||
+        !this.selectedLanguages.some((x) => x.checked)*/
       );
     }
     return false;
