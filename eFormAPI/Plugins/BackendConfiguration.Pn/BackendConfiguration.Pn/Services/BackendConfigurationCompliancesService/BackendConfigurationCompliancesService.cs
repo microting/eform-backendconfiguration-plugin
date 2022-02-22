@@ -139,7 +139,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         PlanningId = compliance.PlanningId,
                         Responsible = responsible,
                     };
-                    if (complianceModel.CaseId == 0 && complianceModel.Deadline < DateTime.Now)
+                    if (complianceModel.CaseId == 0 && complianceModel.Deadline < DateTime.UtcNow)
                     {
                         if (dbCompliance.MicrotingSdkeFormId == 0)
                         {

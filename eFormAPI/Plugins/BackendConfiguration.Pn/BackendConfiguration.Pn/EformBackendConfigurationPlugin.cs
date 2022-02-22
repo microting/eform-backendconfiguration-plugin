@@ -451,6 +451,19 @@ namespace BackendConfiguration.Pn
 
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
+
+            var dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "375734");
+            var dbFieldOptions = await sdkDbContext.FieldOptions.Where(x => x.FieldId == dbField.Id).ToListAsync();
+            foreach (var dbFieldOption in dbFieldOptions)
+            {
+                var dbFieldOptionTranslation =
+                    await sdkDbContext.FieldOptionTranslations.SingleOrDefaultAsync(x => x.Text == "Færdig" && x.FieldOptionId == dbFieldOption.Id);
+                if (dbFieldOptionTranslation != null)
+                {
+                    dbFieldOptionTranslation.Text = "Afsluttet";
+                    await dbFieldOptionTranslation.Update(sdkDbContext);
+                }
+            }
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)

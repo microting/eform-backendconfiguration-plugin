@@ -243,7 +243,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 var core = await _coreHelper.GetCore();
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var propertyWorkers = await _backendConfigurationPnDbContext.PropertyWorkers
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    // .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.WorkerId == deviceUserId)
                     .ToListAsync();
 
