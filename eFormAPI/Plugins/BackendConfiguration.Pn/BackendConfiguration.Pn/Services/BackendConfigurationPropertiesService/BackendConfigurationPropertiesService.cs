@@ -480,6 +480,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 await propertyWorker.Update(_backendConfigurationPnDbContext);
                             }
 
+                            var entityItems = await sdkDbContext.EntityItems
+                                .Where(x => x.EntityGroupId == deviceUsersGroup.Id)
+                                .OrderBy(x => x.Name)
+                                .ToListAsync();
+
+                            int entityItemIncrementer = 0;
+                            foreach (var entityItem in entityItems)
+                            {
+                                await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
+                                    entityItem.EntityItemUid, entityItemIncrementer);
+                                entityItemIncrementer++;
+                            }
+
                             // todo need change language to site language for correct translates and change back after end translate
                             await DeployEform(propertyWorkers, eformId, property.FolderIdForNewTasks,
                                 $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
