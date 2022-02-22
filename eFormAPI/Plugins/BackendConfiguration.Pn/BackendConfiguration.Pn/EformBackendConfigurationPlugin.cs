@@ -329,14 +329,14 @@ namespace BackendConfiguration.Pn
                 await field.Delete(sdkDbContext);
             }
 
-            var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Brandslukkere");
+            var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
             if (areaTranslation2 != null)
             {
                 areaTranslation2.Name = "17. Håndildslukkere";
                 await areaTranslation2.Update(context);
                 // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
 
-                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "17. Brandslukkere").ToListAsync();
+                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "17. Håndildslukkere").ToListAsync();
 
                 foreach (var folderTranslation2 in folderTranslations)
                 {
@@ -346,7 +346,7 @@ namespace BackendConfiguration.Pn
                     {
                         Description = "",
                         LanguageId = 1,
-                        Name = "17. Håndildslukkere",
+                        Name = "17. Brandslukkere",
                     };
                     folderTranslationList.Add(folderTranslation);
 
@@ -360,9 +360,16 @@ namespace BackendConfiguration.Pn
                 foreach (var areaRule in areaRules)
                 {
                     areaRule.EformId = eFormId;
-                    areaRule.EformName = "17. Håndildslukkere";
+                    areaRule.EformName = "17. Brandslukkere";
                     await areaRule.Update(context);
                 }
+            }
+
+            var areaTranslations = await context.AreaTranslations.Where(x => x.Name.Contains("23.")).ToListAsync();
+            foreach (var areaTranslation in areaTranslations)
+            {
+                areaTranslation.Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz";
+                await areaTranslation.Update(context);
             }
 
             var ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.00 Aflæsninger miljøledelse").ToListAsync();
