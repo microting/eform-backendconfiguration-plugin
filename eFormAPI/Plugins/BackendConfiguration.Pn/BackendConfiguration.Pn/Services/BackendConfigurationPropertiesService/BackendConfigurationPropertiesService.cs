@@ -281,6 +281,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         _backendConfigurationLocalizationService.GetString("PropertyNotFound"));
                 }
 
+                if (_backendConfigurationPnDbContext.Properties.Any(x =>
+                        x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.CHR == updateModel.Chr
+                        && x.CVR == updateModel.Cvr
+                        && x.Name == updateModel.Name
+                        && x.Address == updateModel.Address
+                        && x.Id != updateModel.Id))
+                {
+                    return new OperationResult(false,
+                        _backendConfigurationLocalizationService.GetString("PropertyAlreadyExists"));
+                }
+
+
                 if (property.Name != updateModel.Name && property.WorkorderEnable)
                 {
                     var areaGroupUid = await sdkDbContext.EntityGroups
@@ -317,6 +330,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     planningTag.UpdatedByUserId = _userService.UserId;
                     await planningTag.Update(_itemsPlanningPnDbContext);
                 }
+
+                var translatesForFolder = await sdkDbContext.Languages
+                    .Select(
+                        x => new CommonTranslationsModel
+                        {
+                            LanguageId = x.Id,
+                            Name = property.Name,
+                            Description = ""
+                        })
+                    .ToListAsync();
+
+                await core.FolderUpdate((int)property.FolderId, translatesForFolder, null);
 
                 if (property.WorkorderEnable != updateModel.WorkorderEnable)
                 {
@@ -453,6 +478,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 nextItemUid++;
                                 propertyWorker.EntityItemId = entityItem.Id;
                                 await propertyWorker.Update(_backendConfigurationPnDbContext);
+                            }
+
+                            var entityItems = await sdkDbContext.EntityItems
+                                .Where(x => x.EntityGroupId == deviceUsersGroup.Id)
+                                .OrderBy(x => x.Name)
+                                .ToListAsync();
+
+                            int entityItemIncrementer = 0;
+                            foreach (var entityItem in entityItems)
+                            {
+                                await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
+                                    entityItem.EntityItemUid, entityItemIncrementer);
+                                entityItemIncrementer++;
                             }
 
                             // todo need change language to site language for correct translates and change back after end translate
