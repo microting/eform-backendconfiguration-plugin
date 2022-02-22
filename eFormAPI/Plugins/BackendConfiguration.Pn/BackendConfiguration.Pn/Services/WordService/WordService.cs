@@ -234,7 +234,10 @@ namespace BackendConfiguration.Pn.Services.WordService
                     {
                         itemsHtml.Append($@"<td>{areaRulePlanning.StartDate:dd.MM.yyyy}</td>");
                         // ReSharper disable once PossibleInvalidOperationException
-                        itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {(RepeatType)areaRulePlanning.RepeatType}</td>");
+                        var repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
+                        var firstChar = repeatType.First().ToString();
+                        repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
+                        itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {repeatType}</td>");
                     }
                     //itemsHtml.Append(@"<tr><td></td><td></td><td></td></tr>");
                 }
