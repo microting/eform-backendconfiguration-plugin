@@ -443,5 +443,19 @@
       "da": "Lokation",
       "en-US": "Location" // todo maybe need add more translates
     }
+  },
+  {
+    "Key": "StartDate",
+    "LocalizedValue": {
+      "da": "Startdato",
+      "en-US": "StartDate" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Frequence",
+    "LocalizedValue": {
+      "da": "Gentahes hver",
+      "en-US": "Frequence" // todo maybe need add more translates
+    }
   }
 ]
