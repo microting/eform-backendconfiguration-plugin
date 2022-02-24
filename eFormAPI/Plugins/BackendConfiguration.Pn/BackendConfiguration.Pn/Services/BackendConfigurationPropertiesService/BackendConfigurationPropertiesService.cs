@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
@@ -57,6 +58,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly IPluginDbOptions<BackendConfigurationBaseSettings> _options;
+        private readonly WorkOrderHelper _workOrderHelper;
 
         public BackendConfigurationPropertiesService(
             IEFormCoreService coreHelper,
@@ -72,6 +74,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _options = options;
+            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService);
         }
 
         public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request)
@@ -494,7 +497,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             }
 
                             // todo need change language to site language for correct translates and change back after end translate
-                            await DeployEform(propertyWorkers, eformId, property.FolderIdForNewTasks,
+                            await _workOrderHelper.DeployEform(propertyWorkers, eformId, property.FolderIdForNewTasks,
                                 $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
                                 int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid));
                             break;
@@ -523,9 +526,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToList();
 
-                            await RetractEform(propertyWorkerIds, eformIdForNewTasks);
-                            await RetractEform(propertyWorkerIds, eformIdForOngoingTasks);
-                            await RetractEform(propertyWorkerIds, eformIdForCompletedTasks);
+                            await _workOrderHelper.RetractEform(propertyWorkerIds, true);
+                            await _workOrderHelper.RetractEform(propertyWorkerIds, false);
+                            await _workOrderHelper.RetractEform(propertyWorkerIds, false);
 
 
                             var areaGroupUid = await sdkDbContext.EntityGroups
@@ -655,9 +658,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         .Select(x => x.CheckListId)
                         .FirstAsync();
 
-                    await RetractEform(property.PropertyWorkers, eformIdForNewTasks);
-                    await RetractEform(property.PropertyWorkers, eformIdForOngoingTasks);
-                    await RetractEform(property.PropertyWorkers, eformIdForCompletedTasks);
+                    await _workOrderHelper.RetractEform(property.PropertyWorkers, true);
+                    await _workOrderHelper.RetractEform(property.PropertyWorkers, false);
+                    await _workOrderHelper.RetractEform(property.PropertyWorkers, false);
                 }
 
                 // delete property workers
@@ -874,63 +877,79 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             }
         }
 
-        private async Task DeployEform(List<PropertyWorker> propertyWorkers, int eformId, int? folderId,
-            string description, int areasGroupUid, int deviceUsersGroupId)
-        {
-            var core = await _coreHelper.GetCore();
-            await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-            foreach (var propertyWorker in propertyWorkers)
-            {
-                var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
-                var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
-                var mainElement = await core.ReadeForm(eformId, language);
-                mainElement.Repeated = 0;
-                if (folderId != null)
-                {
-                    mainElement.CheckListFolderName = await sdkDbContext.Folders
-                        .Where(x => x.Id == folderId)
-                        .Select(x => x.MicrotingUid.ToString())
-                        .FirstOrDefaultAsync();
-                }
-
-                if (!string.IsNullOrEmpty(description))
-                {
-                    ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
-                    ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
-                }
-
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = areasGroupUid;
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source = deviceUsersGroupId;
-
-                mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-                mainElement.StartDate = DateTime.Now.ToUniversalTime();
-                var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
-                await new WorkorderCase
-                {
-                    CaseId = (int)caseId,
-                    PropertyWorkerId = propertyWorker.Id,
-                    CaseStatusesEnum = CaseStatusesEnum.NewTask,
-                }.Create(_backendConfigurationPnDbContext);
-            }
-        }
-
-        private async Task RetractEform(List<PropertyWorker> propertyWorkers, int eformId)
-        {
-            var core = await _coreHelper.GetCore();
-            await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-            foreach (var propertyWorker in propertyWorkers)
-            {
-                var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
-                await core.CaseDelete(eformId, (int)site.MicrotingUid);
-                var workorderCase = await _backendConfigurationPnDbContext.WorkorderCases
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.PropertyWorkerId == propertyWorker.Id)
-                    .FirstOrDefaultAsync();
-                if (workorderCase != null)
-                {
-                    await workorderCase.Delete(_backendConfigurationPnDbContext);
-                }
-            }
-        }
+        //  private async Task DeployEform(List<PropertyWorker> propertyWorkers, int eformId, int? folderId,
+        //     string description, int? areasGroupUid, int? deviceUsersGroupId)
+        // {
+        //     var core = await _coreHelper.GetCore();
+        //     await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        //     foreach (var propertyWorker in propertyWorkers)
+        //     {
+        //         if (_backendConfigurationPnDbContext.WorkorderCases.Any(x => x.PropertyWorkerId == propertyWorker.Id && x.CaseStatusesEnum == CaseStatusesEnum.NewTask))
+        //         {
+        //             continue;
+        //         }
+        //         var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
+        //         var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
+        //         var mainElement = await core.ReadeForm(eformId, language);
+        //         mainElement.Repeated = 0;
+        //         mainElement.ElementList[0].QuickSyncEnabled = true;
+        //         mainElement.EnableQuickSync = true;
+        //         if (folderId != null)
+        //         {
+        //             mainElement.CheckListFolderName = await sdkDbContext.Folders
+        //                 .Where(x => x.Id == folderId)
+        //                 .Select(x => x.MicrotingUid.ToString())
+        //                 .FirstOrDefaultAsync();
+        //         }
+        //
+        //         if (!string.IsNullOrEmpty(description))
+        //         {
+        //             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+        //             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
+        //         }
+        //
+        //         if (areasGroupUid != null && deviceUsersGroupId != null)
+        //         {
+        //             ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = (int)areasGroupUid;
+        //             ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source =
+        //                 (int)deviceUsersGroupId;
+        //         }
+        //         else if (areasGroupUid == null && deviceUsersGroupId != null)
+        //         {
+        //             ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
+        //                 (int)deviceUsersGroupId;
+        //         }
+        //
+        //         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+        //         mainElement.StartDate = DateTime.Now.ToUniversalTime();
+        //         var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+        //         await new WorkorderCase
+        //         {
+        //             CaseId = (int)caseId,
+        //             PropertyWorkerId = propertyWorker.Id,
+        //             CaseStatusesEnum = CaseStatusesEnum.NewTask,
+        //         }.Create(_backendConfigurationPnDbContext);
+        //     }
+        // }
+        //
+        // private async Task RetractEform(List<PropertyWorker> propertyWorkers, int eformId)
+        // {
+        //     var core = await _coreHelper.GetCore();
+        //     await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        //     foreach (var propertyWorker in propertyWorkers)
+        //     {
+        //         // var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
+        //         // await core.CaseDelete(eformId, (int)site.MicrotingUid);
+        //         var workorderCase = await _backendConfigurationPnDbContext.WorkorderCases
+        //             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+        //             .Where(x => x.PropertyWorkerId == propertyWorker.Id)
+        //             .FirstOrDefaultAsync();
+        //         if (workorderCase != null)
+        //         {
+        //             await core.CaseDelete(workorderCase.CaseId);
+        //             await workorderCase.Delete(_backendConfigurationPnDbContext);
+        //         }
+        //     }
+        // }
     }
 }

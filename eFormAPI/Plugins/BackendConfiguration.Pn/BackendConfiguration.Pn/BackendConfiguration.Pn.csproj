@@ -19,11 +19,8 @@
 
     <ItemGroup>
       <Compile Remove="Handlers\**" />
-      <Compile Remove="Infrastructure\Helpers\**" />
       <EmbeddedResource Remove="Handlers\**" />
-      <EmbeddedResource Remove="Infrastructure\Helpers\**" />
       <None Remove="Handlers\**" />
-      <None Remove="Infrastructure\Helpers\**" />
       <None Remove="Resources\eForms\01. Elforbrug.xml" />
       <EmbeddedResource Include="Resources\eForms\01. Elforbrug.xml" />
       <None Remove="Resources\eForms\01. Miljøledelse_skabelon.xml" />
