@@ -173,9 +173,19 @@ public class WorkOrderHelper
                 .Where(x => workorderCasesCompleted.All(y => y.ParentWorkorderCaseId != x.ParentWorkorderCaseId))
                 .ToList();
 
-            if (property.EntitySelectListAreas != null && property.EntitySelectListDeviceUsers != null)
+            if (property.EntitySelectListAreas == null)
             {
+                var areasGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
+                    $"{property.Name} - Områder", "", true, true);
+                property.EntitySelectListAreas = areasGroup.Id;
+                await property.Update(_backendConfigurationPnDbContext);
+            }
 
+            if (property.EntitySelectListDeviceUsers == null) {
+                var deviceUsersGp = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
+                    $"{property.Name} - Device Users", "", true, false);
+                property.EntitySelectListDeviceUsers = deviceUsersGp.Id;
+                await property.Update(_backendConfigurationPnDbContext);
             }
 
             var areasGroupUid = await sdkDbContext.EntityGroups
