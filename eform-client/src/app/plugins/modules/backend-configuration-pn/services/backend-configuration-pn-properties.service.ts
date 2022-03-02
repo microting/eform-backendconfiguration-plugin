@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  CommonDictionaryModel,
+  CommonDictionaryModel, DeviceUserModel,
   OperationDataResult,
   OperationResult,
   Paged,
@@ -22,6 +22,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   PropertyAreas: 'api/backend-configuration-pn/property-areas',
   PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
   PropertiesIndex: 'api/backend-configuration-pn/properties/index',
+  UpdateSingle: 'api/backend-configuration-pn/properties/assignment/update-device-user',
 };
 
 @Injectable({
@@ -123,6 +124,13 @@ export class BackendConfigurationPnPropertiesService {
     return this.apiBaseService.get(
       BackendConfigurationPnPropertiesMethods.Properties,
       { id: id }
+    );
+  }
+
+  updateSingleDeviceUser(model: DeviceUserModel): Observable<OperationResult> {
+    return this.apiBaseService.post<DeviceUserModel>(
+      BackendConfigurationPnPropertiesMethods.UpdateSingle,
+      model
     );
   }
 }

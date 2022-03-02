@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Models;
+
 namespace BackendConfiguration.Pn.Controllers
 {
     using System.Collections.Generic;
@@ -42,7 +44,7 @@ namespace BackendConfiguration.Pn.Controllers
         {
             _backendConfigurationAssignmentWorkerService = backendConfigurationAssignmentWorkerService;
         }
-        
+
         [HttpGet]
         public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment()
         {
@@ -65,6 +67,13 @@ namespace BackendConfiguration.Pn.Controllers
         public Task<OperationResult> Delete(int deviceUserId)
         {
             return _backendConfigurationAssignmentWorkerService.Delete(deviceUserId);
+        }
+
+        [HttpPost]
+        [Route("update-device-user")]
+        public async Task<OperationResult> UpdateDeviceUser([FromBody] DeviceUserModel deviceUserModel)
+        {
+            return await _backendConfigurationAssignmentWorkerService.UpdateDeviceUser(deviceUserModel);
         }
     }
 }

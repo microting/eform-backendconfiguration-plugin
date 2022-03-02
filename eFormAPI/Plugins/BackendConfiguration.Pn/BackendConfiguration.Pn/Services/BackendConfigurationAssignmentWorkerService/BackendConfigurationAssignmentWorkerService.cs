@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Infrastructure.Models;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
 {
@@ -300,6 +301,78 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
         }
 
+        public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                await using var db = core.DbContextHelper.GetDbContext();
+                var language = db.Languages.Single(x => x.LanguageCode == deviceUserModel.LanguageCode);
+                var siteDto = await core.SiteRead(deviceUserModel.Id);
+                if (siteDto.WorkerUid != null)
+                {
+                    // var workerDto = await core.Advanced_WorkerRead((int)siteDto.WorkerUid);
+                    var worker = await db.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid);
+                    if (worker != null)
+                    {
+                        var fullName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
+                        var isUpdated = await core.SiteUpdate(deviceUserModel.Id, fullName, deviceUserModel.UserFirstName,
+                            deviceUserModel.UserLastName, worker.Email, deviceUserModel.LanguageCode);
+
+                        if (isUpdated)
+                        {
+                            var propertyWorkers = await _backendConfigurationPnDbContext.PropertyWorkers
+                                .Where(x => x.WorkerId == worker.Id)
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .ToListAsync();
+
+                            int propertyId = 0;
+                            foreach (var propertyWorker in propertyWorkers)
+                            {
+                                var et = db.EntityItems.Single(x => x.Id == propertyWorker.EntityItemId);
+                                await core.EntityItemUpdate((int)propertyWorker.EntityItemId, fullName, "", et.EntityItemUid,
+                                    et.DisplayIndex);
+                                propertyId = propertyWorker.PropertyId;
+                            }
+
+                            var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == propertyId);
+
+                            var entityItems = await db.EntityItems
+                                .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
+                                .OrderBy(x => x.Name)
+                                .AsNoTracking()
+                                .ToListAsync();
+
+                            int entityItemIncrementer = 0;
+                            foreach (var entityItem in entityItems)
+                            {
+                                await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
+                                    entityItem.EntityItemUid, entityItemIncrementer);
+                                entityItemIncrementer++;
+                            }
+
+                        }
+                            // {
+                            //     Site site = await db.Sites.SingleAsync(x => x.MicrotingUid == deviceUserModel.Id);
+                            //     site.LanguageId = language.Id;
+                            //     await site.Update(db);
+                            // }
+                            return isUpdated
+                                ? new OperationResult(true, _backendConfigurationLocalizationService.GetString("DeviceUserUpdatedSuccessfully"))
+                                : new OperationResult(false,
+                                    _backendConfigurationLocalizationService.GetString("DeviceUserParamCouldNotBeUpdated"));
+                    }
+
+                    return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserCouldNotBeObtained"));
+                }
+
+                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserNotFound"));
+            }
+            catch (Exception)
+            {
+                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserCouldNotBeUpdated"));
+            }
+        }
 
 
     }
