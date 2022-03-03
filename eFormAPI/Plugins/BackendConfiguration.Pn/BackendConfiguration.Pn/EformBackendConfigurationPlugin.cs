@@ -332,7 +332,7 @@ namespace BackendConfiguration.Pn
             var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
             if (areaTranslation2 != null)
             {
-                areaTranslation2.Name = "17. Håndildslukkere";
+                areaTranslation2.Name = "17. Brandslukkere";
                 await areaTranslation2.Update(context);
                 // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
 

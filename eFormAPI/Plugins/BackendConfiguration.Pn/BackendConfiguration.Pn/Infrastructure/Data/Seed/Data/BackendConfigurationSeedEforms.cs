@@ -239,7 +239,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			{
 				"17. Brandslukkere",""
 			};
-			item = new KeyValuePair<string, List<string>>("17. Håndildslukkere", headers);
+			item = new KeyValuePair<string, List<string>>("17. Brandslukkere", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
