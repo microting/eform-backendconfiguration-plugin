@@ -311,6 +311,14 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "17. Håndildslukkere").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "17. Brandslukkere";
+                await clTranslation.Update(sdkDbContext);
+            }
+
             // Removing the old info fields for eForm 15,16,17
             var fieldOriginalIds = new List<string>
             {
