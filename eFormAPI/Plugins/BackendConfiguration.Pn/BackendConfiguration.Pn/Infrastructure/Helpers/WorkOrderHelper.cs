@@ -213,13 +213,15 @@ public class WorkOrderHelper
 
             var entityItems = await sdkDbContext.EntityItems
                 .Where(x => x.EntityGroupId == deviceUsersGroup.Id)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .OrderBy(x => x.Name)
+                .AsNoTracking()
                 .ToListAsync();
 
             int entityItemIncrementer = 0;
             foreach (var entity in entityItems)
             {
-                await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
+                await core.EntityItemUpdate(entity.Id, entity.Name, entity.Description,
                     entity.EntityItemUid, entityItemIncrementer);
                 entityItemIncrementer++;
             }

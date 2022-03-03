@@ -472,6 +472,15 @@ namespace BackendConfiguration.Pn
                     await dbFieldOptionTranslation.Update(sdkDbContext);
                 }
             }
+
+            var tag =
+                await itemsPlanningContext.PlanningTags.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
+            if (tag != null)
+            {
+                tag.Name = "17. Brandslukkere";
+                await tag.Update(itemsPlanningContext);
+            }
+
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)

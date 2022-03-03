@@ -485,7 +485,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                             var entityItems = await sdkDbContext.EntityItems
                                 .Where(x => x.EntityGroupId == deviceUsersGroup.Id)
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .OrderBy(x => x.Name)
+                                .AsNoTracking()
                                 .ToListAsync();
 
                             int entityItemIncrementer = 0;

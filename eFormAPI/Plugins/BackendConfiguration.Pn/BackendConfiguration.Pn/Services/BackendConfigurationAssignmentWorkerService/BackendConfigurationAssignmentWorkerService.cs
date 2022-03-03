@@ -193,24 +193,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(x => !updateModel.Assignments.Select(y => y.PropertyId).Contains(x.PropertyId))
                     .ToList();
 
-                var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "01. New task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync();
-
-                var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "02. Ongoing task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync();
-
-                var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "03. Completed task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync();
-
                 foreach (var propertyAssignment in assignmentsForDelete)
                 {
                     propertyAssignment.UpdatedByUserId = _userService.UserId;
@@ -218,6 +200,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     if (propertyAssignment.EntityItemId != null)
                     {
                         await core.EntityItemDelete((int)propertyAssignment.EntityItemId);
+                    }
+
+                    var property = await _backendConfigurationPnDbContext.Properties
+                        .Where(x => x.Id == propertyAssignment.PropertyId)
+                        .SingleOrDefaultAsync();
+
+                    var entityItems = await sdkDbContext.EntityItems
+                        .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .OrderBy(x => x.Name)
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    int entityItemIncrementer = 0;
+                    foreach (var entity in entityItems)
+                    {
+                        await core.EntityItemUpdate(entity.Id, entity.Name, entity.Description,
+                            entity.EntityItemUid, entityItemIncrementer);
+                        entityItemIncrementer++;
                     }
                 }
 
@@ -279,6 +280,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     {
                         await core.EntityItemDelete((int)propertyAssignment.EntityItemId);
                     }
+
+                    var property = await _backendConfigurationPnDbContext.Properties
+                        .Where(x => x.Id == propertyAssignment.PropertyId)
+                        .SingleOrDefaultAsync();
+
+                    var entityItems = await sdkDbContext.EntityItems
+                        .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .OrderBy(x => x.Name)
+                        .AsNoTracking()
+                        .ToListAsync();
+
+                    int entityItemIncrementer = 0;
+                    foreach (var entity in entityItems)
+                    {
+                        await core.EntityItemUpdate(entity.Id, entity.Name, entity.Description,
+                            entity.EntityItemUid, entityItemIncrementer);
+                        entityItemIncrementer++;
+                    }
                 }
 
                 await _workOrderHelper.RetractEform(propertyWorkers, true);
@@ -339,6 +359,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                             var entityItems = await db.EntityItems
                                 .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .OrderBy(x => x.Name)
                                 .AsNoTracking()
                                 .ToListAsync();
