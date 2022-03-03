@@ -797,7 +797,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == propertyAreaId)
                     .Include(x => x.Area)
-                    .ThenInclude(x => x.AreaInitialField)
+                    //.ThenInclude(x => x.AreaInitialField)
                     .Include(x => x.Area.AreaTranslations)
                     .Include(x => x.Property)
                     .ThenInclude(x => x.SelectedLanguages)
@@ -851,18 +851,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         }).ToList(),
                     AvailableWorkers = sites,
                     Type = areaProperties.Area.Type,
-                    InitialFields = areaProperties.Area.AreaInitialField != null
+                    InitialFields = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField != null
                         ? new AreaInitialFields
                         {
-                            Alarm = areaProperties.Area.AreaInitialField.Alarm,
-                            DayOfWeek = areaProperties.Area.AreaInitialField.DayOfWeek,
-                            EformName = areaProperties.Area.AreaInitialField.EformName,
-                            SendNotifications = areaProperties.Area.AreaInitialField.Notifications,
-                            RepeatType = areaProperties.Area.AreaInitialField.RepeatType,
-                            Type = areaProperties.Area.AreaInitialField.Type,
-                            RepeatEvery = areaProperties.Area.AreaInitialField.RepeatEvery,
-                            EndDate = areaProperties.Area.AreaInitialField.EndDate,
-                            ComplianceEnabled = areaProperties.Area.AreaInitialField.ComplianceEnabled,
+                            Alarm = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.Alarm,
+                            DayOfWeek = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.DayOfWeek,
+                            EformName = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.EformName,
+                            SendNotifications = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.Notifications,
+                            RepeatType = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.RepeatType,
+                            Type = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.Type,
+                            RepeatEvery = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.RepeatEvery,
+                            EndDate = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.EndDate,
+                            ComplianceEnabled = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.ComplianceEnabled,
                         }
                         : null,
                 };
@@ -899,7 +899,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == areaRuleId)
                     .Include(x => x.Area)
-                    .ThenInclude(x => x.AreaInitialField)
+                    //.ThenInclude(x => x.AreaInitialField)
                     .Include(x => x.Area.AreaTranslations)
                     .Where(x => x.Area.WorkflowState != Constants.WorkflowStates.Removed)
                     .Include(x => x.Property)
@@ -942,18 +942,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Name = languages.First(y => y.Id == x.LanguageId).Name,
                         }).ToList(),
                     AvailableWorkers = sites,
-                    InitialFields = areaRule.Area.AreaInitialField != null
+                    InitialFields = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField != null
                         ? new AreaInitialFields
                         {
-                            Alarm = areaRule.Area.AreaInitialField.Alarm,
-                            DayOfWeek = areaRule.Area.AreaInitialField.DayOfWeek,
-                            EformName = areaRule.Area.AreaInitialField.EformName,
-                            SendNotifications = areaRule.Area.AreaInitialField.Notifications,
-                            RepeatType = areaRule.Area.AreaInitialField.RepeatType,
-                            Type = areaRule.Area.AreaInitialField.Type,
-                            RepeatEvery = areaRule.Area.AreaInitialField.RepeatEvery,
-                            EndDate = areaRule.Area.AreaInitialField.EndDate,
-                            ComplianceEnabled = areaRule.Area.AreaInitialField.ComplianceEnabled,
+                            Alarm = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.Alarm,
+                            DayOfWeek = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.DayOfWeek,
+                            EformName = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.EformName,
+                            SendNotifications = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.Notifications,
+                            RepeatType = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.RepeatType,
+                            Type = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.Type,
+                            RepeatEvery = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.RepeatEvery,
+                            EndDate = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.EndDate,
+                            ComplianceEnabled = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.ComplianceEnabled,
                         }
                         : null,
                 };

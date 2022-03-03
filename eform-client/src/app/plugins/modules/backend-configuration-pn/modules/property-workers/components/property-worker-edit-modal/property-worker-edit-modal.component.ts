@@ -36,7 +36,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   deviceUserAssignments$: Subscription;
 
   constructor(
-    private deviceUserService: DeviceUserService,
+    // private deviceUserService: DeviceUserService,
     public propertiesService: BackendConfigurationPnPropertiesService
   ) {}
 
@@ -83,7 +83,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
         this.selectedDeviceUser.languageCode
     ) {
       // if fields device user edited
-      this.deviceUserCreate$ = this.deviceUserService
+      this.deviceUserCreate$ = this.propertiesService
         .updateSingleDeviceUser(this.selectedDeviceUser)
         .subscribe((operation) => {
           if (operation && operation.success) {
