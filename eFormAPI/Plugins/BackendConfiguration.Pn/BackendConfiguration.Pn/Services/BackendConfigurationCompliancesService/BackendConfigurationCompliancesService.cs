@@ -120,6 +120,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     responsible.Add(kvp);
                 }
 
+                var today = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
                 var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
                 if (result.Entities.Any(x => x.PlanningId == compliance.PlanningId && x.Deadline == compliance.Deadline.AddDays(-1)))
                 {
@@ -139,7 +140,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         PlanningId = compliance.PlanningId,
                         Responsible = responsible,
                     };
-                    if (complianceModel.CaseId == 0 && complianceModel.Deadline < DateTime.UtcNow)
+
+                    if (complianceModel.CaseId == 0 && complianceModel.Deadline < today)
                     {
                         if (dbCompliance.MicrotingSdkeFormId == 0)
                         {
