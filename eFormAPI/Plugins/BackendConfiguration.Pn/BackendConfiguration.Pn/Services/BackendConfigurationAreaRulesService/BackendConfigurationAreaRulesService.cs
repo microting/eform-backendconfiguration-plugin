@@ -396,14 +396,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                     .Where(x => x.PlanningCaseId == planningCase.Id)
                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                     .ToListAsync();
-                                foreach (var planningCaseSite in planningCaseSites
-                                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0))
+                                // foreach (var planningCaseSite in planningCaseSites
+                                //     .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0))
+                                // {
+                                //     var result = await sdkDbContext.Cases.SingleAsync(x =>
+                                //         x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                //     if (result.MicrotingUid != null)
+                                //     {
+                                //         await core.CaseDelete((int) result.MicrotingUid);
+                                //     }
+                                // }
+                                foreach (var planningCaseSite in planningCaseSites)
                                 {
-                                    var result = await sdkDbContext.Cases.SingleAsync(x =>
-                                        x.Id == planningCaseSite.MicrotingSdkCaseId);
-                                    if (result.MicrotingUid != null)
+                                    var result =
+                                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                    if (result is {MicrotingUid: { }})
                                     {
-                                        await core.CaseDelete((int) result.MicrotingUid);
+                                        await core.CaseDelete((int)result.MicrotingUid);
+                                    }
+                                    else
+                                    {
+                                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                            x.Id == planningCaseSite.MicrotingCheckListSitId);
+
+                                        await core.CaseDelete(clSites.MicrotingUid);
                                     }
                                 }
 
@@ -413,6 +429,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                             planning.UpdatedByUserId = _userService.UserId;
                             await planning.Delete(_itemsPlanningPnDbContext);
+                            var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.PlanningId == planning.Id);
+                            if (compliance != null)
+                            {
+                                await compliance.Delete(_backendConfigurationPnDbContext);
+                            }
+                            var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
+                            if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
+                            {
+                                property.ComplianceStatusThirty = 2;
+                                property.ComplianceStatus = 2;
+                            }
+                            else
+                            {
+                                if (!_backendConfigurationPnDbContext.Compliances.Any(x =>
+                                        x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                                {
+                                    property.ComplianceStatusThirty = 0;
+                                    property.ComplianceStatus = 0;
+                                }
+                            }
+
+                            await property.Update(_backendConfigurationPnDbContext);
                         }
                     }
 

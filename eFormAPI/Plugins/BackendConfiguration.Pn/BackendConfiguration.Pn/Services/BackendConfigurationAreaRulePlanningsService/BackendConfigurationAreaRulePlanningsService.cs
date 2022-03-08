@@ -1306,7 +1306,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                 property.ComplianceStatus = 0;
                             }
                         }
-                        property.Update(_backendConfigurationPnDbContext).GetAwaiter().GetResult();
+
+                        await property.Update(_backendConfigurationPnDbContext);
                     }
                 }
             }
