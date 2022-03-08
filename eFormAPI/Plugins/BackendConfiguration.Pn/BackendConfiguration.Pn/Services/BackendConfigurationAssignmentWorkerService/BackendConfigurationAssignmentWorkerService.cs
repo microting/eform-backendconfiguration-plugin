@@ -24,6 +24,7 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
 {
@@ -51,17 +52,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly WorkOrderHelper _workOrderHelper;
 
         public BackendConfigurationAssignmentWorkerService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService);
         }
@@ -219,6 +222,67 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         await core.EntityItemUpdate(entity.Id, entity.Name, entity.Description,
                             entity.EntityItemUid, entityItemIncrementer);
                         entityItemIncrementer++;
+                    }
+
+                    // var siteWorker =
+                    //     await sdkDbContext.SiteWorkers.SingleAsync(x => x.WorkerId == propertyAssignment.WorkerId);
+
+                    var planningSites = await _backendConfigurationPnDbContext.PlanningSites
+                        .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
+                            ps => ps.AreaRulePlanningsId,
+                            arp => arp.Id,
+                            (ps, arp) => new
+                            {
+                                ps.Id,
+                                ps.SiteId,
+                                arp.PropertyId,
+                                ps.WorkflowState,
+                                arp.ItemPlanningId
+                            })
+                        .Where(x => x.SiteId == propertyAssignment.WorkerId)
+                        .Where(x => x.PropertyId == propertyAssignment.PropertyId)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync();
+
+                    foreach (var planningSite in planningSites)
+                    {
+                        var itemPlanningSites = await _itemsPlanningPnDbContext.PlanningSites
+                            .SingleOrDefaultAsync(x => x.SiteId == propertyAssignment.WorkerId
+                                                       && x.PlanningId == planningSite.ItemPlanningId
+                                                       && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                        if (itemPlanningSites != null)
+                        {
+                            await itemPlanningSites.Delete(_itemsPlanningPnDbContext);
+                        }
+
+                        var itemPlanningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                            .Where(x => x.PlanningId == planningSite.ItemPlanningId
+                                        && x.MicrotingSdkSiteId == propertyAssignment.WorkerId
+                                        && x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .ToListAsync();
+
+                        foreach (var planningCaseSite in itemPlanningCaseSites)
+                        {
+                            var result =
+                                await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                            if (result is {MicrotingUid: { }})
+                            {
+                                await core.CaseDelete((int)result.MicrotingUid);
+                            }
+                            else
+                            {
+                                var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                    x.Id == planningCaseSite.MicrotingCheckListSitId);
+
+                                await core.CaseDelete(clSites.MicrotingUid);
+                            }
+                        }
+
+                        var dbPlanningSite = await _backendConfigurationPnDbContext.PlanningSites
+                            .SingleAsync(x => x.Id == planningSite.Id);
+
+                        await dbPlanningSite.Delete(_backendConfigurationPnDbContext);
                     }
                 }
 
