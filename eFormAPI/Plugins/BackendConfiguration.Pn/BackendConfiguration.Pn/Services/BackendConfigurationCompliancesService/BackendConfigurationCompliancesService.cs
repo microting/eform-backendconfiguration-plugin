@@ -342,38 +342,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 if (_backendConfigurationPnDbContext.Compliances.Any(x =>
                         x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
-                    if (property is {ComplianceStatus: 0})
+                    if (property is not {ComplianceStatus: 0})
                     {
-                        property.ComplianceStatus = 1;
-                        await property.Update(_backendConfigurationPnDbContext);
-                    }
-                    else
-                    {
-                        if (_backendConfigurationPnDbContext.Compliances.Any(x => x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                        if (_backendConfigurationPnDbContext.Compliances.Any(x =>
+                                x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
+                                x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             property.ComplianceStatus = 2;
                             property.ComplianceStatusThirty = 2;
                             await property.Update(_backendConfigurationPnDbContext);
                         }
-                        else
-                        {
-                            property.ComplianceStatus = 1;
-                            property.ComplianceStatusThirty = 1;
-                            await property.Update(_backendConfigurationPnDbContext);
-                        }
                     }
 
-                    if (property is {ComplianceStatusThirty: 0})
-                    {
-                        if (_backendConfigurationPnDbContext.Compliances.Any(x =>
-                                x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
-                                x.WorkflowState != Constants.WorkflowStates.Removed))
-                        {
-                            property.ComplianceStatusThirty = 1;
-                            await property.Update(_backendConfigurationPnDbContext);
-                        }
-                    }
-                    else
+                    if (property is not {ComplianceStatusThirty: 0})
                     {
                         if (!_backendConfigurationPnDbContext.Compliances.Any(x =>
                                 x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&

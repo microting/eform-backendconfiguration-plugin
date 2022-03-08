@@ -1063,14 +1063,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             }
                                             else
                                             {
-                                                if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
-                                                {
-                                                    property.ComplianceStatusThirty = _backendConfigurationPnDbContext.Compliances.Any(x =>
-                                                        x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
-                                                        x.WorkflowState != Constants.WorkflowStates.Removed) ? 1 : 0;
-                                                    property.ComplianceStatus = 1;
-                                                }
-                                                else
+                                                if (!_backendConfigurationPnDbContext.Compliances.Any(x =>
+                                                        x.PropertyId == property.Id && x.WorkflowState !=
+                                                        Constants.WorkflowStates.Removed))
                                                 {
                                                     property.ComplianceStatusThirty = 0;
                                                     property.ComplianceStatus = 0;
