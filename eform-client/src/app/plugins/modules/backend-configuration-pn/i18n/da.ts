@@ -153,5 +153,7 @@ export const da = {
   'Select report': 'Vælg rapport',
   'Select area': 'Vælg område',
   'Year': 'År',
-  'Download': 'Hent'
+  'Download': 'Hent',
+  'Plan and assign': 'Planlæg og tildel',
+  'Workorder flow enable': 'Aktivér opgavestyring'
 };
