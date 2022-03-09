@@ -1024,12 +1024,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                                 .ToListAsync();
 
+                                            // foreach (var planningCaseSite in someList)
+                                            // {
+                                            //     var microtingCase = await sdkDbContext.Cases
+                                            //         .SingleOrDefaultAsync(x =>
+                                            //             x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                            //     await core.CaseDelete((int)microtingCase.MicrotingUid);
+                                            // }
                                             foreach (var planningCaseSite in someList)
                                             {
-                                                var microtingCase = await sdkDbContext.Cases
-                                                    .SingleOrDefaultAsync(x =>
-                                                        x.Id == planningCaseSite.MicrotingSdkCaseId);
-                                                await core.CaseDelete((int)microtingCase.MicrotingUid);
+                                                var result =
+                                                    await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                                if (result is {MicrotingUid: { }})
+                                                {
+                                                    await core.CaseDelete((int)result.MicrotingUid);
+                                                }
+                                                else
+                                                {
+                                                    var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                                        x.Id == planningCaseSite.MicrotingCheckListSitId);
+
+                                                    await core.CaseDelete(clSites.MicrotingUid);
+                                                }
                                             }
                                         }
                                     }
