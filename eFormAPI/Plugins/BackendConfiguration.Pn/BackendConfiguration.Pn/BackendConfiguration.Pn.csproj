@@ -185,7 +185,7 @@
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.0.83" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.101" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.102" />
     </ItemGroup>
 
     <ItemGroup>
