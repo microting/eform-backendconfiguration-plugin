@@ -121,7 +121,7 @@ export const da = {
   'View areas': 'Vælg kontrolområder',
   Task: 'Opgave',
   'Assigned to': 'Tildelt til',
-  'View compliance': 'Alle',
+  'View compliance': 'Vis alle planlagte kontrolområder',
   'View compliance 30 days': '30 dage',
   'Compliance 30 days': 'Overholdelse af regler - 30 dage',
   'Compliance enable': 'Vis i Regeloverholdelse',
