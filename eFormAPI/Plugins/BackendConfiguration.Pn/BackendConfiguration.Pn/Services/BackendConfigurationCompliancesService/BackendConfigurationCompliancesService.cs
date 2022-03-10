@@ -253,10 +253,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     .FirstOrDefaultAsync();
 
                 if(foundCase != null) {
-                    var now = DateTime.UtcNow;
+                    // var now = DateTime.UtcNow;
                     var newDoneAt = new DateTime(model.DoneAt.AddDays(1).Year, model.DoneAt.AddDays(1).Month,
-                        model.DoneAt.AddDays(1).Day, now.Hour, now.Minute,
-                        now.Second, DateTimeKind.Utc);
+                        model.DoneAt.AddDays(1).Day, 0, 0,
+                        0, DateTimeKind.Utc);
                     foundCase.DoneAtUserModifiable = newDoneAt;
                     foundCase.DoneAt = newDoneAt;
 
@@ -283,6 +283,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
 
                             planningCaseSite.MicrotingSdkCaseDoneAt = newDoneAt;
+                            planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
                             planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
                             planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
                             await planningCaseSite.Update(_itemsPlanningPnDbContext);
@@ -300,6 +301,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                                 planningCase = await SetFieldValue(planningCase, foundCase.Id, language);
                                 await planningCase.Update(_itemsPlanningPnDbContext);
                             }
+
+                            planningCaseSite.PlanningCaseId = planningCase.Id;
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
                         }
                     }
                     else
@@ -329,6 +333,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                                 planningCase = await SetFieldValue(planningCase, foundCase.Id, language);
                                 await planningCase.Update(_itemsPlanningPnDbContext);
                             }
+                            planningCaseSite.PlanningCaseId = planningCase.Id;
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
                         }
                     }
                 }
