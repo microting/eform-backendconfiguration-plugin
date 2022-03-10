@@ -61,7 +61,7 @@ export const da = {
   'Property name': 'Ejendomsnavn',
   'Property address': 'Ejendomsadresse',
   'Check to pair': 'Kontroller at parre',
-  'Hours and energy': 'Stunden und energie',
+  'Hours and energy': 'Aflæs Timer og energi (MWh)',
   'New employee': 'Ny medarbejder',
   'Edit employee': 'Rediger medarbejder',
   Properties: 'Ejendomme',
