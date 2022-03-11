@@ -281,19 +281,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "Søndag",
+                                        Name = "20.07 Søndag",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "Sunday",
+                                        Name = "20.07 Sunday",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "Sonntag",
+                                        Name = "20.07 Sonntag",
                                         Description = "",
                                     },
                                 }, folderId),
@@ -302,19 +302,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "Mandag",
+                                        Name = "20.01 Mandag",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "Monday",
+                                        Name = "20.01 Monday",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "Montag",
+                                        Name = "20.01 Montag",
                                         Description = "",
                                     },
                                 }, folderId),
@@ -323,19 +323,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "Tirsdag",
+                                        Name = "20.02 Tirsdag",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "Tuesday",
+                                        Name = "20.02 Tuesday",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "Dienstag",
+                                        Name = "20.02 Dienstag",
                                         Description = "",
                                     },
                                 }, folderId),
@@ -344,19 +344,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "Onsdag",
+                                        Name = "20.03 Onsdag",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "Wednesday",
+                                        Name = "20.03 Wednesday",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "Mittwoch",
+                                        Name = "20.03 Mittwoch",
                                         Description = "",
                                     },
                                 }, folderId),
@@ -365,19 +365,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "Torsdag",
+                                        Name = "20.04 Torsdag",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "Thursday",
+                                        Name = "20.04 Thursday",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "Donnerstag",
+                                        Name = "20.04 Donnerstag",
                                         Description = "",
                                     },
                                 }, folderId),
@@ -386,19 +386,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "Fredag",
+                                        Name = "20.05 Fredag",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "Friday",
+                                        Name = "20.05 Friday",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "Freitag",
+                                        Name = "20.05 Freitag",
                                         Description = "",
                                     },
                                 }, folderId),
@@ -407,19 +407,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "Lørdag",
+                                        Name = "20.06 Lørdag",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "Saturday",
+                                        Name = "20.06 Saturday",
                                         Description = "",
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "Samstag",
+                                        Name = "20.06 Samstag",
                                         Description = "",
                                     },
                                 }, folderId),
