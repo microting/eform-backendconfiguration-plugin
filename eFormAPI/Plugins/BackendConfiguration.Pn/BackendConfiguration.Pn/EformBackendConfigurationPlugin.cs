@@ -373,6 +373,76 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Diverse");
+            if (areaTranslation2 != null)
+            {
+                areaTranslation2.Name = "99. Diverse";
+                await areaTranslation2.Update(context);
+
+                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Diverse").ToListAsync();
+
+                foreach (var folderTranslation2 in folderTranslations)
+                {
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                    var folderTranslationList = new List<CommonTranslationsModel>();
+                    var folderTranslation = new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 1,
+                        Name = "99. Diverse",
+                    };
+                    folderTranslationList.Add(folderTranslation);
+
+                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+                }
+
+                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
+
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Diverse")?.CheckListId;
+
+                foreach (var areaRule in areaRules)
+                {
+                    areaRule.EformId = eFormId;
+                    areaRule.EformName = "99. Diverse";
+                    await areaRule.Update(context);
+                }
+            }
+
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Miscellaneous");
+            if (areaTranslation2 != null)
+            {
+                areaTranslation2.Name = "99. Miscellaneous";
+                await areaTranslation2.Update(context);
+
+                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Miscellaneous").ToListAsync();
+
+                foreach (var folderTranslation2 in folderTranslations)
+                {
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                    var folderTranslationList = new List<CommonTranslationsModel>();
+                    var folderTranslation = new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 2,
+                        Name = "99. Miscellaneous",
+                    };
+                    folderTranslationList.Add(folderTranslation);
+
+                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+                }
+
+                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
+
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Miscellaneous")?.CheckListId;
+
+                foreach (var areaRule in areaRules)
+                {
+                    areaRule.EformId = eFormId;
+                    areaRule.EformName = "99. Miscellaneous";
+                    await areaRule.Update(context);
+                }
+            }
+
             var areaTranslations = await context.AreaTranslations.Where(x => x.Name.Contains("23.")).ToListAsync();
             foreach (var areaTranslation in areaTranslations)
             {
