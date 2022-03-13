@@ -1970,7 +1970,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     planning.RepeatUntil =
                         areaRulePlanningModel.TypeSpecificFields.EndDate;
                     planning.DayOfWeek =
-                        (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                        (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Sunday : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                     planning.DayOfMonth =
                         areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                 }
