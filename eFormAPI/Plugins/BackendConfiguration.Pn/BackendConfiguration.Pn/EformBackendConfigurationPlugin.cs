@@ -373,6 +373,13 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            var theTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "100. Diverse");
+            if (theTag != null)
+            {
+                theTag.Name = "99. Diverse";
+                await theTag.Update(itemsPlanningContext);
+            }
+
             areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Diverse");
             if (areaTranslation2 != null)
             {
