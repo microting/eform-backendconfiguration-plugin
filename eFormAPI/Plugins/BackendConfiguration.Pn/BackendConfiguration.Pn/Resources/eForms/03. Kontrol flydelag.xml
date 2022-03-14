@@ -59,6 +59,12 @@
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
+              <Key>0</Key>
+              <Value><![CDATA[ - | - ]]></Value>
+              <Selected>false</Selected>
+              <DisplayOrder>0</DisplayOrder>
+            </KeyValuePair>
+            <KeyValuePair>
               <Key>1</Key>
               <Value><![CDATA[Beholder omrørt|Slurry tank stirred]]></Value>
               <Selected>false</Selected>

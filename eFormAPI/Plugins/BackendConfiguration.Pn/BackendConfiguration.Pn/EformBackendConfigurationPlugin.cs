@@ -760,6 +760,44 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "371900");
+            var theDbFieldOption = await sdkDbContext.FieldOptions.SingleOrDefaultAsync(x => x.Key == "0" && x.FieldId == dbField.Id);
+            if (theDbFieldOption == null)
+            {
+                theDbFieldOption = new FieldOption()
+                {
+                    Key = "0",
+                    DisplayOrder = "0",
+                    Selected = false,
+                    FieldId = dbField.Id
+                };
+                await theDbFieldOption.Create(sdkDbContext);
+
+                var dbFieldOptionTranslation = new FieldOptionTranslation()
+                {
+                    LanguageId = 1,
+                    Text = " - ",
+                    FieldOptionId = theDbFieldOption.Id
+                };
+                await dbFieldOptionTranslation.Create(sdkDbContext);
+
+                dbFieldOptionTranslation = new FieldOptionTranslation()
+                {
+                    LanguageId = 2,
+                    Text = " - ",
+                    FieldOptionId = theDbFieldOption.Id
+                };
+                await dbFieldOptionTranslation.Create(sdkDbContext);
+
+                dbFieldOptionTranslation = new FieldOptionTranslation()
+                {
+                    LanguageId = 3,
+                    Text = " - ",
+                    FieldOptionId = theDbFieldOption.Id
+                };
+                await dbFieldOptionTranslation.Create(sdkDbContext);
+            }
+
             var tag =
                 await itemsPlanningContext.PlanningTags.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
             if (tag != null)
