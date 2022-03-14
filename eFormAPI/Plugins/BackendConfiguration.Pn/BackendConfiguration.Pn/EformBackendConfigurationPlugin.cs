@@ -337,6 +337,40 @@ namespace BackendConfiguration.Pn
                 await field.Delete(sdkDbContext);
             }
 
+            // Removing the old info fields for eForm 15,16,17
+            fieldOriginalIds = new List<string>
+            {
+                "372091",
+                "372092",
+                "372093",
+                "372094",
+                "372095",
+                "372096",
+                "372097",
+                "372098",
+                "372099",
+                "372100",
+                "372101",
+                "372102",
+                "372103",
+                "372104",
+                "372105",
+                "372106",
+                "372107",
+                "372108",
+                "372109",
+                "372110",
+                "372112"
+            };
+
+            fields = await sdkDbContext.Fields.Where(x => fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+
+            foreach (var field in fields)
+            {
+                field.Mandatory = 1;
+                await field.Update(sdkDbContext);
+            }
+
             var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
             if (areaTranslation2 != null)
             {
