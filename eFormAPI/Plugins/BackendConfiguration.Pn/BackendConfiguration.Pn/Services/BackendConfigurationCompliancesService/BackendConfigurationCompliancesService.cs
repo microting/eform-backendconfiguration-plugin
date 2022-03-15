@@ -345,37 +345,31 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
                 var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
 
-                if (_backendConfigurationPnDbContext.Compliances.Any(x =>
-                        x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                if (_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                        x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
+                        x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
-                    if (property is not {ComplianceStatus: 0})
-                    {
-                        if (_backendConfigurationPnDbContext.Compliances.Any(x =>
-                                x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
-                                x.WorkflowState != Constants.WorkflowStates.Removed))
-                        {
-                            property.ComplianceStatus = 2;
-                            property.ComplianceStatusThirty = 2;
-                            await property.Update(_backendConfigurationPnDbContext);
-                        }
-                    }
-
-                    if (property is not {ComplianceStatusThirty: 0})
-                    {
-                        if (!_backendConfigurationPnDbContext.Compliances.Any(x =>
-                                x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
-                                x.WorkflowState != Constants.WorkflowStates.Removed))
-                        {
-                            property.ComplianceStatusThirty = 0;
-                            await property.Update(_backendConfigurationPnDbContext);
-                        }
-                    }
+                    property.ComplianceStatus = 2;
+                    property.ComplianceStatusThirty = 2;
+                    await property.Update(_backendConfigurationPnDbContext);
                 }
                 else
                 {
-                    property.ComplianceStatus = 0;
-                    property.ComplianceStatusThirty = 0;
-                    await property.Update(_backendConfigurationPnDbContext);
+                    if (!_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                            x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
+                            x.WorkflowState != Constants.WorkflowStates.Removed))
+                    {
+                        property.ComplianceStatusThirty = 0;
+                        await property.Update(_backendConfigurationPnDbContext);
+                    }
+
+                    if (!_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
+                            x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
+                            x.WorkflowState != Constants.WorkflowStates.Removed))
+                    {
+                        property.ComplianceStatus = 0;
+                        await property.Update(_backendConfigurationPnDbContext);
+                    }
                 }
 
                 return new OperationResult(true, _localizationService.GetString("CaseHasBeenUpdated"));
