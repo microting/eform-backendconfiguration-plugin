@@ -844,6 +844,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 property.UpdatedByUserId = _userService.UserId;
                 await property.Delete(_backendConfigurationPnDbContext);
 
+                if (property.EntitySelectListAreas != null)
+                {
+                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListAreas);
+                    await core.EntityGroupDelete(eg.MicrotingUid);
+                }
+
+                if (property.EntitySelectListDeviceUsers != null) {
+                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListDeviceUsers);
+                    await core.EntityGroupDelete(eg.MicrotingUid);
+                }
+
                 return new OperationResult(true,
                     _backendConfigurationLocalizationService.GetString("SuccessfullyDeleteProperties"));
             }
