@@ -52,16 +52,16 @@
                     [routerLink]="['../compliances/', property.id]"
                     [disabled]="!property.isWorkersAssigned"
             >
-              <fa-icon icon="eye" [fixedWidth]="true"></fa-icon>
+              <fa-icon icon="list-alt" [fixedWidth]="true"></fa-icon>
             </button>
-            <button id="showComplianceThirtyBtn"
-                    class="btn {{getColorBadge(property.complianceStatusThirty)}} btn-icon mr-2"
-                    mdbTooltip="{{ 'View compliance 30 days' | translate }}"
-                    [routerLink]="['../compliances', property.id, property.complianceStatusThirty]"
-                    [disabled]="!property.isWorkersAssigned"
-            >
-              <fa-icon icon="eye" [fixedWidth]="true"></fa-icon>
-            </button>
+<!--            <button id="showComplianceThirtyBtn"-->
+<!--                    class="btn {{getColorBadge(property.complianceStatusThirty)}} btn-icon mr-2"-->
+<!--                    mdbTooltip="{{ 'View compliance 30 days' | translate }}"-->
+<!--                    [routerLink]="['../compliances', property.id, property.complianceStatusThirty]"-->
+<!--                    [disabled]="!property.isWorkersAssigned"-->
+<!--            >-->
+<!--              <fa-icon icon="list-alt" [fixedWidth]="true"></fa-icon>-->
+<!--            </button>-->
           </td>
           <td>
             <div class="d-flex flex-row justify-content-center">

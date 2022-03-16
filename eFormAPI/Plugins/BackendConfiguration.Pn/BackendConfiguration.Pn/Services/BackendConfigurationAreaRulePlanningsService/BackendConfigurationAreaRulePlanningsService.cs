@@ -142,6 +142,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                         await rulePlanning.Update(_backendConfigurationPnDbContext);
 
+                        var property =
+                            await _backendConfigurationPnDbContext.Properties
+                                .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
                         switch (oldStatus)
                         {
                             // create item planning
@@ -220,6 +223,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                         : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 areaRule.AreaRulesPlannings[0].ItemPlanningId =
                                                     planningForType2TypeTankOpen.Id;
+                                                areaRule.AreaRulesPlannings[0].Status = true;
                                                 await areaRule.AreaRulesPlannings[0]
                                                     .Update(_backendConfigurationPnDbContext);
                                             }
@@ -307,6 +311,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                         ? 1
                                                         : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 areaRule.AreaRulesPlannings[1].ItemPlanningId = planningForType2AlarmYes.Id;
+                                                areaRule.AreaRulesPlannings[1].Status = true;
                                                 await areaRule.AreaRulesPlannings[1]
                                                     .Update(_backendConfigurationPnDbContext);
                                             }
@@ -385,6 +390,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             areaRule.AreaRulesPlannings[2].ItemPlanningId = planningForType2.Id;
                                             areaRule.AreaRulesPlannings[2].DayOfMonth =
                                                 (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                            areaRule.AreaRulesPlannings[2].Status = true;
                                             await areaRule.AreaRulesPlannings[2].Update(_backendConfigurationPnDbContext);
                                             i = areaRule.AreaRulesPlannings.Count;
                                             break;
@@ -469,9 +475,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                     .ToList();
                                                 foreach (var siteId in sites)
                                                 {
-                                                    var property =
-                                                        await _backendConfigurationPnDbContext.Properties
-                                                            .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
                                                     var eformName = $"05. Halebid - {property.Name}";
                                                     var eformId = await sdkDbContext.CheckListTranslations
                                                         .Where(x => x.Text == eformName)
@@ -522,9 +525,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             else
                                             {
                                                 // TODO add the remove check
-                                                var property =
-                                                    await _backendConfigurationPnDbContext.Properties
-                                                        .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
                                                 var eformName = $"05. Halebid - {property.Name}";
                                                 var eformId = await sdkDbContext.CheckListTranslations
                                                     .Where(x => x.Text == eformName)
@@ -897,7 +897,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                             await planning.Create(_itemsPlanningPnDbContext);
                                             await _pairItemWichSiteHelper.Pair(
-                                                rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
+                                                rulePlanning.PlanningSites
+                                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                                    .Select(x => x.SiteId).ToList(),
                                                 (int)areaRule.EformId,
                                                 planning.Id,
                                                 areaRule.FolderId);
@@ -912,57 +914,67 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             case true when !areaRulePlanningModel.Status:
                                 if (rulePlanning.ItemPlanningId != 0)
                                 {
-                                    await DeleteItemPlanning(rulePlanning.ItemPlanningId);
-                                    rulePlanning.ItemPlanningId = 0;
-                                    await rulePlanning.Update(_backendConfigurationPnDbContext);
-                                }
-
-                                if (areaRule.Area.Type == AreaTypesEnum.Type3)
-                                {
-                                    var property =
-                                        await _backendConfigurationPnDbContext.Properties
-                                            .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
-                                    var eformName = $"05. Halebid - {property.Name}";
-                                    var eformId = await sdkDbContext.CheckListTranslations
-                                        .Where(x => x.Text == eformName)
-                                        .Select(x => x.CheckListId)
-                                        .FirstAsync();
-
-                                    var numRules = _backendConfigurationPnDbContext.AreaRules
-                                        .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
-                                            rule => rule.Id,
-                                            rulePlanningModel => rulePlanningModel.AreaRuleId,
-                                            (rule, planning) =>
-                                                new
-                                                {
-                                                    rule.PropertyId,
-                                                    rule.AreaId,
-                                                    planning.Status,
-                                                    planning.WorkflowState,
-                                                    RuleWorkflowState = rule.WorkflowState
-                                                })
-                                        .Where(x => x.PropertyId == property.Id)
-                                        .Where(x => x.AreaId == areaRule.AreaId)
-                                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                        .Where(x => x.RuleWorkflowState != Constants.WorkflowStates.Removed)
-                                        .Count(x => x.Status == true);
-                                    // .Where(x =>
-                                    // x.TailBite == true && x.PropertyId == areaRule.PropertyId);
-                                    if (numRules == 0)
+                                    var complianceList = await _backendConfigurationPnDbContext.Compliances
+                                        .Where(x => x.PlanningId == rulePlanning.ItemPlanningId
+                                        && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                                    foreach (var compliance in complianceList)
                                     {
-                                        foreach (var checkListSite in sdkDbContext.CheckListSites.Where(x =>
-                                            x.CheckListId == eformId))
+                                        if (compliance != null)
                                         {
-                                            await core.CaseDelete(checkListSite.MicrotingUid);
+                                            await compliance.Delete(_backendConfigurationPnDbContext);
                                         }
                                     }
 
-                                    if (areaRule.GroupItemId != 0)
-                                    {
-                                        await core.EntityItemDelete(areaRule.GroupItemId);
-                                        areaRule.GroupItemId = 0;
-                                    }
+                                    await DeleteItemPlanning(rulePlanning.ItemPlanningId);
+
+                                    rulePlanning.ItemPlanningId = 0;
+                                    rulePlanning.Status = false;
+                                    await rulePlanning.Update(_backendConfigurationPnDbContext);
                                 }
+
+                                // if (areaRule.Area.Type == AreaTypesEnum.Type3)
+                                // {
+                                //     var eformName = $"05. Halebid - {property.Name}";
+                                //     var eformId = await sdkDbContext.CheckListTranslations
+                                //         .Where(x => x.Text == eformName)
+                                //         .Select(x => x.CheckListId)
+                                //         .FirstAsync();
+                                //
+                                //     var numRules = _backendConfigurationPnDbContext.AreaRules
+                                //         .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
+                                //             rule => rule.Id,
+                                //             rulePlanningModel => rulePlanningModel.AreaRuleId,
+                                //             (rule, planning) =>
+                                //                 new
+                                //                 {
+                                //                     rule.PropertyId,
+                                //                     rule.AreaId,
+                                //                     planning.Status,
+                                //                     planning.WorkflowState,
+                                //                     RuleWorkflowState = rule.WorkflowState
+                                //                 })
+                                //         .Where(x => x.PropertyId == property.Id)
+                                //         .Where(x => x.AreaId == areaRule.AreaId)
+                                //         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                //         .Where(x => x.RuleWorkflowState != Constants.WorkflowStates.Removed)
+                                //         .Count(x => x.Status == true);
+                                //     // .Where(x =>
+                                //     // x.TailBite == true && x.PropertyId == areaRule.PropertyId);
+                                //     if (numRules == 0)
+                                //     {
+                                //         foreach (var checkListSite in sdkDbContext.CheckListSites.Where(x =>
+                                //             x.CheckListId == eformId))
+                                //         {
+                                //             await core.CaseDelete(checkListSite.MicrotingUid);
+                                //         }
+                                //     }
+                                //
+                                //     if (areaRule.GroupItemId != 0)
+                                //     {
+                                //         await core.EntityItemDelete(areaRule.GroupItemId);
+                                //         areaRule.GroupItemId = 0;
+                                //     }
+                                // }
 
                                 break;
                             // update item planning
@@ -1012,12 +1024,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                                 .ToListAsync();
 
+                                            // foreach (var planningCaseSite in someList)
+                                            // {
+                                            //     var microtingCase = await sdkDbContext.Cases
+                                            //         .SingleOrDefaultAsync(x =>
+                                            //             x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                            //     await core.CaseDelete((int)microtingCase.MicrotingUid);
+                                            // }
                                             foreach (var planningCaseSite in someList)
                                             {
-                                                var microtingCase = await sdkDbContext.Cases
-                                                    .SingleOrDefaultAsync(x =>
-                                                        x.Id == planningCaseSite.MicrotingSdkCaseId);
-                                                await core.CaseDelete((int)microtingCase.MicrotingUid);
+                                                var result =
+                                                    await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                                if (result is {MicrotingUid: { }})
+                                                {
+                                                    await core.CaseDelete((int)result.MicrotingUid);
+                                                }
+                                                else
+                                                {
+                                                    var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                                        x.Id == planningCaseSite.MicrotingCheckListSitId);
+
+                                                    await core.CaseDelete(clSites.MicrotingUid);
+                                                }
                                             }
                                         }
                                     }
@@ -1043,7 +1071,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     }
 
                                     await planning.Update(_itemsPlanningPnDbContext);
-
                                     if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed) || !rulePlanning.ComplianceEnabled)
                                     {
                                         var complianceList = await _backendConfigurationPnDbContext.Compliances
@@ -1053,7 +1080,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         foreach (var compliance in complianceList)
                                         {
                                             await compliance.Delete(_backendConfigurationPnDbContext);
-                                            var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
                                             if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
                                             {
                                                 property.ComplianceStatusThirty = 2;
@@ -1061,14 +1087,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             }
                                             else
                                             {
-                                                if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
-                                                {
-                                                    property.ComplianceStatusThirty = _backendConfigurationPnDbContext.Compliances.Any(x =>
-                                                        x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
-                                                        x.WorkflowState != Constants.WorkflowStates.Removed) ? 1 : 0;
-                                                    property.ComplianceStatus = 1;
-                                                }
-                                                else
+                                                if (!_backendConfigurationPnDbContext.Compliances.Any(x =>
+                                                        x.PropertyId == property.Id && x.WorkflowState !=
+                                                        Constants.WorkflowStates.Removed))
                                                 {
                                                     property.ComplianceStatusThirty = 0;
                                                     property.ComplianceStatus = 0;
@@ -1285,13 +1306,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 await planning.Delete(_itemsPlanningPnDbContext);
 
 
-                if (!_itemsPlanningPnDbContext.PlanningSites.Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                if (!_itemsPlanningPnDbContext.PlanningSites.AsNoTracking().Any(x => x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
                     var complianceList = await _backendConfigurationPnDbContext.Compliances
-                        .Where(x => x.PlanningId == planning.Id).ToListAsync();
+                        .Where(x => x.PlanningId == planning.Id).AsNoTracking().ToListAsync();
                     foreach (var compliance in complianceList)
                     {
-                        await compliance.Delete(_backendConfigurationPnDbContext);
+                        var dbCompliacne =
+                            await _backendConfigurationPnDbContext.Compliances.SingleAsync(x => x.Id == compliance.Id);
+                        await dbCompliacne.Delete(_backendConfigurationPnDbContext);
                         var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
                         if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
@@ -1300,20 +1323,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         }
                         else
                         {
-                            if (_backendConfigurationPnDbContext.Compliances.Any(x => x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
-                            {
-                                property.ComplianceStatusThirty = _backendConfigurationPnDbContext.Compliances.Any(x =>
-                                    x.Deadline < DateTime.UtcNow.AddDays(30) && x.PropertyId == property.Id &&
-                                    x.WorkflowState != Constants.WorkflowStates.Removed) ? 1 : 0;
-                                property.ComplianceStatus = 1;
-                            }
-                            else
+                            if (!_backendConfigurationPnDbContext.Compliances.Any(x =>
+                                    x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
                             {
                                 property.ComplianceStatusThirty = 0;
                                 property.ComplianceStatus = 0;
                             }
                         }
-                        property.Update(_backendConfigurationPnDbContext).GetAwaiter().GetResult();
+
+                        await property.Update(_backendConfigurationPnDbContext);
                     }
                 }
             }
@@ -1952,7 +1970,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     planning.RepeatUntil =
                         areaRulePlanningModel.TypeSpecificFields.EndDate;
                     planning.DayOfWeek =
-                        (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Monday : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+                        (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0 ? DayOfWeek.Sunday : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
                     planning.DayOfMonth =
                         areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                 }

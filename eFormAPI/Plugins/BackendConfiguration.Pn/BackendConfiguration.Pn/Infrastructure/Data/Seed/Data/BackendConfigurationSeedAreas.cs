@@ -582,7 +582,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "17. Håndildslukkere",
+                        Name = "17. Brandslukkere",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 1
                     },
@@ -601,7 +601,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = "17. Håndildslukkere",
+                    EformName = "17. Brandslukkere",
                     Notifications = true,
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
@@ -778,19 +778,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "100. Diverse",
+                        Name = "99. Diverse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 1,
                     },
                     new()
                     {
-                        Name = "100. Miscellaneous",
+                        Name = "99. Miscellaneous",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 2, // en
                     },
                     new()
                     {
-                        Name = "100. Sonstig",
+                        Name = "99. Sonstig",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 3,
                     }

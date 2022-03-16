@@ -454,8 +454,29 @@
   {
     "Key": "Frequence",
     "LocalizedValue": {
-      "da": "Gentahes hver",
+      "da": "Gentages hver",
       "en-US": "Frequence" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Day",
+    "LocalizedValue": {
+      "da": "Dag",
+      "en-US": "Day" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Week",
+    "LocalizedValue": {
+      "da": "Uge",
+      "en-US": "Week" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Month",
+    "LocalizedValue": {
+      "da": "Måned",
+      "en-US": "Month" // todo maybe need add more translates
     }
   }
 ]

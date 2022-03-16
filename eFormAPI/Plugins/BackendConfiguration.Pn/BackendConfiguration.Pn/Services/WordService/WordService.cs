@@ -160,7 +160,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                 .Where(x => x.AreaRule.AreaId == area.Id)
                 //.Select(x => x.AreaRule)
                 .ToListAsync();
-            
+
             // Read html and template
             var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
             var assembly = Assembly.GetExecutingAssembly();
@@ -237,7 +237,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         var repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
                         var firstChar = repeatType.First().ToString();
                         repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
-                        itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {repeatType}</td>");
+                        itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {_localizationService.GetString(repeatType)}</td>");
                     }
                     //itemsHtml.Append(@"<tr><td></td><td></td><td></td></tr>");
                 }

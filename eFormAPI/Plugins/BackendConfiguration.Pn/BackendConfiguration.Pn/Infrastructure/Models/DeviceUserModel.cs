@@ -21,26 +21,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
-using BackendConfiguration.Pn.Infrastructure.Models;
-
-namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
+namespace BackendConfiguration.Pn.Infrastructure.Models
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.AssignmentWorker;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-
-    public interface IBackendConfigurationAssignmentWorkerService
+    public class DeviceUserModel
     {
-        Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment();
-
-        Task<OperationResult> Create(PropertyAssignWorkersModel createModel);
-
-        Task<OperationResult> Update(PropertyAssignWorkersModel updateModel);
-
-        Task<OperationResult> Delete(int deviceUserId);
-
-        Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel);
+        public int Id { get; set; }
+        public string UserFirstName { get; set; }
+        public string UserLastName { get; set; }
+        public int Language { get; set; }
+        public string LanguageCode { get; set; }
     }
 }

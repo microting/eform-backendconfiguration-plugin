@@ -311,6 +311,14 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "17. Håndildslukkere").ToListAsync();
+
+            foreach (var clTranslation in clTranslations)
+            {
+                clTranslation.Text = "17. Brandslukkere";
+                await clTranslation.Update(sdkDbContext);
+            }
+
             // Removing the old info fields for eForm 15,16,17
             var fieldOriginalIds = new List<string>
             {
@@ -329,10 +337,44 @@ namespace BackendConfiguration.Pn
                 await field.Delete(sdkDbContext);
             }
 
+            // Removing the old info fields for eForm 15,16,17
+            fieldOriginalIds = new List<string>
+            {
+                "372091",
+                "372092",
+                "372093",
+                "372094",
+                "372095",
+                "372096",
+                "372097",
+                "372098",
+                "372099",
+                "372100",
+                "372101",
+                "372102",
+                "372103",
+                "372104",
+                "372105",
+                "372106",
+                "372107",
+                "372108",
+                "372109",
+                "372110",
+                "372112"
+            };
+
+            fields = await sdkDbContext.Fields.Where(x => fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+
+            foreach (var field in fields)
+            {
+                field.Mandatory = 1;
+                await field.Update(sdkDbContext);
+            }
+
             var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
             if (areaTranslation2 != null)
             {
-                areaTranslation2.Name = "17. Håndildslukkere";
+                areaTranslation2.Name = "17. Brandslukkere";
                 await areaTranslation2.Update(context);
                 // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
 
@@ -361,6 +403,83 @@ namespace BackendConfiguration.Pn
                 {
                     areaRule.EformId = eFormId;
                     areaRule.EformName = "17. Brandslukkere";
+                    await areaRule.Update(context);
+                }
+            }
+
+            var theTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "100. Diverse");
+            if (theTag != null)
+            {
+                theTag.Name = "99. Diverse";
+                await theTag.Update(itemsPlanningContext);
+            }
+
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Diverse");
+            if (areaTranslation2 != null)
+            {
+                areaTranslation2.Name = "99. Diverse";
+                await areaTranslation2.Update(context);
+
+                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Diverse").ToListAsync();
+
+                foreach (var folderTranslation2 in folderTranslations)
+                {
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                    var folderTranslationList = new List<CommonTranslationsModel>();
+                    var folderTranslation = new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 1,
+                        Name = "99. Diverse",
+                    };
+                    folderTranslationList.Add(folderTranslation);
+
+                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+                }
+
+                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
+
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Diverse")?.CheckListId;
+
+                foreach (var areaRule in areaRules)
+                {
+                    areaRule.EformId = eFormId;
+                    areaRule.EformName = "99. Diverse";
+                    await areaRule.Update(context);
+                }
+            }
+
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Miscellaneous");
+            if (areaTranslation2 != null)
+            {
+                areaTranslation2.Name = "99. Miscellaneous";
+                await areaTranslation2.Update(context);
+
+                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Miscellaneous").ToListAsync();
+
+                foreach (var folderTranslation2 in folderTranslations)
+                {
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                    var folderTranslationList = new List<CommonTranslationsModel>();
+                    var folderTranslation = new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 2,
+                        Name = "99. Miscellaneous",
+                    };
+                    folderTranslationList.Add(folderTranslation);
+
+                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+                }
+
+                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
+
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Miscellaneous")?.CheckListId;
+
+                foreach (var areaRule in areaRules)
+                {
+                    areaRule.EformId = eFormId;
+                    areaRule.EformName = "99. Miscellaneous";
                     await areaRule.Update(context);
                 }
             }
@@ -451,6 +570,276 @@ namespace BackendConfiguration.Pn
 
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Mandag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "20.01 Mandag"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "20.01 Monday"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "20.01 Montag"
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Tirsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "20.02 Tirsdag"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "20.02 Tuesday"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "20.02 Diwstag"
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Onsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "20.03 Onsdag"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "20.03 Wednesday"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "20.03 Mittwoch"
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Torsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "20.04 Torsdag"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "20.04 Thursday"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "20.04 Donnerstag"
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Fredag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "20.05 Fredag"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "20.05 Friday"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "20.05 Freitag"
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Lørdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "20.06 Lørdag"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "20.06 Saturday"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "20.06 Samstag"
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Søndag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var folderTranslation2 in ftList)
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                var folderTranslationList = new List<CommonTranslationsModel>();
+                var folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "20.07 Søndag"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "20.07 Sunday"
+                };
+                folderTranslationList.Add(folderTranslation);
+                folderTranslation = new CommonTranslationsModel
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "20.07 Sonntag"
+                };
+                folderTranslationList.Add(folderTranslation);
+
+                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+            }
+
+            var dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "375734");
+            var dbFieldOptions = await sdkDbContext.FieldOptions.Where(x => x.FieldId == dbField.Id).ToListAsync();
+            foreach (var dbFieldOption in dbFieldOptions)
+            {
+                var dbFieldOptionTranslation =
+                    await sdkDbContext.FieldOptionTranslations.SingleOrDefaultAsync(x => x.Text == "Færdig" && x.FieldOptionId == dbFieldOption.Id);
+                if (dbFieldOptionTranslation != null)
+                {
+                    dbFieldOptionTranslation.Text = "Afsluttet";
+                    await dbFieldOptionTranslation.Update(sdkDbContext);
+                }
+            }
+
+            dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "371900");
+            var theDbFieldOption = await sdkDbContext.FieldOptions.SingleOrDefaultAsync(x => x.Key == "0" && x.FieldId == dbField.Id);
+            if (theDbFieldOption == null)
+            {
+                theDbFieldOption = new FieldOption()
+                {
+                    Key = "0",
+                    DisplayOrder = "0",
+                    Selected = false,
+                    FieldId = dbField.Id
+                };
+                await theDbFieldOption.Create(sdkDbContext);
+
+                var dbFieldOptionTranslation = new FieldOptionTranslation()
+                {
+                    LanguageId = 1,
+                    Text = " - ",
+                    FieldOptionId = theDbFieldOption.Id
+                };
+                await dbFieldOptionTranslation.Create(sdkDbContext);
+
+                dbFieldOptionTranslation = new FieldOptionTranslation()
+                {
+                    LanguageId = 2,
+                    Text = " - ",
+                    FieldOptionId = theDbFieldOption.Id
+                };
+                await dbFieldOptionTranslation.Create(sdkDbContext);
+
+                dbFieldOptionTranslation = new FieldOptionTranslation()
+                {
+                    LanguageId = 3,
+                    Text = " - ",
+                    FieldOptionId = theDbFieldOption.Id
+                };
+                await dbFieldOptionTranslation.Create(sdkDbContext);
+            }
+
+            var tag =
+                await itemsPlanningContext.PlanningTags.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
+            if (tag != null)
+            {
+                tag.Name = "17. Brandslukkere";
+                await tag.Update(itemsPlanningContext);
+            }
+
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)

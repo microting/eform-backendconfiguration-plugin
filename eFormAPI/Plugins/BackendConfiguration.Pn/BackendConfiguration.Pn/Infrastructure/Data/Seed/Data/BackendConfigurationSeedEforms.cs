@@ -33,7 +33,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			var theList = new List<KeyValuePair<string, List<string>>>();
 			var headers = new List<string>
 			{
-				"01. Aflæsning Miljøledelse","01.01 Elforbrug"
+				"01.Aflæsning Miljøledelse","01.01Elforbrug"
 			};
 			var item = new KeyValuePair<string, List<string>>("01. Elforbrug", headers);
 			theList.Add(item);
@@ -45,49 +45,49 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"01. Aflæsning Miljøledelse","01.02 Vandforbrug"
+				"01.Aflæsning Miljøledelse","01.02Vandforbrug"
 			};
 			item = new KeyValuePair<string, List<string>>("01. Vandforbrug", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"02. Beredskab","02.01 Brandudstyr"
+				"02.Beredskab","02.01Brandudstyr"
 			};
 			item = new KeyValuePair<string, List<string>>("02. Brandudstyr", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"02. Beredskab","02.02 Førstehjælpsudstyr"
+				"02.Beredskab","02.02Førstehjælpsudstyr"
 			};
 			item = new KeyValuePair<string, List<string>>("02. Førstehjælp", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"02. Beredskab","02.03 Sikkerhedsudstyr og værnemidler"
+				"02.Beredskab","02.03Sikkerhedsudstyr og værnemidler"
 			};
 			item = new KeyValuePair<string, List<string>>("02. Sikkerhedsudstyr_værnemidler", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"03. Gyllebeholdere","03.02 Alarm"
+				"03.Gyllebeholdere","03.02Alarm"
 			};
 			item = new KeyValuePair<string, List<string>>("03. Kontrol alarmanlæg gyllebeholder", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"03. Gyllebeholdere","03.01 Flydelag"
+				"03.Gyllebeholdere","03.01Flydelag"
 			};
 			item = new KeyValuePair<string, List<string>>("03. Kontrol flydelag", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"03. Gyllebeholdere","03.03 Konstruktion"
+				"03.Gyllebeholdere","03.03Konstruktion"
 			};
 			item = new KeyValuePair<string, List<string>>("03. Kontrol konstruktion", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"04. Foderindlægssedler",""
+				"04.Foderindlægssedler",""
 			};
 			item = new KeyValuePair<string, List<string>>("04. Foderindlægssedler", headers);
 			theList.Add(item);
@@ -99,109 +99,109 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// theList.Add(item);
 			headers = new List<string>
 			{
-				"05. Klargøring af stalde og dokumentation af halebid","05.02 Klargøring af stalde"
+				"05.Klargøring af stalde og dokumentation af halebid","05.02Klargøring af stalde"
 			};
 			item = new KeyValuePair<string, List<string>>("05. Stald_klargøring", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"06. Fodersiloer",""
+				"06.Fodersiloer",""
 			};
 			item = new KeyValuePair<string, List<string>>("06. Siloer", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"07. Dokumentation skadedyrsbekæmpelse","07.01 Fluer"
+				"07.Dokumentation skadedyrsbekæmpelse","07.01Fluer"
 			};
 			item = new KeyValuePair<string, List<string>>("07. Fluer", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"07. Dokumentation skadedyrsbekæmpelse","07.02 Rotter"
+				"07.Dokumentation skadedyrsbekæmpelse","07.02Rotter"
 			};
 			item = new KeyValuePair<string, List<string>>("07. Rotter", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"08. Luftrensning","08.01 Driftsstop"
+				"08.Luftrensning","08.01Driftsstop"
 			};
 			item = new KeyValuePair<string, List<string>>("08. Luftrensning driftsstop", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"08. Luftrensning","08.02 Serviceaftale"
+				"08.Luftrensning","08.02Serviceaftale"
 			};
 			item = new KeyValuePair<string, List<string>>("08. Luftrensning serviceaftale", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"08. Luftrensning","08.03 Timer"
+				"08.Luftrensning","08.03Timer"
 			};
 			item = new KeyValuePair<string, List<string>>("08. Luftrensning timer", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"09. Forsuring","09.01 Driftsstop"
+				"09.Forsuring","09.01Driftsstop"
 			};
 			item = new KeyValuePair<string, List<string>>("09. Forsuring driftsstop", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"09. Forsuring","09.03 pH værdi"
+				"09.Forsuring","09.03pH værdi"
 			};
 			item = new KeyValuePair<string, List<string>>("09. Forsuring pH værdi", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"09. Forsuring","09.02 Serviceaftale"
+				"09.Forsuring","09.02Serviceaftale"
 			};
 			item = new KeyValuePair<string, List<string>>("09. Forsuring serviceaftale", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"10. Varmepumpe","10.01 Driftsstop"
+				"10.Varmepumpe","10.01Driftsstop"
 			};
 			item = new KeyValuePair<string, List<string>>("10. Varmepumpe driftsstop", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"10. Varmepumpe","10.02 Serviceaftale"
+				"10.Varmepumpe","10.02Serviceaftale"
 			};
 			item = new KeyValuePair<string, List<string>>("10. Varmepumpe serviceaftale", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"10. Varmepumpe","10.03 Timer og energi"
+				"10.Varmepumpe","10.03Timer og energi"
 			};
 			item = new KeyValuePair<string, List<string>>("10. Varmepumpe timer og energi", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"11. Varmekilder",""
+				"11.Varmekilder",""
 			};
 			item = new KeyValuePair<string, List<string>>("11. Pillefyr", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"12. Miljøfarlige stoffer","12.01 Affald og farligt affald"
+				"12.Miljøfarlige stoffer","12.01Affald og farligt affald"
 			};
 			item = new KeyValuePair<string, List<string>>("12. Affald og farligt affald", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"12. Miljøfarlige stoffer","12.02 Dieseltank"
+				"12.Miljøfarlige stoffer","12.02Dieseltank"
 			};
 			item = new KeyValuePair<string, List<string>>("12. Dieseltank", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"12. Miljøfarlige stoffer","12.03 Kemi"
+				"12.Miljøfarlige stoffer","12.03Kemi"
 			};
 			item = new KeyValuePair<string, List<string>>("12. Kemi", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"12. Miljøfarlige stoffer","12.04 Motor- og spildolie"
+				"12.Miljøfarlige stoffer","12.04Motor- og spildolie"
 			};
 			item = new KeyValuePair<string, List<string>>("12. Motor- og spildolie", headers);
 			theList.Add(item);
@@ -219,55 +219,55 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"14. Maskiner",""
+				"14.Maskiner",""
 			};
 			item = new KeyValuePair<string, List<string>>("14. Maskiner", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"15. Elværktøj",""
+				"15.Elværktøj",""
 			};
 			item = new KeyValuePair<string, List<string>>("15. Elværktøj", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"16. Stiger",""
+				"16.Stiger",""
 			};
 			item = new KeyValuePair<string, List<string>>("16. Stiger", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"17. Brandslukkere",""
+				"17.Brandslukkere",""
 			};
-			item = new KeyValuePair<string, List<string>>("17. Håndildslukkere", headers);
+			item = new KeyValuePair<string, List<string>>("17. Brandslukkere", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"18. Alarm",""
+				"18.Alarm",""
 			};
 			item = new KeyValuePair<string, List<string>>("18. Alarm", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"19. Ventilation",""
+				"19.Ventilation",""
 			};
 			item = new KeyValuePair<string, List<string>>("19. Ventilation", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"20. Arbejdsopgaver",""
+				"20.Arbejdsopgaver",""
 			};
 			item = new KeyValuePair<string, List<string>>("20. Arbejdsopgave udført", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"21. DANISH Produktstandard v. 1.01",""
+				"21.DANISH Produktstandard v. 1.01",""
 			};
 			item = new KeyValuePair<string, List<string>>("21. DANISH Produktstandard v_1_01", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"22. Sigtetest",""
+				"22.Sigtetest",""
 			};
 			item = new KeyValuePair<string, List<string>>("22. Sigtetest", headers);
 			theList.Add(item);
