@@ -588,8 +588,15 @@ export class AreaRuleRowObject {
       }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
         await (
-          await backendConfigurationAreaRulesPage.planRepeatEvery()
+          await (await backendConfigurationAreaRulesPage.planRepeatEvery()).$(
+            'input'
+          )
         ).setValue(areaRulePlanningCreateUpdate.repeatEvery);
+        const value = await (
+          await backendConfigurationAreaRulesPage.planRepeatEvery()
+        ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatEvery}`);
+        value.waitForDisplayed({ timeout: 40000 });
+        await value.click();
       }
       if (areaRulePlanningCreateUpdate.repeatType) {
         await (
@@ -683,7 +690,9 @@ export class AreaRuleRowObject {
       ).isExisting()
     ) {
       plan.repeatEvery = await (
-        await backendConfigurationAreaRulesPage.planRepeatEvery()
+        await (await backendConfigurationAreaRulesPage.planRepeatEvery()).$(
+          'input'
+        )
       ).getValue();
     }
     if (

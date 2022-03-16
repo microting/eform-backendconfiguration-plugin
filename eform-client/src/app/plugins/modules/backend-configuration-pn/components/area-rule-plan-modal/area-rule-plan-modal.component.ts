@@ -38,6 +38,9 @@ export class AreaRulePlanModalComponent implements OnInit {
   selectedAreaRule: AreaRuleNameAndTypeSpecificFields = new AreaRuleNameAndTypeSpecificFields();
   days: number[] = R.range(1, 29);
   private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
+  repeatTypeDay: number[] = R.range(1, 8);// 1, 2, ..., 6, 7.
+  repeatTypeWeek: number[] = R.range(1, 53);// 1, 2, ..., 51, 52.
+  repeatTypeMonth: number[] = R.range(1, 13);// 1, 2, ..., 11, 12.
 
   get currentDate() {
     return set(new Date(), {
@@ -250,5 +253,20 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   isDisabledSaveBtn() {
     return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
+  }
+
+  repeatTypeMass() {
+    // @ts-ignore
+    switch (this.selectedAreaRulePlanning.typeSpecificFields.repeatType) {
+      case 1: { // day
+        return this.repeatTypeDay;
+      }
+      case 2: { // week
+        return this.repeatTypeWeek;
+      }
+      case 3: { // month
+        return this.repeatTypeMonth;
+      }
+    }
   }
 }

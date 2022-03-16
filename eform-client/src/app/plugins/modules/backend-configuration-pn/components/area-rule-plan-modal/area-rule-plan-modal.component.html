@@ -204,24 +204,16 @@
                 *ngIf="selectedArea.type != 5 && selectedArea.type != 2"
               >
                 <div class="row">
-                  <div class="col-md-6 col-sm-6 col-xs-6">
-                    <div class="md-form">
-                      <input
-                        mdbInput
-                        [(ngModel)]="
-                          selectedAreaRulePlanning.typeSpecificFields
-                            .repeatEvery
-                        "
-                        type="text"
-                        id="planRepeatEvery"
-                        name="createRepeatEvery"
-                        class="form-control"
-                        [disabled]="!selectedAreaRulePlanning.status"
-                      />
-                      <label for="planRepeatEvery">{{
-                        'Repeat every' | translate
-                      }}</label>
-                    </div>
+                  <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+                    <ng-select
+                      [items]="repeatTypeMass()"
+                      [placeholder]="'Repeat every' | translate"
+                      [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
+                      [clearable]="false"
+                      id="planRepeatEvery"
+                      name="createRepeatEvery"
+                    >
+                    </ng-select>
                   </div>
                   <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
                     <ng-select
