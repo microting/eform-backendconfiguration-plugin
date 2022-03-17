@@ -13,11 +13,7 @@ import {
   AreaRuleInitialFieldsModel,
   AreaRuleNameAndTypeSpecificFields,
   AreaRulePlanningModel,
-  AreaRuleSimpleModel,
-  AreaRuleT1PlanningModel,
-  AreaRuleT2PlanningModel,
-  AreaRuleT4PlanningModel,
-  AreaRuleT5PlanningModel,
+  AreaRuleSimpleModel, TypeSpecificFieldsAreaRulePlanning,
 } from '../../models';
 import { add, set } from 'date-fns';
 import * as R from 'ramda';
@@ -38,9 +34,15 @@ export class AreaRulePlanModalComponent implements OnInit {
   selectedAreaRule: AreaRuleNameAndTypeSpecificFields = new AreaRuleNameAndTypeSpecificFields();
   days: number[] = R.range(1, 29);
   private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
-  repeatTypeDay: number[] = R.range(1, 8);// 1, 2, ..., 6, 7.
-  repeatTypeWeek: number[] = R.range(1, 53);// 1, 2, ..., 51, 52.
-  repeatTypeMonth: number[] = R.range(1, 13);// 1, 2, ..., 11, 12.
+  repeatTypeDay: {name: string, id: number}[] = R.map(x => {
+    return {name: x === 1? 'Every' : x.toString(), id: x}
+  }, R.range(1, 31));// 1, 2, ..., 29, 30.
+  repeatTypeWeek: {name: string, id: number}[] = R.map(x => {
+    return {name: x === 1? 'Every' : x.toString(), id: x}
+  }, R.range(1, 51));// 1, 2, ..., 49, 50.
+  repeatTypeMonth: {name: string, id: number}[] = R.map(x => {
+    return {name: x === 1? 'Every' : x.toString(), id: x}
+  }, R.range(1, 25));// 1, 2, ..., 23, 24.
 
   get currentDate() {
     return set(new Date(), {
@@ -82,7 +84,6 @@ export class AreaRulePlanModalComponent implements OnInit {
         ...rule}, selectedPropertyId);
     }
     if (this.selectedArea.type === 5) {
-      this.selectedAreaRulePlanning.typeSpecificFields = <AreaRuleT5PlanningModel> this.selectedAreaRulePlanning.typeSpecificFields;
         if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek !== rule.typeSpecificFields.dayOfWeek) {
           this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = rule.typeSpecificFields.dayOfWeek;
         }
@@ -159,11 +160,7 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   generateRulePlanningTypeSpecificFields(
     initialFields: AreaInitialFieldsModel | AreaRuleInitialFieldsModel
-  ):
-    | AreaRuleT1PlanningModel
-    | AreaRuleT2PlanningModel
-    | AreaRuleT4PlanningModel
-    | AreaRuleT5PlanningModel {
+  ): TypeSpecificFieldsAreaRulePlanning {
     if (this.selectedArea.type === 1) {
       return {
         repeatEvery: initialFields.repeatEvery,
@@ -233,22 +230,17 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   updateEndDate(e: any) {
-    if (
-      this.selectedAreaRulePlanning.typeSpecificFields instanceof
-      AreaRuleT4PlanningModel
-    ) {
-      let date = new Date(e._d);
-      date = set(date, {
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
-      this.selectedAreaRulePlanning.typeSpecificFields.endDate = format(
-        date,
-        this.standartDateTimeFormat
-      );
-    }
+    let date = new Date(e._d);
+    date = set(date, {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
+    this.selectedAreaRulePlanning.typeSpecificFields.endDate = format(
+      date,
+      this.standartDateTimeFormat
+    );
   }
 
   isDisabledSaveBtn() {

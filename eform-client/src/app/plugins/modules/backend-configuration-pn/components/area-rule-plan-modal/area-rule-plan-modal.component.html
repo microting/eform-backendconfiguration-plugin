@@ -36,7 +36,9 @@
                 >
               </div>
             </div>
-            <div class="col-md-12">
+            <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
+                                           selectedAreaRulePlanning.typeSpecificFields.repeatEvery) ||
+                                           selectedArea.type === 4">
               <div class="custom-control custom-switch">
                 <input
                   type="checkbox"
@@ -49,8 +51,7 @@
                 <label
                   for="planAreaRuleComplianceEnableToggle"
                   class="custom-control-label"
-                >{{ "Compliance enable" | translate }}</label
-                >
+                >{{ "Compliance enable" | translate }}</label>
               </div>
             </div>
           </div>
@@ -177,7 +178,8 @@
             <!-- Rule type 1, 2, 3, 5 -->
             <ng-container *ngIf="selectedArea.type !== 4">
               <div class="row">
-                <div class="col-md-12">
+                <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
+                                               selectedAreaRulePlanning.typeSpecificFields.repeatEvery)">
                   <div class="custom-control custom-switch">
                     <input
                       class="custom-control-input"
@@ -206,17 +208,6 @@
                 <div class="row">
                   <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
                     <ng-select
-                      [items]="repeatTypeMass()"
-                      [placeholder]="'Repeat every' | translate"
-                      [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
-                      [clearable]="false"
-                      id="planRepeatEvery"
-                      name="createRepeatEvery"
-                    >
-                    </ng-select>
-                  </div>
-                  <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
-                    <ng-select
                       [items]="[
                         { id: 1, name: 'Day' | translate },
                         { id: 2, name: 'Week' | translate },
@@ -231,6 +222,19 @@
                       [clearable]="false"
                       id="planRepeatType"
                       [disabled]="!selectedAreaRulePlanning.status"
+                    >
+                    </ng-select>
+                  </div>
+                  <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+                    <ng-select
+                      bindLabel="name"
+                      bindValue="id"
+                      [items]="repeatTypeMass()"
+                      [placeholder]="'Repeat every' | translate"
+                      [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
+                      [clearable]="false"
+                      id="planRepeatEvery"
+                      name="createRepeatEvery"
                     >
                     </ng-select>
                   </div>
