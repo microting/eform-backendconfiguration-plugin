@@ -572,20 +572,6 @@ export class AreaRuleRowObject {
           await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
         ).click();
       }
-      if (areaRulePlanningCreateUpdate.notification !== undefined) {
-        await (
-          await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
-        ).click();
-      }
-      if(areaRulePlanningCreateUpdate.enableCompliance !== undefined) {
-        if(await (
-          await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-        ).getValue() !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
-          await (
-            await $('label[for=planAreaRuleComplianceEnableToggle]')
-          ).click();
-        }
-      }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
         await (
           await (await backendConfigurationAreaRulesPage.planRepeatEvery()).$(
@@ -609,6 +595,20 @@ export class AreaRuleRowObject {
         ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatType}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
+      }
+      if (areaRulePlanningCreateUpdate.notification !== undefined) {
+        await (
+          await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
+        ).click();
+      }
+      if (areaRulePlanningCreateUpdate.enableCompliance !== undefined) {
+        if(await (
+          await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
+        ).getValue() !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
+          await (
+            await $('label[for=planAreaRuleComplianceEnableToggle]')
+          ).click();
+        }
       }
       if (areaRulePlanningCreateUpdate.startDate) {
         await (
