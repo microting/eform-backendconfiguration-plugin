@@ -52,8 +52,6 @@ describe('Backend Configuration Area Rules Planning Type2', function () {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
       enableCompliance: true,
-      repeatType: 'Uge',
-      repeatEvery: '5',
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
     // areaRulePlanning.startDate = format(
