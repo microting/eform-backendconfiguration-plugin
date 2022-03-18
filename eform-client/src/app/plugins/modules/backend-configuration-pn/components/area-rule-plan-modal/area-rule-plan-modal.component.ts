@@ -88,6 +88,10 @@ export class AreaRulePlanModalComponent implements OnInit {
           this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = rule.typeSpecificFields.dayOfWeek;
         }
     }
+    if(!this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery && !this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery){
+      this.selectedAreaRulePlanning.sendNotifications = false;
+      this.selectedAreaRulePlanning.complianceEnabled = false;
+    }
     this.frame.show();
   }
 
@@ -161,58 +165,60 @@ export class AreaRulePlanModalComponent implements OnInit {
   generateRulePlanningTypeSpecificFields(
     initialFields: AreaInitialFieldsModel | AreaRuleInitialFieldsModel
   ): TypeSpecificFieldsAreaRulePlanning {
-    if (this.selectedArea.type === 1) {
-      return {
-        repeatEvery: initialFields.repeatEvery,
-        repeatType: initialFields.repeatType,
-      };
+    switch (this.selectedArea.type) {
+      case 1:{
+        return {
+          repeatEvery: initialFields.repeatEvery,
+          repeatType: initialFields.repeatType,
+        };
+      }
+      case 2: {
+        return {
+          repeatEvery: 1,
+          repeatType: 1,
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+        };
+      }
+      case 3: {
+        return {
+          endDate: format(
+            this.currentDatePlusTwoWeeks,
+            this.standartDateTimeFormat
+          ),
+          repeatEvery: 1,
+          repeatType: 1,
+        };
+      }
+      case 4: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          repeatEvery: 12,
+          repeatType: 3,
+        };
+      }
+      case 5: {
+        return {
+          dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
+          repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
+          repeatType: 2,
+        };
+      }
+      case 6: {
+        return {
+          repeatEvery: 12,
+          repeatType: 3,
+          hoursAndEnergyEnabled: true,
+        };
+      }
+      case 7: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+        };
+      }
+      default: {
+        return null;
+      }
     }
-    if (this.selectedArea.type === 2) {
-      return {
-        repeatEvery: 1,
-        repeatType: 1,
-        startDate: format(this.currentDate, this.standartDateTimeFormat),
-      };
-    }
-    if (this.selectedArea.type === 3) {
-      return {
-        endDate: format(
-          this.currentDatePlusTwoWeeks,
-          this.standartDateTimeFormat
-        ),
-        repeatEvery: 1,
-        repeatType: 1,
-      };
-    }
-    if (this.selectedArea.type === 4) {
-      return {
-        startDate: format(this.currentDate, this.standartDateTimeFormat),
-        repeatEvery: 12,
-        repeatType: 3,
-      };
-    }
-    if (this.selectedArea.type === 5) {
-      return {
-        dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
-        repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
-        repeatType: 2,
-      };
-    }
-    if (this.selectedArea.type === 6) {
-      return {
-        repeatEvery: 12,
-        repeatType: 3,
-        // @ts-ignore
-        hoursAndEnergyEnabled: true,
-      };
-    }
-    if (this.selectedArea.type === 7) {
-      // @ts-ignore
-      return {
-        startDate: format(this.currentDate, this.standartDateTimeFormat),
-      };
-    }
-    return null;
   }
 
   updateStartDate(e: any) {
@@ -260,5 +266,20 @@ export class AreaRulePlanModalComponent implements OnInit {
         return this.repeatTypeMonth;
       }
     }
+  }
+
+  onChangeRepeatEvery(repeatEvery: number) {
+    if(this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 1 && repeatEvery === 1){
+      this.selectedAreaRulePlanning.sendNotifications = false;
+      this.selectedAreaRulePlanning.complianceEnabled = false;
+    }
+    this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = repeatEvery;
+  }
+
+  onChangeRepeatType(repeatType: number) {
+    this.selectedAreaRulePlanning.typeSpecificFields.repeatType = repeatType;
+    this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = null
+    this.selectedAreaRulePlanning.sendNotifications = false;
+    this.selectedAreaRulePlanning.complianceEnabled = false;
   }
 }
