@@ -13,11 +13,7 @@ import {
   AreaRuleInitialFieldsModel,
   AreaRuleNameAndTypeSpecificFields,
   AreaRulePlanningModel,
-  AreaRuleSimpleModel,
-  AreaRuleT1PlanningModel,
-  AreaRuleT2PlanningModel,
-  AreaRuleT4PlanningModel,
-  AreaRuleT5PlanningModel,
+  AreaRuleSimpleModel, TypeSpecificFieldsAreaRulePlanning,
 } from '../../models';
 import { add, set } from 'date-fns';
 import * as R from 'ramda';
@@ -38,6 +34,15 @@ export class AreaRulePlanModalComponent implements OnInit {
   selectedAreaRule: AreaRuleNameAndTypeSpecificFields = new AreaRuleNameAndTypeSpecificFields();
   days: number[] = R.range(1, 29);
   private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
+  repeatTypeDay: {name: string, id: number}[] = R.map(x => {
+    return {name: x === 1? 'Every' : x.toString(), id: x}
+  }, R.range(1, 31));// 1, 2, ..., 29, 30.
+  repeatTypeWeek: {name: string, id: number}[] = R.map(x => {
+    return {name: x === 1? 'Every' : x.toString(), id: x}
+  }, R.range(1, 51));// 1, 2, ..., 49, 50.
+  repeatTypeMonth: {name: string, id: number}[] = R.map(x => {
+    return {name: x === 1? 'Every' : x.toString(), id: x}
+  }, R.range(1, 25));// 1, 2, ..., 23, 24.
 
   get currentDate() {
     return set(new Date(), {
@@ -79,10 +84,13 @@ export class AreaRulePlanModalComponent implements OnInit {
         ...rule}, selectedPropertyId);
     }
     if (this.selectedArea.type === 5) {
-      this.selectedAreaRulePlanning.typeSpecificFields = <AreaRuleT5PlanningModel> this.selectedAreaRulePlanning.typeSpecificFields;
         if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek !== rule.typeSpecificFields.dayOfWeek) {
           this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = rule.typeSpecificFields.dayOfWeek;
         }
+    }
+    if(!this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery && !this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery){
+      this.selectedAreaRulePlanning.sendNotifications = false;
+      this.selectedAreaRulePlanning.complianceEnabled = false;
     }
     this.frame.show();
   }
@@ -156,63 +164,61 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   generateRulePlanningTypeSpecificFields(
     initialFields: AreaInitialFieldsModel | AreaRuleInitialFieldsModel
-  ):
-    | AreaRuleT1PlanningModel
-    | AreaRuleT2PlanningModel
-    | AreaRuleT4PlanningModel
-    | AreaRuleT5PlanningModel {
-    if (this.selectedArea.type === 1) {
-      return {
-        repeatEvery: initialFields.repeatEvery,
-        repeatType: initialFields.repeatType,
-      };
+  ): TypeSpecificFieldsAreaRulePlanning {
+    switch (this.selectedArea.type) {
+      case 1:{
+        return {
+          repeatEvery: initialFields.repeatEvery,
+          repeatType: initialFields.repeatType,
+        };
+      }
+      case 2: {
+        return {
+          repeatEvery: 1,
+          repeatType: 1,
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+        };
+      }
+      case 3: {
+        return {
+          endDate: format(
+            this.currentDatePlusTwoWeeks,
+            this.standartDateTimeFormat
+          ),
+          repeatEvery: 1,
+          repeatType: 1,
+        };
+      }
+      case 4: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          repeatEvery: 12,
+          repeatType: 3,
+        };
+      }
+      case 5: {
+        return {
+          dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
+          repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
+          repeatType: 2,
+        };
+      }
+      case 6: {
+        return {
+          repeatEvery: 12,
+          repeatType: 3,
+          hoursAndEnergyEnabled: true,
+        };
+      }
+      case 7: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+        };
+      }
+      default: {
+        return null;
+      }
     }
-    if (this.selectedArea.type === 2) {
-      return {
-        repeatEvery: 1,
-        repeatType: 1,
-        startDate: format(this.currentDate, this.standartDateTimeFormat),
-      };
-    }
-    if (this.selectedArea.type === 3) {
-      return {
-        endDate: format(
-          this.currentDatePlusTwoWeeks,
-          this.standartDateTimeFormat
-        ),
-        repeatEvery: 1,
-        repeatType: 1,
-      };
-    }
-    if (this.selectedArea.type === 4) {
-      return {
-        startDate: format(this.currentDate, this.standartDateTimeFormat),
-        repeatEvery: 12,
-        repeatType: 3,
-      };
-    }
-    if (this.selectedArea.type === 5) {
-      return {
-        dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
-        repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
-        repeatType: 2,
-      };
-    }
-    if (this.selectedArea.type === 6) {
-      return {
-        repeatEvery: 12,
-        repeatType: 3,
-        // @ts-ignore
-        hoursAndEnergyEnabled: true,
-      };
-    }
-    if (this.selectedArea.type === 7) {
-      // @ts-ignore
-      return {
-        startDate: format(this.currentDate, this.standartDateTimeFormat),
-      };
-    }
-    return null;
   }
 
   updateStartDate(e: any) {
@@ -230,25 +236,50 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   updateEndDate(e: any) {
-    if (
-      this.selectedAreaRulePlanning.typeSpecificFields instanceof
-      AreaRuleT4PlanningModel
-    ) {
-      let date = new Date(e._d);
-      date = set(date, {
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
-      this.selectedAreaRulePlanning.typeSpecificFields.endDate = format(
-        date,
-        this.standartDateTimeFormat
-      );
-    }
+    let date = new Date(e._d);
+    date = set(date, {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
+    this.selectedAreaRulePlanning.typeSpecificFields.endDate = format(
+      date,
+      this.standartDateTimeFormat
+    );
   }
 
   isDisabledSaveBtn() {
     return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
+  }
+
+  repeatTypeMass() {
+    // @ts-ignore
+    switch (this.selectedAreaRulePlanning.typeSpecificFields.repeatType) {
+      case 1: { // day
+        return this.repeatTypeDay;
+      }
+      case 2: { // week
+        return this.repeatTypeWeek;
+      }
+      case 3: { // month
+        return this.repeatTypeMonth;
+      }
+    }
+  }
+
+  onChangeRepeatEvery(repeatEvery: number) {
+    if(this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 1 && repeatEvery === 1){
+      this.selectedAreaRulePlanning.sendNotifications = false;
+      this.selectedAreaRulePlanning.complianceEnabled = false;
+    }
+    this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = repeatEvery;
+  }
+
+  onChangeRepeatType(repeatType: number) {
+    this.selectedAreaRulePlanning.typeSpecificFields.repeatType = repeatType;
+    this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = null
+    this.selectedAreaRulePlanning.sendNotifications = false;
+    this.selectedAreaRulePlanning.complianceEnabled = false;
   }
 }

@@ -1,8 +1,4 @@
-import { AreaRuleT1PlanningModel } from './area-rule-t1-planning.model';
-import { AreaRuleT2PlanningModel } from './area-rule-t2-planning.model';
-import { AreaRuleT4PlanningModel } from './area-rule-t4-planning.model';
-import { AreaRuleT5PlanningModel } from './area-rule-t5-planning.model';
-import { AreaRuleT6PlanningModel } from './area-rule-t6-planning.model';
+import {AreaRuleT2AlarmsEnum, AreaRuleT2TypesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 
 export class AreaRulePlanningModel {
   ruleId: number;
@@ -11,16 +7,23 @@ export class AreaRulePlanningModel {
   startDate: string;
   assignedSites: AreaRuleAssignedSitesModel[] = [];
   propertyId: number;
-  typeSpecificFields:
-    | AreaRuleT1PlanningModel
-    | AreaRuleT2PlanningModel
-    | AreaRuleT4PlanningModel
-    | AreaRuleT5PlanningModel
-    | AreaRuleT6PlanningModel;
+  typeSpecificFields: TypeSpecificFieldsAreaRulePlanning;
   complianceEnabled: boolean;
 }
 
 export class AreaRuleAssignedSitesModel {
   siteId: number;
   checked: boolean;
+}
+
+export class TypeSpecificFieldsAreaRulePlanning {
+  repeatEvery?: number;
+  repeatType?: number;
+  dayOfMonth?: number;
+  dayOfWeek?: number;
+  type?: AreaRuleT2TypesEnum;
+  alarm?: AreaRuleT2AlarmsEnum;
+  startDate?: string;
+  endDate?: string;
+  hoursAndEnergyEnabled?: boolean;
 }

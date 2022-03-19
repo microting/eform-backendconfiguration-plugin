@@ -36,7 +36,9 @@
                 >
               </div>
             </div>
-            <div class="col-md-12">
+            <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
+                                           selectedAreaRulePlanning.typeSpecificFields.repeatEvery) ||
+                                           selectedArea.type === 4">
               <div class="custom-control custom-switch">
                 <input
                   type="checkbox"
@@ -49,8 +51,7 @@
                 <label
                   for="planAreaRuleComplianceEnableToggle"
                   class="custom-control-label"
-                >{{ "Compliance enable" | translate }}</label
-                >
+                >{{ "Compliance enable" | translate }}</label>
               </div>
             </div>
           </div>
@@ -177,7 +178,8 @@
             <!-- Rule type 1, 2, 3, 5 -->
             <ng-container *ngIf="selectedArea.type !== 4">
               <div class="row">
-                <div class="col-md-12">
+                <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
+                                               selectedAreaRulePlanning.typeSpecificFields.repeatEvery)">
                   <div class="custom-control custom-switch">
                     <input
                       class="custom-control-input"
@@ -204,25 +206,6 @@
                 *ngIf="selectedArea.type != 5 && selectedArea.type != 2"
               >
                 <div class="row">
-                  <div class="col-md-6 col-sm-6 col-xs-6">
-                    <div class="md-form">
-                      <input
-                        mdbInput
-                        [(ngModel)]="
-                          selectedAreaRulePlanning.typeSpecificFields
-                            .repeatEvery
-                        "
-                        type="text"
-                        id="planRepeatEvery"
-                        name="createRepeatEvery"
-                        class="form-control"
-                        [disabled]="!selectedAreaRulePlanning.status"
-                      />
-                      <label for="planRepeatEvery">{{
-                        'Repeat every' | translate
-                      }}</label>
-                    </div>
-                  </div>
                   <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
                     <ng-select
                       [items]="[
@@ -233,12 +216,25 @@
                       bindLabel="name"
                       [placeholder]="'Repeat Type' | translate"
                       bindValue="id"
-                      [(ngModel)]="
-                        selectedAreaRulePlanning.typeSpecificFields.repeatType
-                      "
+                      [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatType"
+                      (ngModelChange)="onChangeRepeatType($event)"
                       [clearable]="false"
                       id="planRepeatType"
                       [disabled]="!selectedAreaRulePlanning.status"
+                    >
+                    </ng-select>
+                  </div>
+                  <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
+                    <ng-select
+                      bindLabel="name"
+                      bindValue="id"
+                      [items]="repeatTypeMass()"
+                      [placeholder]="'Repeat every' | translate"
+                      [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
+                      (ngModelChange)="onChangeRepeatEvery($event)"
+                      [clearable]="false"
+                      id="planRepeatEvery"
+                      name="createRepeatEvery"
                     >
                     </ng-select>
                   </div>
