@@ -865,6 +865,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             ComplianceEnabled = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.ComplianceEnabled,
                         }
                         : null,
+                    InfoBox = areaProperties.Area.AreaTranslations
+                        .Where(x => x.LanguageId == language.Id)
+                        .Select(x => x.InfoBox)
+                        .FirstOrDefault(),
+                    Placeholder = areaProperties.Area.AreaTranslations
+                        .Where(x => x.LanguageId == language.Id)
+                        .Select(x => x.Placeholder)
+                        .FirstOrDefault(),
                 };
                 if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))
                 {

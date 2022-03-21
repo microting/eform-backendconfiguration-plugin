@@ -7,6 +7,8 @@ export class AreaModel {
   languages: CommonDictionaryModel[] = [];
   availableWorkers: SiteDto[] = [];
   initialFields: AreaInitialFieldsModel;
+  infoBox: string;
+  placeholder: string;
 }
 
 export class AreaInitialFieldsModel {

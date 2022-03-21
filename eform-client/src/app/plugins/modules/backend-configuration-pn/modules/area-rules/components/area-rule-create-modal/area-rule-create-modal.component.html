@@ -7,7 +7,21 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>{{ 'New rule' | translate }}</h3>
+        <h3>{{ 'New rule' | translate }}
+          <ng-template #popTemplate>
+            <p>{{ selectedArea.infoBox }}</p>
+          </ng-template>
+          <fa-icon
+            [mdbPopover]="popTemplate"
+            container="body"
+            placement="right"
+            [triggers]="'hover'"
+            icon="info"
+            size="lg"
+            style="font-size: 1rem"
+          >
+          </fa-icon>
+        </h3>
         <button class="close" data-dismiss="modal" (click)="hide()">
           <span>×</span>
         </button>
@@ -105,6 +119,7 @@
               <div class="row">
                 <div class="form-group col-xs-12 col-md-12">
                   <textarea
+                    [placeholder]="this.selectedArea.placeholder"
                     [(ngModel)]="newAreaRulesString"
                     class="form-control"
                     id="createAreaRulesString"

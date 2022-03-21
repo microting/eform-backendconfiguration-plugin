@@ -45,5 +45,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
             = new();
 
         public AreaInitialFields InitialFields { get; set; }
+
+        public string InfoBox { get; set; }
+
+        public string Placeholder { get; set; }
     }
 }
