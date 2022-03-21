@@ -261,6 +261,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     foundCase.DoneAt = newDoneAt;
 
                     foundCase.SiteId = sdkDbContext.Sites
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Single(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}").Id;
                     foundCase.Status = 100;
                     await foundCase.Update(sdkDbContext);
