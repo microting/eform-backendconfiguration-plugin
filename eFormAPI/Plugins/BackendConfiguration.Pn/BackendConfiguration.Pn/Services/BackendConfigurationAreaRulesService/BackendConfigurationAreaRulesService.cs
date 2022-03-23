@@ -416,10 +416,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                     }
                                     else
                                     {
-                                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                        var clSites = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
                                             x.Id == planningCaseSite.MicrotingCheckListSitId);
 
-                                        await core.CaseDelete(clSites.MicrotingUid);
+                                        if (clSites != null)
+                                        {
+                                            await core.CaseDelete(clSites.MicrotingUid);
+                                        }
                                     }
                                 }
 
@@ -429,7 +432,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                             planning.UpdatedByUserId = _userService.UserId;
                             await planning.Delete(_itemsPlanningPnDbContext);
-                            var complianceList = await _backendConfigurationPnDbContext.Compliances.Where(x => x.PlanningId == planning.Id).ToListAsync();
+                            var complianceList = await _backendConfigurationPnDbContext.Compliances.Where(x => x.PlanningId == planning.Id 
+                                && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
                             foreach (var compliance in complianceList)
                             {
                                 if (compliance != null)
