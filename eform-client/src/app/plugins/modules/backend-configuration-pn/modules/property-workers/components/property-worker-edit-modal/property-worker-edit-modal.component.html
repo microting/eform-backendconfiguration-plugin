@@ -17,7 +17,8 @@
           <div class="row">
             <div class="col-md-12">
               <div class="md-form">
-                <input *ngIf="!selectedDeviceUser.isLocked"
+                <input
+                  [disabled]="selectedDeviceUser.isLocked"
                   mdbInput
                   id="editFirstNameInput"
                   [(ngModel)]="selectedDeviceUser.userFirstName"
@@ -32,8 +33,9 @@
             </div>
             <div class="col-md-12">
               <div class="md-form">
-                <input *ngIf="!selectedDeviceUser.isLocked"
+                <input
                   mdbInput
+                  [disabled]="selectedDeviceUser.isLocked"
                   [(ngModel)]="selectedDeviceUser.userLastName"
                   type="text"
                   name="email"
