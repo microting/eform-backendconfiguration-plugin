@@ -150,16 +150,6 @@ public class WorkOrderHelper
                 .Where(x => x.Text == "01. New task")
                 .Select(x => x.CheckListId)
                 .FirstAsync();
-            var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Text == "02. Ongoing task")
-                .Select(x => x.CheckListId)
-                .FirstAsync();
-            var eformIdForComplitedTasks = await sdkDbContext.CheckListTranslations
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Text == "03. Completed task")
-                .Select(x => x.CheckListId)
-                .FirstAsync();
 
             var workorderCasesCompleted = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -200,16 +190,12 @@ public class WorkOrderHelper
 
             var deviceUsersGroup = await core.EntityGroupRead(deviceUsersGroupUid);
             var nextItemUid = deviceUsersGroup.EntityGroupItemLst.Count;
-            // for (var i = 0; i < propertyWorkers.Count; i++)
-            // {
-            //     var propertyWorker = propertyWorkers[i];
-                var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
-                    .FirstAsync();
-                var entityItem = await core.EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString());
-                propertyWorker.EntityItemId = entityItem.Id;
-                await propertyWorker.Update(_backendConfigurationPnDbContext);
-                // nextItemUid++;
-            // }
+
+            var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
+                .FirstAsync();
+            var entityItem = await core.EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString());
+            propertyWorker.EntityItemId = entityItem.Id;
+            await propertyWorker.Update(_backendConfigurationPnDbContext);
 
             var entityItems = await sdkDbContext.EntityItems
                 .Where(x => x.EntityGroupId == deviceUsersGroup.Id)
@@ -226,158 +212,22 @@ public class WorkOrderHelper
                 entityItemIncrementer++;
             }
 
-            // foreach (var workorderCaseCompleted in workorderCasesCompleted)
-            // {
-            //     var cls = await sdkDbContext.Cases
-            //         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //         .Where(x => x.Id == workorderCaseCompleted.CaseId)
-            //         .OrderBy(x => x.DoneAt)
-            //         .Include(x => x.Site)
-            //         .LastOrDefaultAsync();
-            //
-            //     if (cls != null)
-            //     {
-            //         var language =
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == cls.Site.LanguageId) ??
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(x =>
-            //                 x.LanguageCode == LocaleNames.Danish);
-            //
-            //         var fieldValues = await core.Advanced_FieldValueReadList(new() {cls.Id}, language);
-            //
-            //         var caseWithCreatedBy = await sdkDbContext.Cases
-            //             .Where(x => x.Id == workorderCaseCompleted.ParentWorkorderCase.CaseId)
-            //             .OrderBy(x => x.DoneAt)
-            //             .Include(x => x.Site)
-            //             .FirstAsync();
-            //
-            //         var fieldValuesWithCreatedBy = await core.Advanced_FieldValueReadList(new() {cls.Id},
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(
-            //                 x => x.Id == caseWithCreatedBy.Site.LanguageId) ??
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(x =>
-            //                 x.LanguageCode == LocaleNames.Danish));
-            //
-            //         var area = fieldValues.First().Value;
-            //         var descriptionFromCase = fieldValues[2].Value;
-            //         var assignedTo = fieldValues[3].Value;
-            //         var status = fieldValues[4].Value;
-            //         var createdBy = fieldValuesWithCreatedBy[4].Value;
-            //
-            //         var label = $"<strong>Assigned to:</strong> {assignedTo}<br>" +
-            //                     $"<strong>Location:</strong>{property.Name}<br>" +
-            //                     (string.IsNullOrEmpty(area)
-            //                         ? $"<strong>Area:</strong> {area}<br>"
-            //                         : "") +
-            //                     $"<strong>Description:</strong> {descriptionFromCase}<br><br>" +
-            //                     $"<strong>Created by:</strong> {assignedTo}<br>" +
-            //                     (string.IsNullOrEmpty(createdBy)
-            //                         ? $"<strong>Created by:</strong> {createdBy}<br>"
-            //                         : "") +
-            //                     $"<strong>Created date:</strong> {caseWithCreatedBy.DoneAt: dd.MM.yyyy}<br><br>" +
-            //                     $"<strong>Last updated by:</strong>{cls.Site.Name}<br>" +
-            //                     $"<strong>Last updated date:</strong>{DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
-            //                     $"<strong>Status:</strong> {status};";
-            //         await DeployEform(propertyWorkers, eformIdForComplitedTasks, property.FolderIdForCompletedTasks,
-            //             label, null, null);
-            //     }
-            // }
-            //
-            // foreach (var workorderCaseOngoing in workorderCasesOngoing
-            //              .GroupBy(x => x.ParentWorkorderCaseId,
-            //                  (i, cases) => new { parentWorkorderCaseId = i, workorderCases = cases.ToList() })
-            //              .ToList())
-            // {
-            //     var cls = await sdkDbContext.Cases
-            //         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //         .Where(x => x.Id == workorderCaseOngoing.workorderCases.Last().CaseId)
-            //         .OrderBy(x => x.DoneAt)
-            //         .Include(x => x.Site)
-            //         .LastOrDefaultAsync();
-            //
-            //     if (cls != null)
-            //     {
-            //         var language =
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == cls.Site.LanguageId) ??
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(x =>
-            //                 x.LanguageCode == LocaleNames.Danish);
-            //
-            //         var fieldValues = await core.Advanced_FieldValueReadList(new() {cls.Id}, language);
-            //
-            //         var workorderOngoingCases = _backendConfigurationPnDbContext.WorkorderCases
-            //             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //             .Where(x => x.ParentWorkorderCaseId == workorderCaseOngoing.parentWorkorderCaseId)
-            //             .Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Ongoing)
-            //             .ToList();
-            //         Case lastOngoingCase = null;
-            //         if (workorderOngoingCases.Count > 1)
-            //         {
-            //             lastOngoingCase = await sdkDbContext.Cases
-            //                 .Where(x => x.Id == workorderOngoingCases.Last().CaseId)
-            //                 .OrderBy(x => x.DoneAt)
-            //                 .Include(x => x.Site)
-            //                 .FirstAsync();
-            //         }
-            //
-            //         var caseWithCreatedBy = await sdkDbContext.Cases
-            //             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //             .Where(x => x.Id == workorderCaseOngoing.workorderCases.First().ParentWorkorderCase.CaseId)
-            //             .OrderBy(x => x.DoneAt)
-            //             .Include(x => x.Site)
-            //             .FirstAsync();
-            //
-            //         var fieldValuesWithCreatedBy = await core.Advanced_FieldValueReadList(new() {cls.Id},
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(
-            //                 x => x.Id == caseWithCreatedBy.Site.LanguageId) ??
-            //             await sdkDbContext.Languages.SingleOrDefaultAsync(x =>
-            //                 x.LanguageCode == LocaleNames.Danish));
-            //
-            //         var area = fieldValues.First().Value;
-            //         var descriptionFromCase = fieldValues[2].Value;
-            //         var assignedTo = fieldValues[3].Value;
-            //         var status = fieldValues[4].Value;
-            //         var createdBy = fieldValuesWithCreatedBy[4].Value;
-            //         // todo need change language to site language for correct translates and change back after end translate
-            //         var label =
-            //             $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong>{property.Name}<br>" +
-            //             $"<strong>{_backendConfigurationLocalizationService.GetString("Assigned to")}:</strong> {assignedTo}<br>" +
-            //             (string.IsNullOrEmpty(area)
-            //                 ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {area}<br>"
-            //                 : "") +
-            //             $"<strong>{_backendConfigurationLocalizationService.GetString("Description")}:</strong> {descriptionFromCase}<br><br>" +
-            //             $"<strong>{_backendConfigurationLocalizationService.GetString("Created by")}:</strong> {assignedTo}<br>" +
-            //             (string.IsNullOrEmpty(createdBy)
-            //                 ? $"<strong>{_backendConfigurationLocalizationService.GetString("Created by")}:</strong> {createdBy}<br>"
-            //                 : "") +
-            //             $"<strong>{_backendConfigurationLocalizationService.GetString("Created date")}:</strong> {caseWithCreatedBy.DoneAt: dd.MM.yyyy}<br><br>" +
-            //             (lastOngoingCase == null
-            //                 ? ""
-            //                 : $"<strong>{_backendConfigurationLocalizationService.GetString("Last updated by")}:</strong>{lastOngoingCase.Site.Name}<br>") +
-            //             (lastOngoingCase == null
-            //                 ? ""
-            //                 : $"<strong>{_backendConfigurationLocalizationService.GetString("Last updated date")}:</strong>{lastOngoingCase.DoneAt: dd.MM.yyyy}<br><br>") +
-            //             $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {status};";
-            //         await DeployEform(propertyWorkers, eformIdForOngoingTasks, property.FolderIdForOngoingTasks,
-            //             label, null, int.Parse(deviceUsersGroupUid));
-            //     }
-            // }
-
-            await DeployEform(propertyWorkers, eformIdForNewTasks, property.FolderIdForNewTasks,
+            await DeployEform(propertyWorker, eformIdForNewTasks, property.FolderIdForNewTasks,
                 $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid));
         }
     }
 
-    public async Task DeployEform(List<PropertyWorker> propertyWorkers, int eformId, int? folderId,
+    public async Task DeployEform(PropertyWorker propertyWorker, int eformId, int? folderId,
         string description, int? areasGroupUid, int? deviceUsersGroupId)
     {
         var core = await _coreHelper.GetCore();
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-        foreach (var propertyWorker in propertyWorkers)
-        {
             if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
                     x.PropertyWorkerId == propertyWorker.Id
                     && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
                     && x.WorkflowState != Constants.WorkflowStates.Removed))
             {
-                continue;
+                return;
             }
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
             var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
@@ -420,7 +270,6 @@ public class WorkOrderHelper
                 PropertyWorkerId = propertyWorker.Id,
                 CaseStatusesEnum = CaseStatusesEnum.NewTask,
             }.Create(_backendConfigurationPnDbContext);
-        }
     }
 
     public async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder)

@@ -481,6 +481,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 nextItemUid++;
                                 propertyWorker.EntityItemId = entityItem.Id;
                                 await propertyWorker.Update(_backendConfigurationPnDbContext);
+
+                                // todo need change language to site language for correct translates and change back after end translate
+                                await _workOrderHelper.DeployEform(propertyWorker, eformId, property.FolderIdForNewTasks,
+                                    $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
+                                    int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid));
                             }
 
                             var entityItems = await sdkDbContext.EntityItems
@@ -497,11 +502,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     entityItem.EntityItemUid, entityItemIncrementer);
                                 entityItemIncrementer++;
                             }
-
-                            // todo need change language to site language for correct translates and change back after end translate
-                            await _workOrderHelper.DeployEform(propertyWorkers, eformId, property.FolderIdForNewTasks,
-                                $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
-                                int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid));
                             break;
                         }
                         case false:
