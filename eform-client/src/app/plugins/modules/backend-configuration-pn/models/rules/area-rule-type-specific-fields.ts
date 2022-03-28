@@ -13,4 +13,5 @@ export class AreaRuleTypeSpecificFields {
   dayOfWeek?: number;
   dayOfWeekName?: string;
   repeatEvery?: number;
+  groupId?: number;
 }

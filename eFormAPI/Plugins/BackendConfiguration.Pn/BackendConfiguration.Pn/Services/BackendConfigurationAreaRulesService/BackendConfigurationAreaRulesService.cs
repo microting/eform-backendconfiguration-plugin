@@ -106,7 +106,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 ChecklistStable = x.ChecklistStable,
                                 TailBite = x.TailBite,
                                 DayOfWeek = x.DayOfWeek,
-                                RepeatEvery = x.RepeatEvery
+                                RepeatEvery = x.RepeatEvery,
+                                GroupId = x.GroupItemId,
                             },
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields

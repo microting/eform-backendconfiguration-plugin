@@ -41,4 +41,6 @@ public class TypeSpecificField
     public int? DayOfWeek { get; set; }
 
     public int? RepeatEvery { get; set; }
+
+    public int? GroupId { get; set; }
 }

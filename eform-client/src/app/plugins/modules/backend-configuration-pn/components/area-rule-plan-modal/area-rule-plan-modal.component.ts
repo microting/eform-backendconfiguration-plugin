@@ -19,6 +19,9 @@ import { add, set } from 'date-fns';
 import * as R from 'ramda';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {AuthStateService} from 'src/app/common/store';
+import {AdvEntitySelectableItemModel} from 'src/app/common/models';
+import {EntitySelectService} from 'src/app/common/services';
+import {AreaRuleEntityListModalComponent} from '../../components';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -27,6 +30,7 @@ import {AuthStateService} from 'src/app/common/store';
 })
 export class AreaRulePlanModalComponent implements OnInit {
   @ViewChild('frame', { static: false }) frame;
+  @ViewChild('entityListEditModal', { static: true }) entityListEditModal: AreaRuleEntityListModalComponent;
   @Output()
   updateAreaRulePlan: EventEmitter<AreaRulePlanningModel> = new EventEmitter<AreaRulePlanningModel>();
   selectedArea: AreaModel = new AreaModel();
@@ -58,7 +62,9 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   constructor(
-    dateTimeAdapter: DateTimeAdapter<any>, private authStateService: AuthStateService) {
+    dateTimeAdapter: DateTimeAdapter<any>,
+    private authStateService: AuthStateService,
+    private entitySelectService: EntitySelectService,) {
     dateTimeAdapter.setLocale(authStateService.currentUserLocale);
   }
 
@@ -235,7 +241,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     );
   }
 
-  updateEndDate(e: any) {
+  /*updateEndDate(e: any) {
     let date = new Date(e._d);
     date = set(date, {
       hours: 0,
@@ -247,14 +253,13 @@ export class AreaRulePlanModalComponent implements OnInit {
       date,
       this.standartDateTimeFormat
     );
-  }
+  }*/
 
   isDisabledSaveBtn() {
     return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
   }
 
   repeatTypeMass() {
-    // @ts-ignore
     switch (this.selectedAreaRulePlanning.typeSpecificFields.repeatType) {
       case 1: { // day
         return this.repeatTypeDay;
@@ -281,5 +286,27 @@ export class AreaRulePlanModalComponent implements OnInit {
     this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = null
     this.selectedAreaRulePlanning.sendNotifications = false;
     this.selectedAreaRulePlanning.complianceEnabled = false;
+  }
+
+  updateEntityList(array: AdvEntitySelectableItemModel[]) {
+    if(this.selectedAreaRule.typeSpecificFields.groupId) {
+      this.entitySelectService.getEntitySelectableGroup(this.selectedAreaRule.typeSpecificFields.groupId)
+        .subscribe(data => {
+          if (data.success) {
+            this.entitySelectService.updateEntitySelectableGroup({
+              advEntitySelectableItemModels: array,
+              groupUid: +data.model.microtingUUID,
+              ...data.model
+            }).subscribe(x => {
+              if (x.success) {
+                // this.entityListEditModal.hide();
+              }
+            });
+          }
+        });
+    } else {
+      this.selectedAreaRulePlanning.entityItemsListForCreate = array;
+      // this.entityListEditModal.hide();
+    }
   }
 }

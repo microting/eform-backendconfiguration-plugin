@@ -26,6 +26,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
     using System;
     using System.Collections.Generic;
+    using Microting.eForm.Infrastructure.Models;
 
     public class AreaRulePlanningModel
     {
@@ -47,5 +48,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
             = new ();
 
         public bool ComplianceEnabled { get; set; }
+
+        public List<EntityItem> EntityItemsListForCreate { get; set; }
+            = new();
     }
 }
