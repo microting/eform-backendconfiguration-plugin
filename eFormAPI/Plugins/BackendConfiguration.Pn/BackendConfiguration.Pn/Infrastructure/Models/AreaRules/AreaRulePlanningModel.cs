@@ -48,8 +48,5 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
             = new ();
 
         public bool ComplianceEnabled { get; set; }
-
-        public List<EntityItem> EntityItemsListForCreate { get; set; }
-            = new();
     }
 }

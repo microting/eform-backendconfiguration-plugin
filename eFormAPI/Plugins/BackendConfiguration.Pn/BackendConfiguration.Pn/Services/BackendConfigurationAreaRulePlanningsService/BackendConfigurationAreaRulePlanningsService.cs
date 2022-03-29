@@ -12,6 +12,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Infrastructure;
     using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -1817,21 +1818,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
         private async Task CreatePlanningType3(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, eFormCore.Core core)
         {
             await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core);
-            var currentUserLanguage = await _userService.GetCurrentUserLanguage();
-            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
-                $"{areaRule.Property.Name} - {areaRule.AreaRuleTranslations.Where(x => x.LanguageId == currentUserLanguage.Id).Select(x => x.Name).FirstOrDefault()}", "", 
-                false, true);
-            var entityGroup = await core.EntityGroupRead(groupCreate.MicrotingUid);
-            var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-            foreach (var entityItem in areaRulePlanningModel.EntityItemsListForCreate)
-            {
-                await core.EntitySelectItemCreate(entityGroup.Id, entityItem.Name, entityItem.DisplayIndex,
-                    nextItemUid.ToString());
-                nextItemUid++;
-            }
-
-            areaRule.GroupItemId = Convert.ToInt32(entityGroup.MicrotingUUID);
-            await areaRule.Update(_backendConfigurationPnDbContext);
 
             var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
             if (areaRulePlanningModel.Status)
@@ -1841,6 +1827,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
                     var language =
                         await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
+                    var entityListUid = await _backendConfigurationPnDbContext.AreaProperties
+                        .Where(x => x.PropertyId == areaRule.PropertyId)
+                        .Where(x => x.AreaId == areaRule.AreaId)
+                        .Select(x => x.GroupMicrotingUuid)
+                        .FirstAsync();
                     if (!sdkDbContext.CheckListSites
                             .Any(x =>
                                 x.CheckListId == areaRule.EformId &&
@@ -1856,6 +1847,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         mainElement.StartDate = DateTime.Now.ToUniversalTime();
                         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                         mainElement.DisplayOrder = 10000000;
+                        ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = entityListUid;
                         /*var caseId = */
                         await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folder.Id);
                     }

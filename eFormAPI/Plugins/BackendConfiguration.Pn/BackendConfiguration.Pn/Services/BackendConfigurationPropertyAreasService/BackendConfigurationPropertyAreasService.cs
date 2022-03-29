@@ -41,6 +41,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Dto;
     using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -873,6 +874,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .Where(x => x.LanguageId == language.Id)
                         .Select(x => x.Placeholder)
                         .FirstOrDefault(),
+                    GroupId = areaProperties.GroupMicrotingUuid,
                 };
                 if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))
                 {
@@ -1009,6 +1011,50 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 cl.ReportH1 = "05. Klargøring af stalde og dokumentation af halebid";
                 cl.ReportH2 = "05.01 Halebid";
                 await cl.Update(sdkDbContext);
+            }
+        }
+
+
+        public async Task<OperationResult> CreateEntityList(List<EntityItem> entityItemsListForCreate, int propertyAreaId)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var propertyArea = await _backendConfigurationPnDbContext.AreaProperties
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == propertyAreaId)
+                    .Include(x => x.Area)
+                    .Include(x => x.Property)
+                    .FirstOrDefaultAsync();
+                if (propertyArea == null)
+                {
+                    return new OperationResult(false,
+                        _backendConfigurationLocalizationService.GetString("AreaPropertyNotFound"));
+                }
+                var currentUserLanguage = await _userService.GetCurrentUserLanguage();
+                var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
+                    $"{propertyArea.Property.Name} - {propertyArea.Area.AreaTranslations.Where(x => x.LanguageId == currentUserLanguage.Id).Select(x => x.Name).FirstOrDefault()}", "",
+                    true, true);
+                var entityGroup = await core.EntityGroupRead(groupCreate.MicrotingUid);
+                var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+                foreach (var entityItem in entityItemsListForCreate)
+                {
+                    await core.EntitySelectItemCreate(entityGroup.Id, entityItem.Name, entityItem.DisplayIndex,
+                        nextItemUid.ToString());
+                    nextItemUid++;
+                }
+
+                propertyArea.GroupMicrotingUuid = Convert.ToInt32(entityGroup.MicrotingUUID);
+                await propertyArea.Update(_backendConfigurationPnDbContext);
+
+                return new OperationResult(true);
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationResult(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileCreateEntityList")}: {e.Message}");
             }
         }
     }

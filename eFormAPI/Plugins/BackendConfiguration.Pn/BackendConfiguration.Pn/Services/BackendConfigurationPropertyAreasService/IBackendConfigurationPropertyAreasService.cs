@@ -27,6 +27,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Infrastructure.Models.PropertyAreas;
+    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
     public interface IBackendConfigurationPropertyAreasService
@@ -38,5 +39,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         Task<OperationDataResult<AreaModel>> ReadAreaByPropertyAreaId(int propertyAreaId);
 
         Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId);
+
+        Task<OperationResult> CreateEntityList(List<EntityItem> entityItemsListForCreate, int propertyAreaId);
     }
 }

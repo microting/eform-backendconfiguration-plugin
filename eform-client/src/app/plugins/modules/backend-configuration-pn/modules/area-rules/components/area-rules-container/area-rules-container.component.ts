@@ -21,7 +21,9 @@ import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import { TranslateService } from '@ngx-translate/core';
-import {AreaRulePlanModalComponent} from '../../../../components';
+import {AreaRuleEntityListModalComponent, AreaRulePlanModalComponent} from '../../../../components';
+import { AdvEntitySelectableItemModel } from 'src/app/common/models';
+import {EntitySelectService} from 'src/app/common/services';
 
 @AutoUnsubscribe()
 @Component({
@@ -38,6 +40,8 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   deleteAreaRuleModal: AreaRuleDeleteModalComponent;
   @ViewChild('planAreaRuleModal', { static: false })
   planAreaRuleModal: AreaRulePlanModalComponent;
+  @ViewChild('entityListEditModal', { static: false })
+  entityListEditModal: AreaRuleEntityListModalComponent;
 
   areaRules: AreaRuleSimpleModel[] = [];
   selectedArea: AreaModel = new AreaModel();
@@ -71,7 +75,8 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
     public authStateService: AuthStateService,
     private route: ActivatedRoute,
     private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
-    private translateService: TranslateService
+    private translateService: TranslateService,
+    private entitySelectService: EntitySelectService,
   ) {}
 
   ngOnInit() {
@@ -213,5 +218,32 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  updateEntityList(model: Array<AdvEntitySelectableItemModel>) {
+    if(!this.selectedArea.groupId){
+      this.backendConfigurationPnPropertiesService.createEntityList(model, this.propertyAreaId)
+        .subscribe((x => {
+          if(x.success){
+            this.entityListEditModal.hide();
+            this.getArea(this.propertyAreaId);
+          }
+        }))
+    } else {
+      this.entitySelectService.getEntitySelectableGroup(this.selectedArea.groupId)
+      .subscribe(data => {
+        if (data.success) {
+          this.entitySelectService.updateEntitySelectableGroup({
+            advEntitySelectableItemModels: model,
+            groupUid: +data.model.microtingUUID,
+            ...data.model
+          }).subscribe(x => {
+            if (x.success) {
+              this.entityListEditModal.hide();
+            }
+          });
+        }
+      });
+    }
   }
 }

@@ -107,7 +107,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 TailBite = x.TailBite,
                                 DayOfWeek = x.DayOfWeek,
                                 RepeatEvery = x.RepeatEvery,
-                                GroupId = x.GroupItemId,
                             },
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields
@@ -341,10 +340,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 }
 
 
-                if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
-                {
-                    await core.EntityGroupDelete(areaRule.GroupItemId.ToString());
-                }
+                //if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
+                //{
+                //    await core.EntityGroupDelete(areaRule.GroupItemId.ToString());
+                //}
 
                 foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations)
                 {

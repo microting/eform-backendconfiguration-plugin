@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  AdvEntitySelectableItemModel,
   CommonDictionaryModel, DeviceUserModel,
   OperationDataResult,
   OperationResult,
@@ -23,6 +24,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
   PropertiesIndex: 'api/backend-configuration-pn/properties/index',
   UpdateSingle: 'api/backend-configuration-pn/properties/assignment/update-device-user',
+  CreateEntityList: 'api/backend-configuration-pn/property-areas/create-entity-list/',
 };
 
 @Injectable({
@@ -130,6 +132,13 @@ export class BackendConfigurationPnPropertiesService {
   updateSingleDeviceUser(model: DeviceUserModel): Observable<OperationResult> {
     return this.apiBaseService.post<DeviceUserModel>(
       BackendConfigurationPnPropertiesMethods.UpdateSingle,
+      model
+    );
+  }
+
+  createEntityList(model: Array<AdvEntitySelectableItemModel>, propertyAreaId: number): Observable<OperationResult> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnPropertiesMethods.CreateEntityList + propertyAreaId,
       model
     );
   }

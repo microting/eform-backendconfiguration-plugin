@@ -25,6 +25,7 @@ namespace BackendConfiguration.Pn.Controllers
     using Infrastructure.Models.PropertyAreas;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
+    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Services.BackendConfigurationPropertyAreasService;
 
@@ -65,6 +66,13 @@ namespace BackendConfiguration.Pn.Controllers
         public Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId)
         {
             return _backendConfigurationPropertyAreasService.ReadAreaByAreaRuleId(areaRuleId);
+        }
+
+        [HttpPost]
+        [Route("property-areas/create-entity-list/{propertyAreaId}")]
+        public Task<OperationResult> CreateEntityList([FromBody] List<EntityItem> entityItemsListForCreate, int propertyAreaId)
+        {
+            return _backendConfigurationPropertyAreasService.CreateEntityList(entityItemsListForCreate, propertyAreaId);
         }
     }
 }

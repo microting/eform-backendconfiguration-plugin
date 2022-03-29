@@ -49,5 +49,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
         public string InfoBox { get; set; }
 
         public string Placeholder { get; set; }
+
+        public int GroupId { get; set; }
     }
 }

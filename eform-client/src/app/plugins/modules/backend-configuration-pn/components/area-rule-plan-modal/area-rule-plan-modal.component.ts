@@ -19,8 +19,6 @@ import { add, set } from 'date-fns';
 import * as R from 'ramda';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {AuthStateService} from 'src/app/common/store';
-import {AdvEntitySelectableItemModel} from 'src/app/common/models';
-import {EntitySelectService} from 'src/app/common/services';
 import {AreaRuleEntityListModalComponent} from '../../components';
 
 @Component({
@@ -63,8 +61,7 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
-    private authStateService: AuthStateService,
-    private entitySelectService: EntitySelectService,) {
+    private authStateService: AuthStateService,) {
     dateTimeAdapter.setLocale(authStateService.currentUserLocale);
   }
 
@@ -288,25 +285,4 @@ export class AreaRulePlanModalComponent implements OnInit {
     this.selectedAreaRulePlanning.complianceEnabled = false;
   }
 
-  updateEntityList(array: AdvEntitySelectableItemModel[]) {
-    if(this.selectedAreaRule.typeSpecificFields.groupId) {
-      this.entitySelectService.getEntitySelectableGroup(this.selectedAreaRule.typeSpecificFields.groupId)
-        .subscribe(data => {
-          if (data.success) {
-            this.entitySelectService.updateEntitySelectableGroup({
-              advEntitySelectableItemModels: array,
-              groupUid: +data.model.microtingUUID,
-              ...data.model
-            }).subscribe(x => {
-              if (x.success) {
-                // this.entityListEditModal.hide();
-              }
-            });
-          }
-        });
-    } else {
-      this.selectedAreaRulePlanning.entityItemsListForCreate = array;
-      // this.entityListEditModal.hide();
-    }
-  }
 }

@@ -688,6 +688,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         }
                     }
 
+                    if (areaProperty.GroupMicrotingUuid != 0)
+                    {
+                        await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString());
+                    }
                     // get areaRules and select all linked entity for delete
                     var areaRules = await _backendConfigurationPnDbContext.AreaRules
                         .Where(x => x.PropertyId == areaProperty.PropertyId)
