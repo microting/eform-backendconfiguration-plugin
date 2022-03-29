@@ -343,7 +343,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                 if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
                 {
-                    await core.EntityItemDelete(areaRule.GroupItemId);
+                    await core.EntityGroupDelete(areaRule.GroupItemId.ToString());
                 }
 
                 foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations)
