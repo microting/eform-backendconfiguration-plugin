@@ -230,6 +230,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "05. Stald_klargøring",
                     Notifications = true,
                     ComplianceEnabled = true,
+                    RepeatEvery = 0,
                 },
             },
             new Area
