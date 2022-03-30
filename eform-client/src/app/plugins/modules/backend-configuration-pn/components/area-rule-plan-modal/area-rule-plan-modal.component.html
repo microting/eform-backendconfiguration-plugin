@@ -36,9 +36,7 @@
                 >
               </div>
             </div>
-            <div class="col-md-12" *ngIf="selectedAreaRulePlanning.typeSpecificFields &&
-                                           selectedAreaRulePlanning.typeSpecificFields.repeatEvery &&
-                                           selectedArea.type !== 4 && selectedArea.type !== 3">
+            <div class="col-md-12" *ngIf="getShowCompliance()">
               <div class="custom-control custom-switch">
                 <input
                   type="checkbox"

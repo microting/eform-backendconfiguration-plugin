@@ -285,4 +285,15 @@ export class AreaRulePlanModalComponent implements OnInit {
     this.selectedAreaRulePlanning.complianceEnabled = false;
   }
 
+  getShowCompliance(): boolean {
+    if(this.selectedArea.type === 3) {
+      return false;
+    }
+    if(this.selectedArea.type === 4 ||
+       this.selectedAreaRulePlanning.typeSpecificFields &&
+       this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery) {
+      return true;
+    }
+  }
+
 }
