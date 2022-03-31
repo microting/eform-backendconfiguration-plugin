@@ -191,6 +191,7 @@ namespace BackendConfiguration.Pn
                 await newArea.Create(context);
             }
 
+            /*
             if (context.AreaTranslations.Any(x => x.Name == "11. Pillefyr" && x.LanguageId == 1))
             {
                 var planningTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "11. Pillefyr");
@@ -225,6 +226,109 @@ namespace BackendConfiguration.Pn
                 var areaTranslation = context.AreaTranslations.Single(x => x.Name == "23. IE Reporting" && x.LanguageId == 1);
                 areaTranslation.Name = "23. IE-indberetning";
                 await areaTranslation.Update(context);
+            }*/
+
+            foreach (var translation in context.AreaTranslations)
+            {
+                var translationFromSeed = BackendConfigurationSeedAreas.AreasSeed
+                    .Where(x => translation.AreaId == x.Id)
+                    .SelectMany(x => x.AreaTranslations)
+                    .FirstOrDefault(x => translation.LanguageId == x.LanguageId);
+                var needToUpdate = false;
+                if (translation.InfoBox != translationFromSeed.InfoBox)
+                {
+                    translation.InfoBox = translationFromSeed.InfoBox;
+                    needToUpdate = true;
+                }
+                if (translation.Placeholder != translationFromSeed.Placeholder)
+                {
+                    translation.Placeholder = translationFromSeed.Placeholder;
+                    needToUpdate = true;
+                }
+                if (translation.Description != translationFromSeed.Description)
+                {
+                    translation.Description = translationFromSeed.Description;
+                    needToUpdate = true;
+                }
+                if (translation.Name != translationFromSeed.Name)
+                {
+                    translation.Name = translationFromSeed.Name;
+                    needToUpdate = true;
+                }
+                if(needToUpdate)
+                {
+                    await translation.Update(context);
+                }
+            }
+
+            foreach (var areaInitialFieldFromDb in context.AreaInitialFields)
+            {
+                var areaInitialFieldFromSeed = BackendConfigurationSeedAreas.AreasSeed
+                    .Where(x => areaInitialFieldFromDb.AreaId == x.Id)
+                    .Select(x => x.AreaInitialField)
+                    .FirstOrDefault(x => areaInitialFieldFromDb.Id == x.Id);
+                if (areaInitialFieldFromSeed != null)
+                {
+                    var needToUpdate = false;
+                    if (areaInitialFieldFromDb.ComplianceEnabled != areaInitialFieldFromSeed.ComplianceEnabled)
+                    {
+                        areaInitialFieldFromDb.ComplianceEnabled = areaInitialFieldFromSeed.ComplianceEnabled;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.Type != areaInitialFieldFromSeed.Type)
+                    {
+                        areaInitialFieldFromDb.Type = areaInitialFieldFromSeed.Type;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.Alarm != areaInitialFieldFromSeed.Alarm)
+                    {
+                        areaInitialFieldFromDb.Alarm = areaInitialFieldFromSeed.Alarm;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.DayOfWeek != areaInitialFieldFromSeed.DayOfWeek)
+                    {
+                        areaInitialFieldFromDb.DayOfWeek = areaInitialFieldFromSeed.DayOfWeek;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.RepeatEvery != areaInitialFieldFromSeed.RepeatEvery)
+                    {
+                        areaInitialFieldFromDb.RepeatEvery = areaInitialFieldFromSeed.RepeatEvery;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.RepeatType != areaInitialFieldFromSeed.RepeatType)
+                    {
+                        areaInitialFieldFromDb.RepeatType = areaInitialFieldFromSeed.RepeatType;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.EformName != areaInitialFieldFromSeed.EformName)
+                    {
+                        areaInitialFieldFromDb.EformName = areaInitialFieldFromSeed.EformName;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.EndDate != areaInitialFieldFromSeed.EndDate)
+                    {
+                        areaInitialFieldFromDb.EndDate = areaInitialFieldFromSeed.EndDate;
+                        needToUpdate = true;
+                    }
+
+                    if (areaInitialFieldFromDb.Notifications != areaInitialFieldFromSeed.Notifications)
+                    {
+                        areaInitialFieldFromDb.Notifications = areaInitialFieldFromSeed.Notifications;
+                        needToUpdate = true;
+                    }
+
+                    if (needToUpdate)
+                    {
+                        await areaInitialFieldFromDb.Update(context);
+                    }
+                }
             }
 
             // Upgrade AreaRules
@@ -511,14 +615,15 @@ namespace BackendConfiguration.Pn
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel()
+                var folderTranslationList = new List<CommonTranslationsModel>()
                 {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "23.01 Logbøger miljøteknologier",
+                    new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 1,
+                        Name = "23.01 Logbøger miljøteknologier",
+                    }
                 };
-                folderTranslationList.Add(folderTranslation);
 
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
@@ -527,14 +632,15 @@ namespace BackendConfiguration.Pn
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel()
+                var folderTranslationList = new List<CommonTranslationsModel>()
                 {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "23.02 Dokumentation afsluttede inspektioner",
+                    new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 1,
+                        Name = "23.02 Dokumentation afsluttede inspektioner",
+                    }
                 };
-                folderTranslationList.Add(folderTranslation);
 
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }

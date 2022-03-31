@@ -106,7 +106,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 ChecklistStable = x.ChecklistStable,
                                 TailBite = x.TailBite,
                                 DayOfWeek = x.DayOfWeek,
-                                RepeatEvery = x.RepeatEvery
+                                RepeatEvery = x.RepeatEvery,
                             },
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields
@@ -340,10 +340,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 }
 
 
-                if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
-                {
-                    await core.EntityItemDelete(areaRule.GroupItemId);
-                }
+                //if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
+                //{
+                //    await core.EntityGroupDelete(areaRule.GroupItemId.ToString());
+                //}
 
                 foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations)
                 {

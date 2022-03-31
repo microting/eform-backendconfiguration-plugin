@@ -22,16 +22,15 @@ import {
 } from './components';
 import { AreaRulesRouting } from './area-rules.routing';
 import {AreaRulePlanModalModule} from '../../components/area-rule-plan-modal.module';
-// import { UiSwitchModule } from 'ngx-ui-switch';
 
 @NgModule({
-  declarations: [
-    AreaRulesContainerComponent,
-    AreaRulesTableComponent,
-    AreaRuleCreateModalComponent,
-    AreaRuleEditModalComponent,
-    AreaRuleDeleteModalComponent,
-  ],
+    declarations: [
+        AreaRulesContainerComponent,
+        AreaRulesTableComponent,
+        AreaRuleCreateModalComponent,
+        AreaRuleEditModalComponent,
+        AreaRuleDeleteModalComponent,
+    ],
   imports: [
     CommonModule,
     MDBBootstrapModule,
@@ -48,7 +47,6 @@ import {AreaRulePlanModalModule} from '../../components/area-rule-plan-modal.mod
     OwlDateTimeModule,
     OwlMomentDateTimeModule,
     AreaRulePlanModalModule,
-    // UiSwitchModule,
-  ],
+  ]
 })
 export class AreaRulesModule {}

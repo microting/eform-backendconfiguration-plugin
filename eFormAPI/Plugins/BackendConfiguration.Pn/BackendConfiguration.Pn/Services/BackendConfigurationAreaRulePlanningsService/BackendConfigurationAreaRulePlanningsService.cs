@@ -12,6 +12,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Infrastructure;
     using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -395,7 +396,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             i = areaRule.AreaRulesPlannings.Count;
                                             break;
                                         }
-                                    case AreaTypesEnum.Type3: // stables and tail bite
+                                    /*case AreaTypesEnum.Type3: // stables and tail bite
                                         {
                                             if (areaRule.ChecklistStable is true)
                                             {
@@ -503,7 +504,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                         mainElement.StartDate = DateTime.Now.ToUniversalTime();
                                                         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                                                         mainElement.DisplayOrder = 10000000;
-                                                        /*var caseId = */
+                                                        /*var caseId = #1#
                                                         await core.CaseCreate(mainElement, "",
                                            (int)site.MicrotingUid, folder.Id);
                                                     }
@@ -568,7 +569,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             }
                                             i = areaRule.AreaRulesPlannings.Count;
                                             break;
-                                        }
+                                        }*/
                                     case AreaTypesEnum.Type6: // heat pumps
                                         {
                                             if (areaRulePlanningModel.TypeSpecificFields?.HoursAndEnergyEnabled is true)
@@ -1202,6 +1203,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 .Where(x => x.Id == areaRulePlanningModel.RuleId)
                 .Include(x => x.AreaRuleTranslations)
                 .Include(x => x.Area)
+                .Include(x => x.Property)
                 .FirstOrDefaultAsync();
 
             if (areaRule == null)
@@ -1815,112 +1817,39 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
         private async Task CreatePlanningType3(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, eFormCore.Core core)
         {
-            var planningForType3ChecklistStableId = 0;
-            if (areaRule.ChecklistStable is true)
+            await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core);
+
+            var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
+            if (areaRulePlanningModel.Status)
             {
-                if (areaRulePlanningModel.Status)
+                foreach (var siteId in sites)
                 {
-                    var planningForType3ChecklistStable = await CreateItemPlanningObject((int)areaRule.EformId,
-                        areaRule.EformName, areaRule.FolderId, areaRulePlanningModel, areaRule);
-                    planningForType3ChecklistStable.NameTranslations = areaRule.AreaRuleTranslations.Select(
-                        areaRuleAreaRuleTranslation => new PlanningNameTranslation
-                        {
-                            LanguageId = areaRuleAreaRuleTranslation.LanguageId,
-                            Name = areaRuleAreaRuleTranslation.Name,
-                        }).ToList();
-                    if (areaRulePlanningModel.TypeSpecificFields != null)
+                    var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
+                    var language =
+                        await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
+                    var entityListUid = await _backendConfigurationPnDbContext.AreaProperties
+                        .Where(x => x.PropertyId == areaRule.PropertyId)
+                        .Where(x => x.AreaId == areaRule.AreaId)
+                        .Select(x => x.GroupMicrotingUuid)
+                        .FirstAsync();
+                    if (!sdkDbContext.CheckListSites
+                            .Any(x =>
+                                x.CheckListId == areaRule.EformId &&
+                                x.SiteId == siteId &&
+                                x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
-                        if (areaRulePlanningModel.TypeSpecificFields.RepeatType != null)
-                        {
-                            planningForType3ChecklistStable.RepeatType =
-                                (RepeatType)areaRulePlanningModel.TypeSpecificFields.RepeatType;
-                        }
-
-                        if (areaRulePlanningModel.TypeSpecificFields.RepeatEvery != null)
-                        {
-                            planningForType3ChecklistStable.RepeatEvery =
-                                (int)areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
-                        }
-
-                        planningForType3ChecklistStable.RepeatUntil =
-                            areaRulePlanningModel.TypeSpecificFields.EndDate;
-                        planningForType3ChecklistStable.DayOfWeek =
-                            (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
-                                ? DayOfWeek.Monday
-                                : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                        planningForType3ChecklistStable.DayOfMonth =
-                            areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0 ? 1 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                    }
-
-                    await planningForType3ChecklistStable.Create(_itemsPlanningPnDbContext);
-                    await _pairItemWichSiteHelper.Pair(
-                        areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(),
-                        (int)areaRule.EformId,
-                        planningForType3ChecklistStable.Id,
-                        areaRule.FolderId);
-                    planningForType3ChecklistStableId = planningForType3ChecklistStable.Id;
-                }
-            }
-
-            var areaRulePlanningForType3ChecklistStable = CreateAreaRulePlanningObject(areaRulePlanningModel,
-                areaRule, planningForType3ChecklistStableId,
-                areaRule.FolderId);
-
-            await areaRulePlanningForType3ChecklistStable.Create(_backendConfigurationPnDbContext);
-
-            // var planningForType3TailBiteId = 0;
-            if (areaRule.TailBite is true)
-            {
-                var property =
-                    await _backendConfigurationPnDbContext.Properties.SingleOrDefaultAsync(x =>
-                        x.Id == areaRule.PropertyId);
-                var eformName = $"05. Halebid - {property.Name}";
-                var eformId = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.Text == eformName)
-                    .Select(x => x.CheckListId)
-                    .FirstAsync();
-
-                var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.AreaId == areaRule.AreaId)
-                    .Where(x => x.PropertyId == areaRule.PropertyId)
-                    .Select(x => new { x.Area, x.GroupMicrotingUuid, x.PropertyId })
-                    .FirstAsync();
-                var entityGroup = await core.EntityGroupRead(areaProperty.GroupMicrotingUuid.ToString());
-                var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-                var entityItem = await core.EntitySelectItemCreate(entityGroup.Id,
-                    areaRule.AreaRuleTranslations.First().Name, entityGroup.EntityGroupItemLst.Count,
-                    nextItemUid.ToString());
-                areaRule.GroupItemId = entityItem.Id;
-                await areaRule.Update(_backendConfigurationPnDbContext);
-
-                var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
-                if (areaRulePlanningModel.Status)
-                {
-                    foreach (var siteId in sites)
-                    {
-                        var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
-                        var language =
-                            await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
-                        if (!sdkDbContext.CheckListSites.Any(x =>
-                            x.CheckListId == eformId &&
-                            x.SiteId == siteId &&
-                            x.WorkflowState != Constants.WorkflowStates.Removed))
-                        {
-                            var mainElement = await core.ReadeForm(eformId, language);
-
-                            var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId);
-                            var folderMicrotingId = folder.MicrotingUid.ToString();
-                            mainElement.Repeated = -1;
-                            mainElement.CheckListFolderName = folderMicrotingId;
-                            mainElement.StartDate = DateTime.Now.ToUniversalTime();
-                            mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-                            mainElement.Label =
-                                mainElement.Label.Replace($" - {property.Name}", "");
-                            mainElement.DisplayOrder = 10000000;
-                            /*var caseId = */
-                            await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folder.Id);
-                        }
+                        var mainElement = await core.ReadeForm((int)areaRule.EformId, language);
+                        // todo add group id to eform
+                        var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId);
+                        var folderMicrotingId = folder.MicrotingUid.ToString();
+                        mainElement.Repeated = -1;
+                        mainElement.CheckListFolderName = folderMicrotingId;
+                        mainElement.StartDate = DateTime.Now.ToUniversalTime();
+                        mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                        mainElement.DisplayOrder = 10000000;
+                        ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = entityListUid;
+                        /*var caseId = */
+                        await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folder.Id);
                     }
                 }
             }
