@@ -8,8 +8,6 @@ export class AreaRuleTypeSpecificFields {
   eformName?: string;
   type?: AreaRuleT2TypesEnum;
   alarm?: AreaRuleT2AlarmsEnum;
-  checklistStable?: boolean;
-  tailBite?: boolean;
   dayOfWeek?: number;
   dayOfWeekName?: string;
   repeatEvery?: number;

@@ -44,6 +44,8 @@
       <None Remove="Resources\eForms\05. Stald_klargøring.xml" />
       <EmbeddedResource Include="Resources\eForms\05. Stald_klargøring.xml" />
       <None Remove="Resources\eForms\06. Siloer.xml" />
+      <EmbeddedResource Include="Resources\eForms\05.01 Halebid.xml" />
+      <None Remove="Resources\eForms\05.01 Halebid.xml" />
       <EmbeddedResource Include="Resources\eForms\06. Siloer.xml" />
       <None Remove="Resources\eForms\07. Fluer.xml" />
       <EmbeddedResource Include="Resources\eForms\07. Fluer.xml" />

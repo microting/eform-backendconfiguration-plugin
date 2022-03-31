@@ -41,7 +41,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
-    using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationAreaRulesService : IBackendConfigurationAreaRulesService
     {
@@ -103,8 +102,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 EformId = x.EformId,
                                 Type = x.Type,
                                 Alarm = x.Alarm,
-                                ChecklistStable = x.ChecklistStable,
-                                TailBite = x.TailBite,
                                 DayOfWeek = x.DayOfWeek,
                                 RepeatEvery = x.RepeatEvery,
                             },
@@ -192,7 +189,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             }).ToList(),
                         IsDefault = x.IsDefault,
                         TypeSpecificFields = new
-                            {x.Type, x.Alarm, x.ChecklistStable, x.TailBite, x.DayOfWeek, x.RepeatEvery},
+                            {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery},
                         EformId = x.EformId,
                     })
                     .FirstOrDefaultAsync();
@@ -259,9 +256,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 {
                     areaRule.Type = updateModel.TypeSpecificFields.Type;
                     areaRule.Alarm = updateModel.TypeSpecificFields.Alarm;
-                    areaRule.ChecklistStable = updateModel.TypeSpecificFields.ChecklistStable;
                     areaRule.DayOfWeek = updateModel.TypeSpecificFields.DayOfWeek;
-                    areaRule.TailBite = updateModel.TypeSpecificFields.TailBite;
                     areaRule.RepeatEvery = updateModel.TypeSpecificFields.RepeatEvery;
                 }
 
@@ -545,8 +540,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                     if (areaRuleCreateModel.TypeSpecificFields != null)
                     {
-                        areaRule.ChecklistStable = areaRuleCreateModel.TypeSpecificFields.ChecklistStable;
-                        areaRule.TailBite = areaRuleCreateModel.TypeSpecificFields.TailBite;
                         areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
                         areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek;
                         areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;

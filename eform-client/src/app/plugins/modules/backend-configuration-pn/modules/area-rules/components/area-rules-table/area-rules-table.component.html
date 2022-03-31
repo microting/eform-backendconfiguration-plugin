@@ -68,18 +68,18 @@
           </td>
         </ng-container>
         <ng-container *ngIf="selectedArea.type === 3">
-          <td id="ruleChecklistStable">
+          <!--<td id="ruleChecklistStable">
             {{
               (rule.typeSpecificFields.checklistStable ? 'Yes' : 'No')
                 | translate
             }}
-          </td>
+          </td>-->
           <td id="ruleEformNameT3">
             {{ rule.eformName }}
           </td>
-          <td id="ruleTailBite">
+          <!--<td id="ruleTailBite">
             {{ (rule.typeSpecificFields.tailBite ? 'Yes' : 'No') | translate }}
-          </td>
+          </td>-->
         </ng-container>
         <ng-container *ngIf="selectedArea.type === 5">
           <td id="ruleWeekDay">

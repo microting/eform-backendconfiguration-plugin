@@ -143,7 +143,7 @@ namespace BackendConfiguration.Pn
                     var newTemplate = await core.TemplateFromXml(contents);
                     if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
                     {
-                        int clId = await core.TemplateCreate(newTemplate);
+                        var clId = await core.TemplateCreate(newTemplate);
                         var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
                         cl.IsLocked = true;
                         cl.IsEditable = false;
@@ -334,7 +334,7 @@ namespace BackendConfiguration.Pn
             // Upgrade AreaRules
             var areaRulePlannings = await context.AreaRulePlannings.Where(x => x.PropertyId == 0).ToListAsync();
 
-            foreach (AreaRulePlanning areaRulePlanning in areaRulePlannings)
+            foreach (var areaRulePlanning in areaRulePlannings)
             {
                 var areaRule = await context.AreaRules.SingleOrDefaultAsync(x => x.Id == areaRulePlanning.AreaRuleId);
                 areaRulePlanning.PropertyId = areaRule.PropertyId;

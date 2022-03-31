@@ -9,7 +9,6 @@ import backendConfigurationAreaRulesPage, {
   AreaRuleCreateUpdate,
   AreaRulePlanningCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
-import { format, sub } from 'date-fns';
 import itemsPlanningPlanningPage from '../../../Page objects/ItemsPlanning/ItemsPlanningPlanningPage';
 
 const property: PropertyCreateUpdate = {
@@ -40,7 +39,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
   });
   it('should create new planning from default area rule', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(0);
+    expect(rowNum, 'have some non-default area rules').eq(1);
     const areaRuleForCreate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
     };
@@ -50,7 +49,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
     //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
-      enableCompliance: false,
+      // enableCompliance: false,
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
     // areaRulePlanning.startDate = format(
@@ -71,7 +70,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     ).eq(1);
     const itemPlannings = await itemsPlanningPlanningPage.getAllPlannings();
     // first planning
-    expect(itemPlannings[0].eFormName).eq('05. Stald_klargøring');
+    expect(itemPlannings[0].eFormName).eq('05. Halebid og risikovurdering');
     expect(itemPlannings[0].name).eq(areaRule.name);
     expect(itemPlannings[0].folderName).eq(`${property.name} - 05. Stalde`);
     expect(itemPlannings[0].repeatEvery).eq(0);

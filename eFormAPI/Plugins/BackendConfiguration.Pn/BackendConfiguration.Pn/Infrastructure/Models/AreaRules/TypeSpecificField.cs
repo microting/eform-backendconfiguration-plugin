@@ -34,10 +34,6 @@ public class TypeSpecificField
 
     public AreaRuleT2AlarmsEnum? Alarm { get; set; }
 
-    public bool? ChecklistStable { get; set; }
-
-    public bool? TailBite { get; set; }
-
     public int? DayOfWeek { get; set; }
 
     public int? RepeatEvery { get; set; }
