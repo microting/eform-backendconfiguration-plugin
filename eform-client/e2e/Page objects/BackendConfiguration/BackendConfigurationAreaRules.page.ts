@@ -53,14 +53,6 @@ export class BackendConfigurationAreaRulesPage extends Page {
     return $(`#createRuleAlarm${i}`);
   }
 
-  public async createRuleChecklistStable(i: number) {
-    return $(`#createRuleChecklistStable${i}`);
-  }
-
-  public async createRuleTailBite(i: number) {
-    return $(`#createRuleTailBite${i}`);
-  }
-
   public async createAreaDayOfWeek(i: number) {
     return $(`#createAreaDayOfWeek${i}`);
   }
@@ -114,14 +106,6 @@ export class BackendConfigurationAreaRulesPage extends Page {
 
   public async editRuleEformId() {
     return $('#editRuleEformId');
-  }
-
-  public async editRuleChecklistStable() {
-    return $('#editRuleChecklistStable');
-  }
-
-  public async editRuleTailBite() {
-    return $('#editRuleTailBite');
   }
 
   public async editRuleType() {
@@ -178,6 +162,81 @@ export class BackendConfigurationAreaRulesPage extends Page {
     return $(`#checkboxCreateAssignment${i}`);
   }
 
+  public async updateEntityList() {
+    const ele = await $(`#updateEntityList`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async entityListSaveBtn() {
+    const ele = await $(`#entityListSaveBtn`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async entityListSaveCancelBtn() {
+    const ele = await $(`#entityListSaveCancelBtn`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async addSingleEntitySelectableItem() {
+    const ele = await $(`#addSingleEntitySelectableItem`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async entityItemEditNameBox() {
+    const ele = await $(`#entityItemEditNameBox`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async entityItemSaveBtn() {
+    const ele = await $(`#entityItemSaveBtn`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async entityItemCancelBtn() {
+    const ele = await $(`#entityItemCancelBtn`);
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async createEntityItemName(i: number) {
+    const ele = await $$(`#createEntityItemName`)[i];
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async entityItemEditBtn(i: number) {
+    const ele = await $$(`#entityItemEditBtn`)[i];
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async entityItemDeleteBtn(i: number) {
+    const ele = await $$(`#entityItemDeleteBtn`)[i];
+    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async getCountEntityListItems(): Promise<number> {
+    await browser.pause(500);
+    return $$(`#createEntityItemName`).length;
+  }
+
   public async getFirstAreaRuleRowObject(): Promise<AreaRuleRowObject> {
     return await new AreaRuleRowObject().getRow(1);
   }
@@ -218,6 +277,50 @@ export class BackendConfigurationAreaRulesPage extends Page {
     await this.closeCreateAreaRuleModal(clickCancel);
   }
 
+  public async editEntityList(itemsForCreate?: string[], clickCancel = false) {
+    await this.openEntityListModal(itemsForCreate);
+    await this.closeEntityListModal(clickCancel);
+  }
+
+  public async openEntityListModal(newItems?: string[]) {
+    await (await this.updateEntityList()).click()
+    await (await this.entityListSaveCancelBtn()).waitForDisplayed({ timeout: 40000 })
+    if(newItems) {
+      const count = await this.getCountEntityListItems();
+      for (let i = 0; i < newItems.length; i++) {
+        await (await this.addSingleEntitySelectableItem()).click();
+      }
+      for (let i = 0; i < newItems.length; i++) {
+        await this.editEntityItem(count+i, newItems[i]);
+      }
+    }
+  }
+
+  public async closeEntityListModal(clickCancel = false) {
+    if(clickCancel) {
+      await (await this.entityListSaveCancelBtn()).click();
+    } else {
+      await (await this.entityListSaveBtn()).click();
+    }
+    await (await this.updateEntityList()).waitForClickable({ timeout: 40000 })
+  }
+
+  public async editEntityItem(index: number, newName: string, clickCancel = false) {
+    await (await this.entityItemEditBtn(index)).click();
+    await (await this.entityItemCancelBtn()).waitForDisplayed();
+    await (await this.entityItemEditNameBox()).setValue(newName);
+    if(clickCancel){
+      await (await this.entityItemCancelBtn()).click();
+    } else {
+      await (await this.entityItemSaveBtn()).click();
+    }
+    await (await this.entityListSaveCancelBtn()).waitForDisplayed({ timeout: 40000 })
+  }
+
+  public async deleteEntityItem(index: number) {
+    await (await this.entityItemDeleteBtn(index)).click();
+  }
+
   public async openCreateAreaRuleModal(areaRule?: AreaRuleCreateUpdate) {
     await (await this.ruleCreateBtn()).click();
     await (await this.areaRuleCreateSaveCancelBtn()).waitForClickable({
@@ -253,28 +356,6 @@ export class BackendConfigurationAreaRulesPage extends Page {
           );
           const value = await (await this.createRuleAlarm(0)).$(
             `.ng-option=${areaRule.alarm}`
-          );
-          value.waitForDisplayed({ timeout: 40000 });
-          await value.click();
-        }
-        if (areaRule.checkListStable !== undefined) {
-          const checkListStable = areaRule.checkListStable ? 'Ja' : 'Ingen';
-          await (
-            await (await this.createRuleChecklistStable(0)).$('input')
-          ).setValue(checkListStable);
-          const value = await (await this.createRuleAlarm(0)).$(
-            `.ng-option=${checkListStable}`
-          );
-          value.waitForDisplayed({ timeout: 40000 });
-          await value.click();
-        }
-        if (areaRule.tailBite !== undefined) {
-          const tailBite = areaRule.checkListStable ? 'Ja' : 'Ingen';
-          await (await (await this.createRuleTailBite(0)).$('input')).setValue(
-            tailBite
-          );
-          const value = await (await this.createRuleTailBite(0)).$(
-            `.ng-option=${tailBite}`
           );
           value.waitForDisplayed({ timeout: 40000 });
           await value.click();
@@ -325,8 +406,6 @@ export class AreaRuleRowObject {
   public rulePlanningStatus: boolean;
   public ruleType?: string;
   public ruleAlarm?: string;
-  public ruleChecklistStable?: string;
-  public ruleTailBite?: string;
   public ruleWeekDay?: string;
   public showAreaRulePlanningBtn: WebdriverIO.Element;
   public editRuleBtn?: WebdriverIO.Element;
@@ -363,18 +442,6 @@ export class AreaRuleRowObject {
         const ele = await this.row.$('#ruleAlarm');
         if (ele && (await ele.isDisplayed())) {
           this.ruleAlarm = await ele.getText();
-        }
-      } catch (e) {}
-      try {
-        const ele = await this.row.$('#ruleChecklistStable');
-        if (ele && (await ele.isDisplayed())) {
-          this.ruleChecklistStable = await ele.getText();
-        }
-      } catch (e) {}
-      try {
-        const ele = await this.row.$('#ruleTailBite');
-        if (ele && (await ele.isDisplayed())) {
-          this.ruleTailBite = await ele.getText();
         }
       } catch (e) {}
       try {
@@ -470,32 +537,6 @@ export class AreaRuleRowObject {
         const value = await (
           await backendConfigurationAreaRulesPage.editRuleAlarm()
         ).$(`.ng-option=${areaRule.alarm}`);
-        value.waitForDisplayed({ timeout: 40000 });
-        await value.click();
-      }
-      if (areaRule.checkListStable !== undefined) {
-        const checkListStable = areaRule.checkListStable ? 'Ja' : 'Nej';
-        await (
-          await (
-            await backendConfigurationAreaRulesPage.editRuleChecklistStable()
-          ).$('input')
-        ).setValue(checkListStable);
-        const value = await (
-          await backendConfigurationAreaRulesPage.editRuleChecklistStable()
-        ).$(`.ng-option=${checkListStable}`);
-        value.waitForDisplayed({ timeout: 40000 });
-        await value.click();
-      }
-      if (areaRule.tailBite !== undefined) {
-        const tailBite = areaRule.checkListStable ? 'Ja' : 'Nej';
-        await (
-          await (await backendConfigurationAreaRulesPage.editRuleTailBite()).$(
-            'input'
-          )
-        ).setValue(tailBite);
-        const value = await (
-          await backendConfigurationAreaRulesPage.editRuleTailBite()
-        ).$(`.ng-option=${tailBite}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
       }
@@ -738,8 +779,6 @@ export class AreaRuleCreateUpdate {
   eform?: string;
   type?: string;
   alarm?: string;
-  checkListStable?: boolean;
-  tailBite?: boolean;
   dayOfWeek?: string;
 }
 

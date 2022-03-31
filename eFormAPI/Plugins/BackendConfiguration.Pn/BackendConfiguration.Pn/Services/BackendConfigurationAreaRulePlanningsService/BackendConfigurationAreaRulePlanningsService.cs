@@ -1505,8 +1505,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     EformId = sitePlanning.AreaRule.EformId,
                                     Type = sitePlanning.AreaRule.Type,
                                     Alarm = sitePlanning.AreaRule.Alarm,
-                                    ChecklistStable = sitePlanning.AreaRule.ChecklistStable,
-                                    TailBite = sitePlanning.AreaRule.TailBite,
                                     DayOfWeek = sitePlanning.AreaRule.DayOfWeek,
                                     RepeatEvery = sitePlanning.AreaRule.RepeatEvery,
                                 },

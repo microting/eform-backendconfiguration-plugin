@@ -33,10 +33,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
         public AreaRuleT2TypesEnum Type { get; set; }
 
         public AreaRuleT2AlarmsEnum Alarm { get; set; }
-
-        public bool ChecklistStable { get; set; }
-
-        public bool TailBite { get; set; }
         
         public int DayOfWeek { get; set; }
 

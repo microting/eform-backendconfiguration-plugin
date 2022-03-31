@@ -122,8 +122,6 @@ export class AreaRuleCreateModalComponent implements OnInit {
     }
     if (this.selectedArea.type === 3) {
       return {
-        checklistStable: true,
-        tailBite: true,
         eformId: this.selectedArea.initialFields.eformId,
         eformName: this.selectedArea.initialFields.eformName,
       };

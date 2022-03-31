@@ -10,7 +10,7 @@ import { TableHeaderElementModel } from 'src/app/common/models';
 import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
-} from 'src/app/plugins/modules/backend-configuration-pn/enums';
+} from '../../../../enums';
 import { AreaModel, AreaRuleSimpleModel } from '../../../../models';
 
 @Component({
@@ -57,13 +57,13 @@ export class AreaRulesTableComponent implements OnInit {
   tableHeadersT3: TableHeaderElementModel[] = [
     { name: 'ID', elementId: 'ID', sortable: false},
     { name: 'Name', elementId: 'nameTableHeader', sortable: false },
-    {
-      name: 'Checklist stable',
-      elementId: 'checklistStableTableHeader',
-      sortable: false,
-    },
+    // {
+    //   name: 'Checklist stable',
+    //   elementId: 'checklistStableTableHeader',
+    //   sortable: false,
+    // },
     { name: 'eForm', elementId: 'eformTableHeader', sortable: false },
-    { name: 'Tail bite', elementId: 'tailBiteTableHeader', sortable: false },
+    // { name: 'Tail bite', elementId: 'tailBiteTableHeader', sortable: false },
     { name: 'Status', elementId: 'statusTableHeader', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];

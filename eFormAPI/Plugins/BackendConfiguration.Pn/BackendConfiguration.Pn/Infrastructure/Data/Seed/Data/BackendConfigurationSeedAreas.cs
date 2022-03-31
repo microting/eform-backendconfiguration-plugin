@@ -197,7 +197,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             new Area
             {
                 Id = 5,
-                Type = AreaTypesEnum.Type1,
+                Type = AreaTypesEnum.Type3,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -227,7 +227,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = "05. Stald_klargøring",
+                    EformName = "05. Halebid og risikovurdering",
                     Notifications = true,
                     ComplianceEnabled = true,
                     RepeatEvery = 0,
@@ -1403,6 +1403,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = true,
                 },
                 AreaId = 21,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "05. Halebid og risikovurdering",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "Tailbite" },
+                    new() { LanguageId = 2, Name = "Tailbite" }, // todo it's ok translate?
+                    new() { LanguageId = 3, Name = "Tailbite" }, // todo it's ok translate?
+                },
+                AreaId = 5,
                 IsDefault = true,
             },
         };
