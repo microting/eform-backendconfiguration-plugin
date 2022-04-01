@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142549</Id>
+  <Id>1412</Id>
   <Repeated>0</Repeated>
   <Label>05. Halebid og risikovurdering|05. Tail bite and risc assessment</Label>
   <StartDate>2021-07-05</StartDate>
@@ -13,7 +13,7 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142549</Id>
+      <Id>1412</Id>
       <Label>05. Halebid og risikovurdering|05. Tail bite and risc assessment</Label>
       <Description><![CDATA[]]></Description>
       <DisplayOrder>0</DisplayOrder>
@@ -47,7 +47,7 @@
           <Label>Stald/sektion|Stable/section:</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>1</DisplayOrder>
-          <Source>5307</Source>
+          <Source>SOURCE_REPLACE_ME</Source>
           <KeyValuePairList/>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
@@ -68,7 +68,7 @@
         <DataItem type="SingleSelect">
           <Id>374906</Id>
           <Label>Grad af halebid|Degree tail bite</Label>
-          <Description><![CDATA[<b>Mindre alvorlig haleskade<br></b>Halen er ikke varm og hævet. Generelt er der få skader i besætningen.<br><b><b><br></b>Alvorligt halebid<br></b>Halen er varm og hævet, og der er tegn på infektion. Der er flere halebid i besætningen.<br><b>|</b><br><b>Minor tail injury</b><br>The tail is not hot and swollen. In general, there are few injuries in the herd.<br><br><b>Severe tail bite</b><br>The tail is warm and swollen and there are signs of infection. There are several tail bites in the herd.]]></Description>
+          <Description><![CDATA[<b>Mindre alvorlig haleskade</b><br>Halen er ikke varm og hævet. Generelt er der få skader i besætningen.<br><br><b>Alvorligt halebid</b><br>Halen er varm og hævet, og der er tegn på infektion. Der er flere halebid i besætningen.<br>|<br><b>Minor tail injury</b><br>The tail is not hot and swollen. In general, there are few injuries in the herd.<br><br><b>Severe tail bite</b><br>The tail is warm and swollen and there are signs of infection. There are several tail bites in the herd.]]></Description>
           <DisplayOrder>3</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>

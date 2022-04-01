@@ -960,7 +960,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 2,// en
                         InfoBox = "",
-                        Placeholder = "", 
+                        Placeholder = "",
                     },
                     new()
                     {
@@ -1410,9 +1410,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 EformName = "05. Halebid og risikovurdering",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "Tailbite" },
+                    new() { LanguageId = 1, Name = "Halebid" },
                     new() { LanguageId = 2, Name = "Tailbite" }, // todo it's ok translate?
-                    new() { LanguageId = 3, Name = "Tailbite" }, // todo it's ok translate?
+                    new() { LanguageId = 3, Name = "Schwanzbiss" }, // todo it's ok translate?
                 },
                 AreaId = 5,
                 IsDefault = true,

@@ -245,18 +245,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             await SeedTailBite(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
                             newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
                             await newAssignment.Update(_backendConfigurationPnDbContext);
+                            string text = $"05. Halebid - {property.Name}";
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                             {
                                 areaRule.PropertyId = property.Id;
                                 areaRule.FolderId = folderId;
                                 areaRule.CreatedByUserId = _userService.UserId;
                                 areaRule.UpdatedByUserId = _userService.UserId;
-                                if (!string.IsNullOrEmpty(areaRule.EformName))
+                                if (!string.IsNullOrEmpty(text))
                                 {
                                     var eformId = await sdkDbContext.CheckListTranslations
-                                        .Where(x => x.Text == areaRule.EformName)
+                                        .Where(x => x.Text == text)
                                         .Select(x => x.CheckListId)
                                         .FirstAsync();
+                                    areaRule.EformName = text;
                                     areaRule.EformId = eformId;
                                 }
                                 await areaRule.Create(_backendConfigurationPnDbContext);
@@ -992,7 +994,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
             if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
             {
                 var assembly = Assembly.GetExecutingAssembly();
-                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.05. Halebid.xml");
+                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.05. Halebid og risikovurdering.xml");
 
                 string contents;
                 using(var sr = new StreamReader(resourceStream))
@@ -1003,6 +1005,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 contents = contents.Replace("SOURCE_REPLACE_ME", entityGroupId);
                 var mainElement = await core.TemplateFromXml(contents);
                 mainElement.Label = text;
+                mainElement.ElementList[0].Label = text;
 
                 int clId = await core.TemplateCreate(mainElement);
                 var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);

@@ -177,6 +177,8 @@
       <EmbeddedResource Include="Resources\eForms\02. Igangværende opgave.xml" />
       <None Remove="Resources\eForms\03. Afslutted opgave.xml" />
       <EmbeddedResource Include="Resources\eForms\03. Afslutted opgave.xml" />
+      <None Remove="Resources\eForms\05. Halebid og risikovurdering.xml" />
+      <EmbeddedResource Include="Resources\eForms\05. Halebid og risikovurdering.xml" />
     </ItemGroup>
 
     <ItemGroup>
