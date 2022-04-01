@@ -104,6 +104,18 @@
             >
               <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
             </button>
+            <ng-container *ngIf="selectedArea.type === 3 && rule.isDefault">
+              <button
+                mdbBtn
+                class="btn btn-success btn-icon mr-2"
+                (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
+                mdbTooltip="{{ 'Edit entity select list' | translate }}"
+                id="updateEntityList"
+                [placement]="'left'"
+              >
+                <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
+              </button>
+            </ng-container>
             <ng-container *ngIf="!rule.isDefault">
               <button
                 id="showEditRuleBtn"

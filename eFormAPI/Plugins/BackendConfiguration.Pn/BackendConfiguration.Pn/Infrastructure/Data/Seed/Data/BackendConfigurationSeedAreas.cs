@@ -1411,8 +1411,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new() { LanguageId = 1, Name = "Halebid" },
-                    new() { LanguageId = 2, Name = "Tailbite" }, // todo it's ok translate?
-                    new() { LanguageId = 3, Name = "Schwanzbiss" }, // todo it's ok translate?
+                    new() { LanguageId = 2, Name = "Tailbite" },
+                    new() { LanguageId = 3, Name = "Schwanzbiss" },
                 },
                 AreaId = 5,
                 IsDefault = true,

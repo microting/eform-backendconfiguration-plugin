@@ -28,6 +28,8 @@ export class AreaRulesTableComponent implements OnInit {
   showEditRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
   @Output()
   showDeleteRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
+  @Output()
+  showEditEntityListModal: EventEmitter<number> = new EventEmitter();
 
   get areaRuleAlarms() {
     return AreaRuleT2AlarmsEnum;
@@ -132,5 +134,9 @@ export class AreaRulesTableComponent implements OnInit {
     ];
     return weekNames.find((y) => y.id === areaRule.typeSpecificFields.dayOfWeek)
       .name;
+  }
+
+  onShowEditEntityListModal(groupId?: number) {
+    this.showEditEntityListModal.emit(groupId);
   }
 }
