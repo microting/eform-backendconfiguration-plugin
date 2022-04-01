@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2021 Microting A/S
@@ -227,7 +227,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaInitialField = new AreaInitialField
                 {
-                    EformName = "05. Halebid og risikovurdering",
+                    // EformName = "05. Halebid og risikovurdering",
                     Notifications = true,
                     ComplianceEnabled = true,
                     RepeatEvery = 0,
