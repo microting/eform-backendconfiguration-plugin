@@ -5,14 +5,6 @@
 >
 
   <div class="p-3" *ngIf="selectedArea.type !== 4">
-    <ng-container *ngIf="selectedArea.type === 3">
-      <button
-        mdbBtn
-        class="btn-success btn-small-height"
-        (click)="entityListEditModal.show(this.selectedArea.groupId)"
-        id="updateEntityList"
-      >{{'Edit entity select list' | translate}}</button>
-    </ng-container>
     <button
       mdbBtn
       id="ruleCreateBtn"
@@ -33,6 +25,7 @@
     (showDeleteRuleModal)="showDeleteAreaRuleModal($event)"
     (showEditRuleModal)="showEditAreaRuleModal($event)"
     (showPlanAreaRuleModal)="showPlanAreaRuleModal($event)"
+    (showEditEntityListModal)="entityListEditModal.show($event)"
   ></app-area-rules-table>
 </div>
 
