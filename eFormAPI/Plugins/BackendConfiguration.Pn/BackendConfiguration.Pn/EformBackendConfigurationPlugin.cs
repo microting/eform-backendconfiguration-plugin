@@ -31,6 +31,7 @@ using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn
 {
@@ -602,6 +603,11 @@ namespace BackendConfiguration.Pn
                     await areaRule.Update(context);
                 }
             }
+            
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Klargøring af stalde og dokumentation af halebid");
+            var area = await context.Areas.SingleAsync(x => x.Id == areaTranslation2.AreaId);
+            area.Type = AreaTypesEnum.Type3;
+            await area.Update(context);
 
             var areaTranslations = await context.AreaTranslations.Where(x => x.Name.Contains("23.")).ToListAsync();
             foreach (var areaTranslation in areaTranslations)
