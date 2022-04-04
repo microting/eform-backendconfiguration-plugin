@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Main>
-  <Id>1412</Id>
+<Main
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <OriginalId>1412</OriginalId>
   <Repeated>0</Repeated>
   <Label>05. Halebid og risikovurdering|05. Tail bite and risc assessment</Label>
   <StartDate>2021-07-05</StartDate>
@@ -12,50 +14,59 @@
   <Summary>false</Summary>
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
-    <Element type="DataElement">
-      <Id>1412</Id>
+    <Element xsi:type="DataElement">
+      <OriginalId>1412</OriginalId>
       <Label>05. Halebid og risikovurdering|05. Tail bite and risc assessment</Label>
-      <Description><![CDATA[]]></Description>
+      <Description>
+        <![CDATA[]]>
+      </Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
       <ManualSync>false</ManualSync>
       <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
-      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <DoneButtonEnabled>false</DoneButtonEnabled>
       <ApprovalEnabled>false</ApprovalEnabled>
-      <DataItemGroupList>
-        <DataItemGroup type="FieldGroup">
-          <Id>374902</Id>
+      <DataItemList>
+        <DataItem xsi:type="FieldContainer">
+          <OriginalId>374902</OriginalId>
           <Label>LÆS MERE|READ MORE</Label>
-          <Description><![CDATA[]]></Description>
+          <Description>
+            <![CDATA[]]>
+          </Description>
           <DisplayOrder>0</DisplayOrder>
           <Value>Closed</Value>
           <Color>fff6df</Color>
           <DataItemList>
-            <DataItem type="None">
-              <Id>374903</Id>
+            <DataItem xsi:type="None">
+              <OriginalId>374903</OriginalId>
               <Label>INFO|INFO</Label>
-              <Description><![CDATA[Halebid kan forekomme hos grise i alle aldersgrupper, men ses primært hos grise, som er mellem 30 og 70 kg eller i alderen tre til fem måneder.&nbsp;<br><br>Halebid hos grise er et velfærdsmæssigt problem, der skal tages hånd om, så snart det forekommer i besætningen.<br><br>Udviklingen fra mindre halebid til alvorlige halebid sker hurtigt. Desuden kan halebid hurtigt brede sig blandt grisene i en sti.<br>|<br>Tail bites can occur in pigs of all age groups, but are seen primarily in pigs that are between 30 and 70 kg or aged three to five months.<br><br>Tail bite in pigs is a welfare issue that needs to be addressed as soon as it occurs in the herd.<br><br>The development from minor tail bites to severe tail bites happens quickly. In addition, tail bites can quickly spread among the pigs in a pen.<br>]]></Description>
+              <Description>
+                <![CDATA[Halebid kan forekomme hos grise i alle aldersgrupper, men ses primært hos grise, som er mellem 30 og 70 kg eller i alderen tre til fem måneder.&nbsp;<br><br>Halebid hos grise er et velfærdsmæssigt problem, der skal tages hånd om, så snart det forekommer i besætningen.<br><br>Udviklingen fra mindre halebid til alvorlige halebid sker hurtigt. Desuden kan halebid hurtigt brede sig blandt grisene i en sti.<br>|<br>Tail bites can occur in pigs of all age groups, but are seen primarily in pigs that are between 30 and 70 kg or aged three to five months.<br><br>Tail bite in pigs is a welfare issue that needs to be addressed as soon as it occurs in the herd.<br><br>The development from minor tail bites to severe tail bites happens quickly. In addition, tail bites can quickly spread among the pigs in a pen.<br>]]>
+              </Description>
               <DisplayOrder>0</DisplayOrder>
               <Color>fff6df</Color>
             </DataItem>
           </DataItemList>
-        </DataItemGroup>
-      </DataItemGroupList>
+        </DataItem>
+      </DataItemList>
       <DataItemList>
-        <DataItem type="SingleSelectSearch">
-          <Id>374904</Id>
+        <DataItem xsi:type="EntitySelect">
+          <OriginalId>374904</OriginalId>
           <Label>Stald/sektion|Stable/section:</Label>
-          <Description><![CDATA[]]></Description>
+          <Description>
+            <![CDATA[]]>
+          </Description>
           <DisplayOrder>1</DisplayOrder>
           <Source>SOURCE_REPLACE_ME</Source>
-          <KeyValuePairList/>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
-        <DataItem type="Comment">
-          <Id>374905</Id>
+        <DataItem xsi:type="Comment">
+          <OriginalId>374905</OriginalId>
           <Label>Note|Note</Label>
-          <Description><![CDATA[Fx sti, område i stald etc.|Eg pen, area in stable etc.]]></Description>
+          <Description>
+            <![CDATA[Fx sti, område i stald etc.|Eg pen, area in stable etc.]]>
+          </Description>
           <DisplayOrder>2</DisplayOrder>
           <Multi>1</Multi>
           <GeolocationEnabled>false</GeolocationEnabled>
@@ -65,40 +76,50 @@
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
-        <DataItem type="SingleSelect">
-          <Id>374906</Id>
+        <DataItem xsi:type="SingleSelect">
+          <OriginalId>374906</OriginalId>
           <Label>Grad af halebid|Degree tail bite</Label>
-          <Description><![CDATA[<b>Mindre alvorlig haleskade</b><br>Halen er ikke varm og hævet. Generelt er der få skader i besætningen.<br><br><b>Alvorligt halebid</b><br>Halen er varm og hævet, og der er tegn på infektion. Der er flere halebid i besætningen.<br>|<br><b>Minor tail injury</b><br>The tail is not hot and swollen. In general, there are few injuries in the herd.<br><br><b>Severe tail bite</b><br>The tail is warm and swollen and there are signs of infection. There are several tail bites in the herd.]]></Description>
+          <Description>
+            <![CDATA[<b>Mindre alvorlig haleskade</b><br>Halen er ikke varm og hævet. Generelt er der få skader i besætningen.<br><br><b>Alvorligt halebid</b><br>Halen er varm og hævet, og der er tegn på infektion. Der er flere halebid i besætningen.<br>|<br><b>Minor tail injury</b><br>The tail is not hot and swollen. In general, there are few injuries in the herd.<br><br><b>Severe tail bite</b><br>The tail is warm and swollen and there are signs of infection. There are several tail bites in the herd.]]>
+          </Description>
           <DisplayOrder>3</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Mindre alvorlig haleskade|Minor tail injury]]></Value>
+              <Value>
+                <![CDATA[Mindre alvorlig haleskade|Minor tail injury]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Alvorligt halebid|Severe tail bite]]></Value>
+              <Value>
+                <![CDATA[Alvorligt halebid|Severe tail bite]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
           </KeyValuePairList>
           <Color>e8eaf6</Color>
         </DataItem>
-        <DataItem type="Picture">
-          <Id>374907</Id>
+        <DataItem xsi:type="Picture">
+          <OriginalId>374907</OriginalId>
           <Label>Billede|Picture</Label>
-          <Description><![CDATA[]]></Description>
+          <Description>
+            <![CDATA[]]>
+          </Description>
           <DisplayOrder>4</DisplayOrder>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
-        <DataItem type="Comment">
-          <Id>374900</Id>
+        <DataItem xsi:type="Comment">
+          <OriginalId>374900</OriginalId>
           <Label>Kommentar til halebid|Comment tail bite</Label>
-          <Description><![CDATA[]]></Description>
+          <Description>
+            <![CDATA[]]>
+          </Description>
           <DisplayOrder>5</DisplayOrder>
           <Multi>1</Multi>
           <GeolocationEnabled>false</GeolocationEnabled>
@@ -108,149 +129,189 @@
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
-        <DataItem type="None">
-          <Id>375700</Id>
+        <DataItem xsi:type="None">
+          <OriginalId>375700</OriginalId>
           <Label>Risikovurdering|Risk assessment</Label>
-          <Description><![CDATA[]]></Description>
+          <Description>
+            <![CDATA[]]>
+          </Description>
           <DisplayOrder>6</DisplayOrder>
           <Color>ffe4e4</Color>
         </DataItem>
-        <DataItem type="SingleSelect">
-          <Id>375694</Id>
+        <DataItem xsi:type="SingleSelect">
+          <OriginalId>375694</OriginalId>
           <Label>Vand problem|Water problem</Label>
-          <Description><![CDATA[Er der forhold omkring drikkevand og vandforsyning, der giver problemer i besætningen?<br>|<br>Are there conditions around drinking water and water supply that cause problems in the herd?]]></Description>
+          <Description>
+            <![CDATA[Er der forhold omkring drikkevand og vandforsyning, der giver problemer i besætningen?<br>|<br>Are there conditions around drinking water and water supply that cause problems in the herd?]]>
+          </Description>
           <DisplayOrder>7</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Ja|Yes]]></Value>
+              <Value>
+                <![CDATA[Ja|Yes]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Nej|No]]></Value>
+              <Value>
+                <![CDATA[Nej|No]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
           </KeyValuePairList>
           <Color>ffe4e4</Color>
         </DataItem>
-        <DataItem type="SingleSelect">
-          <Id>375695</Id>
+        <DataItem xsi:type="SingleSelect">
+          <OriginalId>375695</OriginalId>
           <Label>Foder og udfodring problem|Feed and feeding problem</Label>
-          <Description><![CDATA[Er der forhold omkring foder og udfodring, der giver problemer i besætningen?<br>|<br>Are there conditions around feed and feeding that cause problems in the herd?]]></Description>
+          <Description>
+            <![CDATA[Er der forhold omkring foder og udfodring, der giver problemer i besætningen?<br>|<br>Are there conditions around feed and feeding that cause problems in the herd?]]>
+          </Description>
           <DisplayOrder>8</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Ja|Yes]]></Value>
+              <Value>
+                <![CDATA[Ja|Yes]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Nej|No]]></Value>
+              <Value>
+                <![CDATA[Nej|No]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
           </KeyValuePairList>
           <Color>ffe4e4</Color>
         </DataItem>
-        <DataItem type="SingleSelect">
-          <Id>375696</Id>
+        <DataItem xsi:type="SingleSelect">
+          <OriginalId>375696</OriginalId>
           <Label>Lege og aktivitetsmateriale problem|Toys and activity material problem</Label>
-          <Description><![CDATA[Er der forhold omkring tildeling af lege- og aktivitetsmateriale, der giver udfordringer i besætningen?<br>|<br>Are there conditions around the allocation of toys and activity materials that present challenges in the herd?]]></Description>
+          <Description>
+            <![CDATA[Er der forhold omkring tildeling af lege- og aktivitetsmateriale, der giver udfordringer i besætningen?<br>|<br>Are there conditions around the allocation of toys and activity materials that present challenges in the herd?]]>
+          </Description>
           <DisplayOrder>9</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Ja|Yes]]></Value>
+              <Value>
+                <![CDATA[Ja|Yes]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Nej|No]]></Value>
+              <Value>
+                <![CDATA[Nej|No]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
           </KeyValuePairList>
           <Color>ffe4e4</Color>
         </DataItem>
-        <DataItem type="SingleSelect">
-          <Id>375697</Id>
+        <DataItem xsi:type="SingleSelect">
+          <OriginalId>375697</OriginalId>
           <Label>Staldklima problem|Stable climate problem</Label>
-          <Description><![CDATA[Er der forhold omkring staldklima, der giver udfordringer i besætningen?<br>|<br>Are there conditions around the stable climate that present challenges in the herd?]]></Description>
+          <Description>
+            <![CDATA[Er der forhold omkring staldklima, der giver udfordringer i besætningen?<br>|<br>Are there conditions around the stable climate that present challenges in the herd?]]>
+          </Description>
           <DisplayOrder>10</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Ja|Yes]]></Value>
+              <Value>
+                <![CDATA[Ja|Yes]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Nej|No]]></Value>
+              <Value>
+                <![CDATA[Nej|No]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
           </KeyValuePairList>
           <Color>ffe4e4</Color>
         </DataItem>
-        <DataItem type="SingleSelect">
-          <Id>375698</Id>
+        <DataItem xsi:type="SingleSelect">
+          <OriginalId>375698</OriginalId>
           <Label>Sundhed problem|Health problem</Label>
-          <Description><![CDATA[Er der forhold omkring grisenes sundhed, der giver udfordringer i besætningen?<br>|<br>Are there conditions around the pigs' health that present challenges in the herd?]]></Description>
+          <Description>
+            <![CDATA[Er der forhold omkring grisenes sundhed, der giver udfordringer i besætningen?<br>|<br>Are there conditions around the pigs' health that present challenges in the herd?]]>
+          </Description>
           <DisplayOrder>11</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Ja|Yes]]></Value>
+              <Value>
+                <![CDATA[Ja|Yes]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Nej|No]]></Value>
+              <Value>
+                <![CDATA[Nej|No]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
           </KeyValuePairList>
           <Color>ffe4e4</Color>
         </DataItem>
-        <DataItem type="SingleSelect">
-          <Id>375699</Id>
+        <DataItem xsi:type="SingleSelect">
+          <OriginalId>375699</OriginalId>
           <Label>Driftsledelse problem|Operations Management problem</Label>
-          <Description><![CDATA[Er der forhold omkring driftsledelse vedrørende halebid, der giver udfordringer?<br>|<br>Are there management issues regarding tail bites that present challenges?]]></Description>
+          <Description>
+            <![CDATA[Er der forhold omkring driftsledelse vedrørende halebid, der giver udfordringer?<br>|<br>Are there management issues regarding tail bites that present challenges?]]>
+          </Description>
           <DisplayOrder>12</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Ja|Yes]]></Value>
+              <Value>
+                <![CDATA[Ja|Yes]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Nej|No]]></Value>
+              <Value>
+                <![CDATA[Nej|No]]>
+              </Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
           </KeyValuePairList>
           <Color>ffe4e4</Color>
         </DataItem>
-        <DataItem type="SaveButton">
-          <Id>374901</Id>
+        <DataItem xsi:type="SaveButton">
+          <OriginalId>374901</OriginalId>
           <Label>Gem registrering|Save registration</Label>
-          <Description><![CDATA[]]></Description>
+          <Description>
+            <![CDATA[]]>
+          </Description>
           <DisplayOrder>13</DisplayOrder>
           <Value>GEM|SAVE</Value>
           <Color>f0f8db</Color>

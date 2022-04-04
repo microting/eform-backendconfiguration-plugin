@@ -31,6 +31,7 @@ using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn
 {
@@ -127,39 +128,32 @@ namespace BackendConfiguration.Pn
             var assembly = Assembly.GetExecutingAssembly();
             foreach (var (eformName, eform) in eforms)
             {
-
-                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.{eformName}.xml");
-                if (resourceStream == null)
+                try
                 {
-                    Console.WriteLine(eformName);
-                }
-                else
-                {
-                    string contents;
-                    using(var sr = new StreamReader(resourceStream))
+                    var resourceStream =
+                        assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.{eformName}.xml");
+                    if (resourceStream == null)
                     {
-                        contents = await sr.ReadToEndAsync();
-                    }
-                    var newTemplate = await core.TemplateFromXml(contents);
-                    if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
-                    {
-                        var clId = await core.TemplateCreate(newTemplate);
-                        var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
-                        cl.IsLocked = true;
-                        cl.IsEditable = false;
-                        cl.ReportH1 = eform[0];
-                        cl.ReportH2 = eform[1];
-                        cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
-                        cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
-                        cl.IsDoneAtEditable = true;
-                        await cl.Update(sdkDbContext);
+                        Console.WriteLine(eformName);
                     }
                     else
                     {
-                        try {
-                            var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
-                                x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
-                                x.WorkflowState != Constants.WorkflowStates.Removed);
+                        string contents;
+                        using (var sr = new StreamReader(resourceStream))
+                        {
+                            contents = await sr.ReadToEndAsync();
+                        }
+
+                        if (eformName == "05. Halebid og risikovurdering")
+                        {
+                            contents = contents.Replace("SOURCE_REPLACE_ME", "123");
+                        }
+
+                        var newTemplate = await core.TemplateFromXml(contents);
+                        if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
+                        {
+                            var clId = await core.TemplateCreate(newTemplate);
+                            var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
                             cl.IsLocked = true;
                             cl.IsEditable = false;
                             cl.ReportH1 = eform[0];
@@ -169,12 +163,34 @@ namespace BackendConfiguration.Pn
                             cl.IsDoneAtEditable = true;
                             await cl.Update(sdkDbContext);
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            Console.WriteLine(ex.Message);
+                            try
+                            {
+                                var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
+                                    x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
+                                    x.WorkflowState != Constants.WorkflowStates.Removed);
+                                cl.IsLocked = true;
+                                cl.IsEditable = false;
+                                cl.ReportH1 = eform[0];
+                                cl.ReportH2 = eform[1];
+                                cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
+                                cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
+                                cl.IsDoneAtEditable = true;
+                                await cl.Update(sdkDbContext);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
                         }
                     }
                 }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(exception.Message);
+                }
+                
 
             }
 
@@ -587,6 +603,11 @@ namespace BackendConfiguration.Pn
                     await areaRule.Update(context);
                 }
             }
+            
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Klargøring af stalde og dokumentation af halebid");
+            var area = await context.Areas.SingleAsync(x => x.Id == areaTranslation2.AreaId);
+            area.Type = AreaTypesEnum.Type3;
+            await area.Update(context);
 
             var areaTranslations = await context.AreaTranslations.Where(x => x.Name.Contains("23.")).ToListAsync();
             foreach (var areaTranslation in areaTranslations)
