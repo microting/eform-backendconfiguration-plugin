@@ -1410,9 +1410,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 EformName = "05. Halebid og risikovurdering",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "Halebid" },
-                    new() { LanguageId = 2, Name = "Tailbite" },
-                    new() { LanguageId = 3, Name = "Schwanzbiss" },
+                    new() { LanguageId = 1, Name = "01. Halebid" },
+                    new() { LanguageId = 2, Name = "01. Tailbite" },
+                    new() { LanguageId = 3, Name = "01. Schwanzbiss" },
                 },
                 AreaId = 5,
                 IsDefault = true,
