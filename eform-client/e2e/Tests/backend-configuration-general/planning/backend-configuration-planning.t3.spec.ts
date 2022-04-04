@@ -72,7 +72,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     // first planning
     expect(itemPlannings[0].eFormName).eq('05. Halebid - ' + property.name);
     expect(itemPlannings[0].name).eq(areaRule.name);
-    expect(itemPlannings[0].folderName).eq(`${property.name} - 05. Stalde`);
+    expect(itemPlannings[0].folderName).eq(`${property.name} - 05. Halebid og klargøring af stalde`);
     expect(itemPlannings[0].repeatEvery).eq(0);
     expect(itemPlannings[0].repeatType).eq('Dag');
     const workers = await itemPlannings[0].readPairing();
