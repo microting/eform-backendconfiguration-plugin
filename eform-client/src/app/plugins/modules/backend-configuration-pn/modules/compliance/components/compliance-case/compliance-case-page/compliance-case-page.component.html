@@ -27,19 +27,22 @@
                 mdbInput
                 [owlDateTime]="dt1"
                 [(ngModel)]="replyElement.doneAt"
-                [max]="maxDate"
                 type="text"
                 id="doneAt"
                 name="doneAt"
                 class="form-control"
+                required
               />
-              <label for="doneAt">{{
+              <label for="doneAt" [ngClass]="{'invalid': !replyElement.doneAt}">{{
                 'Select date' | translate
-                }}</label>
+                }}*</label>
               <owl-date-time [pickerType]="'calendar'"
                              #dt1
-                             [firstDayOfWeek]="1"
-              ></owl-date-time>
+                             [firstDayOfWeek]="1">
+              </owl-date-time>
+              <div class="invalid" *ngIf="!replyElement.doneAt">
+                {{'Date is required'| translate}}*
+              </div>
             </div>
           </div>
         </mdb-card-body>
