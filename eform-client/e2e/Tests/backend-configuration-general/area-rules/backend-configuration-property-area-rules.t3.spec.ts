@@ -46,7 +46,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areaRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areaRule.name).eq(areaRuleForCreate.name);
-    expect(areaRule.eform).eq('05. Halebid og risikovurdering');
+    expect(areaRule.eform).eq('05. Stald_klargøring');
     expect(areaRule.rulePlanningStatus).eq(false);
   });
   it('should not create items entity list', async () => {
@@ -78,7 +78,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areRule.name).eq(areaRuleForCreate.name);
-    expect(areRule.eform).eq('05. Halebid og risikovurdering');
+    expect(areRule.eform).eq('05. Stald_klargøring');
     expect(areRule.rulePlanningStatus).eq(false);
   });
   it('should edit created area rule type 3', async () => {

@@ -215,13 +215,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 new()
                                 {
                                     LanguageId = 1, // da
-                                    Name = "05. Stalde",
+                                    Name = "05. Halebid og klargøring af stalde",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
-                                    Name = "05. Stables",
+                                    Name = "05. Tailbite and preparation of stables",
                                     Description = "",
                                 },
                                 new()
