@@ -161,7 +161,11 @@ namespace BackendConfiguration.Pn
                             cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
                             cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
                             cl.IsDoneAtEditable = true;
+                            cl.QuickSyncEnabled = 1;
                             await cl.Update(sdkDbContext);
+                            var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                            subCl.QuickSyncEnabled = 1;
+                            await subCl.Update(sdkDbContext);
                         }
                         else
                         {
@@ -177,7 +181,11 @@ namespace BackendConfiguration.Pn
                                 cl.ReportH3 = eform.Count == 3 ? eform[2] : "";
                                 cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
                                 cl.IsDoneAtEditable = true;
+                                cl.QuickSyncEnabled = 1;
                                 await cl.Update(sdkDbContext);
+                                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                                subCl.QuickSyncEnabled = 1;
+                                await subCl.Update(sdkDbContext);
                             }
                             catch (Exception ex)
                             {
@@ -190,7 +198,7 @@ namespace BackendConfiguration.Pn
                 {
                     Console.WriteLine(exception.Message);
                 }
-                
+
 
             }
 
@@ -603,7 +611,7 @@ namespace BackendConfiguration.Pn
                     await areaRule.Update(context);
                 }
             }
-            
+
             areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Klargøring af stalde og dokumentation af halebid");
             var area = await context.Areas.SingleAsync(x => x.Id == areaTranslation2.AreaId);
             area.Type = AreaTypesEnum.Type3;
