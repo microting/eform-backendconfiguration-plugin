@@ -45,6 +45,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -53,6 +54,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -61,6 +63,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -85,6 +88,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -93,6 +97,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -101,6 +106,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -125,6 +131,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -133,6 +140,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -141,6 +149,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -167,6 +176,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -175,6 +185,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -183,6 +194,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -207,6 +219,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -215,6 +228,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -223,6 +237,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -244,8 +259,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "06. Fodersiloer",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.9rbo49l8hwn1",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
+                        InfoBox = "En fodersilo pr. linje",
+                        Placeholder = "Fodersilo",
                     },
                     new()
                     {
@@ -254,6 +269,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -262,6 +278,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -286,6 +303,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -294,6 +312,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -302,6 +321,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -326,6 +346,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -334,6 +355,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -342,6 +364,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -366,6 +389,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -374,6 +398,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -382,6 +407,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -406,6 +432,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -414,6 +441,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -422,6 +450,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -446,6 +475,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -454,6 +484,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -462,6 +493,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -486,6 +518,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -494,6 +527,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -502,6 +536,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -526,6 +561,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -534,6 +570,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -542,6 +579,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -564,6 +602,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -572,6 +611,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -580,6 +620,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -604,6 +645,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -612,6 +654,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -620,6 +663,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -644,6 +688,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -652,6 +697,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -660,6 +706,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -684,6 +731,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -692,6 +740,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -700,6 +749,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -724,6 +774,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -732,6 +783,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -740,6 +792,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -764,6 +817,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -772,6 +826,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -780,6 +835,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -804,6 +860,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -812,6 +869,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -820,6 +878,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -844,6 +903,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -852,6 +912,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -860,6 +921,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
             },
@@ -876,6 +938,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -884,6 +947,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -892,6 +956,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -916,6 +981,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -924,6 +990,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2, // en
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -932,6 +999,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -953,6 +1021,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,// da
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -961,6 +1030,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 2,// en
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     },
                     new()
                     {
@@ -969,6 +1039,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 3,// ge
                         InfoBox = "",
                         Placeholder = "",
+                        NewItemName = ""
                     }
                 },
                 AreaInitialField = new AreaInitialField

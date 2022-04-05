@@ -269,6 +269,11 @@ namespace BackendConfiguration.Pn
                     translation.Placeholder = translationFromSeed.Placeholder;
                     needToUpdate = true;
                 }
+                if (translation.NewItemName != translationFromSeed.NewItemName)
+                {
+                    translation.NewItemName = translationFromSeed.NewItemName;
+                    needToUpdate = true;
+                }
                 if (translation.Description != translationFromSeed.Description)
                 {
                     translation.Description = translationFromSeed.Description;
