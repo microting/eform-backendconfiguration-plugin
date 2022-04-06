@@ -40,12 +40,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "01. Registreringer til Miljøledelse",
+                        // Name = "01. Registreringer til Miljøledelse",
+                        Name = "01. Fokusområder Miljøledelse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Et fokusområde pr. linje",
+                        Placeholder = "Fokusområde",
+                        NewItemName = "Nyt fokusområde"
                     },
                     new()
                     {
@@ -86,9 +87,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "02. Beredskab",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.lxbt89gfjmsr",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Et beredskabsområde pr. linje",
+                        Placeholder = "Beredskabsområde",
+                        NewItemName = "Nyt beredskabsområde"
                     },
                     new()
                     {
@@ -129,9 +130,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "03. Gyllebeholdere",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En gyllebeholder pr. linje",
+                        Placeholder = "Gyllebeholder",
+                        NewItemName = "Ny gyllebeholder"
                     },
                     new()
                     {
@@ -174,9 +175,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "04. Fodringskrav (kun IE-husdyrbrug)",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.4a0a8zqjbwmq",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En foderblanding pr. linje",
+                        Placeholder = "Foderblanding",
+                        NewItemName = "Ny foderblanding"
                     },
                     new()
                     {
@@ -261,6 +262,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "En fodersilo pr. linje",
                         Placeholder = "Fodersilo",
+                        NewItemName = "Ny fodersilo"
                     },
                     new()
                     {
@@ -301,9 +303,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "07. Skadedyrsbekæmpelse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iljrzeutkuw4",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Et kontrolområde pr. linje",
+                        Placeholder = "Kontrolområde",
+                        NewItemName = "Nyt kontrolområde"
                     },
                     new()
                     {
@@ -344,9 +346,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "08. Luftrensning",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.q3puu5rb21t5",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Et kontrolområde pr. linje",
+                        Placeholder = "Kontrolområde",
+                        NewItemName = "Nyt kontrolområde"
                     },
                     new()
                     {
@@ -387,9 +389,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "09. Forsuring",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdavny7gjz0n",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Et kontrolområde pr. linje",
+                        Placeholder = "Kontrolområde",
+                        NewItemName = "Nyt kontrolområde"
                     },
                     new()
                     {
@@ -430,9 +432,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "10. Varmepumper",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.dxezyj6gry62",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En varmepumpe pr. linje",
+                        Placeholder = "Varmepumpe",
+                        NewItemName = "Ny varmepumpe"
                     },
                     new()
                     {
@@ -473,9 +475,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "11. Varmekilder",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En varmekilde pr. linje",
+                        Placeholder = "Varmekilde",
+                        NewItemName = "Ny varmekilde"
                     },
                     new()
                     {
@@ -516,9 +518,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "12. Miljøfarlige stoffer",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.ocy0eycm3hu7",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Et kontrolområde pr. linje",
+                        Placeholder = "Kontrolområde",
+                        NewItemName = "Nyt kontrolområde"
                     },
                     new()
                     {
@@ -600,9 +602,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "14. Maskiner",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5t8ueh77brvx",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En maskine pr. linje",
+                        Placeholder = "Maskine",
+                        NewItemName = "Ny maskine"
                     },
                     new()
                     {
@@ -643,9 +645,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "15. Elværktøj",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3aqslige0sx8",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Et elværktøj pr. linje",
+                        Placeholder = "Elværktøj",
+                        NewItemName = "Nyt elværktøj"
                     },
                     new()
                     {
@@ -686,9 +688,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "16. Stiger",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.201m31f6b76t",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En stige pr. linje",
+                        Placeholder = "Stige",
+                        NewItemName = "Ny stige"
                     },
                     new()
                     {
@@ -729,9 +731,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "17. Brandslukkere",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En brandslukker pr. linje",
+                        Placeholder = "Brandslukker",
+                        NewItemName = "Ny brandslukker"
                     },
                     new()
                     {
@@ -772,9 +774,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "18. Alarm",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdl5bg82luo9",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En alarm pr. linje",
+                        Placeholder = "Alarm",
+                        NewItemName = "Ny alarm"
                     },
                     new()
                     {
@@ -815,9 +817,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "19. Ventilation",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.122yhikalodh",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En ventilation pr. linje",
+                        Placeholder = "Ventilation",
+                        NewItemName = "Ny ventilation"
                     },
                     new()
                     {
@@ -858,9 +860,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "20. Tilbagevendende opgaver (man-søn)",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.7sb10z3swexo",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En rutineopgave pr. linje",
+                        Placeholder = "Èn rutineopgave pr. linje",
+                        NewItemName = "Ny rutineopgave"
                     },
                     new()
                     {
@@ -936,9 +938,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "22. Sigtetest",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xawyj9b4y3rq",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En foderblanding pr. linje",
+                        Placeholder = "Foderblanding",
+                        NewItemName = "Ny foderblanding"
                     },
                     new()
                     {
@@ -1019,9 +1021,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "23. IE-indberetning", // todo need beter translate
                         Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 1,// da
-                        InfoBox = "",
+                        InfoBox = "Se krav i Miljøgodkendelse",
                         Placeholder = "",
-                        NewItemName = ""
+                        NewItemName = "Vælg indberetningsområder"
                     },
                     new()
                     {

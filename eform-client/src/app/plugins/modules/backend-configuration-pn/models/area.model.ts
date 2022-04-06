@@ -10,6 +10,7 @@ export class AreaModel {
   infoBox: string;
   placeholder: string;
   groupId: number;
+  newItemName: string;
 }
 
 export class AreaInitialFieldsModel {
