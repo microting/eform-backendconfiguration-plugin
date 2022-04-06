@@ -31,8 +31,8 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
     { name: '' },
   ];
   disabledAreas: string[] = [
-    '13. Arbejdstilsynets Landbrugs APV',
-    '05. Klargøring af stalde og dokumentation af halebid',
+    '13. APV Landbrug',
+    '05. Stalde: Halebid og klargøring',
     '21. DANISH Standard',
     '100. Diverse',
   ]
