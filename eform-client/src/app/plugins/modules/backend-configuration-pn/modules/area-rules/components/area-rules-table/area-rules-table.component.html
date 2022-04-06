@@ -1,4 +1,59 @@
+<div class="row p-1 mt-4 table-responsive no-gutters" *ngIf="selectedArea.type === 3">
+  <h3>{{'Halebid' | translate}}</h3>
+  <table
+    mdbTable
+    striped="true"
+    hover="true"
+    small="true"
+    class="z-depth-1 text-center"
+  >
+    <thead
+      table-headers
+      [tableHeaders]="tableHeadersT3"
+      [stickyHeader]="true"
+    ></thead>
+    <tbody id="areaRulesTableBodyT3">
+    <tr *ngFor="let rule of tableItemsForAreaRulesDefaultT3; let i = index">
+      <td>{{ rule.id }}</td>
+      <td id="ruleNameT3">
+        {{ rule.translatedName }}
+      </td>
+      <td>
+        {{ rule.eformName }}
+      </td>
+      <td id="rulePlanningStatusT3">
+        {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
+      </td>
+
+      <td>
+        <div class="d-flex flex-row justify-content-center">
+          <button
+            id="showAreaRulePlanningBtnT3"
+            class="btn btn-success btn-icon mr-2"
+            mdbTooltip="{{ 'Plan and assign' | translate }}"
+            (click)="onShowPlanAreaRule(rule)"
+          >
+            <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
+          </button>
+          <button
+            mdbBtn
+            class="btn btn-success btn-icon mr-2"
+            (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
+            mdbTooltip="{{ 'Edit entity select list' | translate }}"
+            id="updateEntityList"
+            [placement]="'left'"
+          >
+            <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
+          </button>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
 <div class="row p-1 mt-4 table-responsive no-gutters">
+  <h3 *ngIf="selectedArea.type === 3">{{'Klargøring af stalde' | translate}}</h3>
   <table
     mdbTable
     striped="true"
@@ -104,18 +159,6 @@
             >
               <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
             </button>
-            <ng-container *ngIf="selectedArea.type === 3 && rule.isDefault">
-              <button
-                mdbBtn
-                class="btn btn-success btn-icon mr-2"
-                (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
-                mdbTooltip="{{ 'Edit entity select list' | translate }}"
-                id="updateEntityList"
-                [placement]="'left'"
-              >
-                <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
-            </ng-container>
             <ng-container *ngIf="!rule.isDefault">
               <button
                 id="showEditRuleBtn"
