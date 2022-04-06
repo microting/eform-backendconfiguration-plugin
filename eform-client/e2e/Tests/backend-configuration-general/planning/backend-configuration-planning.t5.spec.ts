@@ -77,7 +77,7 @@ describe('Backend Configuration Area Rules Planning Type5', function () {
     expect(itemPlanning.eFormName).eq('20. Arbejdsopgave udført');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 20. Tilbagevendende opgaver (man-søn) - 20.04 ${areaRuleForCreate.dayOfWeek}`
+      `${property.name} - 20. Ugentlige rutineopgaver - 20.04 ${areaRuleForCreate.dayOfWeek}`
     );
     expect(itemPlanning.repeatEvery).eq(1);
     expect(itemPlanning.repeatType).eq('Uge');

@@ -561,7 +561,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "13. Arbejdstilsynets Landbrugs APV",
+                        // Name = "13. Arbejdstilsynets Landbrugs APV",
+                        Name = "13. APV Landbrug",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.o3ig9krjpdcb",
                         LanguageId = 1,
                         InfoBox = "",
@@ -570,7 +571,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "13. The Danish Working Environment Authority's Agricultural APV",
+                        Name = "13. APV Agriculture",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.o3ig9krjpdcb",
                         LanguageId = 2,
                         InfoBox = "",
@@ -579,7 +580,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "13. Landwirtschaftliche APV . der dänischen Arbeitsumweltbehörde",
+                        Name = "13. APV Landwirtschaft",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.o3ig9krjpdcb",
                         LanguageId = 3,
                         InfoBox = "",

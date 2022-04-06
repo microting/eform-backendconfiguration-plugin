@@ -61,7 +61,7 @@ describe('Backend Configuration Area Rules Planning Type4', function () {
     expect(itemPlanning.eFormName).eq('13. APV Medarbejder');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 13. Arbejdstilsynets Landbrugs APV`
+      `${property.name} - 13. APV Landbrug`
     );
     expect(itemPlanning.repeatEvery).eq(0);
     expect(itemPlanning.repeatType).eq('Dag');
