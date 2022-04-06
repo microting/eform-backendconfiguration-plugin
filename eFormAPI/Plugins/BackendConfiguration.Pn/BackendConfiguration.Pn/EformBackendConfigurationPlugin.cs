@@ -617,7 +617,7 @@ namespace BackendConfiguration.Pn
                 }
             }
 
-            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Klargøring af stalde og dokumentation af halebid");
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Stalde: Halebid og klargøring");
             var area = await context.Areas.SingleAsync(x => x.Id == areaTranslation2.AreaId);
             area.Type = AreaTypesEnum.Type3;
             await area.Update(context);
