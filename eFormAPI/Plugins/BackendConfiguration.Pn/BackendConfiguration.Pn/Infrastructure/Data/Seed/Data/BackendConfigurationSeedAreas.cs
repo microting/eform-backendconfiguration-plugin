@@ -50,21 +50,21 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "01. Registrations to Environmental Management",
+                        Name = "01. Focus areas Environmental management",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "An area of focus per line",
+                        Placeholder = "Area of focus",
+                        NewItemName = "New area of focus"
                     },
                     new()
                     {
-                        Name = "01. Registrierungen zum Umweltmanagement",
+                        Name = "01. Schwerpunkte Umweltverwaltung",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Ein Fokusområde pro Zeile",
+                        Placeholder = "Fokusbereich",
+                        NewItemName = "Neues Fokusområde"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -96,18 +96,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "02. Contingency",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.lxbt89gfjmsr",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "One contingency area per line",
+                        Placeholder = "Contingency area",
+                        NewItemName = "New contingency area"
                     },
                     new()
                     {
                         Name = "02. Kontingenz",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.lxbt89gfjmsr",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Ein Kontingenz-Bereich pro Zeile",
+                        Placeholder = "Kontingenz-Bereich",
+                        NewItemName = "Neuer Kontingenz-Bereich"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -139,18 +139,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "03. Slurry tanks",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "One slurry tank per line",
+                        Placeholder = "Slurry tank",
+                        NewItemName = "New slurry tank"
                     },
                     new()
                     {
                         Name = "03. Gülletanks",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Gülle-Tank pro Zeile",
+                        Placeholder = "Gülle-Tank",
+                        NewItemName = "Neue Gülle-Tank"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -184,18 +184,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "04. Feeding documentation (kun IE-livestock only)",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.4a0a8zqjbwmq",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one feeding plan per line",
+                        Placeholder = "Feeding plan",
+                        NewItemName = "New feeding plan"
                     },
                     new()
                     {
                         Name = "04. Fütterungsdokumentation (nur IE Vieh)",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.4a0a8zqjbwmq",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Fütterungsplanung pro Zeile",
+                        Placeholder = "Fütterungsplanung",
+                        NewItemName = "Neue Fütterungsplanung"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -215,30 +215,33 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "05. Klargøring af stalde og dokumentation af halebid",
+                        // Name = "05. Klargøring af stalde og dokumentation af halebid",
+                        Name = "05. Stalde: Halebid og klargøring",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "En stald pr. linje",
+                        Placeholder = "Stald",
+                        NewItemName = "Ny stald"
                     },
                     new()
                     {
-                        Name = "05. Barn preparations and tail bite documentation",
+                        // Name = "05. Barn preparations and tail bite documentation",
+                        Name = "05. Stables: Tail bite and preparation",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "One stable per line",
+                        Placeholder = "Stable",
+                        NewItemName = "New stable"
                     },
                     new()
                     {
-                        Name = "05. Stallvorbereitungen und Schwanzbissdokumentation",
+                        // Name = "05. Stallvorbereitungen und Schwanzbissdokumentation",
+                        Name = "05. Ställe: Schwanzbiss und Vorbereitung",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Ställe pro Zeile",
+                        Placeholder = "Ställe",
+                        NewItemName = "Neue Ställe"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -269,18 +272,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "06. Silos",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.9rbo49l8hwn1",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one silo per line",
+                        Placeholder = "Silo",
+                        NewItemName = "New silo"
                     },
                     new()
                     {
                         Name = "06. Silos",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.9rbo49l8hwn1",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Silo pro Zeile",
+                        Placeholder = "Silo",
+                        NewItemName = "Neue Silo"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -312,18 +315,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "07. Pest control",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iljrzeutkuw4",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one pest control area per line",
+                        Placeholder = "Pest control area",
+                        NewItemName = "New pest control area"
                     },
                     new()
                     {
                         Name = "07. Schädlingsbekämpfung",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.iljrzeutkuw4",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Schädlingsbekämpfungsgebiet pro Zeile",
+                        Placeholder = "Schädlingsbekämpfungsgebiet",
+                        NewItemName = "Neue Schädlingsbekämpfungsgebiet"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -355,18 +358,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "08. Aircleaning",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.q3puu5rb21t5",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one air cleaning area per line",
+                        Placeholder = "Aircleaning area",
+                        NewItemName = "New air cleaning area"
                     },
                     new()
                     {
                         Name = "08. Luftreinigung",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.q3puu5rb21t5",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Luftreinigungsgebiet pro Zeile",
+                        Placeholder = "Luftreinigungsgebiet",
+                        NewItemName = "Neue Luftreinigungsgebiet"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -398,18 +401,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "09. Acidification",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdavny7gjz0n",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one acidification area per line",
+                        Placeholder = "Acidification area",
+                        NewItemName = "New acidification area"
                     },
                     new()
                     {
                         Name = "09. Ansäuerung",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdavny7gjz0n",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Ansäuerungsgebiet pro Zeile",
+                        Placeholder = "Ansäuerungsgebiet",
+                        NewItemName = "Neue Ansäuerungsgebiet"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -441,18 +444,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "10. Heat pumps",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.dxezyj6gry62",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one heat pump per line",
+                        Placeholder = "Heatpump",
+                        NewItemName = "New heatpump"
                     },
                     new()
                     {
                         Name = "10. Wärmepumpen",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.dxezyj6gry62",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Wärmepumpe pro Zeile",
+                        Placeholder = "Wärmepumpen",
+                        NewItemName = "Neue Wärmepumpe"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -484,18 +487,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "11. Heat sources",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one heat source per line",
+                        Placeholder = "Heat source",
+                        NewItemName = "New heat source"
                     },
                     new()
                     {
                         Name = "11. Wärmequellen",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.er2v0a3yxqzu",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Wärmequelle pro Zeile",
+                        Placeholder = "Wärmequelle",
+                        NewItemName = "Neue Wärmequelle"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -527,18 +530,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "12. Environmentally hazardous substances",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.ocy0eycm3hu7",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one control area per line",
+                        Placeholder = "Control area",
+                        NewItemName = "New control area"
                     },
                     new()
                     {
                         Name = "12. Umweltgefährdende Stoffe",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.ocy0eycm3hu7",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Umweltgefährdende Stoffe pro Zeile",
+                        Placeholder = "Umweltgefährdende Stoffe",
+                        NewItemName = "Neue Umweltgefährdende Stoffe"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -611,18 +614,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "14. Machines",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5t8ueh77brvx",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one Machine per line",
+                        Placeholder = "Machine",
+                        NewItemName = "New Machine"
                     },
                     new()
                     {
                         Name = "14. Machinen",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5t8ueh77brvx",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Maschine pro Zeile",
+                        Placeholder = "Maschine",
+                        NewItemName = "Neue Maschine"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -654,18 +657,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "15. Inspection of power tools",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3aqslige0sx8",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one power tool per line",
+                        Placeholder = "Power tool",
+                        NewItemName = "New power tool"
                     },
                     new()
                     {
                         Name = "15. Inspektion von Elektrowerkzeugen",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3aqslige0sx8",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Elektrowerkzeug pro Zeile",
+                        Placeholder = "Elektrowerkzeug",
+                        NewItemName = "Neues Elektrowerkzeug"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -697,18 +700,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "16. Ladders",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.201m31f6b76t",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one ladder per line",
+                        Placeholder = "Ladder",
+                        NewItemName = "New ladder"
                     },
                     new()
                     {
                         Name = "16. Leitern",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.201m31f6b76t",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Leiter pro Zeile",
+                        Placeholder = "Leiter",
+                        NewItemName = "Neuer Leiter"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -740,18 +743,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "17. Fire extinguishers",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one fire extinguisher per line",
+                        Placeholder = "Fire extinguisher",
+                        NewItemName = "New fire extinguisher"
                     },
                     new()
                     {
                         Name = "17. Feuerlöscher",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5f3qhcjuqopu",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Feuerlöscher pro Zeile",
+                        Placeholder = "Feuerlöscher",
+                        NewItemName = "Neuer Feuerlöscher"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -783,18 +786,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "18. Alarm",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdl5bg82luo9",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one alarm per line",
+                        Placeholder = "Alarm",
+                        NewItemName = "New alarm"
                     },
                     new()
                     {
                         Name = "18. Alarm",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xdl5bg82luo9",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Alarm pro Zeile",
+                        Placeholder = "Alarm",
+                        NewItemName = "Neuer Alarm"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -826,18 +829,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "19. Ventilation",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.122yhikalodh",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one ventilation per line",
+                        Placeholder = "Ventilation",
+                        NewItemName = "New ventilation"
                     },
                     new()
                     {
                         Name = "19. Belüftung",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.122yhikalodh",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Belüftung pro Zeile",
+                        Placeholder = "Belüftung",
+                        NewItemName = "Neue Belüftung"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -857,7 +860,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "20. Tilbagevendende opgaver (man-søn)",
+                        Name = "20. Ugentlige rutineopgaver",
+                        // Name = "20. Tilbagevendende opgaver (man-søn)",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.7sb10z3swexo",
                         LanguageId = 1,
                         InfoBox = "En rutineopgave pr. linje",
@@ -866,21 +870,23 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "20. Recurring tasks (mon-sun)",
+                        // Name = "20. Recurring tasks (mon-sun)",
+                        Name = "20. Weekly routine tasks",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.7sb10z3swexo",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one routine task per line",
+                        Placeholder = "Routine task",
+                        NewItemName = "New routine task"
                     },
                     new()
                     {
-                        Name = "20. Wiederkehrende Aufgaben (Mo-So)",
+                        // Name = "20. Wiederkehrende Aufgaben (Mo-So)",
+                        Name = "20. Wöchentliche Routineaufgaben",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.7sb10z3swexo",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur eine Wöchentliche Routineaufgaben pro Zeile",
+                        Placeholder = "Wöchentliche Routineaufgaben",
+                        NewItemName = "Neue Wöchentliche Routineaufgaben"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -947,18 +953,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "22. Sieve test",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xawyj9b4y3rq",
                         LanguageId = 2,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "One sieve test per line",
+                        Placeholder = "Sieve test",
+                        NewItemName = "New sieve test"
                     },
                     new()
                     {
                         Name = "22. Testen mit Sieb", // TODO better german translation
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.xawyj9b4y3rq",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Ein Sieb-Test pro Zeile",
+                        Placeholder = "Sieb-Test",
+                        NewItemName = "Neuer Sieb-Test"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -981,27 +987,27 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "99. Diverse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 1,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Kun et kontrolområde pr. linje",
+                        Placeholder = "Kontrolområde",
+                        NewItemName = "Nyt kontrolområde"
                     },
                     new()
                     {
                         Name = "99. Miscellaneous",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 2, // en
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Only one control area per line",
+                        Placeholder = "Control area",
+                        NewItemName = "New control area"
                     },
                     new()
                     {
                         Name = "99. Sonstig",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.5cyvenoqt2qk",
                         LanguageId = 3,
-                        InfoBox = "",
-                        Placeholder = "",
-                        NewItemName = ""
+                        InfoBox = "Nur ein Kontroll-Bereich pro Zeile",
+                        Placeholder = "Kontroll-Bereich",
+                        NewItemName = "Neuer Kontroll-Bereich"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -1030,18 +1036,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "23. IE Reporting",
                         Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 2,// en
-                        InfoBox = "",
+                        InfoBox = "See requirements in Environment Approval",
                         Placeholder = "",
-                        NewItemName = ""
+                        NewItemName = "Choose reporting areas"
                     },
                     new()
                     {
                         Name = "23. IE-Berichterstattung", // todo need beter translate
                         Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 3,// ge
-                        InfoBox = "",
+                        InfoBox = "Siehe Anforderungen in Umweltzulassung",
                         Placeholder = "",
-                        NewItemName = ""
+                        NewItemName = "Berichtsgebiete auswählen"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -1483,9 +1489,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 EformName = "05. Halebid og risikovurdering",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "01. Halebid" },
-                    new() { LanguageId = 2, Name = "01. Tailbite" },
-                    new() { LanguageId = 3, Name = "01. Schwanzbiss" },
+                    new() { LanguageId = 1, Name = "01. Registrer halebid" },
+                    new() { LanguageId = 2, Name = "01. Register tail bite" },
+                    new() { LanguageId = 3, Name = "01. Schwanzbiss registrieren" },
                 },
                 AreaId = 5,
                 IsDefault = true,
