@@ -50,6 +50,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
 
         public string Placeholder { get; set; }
 
+        public string NewItemName { get; set; }
+
         public int GroupId { get; set; }
     }
 }

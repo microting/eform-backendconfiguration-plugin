@@ -876,6 +876,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .Where(x => x.LanguageId == language.Id)
                         .Select(x => x.Placeholder)
                         .FirstOrDefault(),
+                    NewItemName = areaProperties.Area.AreaTranslations
+                        .Where(x => x.LanguageId == language.Id)
+                        .Select(x => x.NewItemName)
+                        .FirstOrDefault(),
                     GroupId = areaProperties.GroupMicrotingUuid,
                 };
                 if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))

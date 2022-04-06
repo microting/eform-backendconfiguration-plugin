@@ -67,7 +67,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.eFormName).eq('01. Vandforbrug');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 01. Registreringer til Miljøledelse`
+      `${property.name} - 01. Fokusområder Miljøledelse`
     );
     expect(itemPlanning.repeatEvery).eq(1);
     expect(itemPlanning.repeatType).eq('Måned');
