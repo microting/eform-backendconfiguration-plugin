@@ -215,19 +215,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 new()
                                 {
                                     LanguageId = 1, // da
-                                    Name = "05. Halebid og klargøring af stalde",
+                                    // Name = "05. Halebid og klargøring af stalde",
+                                    Name = "05. Stalde: Halebid og klargøring",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
-                                    Name = "05. Tailbite and preparation of stables",
+                                    // Name = "05. Tailbite and preparation of stables",
+                                    Name = "05. Stables: Tail biting and preparation",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
-                                    Name = "05. Stallungen",
+                                    // Name = "05. Stallungen",
+                                    Name = "05. Ställe: Schwanzbeißen und Vorbereitung",
                                     Description = "",
                                 },
                             }, property.FolderId);
