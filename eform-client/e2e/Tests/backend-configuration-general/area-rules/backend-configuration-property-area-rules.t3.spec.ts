@@ -41,7 +41,7 @@ describe('Backend Configuration Area Rules Type3', function () {
   });
   it('should create new area rule type 3', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(1);
+    expect(rowNum, 'have some non-default area rules').eq(0);
     await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
     expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areaRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();

@@ -3,8 +3,9 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnInit,
+  OnChanges,
   Output,
+  SimpleChanges,
 } from '@angular/core';
 import { TableHeaderElementModel } from 'src/app/common/models';
 import {
@@ -19,7 +20,7 @@ import { AreaModel, AreaRuleSimpleModel } from '../../../../models';
   styleUrls: ['./area-rules-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AreaRulesTableComponent implements OnInit {
+export class AreaRulesTableComponent implements OnChanges {
   @Input() areaRules: AreaRuleSimpleModel[] = [];
   @Input() selectedArea: AreaModel = new AreaModel();
   @Output()
@@ -38,6 +39,8 @@ export class AreaRulesTableComponent implements OnInit {
   get areaRuleTypes() {
     return AreaRuleT2TypesEnum;
   }
+
+  tableItemsForAreaRulesDefaultT3: AreaRuleSimpleModel[] = [];
 
   tableHeadersT1: TableHeaderElementModel[] = [
     { name: 'ID', elementId: 'ID', sortable: false},
@@ -108,7 +111,15 @@ export class AreaRulesTableComponent implements OnInit {
 
   constructor() {}
 
-  ngOnInit(): void {}
+  ngOnChanges(changes: SimpleChanges): void {
+    if (((changes.selectedArea && !changes.selectedArea.firstChange) ||
+      (changes.areaRules && !changes.areaRules.firstChange))
+      && this.areaRules && this.selectedArea &&
+      this.selectedArea.type === 3) {
+      this.tableItemsForAreaRulesDefaultT3 = this.areaRules.filter(x => x.isDefault);
+      this.areaRules = this.areaRules.filter(x => !x.isDefault);
+    }
+  }
 
   onShowPlanAreaRule(rule: AreaRuleSimpleModel) {
     this.showPlanAreaRuleModal.emit(rule);
