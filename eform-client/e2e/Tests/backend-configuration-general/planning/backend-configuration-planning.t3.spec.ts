@@ -42,6 +42,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     expect(rowNum, 'have some non-default area rules').eq(0);
     const areaRuleForCreate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
+      eform: `05. Halebid - ${property.name}`,
     };
     await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
 
