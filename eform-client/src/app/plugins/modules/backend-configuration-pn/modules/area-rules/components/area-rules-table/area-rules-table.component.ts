@@ -112,8 +112,8 @@ export class AreaRulesTableComponent implements OnChanges {
   constructor() {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if ((changes.selectedArea && !changes.selectedArea.firstChange) ||
-      (changes.areaRules && !changes.areaRules.firstChange)
+    if (((changes.selectedArea && !changes.selectedArea.firstChange) ||
+      (changes.areaRules && !changes.areaRules.firstChange))
       && this.areaRules && this.selectedArea &&
       this.selectedArea.type === 3) {
       this.tableItemsForAreaRulesDefaultT3 = this.areaRules.filter(x => x.isDefault);
