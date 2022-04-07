@@ -156,5 +156,6 @@ export const da = {
   'Year': 'År',
   'Download': 'Hent',
   'Plan and assign': 'Planlæg og tildel',
-  'Workorder flow enable': 'Aktivér opgavestyring'
+  'Workorder flow enable': 'Aktivér opgavestyring',
+  'Date is required': 'Dato er påkrævet',
 };
