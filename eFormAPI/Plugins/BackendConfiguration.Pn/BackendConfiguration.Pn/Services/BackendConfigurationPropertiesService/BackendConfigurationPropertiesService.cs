@@ -727,12 +727,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             {
                                 await core.CaseDelete(checkListSite.MicrotingUid);
                             }
-
-                            var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == eForm.CheckListId);
-                            cl.IsDoneAtEditable = true;
-                            cl.ReportH1 = "05. Stalde: Halebid og klargøring";
-                            cl.ReportH2 = "05.01Halebid";
-                            await cl.Update(sdkDbContext);
                         }
 
                         // delete translations for are rules

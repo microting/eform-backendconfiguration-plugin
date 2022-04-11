@@ -172,7 +172,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "04. Fodringskrav (kun IE-husdyrbrug)",
+                        // Name = "04. Fodringskrav (kun IE-husdyrbrug)",
+                        Name = "04. Foderindlægssedler",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.4a0a8zqjbwmq",
                         LanguageId = 1,
                         InfoBox = "En foderblanding pr. linje",
