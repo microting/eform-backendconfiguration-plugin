@@ -1,0 +1,65 @@
+<div class="row p-1 mt-4 table-responsive no-gutters">
+  <table
+    mdbTable
+    striped="true"
+    hover="true"
+    small="true"
+    class="z-depth-1 text-center"
+  >
+    <thead
+      table-headers
+      [tableHeaders]="tableHeaders"
+        [sort]="taskManagementStateService.getSort() | async"
+        (sortChanged)="sortTable($event)"
+    ></thead>
+    <tbody id="taskManagementTableBody">
+      <tr *ngFor="let workOrderCaseModel of workOrderCases; let i = index">
+        <td id="id">
+          {{ workOrderCaseModel.id }}
+        </td>
+        <td id="createdDate">
+          {{ workOrderCaseModel.createdDate | date: 'dd.MM.yyyy' }}
+        </td>
+        <td id="propertyName">
+          {{ workOrderCaseModel.propertyName }}
+        </td>
+        <td id="areaName">
+          {{ workOrderCaseModel.areaName }}
+        </td>
+        <td id="createdByName">
+          {{ workOrderCaseModel.createdByName }}
+        </td>
+        <td id="createdByText">
+          {{ workOrderCaseModel.createdByText }}
+        </td>
+        <td id="lastAssignedTo">
+          {{ workOrderCaseModel.lastAssignedTo }}
+        </td>
+        <td>
+          <div class="d-flex flex-row justify-content-center">
+            <button
+              id="taskManagementViewBtn"
+              class="btn btn-success btn-icon mb-2"
+              mdbTooltip="{{ 'View task' | translate }}"
+              (click)="onOpenViewModal(workOrderCaseModel.id)"
+            >
+              <fa-icon icon="eye" [fixedWidth]="true" size="lg"></fa-icon>
+            </button>
+          </div>
+        </td>
+        <td id="description">
+          {{ workOrderCaseModel.description }}
+        </td>
+        <td id="lastUpdateDate">
+          {{ workOrderCaseModel.lastUpdateDate | date: 'dd.MM.yyyy' }}
+        </td>
+        <td id="lastUpdatedBy">
+          {{ workOrderCaseModel.lastUpdatedBy }}
+        </td>
+        <td id="status">
+          {{ workOrderCaseModel.status }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

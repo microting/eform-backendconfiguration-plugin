@@ -74,7 +74,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _options = options;
-            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService);
+            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
         }
 
         public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request)

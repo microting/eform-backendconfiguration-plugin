@@ -20,12 +20,10 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Controllers;
 
-using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Services.WordService;
 
 [Authorize]

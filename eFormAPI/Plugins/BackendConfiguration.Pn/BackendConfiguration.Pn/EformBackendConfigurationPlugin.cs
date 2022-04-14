@@ -64,6 +64,7 @@ namespace BackendConfiguration.Pn
     using Services.BackendConfigurationLocalizationService;
     using Services.BackendConfigurationPropertiesService;
     using Services.BackendConfigurationPropertyAreasService;
+    using Services.BackendConfigurationTaskManagementService;
     using Services.RebusService;
     using Services.WordService;
 
@@ -90,6 +91,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
             services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
             services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
+            services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService> ();
             services.AddControllers();
@@ -1212,6 +1214,75 @@ namespace BackendConfiguration.Pn
                                 }
                             }
                         },
+                        new()
+                        {
+                            Name = "Task management",
+                            E2EId = "backend-configuration-pn-task-management",
+                            Link = "/plugins/backend-configuration-pn/task-management",
+                            Type = MenuItemTypeEnum.Link,
+                            Position = 1,
+                            MenuTemplate = new PluginMenuTemplateModel
+                            {
+                                Name = "Task management",
+                                E2EId = "backend-configuration-pn-task-management",
+                                DefaultLink = "/plugins/backend-configuration-pn/task-management",
+                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                                Translations = new List<PluginMenuTranslationModel>
+                                {
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.English,
+                                        Name = "Task management",
+                                        Language = LanguageNames.English,
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.German,
+                                        Name = "Aufgabenverwaltung",
+                                        Language = LanguageNames.German,
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Danish,
+                                        Name = "Opgavestyring",
+                                        Language = LanguageNames.Danish,
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Ukrainian,
+                                        Name = "Управління завданнями",
+                                        Language = LanguageNames.Ukrainian,
+                                    }
+                                }
+                            },
+                            Translations = new List<PluginMenuTranslationModel>
+                            {
+                                new()
+                                {
+                                    LocaleName = LocaleNames.English,
+                                    Name = "Task management",
+                                    Language = LanguageNames.English,
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.German,
+                                    Name = "Aufgabenverwaltung",
+                                    Language = LanguageNames.German,
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Danish,
+                                    Name = "Opgavestyring",
+                                    Language = LanguageNames.Danish,
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Ukrainian,
+                                    Name = "Управління завданнями",
+                                    Language = LanguageNames.Ukrainian,
+                                }
+                            }
+                        },
                     }
                 }
             };
@@ -1248,6 +1319,14 @@ namespace BackendConfiguration.Pn
                         Link = "/plugins/backend-configuration/workers",
                         Guards = new List<string>(),
                         Position = 1,
+                    },
+                    new()
+                    {
+                        Name = localizationService?.GetString("Task management"),
+                        E2EId = "backend-configuration-task-management",
+                        Link = "/plugins/backend-configuration/task-management",
+                        Guards = new List<string>(),
+                        Position = 2,
                     },
                 }
             });

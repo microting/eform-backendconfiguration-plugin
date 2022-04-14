@@ -19,11 +19,18 @@ public class WorkOrderHelper
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
     private readonly IEFormCoreService _coreHelper;
     private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-    public WorkOrderHelper(IEFormCoreService coreHelper, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+    private readonly IUserService _userService;
+    public WorkOrderHelper(
+        IEFormCoreService coreHelper,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+        IUserService userService
+        )
     {
         _coreHelper = coreHelper;
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+        _userService = userService;
     }
 
     public async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers)
@@ -269,6 +276,8 @@ public class WorkOrderHelper
                 CaseId = (int)caseId,
                 PropertyWorkerId = propertyWorker.Id,
                 CaseStatusesEnum = CaseStatusesEnum.NewTask,
+                CreatedByUserId = _userService.UserId,
+                UpdatedByUserId = _userService.UserId,
             }.Create(_backendConfigurationPnDbContext);
     }
 
@@ -287,6 +296,7 @@ public class WorkOrderHelper
                 if (workorderCase != null)
                 {
                     await core.CaseDelete(workorderCase.CaseId);
+                    workorderCase.UpdatedByUserId = _userService.UserId;
                     await workorderCase.Delete(_backendConfigurationPnDbContext);
                 }
 
@@ -308,8 +318,10 @@ public class WorkOrderHelper
                     {
                         try
                         {
+                            workorderCase.UpdatedByUserId = _userService.UserId;
                             await core.CaseDelete(workorderCase.CaseId);
-                        } catch (Exception e)
+                        }
+                        catch (Exception e)
                         {
                             Console.WriteLine(e);
                         }

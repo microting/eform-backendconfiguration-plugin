@@ -22,30 +22,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
-using Microsoft.EntityFrameworkCore;
-using Microting.eForm.Infrastructure.Constants;
-using Microting.eForm.Infrastructure.Data.Entities;
-using Microting.eForm.Infrastructure.Models;
-using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Infrastructure.Delegates.CaseUpdate;
-using Microting.eFormApi.BasePn.Infrastructure.Helpers;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
-using Microting.ItemsPlanningBase.Infrastructure.Data;
-using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
-using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService
 {
-    using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
+    using BackendConfigurationLocalizationService;
+    using Infrastructure.Models.Compliances.Index;
+    using Microsoft.EntityFrameworkCore;
+    using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Data.Entities;
+    using Microting.eForm.Infrastructure.Models;
+    using Microting.eFormApi.BasePn.Abstractions;
+    using Microting.eFormApi.BasePn.Infrastructure.Delegates.CaseUpdate;
+    using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+    using Microting.ItemsPlanningBase.Infrastructure.Data;
+    using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
 
     public class BackendConfigurationCompliancesService : IBackendConfigurationCompliancesService
@@ -57,7 +54,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
 
-        public BackendConfigurationCompliancesService(ItemsPlanningPnDbContext itemsPlanningPnDbContext, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IUserService userService, IBackendConfigurationLocalizationService localizationService, IEFormCoreService coreHelper)
+        public BackendConfigurationCompliancesService(
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+            BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+            IUserService userService,
+            IBackendConfigurationLocalizationService localizationService,
+            IEFormCoreService coreHelper
+            )
         {
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
@@ -69,7 +72,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
         public async Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request)
         {
             var language = await _userService.GetCurrentUserLanguage();
-            Paged<CompliancesModel> result = new Paged<CompliancesModel>
+            var result = new Paged<CompliancesModel>
             {
                 Entities = new List<CompliancesModel>()
             };
@@ -90,15 +93,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 .OrderBy(x => x.Deadline)
                 .ToListAsync();
 
-            foreach (Compliance compliance in theList)
+            foreach (var compliance in theList)
             {
-                var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
+                var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation
+                    .SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
 
                 if (planningNameTranslation == null)
                 {
                     continue;
                 }
-                var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);
+                var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations
+                    .SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);
 
                 if (areaTranslation == null)
                 {
@@ -106,19 +111,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 }
 
                 var planningSites = await _itemsPlanningPnDbContext.PlanningSites
-                .Where(x => x.PlanningId == compliance.PlanningId)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(x => x.SiteId).Distinct().ToListAsync();
-
-                List<KeyValuePair<int, string>> responsible = new List<KeyValuePair<int, string>>();
+                    .Where(x => x.PlanningId == compliance.PlanningId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.SiteId)
+                    .Distinct()
+                    .ToListAsync();
 
                 var sitesList = await sdkDbContext.Sites.Where(x => planningSites.Contains(x.Id)).ToListAsync();
 
-                foreach (var site in sitesList)
-                {
-                    var kvp = new KeyValuePair<int,string>(site.Id, site.Name);
-                    responsible.Add(kvp);
-                }
+                var responsible = sitesList.Select(site => new KeyValuePair<int, string>(site.Id, site.Name)).ToList();
 
                 var today = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
                 var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
@@ -128,7 +129,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 }
                 else
                 {
-                    CompliancesModel complianceModel = new CompliancesModel
+                    var complianceModel = new CompliancesModel
                     {
                         CaseId = compliance.MicrotingSdkCaseId,
                         Deadline = compliance.Deadline.AddDays(-1),
@@ -145,10 +146,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     {
                         if (dbCompliance.MicrotingSdkeFormId == 0)
                         {
-                            var planning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == complianceModel.PlanningId);
+                            var planning = await _itemsPlanningPnDbContext.Plannings
+                                .SingleAsync(x => x.Id == complianceModel.PlanningId);
                             dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
                         }
-                        Case caseEntity = new Case()
+                        var caseEntity = new Case()
                         {
                             CheckListId = dbCompliance.MicrotingSdkeFormId,
                         };
@@ -172,12 +174,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 PropertyId = propertyId
             });
 
-            if (compliance.Model.Entities.Count == 0)
-            {
-                return new OperationDataResult<int>(true, 0);
-            } else {
-                return new OperationDataResult<int>(true, 1);
-            }
+            return new OperationDataResult<int>(true, compliance.Model.Entities.Count == 0 ? 0 : 1);
         }
 
         public async Task<OperationDataResult<ReplyElement>> Read(int id)
@@ -277,7 +274,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     }
                     if (compliance.PlanningCaseSiteId != 0)
                     {
-                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId);
+                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                            .SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId);
                         if (planningCaseSite != null)
                         {
                             planningCaseSite.Status = 100;
@@ -289,7 +287,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
                             await planningCaseSite.Update(_itemsPlanningPnDbContext);
 
-                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
+                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
                             if (planningCase.Status != 100)
                             {
                                 planningCase.Status = 100;
@@ -309,7 +308,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     }
                     else
                     {
-                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId);
+                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                            .SingleOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId);
                         if (planningCaseSite != null)
                         {
                             planningCaseSite.Status = 100;
@@ -321,7 +321,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
                             await planningCaseSite.Update(_itemsPlanningPnDbContext);
 
-                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
+                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
                             if (planningCase.Status != 100)
                             {
                                 planningCase.Status = 100;
@@ -385,7 +386,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
         private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, int caseId, Language language)
         {
-            var planning = _itemsPlanningPnDbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
+            var planning = _itemsPlanningPnDbContext.Plannings
+                .SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
             var caseIds = new List<int>
             {
                 planningCaseSite.MicrotingSdkCaseId
@@ -394,20 +396,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
             var core = await _coreHelper.GetCore();
             var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language);
 
-            if (planning == null) return planningCaseSite;
+            if (planning == null)
+            {
+                return planningCaseSite;
+            }
             if (planning.NumberOfImagesEnabled)
             {
-                planningCaseSite.NumberOfImages = 0;
-                foreach (var fieldValue in fieldValues)
-                {
-                    if (fieldValue.FieldType == Constants.FieldTypes.Picture)
-                    {
-                        if (fieldValue.UploadedData != null)
-                        {
-                            planningCaseSite.NumberOfImages += 1;
-                        }
-                    }
-                }
+                planningCaseSite.NumberOfImages = fieldValues
+                    .Where(fieldValue => fieldValue.FieldType == Constants.FieldTypes.Picture)
+                    .Count(fieldValue => fieldValue.UploadedData != null);
             }
 
             return planningCaseSite;
@@ -416,24 +413,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
         private async Task<PlanningCase> SetFieldValue(PlanningCase planningCase, int caseId, Language language)
         {
             var core = await _coreHelper.GetCore();
-            var planning = await _itemsPlanningPnDbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
+            var planning = await _itemsPlanningPnDbContext.Plannings
+                .SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
             var caseIds = new List<int> { planningCase.MicrotingSdkCaseId };
             var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language).ConfigureAwait(false);
 
-            if (planning == null) return planningCase;
+            if (planning == null)
+            {
+                return planningCase;
+            }
             if (planning.NumberOfImagesEnabled)
             {
-                planningCase.NumberOfImages = 0;
-                foreach (var fieldValue in fieldValues)
-                {
-                    if (fieldValue.FieldType == Constants.FieldTypes.Picture)
-                    {
-                        if (fieldValue.UploadedData != null)
-                        {
-                            planningCase.NumberOfImages += 1;
-                        }
-                    }
-                }
+                planningCase.NumberOfImages = fieldValues
+                    .Where(fieldValue => fieldValue.FieldType == Constants.FieldTypes.Picture)
+                    .Count(fieldValue => fieldValue.UploadedData != null);
             }
 
             return planningCase;
