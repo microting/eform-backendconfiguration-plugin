@@ -1015,12 +1015,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 mainElement.ElementList[0].Label = text;
 
                 int clId = await core.TemplateCreate(mainElement);
-                var cl = await sdkDbContext.CheckLists.SingleOrDefaultAsync(x => x.Id == clId);
+                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
                 cl.IsLocked = true;
                 cl.IsEditable = false;
-                cl.ReportH1 = "05. Klargøring af stalde og dokumentation af halebid";
-                cl.ReportH2 = "05.01 Halebid";
+                cl.IsDoneAtEditable = true;
+                cl.ReportH1 = "05.Stalde: Halebid og klargøring";
+                cl.ReportH2 = "05.01Halebid";
+                cl.QuickSyncEnabled = 1;
                 await cl.Update(sdkDbContext);
+                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                subCl.QuickSyncEnabled = 1;
+                await subCl.Update(sdkDbContext);
+
             }
         }
 

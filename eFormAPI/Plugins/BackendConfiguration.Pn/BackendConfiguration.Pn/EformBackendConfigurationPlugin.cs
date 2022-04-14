@@ -540,11 +540,24 @@ namespace BackendConfiguration.Pn
                 }
             }
 
-            var theTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "100. Diverse");
-            if (theTag != null)
+            List<KeyValuePair<string, string>> tags = new List<KeyValuePair<string, string>>();
+            tags.Add(new KeyValuePair<string, string>("100. Diverse", "99. Diverse"));
+            tags.Add(new KeyValuePair<string, string>("01. Registreringer til Miljøledelse", "01. Fokusområder Miljøledelse"));
+            tags.Add(new KeyValuePair<string, string>("04. Fodringskrav (kun IE-husdyrbrug)", "04. Foderindlægssedler"));
+            tags.Add(new KeyValuePair<string, string>("05. Klargøring af stalde og dokumentation af halebid", "05. Stalde: Halebid og klargøring"));
+            tags.Add(new KeyValuePair<string, string>("13. Arbejdstilsynets Landbrugs APV", "13. APV Landbrug"));
+            tags.Add(new KeyValuePair<string, string>("20. Tilbagevendende opgaver (man-søn)", "20. Ugentlige rutineopgaver"));
+
+            foreach (var keyValuePair in tags)
             {
-                theTag.Name = "99. Diverse";
-                await theTag.Update(itemsPlanningContext);
+                var theTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == keyValuePair.Key);
+                {
+                    if (theTag != null)
+                    {
+                        theTag.Name = keyValuePair.Value;
+                        await theTag.Update(itemsPlanningContext);
+                    }
+                }
             }
 
             areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Diverse");
