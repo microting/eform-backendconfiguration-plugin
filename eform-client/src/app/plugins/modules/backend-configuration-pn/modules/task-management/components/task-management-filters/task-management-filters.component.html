@@ -15,9 +15,7 @@
       <ng-select
         [placeholder]="'Property - Areas' | translate"
         [items]="propertyAreas"
-        bindLabel="name"
-        bindValue="areaId"
-        formControlName="areaId"
+        formControlName="areaName"
         [clearable]="false"
       >
       </ng-select>
@@ -26,7 +24,7 @@
       <ng-select
         [placeholder]="'Created by' | translate"
         bindLabel="name"
-        bindValue="id"
+        bindValue="name"
         formControlName="createdBy"
         [items]="assignedSitesToProperty"
       >
@@ -36,7 +34,7 @@
       <ng-select
         [placeholder]="'Last assigned to' | translate"
         bindLabel="name"
-        bindValue="id"
+        bindValue="name"
         formControlName="lastAssignedTo"
         [items]="assignedSitesToProperty"
       >
@@ -63,6 +61,7 @@
           [owlDateTime]="dt1"
           formControlName="date"
           type="text"
+          [selectMode]="'range'"
           id="dateFilter"
           name="dateFilter"
           class="form-control"

@@ -26,5 +26,5 @@ export class TaskManagementQuery extends Query<TaskManagementState> {
     (state) => new SortModel(state.pagination.sort, state.pagination.isSortDsc)
   );
   selectFilters$ = this.select((state) => state.filters);
-  selectDisableButtons$ = this.select((state) => !state.filters.propertyId || !state.filters.areaId);
+  selectDisableButtons$ = this.select((state) => !state.filters.propertyId || !state.filters.areaName);
 }

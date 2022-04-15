@@ -6,32 +6,33 @@ import {
 
 export interface TaskManagementFiltrationModel {
   propertyId: number,
-  areaId: number,
-  createdBy?: number,
-  lastAssignedTo?: number,
+  areaName: string,
+  createdBy?: string,
+  lastAssignedTo?: string,
   status?: number,
-  date?: Date | string,
+  dateFrom?: Date | string,
+  dateTo?: Date | string,
 }
 
 export interface TaskManagementState {
   pagination: CommonPaginationState;
   filters: TaskManagementFiltrationModel;
-  total: number;
+  // total: number;
 }
 
 function createInitialState(): TaskManagementState {
   return <TaskManagementState>{
     pagination: {
       pageSize: 10,
-      sort: 'Id',
+      sort: 'CreatedDate',
       isSortDsc: false,
       offset: 0,
     },
     filters: {
-      propertyId: undefined,
-      areaId: undefined,
+      propertyId: null,
+      areaName: null,
     },
-    total: 0,
+    // total: 0,
   };
 }
 

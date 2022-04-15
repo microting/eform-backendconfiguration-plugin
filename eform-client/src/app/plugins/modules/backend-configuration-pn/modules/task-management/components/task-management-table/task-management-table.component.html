@@ -1,4 +1,4 @@
-<div class="row p-1 mt-4 table-responsive no-gutters">
+<div class="row p-1 mt-4 mb-2 table-responsive no-gutters">
   <table
     mdbTable
     striped="true"
@@ -9,8 +9,8 @@
     <thead
       table-headers
       [tableHeaders]="tableHeaders"
-        [sort]="taskManagementStateService.getSort() | async"
-        (sortChanged)="sortTable($event)"
+      [sort]="taskManagementStateService.getSort() | async"
+      (sortChanged)="sortTable($event)"
     ></thead>
     <tbody id="taskManagementTableBody">
       <tr *ngFor="let workOrderCaseModel of workOrderCases; let i = index">
@@ -44,6 +44,14 @@
               (click)="onOpenViewModal(workOrderCaseModel.id)"
             >
               <fa-icon icon="eye" [fixedWidth]="true" size="lg"></fa-icon>
+            </button>
+            <button
+              id="taskManagementDeleteBtn"
+              class="btn btn-danger btn-icon mb-2"
+              mdbTooltip="{{ 'Delete task' | translate }}"
+              (click)="onOpenDeleteModal(workOrderCaseModel)"
+            >
+              <fa-icon icon="trash" [fixedWidth]="true" size="lg"></fa-icon>
             </button>
           </div>
         </td>

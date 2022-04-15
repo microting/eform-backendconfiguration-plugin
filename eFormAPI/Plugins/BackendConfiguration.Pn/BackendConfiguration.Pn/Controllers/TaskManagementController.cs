@@ -68,4 +68,24 @@ public class TaskManagementController : Controller
     {
         return await _backendConfigurationTaskManagementService.GetTaskById(workOrderCaseId);
     }
+
+    [HttpGet]
+    [Route("entity-items")]
+    public async Task<OperationDataResult<List<string>>> GetItemsEntityListByPropertyId(int propertyId)
+    {
+        return await _backendConfigurationTaskManagementService.GetItemsEntityListByPropertyId(propertyId);
+    }
+
+    [HttpDelete]
+    public async Task<OperationResult> DeleteTaskById(int workOrderCaseId)
+    {
+        return await _backendConfigurationTaskManagementService.DeleteTaskById(workOrderCaseId);
+    }
+
+    [HttpPost]
+    public async Task<OperationResult> CreateTask([FromForm]WorkOrderCaseCreateModel createModel)
+    {
+        createModel.Files = HttpContext.Request.Form.Files;
+        return await _backendConfigurationTaskManagementService.CreateTask(createModel);
+    }
 }

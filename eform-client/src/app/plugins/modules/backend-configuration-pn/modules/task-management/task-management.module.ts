@@ -13,6 +13,7 @@ import {
   TaskManagementTableComponent,
   TaskManagementFiltersComponent,
   TaskManagementCreateShowModalComponent,
+  TaskManagementDeleteModalComponent,
 } from './components';
 import {TaskManagementRouting} from './task-management.routing';
 import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts/custom-date-time-adapter';
@@ -28,6 +29,7 @@ import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-i
     TaskManagementTableComponent,
     TaskManagementFiltersComponent,
     TaskManagementCreateShowModalComponent,
+    TaskManagementDeleteModalComponent
   ],
   imports: [
     CommonModule,

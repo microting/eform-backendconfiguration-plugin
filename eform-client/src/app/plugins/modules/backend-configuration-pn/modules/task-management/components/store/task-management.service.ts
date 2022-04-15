@@ -38,7 +38,7 @@ export class TaskManagementStateService {
     Observable<OperationDataResult<WorkOrderCaseModel[]>> {
     return this.service
       .getWorkOrderCases({
-        // ...this.query.pageSetting.pagination,
+        ...this.query.pageSetting.pagination,
         ...this.query.pageSetting.filters,
       });
   }
@@ -56,15 +56,15 @@ export class TaskManagementStateService {
   //   }));
   // }
 
-  updatePageSize(pageSize: number) {
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        pageSize: pageSize,
-      },
-    }));
-    this.checkOffset();
-  }
+  // updatePageSize(pageSize: number) {
+  //   this.store.update((state) => ({
+  //     pagination: {
+  //       ...state.pagination,
+  //       pageSize: pageSize,
+  //     },
+  //   }));
+  // this.checkOffset();
+  // }
 
   changePage(offset: number) {
     this.store.update((state) => ({
@@ -97,21 +97,21 @@ export class TaskManagementStateService {
     }));
   }
 
-  checkOffset() {
-    const newOffset = getOffset(
-      this.query.pageSetting.pagination.pageSize,
-      this.query.pageSetting.pagination.offset,
-      this.query.pageSetting.total
-    );
-    if (newOffset !== this.query.pageSetting.pagination.offset) {
-      this.store.update((state) => ({
-        pagination: {
-          ...state.pagination,
-          offset: newOffset,
-        },
-      }));
-    }
-  }
+  // checkOffset() {
+  //   const newOffset = getOffset(
+  //     this.query.pageSetting.pagination.pageSize,
+  //     this.query.pageSetting.pagination.offset,
+  //     this.query.pageSetting.total
+  //   );
+  //   if (newOffset !== this.query.pageSetting.pagination.offset) {
+  //     this.store.update((state) => ({
+  //       pagination: {
+  //         ...state.pagination,
+  //         offset: newOffset,
+  //       },
+  //     }));
+  //   }
+  // }
 
   getFiltersAsync(): Observable<TaskManagementFiltrationModel> {
     return this.query.selectFilters$;
@@ -133,6 +133,11 @@ export class TaskManagementStateService {
 
   getDisabledButtonsAsync() {
     return this.query.selectDisableButtons$;
+  }
+
+  getDisabledButtons() {
+    const storeValue = this.store.getValue()
+    return !storeValue.filters.propertyId || !storeValue.filters.areaName;
   }
 
   // getPagination(): Observable<PaginationModel> {

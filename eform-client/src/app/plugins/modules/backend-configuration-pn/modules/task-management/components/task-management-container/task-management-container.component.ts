@@ -2,7 +2,7 @@ import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { WorkOrderCaseModel } from '../../../../models';
 import {TaskManagementStateService} from '../store';
-import {TaskManagementCreateShowModalComponent} from '../';
+import {TaskManagementCreateShowModalComponent, TaskManagementDeleteModalComponent} from '../';
 import {BackendConfigurationPnTaskManagementService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 
 @AutoUnsubscribe()
@@ -13,6 +13,7 @@ import {BackendConfigurationPnTaskManagementService} from 'src/app/plugins/modul
 })
 export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   @ViewChild('showCreateModal', {static: true}) showCreateModal: TaskManagementCreateShowModalComponent;
+  @ViewChild('deleteModal', {static: true}) deleteModal: TaskManagementDeleteModalComponent;
 
   workOrderCases: WorkOrderCaseModel[] = [];
 
@@ -46,5 +47,19 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
 
   openCreateModal() {
     this.showCreateModal.show();
+  }
+
+  openDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
+    this.deleteModal.show(workOrderCaseModel);
+  }
+
+  deleteWorkOrderCaseModel(workOrderCaseId: number){
+    this.taskManagementService.deleteWorkOrderCase(workOrderCaseId)
+      .subscribe((data) => {
+        if(data && data.success) {
+          this.deleteModal.hide();
+          this.updateTable();
+        }
+    })
   }
 }

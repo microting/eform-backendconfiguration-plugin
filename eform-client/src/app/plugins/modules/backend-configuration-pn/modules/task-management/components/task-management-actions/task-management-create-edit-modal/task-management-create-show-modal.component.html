@@ -2,7 +2,8 @@
   [config]="{ ignoreBackdropClick: true }"
   mdbModal
   class="modal fade"
-  #frame="mdbModal" style="overflow-y: scroll;"
+  #frame="mdbModal"
+  style="overflow-y: scroll"
 >
   <div class="modal-dialog modal-md">
     <div class="modal-content">
@@ -32,9 +33,7 @@
               <ng-select
                 [placeholder]="'Area' | translate"
                 [items]="propertyAreas"
-                bindLabel="name"
-                bindValue="areaId"
-                formControlName="areaId"
+                formControlName="areaName"
                 [clearable]="false"
               >
               </ng-select>
@@ -46,46 +45,54 @@
                 bindValue="id"
                 formControlName="assignedTo"
                 [items]="assignedSitesToProperty"
+                [clearable]="isCreate"
               >
               </ng-select>
             </div>
-            <div class="row">
+            <div class="row mb-2">
               <div class="row">
                 <button
                   *ngIf="isCreate"
                   mdbBtn
                   class="btn-success btn-icon"
                   id="addNewImages"
-                  mdbTooltip="{{'Add new image' | translate}}"
+                  mdbTooltip="{{ 'Add new image' | translate }}"
                   (click)="frame.hide(); addNewImageModal.show()"
                 >
                   <fa-icon icon="plus" size="lg"></fa-icon>
                 </button>
               </div>
               <div class="row">
-                <div class="col-md-3 col-sm-4 col-xs-12" *ngFor="let image of images; let i = index">
+                <div
+                  class="col-md-3 col-sm-4 col-xs-12"
+                  *ngFor="let image of images; let i = index"
+                >
                   <mdb-card>
-                    <mdb-card-img (click)="openPicture(i)" [src]="image.src | authImage | async" alt="Card image cap" ></mdb-card-img>
-                    <!--Card content-->
-                    <mdb-card-body *ngIf="isCreate">
-                      <mdb-card-text>
-                        <div class="d-flex justify-content-center">
-                          <button mdbBtn class="btn-icon btn-danger"
-                                  mdbTooltip="{{'Delete picture' | translate}}"
-                                  (click)="deleteImageByName(image.fileName)"
-                                  >
-                            <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
-                          </button>
-                        </div>
-                      </mdb-card-text>
-                    </mdb-card-body>
+                    <button
+                      *ngIf="isCreate"
+                      class="close"
+                      data-dismiss="modal"
+                      style="right: 5px"
+                      (click)="deleteImageByName(image.fileName)"
+                      mdbTooltip="{{ 'Delete picture' | translate }}"
+                    >
+                      <span>×</span>
+                    </button>
+                    <mdb-card-img
+                      (click)="openPicture(i)"
+                      [src]="image.src | authImage | async"
+                      alt="Card image cap"
+                    >
+                    </mdb-card-img>
                   </mdb-card>
                 </div>
               </div>
             </div>
-            <div style="margin-right: -15px; margin-left: -15px;">
+            <div style="margin-right: -15px; margin-left: -15px">
               <formatting-text-editor
                 [placeholder]="'Description of task' | translate"
+                [(value)]="description"
+                [disabled]="!isCreate"
               >
               </formatting-text-editor>
             </div>
@@ -98,6 +105,7 @@
           class="btn-success btn-small-height"
           id="taskManagementCreateShowSaveBtn"
           [disabled]="!isCreate"
+          (click)="create()"
         >
           {{ 'Save' | translate }}
         </button>
@@ -130,10 +138,7 @@
           #fileUpload
         />
         <div>
-          {{
-          newImage ? newImage.name :
-            'No file uploaded yet.' | translate
-          }}
+          {{ newImage ? newImage.name : ('No file uploaded yet.' | translate) }}
           <button
             mdbBtn
             class="btn-primary btn-small-height"
@@ -144,10 +149,19 @@
         </div>
       </div>
       <div class="modal-footer d-flex justify-content-around">
-        <button mdbBtn class="btn-success btn-small-height" (click)="addPicture()" [disabled]="!newImage">
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          (click)="addPicture()"
+          [disabled]="!newImage"
+        >
           {{ 'Add' | translate }}
         </button>
-        <button mdbBtn class="btn-accent text-black-50 btn-small-height" (click)="addNewImageModal.hide(); frame.show()">
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="addNewImageModal.hide(); frame.show()"
+        >
           {{ 'Cancel' | translate }}
         </button>
       </div>

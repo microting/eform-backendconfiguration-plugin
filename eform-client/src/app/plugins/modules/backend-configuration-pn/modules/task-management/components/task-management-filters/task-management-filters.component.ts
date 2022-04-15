@@ -5,19 +5,17 @@ import {
   OnInit,
   Output,
 } from '@angular/core';
+import { TaskManagementStateService } from '../store';
+import { FormControl, FormGroup } from '@angular/forms';
+import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
+import { Subscription } from 'rxjs';
 import {
-  TaskManagementStateService,
-} from '../store';
-import {FormControl, FormGroup} from '@angular/forms';
-import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription} from 'rxjs';
-import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {
-  PropertyAreaModel,
-  PropertyAssignWorkersModel,
-} from '../../../../models';
+  BackendConfigurationPnPropertiesService,
+  BackendConfigurationPnTaskManagementService,
+} from '../../../../services';
 import { CommonDictionaryModel } from 'src/app/common/models';
-import {SitesService} from 'src/app/common/services';
+import { SitesService } from 'src/app/common/services';
+import { format, set } from 'date-fns';
 
 @AutoUnsubscribe()
 @Component({
@@ -27,188 +25,224 @@ import {SitesService} from 'src/app/common/services';
 })
 export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
+  private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
   filtersForm: FormGroup;
-  propertyAreas: PropertyAreaModel[] = [];
+  propertyAreas: string[] = [];
   properties: CommonDictionaryModel[];
   assignedSitesToProperty: CommonDictionaryModel[];
 
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
-  areaIdValueChangesSub$: Subscription;
+  areaNameValueChangesSub$: Subscription;
 
   constructor(
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
     private sitesService: SitesService,
+    private taskManagementService: BackendConfigurationPnTaskManagementService
   ) {}
 
   ngOnInit(): void {
     this.getProperties();
-    this.selectFiltersSub$ = this.taskManagementStateService.getFiltersAsync().subscribe(filters => {
-      if(!this.filtersForm) {
-        this.filtersForm = new FormGroup({
-          propertyId: new FormControl(filters.propertyId),
-          areaId: new FormControl({
-            value: filters.areaId,
-            disabled: !filters.propertyId,
-          }),
-          createdBy: new FormControl({
-            value: filters.createdBy,
-            disabled: !filters.propertyId && !filters.areaId,
-          }),
-          lastAssignedTo: new FormControl({
-            value: filters.lastAssignedTo,
-            disabled: !filters.propertyId && !filters.areaId,
-          }),
-          status: new FormControl({
-            value: filters.status,
-            disabled: !filters.propertyId && !filters.areaId,
-          }),
-          date: new FormControl({
-            value: filters.date,
-            disabled: !filters.propertyId && !filters.areaId,
-          }),
-        });
-        if (filters.propertyId) {
-          this.getPropertyAreas(filters.propertyId);
-          this.getSites(filters.propertyId);
+    this.selectFiltersSub$ = this.taskManagementStateService
+      .getFiltersAsync()
+      .subscribe((filters) => {
+        if (!this.filtersForm) {
+          this.filtersForm = new FormGroup({
+            propertyId: new FormControl(filters.propertyId),
+            areaName: new FormControl({
+              value: filters.areaName,
+              disabled: !filters.propertyId,
+            }),
+            createdBy: new FormControl({
+              value: filters.createdBy,
+              disabled: !filters.propertyId && !filters.areaName,
+            }),
+            lastAssignedTo: new FormControl({
+              value: filters.lastAssignedTo,
+              disabled: !filters.propertyId && !filters.areaName,
+            }),
+            status: new FormControl({
+              value: filters.status,
+              disabled: !filters.propertyId && !filters.areaName,
+            }),
+            date: new FormControl({
+              value: [filters.dateFrom, filters.dateTo],
+              disabled: !filters.propertyId && !filters.areaName,
+            }),
+          });
+          if (filters.propertyId) {
+            this.getPropertyAreas(filters.propertyId);
+            this.getSites(filters.propertyId);
+          }
         }
-      }
-    })
-    this.propertyIdValueChangesSub$ = this.filtersForm.get('propertyId')
+      });
+    this.propertyIdValueChangesSub$ = this.filtersForm
+      .get('propertyId')
       .valueChanges.subscribe((value: number) => {
-        if(this.taskManagementStateService.store.getValue().filters.propertyId !== value) {
+        if (
+          this.taskManagementStateService.store.getValue().filters
+            .propertyId !== value
+        ) {
           this.getPropertyAreas(value);
           this.getSites(value);
           this.taskManagementStateService.store.update((state) => ({
             filters: {
               ...state.filters,
               propertyId: value,
-              areaId: undefined,
-              date: undefined,
-              status: undefined,
-              createdBy: undefined,
-              lastAssignedTo: undefined,
+              areaName: null,
+              dateFrom: null,
+              dateTo: null,
+              status: null,
+              createdBy: null,
+              lastAssignedTo: null,
             },
-          }))
-          this.filtersForm.get('areaId').enable();
-          this.filtersForm.get('areaId').setValue(undefined);
-          this.filtersForm.get('createdBy').setValue(undefined);
-          this.filtersForm.get('lastAssignedTo').setValue(undefined);
-          this.filtersForm.get('status').setValue(undefined);
-          this.filtersForm.get('date').setValue(undefined);
-          this.filtersForm.get('createdBy').disable();
-          this.filtersForm.get('lastAssignedTo').disable();
-          this.filtersForm.get('status').disable();
-          this.filtersForm.get('date').disable();
+          }));
+          this.filtersForm.get('areaName').enable({ emitEvent: false });
+          this.filtersForm
+            .get('areaName')
+            .setValue(undefined, { emitEvent: false });
+          this.filtersForm
+            .get('createdBy')
+            .setValue(undefined, { emitEvent: false });
+          this.filtersForm
+            .get('lastAssignedTo')
+            .setValue(undefined, { emitEvent: false });
+          this.filtersForm
+            .get('status')
+            .setValue(undefined, { emitEvent: false });
+          this.filtersForm.get('date').setValue([], { emitEvent: false });
+          this.filtersForm.get('createdBy').disable({ emitEvent: false });
+          this.filtersForm.get('lastAssignedTo').disable({ emitEvent: false });
+          this.filtersForm.get('status').disable({ emitEvent: false });
+          this.filtersForm.get('date').disable({ emitEvent: false });
         }
-    });
-    this.areaIdValueChangesSub$ = this.filtersForm.get('areaId')
-      .valueChanges.subscribe((value: number) => {
-        if(this.taskManagementStateService.store.getValue().filters.areaId !== value) {
+      });
+    this.areaNameValueChangesSub$ = this.filtersForm
+      .get('areaName')
+      .valueChanges.subscribe((value: string) => {
+        if (
+          this.taskManagementStateService.store.getValue().filters.areaName !==
+          value
+        ) {
           this.taskManagementStateService.store.update((state) => ({
             filters: {
               ...state.filters,
-              areaId: value,
+              areaName: value,
             },
           }));
         }
-        if(value) {
-          this.filtersForm.get('createdBy').enable();
-          this.filtersForm.get('lastAssignedTo').enable();
-          this.filtersForm.get('status').enable();
-          this.filtersForm.get('date').enable();
+        if (value) {
+          this.filtersForm.get('createdBy').enable({ emitEvent: false });
+          this.filtersForm.get('lastAssignedTo').enable({ emitEvent: false });
+          this.filtersForm.get('status').enable({ emitEvent: false });
+          this.filtersForm.get('date').enable({ emitEvent: false });
         } else {
-          this.filtersForm.get('createdBy').disable();
-          this.filtersForm.get('lastAssignedTo').disable();
-          this.filtersForm.get('status').disable();
-          this.filtersForm.get('date').disable();
+          this.filtersForm.get('createdBy').disable({ emitEvent: false });
+          this.filtersForm.get('lastAssignedTo').disable({ emitEvent: false });
+          this.filtersForm.get('status').disable({ emitEvent: false });
+          this.filtersForm.get('date').disable({ emitEvent: false });
         }
-    });
+      });
 
-    this.filtersForm.get('createdBy').valueChanges.subscribe((value: number) => {
-      if(this.taskManagementStateService.store.getValue().filters.createdBy !== value) {
+    this.filtersForm
+      .get('createdBy')
+      .valueChanges.subscribe((value: string) => {
         this.taskManagementStateService.store.update((state) => ({
           filters: {
             ...state.filters,
             createdBy: value,
           },
         }));
-      }
-    });
-    this.filtersForm.get('lastAssignedTo').valueChanges.subscribe((value: number) => {
-      if(this.taskManagementStateService.store.getValue().filters.lastAssignedTo !== value) {
+      });
+    this.filtersForm
+      .get('lastAssignedTo')
+      .valueChanges.subscribe((value: string) => {
         this.taskManagementStateService.store.update((state) => ({
           filters: {
             ...state.filters,
             lastAssignedTo: value,
           },
         }));
-      }
-    });
+      });
     this.filtersForm.get('status').valueChanges.subscribe((value: number) => {
-      if(this.taskManagementStateService.store.getValue().filters.status !== value) {
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            status: value,
-          },
-        }));
-      }
+      this.taskManagementStateService.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          status: value,
+        },
+      }));
     });
-    this.filtersForm.get('date').valueChanges.subscribe((value: string | Date) => {
-      if(this.taskManagementStateService.store.getValue().filters.date !== value) {
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            date: value,
-          },
-        }));
-      }
+    this.filtersForm.get('date').valueChanges.subscribe((value: any[]) => {
+      let dateFrom = new Date(value[0]._d);
+      let dateTo = new Date(value[1]._d);
+      dateFrom = set(dateFrom, {
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        milliseconds: 0,
+      });
+      dateTo = set(dateTo, {
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        milliseconds: 0,
+      });
+      this.taskManagementStateService.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          dateFrom: format(dateFrom, this.standartDateTimeFormat),
+          dateTo: format(dateTo, this.standartDateTimeFormat),
+        },
+      }));
     });
   }
 
   getPropertyAreas(propertyId: number) {
-    this.propertyService.getPropertyAreas(propertyId)
+    // get entity items
+    this.taskManagementService
+      .getEntityItemsListByPropertyId(propertyId)
       .subscribe((data) => {
-        if(data && data.success && data.model) {
-          this.propertyAreas = data.model.filter(x => x.activated);
+        if (data && data.success && data.model) {
+          this.propertyAreas = data.model;
         }
-      })
+      });
   }
 
   getProperties() {
-    this.propertyService.getAllPropertiesDictionary()
-      .subscribe(data => {
-        if(data && data.success && data.model){
-          this.properties = data.model;
-        }
-      })
+    this.propertyService.getAllPropertiesDictionary().subscribe((data) => {
+      if (data && data.success && data.model) {
+        this.properties = data.model;
+      }
+    });
   }
 
   getSites(propertyId: number) {
-    this.sitesService.getAllSitesDictionary()
-      .subscribe(result => {
-        if(result && result.success && result.success){
-          const sites = result.model;
-          this.propertyService.getPropertiesAssignments()
-            .subscribe(data => {
-              if(data && data.success && data.model){
-                data.model.forEach(x => x.assignments = x.assignments.filter(x => x.isChecked && x.propertyId === propertyId));
-                data.model = data.model.filter(x => x.assignments.length > 0);
-                this.assignedSitesToProperty = data.model.map((x) => {
-                  return {
-                    id: x.siteId,
-                    name: sites.find(y => y.id === x.siteId).name,
-                    description: '',
-                  }});
-              }
-            })
-        }
-      })
+    this.sitesService.getAllSitesDictionary().subscribe((result) => {
+      if (result && result.success && result.success) {
+        const sites = result.model;
+        this.propertyService.getPropertiesAssignments().subscribe((data) => {
+          if (data && data.success && data.model) {
+            data.model.forEach(
+              (x) =>
+                (x.assignments = x.assignments.filter(
+                  (x) => x.isChecked && x.propertyId === propertyId
+                ))
+            );
+            data.model = data.model.filter((x) => x.assignments.length > 0);
+            this.assignedSitesToProperty = data.model.map((x) => {
+              const site = sites.find((y) => y.id === x.siteId);
+              return {
+                id: x.siteId,
+                name: site ? site.name : '',
+                description: '',
+              };
+            });
+          }
+        });
+      }
+    });
   }
 
-  ngOnDestroy(): void {
-  }
-
+  ngOnDestroy(): void {}
 }

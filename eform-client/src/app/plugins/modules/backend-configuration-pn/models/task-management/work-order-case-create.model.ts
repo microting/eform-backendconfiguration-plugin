@@ -1,8 +1,7 @@
-export class WorkOrderCaseForReadModel {
-  id: number;
+export class WorkOrderCaseCreateModel {
   propertyId: number;
   areaName: string;
   assignedSiteId: number;
-  pictureNames: string[];
+  files: File[];
   description: string;
 }

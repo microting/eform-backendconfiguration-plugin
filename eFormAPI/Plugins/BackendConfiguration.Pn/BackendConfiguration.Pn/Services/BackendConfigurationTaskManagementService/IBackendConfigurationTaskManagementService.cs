@@ -34,4 +34,10 @@ public interface IBackendConfigurationTaskManagementService
     Task<List<WorkorderCaseModel>> GetReport(TaskManagementFiltersModel filtersModel);
 
     Task<OperationDataResult<WorkOrderCaseReadModel>> GetTaskById(int workOrderCaseId);
+
+    Task<OperationDataResult<List<string>>> GetItemsEntityListByPropertyId(int propertyId);
+
+    Task<OperationResult> DeleteTaskById(int workOrderCaseId);
+
+    Task<OperationResult> CreateTask(WorkOrderCaseCreateModel createModel);
 }
