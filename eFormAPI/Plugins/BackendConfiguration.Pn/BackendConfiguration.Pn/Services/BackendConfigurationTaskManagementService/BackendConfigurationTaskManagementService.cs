@@ -28,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
 using Infrastructure.Helpers;
@@ -36,6 +37,7 @@ using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Consts;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -326,49 +328,28 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     _localizationService.GetString("PropertyNotFound"));
             }
 
-            var propertyWorker = property.PropertyWorkers.First(x => x.WorkerId == createModel.AssignedSiteId);
-
-            var eformId = await sdkDbContext.CheckListTranslations
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Text == "01. New task")
-                .Select(x => x.CheckListId)
-                .FirstAsync();
-
-            var areasGroupUid = await sdkDbContext.EntityGroups
-                .Where(x => x.Id == property.EntitySelectListAreas)
-                .Select(x => int.Parse(x.MicrotingUid))
-                .FirstAsync();
-
-            var deviceUsersGroup = await sdkDbContext.EntityGroups
-                .Where(x => x.Id == property.EntitySelectListDeviceUsers)
-                .Select(x => int.Parse(x.MicrotingUid))
-                .FirstAsync();
-
-            var defaultValueForArea = await sdkDbContext.EntityItems
-                .Where(x => x.EntityGroupId == property.EntitySelectListAreas)
-                .Where(x => x.Name == createModel.AreaName)
-                .Select(x => int.Parse(x.MicrotingUid))
-                .FirstOrDefaultAsync();
-
-            var workOrderCaseId = await DeployEform(propertyWorker, eformId, property.FolderIdForNewTasks,
-                $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name} <br>{createModel.Description}",
-                defaultValueForArea, areasGroupUid, deviceUsersGroup);
-            if(workOrderCaseId != 0 && createModel.Files.Any())
+            var pictureListUploadedIds = new List<int>();
+            if (createModel.Files.Any())
             {
-                var folder = Path.Combine("pictures-for-case");
+                var folder = Path.Combine(Path.GetTempPath(), "pictures-for-case");
                 Directory.CreateDirectory(folder);
+                
                 foreach (var picture in createModel.Files)
                 {
                     var filePath = Path.Combine(folder, $"{DateTime.Now.Ticks}.{picture.ContentType}");
-                    // ReSharper disable once UseAwaitUsing
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                        // if you replace using to await using - stream not start copy until it goes beyond the current block
+
+                    var hash = "";
+                    using (var md5 = MD5.Create())
                     {
-                        await picture.CopyToAsync(stream);
+                        await using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await picture.CopyToAsync(stream);
+                            var grr = await md5.ComputeHashAsync(stream);
+                            hash = BitConverter.ToString(grr).Replace("-", "").ToLower();
+                        }
                     }
 
                     await core.PutFileToStorageSystem(filePath, picture.FileName);
-                    var hash = await core.PdfUpload(filePath);
 
                     var uploadData = new Microting.eForm.Infrastructure.Data.Entities.UploadedData
                     {
@@ -377,15 +358,60 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                         FileLocation = filePath,
                     };
                     await uploadData.Create(sdkDbContext);
-
-                    await new WorkorderCaseImage
-                    {
-                        WorkorderCaseId = workOrderCaseId,
-                        UploadedDataId = uploadData.Id,
-                        CreatedByUserId = _userService.UserId,
-                    }.Create(_backendConfigurationPnDbContext);
+                    pictureListUploadedIds.Add(uploadData.Id);
                 }
             }
+
+            var propertyWorker = property.PropertyWorkers.First(x => x.WorkerId == createModel.AssignedSiteId);
+
+            var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.Text == "02. Ongoing task")
+                .Select(x => x.CheckListId)
+                .FirstOrDefaultAsync();
+
+            var deviceUsersGroupMicrotingUid = await sdkDbContext.EntityGroups
+                .Where(x => x.Id == property.EntitySelectListDeviceUsers)
+                .Select(x => int.Parse(x.MicrotingUid))
+                .FirstAsync();
+
+            var site = await sdkDbContext.Sites
+                .Where(x => x.Id == createModel.AssignedSiteId)
+                .FirstOrDefaultAsync();
+
+            var propertyWorkers = property.PropertyWorkers
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToList();
+
+            var language = await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId) ??
+                           await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.LanguageCode == LocaleNames.Danish);
+
+            var label = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
+                        $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
+                        $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
+                        $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
+                        $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName()}<br>" +
+                        $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
+                        $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>" +
+                        $"<center><strong>******************</strong></center>";
+
+            var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName) ? $"{property.Name}; {createModel.AreaName}" : $"{property.Name}";
+            var pushMessageBody = createModel.Description;
+
+            // deploy eform to ongoing status
+            await DeployEform(
+                propertyWorkers,
+                eformIdForOngoingTasks,
+                (int)property.FolderIdForOngoingTasks,
+                label,
+                CaseStatusesEnum.Ongoing,
+                createModel.Description,
+                deviceUsersGroupMicrotingUid,
+                pushMessageBody,
+                pushMessageTitle,
+                pictureListUploadedIds,
+                createModel.AreaName);
+
             return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
         }
         catch (Exception e)
@@ -396,64 +422,83 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 $"{_localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
         }
     }
-
-    private async Task<int> DeployEform(PropertyWorker propertyWorker, int eformId, int? folderId,
-        string description, int defaultValueForArea, int? areasGroupUid, int? deviceUsersGroupId)
+    private async Task DeployEform(
+        List<PropertyWorker> propertyWorkers,
+        int eformId,
+        int folderId,
+        string description,
+        CaseStatusesEnum status,
+        string newDescription,
+        int? deviceUsersGroupId,
+        string pushMessageBody,
+        string pushMessageTitle,
+        List<int> pictureListUploadedIds,
+        string areaName)
     {
         var core = await _coreHelper.GetCore();
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-        if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
-                x.PropertyWorkerId == propertyWorker.Id
-                && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
-                && x.WorkflowState != Constants.WorkflowStates.Removed))
+        foreach (var propertyWorker in propertyWorkers)
         {
-            return 0;
-        }
-        var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
-        var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
-        var mainElement = await core.ReadeForm(eformId, language);
-        mainElement.Repeated = 0;
-        mainElement.ElementList[0].QuickSyncEnabled = true;
-        mainElement.EnableQuickSync = true;
-        if (folderId != null)
-        {
+            var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
+            var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
+            var mainElement = await core.ReadeForm(eformId, siteLanguage);
             mainElement.CheckListFolderName = await sdkDbContext.Folders
                 .Where(x => x.Id == folderId)
                 .Select(x => x.MicrotingUid.ToString())
                 .FirstOrDefaultAsync();
-        }
-
-        if (!string.IsNullOrEmpty(description))
-        {
+            mainElement.Label = " ";
+            mainElement.ElementList[0].QuickSyncEnabled = true;
+            mainElement.EnableQuickSync = true;
+            mainElement.ElementList[0].Label = " ";
+            mainElement.ElementList[0].Description.InderValue = description;
+            mainElement.PushMessageTitle = pushMessageTitle;
+            mainElement.PushMessageBody = pushMessageBody;
+            // TODO uncomment when new app has been released.
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
-        }
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
+            if (deviceUsersGroupId != null)
+            {
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source = (int)deviceUsersGroupId;
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Mandatory = true;
+                ((Comment)((DataElement)mainElement.ElementList[0]).DataItemList[3]).Value = newDescription;
+                ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
+                mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                mainElement.Repeated = 1;
+            }
+            else
+            {
+                mainElement.EndDate = DateTime.Now.AddDays(30).ToUniversalTime();
+                mainElement.ElementList[0].DoneButtonEnabled = false;
+                mainElement.Repeated = 1;
+            }
 
-        if (areasGroupUid != null && deviceUsersGroupId != null)
-        {
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = (int)areasGroupUid;
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).DefaultValue = defaultValueForArea;
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source =
-                (int)deviceUsersGroupId;
-        }
-        else if (areasGroupUid == null && deviceUsersGroupId != null)
-        {
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
-                (int)deviceUsersGroupId;
-        }
+            mainElement.StartDate = DateTime.Now.ToUniversalTime();
+            var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+            var workOrderCase = new WorkorderCase
+            {
+                CaseId = (int)caseId,
+                PropertyWorkerId = propertyWorker.Id,
+                CaseStatusesEnum = status,
+                SelectedAreaName = areaName,
+                CreatedByName = site.Name,
+                Description = newDescription,
+                CaseInitiated = DateTime.UtcNow,
+                CreatedByUserId = _userService.UserId,
+            };
+            await workOrderCase.Create(_backendConfigurationPnDbContext);
 
-        mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-        mainElement.StartDate = DateTime.Now.ToUniversalTime();
-        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
-        var workOrderCase = new WorkorderCase
-        {
-            CaseId = (int)caseId,
-            PropertyWorkerId = propertyWorker.Id,
-            CaseStatusesEnum = CaseStatusesEnum.NewTask,
-            CreatedByUserId = _userService.UserId,
-            UpdatedByUserId = _userService.UserId,
-        };
-        await workOrderCase.Create(_backendConfigurationPnDbContext);
-        return workOrderCase.Id;
+            foreach (var pictureUploadedId in pictureListUploadedIds)
+            {
+                var uploadedData =
+                    await sdkDbContext.UploadedDatas.SingleAsync(x => x.Id == pictureUploadedId);
+                var workOrderCaseImage = new WorkorderCaseImage
+                {
+                    WorkorderCaseId = workOrderCase.Id,
+                    UploadedDataId = pictureUploadedId
+                };
+                await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
+            }
+        }
     }
 }

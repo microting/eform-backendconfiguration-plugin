@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import {Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
 import { CommonDictionaryModel } from 'src/app/common/models';
 import {
   BackendConfigurationPnPropertiesService,
@@ -25,6 +25,7 @@ export class TaskManagementCreateShowModalComponent
 {
   @ViewChild('frame', { static: false }) frame;
   @ViewChild('addNewImageModal', { static: false })
+  @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
   addNewImageModal: ModalDirective;
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -245,6 +246,7 @@ export class TaskManagementCreateShowModalComponent
     this.taskManagementService.createWorkOrderCase(workOrderCase)
       .subscribe(data => {
         if (data && data.success) {
+          this.taskCreated.emit();
           this.hide();
         }
     })
