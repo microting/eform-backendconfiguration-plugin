@@ -341,12 +341,10 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     var hash = "";
                     using (var md5 = MD5.Create())
                     {
-                        await using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await picture.CopyToAsync(stream);
-                            var grr = await md5.ComputeHashAsync(stream);
-                            hash = BitConverter.ToString(grr).Replace("-", "").ToLower();
-                        }
+                        await using var stream = new FileStream(filePath, FileMode.Create);
+                        await picture.CopyToAsync(stream);
+                        var grr = await md5.ComputeHashAsync(stream);
+                        hash = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
 
                     await core.PutFileToStorageSystem(filePath, picture.FileName);
@@ -361,8 +359,6 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     pictureListUploadedIds.Add(uploadData.Id);
                 }
             }
-
-            var propertyWorker = property.PropertyWorkers.First(x => x.WorkerId == createModel.AssignedSiteId);
 
             var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -382,10 +378,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             var propertyWorkers = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToList();
-
-            var language = await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId) ??
-                           await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.LanguageCode == LocaleNames.Danish);
-
+            
             var label = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
@@ -453,7 +446,6 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             mainElement.ElementList[0].Description.InderValue = description;
             mainElement.PushMessageTitle = pushMessageTitle;
             mainElement.PushMessageBody = pushMessageBody;
-            // TODO uncomment when new app has been released.
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
@@ -490,8 +482,6 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
             foreach (var pictureUploadedId in pictureListUploadedIds)
             {
-                var uploadedData =
-                    await sdkDbContext.UploadedDatas.SingleAsync(x => x.Id == pictureUploadedId);
                 var workOrderCaseImage = new WorkorderCaseImage
                 {
                     WorkorderCaseId = workOrderCase.Id,
