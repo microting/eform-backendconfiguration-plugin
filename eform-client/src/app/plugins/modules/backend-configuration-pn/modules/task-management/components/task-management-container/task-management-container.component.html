@@ -1,0 +1,70 @@
+<eform-subheader
+  [title]="'Task management' | translate"
+  [forceStaticTitle]="true"
+>
+  <div class="p-3">
+    <button
+      mdbBtn
+      id="entitySearchCreateSaveBtn"
+      class="btn-success btn-small-height"
+      (click)="openCreateModal()"
+    >
+      {{ 'Create new task' | translate }}
+    </button>
+  </div>
+</eform-subheader>
+
+<div class="container-fluid">
+  <app-task-management-filters></app-task-management-filters>
+  <div class="col">
+    <div class="row">
+      <button
+        mdbBtn
+        id="showReportBtn"
+        class="btn-success btn-small-height"
+        [disabled]="
+          taskManagementStateService.getDisabledButtonsAsync() | async
+        "
+        (click)="updateTable()"
+      >
+        {{ 'Show report' | translate }}
+      </button>
+      <button
+        mdbBtn
+        id="wordBtn"
+        class="btn-success btn-small-height"
+        [disabled]="
+          taskManagementStateService.getDisabledButtonsAsync() | async
+        "
+      >
+        {{ 'Word' | translate }}
+      </button>
+      <button
+        mdbBtn
+        id="excelBtn"
+        class="btn-success btn-small-height"
+        [disabled]="
+          taskManagementStateService.getDisabledButtonsAsync() | async
+        "
+      >
+        {{ 'Excel' | translate }}
+      </button>
+    </div>
+  </div>
+  <app-task-management-table
+    [workOrderCases]="workOrderCases"
+    (openViewModal)="openViewModal($event)"
+    (updateTable)="taskManagementStateService.getDisabledButtons ? updateTable() : undefined"
+    (openDeleteModal)="openDeleteModal($event)"
+  > </app-task-management-table>
+</div>
+
+<app-task-management-create-show-modal
+  (taskCreated)="updateTable()"
+  #showCreateModal>
+</app-task-management-create-show-modal>
+
+<app-task-management-delete-modal
+  (workOrderCaseDelete)="deleteWorkOrderCaseModel($event)"
+  #deleteModal>
+</app-task-management-delete-modal>

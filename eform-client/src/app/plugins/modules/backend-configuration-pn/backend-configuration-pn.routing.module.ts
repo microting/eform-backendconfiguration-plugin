@@ -63,6 +63,14 @@ export const routes: Routes = [
             (m) => m.TaskWorkerAssignmentsModule
           ),
       },
+      {
+        path: 'task-management',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/task-management/task-management.module').then(
+            (m) => m.TaskManagementModule
+          ),
+      },
     ],
   },
 ];

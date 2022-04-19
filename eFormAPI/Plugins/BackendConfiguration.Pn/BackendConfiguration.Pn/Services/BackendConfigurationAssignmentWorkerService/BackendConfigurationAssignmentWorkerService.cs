@@ -68,7 +68,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService);
+            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
         }
 
         public async Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment()

@@ -21,9 +21,7 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Controllers
 {
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading.Tasks;
-    using Infrastructure.Data.Seed.Data;
     using Infrastructure.Models.AreaRules;
     using Microsoft.AspNetCore.Mvc;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;

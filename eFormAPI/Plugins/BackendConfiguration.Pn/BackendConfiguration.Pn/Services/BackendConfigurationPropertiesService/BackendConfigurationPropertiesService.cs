@@ -74,7 +74,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _options = options;
-            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService);
+            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
         }
 
         public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request)
@@ -352,7 +352,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     {
                         case true:
                         {
-                            int? folderIdForNewTasks;
+                            // int? folderIdForNewTasks;
                             if (property.FolderIdForTasks == null)
                             {
                                 var translatesFolderForTasks = new List<CommonTranslationsModel>
@@ -506,7 +506,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         }
                         case false:
                         {
-                            var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
+                            /*var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.Text == "01. New task")
                                 .Select(x => x.CheckListId)
@@ -522,7 +522,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.Text == "03. Completed task")
                                 .Select(x => x.CheckListId)
-                                .FirstAsync();
+                                .FirstAsync();*/
 
                             var propertyWorkerIds = property.PropertyWorkers
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -642,7 +642,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 // retract eforms
                 if (property.WorkorderEnable)
                 {
-                    var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
+                    /*var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.Text == "01. New task")
                         .Select(x => x.CheckListId)
@@ -658,7 +658,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.Text == "03. Completed task")
                         .Select(x => x.CheckListId)
-                        .FirstAsync();
+                        .FirstAsync();*/
 
                     await _workOrderHelper.RetractEform(property.PropertyWorkers, true);
                     await _workOrderHelper.RetractEform(property.PropertyWorkers, false);

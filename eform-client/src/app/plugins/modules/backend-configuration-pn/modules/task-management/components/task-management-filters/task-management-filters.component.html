@@ -1,0 +1,80 @@
+<div class="col" [formGroup]="filtersForm">
+  <div class="row">
+    <div class="col-2 ng-select-wrapper">
+      <ng-select
+        [placeholder]="'Property' | translate"
+        [items]="properties"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="propertyId"
+        [clearable]="false"
+      >
+      </ng-select>
+    </div>
+    <div class="col-2 ng-select-wrapper">
+      <ng-select
+        [placeholder]="'Property - Areas' | translate"
+        [items]="propertyAreas"
+        formControlName="areaName"
+        [clearable]="false"
+      >
+      </ng-select>
+    </div>
+    <div class="col-2 ng-select-wrapper">
+      <ng-select
+        [placeholder]="'Created by' | translate"
+        bindLabel="name"
+        bindValue="name"
+        formControlName="createdBy"
+        [items]="assignedSitesToProperty"
+      >
+      </ng-select>
+    </div>
+    <div class="col-2 ng-select-wrapper">
+      <ng-select
+        [placeholder]="'Last assigned to' | translate"
+        bindLabel="name"
+        bindValue="name"
+        formControlName="lastAssignedTo"
+        [items]="assignedSitesToProperty"
+      >
+      </ng-select>
+    </div>
+    <div class="col-2 ng-select-wrapper">
+      <ng-select
+        [placeholder]="'Status' | translate"
+        [items]="[
+          {id: -1, name: ('All' | translate)},
+          {id: 1, name: ('Ongoing' | translate)},
+          {id: 2, name: ('Completed' | translate)},
+        ]"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="status"
+      >
+      </ng-select>
+    </div>
+    <div class="col-2">
+      <div class="md-form" [owlDateTimeTrigger]="dt1">
+        <input
+          mdbInput
+          [owlDateTime]="dt1"
+          formControlName="date"
+          type="text"
+          [selectMode]="'range'"
+          id="dateFilter"
+          name="dateFilter"
+          class="form-control"
+        />
+        <owl-date-time
+          [pickerType]="'calendar'"
+          [firstDayOfWeek]="1"
+          #dt1
+        ></owl-date-time>
+        <label for="dateFilter">{{
+          'Date' | translate
+          }}</label>
+      </div>
+    </div>
+  </div>
+</div>

@@ -19,11 +19,18 @@ public class WorkOrderHelper
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
     private readonly IEFormCoreService _coreHelper;
     private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-    public WorkOrderHelper(IEFormCoreService coreHelper, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
+    private readonly IUserService _userService;
+    public WorkOrderHelper(
+        IEFormCoreService coreHelper,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+        IUserService userService
+        )
     {
         _coreHelper = coreHelper;
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+        _userService = userService;
     }
 
     public async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers)
@@ -171,7 +178,8 @@ public class WorkOrderHelper
                 await property.Update(_backendConfigurationPnDbContext);
             }
 
-            if (property.EntitySelectListDeviceUsers == null) {
+            if (property.EntitySelectListDeviceUsers == null)
+            {
                 var deviceUsersGp = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
                     $"{property.Name} - Device Users", "", true, false);
                 property.EntitySelectListDeviceUsers = deviceUsersGp.Id;
@@ -222,54 +230,56 @@ public class WorkOrderHelper
     {
         var core = await _coreHelper.GetCore();
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-            if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
-                    x.PropertyWorkerId == propertyWorker.Id
-                    && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
-                    && x.WorkflowState != Constants.WorkflowStates.Removed))
-            {
-                return;
-            }
-            var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
-            var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
-            var mainElement = await core.ReadeForm(eformId, language);
-            mainElement.Repeated = 0;
-            mainElement.ElementList[0].QuickSyncEnabled = true;
-            mainElement.EnableQuickSync = true;
-            if (folderId != null)
-            {
-                mainElement.CheckListFolderName = await sdkDbContext.Folders
-                    .Where(x => x.Id == folderId)
-                    .Select(x => x.MicrotingUid.ToString())
-                    .FirstOrDefaultAsync();
-            }
+        if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
+                x.PropertyWorkerId == propertyWorker.Id
+                && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
+                && x.WorkflowState != Constants.WorkflowStates.Removed))
+        {
+            return;
+        }
+        var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
+        var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
+        var mainElement = await core.ReadeForm(eformId, language);
+        mainElement.Repeated = 0;
+        mainElement.ElementList[0].QuickSyncEnabled = true;
+        mainElement.EnableQuickSync = true;
+        if (folderId != null)
+        {
+            mainElement.CheckListFolderName = await sdkDbContext.Folders
+                .Where(x => x.Id == folderId)
+                .Select(x => x.MicrotingUid.ToString())
+                .FirstOrDefaultAsync();
+        }
 
-            if (!string.IsNullOrEmpty(description))
-            {
-                ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
-                ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
-            }
+        if (!string.IsNullOrEmpty(description))
+        {
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
+        }
 
-            if (areasGroupUid != null && deviceUsersGroupId != null)
-            {
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = (int)areasGroupUid;
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source =
-                    (int)deviceUsersGroupId;
-            }
-            else if (areasGroupUid == null && deviceUsersGroupId != null)
-            {
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
-                    (int)deviceUsersGroupId;
-            }
+        if (areasGroupUid != null && deviceUsersGroupId != null)
+        {
+            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = (int)areasGroupUid;
+            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source =
+                (int)deviceUsersGroupId;
+        }
+        else if (areasGroupUid == null && deviceUsersGroupId != null)
+        {
+            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
+                (int)deviceUsersGroupId;
+        }
 
-            mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-            mainElement.StartDate = DateTime.Now.ToUniversalTime();
-            var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
-            await new WorkorderCase
-            {
-                CaseId = (int)caseId,
-                PropertyWorkerId = propertyWorker.Id,
-                CaseStatusesEnum = CaseStatusesEnum.NewTask,
-            }.Create(_backendConfigurationPnDbContext);
+        mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+        mainElement.StartDate = DateTime.Now.ToUniversalTime();
+        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+        await new WorkorderCase
+        {
+            CaseId = (int)caseId,
+            PropertyWorkerId = propertyWorker.Id,
+            CaseStatusesEnum = CaseStatusesEnum.NewTask,
+            CreatedByUserId = _userService.UserId,
+            UpdatedByUserId = _userService.UserId,
+        }.Create(_backendConfigurationPnDbContext);
     }
 
     public async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder)
@@ -287,6 +297,7 @@ public class WorkOrderHelper
                 if (workorderCase != null)
                 {
                     await core.CaseDelete(workorderCase.CaseId);
+                    workorderCase.UpdatedByUserId = _userService.UserId;
                     await workorderCase.Delete(_backendConfigurationPnDbContext);
                 }
 
@@ -308,8 +319,10 @@ public class WorkOrderHelper
                     {
                         try
                         {
+                            workorderCase.UpdatedByUserId = _userService.UserId;
                             await core.CaseDelete(workorderCase.CaseId);
-                        } catch (Exception e)
+                        }
+                        catch (Exception e)
                         {
                             Console.WriteLine(e);
                         }
