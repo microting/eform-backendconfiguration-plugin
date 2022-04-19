@@ -24,7 +24,7 @@ function createInitialState(): TaskManagementState {
   return <TaskManagementState>{
     pagination: {
       pageSize: 10,
-      sort: 'CreatedDate',
+      sort: 'CreatedAt',
       isSortDsc: false,
       offset: 0,
     },
