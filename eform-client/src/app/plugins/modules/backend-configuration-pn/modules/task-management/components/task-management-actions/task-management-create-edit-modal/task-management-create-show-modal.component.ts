@@ -125,7 +125,9 @@ export class TaskManagementCreateShowModalComponent
     this.images = [];
     this.propertyAreas = [];
     this.assignedSitesToProperty = [];
-    this.propertyIdValueChangesSub$.unsubscribe();
+    if (this.propertyIdValueChangesSub$) {
+      this.propertyIdValueChangesSub$.unsubscribe();
+    }
     this.frame.hide();
   }
 
