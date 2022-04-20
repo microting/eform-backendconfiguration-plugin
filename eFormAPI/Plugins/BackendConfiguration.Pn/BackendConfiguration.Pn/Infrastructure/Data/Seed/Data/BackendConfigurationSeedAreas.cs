@@ -222,7 +222,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         LanguageId = 1,
                         InfoBox = "En stald pr. linje",
                         Placeholder = "Stald",
-                        NewItemName = "Ny stald"
+                        NewItemName = "Ny stald til klargøring"
                     },
                     new()
                     {

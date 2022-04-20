@@ -158,4 +158,5 @@ export const da = {
   'Plan and assign': 'Planlæg og tildel',
   'Workorder flow enable': 'Aktivér opgavestyring',
   'Date is required': 'Dato er påkrævet',
+  'Edit list of stables for tailbites': 'Rediger liste med stalde til halebid'
 };
