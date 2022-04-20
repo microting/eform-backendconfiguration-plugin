@@ -25,6 +25,7 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Services.WordService
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -34,6 +35,7 @@ namespace BackendConfiguration.Pn.Services.WordService
     using BackendConfigurationLocalizationService;
     using Infrastructure.Data.Seed.Data;
     using Infrastructure.Models.AreaRules;
+    using Infrastructure.Models.TaskManagement;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Logging;
     using Microting.eForm.Infrastructure.Constants;
@@ -114,6 +116,94 @@ namespace BackendConfiguration.Pn.Services.WordService
                     false,
                     _localizationService.GetString("ErrorWhileGenerateWordFile"));
             }
+        }
+
+        public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels)
+        {
+            // Read html and template
+            var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
+            var assembly = Assembly.GetExecutingAssembly();
+            var resourceStream = assembly.GetManifestResourceStream(resourceString);
+            string html;
+            using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
+            {
+                html = await reader.ReadToEndAsync();
+            }
+
+            resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
+            var docxFileResourceStream = assembly.GetManifestResourceStream(resourceString);
+            if (docxFileResourceStream == null)
+            {
+                throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
+            }
+            var docxFileStream = new MemoryStream();
+            await docxFileResourceStream.CopyToAsync(docxFileStream);
+
+            var itemsHtml = new StringBuilder();
+            itemsHtml.Append(@"<div style='font-family:Calibri;'>");
+            itemsHtml.Append(@"<table width=""100%"" border=""1"">");
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("PropertyArea")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("LastAssignedTo")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Status")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Date")}</td>");
+            itemsHtml.Append(@"</tr>");
+            itemsHtml.Append(@"<tr style='font-size:11pt;'>");
+            itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync()}</td>");
+            itemsHtml.Append($@"<td>{filtersModel.AreaName}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.LastAssignedTo) ? "" : filtersModel.LastAssignedTo)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus()))}</td>");
+            itemsHtml.Append($@"<td>{(!filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d"))}");
+            itemsHtml.Append($@"{(!filtersModel.DateTo.HasValue ? "" : " - " + filtersModel.DateTo.Value.ToString("d"))}</td>");
+            itemsHtml.Append(@"</tr>");
+            itemsHtml.Append(@"</table>");
+            itemsHtml.Append(@"<p></p>"); // enter
+
+            itemsHtml.Append(@"<table width=""100%"" border=""1"">");
+            // Table header
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedDate")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Area")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy1")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy2")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("LastAssignedTo")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Description")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("LastUpdateDate")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("LastUpdatedBy")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Status")}</td>");
+            itemsHtml.Append(@"</tr>");
+
+            foreach (var workOrderCaseModel in workOrderCaseModels)
+            {
+                itemsHtml.Append(@"<tr style='font-size:11pt;'>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.Id}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedDate.ToString("F")}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.PropertyName}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.AreaName}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedByName}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedByText}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.LastAssignedTo}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.Description}</td>");
+                itemsHtml.Append($@"<td>{(workOrderCaseModel.LastUpdateDate.HasValue ? workOrderCaseModel.LastUpdateDate.Value.ToString("F") : "")}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.LastUpdatedBy}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.Status}</td>");
+                itemsHtml.Append(@"</tr>");
+            }
+            itemsHtml.Append(@"</table>");
+            itemsHtml.Append("</div>");
+
+            html = html.Replace("{%ItemList%}", itemsHtml.ToString());
+
+            var word = new WordProcessor(docxFileStream);
+            word.AddHtml(html, 284);
+            word.Dispose();
+            docxFileStream.Position = 0;
+            return docxFileStream;
         }
 
         private async Task<OperationDataResult<Stream>> GenerateReportType7(Property property, Area area, int year)

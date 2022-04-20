@@ -36,6 +36,7 @@
         [disabled]="
           taskManagementStateService.getDisabledButtonsAsync() | async
         "
+        (click)="onDownloadWordReport()"
       >
         {{ 'Word' | translate }}
       </button>
@@ -46,6 +47,7 @@
         [disabled]="
           taskManagementStateService.getDisabledButtonsAsync() | async
         "
+        (click)="onDownloadExcelReport()"
       >
         {{ 'Excel' | translate }}
       </button>

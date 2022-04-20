@@ -22,33 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.IO;
-using BackendConfiguration.Pn.Infrastructure.Models.Settings;
-using BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
-using DocumentFormat.OpenXml.Office2010.ExcelAc;
-using Microting.eForm.Infrastructure.Constants;
-using Microting.eForm.Infrastructure.Data.Entities;
-using Microting.eForm.Infrastructure.Models;
-using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
-using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Reflection;
-    using System.Text.RegularExpressions;
     using Infrastructure.Data.Seed;
     using Infrastructure.Data.Seed.Data;
+    using Infrastructure.Models.Settings;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microting.eForm.Infrastructure.Constants;
+    using Microting.eForm.Infrastructure.Data.Entities;
+    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Consts;
+    using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Application;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Application.NavigationMenu;
@@ -56,17 +46,26 @@ namespace BackendConfiguration.Pn
     using Microting.EformBackendConfigurationBase.Infrastructure.Const;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
     using Services.BackendConfigurationAreaRulePlanningsService;
     using Services.BackendConfigurationAreaRulesService;
     using Services.BackendConfigurationAssignmentWorkerService;
+    using Services.BackendConfigurationCompliancesService;
     using Services.BackendConfigurationLocalizationService;
     using Services.BackendConfigurationPropertiesService;
     using Services.BackendConfigurationPropertyAreasService;
     using Services.BackendConfigurationTaskManagementService;
+    using Services.ExcelService;
     using Services.RebusService;
     using Services.WordService;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Text.RegularExpressions;
 
     public class EformBackendConfigurationPlugin : IEformPlugin
     {
@@ -94,6 +93,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService> ();
+            services.AddTransient<IExcelService, ExcelService>();
             services.AddControllers();
             SeedEForms(services);
         }

@@ -23,10 +23,10 @@ export interface TaskManagementState {
 function createInitialState(): TaskManagementState {
   return <TaskManagementState>{
     pagination: {
-      pageSize: 10,
+      // pageSize: 10,
       sort: 'CreatedAt',
       isSortDsc: false,
-      offset: 0,
+      // offset: 0,
     },
     filters: {
       propertyId: null,

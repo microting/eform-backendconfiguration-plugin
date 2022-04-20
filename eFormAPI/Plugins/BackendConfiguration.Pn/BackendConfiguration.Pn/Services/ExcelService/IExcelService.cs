@@ -22,36 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
+namespace BackendConfiguration.Pn.Services.ExcelService;
 
-using System;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using Infrastructure.Models.TaskManagement;
 
-public class TaskManagementFiltersModel : FilterAndSortModel
+public interface IExcelService
 {
-    public int PropertyId { get; set; }
-
-    public string AreaName { get; set; }
-
-    public string CreatedBy { get; set; }
-
-    public string LastAssignedTo { get; set; }
-
-    public int? Status { get; set; }
-
-    public DateTime? DateFrom { get; set; }
-
-    public DateTime? DateTo { get; set; }
-
-    public string GetStringStatus()
-    {
-        return Status switch
-        {
-            -1 => "All",
-            1 => "Ongoing",
-            2 => "Completed",
-            null => "",
-            _ => ""
-        };
-    }
+    Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
 }

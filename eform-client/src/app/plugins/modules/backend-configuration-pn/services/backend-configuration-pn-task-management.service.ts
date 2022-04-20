@@ -8,10 +8,15 @@ import {
   WorkOrderCaseModel,
 } from '../models';
 import {TaskManagementFiltrationModel} from '../modules/task-management/components/store';
+import {
+  BackendConfigurationPnReportsMethods
+} from 'src/app/plugins/modules/backend-configuration-pn/services/backend-configuration-pn-report.service';
 
 export let BackendConfigurationPnTaskManagementMethods = {
   WorkOrderCases: 'api/backend-configuration-pn/task-management',
   EntityItemsList: 'api/backend-configuration-pn/task-management/entity-items',
+  WordReport: 'api/backend-configuration-pn/task-management/word',
+  ExcelReport: 'api/backend-configuration-pn/task-management/excel',
 };
 
 @Injectable({
@@ -49,5 +54,13 @@ export let BackendConfigurationPnTaskManagementMethods = {
       BackendConfigurationPnTaskManagementMethods.WorkOrderCases,
       workOrderCase
     );
+  }
+
+  downloadWordReport(model: TaskManagementFiltrationModel): Observable<any> {
+    return this.apiBaseService.getBlobData(BackendConfigurationPnTaskManagementMethods.WordReport, model);
+  }
+
+  downloadExcelReport(model: TaskManagementFiltrationModel): Observable<any> {
+    return this.apiBaseService.getBlobData(BackendConfigurationPnTaskManagementMethods.ExcelReport, model);
   }
 }

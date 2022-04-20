@@ -24,13 +24,16 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Services.WordService
 {
-    using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
+    using Infrastructure.Models.TaskManagement;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
     public interface IWordService
     {
         Task<OperationDataResult<Stream>> GenerateReport(int propertyId, int areaId, int year);
+
+        Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
     }
 }
