@@ -9,7 +9,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <div>
-          <h3>{{ 'View' | translate }}</h3>
+          <h3>{{ (isCreate ? 'Create' : 'View') | translate }}</h3>
         </div>
         <button class="close" data-dismiss="modal" (click)="hide()">
           <span>×</span>
