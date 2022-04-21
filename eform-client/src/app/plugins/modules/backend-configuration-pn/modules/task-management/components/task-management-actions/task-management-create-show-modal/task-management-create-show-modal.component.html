@@ -104,7 +104,7 @@
           mdbBtn
           class="btn-success btn-small-height"
           id="taskManagementCreateShowSaveBtn"
-          [disabled]="!isCreate"
+          [disabled]="!(workOrderCaseForm.valid && isCreate)"
           (click)="create()"
         >
           {{ 'Save' | translate }}

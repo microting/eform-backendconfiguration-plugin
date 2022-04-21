@@ -6,8 +6,8 @@ import {
 } from '../../../../../services';
 import { SitesService, TemplateFilesService } from 'src/app/common/services';
 import {WorkOrderCaseCreateModel, WorkOrderCaseForReadModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
-import { FormControl, FormGroup } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { Subscription} from 'rxjs';
 import { ModalDirective } from 'angular-bootstrap-md';
 import * as R from 'ramda';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
@@ -34,11 +34,11 @@ export class TaskManagementCreateShowModalComponent
   isCreate = true;
   workOrderCaseForm: FormGroup;
   images: any[] = [];
-  imageSubs$: Subscription[] = [];
   newImage: File;
   galleryImages: GalleryItem[] = [];
 
   propertyIdValueChangesSub$: Subscription;
+  imageSubs$: Subscription[] = [];
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -54,15 +54,15 @@ export class TaskManagementCreateShowModalComponent
       propertyId: new FormControl({
         value: null,
         disabled: false,
-      }),
+      }, Validators.required),
       areaName: new FormControl({
         value: null,
         disabled: false,
-      }),
+      }, Validators.required),
       assignedTo: new FormControl({
         value: null,
         disabled: false,
-      }),
+      }, Validators.required),
     });
   }
 
@@ -114,6 +114,12 @@ export class TaskManagementCreateShowModalComponent
           if (propertyId) {
             this.getPropertyAreas(propertyId);
             this.getSites(propertyId);
+            this.workOrderCaseForm.patchValue(
+              {
+                areaName: null,
+                assignedTo: null,
+              }
+            );
           }
         });
       this.isCreate = true;
