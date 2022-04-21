@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142701</Id>
+  <Repeated>0</Repeated>
+  <Label>24.01.05.02 Punktudsugning i slagtesvinestalde - Drift</Label>
+  <StartDate>2022-04-12</StartDate>
+  <EndDate>2032-04-12</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142701</Id>
+      <Label>24.01.05.02 Punktudsugning i slagtesvinestalde - Drift</Label>
+      <Description><![CDATA[<i>Billeder af logbog med dokumentation for driftstid, f.eks. data-logger, ydelse, driftstid mv.</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>375926</Id>
+          <Label>24.01.05.02 Punktudsugning i slagtesvinestalde - Drift</Label>
+          <Description><![CDATA[<b>(datalogger, ydelse)</b><br>Billeder af logbog med dokumentation for driftstid, f.eks. data-logger, ydelse, driftstid mv.]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>375927</Id>
+          <Label>Billeder</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375928</Id>
+          <Label>Kommentar</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>375929</Id>
+          <Label>Indsend registrering</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Value>INDSEND</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

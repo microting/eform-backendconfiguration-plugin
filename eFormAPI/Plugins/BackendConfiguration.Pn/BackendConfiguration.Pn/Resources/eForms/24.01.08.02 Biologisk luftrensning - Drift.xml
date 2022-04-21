@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142704</Id>
+  <Repeated>0</Repeated>
+  <Label>24.01.08.02 Biologisk luftrensning - Drift</Label>
+  <StartDate>2022-04-12</StartDate>
+  <EndDate>2032-04-12</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142704</Id>
+      <Label>24.01.08.02 Biologisk luftrensning - Drift</Label>
+      <Description><![CDATA[<i>Billeder af logbog med dokumentation for anvendelse, f.eks. data-logger, ydelse, driftstid, ledetal mv.</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>375938</Id>
+          <Label>24.01.08.02 Biologisk luftrensning - Drift</Label>
+          <Description><![CDATA[<b>(datalogger, ydelse, ledetal)</b><br>Billeder af logbog med dokumentation for anvendelse, f.eks. data-logger, ydelse, driftstid, ledetal mv.<br><br>Du finder dine krav til egenkontrol i vilkårene i din miljøgodkendelse.]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>375939</Id>
+          <Label>Billeder</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375940</Id>
+          <Label>Kommentar</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>375941</Id>
+          <Label>Indsend registrering</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Value>INDSEND</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

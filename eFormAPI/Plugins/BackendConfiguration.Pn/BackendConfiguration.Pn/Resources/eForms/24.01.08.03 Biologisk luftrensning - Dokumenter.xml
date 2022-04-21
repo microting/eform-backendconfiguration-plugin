@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142680</Id>
+  <Repeated>0</Repeated>
+  <Label>24.01.08.03 Biologisk luftrensning - Dokumenter</Label>
+  <StartDate>2022-04-12</StartDate>
+  <EndDate>2032-04-12</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142680</Id>
+      <Label>24.01.08.03 Biologisk luftrensning - Dokumenter</Label>
+      <Description><![CDATA[<i>Reparationer, faktura, service m.m.</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>375808</Id>
+          <Label>24.01.08.03 Biologisk luftrensning - Dokumenter</Label>
+          <Description><![CDATA[<b>(reparationer, faktura, service m.m.)</b><br>Hvis du har fakturaer eller lignende kan du tage billeder af dem, så bliver de automatisk vedhæftet din indrapportering.]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>375809</Id>
+          <Label>Billeder</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375810</Id>
+          <Label>Kommentar</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>375811</Id>
+          <Label>Indsend registrering</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Value>INDSEND</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
