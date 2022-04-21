@@ -78,7 +78,6 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 .ThenInclude(x => x.Property)
                 .Where(x => x.PropertyWorker.PropertyId == filtersModel.PropertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => filtersModel.AreaName == x.SelectedAreaName)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
 
             if (filtersModel.Status != null)
@@ -93,6 +92,12 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     _ => query
                 };
             }
+
+            if (!string.IsNullOrEmpty(filtersModel.AreaName))
+            {
+                query = query.Where(x => filtersModel.AreaName == x.SelectedAreaName);
+            }
+
             if (!string.IsNullOrEmpty(filtersModel.CreatedBy))
             {
                 query = query.Where(x => x.CreatedByName == filtersModel.CreatedBy);

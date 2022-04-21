@@ -87,7 +87,7 @@ public class ExcelService: IExcelService
         currentColumn = startColumnForHeaderTable;
         //* table data
         worksheet.Cell(currentRow, currentColumn++).Value = await _backendConfigurationPnDbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync();
-        worksheet.Cell(currentRow, currentColumn++).Value = filtersModel.AreaName;
+        worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
         worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy;
         worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.LastAssignedTo) ? "" : filtersModel.LastAssignedTo;
         worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus());

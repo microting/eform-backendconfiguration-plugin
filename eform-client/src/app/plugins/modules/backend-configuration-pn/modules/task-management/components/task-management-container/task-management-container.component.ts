@@ -100,7 +100,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .downloadWordReport()
       .subscribe(
         (data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}_${filters.areaName}_report.docx`);
+          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${ filters.areaName ? '_' + filters.areaName : ''}_report.docx`);
         },
         (_) => {
           this.toasterService.error('Error downloading report');
@@ -114,7 +114,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .downloadExcelReport()
       .subscribe(
         (data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}_${filters.areaName}_report.xlsx`);
+          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${ filters.areaName ? '_' + filters.areaName : ''}_report.xlsx`);
         },
         (_) => {
           this.toasterService.error('Error downloading report');
