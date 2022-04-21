@@ -71,8 +71,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
     {
         try
         {
-            var core = await _coreHelper.GetCore();
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            /*var core = await _coreHelper.GetCore();
+            var sdkDbContext = core.DbContextHelper.GetDbContext();*/
             var query = _backendConfigurationPnDbContext.WorkorderCases
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
@@ -110,28 +110,30 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     .Where(x => x.CreatedAt <= filtersModel.DateTo.Value);
             }
 
-            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel, new List<string>(), new List<string>()
+            var excludeSort = new List<string>
             {
-                "Id", "Property", "Area", "CreatedByName", "CreatedByText", "LastAssignedTo", "Description", "Status",
-            });
+                "PropertyName",
+            };
+            query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel, new List<string>(), excludeSort);
 
             var workorderCasesFromDb = await query
-                .Select(x => new 
+                .Select(x => new WorkorderCaseModel
                 {
                     AreaName = x.SelectedAreaName,
-                    x.CreatedByName,
-                    x.CreatedByText,
+                    CreatedByName = x.CreatedByName,
+                    CreatedByText = x.CreatedByText,
                     CreatedDate = x.CreatedAt,
-                    x.Id,
+                    Id = x.Id,
                     Status = x.CaseStatusesEnum.ToString(),
-                    x.Description,
+                    Description = x.Description,
                     PropertyName = x.PropertyWorker.Property.Name,
                     LastUpdateDate = x.UpdatedAt,
-                    x.CaseId,
-                    x.LastUpdatedByName,
+                    //x.CaseId,
+                    LastUpdatedBy = x.LastUpdatedByName,
+                    LastAssignedTo = x.LastAssignedToName,
                 })
                 .ToListAsync();
-            var workorderCases = new List<WorkorderCaseModel>();
+            /*var workorderCases = new List<WorkorderCaseModel>();
             foreach (var workorderCaseModel in workorderCasesFromDb)
             {
                 var assignedSiteName = await sdkDbContext.Cases
@@ -151,7 +153,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     PropertyName = workorderCaseModel.PropertyName,
                     LastUpdateDate = workorderCaseModel.LastUpdateDate,
                     LastAssignedTo = assignedSiteName,
-                    LastUpdatedBy = workorderCaseModel.LastUpdatedByName,
+                    LastUpdatedBy = workorderCaseModel.LastUpdatedBy,
                 });
             }
             if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
@@ -159,7 +161,27 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 workorderCases = workorderCases.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo).ToList();
             }
 
-            return workorderCases;
+            if(excludeSort.Contains(filtersModel.Sort))
+            {
+                workorderCases = QueryHelper
+                    .AddFilterAndSortToQuery(workorderCases.AsQueryable(), filtersModel, new List<string>())
+                    .ToList();
+            }
+
+            return workorderCases;*/
+            if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
+            {
+                workorderCasesFromDb = workorderCasesFromDb.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo).ToList();
+            }
+
+            if (excludeSort.Contains(filtersModel.Sort))
+            {
+                workorderCasesFromDb = QueryHelper
+                    .AddFilterAndSortToQuery(workorderCasesFromDb.AsQueryable(), filtersModel, new List<string>())
+                    .ToList();
+            }
+
+            return workorderCasesFromDb;
         }
         catch (Exception e)
         {
