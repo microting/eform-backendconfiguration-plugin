@@ -25,6 +25,7 @@ namespace BackendConfiguration.Pn.Services.WordService
 {
     using System;
     using System.IO;
+    using DocumentFormat.OpenXml;
     using DocumentFormat.OpenXml.Packaging;
     using DocumentFormat.OpenXml.Wordprocessing;
     using HtmlToOpenXml;
@@ -48,7 +49,8 @@ namespace BackendConfiguration.Pn.Services.WordService
         /// Adds the HTML.
         /// </summary>
         /// <param name="html">The HTML.</param>
-        public void AddHtml(string html)
+        /// <param name="margin">the margin in number. if you need in 5 mm margin, you need 5 multiply 56.8 and get 284. take 284 in this variable</param>
+        public void AddHtml(string html, int? margin = null)
         {
             var mainPart = _wordProcessingDocument.MainDocumentPart;
             if (mainPart == null)
@@ -59,6 +61,14 @@ namespace BackendConfiguration.Pn.Services.WordService
 
             var converter = new HtmlConverter(mainPart);
             converter.ParseHtml(html);
+            if (margin != null)
+            {
+                SectionProperties sectionProps = new SectionProperties();
+                var marginUint = uint.Parse(margin.Value.ToString());
+                PageMargin pageMargin = new PageMargin() { Top = margin, Right = marginUint, Bottom = margin, Left = marginUint, Header = 720U, Footer = 720U, Gutter = 0U };
+                sectionProps.Append(pageMargin);
+                mainPart.Document.Body.Append(sectionProps);
+            }
             mainPart.Document.Save();
         }
 

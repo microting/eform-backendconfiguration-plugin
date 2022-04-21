@@ -37,7 +37,6 @@ using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Infrastructure.Consts;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
@@ -123,7 +122,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     x.Description,
                     PropertyName = x.PropertyWorker.Property.Name,
                     LastUpdateDate = x.UpdatedAt,
-                    x.CaseId
+                    x.CaseId,
+                    x.LastUpdatedByName,
                 })
                 .ToListAsync();
             var workorderCases = new List<WorkorderCaseModel>();
@@ -146,6 +146,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     PropertyName = workorderCaseModel.PropertyName,
                     LastUpdateDate = workorderCaseModel.LastUpdateDate,
                     LastAssignedTo = assignedSiteName,
+                    LastUpdatedBy = workorderCaseModel.LastUpdatedByName,
                 });
             }
             if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
@@ -415,6 +416,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 $"{_localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
         }
     }
+
     private async Task DeployEform(
         List<PropertyWorker> propertyWorkers,
         int eformId,
@@ -477,6 +479,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 Description = newDescription,
                 CaseInitiated = DateTime.UtcNow,
                 CreatedByUserId = _userService.UserId,
+                LastAssignedToName = site.Name,
             };
             await workOrderCase.Create(_backendConfigurationPnDbContext);
 

@@ -30,7 +30,6 @@ using Services.WordService;
 [Route("api/backend-configuration-pn/report")]
 public class ReportController : Controller
 {
-
     private readonly IWordService _wordService;
 
     public ReportController(IWordService wordService)
