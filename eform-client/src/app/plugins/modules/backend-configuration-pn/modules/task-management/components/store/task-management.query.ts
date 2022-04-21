@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Query } from '@datorama/akita';
 import { TaskManagementState, TaskManagementStore } from './';
-import { PaginationModel, SortModel } from 'src/app/common/models';
+import { SortModel } from 'src/app/common/models';
 
 @Injectable({ providedIn: 'root' })
 export class TaskManagementQuery extends Query<TaskManagementState> {
@@ -26,5 +26,5 @@ export class TaskManagementQuery extends Query<TaskManagementState> {
     (state) => new SortModel(state.pagination.sort, state.pagination.isSortDsc)
   );
   selectFilters$ = this.select((state) => state.filters);
-  selectDisableButtons$ = this.select((state) => !state.filters.propertyId || !state.filters.areaName);
+  selectDisableButtons$ = this.select((state) => !state.filters.propertyId);
 }

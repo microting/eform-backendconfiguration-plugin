@@ -152,7 +152,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append(@"</tr>");
             itemsHtml.Append(@"<tr style='font-size:11pt;'>");
             itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync()}</td>");
-            itemsHtml.Append($@"<td>{filtersModel.AreaName}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.LastAssignedTo) ? "" : filtersModel.LastAssignedTo)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus()))}</td>");

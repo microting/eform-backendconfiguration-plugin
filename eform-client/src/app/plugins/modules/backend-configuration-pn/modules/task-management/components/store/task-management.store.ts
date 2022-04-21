@@ -6,7 +6,7 @@ import {
 
 export interface TaskManagementFiltrationModel {
   propertyId: number,
-  areaName: string,
+  areaName?: string,
   createdBy?: string,
   lastAssignedTo?: string,
   status?: number,
@@ -30,7 +30,6 @@ function createInitialState(): TaskManagementState {
     },
     filters: {
       propertyId: null,
-      areaName: null,
     },
     // total: 0,
   };

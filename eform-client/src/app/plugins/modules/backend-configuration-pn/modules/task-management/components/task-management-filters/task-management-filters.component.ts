@@ -56,19 +56,19 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             }),
             createdBy: new FormControl({
               value: filters.createdBy,
-              disabled: !filters.propertyId && !filters.areaName,
+              disabled: !filters.propertyId,
             }),
             lastAssignedTo: new FormControl({
               value: filters.lastAssignedTo,
-              disabled: !filters.propertyId && !filters.areaName,
+              disabled: !filters.propertyId,
             }),
             status: new FormControl({
               value: filters.status,
-              disabled: !filters.propertyId && !filters.areaName,
+              disabled: !filters.propertyId,
             }),
             date: new FormControl({
               value: [filters.dateFrom, filters.dateTo],
-              disabled: !filters.propertyId && !filters.areaName,
+              disabled: !filters.propertyId,
             }),
           });
           if (filters.propertyId) {
@@ -112,10 +112,10 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             .get('status')
             .setValue(undefined, { emitEvent: false });
           this.filtersForm.get('date').setValue([], { emitEvent: false });
-          this.filtersForm.get('createdBy').disable({ emitEvent: false });
-          this.filtersForm.get('lastAssignedTo').disable({ emitEvent: false });
-          this.filtersForm.get('status').disable({ emitEvent: false });
-          this.filtersForm.get('date').disable({ emitEvent: false });
+          this.filtersForm.get('createdBy').enable({ emitEvent: false });
+          this.filtersForm.get('lastAssignedTo').enable({ emitEvent: false });
+          this.filtersForm.get('status').enable({ emitEvent: false });
+          this.filtersForm.get('date').enable({ emitEvent: false });
         }
       });
     this.areaNameValueChangesSub$ = this.filtersForm
@@ -132,7 +132,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             },
           }));
         }
-        if (value) {
+        /*if (value) {
           this.filtersForm.get('createdBy').enable({ emitEvent: false });
           this.filtersForm.get('lastAssignedTo').enable({ emitEvent: false });
           this.filtersForm.get('status').enable({ emitEvent: false });
@@ -142,7 +142,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           this.filtersForm.get('lastAssignedTo').disable({ emitEvent: false });
           this.filtersForm.get('status').disable({ emitEvent: false });
           this.filtersForm.get('date').disable({ emitEvent: false });
-        }
+        }*/
       });
 
     this.filtersForm
@@ -219,8 +219,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
       pageIndex: 0
     }).subscribe((data) => {
       if (data && data.success && data.model) {
-        this.properties = data.model.entities.filter(x => x.workorderEnable).map(x => {
-          return { name: x.name, description: '', id: x.id };
+        this.properties = data.model.entities.filter((x) => x.workorderEnable).map((x) => {
+          return { name: `${x.cvr} - ${x.chr} - ${x.name}`, description: '', id: x.id };
         });
       }
     });

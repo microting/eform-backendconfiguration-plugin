@@ -153,7 +153,7 @@ export class TaskManagementStateService {
 
   getDisabledButtons() {
     const storeValue = this.store.getValue()
-    return !storeValue.filters.propertyId || !storeValue.filters.areaName;
+    return !storeValue.filters.propertyId;
   }
 
   // getPagination(): Observable<PaginationModel> {

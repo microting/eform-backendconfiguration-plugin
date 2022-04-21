@@ -13,4 +13,7 @@ export class PropertyModel {
   complianceStatusThirty: PropertyCompliancesColorBadgesEnum;
   complianceStatusBadge: string;
   workorderEnable: boolean;
+  getFullName(): string {
+    return `${this.cvr} - ${this.chr} - ${this.name}`;
+  }
 }
