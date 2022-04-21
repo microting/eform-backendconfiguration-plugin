@@ -25,6 +25,7 @@
                 bindLabel="name"
                 bindValue="id"
                 formControlName="propertyId"
+                id="propertyId"
                 [clearable]="false"
               >
               </ng-select>
@@ -34,6 +35,7 @@
                 [placeholder]="'Area' | translate"
                 [items]="propertyAreas"
                 formControlName="areaName"
+                id="areaName"
                 [clearable]="false"
               >
               </ng-select>
@@ -44,6 +46,7 @@
                 bindLabel="name"
                 bindValue="id"
                 formControlName="assignedTo"
+                id="assignedTo"
                 [items]="assignedSitesToProperty"
                 [clearable]="isCreate"
               >
@@ -90,6 +93,7 @@
             </div>
             <div style="margin-right: -15px; margin-left: -15px">
               <formatting-text-editor
+                id="descriptionTask"
                 [placeholder]="'Description of task' | translate"
                 [(value)]="description"
                 [disabled]="!isCreate"
