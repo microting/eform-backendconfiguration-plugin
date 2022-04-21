@@ -43,6 +43,22 @@ export class TaskManagementStateService {
       });
   }
 
+  downloadWordReport() {
+    return this.service
+      .downloadWordReport({
+        ...this.query.pageSetting.pagination,
+        ...this.query.pageSetting.filters,
+      });
+  }
+
+  downloadExcelReport() {
+    return this.service
+      .downloadExcelReport({
+        ...this.query.pageSetting.pagination,
+        ...this.query.pageSetting.filters,
+      });
+  }
+
   // updateNameFilter(nameFilter: string) {
   //   this.store.update((state) => ({
   //     filters: {

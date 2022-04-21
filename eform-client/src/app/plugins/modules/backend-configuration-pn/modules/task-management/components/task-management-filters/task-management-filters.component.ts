@@ -28,8 +28,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
   filtersForm: FormGroup;
   propertyAreas: string[] = [];
-  properties: CommonDictionaryModel[];
-  assignedSitesToProperty: CommonDictionaryModel[];
+  properties: CommonDictionaryModel[] = [];
+  assignedSitesToProperty: CommonDictionaryModel[] = [];
 
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
@@ -210,9 +210,18 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   }
 
   getProperties() {
-    this.propertyService.getAllPropertiesDictionary().subscribe((data) => {
+    this.propertyService.getAllProperties({
+      nameFilter: '',
+      sort: 'Id',
+      isSortDsc: false,
+      pageSize: 100000,
+      offset: 0,
+      pageIndex: 0
+    }).subscribe((data) => {
       if (data && data.success && data.model) {
-        this.properties = data.model;
+        this.properties = data.model.entities.filter(x => x.workorderEnable).map(x => {
+          return { name: x.name, description: '', id: x.id };
+        });
       }
     });
   }

@@ -22,6 +22,7 @@ namespace BackendConfiguration.Pn.Controllers;
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using Infrastructure.Models.TaskManagement;
 using Microsoft.AspNetCore.Authorization;
@@ -29,6 +30,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Services.BackendConfigurationLocalizationService;
 using Services.BackendConfigurationTaskManagementService;
+using Services.ExcelService;
+using Services.WordService;
 
 [Authorize]
 [Route("api/backend-configuration-pn/task-management")]
@@ -36,14 +39,19 @@ public class TaskManagementController : Controller
 {
     private readonly IBackendConfigurationTaskManagementService _backendConfigurationTaskManagementService;
     private readonly IBackendConfigurationLocalizationService _localizationService;
+    private readonly IWordService _wordService;
+    private readonly IExcelService _excelService;
 
     public TaskManagementController(
         IBackendConfigurationTaskManagementService backendConfigurationTaskManagementService,
-        IBackendConfigurationLocalizationService localizationService
-        )
+        IBackendConfigurationLocalizationService localizationService,
+        IWordService wordService,
+        IExcelService excelService)
     {
         _backendConfigurationTaskManagementService = backendConfigurationTaskManagementService;
         _localizationService = localizationService;
+        _wordService = wordService;
+        _excelService = excelService;
     }
 
     [HttpGet]
@@ -87,5 +95,84 @@ public class TaskManagementController : Controller
     {
         createModel.Files = HttpContext.Request.Form.Files;
         return await _backendConfigurationTaskManagementService.CreateTask(createModel);
+    }
+
+    [HttpGet]
+    [Route("word")]
+    public async Task GetWordReport(TaskManagementFiltersModel filtersModel)
+    {
+        try
+        {
+            filtersModel.Sort = "";
+
+            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel);
+
+            var fileReport = await _wordService.GenerateWorkOrderCaseReport(filtersModel, report);
+            const int bufferSize = 4086;
+            var buffer = new byte[bufferSize];
+            Response.OnStarting(async () =>
+            {
+                await using var wordStream = fileReport;
+                int bytesRead;
+                Response.ContentLength = wordStream.Length;
+                Response.ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+                while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
+                       !HttpContext.RequestAborted.IsCancellationRequested)
+                {
+                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
+                    await Response.Body.FlushAsync();
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            Response.ContentLength = e.Message.Length;
+            Response.ContentType = "text/plain";
+            Response.StatusCode = 400;
+            var bytes = Encoding.UTF8.GetBytes(e.Message);
+            await Response.Body.WriteAsync(bytes, 0, e.Message.Length);
+            await Response.Body.FlushAsync();
+        }
+    }
+
+
+    [HttpGet]
+    [Route("excel")]
+    public async Task GetExcelReport(TaskManagementFiltersModel filtersModel)
+    {
+        try
+        {
+            filtersModel.Sort = "";
+
+            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel);
+
+            var fileReport = await _excelService.GenerateWorkOrderCaseReport(filtersModel, report);
+            const int bufferSize = 4086;
+            var buffer = new byte[bufferSize];
+            Response.OnStarting(async () =>
+            {
+                await using var wordStream = fileReport;
+                int bytesRead;
+                Response.ContentLength = wordStream.Length;
+                Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+                while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
+                       !HttpContext.RequestAborted.IsCancellationRequested)
+                {
+                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
+                    await Response.Body.FlushAsync();
+                }
+            });
+        }
+        catch (Exception e)
+        {
+            Response.ContentLength = e.Message.Length;
+            Response.ContentType = "text/plain";
+            Response.StatusCode = 400;
+            var bytes = Encoding.UTF8.GetBytes(e.Message);
+            await Response.Body.WriteAsync(bytes, 0, e.Message.Length);
+            await Response.Body.FlushAsync();
+        }
     }
 }

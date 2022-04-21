@@ -285,6 +285,7 @@
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.1" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.115" />
+      <PackageReference Include="ClosedXML" Version="0.95.4" />
     </ItemGroup>
 
     <ItemGroup>
