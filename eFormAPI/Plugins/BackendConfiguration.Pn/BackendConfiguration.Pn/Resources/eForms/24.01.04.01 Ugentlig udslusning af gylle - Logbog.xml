@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142692</Id>
+  <Repeated>0</Repeated>
+  <Label>24.01.04.01 Ugentlig udslusning af gylle - Logbog</Label>
+  <StartDate>2022-04-12</StartDate>
+  <EndDate>2032-04-12</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142692</Id>
+      <Label>24.01.04.01 Ugentlig udslusning af gylle - Logbog</Label>
+      <Description><![CDATA[Udfyld og indsend logbog v. driftsstop]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>375873</Id>
+          <Label>24.01.04.01 Ugentlig udslusning af gylle - Logbog</Label>
+          <Description><![CDATA[<b>Logbog v. driftsstop</b><br>For at du kan indsende logbogen, skal du udfylde:<br><br>Startdato for driftsstop<br>Slutdato for driftsstop<br>Driftsstop timer<br>Årsag til driftsstop]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Date">
+          <Id>375870</Id>
+          <Label>Startdato for driftsstop</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2022-04-12</MinValue>
+          <MaxValue>2032-04-12</MaxValue>
+          <Value/>
+          <Mandatory>true</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Date">
+          <Id>375871</Id>
+          <Label>Slutdato for driftsstop</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <MinValue>2022-04-12</MinValue>
+          <MaxValue>2032-04-12</MaxValue>
+          <Value/>
+          <Mandatory>true</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Number">
+          <Id>375869</Id>
+          <Label>Driftsstop timer</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>true</Mandatory>
+          <MinValue/>
+          <MaxValue/>
+          <Value/>
+          <DecimalCount>2</DecimalCount>
+          <UnitName/>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375872</Id>
+          <Label>Årsag til driftsstop</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>true</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>375867</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>375866</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>375868</Id>
+          <Label>Indsend registrering</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>7</DisplayOrder>
+          <Value>INDSEND</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>
