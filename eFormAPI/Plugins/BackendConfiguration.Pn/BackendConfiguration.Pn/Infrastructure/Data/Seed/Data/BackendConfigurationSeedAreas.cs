@@ -1058,6 +1058,47 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 1, // days
                     ComplianceEnabled = true,
                 },
+            },
+            new Area
+            {
+                Id = 27,
+                Type = AreaTypesEnum.Type7,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "24. IE-indberetning", // todo need beter translate
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 1,// da
+                        InfoBox = "Se krav i Miljøgodkendelse",
+                        Placeholder = "",
+                        NewItemName = "Vælg indberetningsområder"
+                    },
+                    new()
+                    {
+                        Name = "24. IE Reporting",
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 2,// en
+                        InfoBox = "See requirements in Environment Approval",
+                        Placeholder = "",
+                        NewItemName = "Choose reporting areas"
+                    },
+                    new()
+                    {
+                        Name = "24. IE-Berichterstattung", // todo need beter translate
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 3,// ge
+                        InfoBox = "Siehe Anforderungen in Umweltzulassung",
+                        Placeholder = "",
+                        NewItemName = "Berichtsgebiete auswählen"
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    RepeatType = 1, // days
+                    ComplianceEnabled = true,
+                },
             }
         };
 
