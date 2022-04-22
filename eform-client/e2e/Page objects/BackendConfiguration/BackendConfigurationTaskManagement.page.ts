@@ -1,6 +1,6 @@
 import Page from '../Page';
 import backendConfigurationPropertiesPage from './BackendConfigurationProperties.page';
-import {selectValueInNgSelector} from '../../Helpers/helper-functions';
+import {selectDateRangeOnDatePicker, selectValueInNgSelector} from '../../Helpers/helper-functions';
 
 export class BackendConfigurationTaskManagementPage extends Page {
   constructor() {
@@ -165,7 +165,7 @@ export class BackendConfigurationTaskManagementPage extends Page {
   public async taskManagementDeleteBtn() {
     const ele = await $('#taskManagementDeleteBtn');
     await ele.waitForDisplayed({ timeout: 40000 });
-    await ele.waitForClickable({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
@@ -180,6 +180,62 @@ export class BackendConfigurationTaskManagementPage extends Page {
     const ele = await $('#createNewTaskBtn');
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async idTableHeader() {
+    const ele = await $('#idTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async createdAtTableHeader() {
+    const ele = await $('#createdAtTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async selectedAreaNameTableHeader() {
+    const ele = await $('#selectedAreaNameTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async createdByNameTableHeader() {
+    const ele = await $('#createdByNameTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async createdByTextTableHeader() {
+    const ele = await $('#createdByTextTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async lastAssignedToNameTableHeader() {
+    const ele = await $('#lastAssignedToNameTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async updatedAtTableHeader() {
+    const ele = await $('#updatedAtTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async caseStatusesEnumTableHeader() {
+    const ele = await $('#caseStatusesEnumTableHeader');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
@@ -237,6 +293,38 @@ export class BackendConfigurationTaskManagementPage extends Page {
       await (await this.taskManagementCreateShowSaveBtn()).click();
     }
     await (await this.createNewTaskBtn()).waitForClickable({ timeout: 40000 });
+  }
+
+  public async changeFilters(filerts: TaskManagementFilters) {
+    if(filerts) {
+      if(filerts.propertyName){
+        await selectValueInNgSelector(await this.propertyIdFilter(), filerts.propertyName);
+      }
+      if(filerts.areaName){
+        await selectValueInNgSelector(await this.areaNameFilter(), filerts.areaName);
+      }
+      if(filerts.createdBy){
+        await selectValueInNgSelector(await this.createdByFilter(), filerts.createdBy);
+      }
+      if(filerts.lastAssignedTo){
+        await selectValueInNgSelector(await this.lastAssignedToFilter(), filerts.lastAssignedTo);
+      }
+      if(filerts.status){
+        await selectValueInNgSelector(await this.statusFilter(), filerts.status);
+      }
+      if(filerts.date){
+        await (await this.dateFilter()).click();
+        await selectDateRangeOnDatePicker(
+          filerts.date.yearFrom,
+          filerts.date.monthFrom,
+          filerts.date.dayFrom,
+          filerts.date.yearTo,
+          filerts.date.monthTo,
+          filerts.date.dayTo);
+      }
+      await (await this.showReportBtn()).click();
+      await (await this.createNewTaskBtn()).waitForClickable({ timeout: 40000});
+    }
   }
 }
 
@@ -374,4 +462,20 @@ export class TaskCreateShow {
   areaName: string;
   assignedTo: string;
   description?: string;
+}
+
+export class TaskManagementFilters {
+  propertyName: string;
+  areaName?: string;
+  createdBy?: string;
+  lastAssignedTo?: string;
+  status?: string;
+  date?: {
+    yearFrom: number,
+    monthFrom: number,
+    dayFrom: number,
+    yearTo: number,
+    monthTo: number,
+    dayTo: number,
+  };
 }

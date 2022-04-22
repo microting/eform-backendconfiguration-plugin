@@ -314,7 +314,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             var parentTasks = await _backendConfigurationPnDbContext.WorkorderCases
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == task.ParentWorkorderCaseId)
-                .FirstAsync();
+                .FirstOrDefaultAsync();
 
             var propertyWorkerList = new List<PropertyWorker> { task.PropertyWorker };
             await _workOrderHelper.RetractEform(propertyWorkerList, true);
@@ -326,8 +326,11 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 childTask.UpdatedByUserId = _userService.UserId;
                 await childTask.Delete(_backendConfigurationPnDbContext);
             }
-            parentTasks.UpdatedByUserId = _userService.UserId;
-            await parentTasks.Delete(_backendConfigurationPnDbContext);
+            if(parentTasks != null)
+            {
+                parentTasks.UpdatedByUserId = _userService.UserId;
+                await parentTasks.Delete(_backendConfigurationPnDbContext);
+            }
             return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
         }
         catch (Exception e)
@@ -433,14 +436,14 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 pictureListUploadedIds,
                 createModel.AreaName);
 
-            return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
+            return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
         catch (Exception e)
         {
             Log.LogException(e.Message);
             Log.LogException(e.StackTrace);
             return new OperationResult(false,
-                $"{_localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
+                $"{_localizationService.GetString("ErrorWhileCreateTask")}: {e.Message}");
         }
     }
 

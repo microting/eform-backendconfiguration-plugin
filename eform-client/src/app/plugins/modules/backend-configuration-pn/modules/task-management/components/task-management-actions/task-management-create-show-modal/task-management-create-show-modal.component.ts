@@ -24,8 +24,8 @@ export class TaskManagementCreateShowModalComponent
   implements OnInit, OnDestroy
 {
   @ViewChild('frame', { static: false }) frame;
-  @ViewChild('addNewImageModal', { static: false })
   @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
+  @ViewChild('addNewImageModal', { static: false })
   addNewImageModal: ModalDirective;
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];

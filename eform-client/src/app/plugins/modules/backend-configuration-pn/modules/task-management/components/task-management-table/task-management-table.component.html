@@ -56,7 +56,7 @@
           </div>
         </td>
         <td id="description">
-          {{ workOrderCaseModel.description }}
+          <div [innerHTML]="workOrderCaseModel.description"></div>
         </td>
         <td id="lastUpdateDate">
           {{ workOrderCaseModel.lastUpdateDate | date: 'dd.MM.yyyy' }}

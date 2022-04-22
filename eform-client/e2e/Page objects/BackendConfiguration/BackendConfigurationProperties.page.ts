@@ -1,5 +1,4 @@
 import Page from '../Page';
-import {applicationLanguages, applicationLanguagesTranslated} from '../../../src/app/common/const';
 import * as R from 'ramda';
 
 export class BackendConfigurationPropertiesPage extends Page {
@@ -166,6 +165,27 @@ export class BackendConfigurationPropertiesPage extends Page {
     return ele;
   }
 
+  public async propertyCreateWorkorderFlowEnableToggle() {
+    const ele = await $(`[for='propertyCreateWorkorderFlowEnableToggle']`);
+    // await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async propertyEditWorkorderFlowEnableToggleInput() {
+    const ele = await $('#propertyEditWorkorderFlowEnableToggle');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
+  public async propertyEditWorkorderFlowEnableToggle() {
+    const ele = await $(`[for='propertyEditWorkorderFlowEnableToggle']`);
+    // await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
   public async configurePropertyAreasBtn() {
     const ele = await $('#configurePropertyAreasBtn');
     await ele.waitForDisplayed({ timeout: 40000 });
@@ -214,22 +234,25 @@ export class BackendConfigurationPropertiesPage extends Page {
       if (property.address) {
         await (await this.createPropertyAddress()).setValue(property.address);
       }
-      // if (property.selectedLanguages) {
-      //   for (let i = 0; i < property.selectedLanguages.length; i++) {
-      //     let languageId = 0;
-      //     if (property.selectedLanguages[i].languageId) {
-      //       languageId = property.selectedLanguages[i].languageId;
-      //     } else {
-      //       languageId = applicationLanguages.find(
-      //         (x) => x.text === property.selectedLanguages[i].languageName
-      //       ).id;
-      //     }
-      //     const checkboxForClick = await (
-      //       await this.checkboxCreatePropertySelectLanguage(languageId)
-      //     ).$('..');
-      //     await checkboxForClick.click();
-      //   }
-      // }
+      /*if (property.selectedLanguages) {
+        for (let i = 0; i < property.selectedLanguages.length; i++) {
+          let languageId = 0;
+          if (property.selectedLanguages[i].languageId) {
+            languageId = property.selectedLanguages[i].languageId;
+          } else {
+            languageId = applicationLanguages.find(
+              (x) => x.text === property.selectedLanguages[i].languageName
+            ).id;
+          }
+          const checkboxForClick = await (
+            await this.checkboxCreatePropertySelectLanguage(languageId)
+          ).$('..');
+          await checkboxForClick.click();
+        }
+      }*/
+      if(property.workOrderFlow === true){
+        await (await this.propertyCreateWorkorderFlowEnableToggle()).click();
+      }
     }
   }
 
@@ -372,24 +395,29 @@ export class PropertyRowObject {
           await backendConfigurationPropertiesPage.editPropertyAddress()
         ).setValue(property.address);
       }
-      // if (property.selectedLanguages) {
-      //   for (let i = 0; i < property.selectedLanguages.length; i++) {
-      //     let languageId = 0;
-      //     if (property.selectedLanguages[i].languageId) {
-      //       languageId = property.selectedLanguages[i].languageId;
-      //     } else {
-      //       languageId = applicationLanguages.find(
-      //         (x) => x.text === property.selectedLanguages[i].languageName
-      //       ).id;
-      //     }
-      //     const checkboxForClick = await (
-      //       await backendConfigurationPropertiesPage.checkboxEditPropertySelectLanguage(
-      //         languageId
-      //       )
-      //     ).$('..');
-      //     await checkboxForClick.click();
-      //   }
-      // }
+      /*if (property.selectedLanguages) {
+        for (let i = 0; i < property.selectedLanguages.length; i++) {
+          let languageId = 0;
+          if (property.selectedLanguages[i].languageId) {
+            languageId = property.selectedLanguages[i].languageId;
+          } else {
+            languageId = applicationLanguages.find(
+              (x) => x.text === property.selectedLanguages[i].languageName
+            ).id;
+          }
+          const checkboxForClick = await (
+            await backendConfigurationPropertiesPage.checkboxEditPropertySelectLanguage(
+              languageId
+            )
+          ).$('..');
+          await checkboxForClick.click();
+        }
+      }*/
+      const workOrderFlow = (await (await backendConfigurationPropertiesPage.propertyEditWorkorderFlowEnableToggleInput()
+      ).getValue()) === 'true'
+      if(property.workOrderFlow === true && workOrderFlow !== true || property.workOrderFlow === false && workOrderFlow !== false){
+        await (await backendConfigurationPropertiesPage.propertyEditWorkorderFlowEnableToggle()).click();
+      }
     }
   }
 
@@ -495,4 +523,5 @@ export class PropertyCreateUpdate {
   cvrNumber?: string;
   address?: string;
   // selectedLanguages?: { languageId?: number; languageName?: string }[];
+  workOrderFlow?: boolean
 }
