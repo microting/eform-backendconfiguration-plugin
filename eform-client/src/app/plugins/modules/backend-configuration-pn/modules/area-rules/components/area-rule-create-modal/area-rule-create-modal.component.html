@@ -28,7 +28,7 @@
       </div>
       <div class="modal-body">
         <div class="container-fluid">
-          <ng-container *ngIf="newAreaRules.areaRules.length === 0 || selectedArea.type === 7 || selectedArea.type === 8">
+          <ng-container *ngIf="newAreaRules.areaRules.length === 0 || selectedArea.type === 7">
             <ng-container *ngIf="selectedArea.type !== 7 && selectedArea.type !== 8">
               <div class="row" *ngIf="selectedArea.type === 5">
                 <div class="col-12 ng-select-wrapper">
@@ -136,8 +136,23 @@
                 {{ 'Create' | translate }}
               </button>
             </ng-container>
-            <ng-container *ngIf="selectedArea.type === 7 || selectedArea.type === 8">
+            <ng-container *ngIf="selectedArea.type === 7">
                 <div *ngFor="let folder of areaRulesForType7; let i = index" class="d-flex flex-column">
+                  <b>{{folder.folderName}}</b>
+                    <div *ngFor="let areaRuleName of folder.areaRuleNames; let j = index" class="mat-checkbox">
+                      <input
+                        id="areaRule{{i}}_{{j}}"
+                        [value]="getChecked(areaRuleName)"
+                        [checked]="getChecked(areaRuleName)"
+                        [ngModel]="getChecked(areaRuleName)"
+                        (change)="addOrRemoveAreaRuleName(areaRuleName, $event)"
+                        type="checkbox">
+                      <label for="areaRule{{i}}_{{j}}">{{ areaRuleName }}</label>
+                    </div>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 8">
+                <div *ngFor="let folder of areaRulesForType8; let i = index" class="d-flex flex-column">
                   <b>{{folder.folderName}}</b>
                     <div *ngFor="let areaRuleName of folder.areaRuleNames; let j = index" class="mat-checkbox">
                       <input

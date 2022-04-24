@@ -89,7 +89,6 @@
       <None Remove="Resources\eForms\16. Stiger.xml" />
       <EmbeddedResource Include="Resources\eForms\16. Stiger.xml" />
       <None Remove="Resources\eForms\17. Håndildslukkere.xml" />
-      <EmbeddedResource Include="Resources\eForms\17. Håndildslukkere.xml" />
       <None Remove="Resources\eForms\18. Alarm.xml" />
       <EmbeddedResource Include="Resources\eForms\18. Alarm.xml" />
       <None Remove="Resources\eForms\19. Ventilation.xml" />

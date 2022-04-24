@@ -767,13 +767,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			{
 				"24.04Overholdelse fodringskrav","24.04.02Reduceret indhold af råprotein","24.04.02.01Indlægssedler og blanderecepter"
 			};
-			item = new KeyValuePair<string, List<string>>("24.04.02.01 Reduceret indhold af råprotein", headers);
+			item = new KeyValuePair<string, List<string>>("24.04.02 Reduceret indhold af råprotein", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
 				"24.04Overholdelse fodringskrav","24.04.03Tilsætningsstoffer i foder - fytase eller andet","24.04.03.01Indlægssedler og blanderecepter"
 			};
-			item = new KeyValuePair<string, List<string>>("24.04.03.01 Tilsætningsstoffer i foder - fytase eller andet", headers);
+			item = new KeyValuePair<string, List<string>>("24.04.03 Tilsætningsstoffer i foder - fytase eller andet", headers);
 			theList.Add(item);
 
 			return theList;

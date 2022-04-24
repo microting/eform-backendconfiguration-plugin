@@ -42,7 +42,9 @@ export class AreaRuleCreateModalComponent implements OnInit {
   typeahead = new EventEmitter<string>();
   templatesModel: TemplateListModel = new TemplateListModel();
   areaRulesForType7: { folderName: string; areaRuleNames: string[] }[] = [];
+  areaRulesForType8: { folderName: string; areaRuleNames: string[] }[] = [];
   newAreaRulesForType7: string[] = [];
+  newAreaRulesForType8: string[] = [];
 
   constructor(
     private eFormService: EFormService,
@@ -78,7 +80,19 @@ export class AreaRuleCreateModalComponent implements OnInit {
       this.areaRules.forEach(x => this.newAreaRulesForType7 = [...this.newAreaRulesForType7, x.translatedName]);
       this.frame.show();
     } else {
-      this.frame.show();
+      if (this.selectedArea.type === 8) {
+        this.backendConfigurationPnAreasService
+          .getAreaRulesForType8()
+          .subscribe((data) => {
+            if (data.success) {
+              this.areaRulesForType8 = data.model;
+            }
+          });
+        this.areaRules.forEach(x => this.newAreaRulesForType8 = [...this.newAreaRulesForType8, x.translatedName]);
+        this.frame.show();
+      } else {
+        this.frame.show();
+      }
     }
   }
 
@@ -88,6 +102,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
     this.newAreaRulesDayOfWeek = null;
     this.newAreaRulesRepeatEvery = 1;
     this.newAreaRulesForType7 = [];
+    this.newAreaRulesForType8 = [];
     this.frame.hide();
   }
 
@@ -166,27 +181,66 @@ export class AreaRuleCreateModalComponent implements OnInit {
         this.deleteAreaRule.emit(areaRuleIdsForDelete);
       }
     } else {
+      if (this.selectedArea.type === 8) {
+      const areaRuleNamesForCreate = this.newAreaRulesForType8
+        .filter(x => !this.areaRules.some(y => y.translatedName === x));
+      const areaRuleIdsForDelete = this.areaRules
+        .filter(x => !this.newAreaRulesForType8.some(y => y === x.translatedName))
+        .map(x => x.id);
+      const areaRulesForCreate = new AreaRulesCreateModel();
+      for (let i = 0; i < areaRuleNamesForCreate.length; i++) {
+        areaRulesForCreate.areaRules = [
+          ...areaRulesForCreate.areaRules,
+          {
+            typeSpecificFields: {},
+            translatedNames: [{name: areaRuleNamesForCreate[i], id: 0, description: ''}]
+          },
+        ];
+      }
+      if (areaRulesForCreate.areaRules.length > 0) {
+        this.createAreaRule.emit(areaRulesForCreate);
+      }
+      if (areaRuleIdsForDelete.length > 0) {
+        this.deleteAreaRule.emit(areaRuleIdsForDelete);
+      }
+    }
       this.createAreaRule.emit(this.newAreaRules);
     }
   }
 
   addOrRemoveAreaRuleName(areaRuleName: string, e: any) {
-    if (e.target.checked) {
-      this.newAreaRulesForType7 = [...this.newAreaRulesForType7, areaRuleName];
+    if (this.selectedArea.type === 7) {
+      if (e.target.checked) {
+        this.newAreaRulesForType7 = [...this.newAreaRulesForType7, areaRuleName];
+      } else {
+        this.newAreaRulesForType7 = this.newAreaRulesForType7.filter(x => x !== areaRuleName);
+      }
     } else {
-      this.newAreaRulesForType7 = this.newAreaRulesForType7.filter(x => x !== areaRuleName);
+      if (e.target.checked) {
+        this.newAreaRulesForType8 = [...this.newAreaRulesForType8, areaRuleName];
+      } else {
+        this.newAreaRulesForType8 = this.newAreaRulesForType8.filter(x => x !== areaRuleName);
+      }
     }
   }
 
   getChecked(areaRuleName: string): boolean {
-    return this.newAreaRulesForType7.find(x => x === areaRuleName) !== undefined;
+    if (this.selectedArea.type === 7) {
+      return this.newAreaRulesForType7.find(x => x === areaRuleName) !== undefined;
+    } else {
+      return this.newAreaRulesForType8.find(x => x === areaRuleName) !== undefined;
+    }
   }
 
   getIsSaveButtonDisabled(): boolean {
     if (this.selectedArea.type === 7) {
       return this.newAreaRulesForType7.length === 0;
     } else {
-      return this.newAreaRules.areaRules.length === 0;
+      if (this.selectedArea.type === 8) {
+        return this.newAreaRulesForType8.length === 0;
+      } else {
+        return this.newAreaRules.areaRules.length === 0;
+      }
     }
   }
 }

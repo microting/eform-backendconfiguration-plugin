@@ -17,6 +17,7 @@ export let BackendConfigurationPnAreasMethods = {
   AreaRules: 'api/backend-configuration-pn/area-rules',
   AreaRulesMultipleDelete: 'api/backend-configuration-pn/area-rules/multiple-delete',
   AreaRulesForType7: 'api/backend-configuration-pn/area-rules/type-7',
+  AreaRulesForType8: 'api/backend-configuration-pn/area-rules/type-8',
   AreaRulesIndex: 'api/backend-configuration-pn/area-rules/index',
   AreaRulePlanning: 'api/backend-configuration-pn/area-rules/planning',
   AreaRulePlanningById: 'api/backend-configuration-pn/area-rules/planning-by-id',
@@ -103,6 +104,12 @@ export let BackendConfigurationPnAreasMethods = {
   getAreaRulesForType7(): Observable<OperationDataResult<{ folderName: string, areaRuleNames: string[] }[]>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRulesForType7
+    );
+  }
+
+  getAreaRulesForType8(): Observable<OperationDataResult<{ folderName: string, areaRuleNames: string[] }[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.AreaRulesForType8
     );
   }
 

@@ -1556,7 +1556,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.00 AFLÆSNINGER",
+                FolderName = "24.00 Aflæsninger",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
@@ -1574,7 +1574,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.00 AFLÆSNINGER",
+                FolderName = "24.00 Aflæsninger",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
@@ -2382,7 +2382,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.03 DOKUMENTATION MILJØLEDELSE",
+                FolderName = "24.03 Dokumentation miljøledelse",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
@@ -2402,7 +2402,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.03 DOKUMENTATION MILJØLEDELSE",
+                FolderName = "24.03 Dokumentation miljøledelse",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = false,

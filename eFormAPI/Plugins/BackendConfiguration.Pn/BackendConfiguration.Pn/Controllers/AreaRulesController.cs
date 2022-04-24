@@ -36,7 +36,7 @@ namespace BackendConfiguration.Pn.Controllers
         private readonly IBackendConfigurationAreaRulePlanningsService _backendConfigurationAreaRulePlanningsService;
 
         public AreaRulesController(
-            IBackendConfigurationAreaRulesService backendConfigurationAreaRulesService, 
+            IBackendConfigurationAreaRulesService backendConfigurationAreaRulesService,
             IBackendConfigurationAreaRulePlanningsService backendConfigurationAreaRulePlanningsService)
         {
             _backendConfigurationAreaRulesService = backendConfigurationAreaRulesService;
@@ -100,6 +100,13 @@ namespace BackendConfiguration.Pn.Controllers
         public async Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7()
         {
             return await _backendConfigurationAreaRulesService.GetAreaRulesForType7();
+        }
+
+        [HttpGet]
+        [Route("type-8")]
+        public async Task<OperationDataResult<List<AreaRulesForType8>>> GetAreaRulesForType8()
+        {
+            return await _backendConfigurationAreaRulesService.GetAreaRulesForType8();
         }
 
         [HttpGet]
