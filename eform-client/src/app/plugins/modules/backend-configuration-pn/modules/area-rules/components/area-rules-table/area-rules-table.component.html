@@ -103,13 +103,19 @@
       [tableHeaders]="tableHeadersT7"
       [stickyHeader]="true"
     ></thead>
+    <thead
+      *ngIf="selectedArea.type === 8"
+      table-headers
+      [tableHeaders]="tableHeadersT7"
+      [stickyHeader]="true"
+    ></thead>
     <tbody id="areaRulesTableBody">
       <tr *ngFor="let rule of areaRules; let i = index">
         <td>{{ rule.id }}</td>
         <td id="ruleName">
           {{ rule.translatedName }}
         </td>
-        <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7">
+        <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7 || selectedArea.type === 8">
           <td id="ruleEformNameT1">
             {{ rule.eformName }}
           </td>

@@ -743,7 +743,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			{
 				"24.02Dokumentation afsluttede inspektioner","24.02.08Maskiner til udbringning af husdyrgødning samt doseringsmekanisme","24.02.08.02Dokumenter (reparationer, faktura, service m.m.)"
 			};
-			item = new KeyValuePair<string, List<string>>("24.02.08.03 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter", headers);
+			item = new KeyValuePair<string, List<string>>("24.02.08.02 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{

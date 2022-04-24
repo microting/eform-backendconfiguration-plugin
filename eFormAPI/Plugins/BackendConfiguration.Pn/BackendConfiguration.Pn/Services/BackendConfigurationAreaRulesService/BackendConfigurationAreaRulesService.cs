@@ -427,7 +427,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                             planning.UpdatedByUserId = _userService.UserId;
                             await planning.Delete(_itemsPlanningPnDbContext);
-                            var complianceList = await _backendConfigurationPnDbContext.Compliances.Where(x => x.PlanningId == planning.Id 
+                            var complianceList = await _backendConfigurationPnDbContext.Compliances.Where(x => x.PlanningId == planning.Id
                                 && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
                             foreach (var compliance in complianceList)
                             {
@@ -498,14 +498,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 .Select(y => y.Name)
                                 .Contains(areaRuleCreateModel.TranslatedNames[0].Name));
                     }
+                    var areaRuleType8 = new AreaRule();
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type8)
+                    {
+                        areaRuleType8 = BackendConfigurationSeedAreas.AreaRulesForType8
+                            .First(x => x.AreaRuleTranslations
+                                .Select(y => y.Name)
+                                .Contains(areaRuleCreateModel.TranslatedNames[0].Name));
+                    }
                     var eformId = areaRuleCreateModel.TypeSpecificFields.EformId;
-                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7)
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7 or AreaTypesEnum.Type8)
                     {
                         var eformName = areaProperty.Area.Type switch
                         {
                             AreaTypesEnum.Type2 => "03. Kontrol konstruktion",
                             AreaTypesEnum.Type6 => "10. Varmepumpe serviceaftale",
                             AreaTypesEnum.Type7 => areaRuleType7.EformName,
+                            AreaTypesEnum.Type8 => areaRuleType8.EformName,
                             _ => ""
                         };
                         eformId = await sdkDbContext.CheckListTranslations

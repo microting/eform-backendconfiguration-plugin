@@ -28,8 +28,8 @@
       </div>
       <div class="modal-body">
         <div class="container-fluid">
-          <ng-container *ngIf="newAreaRules.areaRules.length === 0 || selectedArea.type === 7">
-            <ng-container *ngIf="selectedArea.type !== 7">
+          <ng-container *ngIf="newAreaRules.areaRules.length === 0 || selectedArea.type === 7 || selectedArea.type === 8">
+            <ng-container *ngIf="selectedArea.type !== 7 && selectedArea.type !== 8">
               <div class="row" *ngIf="selectedArea.type === 5">
                 <div class="col-12 ng-select-wrapper">
                   <ng-select
@@ -136,7 +136,7 @@
                 {{ 'Create' | translate }}
               </button>
             </ng-container>
-            <ng-container *ngIf="selectedArea.type === 7">
+            <ng-container *ngIf="selectedArea.type === 7 || selectedArea.type === 8">
                 <div *ngFor="let folder of areaRulesForType7; let i = index" class="d-flex flex-column">
                   <b>{{folder.folderName}}</b>
                     <div *ngFor="let areaRuleName of folder.areaRuleNames; let j = index" class="mat-checkbox">
@@ -152,7 +152,7 @@
               </div>
             </ng-container>
           </ng-container>
-          <ng-container *ngIf="newAreaRules.areaRules.length > 0 && selectedArea.type !== 7">
+          <ng-container *ngIf="newAreaRules.areaRules.length > 0 && selectedArea.type !== 7 && selectedArea.type !== 8">
             <!-- Show all area rules generated from previous block -->
             <ng-container
               *ngFor="let newAreaRule of newAreaRules.areaRules; let i = index"

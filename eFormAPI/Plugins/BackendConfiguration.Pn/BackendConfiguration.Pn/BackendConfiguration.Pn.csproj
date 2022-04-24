@@ -264,7 +264,6 @@
       <None Remove="Resources\eForms\24.02.08.01 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml" />
       <EmbeddedResource Include="Resources\eForms\24.02.08.01 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml" />
       <None Remove="Resources\eForms\24.02.08.03 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.08.03 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
       <None Remove="Resources\eForms\24.03.01 Evaluering Miljøledelse.xml" />
       <EmbeddedResource Include="Resources\eForms\24.03.01 Evaluering Miljøledelse.xml" />
       <None Remove="Resources\eForms\24.03.02 Dokumenter til Miljøledelse.xml" />
@@ -272,9 +271,13 @@
       <None Remove="Resources\eForms\24.04.01 Fasefodring.xml" />
       <EmbeddedResource Include="Resources\eForms\24.04.01 Fasefodring.xml" />
       <None Remove="Resources\eForms\24.04.02.01 Reduceret indhold af råprotein.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.04.02.01 Reduceret indhold af råprotein.xml" />
       <None Remove="Resources\eForms\24.04.03.01 Tilsætningsstoffer i foder - fytase eller andet.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.04.03.01 Tilsætningsstoffer i foder - fytase eller andet.xml" />
+      <None Remove="Resources\eForms\24.02.08.02 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
+      <EmbeddedResource Include="Resources\eForms\24.02.08.02 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
+      <None Remove="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml" />
+      <EmbeddedResource Include="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml" />
+      <None Remove="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
+      <EmbeddedResource Include="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
     </ItemGroup>
 
     <ItemGroup>
@@ -282,7 +285,7 @@
       <PackageReference Include="Microting.eForm" Version="5.5.14" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.52" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.2" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.3" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.116" />
       <PackageReference Include="ClosedXML" Version="0.95.4" />
