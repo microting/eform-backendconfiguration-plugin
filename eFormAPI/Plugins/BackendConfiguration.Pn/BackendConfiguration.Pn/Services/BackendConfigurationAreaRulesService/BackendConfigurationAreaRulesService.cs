@@ -104,6 +104,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 Alarm = x.Alarm,
                                 DayOfWeek = x.DayOfWeek,
                                 RepeatEvery = x.RepeatEvery,
+                                RepeatType = x.RepeatType,
+                                ComplianceEnabled = x.ComplianceEnabled,
+                                ComplianceModifiable = x.ComplianceModifiable,
+                                Notifications = x.Notifications,
+                                NotificationsModifiable = x.NotificationsModifiable,
                             },
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields
@@ -189,7 +194,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             }).ToList(),
                         IsDefault = x.IsDefault,
                         TypeSpecificFields = new
-                            {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery},
+                            {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery, x.RepeatType},
                         EformId = x.EformId,
                     })
                     .FirstOrDefaultAsync();
@@ -547,9 +552,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         areaRule.FolderId = parentFolderId;
                     }
 
+                    if (areaRuleCreateModel.TypeSpecificFields != null)
+                    {
+                        areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
+                        areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek;
+                        areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
+                        areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery;
+                    }
+                    areaRule.ComplianceEnabled = true;
+                    areaRule.ComplianceModifiable = true;
+                    areaRule.Notifications = true;
+                    areaRule.NotificationsModifiable = true;
+
                     if (areaProperty.Area.Type is AreaTypesEnum.Type8)
                     {
-                        areaRule.IsDefault = areaRuleType7.IsDefault;
+                        areaRule.IsDefault = areaRuleType8.IsDefault;
                         // create folder
                         var pairedFolderToPropertyArea = areaProperty.ProperyAreaFolders.Select(x => x.FolderId).ToList();
                         var parentFolderId = await sdkDbContext.FolderTranslations
@@ -560,15 +577,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .Select(x => x.FolderId)
                             .FirstAsync();
                         areaRule.FolderId = parentFolderId;
+                        areaRule.RepeatEvery = (int) areaRuleType8.AreaRuleInitialField.RepeatEvery;
+                        // areaRule.DayOfWeek = (int) areaRuleType8.AreaRuleInitialField.DayOfWeek;
+                        areaRule.RepeatType = areaRuleType8.AreaRuleInitialField.RepeatType;
+                        areaRule.ComplianceEnabled = areaRuleType8.AreaRuleInitialField.ComplianceEnabled;
+                        areaRule.ComplianceModifiable = false;
+                        areaRule.Notifications = areaRuleType8.AreaRuleInitialField.Notifications;
+                        areaRule.NotificationsModifiable = false;
                     }
 
-                    if (areaRuleCreateModel.TypeSpecificFields != null)
-                    {
-                        areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
-                        areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek;
-                        areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
-                        areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery;
-                    }
 
                     var language = await _userService.GetCurrentUserLanguage();
                     if (eformId != 0)

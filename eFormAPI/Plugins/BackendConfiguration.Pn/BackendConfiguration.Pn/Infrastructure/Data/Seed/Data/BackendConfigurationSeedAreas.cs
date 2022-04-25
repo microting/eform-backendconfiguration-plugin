@@ -1597,8 +1597,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1617,8 +1617,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1655,8 +1655,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1675,8 +1675,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1713,8 +1713,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1733,8 +1733,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1771,8 +1771,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1791,8 +1791,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1829,8 +1829,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1849,8 +1849,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1887,8 +1887,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1907,8 +1907,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1945,8 +1945,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -1965,8 +1965,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2003,8 +2003,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2023,8 +2023,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2061,8 +2061,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2101,8 +2101,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2139,8 +2139,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2177,8 +2177,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2215,8 +2215,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2253,8 +2253,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2291,8 +2291,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2329,8 +2329,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2367,8 +2367,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule
@@ -2407,8 +2407,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     ComplianceEnabled = false,
                     Notifications = false,
-                    RepeatEvery = 0,
-                    RepeatType = 0,
+                    RepeatEvery = 1,
+                    RepeatType = 1,
                 }
             },
             new AreaRule

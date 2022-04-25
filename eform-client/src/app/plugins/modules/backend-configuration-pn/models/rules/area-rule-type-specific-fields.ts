@@ -11,5 +11,10 @@ export class AreaRuleTypeSpecificFields {
   dayOfWeek?: number;
   dayOfWeekName?: string;
   repeatEvery?: number;
+  repeatType?: number;
   groupId?: number;
+  complianceEnabled?: boolean;
+  complianceModifiable?: boolean;
+  notifications?: boolean;
+  notificationsModifiable?: boolean;
 }

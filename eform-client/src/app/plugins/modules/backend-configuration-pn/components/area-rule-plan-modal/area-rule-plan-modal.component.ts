@@ -218,6 +218,20 @@ export class AreaRulePlanModalComponent implements OnInit {
           startDate: format(this.currentDate, this.standartDateTimeFormat),
         };
       }
+      case 8: {
+        this.selectedAreaRulePlanning.sendNotifications = this.selectedAreaRule.typeSpecificFields.notifications;
+        this.selectedAreaRulePlanning.complianceEnabled = this.selectedAreaRule.typeSpecificFields.complianceEnabled;
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
+          repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
+          repeatType: this.selectedAreaRule.typeSpecificFields.repeatType,
+          complianceEnabled: this.selectedAreaRule.typeSpecificFields.complianceEnabled,
+          complianceModifiable: this.selectedAreaRule.typeSpecificFields.complianceModifiable,
+          notifications: this.selectedAreaRule.typeSpecificFields.notifications,
+          notificationsModifiable: this.selectedAreaRule.typeSpecificFields.notificationsModifiable,
+        };
+      }
       default: {
         return null;
       }
@@ -293,6 +307,9 @@ export class AreaRulePlanModalComponent implements OnInit {
        this.selectedAreaRulePlanning.typeSpecificFields &&
        this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery) {
       return true;
+    }
+    if (this.selectedArea.type === 8) {
+      return this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable ;
     }
   }
 
