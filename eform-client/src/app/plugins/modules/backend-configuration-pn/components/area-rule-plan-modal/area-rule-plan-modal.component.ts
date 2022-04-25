@@ -106,6 +106,14 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   onUpdateAreaRulePlan() {
+    if (this.selectedArea.type === 8) {
+      if (!this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable) {
+        this.selectedAreaRulePlanning.complianceEnabled = false;
+      }
+      if (!this.selectedAreaRulePlanning.typeSpecificFields.notificationsModifiable) {
+        this.selectedAreaRulePlanning.sendNotifications = false;
+      }
+    }
     if (!this.selectedAreaRulePlanning.startDate) {
       this.selectedAreaRulePlanning.startDate = format(
         this.currentDate,

@@ -569,14 +569,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         areaRule.IsDefault = areaRuleType8.IsDefault;
                         // create folder
                         var pairedFolderToPropertyArea = areaProperty.ProperyAreaFolders.Select(x => x.FolderId).ToList();
-                        var parentFolderId = await sdkDbContext.FolderTranslations
+                        var folderId = await sdkDbContext.FolderTranslations
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             // .Where(x => x.LanguageId == 2) // en
                             .Where(x => pairedFolderToPropertyArea.Contains(x.FolderId))
                             .Where(x => x.Name == areaRuleType8.FolderName)
                             .Select(x => x.FolderId)
                             .FirstAsync();
-                        areaRule.FolderId = parentFolderId;
+                        areaRule.FolderId = folderId;
                         areaRule.RepeatEvery = (int) areaRuleType8.AreaRuleInitialField.RepeatEvery;
                         // areaRule.DayOfWeek = (int) areaRuleType8.AreaRuleInitialField.DayOfWeek;
                         areaRule.RepeatType = areaRuleType8.AreaRuleInitialField.RepeatType;
@@ -598,23 +598,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .FirstOrDefaultAsync();
                     }
 
-                    if (areaProperty.Area.Type != AreaTypesEnum.Type7)
+                    if (areaProperty.Area.Type != AreaTypesEnum.Type7 && areaProperty.Area.Type != AreaTypesEnum.Type8)
                     {
                         areaRule.FolderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
                             .Include(x => x.AreaProperty)
                             .Where(x => x.AreaProperty.Id == createModel.PropertyAreaId)
                             .Select(x => x.FolderId)
                             .FirstOrDefaultAsync();
+
                     }
 
-                    if (areaProperty.Area.Type != AreaTypesEnum.Type8)
-                    {
-                        areaRule.FolderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
-                            .Include(x => x.AreaProperty)
-                            .Where(x => x.AreaProperty.Id == createModel.PropertyAreaId)
-                            .Select(x => x.FolderId)
-                            .FirstOrDefaultAsync();
-                    }
                     areaRule.FolderName = await sdkDbContext.FolderTranslations
                         .Where(x => x.FolderId == areaRule.FolderId)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
