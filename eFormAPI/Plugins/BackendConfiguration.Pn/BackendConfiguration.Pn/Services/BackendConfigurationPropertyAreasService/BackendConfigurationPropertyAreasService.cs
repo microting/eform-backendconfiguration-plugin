@@ -451,6 +451,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 areaRule.FolderId = folderId;
                                 areaRule.CreatedByUserId = _userService.UserId;
                                 areaRule.UpdatedByUserId = _userService.UserId;
+                                areaRule.ComplianceModifiable = true;
+                                areaRule.NotificationsModifiable = true;
                                 if (!string.IsNullOrEmpty(areaRule.EformName))
                                 {
                                     var eformId = await sdkDbContext.CheckListTranslations
@@ -1236,6 +1238,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 areaRule.FolderId = folderId;
                                 areaRule.CreatedByUserId = _userService.UserId;
                                 areaRule.UpdatedByUserId = _userService.UserId;
+                                areaRule.ComplianceModifiable = true;
+                                areaRule.NotificationsModifiable = true;
                                 if (!string.IsNullOrEmpty(areaRule.EformName))
                                 {
                                     var eformId = await sdkDbContext.CheckListTranslations
