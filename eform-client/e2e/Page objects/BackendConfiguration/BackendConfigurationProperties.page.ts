@@ -413,7 +413,7 @@ export class PropertyRowObject {
           await checkboxForClick.click();
         }
       }*/
-      if(property.workOrderFlow == true || property.workOrderFlow == false) {
+      if(property.workOrderFlow === true || property.workOrderFlow === false) {
         const workOrderFlow = (await (await backendConfigurationPropertiesPage.propertyEditWorkorderFlowEnableToggleInput()
         ).getValue()) === 'true'
         if(property.workOrderFlow === true && workOrderFlow !== true || property.workOrderFlow === false && workOrderFlow !== false){

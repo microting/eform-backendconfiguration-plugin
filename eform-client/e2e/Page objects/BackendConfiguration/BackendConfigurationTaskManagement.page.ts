@@ -165,7 +165,7 @@ export class BackendConfigurationTaskManagementPage extends Page {
   public async taskManagementDeleteBtn() {
     const ele = await $('#taskManagementDeleteBtn');
     await ele.waitForDisplayed({ timeout: 40000 });
-    // await ele.waitForClickable({ timeout: 40000 });
+    await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
@@ -360,7 +360,7 @@ export class TaskRowObject {
       this.createdBy2 = await (await this.row.$('#createdByText')).getText();
       this.lastAssignedTo = await (await this.row.$('#lastAssignedTo')).getText();
       this.showTaskBtn = await this.row.$('#taskManagementViewBtn');
-      this.deleteTaskBtn = await this.row.$('#taskManagementDeleteBtn');
+      this.deleteTaskBtn = await this.row.$('#taskManagementDeleteTaskBtn');
       this.description = await (await this.row.$('#description')).getText();
       this.lastUpdatedDate = await (await this.row.$('#lastUpdateDate')).getText();
       this.lastUpdatedBy = await (await this.row.$('#lastUpdatedBy')).getText();
