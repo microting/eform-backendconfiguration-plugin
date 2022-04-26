@@ -577,7 +577,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .Select(x => x.FolderId)
                             .FirstAsync();
                         areaRule.FolderId = folderId;
-                        areaRule.RepeatEvery = (int) areaRuleType8.AreaRuleInitialField.RepeatEvery;
+                        if (areaRuleType8.AreaRuleInitialField.RepeatEvery != null)
+                        {
+                            areaRule.RepeatEvery = (int) areaRuleType8.AreaRuleInitialField.RepeatEvery;
+                        }
                         // areaRule.DayOfWeek = (int) areaRuleType8.AreaRuleInitialField.DayOfWeek;
                         areaRule.RepeatType = areaRuleType8.AreaRuleInitialField.RepeatType;
                         areaRule.ComplianceEnabled = areaRuleType8.AreaRuleInitialField.ComplianceEnabled;
