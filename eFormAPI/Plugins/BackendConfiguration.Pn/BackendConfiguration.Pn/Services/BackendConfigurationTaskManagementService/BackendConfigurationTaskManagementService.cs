@@ -78,6 +78,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 .ThenInclude(x => x.Property)
                 .Where(x => x.PropertyWorker.PropertyId == filtersModel.PropertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.LeadingCase == true)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
 
             if (filtersModel.Status != null)
@@ -131,8 +132,11 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     //x.CaseId,
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
+                    ParentWorkorderCaseId = x.ParentWorkorderCaseId
                 })
                 .ToListAsync();
+
+            // workorderCasesFromDb = workorderCasesFromDb
             /*var workorderCases = new List<WorkorderCaseModel>();
             foreach (var workorderCaseModel in workorderCasesFromDb)
             {
@@ -201,7 +205,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == workOrderCaseId)
                 .Include(x => x.PropertyWorker)
-                .Select(x => new 
+                .Select(x => new
                 {
                     x.SelectedAreaName,
                     x.Description,
@@ -364,7 +368,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             {
                 var folder = Path.Combine(Path.GetTempPath(), "pictures-for-case");
                 Directory.CreateDirectory(folder);
-                
+
                 foreach (var picture in createModel.Files)
                 {
                     var filePath = Path.Combine(folder, $"{DateTime.Now.Ticks}.{picture.ContentType}");
@@ -409,7 +413,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             var propertyWorkers = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToList();
-            
+
             var label = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
