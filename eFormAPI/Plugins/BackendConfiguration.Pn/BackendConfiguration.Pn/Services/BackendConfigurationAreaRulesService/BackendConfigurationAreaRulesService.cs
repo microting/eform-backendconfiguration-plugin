@@ -584,9 +584,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         // areaRule.DayOfWeek = (int) areaRuleType8.AreaRuleInitialField.DayOfWeek;
                         areaRule.RepeatType = areaRuleType8.AreaRuleInitialField.RepeatType;
                         areaRule.ComplianceEnabled = areaRuleType8.AreaRuleInitialField.ComplianceEnabled;
-                        areaRule.ComplianceModifiable = false;
+                        areaRule.ComplianceModifiable = areaRuleType8.AreaRuleInitialField.ComplianceEnabled;
                         areaRule.Notifications = areaRuleType8.AreaRuleInitialField.Notifications;
-                        areaRule.NotificationsModifiable = false;
+                        areaRule.NotificationsModifiable = areaRuleType8.AreaRuleInitialField.Notifications;
                     }
 
 
