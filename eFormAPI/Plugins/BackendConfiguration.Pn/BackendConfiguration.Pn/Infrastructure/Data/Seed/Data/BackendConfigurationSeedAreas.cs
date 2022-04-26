@@ -1028,7 +1028,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "23. IE-indberetning", // todo need beter translate
+                        Name = "23. IE-indberetning (Gammel)", // todo need beter translate
                         Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 1,// da
                         InfoBox = "Se krav i Miljøgodkendelse",
@@ -1037,7 +1037,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "23. IE Reporting",
+                        Name = "23. IE Reporting (Old)",
                         Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 2,// en
                         InfoBox = "See requirements in Environment Approval",
@@ -1046,7 +1046,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "23. IE-Berichterstattung", // todo need beter translate
+                        Name = "23. IE-Berichterstattung (Alt)", // todo need beter translate
                         Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
                         LanguageId = 3,// ge
                         InfoBox = "Siehe Anforderungen in Umweltzulassung",

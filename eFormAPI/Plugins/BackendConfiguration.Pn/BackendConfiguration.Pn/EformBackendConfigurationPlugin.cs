@@ -542,6 +542,31 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "23. IE-indberetning");
+            if (areaTranslation2 != null)
+            {
+                areaTranslation2.Name = "23. IE-indberetning (Gammel)";
+                await areaTranslation2.Update(context);
+                // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
+
+                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23. IE-indberetning").ToListAsync();
+
+                foreach (var folderTranslation2 in folderTranslations)
+                {
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
+                    var folderTranslationList = new List<CommonTranslationsModel>();
+                    var folderTranslation = new CommonTranslationsModel()
+                    {
+                        Description = "",
+                        LanguageId = 1,
+                        Name = "23. IE-indberetning (Gammel)",
+                    };
+                    folderTranslationList.Add(folderTranslation);
+
+                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
+                }
+            }
+
             List<KeyValuePair<string, string>> tags = new List<KeyValuePair<string, string>>();
             tags.Add(new KeyValuePair<string, string>("100. Diverse", "99. Diverse"));
             tags.Add(new KeyValuePair<string, string>("01. Registreringer til Miljøledelse", "01. Fokusområder Miljøledelse"));
@@ -549,6 +574,7 @@ namespace BackendConfiguration.Pn
             tags.Add(new KeyValuePair<string, string>("05. Klargøring af stalde og dokumentation af halebid", "05. Stalde: Halebid og klargøring"));
             tags.Add(new KeyValuePair<string, string>("13. Arbejdstilsynets Landbrugs APV", "13. APV Landbrug"));
             tags.Add(new KeyValuePair<string, string>("20. Tilbagevendende opgaver (man-søn)", "20. Ugentlige rutineopgaver"));
+            tags.Add(new KeyValuePair<string, string>("23. IE-indberetning", "23. IE-indberetning (Gammel)"));
 
             foreach (var keyValuePair in tags)
             {
