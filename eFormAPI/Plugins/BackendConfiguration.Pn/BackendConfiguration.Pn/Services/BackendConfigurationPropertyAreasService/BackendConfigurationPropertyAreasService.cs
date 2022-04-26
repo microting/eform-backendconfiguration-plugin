@@ -451,6 +451,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 areaRule.FolderId = folderId;
                                 areaRule.CreatedByUserId = _userService.UserId;
                                 areaRule.UpdatedByUserId = _userService.UserId;
+                                areaRule.ComplianceModifiable = true;
+                                areaRule.NotificationsModifiable = true;
                                 if (!string.IsNullOrEmpty(areaRule.EformName))
                                 {
                                     var eformId = await sdkDbContext.CheckListTranslations
@@ -616,6 +618,604 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             }
                             break;
                         }
+
+                        case AreaTypesEnum.Type8:
+                        {
+                            // create folder with ie reporting name
+                            var folderId = await core.FolderCreate(
+                                area.AreaTranslations.Select(x => new CommonTranslationsModel
+                                {
+                                    Name = x.Name,
+                                    LanguageId = x.LanguageId,
+                                    Description = "",
+                                }).ToList(),
+                                property.FolderId);
+                            //create 4 folders
+                            var folderIds = new List<int>();
+
+                            var subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.00 Aflæsninger", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.00 Readings environmental management",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.00 Messungen Umweltmanagement", // todo
+                                    Description = "",
+                                },
+                            }, folderId);
+                            folderIds.Add(subFolderId);
+                            subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01 Logbøger miljøteknologier", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01 Logbooks for any environmental technologies",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01 Fahrtenbücher für alle Umwelttechnologien", // todo
+                                    Description = "",
+                                },
+                            }, folderId);
+                            folderIds.Add(subFolderId);
+                            var subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.01 Gyllebeholdere", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.01 Manure containers",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.01 Güllebehälter", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.02 Gyllekøling", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.02 Slurry cooling",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.02 Schlammkühlung", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.03 Forsuring", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.03 Acidification",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.03 Versauerung", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.04 Ugentlig udslusning af gylle", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.04 Weekly slurry disposal",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.04 Wöchentliche Gülleentsorgung", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.05 Punktudsugning i slagtesvinestalde", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.05 Point extraction in fattening pig stables",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.05 Punktabsaugung in Mastschweineställen", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.06 Varmevekslere til traditionelle slagtekyllingestalde", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.06 Heat exchangers for traditional broiler houses",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.06 Wärmetauscher für traditionelle Masthähnchenställe", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.07 Gødningsbånd til æglæggende høns", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.07 Manure belt for laying hens",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.07 Kotband für Legehennen", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.08 Biologisk luftrensning", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.08 Biological air purification",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.08 Biologische Luftreinigung", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.01.09 Kemisk luftrensning", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.01.09 Chemical air purification",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.01.09 Chemische Luftreinigung", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02 Dokumentation afsluttede inspektioner", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02 Documentation of completed inspections",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02 Dokumentation abgeschlossener Inspektionen", // todo
+                                    Description = "",
+                                },
+                            }, folderId);
+                            folderIds.Add(subFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.01 Visuel kontrol af tom gyllebeholdere", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.01 Visual inspection of empty slurry tankers",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.01 Sichtprüfung von leeren Güllefässern", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.02 Gyllepumper", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.02 Slurry pumps",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.02 Schlammpumpen", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.03 Forsyningssystemer til vand og foder", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.03 Water and feed supply systems",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.03 Wasser- und Futterversorgungssysteme", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.04 Varme-, køle- og ventilationssystemer", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.04 Heating, cooling and ventilation systems",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.04 Heiz-, Kühl- und Lüftungssysteme", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.05 Silos and equipment in transport equipment in connection with feed systems - pipes, augers, etc.",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.05 Silos und Einrichtungen in Transporteinrichtungen in Verbindung mit Beschickungssystemen - Rohre, Schnecken usw.", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.06 Luftrensningssystemer", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.06 Air purification systems",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.06 Luftreinigungssysteme", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.07 Udstyr til drikkevand", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.07 Equipment for drinking water",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.07 Ausrüstung für Trinkwasser", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.02.08 Machines for application of livestock manure and dosing mechanism",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.02.08 Maschinen zum Ausbringen von Viehmist und Dosiermechanismus", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.03 Dokumentation miljøledelse", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.03 Documentation for environmental management",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.03 Dokumentation für das Umweltmanagement", // todo
+                                    Description = "",
+                                },
+                            }, folderId);
+                            folderIds.Add(subFolderId);
+                            subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.04 Overholdelse fodringskrav", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.04 Compliance with feeding requirements",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.04 Einhaltung der Fütterungsanforderungen", // todo
+                                    Description = "",
+                                },
+                            }, folderId);
+                            folderIds.Add(subFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.04.01 Fasefodring", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.04.01 Phase feeding",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.04.01 Phasenfütterung", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.04.02 Reduceret indhold af råprotein", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.04.02 Reduced content of crude protein",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.04.02 Reduzierter Gehalt an Rohprotein", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+                            subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "24.04.03 Tilsætningsstoffer i foder - fytase eller andet", // todo
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "24.04.03 Additives in feed - phytase or other",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "24.04.03 Zusatzstoffe in Futtermitteln – Phytase oder andere", // todo
+                                    Description = "",
+                                },
+                            }, subFolderId);
+                            folderIds.Add(subSubFolderId);
+
+                                await new ProperyAreaFolder
+                            {
+                                FolderId = folderId,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            }.Create(_backendConfigurationPnDbContext);
+
+                            foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                            {
+                                FolderId = folderIdLocal,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            }))
+                            {
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                            }
+                            foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
+                            {
+                                areaRule.PropertyId = property.Id;
+                                areaRule.FolderId = folderId;
+                                areaRule.CreatedByUserId = _userService.UserId;
+                                areaRule.UpdatedByUserId = _userService.UserId;
+                                if (!string.IsNullOrEmpty(areaRule.EformName))
+                                {
+                                    var eformId = await sdkDbContext.CheckListTranslations
+                                        .Where(x => x.Text == areaRule.EformName)
+                                        .Select(x => x.CheckListId)
+                                        .FirstAsync();
+                                    areaRule.EformId = eformId;
+                                }
+                                await areaRule.Create(_backendConfigurationPnDbContext);
+                            }
+                            break;
+                        }
                         default:
                         {
                             var folderId = await core.FolderCreate(
@@ -638,6 +1238,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 areaRule.FolderId = folderId;
                                 areaRule.CreatedByUserId = _userService.UserId;
                                 areaRule.UpdatedByUserId = _userService.UserId;
+                                areaRule.ComplianceModifiable = true;
+                                areaRule.NotificationsModifiable = true;
                                 if (!string.IsNullOrEmpty(areaRule.EformName))
                                 {
                                     var eformId = await sdkDbContext.CheckListTranslations

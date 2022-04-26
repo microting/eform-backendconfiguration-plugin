@@ -104,6 +104,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 Alarm = x.Alarm,
                                 DayOfWeek = x.DayOfWeek,
                                 RepeatEvery = x.RepeatEvery,
+                                RepeatType = x.RepeatType,
+                                ComplianceEnabled = x.ComplianceEnabled,
+                                ComplianceModifiable = x.ComplianceModifiable,
+                                Notifications = x.Notifications,
+                                NotificationsModifiable = x.NotificationsModifiable,
                             },
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields
@@ -121,7 +126,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             : null,
                     });
 
-                if (areaProperty.Type == AreaTypesEnum.Type7)
+                if (areaProperty.Type == AreaTypesEnum.Type7 || areaProperty.Type == AreaTypesEnum.Type8)
                 {
                     queryWithSelect = queryWithSelect.OrderBy(x => x.TranslatedName);
                 }
@@ -189,7 +194,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             }).ToList(),
                         IsDefault = x.IsDefault,
                         TypeSpecificFields = new
-                            {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery},
+                            {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery, x.RepeatType},
                         EformId = x.EformId,
                     })
                     .FirstOrDefaultAsync();
@@ -427,7 +432,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                             planning.UpdatedByUserId = _userService.UserId;
                             await planning.Delete(_itemsPlanningPnDbContext);
-                            var complianceList = await _backendConfigurationPnDbContext.Compliances.Where(x => x.PlanningId == planning.Id 
+                            var complianceList = await _backendConfigurationPnDbContext.Compliances.Where(x => x.PlanningId == planning.Id
                                 && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
                             foreach (var compliance in complianceList)
                             {
@@ -498,14 +503,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 .Select(y => y.Name)
                                 .Contains(areaRuleCreateModel.TranslatedNames[0].Name));
                     }
+                    var areaRuleType8 = new AreaRule();
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type8)
+                    {
+                        areaRuleType8 = BackendConfigurationSeedAreas.AreaRulesForType8
+                            .First(x => x.AreaRuleTranslations
+                                .Select(y => y.Name)
+                                .Contains(areaRuleCreateModel.TranslatedNames[0].Name));
+                    }
                     var eformId = areaRuleCreateModel.TypeSpecificFields.EformId;
-                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7)
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7 or AreaTypesEnum.Type8)
                     {
                         var eformName = areaProperty.Area.Type switch
                         {
                             AreaTypesEnum.Type2 => "03. Kontrol konstruktion",
                             AreaTypesEnum.Type6 => "10. Varmepumpe serviceaftale",
                             AreaTypesEnum.Type7 => areaRuleType7.EformName,
+                            AreaTypesEnum.Type8 => areaRuleType8.EformName,
                             _ => ""
                         };
                         eformId = await sdkDbContext.CheckListTranslations
@@ -545,6 +559,36 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
                         areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery;
                     }
+                    areaRule.ComplianceEnabled = true;
+                    areaRule.ComplianceModifiable = true;
+                    areaRule.Notifications = true;
+                    areaRule.NotificationsModifiable = true;
+
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type8)
+                    {
+                        areaRule.IsDefault = areaRuleType8.IsDefault;
+                        // create folder
+                        var pairedFolderToPropertyArea = areaProperty.ProperyAreaFolders.Select(x => x.FolderId).ToList();
+                        var folderId = await sdkDbContext.FolderTranslations
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            // .Where(x => x.LanguageId == 2) // en
+                            .Where(x => pairedFolderToPropertyArea.Contains(x.FolderId))
+                            .Where(x => x.Name == areaRuleType8.FolderName)
+                            .Select(x => x.FolderId)
+                            .FirstAsync();
+                        areaRule.FolderId = folderId;
+                        if (areaRuleType8.AreaRuleInitialField.RepeatEvery != null)
+                        {
+                            areaRule.RepeatEvery = (int) areaRuleType8.AreaRuleInitialField.RepeatEvery;
+                        }
+                        // areaRule.DayOfWeek = (int) areaRuleType8.AreaRuleInitialField.DayOfWeek;
+                        areaRule.RepeatType = areaRuleType8.AreaRuleInitialField.RepeatType;
+                        areaRule.ComplianceEnabled = areaRuleType8.AreaRuleInitialField.ComplianceEnabled;
+                        areaRule.ComplianceModifiable = areaRuleType8.AreaRuleInitialField.ComplianceEnabled;
+                        areaRule.Notifications = areaRuleType8.AreaRuleInitialField.Notifications;
+                        areaRule.NotificationsModifiable = areaRuleType8.AreaRuleInitialField.Notifications;
+                    }
+
 
                     var language = await _userService.GetCurrentUserLanguage();
                     if (eformId != 0)
@@ -557,14 +601,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .FirstOrDefaultAsync();
                     }
 
-                    if(areaProperty.Area.Type != AreaTypesEnum.Type7)
+                    if (areaProperty.Area.Type != AreaTypesEnum.Type7 && areaProperty.Area.Type != AreaTypesEnum.Type8)
                     {
                         areaRule.FolderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
                             .Include(x => x.AreaProperty)
                             .Where(x => x.AreaProperty.Id == createModel.PropertyAreaId)
                             .Select(x => x.FolderId)
                             .FirstOrDefaultAsync();
+
                     }
+
                     areaRule.FolderName = await sdkDbContext.FolderTranslations
                         .Where(x => x.FolderId == areaRule.FolderId)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -576,7 +622,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                     var translations = new List<AreaRuleTranslation>();
 
-                    if (areaProperty.Area.Type != AreaTypesEnum.Type7)
+                    if (areaProperty.Area.Type != AreaTypesEnum.Type7 && areaProperty.Area.Type != AreaTypesEnum.Type8)
                     {
                         translations = areaRuleCreateModel.TranslatedNames
                             .Select(x => new AreaRuleTranslation
@@ -592,6 +638,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     if (areaProperty.Area.Type is AreaTypesEnum.Type7)
                     {
                         translations = areaRuleType7.AreaRuleTranslations
+                            .Select(x => new AreaRuleTranslation
+                            {
+                                AreaRuleId = areaRule.Id,
+                                LanguageId = x.LanguageId,
+                                Name = x.Name,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId,
+                            }).ToList();
+                    }
+
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type8)
+                    {
+                        translations = areaRuleType8.AreaRuleTranslations
                             .Select(x => new AreaRuleTranslation
                             {
                                 AreaRuleId = areaRule.Id,
@@ -660,6 +719,48 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 Log.LogException(e.Message);
                 Log.LogException(e.StackTrace);
                 return new OperationDataResult<List<AreaRulesForType7>>(false);
+            }
+        }
+        public async Task<OperationDataResult<List<AreaRulesForType8>>> GetAreaRulesForType8()
+        {
+            try
+            {
+                var curentLanguage = await _userService.GetCurrentUserLanguage();
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var model = BackendConfigurationSeedAreas.AreaRulesForType8
+                    .GroupBy(x => x.FolderName)
+                    .Select(x => new AreaRulesForType8
+                    {
+                        FolderName = x.Key,
+                        AreaRuleNames = x.Select(y => y)
+                            .Where(y => y.FolderName == x.Key)
+                            .SelectMany(y => y.AreaRuleTranslations
+                                .Where(z => z.LanguageId == curentLanguage.Id)
+                                .Select(z => z.Name))
+                            .ToList(),
+                    })
+                    .ToList();
+
+                foreach (var areaRulesForType8 in model)
+                {
+                    areaRulesForType8.FolderName = await sdkDbContext.FolderTranslations
+                        .OrderBy(x => x.Id)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Name == areaRulesForType8.FolderName)
+                        .SelectMany(x => x.Folder.FolderTranslations)
+                        .Where(x => x.LanguageId == curentLanguage.Id)
+                        .Select(x => x.Name)
+                        .LastOrDefaultAsync();
+                }
+
+                return new OperationDataResult<List<AreaRulesForType8>>(true, model);
+            }
+            catch (Exception e)
+            {
+                Log.LogException(e.Message);
+                Log.LogException(e.StackTrace);
+                return new OperationDataResult<List<AreaRulesForType8>>(false);
             }
         }
 

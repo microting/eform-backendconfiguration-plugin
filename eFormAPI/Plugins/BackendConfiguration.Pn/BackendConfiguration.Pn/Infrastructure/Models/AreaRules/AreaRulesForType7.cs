@@ -32,4 +32,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public List<string> AreaRuleNames { get; set; }
     }
+
+    public class AreaRulesForType8
+    {
+        public string FolderName { get; set; }
+
+        public List<string> AreaRuleNames { get; set; }
+    }
 }

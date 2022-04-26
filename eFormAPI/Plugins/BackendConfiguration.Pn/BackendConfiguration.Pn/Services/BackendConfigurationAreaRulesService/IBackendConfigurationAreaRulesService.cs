@@ -43,6 +43,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
         Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7();
 
+        Task<OperationDataResult<List<AreaRulesForType8>>> GetAreaRulesForType8();
+
         Task<OperationResult> Delete(List<int> areaRuleIds);
     }
 }

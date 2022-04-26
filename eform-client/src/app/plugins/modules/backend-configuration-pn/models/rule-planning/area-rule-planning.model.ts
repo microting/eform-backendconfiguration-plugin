@@ -28,4 +28,8 @@ export class TypeSpecificFieldsAreaRulePlanning {
   startDate?: string;
   endDate?: string;
   hoursAndEnergyEnabled?: boolean;
+  complianceEnabled?: boolean;
+  complianceModifiable?: boolean;
+  notifications?: boolean;
+  notificationsModifiable?: boolean;
 }

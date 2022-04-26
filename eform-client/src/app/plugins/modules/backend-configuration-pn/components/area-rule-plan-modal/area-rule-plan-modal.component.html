@@ -36,22 +36,27 @@
                 >
               </div>
             </div>
-            <div class="col-md-12" *ngIf="getShowCompliance()">
-              <div class="custom-control custom-switch">
-                <input
-                  type="checkbox"
-                  id="planAreaRuleComplianceEnableToggle"
-                  [value]="selectedAreaRulePlanning.complianceEnabled"
-                  [checked]="selectedAreaRulePlanning.complianceEnabled"
-                  [(ngModel)]="selectedAreaRulePlanning.complianceEnabled"
-                  class="custom-control-input"
-                />
-                <label
-                  for="planAreaRuleComplianceEnableToggle"
-                  class="custom-control-label"
-                >{{ "Compliance enable" | translate }}</label>
-              </div>
-            </div>
+            <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined">
+              <ng-container *ngIf="selectedAreaRule.typeSpecificFields.complianceModifiable">
+                <div class="col-md-12" *ngIf="getShowCompliance()">
+                  <div class="custom-control custom-switch">
+                    <input
+                      type="checkbox"
+                      id="planAreaRuleComplianceEnableToggle"
+                      [value]="selectedAreaRulePlanning.complianceEnabled"
+                      [checked]="selectedAreaRulePlanning.complianceEnabled"
+                      [(ngModel)]="selectedAreaRulePlanning.complianceEnabled"
+                      class="custom-control-input"
+                    />
+                    <label
+                      for="planAreaRuleComplianceEnableToggle"
+                      class="custom-control-label"
+                    >{{ "Compliance enable" | translate }}</label>
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+
           </div>
           <ng-container *ngIf="selectedAreaRule.typeSpecificFields">
             <div class="row" *ngIf="selectedArea.type === 6">
@@ -179,30 +184,35 @@
                 <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
                                                selectedAreaRulePlanning.typeSpecificFields.repeatEvery)
                                                && selectedArea.type !== 3">
-                  <div class="custom-control custom-switch">
-                    <input
-                      class="custom-control-input"
-                      type="checkbox"
-                      id="planAreaRuleNotificationsToggle"
-                      [value]="selectedAreaRulePlanning.sendNotifications"
-                      [checked]="selectedAreaRulePlanning.sendNotifications"
-                      [(ngModel)]="selectedAreaRulePlanning.sendNotifications"
-                      (change)="
-                        selectedAreaRulePlanning.sendNotifications =
-                          $event.target.checked
-                      "
-                      [disabled]="!selectedAreaRulePlanning.status"
-                    />
-                    <label
-                      for="planAreaRuleNotificationsToggle"
-                      class="custom-control-label"
-                      >{{ 'Notifications on/off' | translate }}</label
-                    >
-                  </div>
+
+                  <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined">
+                    <ng-container *ngIf="selectedAreaRule.typeSpecificFields.notificationsModifiable">
+                      <div class="custom-control custom-switch">
+                        <input
+                          class="custom-control-input"
+                          type="checkbox"
+                          id="planAreaRuleNotificationsToggle"
+                          [value]="selectedAreaRulePlanning.sendNotifications"
+                          [checked]="selectedAreaRulePlanning.sendNotifications"
+                          [(ngModel)]="selectedAreaRulePlanning.sendNotifications"
+                          (change)="
+                            selectedAreaRulePlanning.sendNotifications =
+                              $event.target.checked
+                          "
+                          [disabled]="!selectedAreaRulePlanning.status"
+                        />
+                        <label
+                          for="planAreaRuleNotificationsToggle"
+                          class="custom-control-label"
+                          >{{ 'Notifications on/off' | translate }}</label
+                        >
+                      </div>
+                    </ng-container>
+                  </ng-container>
                 </div>
               </div>
               <ng-container
-                *ngIf="selectedArea.type != 5 && selectedArea.type != 2"
+                *ngIf="selectedArea.type != 5 && selectedArea.type != 2 && selectedAreaRule.typeSpecificFields.notificationsModifiable"
               >
                 <div class="row" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid'">
                   <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
