@@ -19,18 +19,18 @@ import {
 })
 export class TaskManagementTableComponent implements OnInit {
   tableHeaders: TableHeaderElementModel[] = [
-    { name: 'Id', sortable: false },
+    { name: 'Id', sortable: true },
     { name: 'CreatedAt', visibleName: 'CreatedDate', sortable: true },
-    { name: 'Property', sortable: false },
-    { name: 'Area', sortable: false },
-    { name: 'CreatedByName', visibleName: 'Created by 1', sortable: false },
-    { name: 'CreatedByText', visibleName: 'Created by 2', sortable: false },
-    { name: 'LastAssignedTo', sortable: false },
+    { name: 'PropertyName', visibleName: 'Property', sortable: false },
+    { name: 'SelectedAreaName', visibleName: 'Area',sortable: true },
+    { name: 'CreatedByName', visibleName: 'Created by 1', sortable: true },
+    { name: 'CreatedByText', visibleName: 'Created by 2', sortable: true },
+    { name: 'LastAssignedToName', visibleName: 'LastAssignedTo',sortable: true },
     { name: 'Actions', elementId: '', sortable: false },
     { name: 'Description', sortable: false },
     { name: 'UpdatedAt', visibleName: 'LastUpdateDate', sortable: true },
-    { name: 'LastUpdateBy', sortable: false },
-    { name: 'Status', sortable: false },
+    { name: 'LastUpdatedByName', visibleName: 'LastUpdateBy', sortable: false },
+    { name: 'CaseStatusesEnum', visibleName: 'Status', sortable: true },
   ];
   @Input() workOrderCases: WorkOrderCaseModel[];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();

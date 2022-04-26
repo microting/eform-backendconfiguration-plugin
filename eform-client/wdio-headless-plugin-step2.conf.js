@@ -26,6 +26,9 @@ exports.config = {
       'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t3.spec.ts',
       'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t4.spec.ts',
       'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t5.spec.ts',
+      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.create.spec.ts',
+      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.delete.spec.ts',
+      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.sort-filtering.spec.ts',
     ],
     suites: {
         settings: [

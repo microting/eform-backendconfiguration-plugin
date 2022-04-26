@@ -7,6 +7,7 @@
         bindLabel="name"
         bindValue="id"
         formControlName="propertyId"
+        id="propertyIdFilter"
         [clearable]="false"
       >
       </ng-select>
@@ -16,6 +17,7 @@
         [placeholder]="'Property - Areas' | translate"
         [items]="propertyAreas"
         formControlName="areaName"
+        id="areaNameFilter"
       >
       </ng-select>
     </div>
@@ -26,6 +28,7 @@
         bindValue="name"
         formControlName="createdBy"
         [items]="assignedSitesToProperty"
+        id="createdByFilter"
       >
       </ng-select>
     </div>
@@ -36,6 +39,7 @@
         bindValue="name"
         formControlName="lastAssignedTo"
         [items]="assignedSitesToProperty"
+        id="lastAssignedToFilter"
       >
       </ng-select>
     </div>
@@ -50,6 +54,7 @@
         bindLabel="name"
         bindValue="id"
         formControlName="status"
+        id="statusFilter"
       >
       </ng-select>
     </div>
