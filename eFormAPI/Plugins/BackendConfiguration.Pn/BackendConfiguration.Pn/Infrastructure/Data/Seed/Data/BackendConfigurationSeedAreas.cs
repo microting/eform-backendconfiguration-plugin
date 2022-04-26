@@ -2082,7 +2082,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = true,
                     Notifications = true,
                     RepeatEvery = 12,
-                    RepeatType = 2
+                    RepeatType = 3
                 }
             },
             new AreaRule
@@ -2388,7 +2388,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = true,
                     Notifications = true,
                     RepeatEvery = 12,
-                    RepeatType = 2
+                    RepeatType = 3
                 }
             },
             new AreaRule
