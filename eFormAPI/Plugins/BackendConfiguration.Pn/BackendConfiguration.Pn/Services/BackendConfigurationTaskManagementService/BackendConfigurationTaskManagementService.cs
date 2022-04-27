@@ -466,6 +466,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
     {
         var core = await _coreHelper.GetCore();
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        int i = 0;
         foreach (var propertyWorker in propertyWorkers)
         {
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
@@ -514,6 +515,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 CaseInitiated = DateTime.UtcNow,
                 CreatedByUserId = _userService.UserId,
                 LastAssignedToName = site.Name,
+                LeadingCase = i == 0
             };
             await workOrderCase.Create(_backendConfigurationPnDbContext);
 
@@ -526,6 +528,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 };
                 await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
             }
+
+            i++;
         }
     }
 }
