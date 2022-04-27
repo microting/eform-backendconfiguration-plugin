@@ -358,7 +358,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
                 foreach (var picture in createModel.Files)
                 {
-                    var filePath = Path.Combine(folder, $"{DateTime.Now.Ticks}.{picture.ContentType}");
+                    var filePath = Path.Combine(folder, $"{DateTime.Now.Ticks}.{picture.ContentType.Split("/")[1]}");
 
                     var hash = "";
                     using (var md5 = MD5.Create())
