@@ -49,4 +49,6 @@ public class WorkorderCaseModel
     public string LastUpdatedBy { get; set; }
 
     public string Status { get; set; }
+
+    public int? ParentWorkorderCaseId { get; set; }
 }
