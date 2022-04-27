@@ -22,6 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Reflection;
+using BackendConfiguration.Pn.Services.WordService;
+using ImageMagick;
+using Microting.eForm.Helpers;
+using Microting.eForm.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;
 
 using System;
@@ -136,43 +142,6 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 })
                 .ToListAsync();
 
-            // workorderCasesFromDb = workorderCasesFromDb
-            /*var workorderCases = new List<WorkorderCaseModel>();
-            foreach (var workorderCaseModel in workorderCasesFromDb)
-            {
-                var assignedSiteName = await sdkDbContext.Cases
-                    .Where(x => x.MicrotingUid == workorderCaseModel.CaseId || x.Id == workorderCaseModel.CaseId)
-                    .Include(x => x.Site)
-                    .Select(x => x.Site.Name)
-                    .FirstOrDefaultAsync();
-                workorderCases.Add(new WorkorderCaseModel
-                {
-                    AreaName = workorderCaseModel.AreaName,
-                    CreatedByName = workorderCaseModel.CreatedByName,
-                    CreatedByText = workorderCaseModel.CreatedByText,
-                    CreatedDate = workorderCaseModel.CreatedDate,
-                    Id = workorderCaseModel.Id,
-                    Status = workorderCaseModel.Status,
-                    Description = workorderCaseModel.Description,
-                    PropertyName = workorderCaseModel.PropertyName,
-                    LastUpdateDate = workorderCaseModel.LastUpdateDate,
-                    LastAssignedTo = assignedSiteName,
-                    LastUpdatedBy = workorderCaseModel.LastUpdatedBy,
-                });
-            }
-            if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
-            {
-                workorderCases = workorderCases.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo).ToList();
-            }
-
-            if(excludeSort.Contains(filtersModel.Sort))
-            {
-                workorderCases = QueryHelper
-                    .AddFilterAndSortToQuery(workorderCases.AsQueryable(), filtersModel, new List<string>())
-                    .ToList();
-            }
-
-            return workorderCases;*/
             if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
             {
                 workorderCasesFromDb = workorderCasesFromDb.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo).ToList();
@@ -362,8 +331,26 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
                     _localizationService.GetString("PropertyNotFound"));
             }
+            var propertyWorkers = property.PropertyWorkers
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToList();
 
-            var pictureListUploadedIds = new List<int>();
+            var newWorkorderCase = new WorkorderCase
+            {
+                ParentWorkorderCaseId = null,
+                CaseId = 0,
+                PropertyWorkerId = propertyWorkers.First().Id,
+                SelectedAreaName = createModel.AreaName,
+                CreatedByName = await _userService.GetCurrentUserFullName(),
+                CreatedByText = "",
+                CaseStatusesEnum = CaseStatusesEnum.Ongoing,
+                Description = createModel.Description,
+                CaseInitiated = DateTime.UtcNow,
+                LeadingCase = true
+            };
+            await newWorkorderCase.Create(_backendConfigurationPnDbContext);
+            
+            var picturesOfTasks = new List<string>();
             if (createModel.Files.Any())
             {
                 var folder = Path.Combine(Path.GetTempPath(), "pictures-for-case");
@@ -391,16 +378,23 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                         FileLocation = filePath,
                     };
                     await uploadData.Create(sdkDbContext);
-                    pictureListUploadedIds.Add(uploadData.Id);
+                    var workOrderCaseImage = new WorkorderCaseImage
+                    {
+                        WorkorderCaseId = newWorkorderCase.Id,
+                        UploadedDataId = uploadData.Id
+                    };
+                    picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}");
+                    await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
                 }
             }
+            var pdfHash = await GeneratePdf(picturesOfTasks);
 
             var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Text == "02. Ongoing task")
                 .Select(x => x.CheckListId)
                 .FirstOrDefaultAsync();
-
+            
             var deviceUsersGroupMicrotingUid = await sdkDbContext.EntityGroups
                 .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                 .Select(x => int.Parse(x.MicrotingUid))
@@ -410,20 +404,15 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 .Where(x => x.Id == createModel.AssignedSiteId)
                 .FirstOrDefaultAsync();
 
-            var propertyWorkers = property.PropertyWorkers
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToList();
-
             var label = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
                         $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
                         $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName()}<br>" +
                         $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
-                        $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>" +
-                        $"<center><strong>******************</strong></center>";
+                        $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
 
-            var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName) ? $"{property.Name}; {createModel.AreaName}" : $"{property.Name}";
+                        var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName) ? $"{property.Name}; {createModel.AreaName}" : $"{property.Name}";
             var pushMessageBody = createModel.Description;
 
             // deploy eform to ongoing status
@@ -435,9 +424,9 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 CaseStatusesEnum.Ongoing,
                 createModel.Description,
                 deviceUsersGroupMicrotingUid,
+                pdfHash,
                 pushMessageBody,
                 pushMessageTitle,
-                pictureListUploadedIds,
                 createModel.AreaName);
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
@@ -459,14 +448,13 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
         CaseStatusesEnum status,
         string newDescription,
         int? deviceUsersGroupId,
+        string pdfHash,
         string pushMessageBody,
         string pushMessageTitle,
-        List<int> pictureListUploadedIds,
         string areaName)
     {
         var core = await _coreHelper.GetCore();
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-        int i = 0;
         foreach (var propertyWorker in propertyWorkers)
         {
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
@@ -480,12 +468,13 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             mainElement.ElementList[0].QuickSyncEnabled = true;
             mainElement.EnableQuickSync = true;
             mainElement.ElementList[0].Label = " ";
-            mainElement.ElementList[0].Description.InderValue = description;
+            mainElement.ElementList[0].Description.InderValue = description + "<center><strong>******************</strong></center>";
             mainElement.PushMessageTitle = pushMessageTitle;
             mainElement.PushMessageBody = pushMessageBody;
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
+            ((ShowPdf) ((DataElement) mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
             if (deviceUsersGroupId != null)
             {
                 ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source = (int)deviceUsersGroupId;
@@ -515,21 +504,125 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 CaseInitiated = DateTime.UtcNow,
                 CreatedByUserId = _userService.UserId,
                 LastAssignedToName = site.Name,
-                LeadingCase = i == 0
+                LeadingCase = false
             };
             await workOrderCase.Create(_backendConfigurationPnDbContext);
 
-            foreach (var pictureUploadedId in pictureListUploadedIds)
-            {
-                var workOrderCaseImage = new WorkorderCaseImage
-                {
-                    WorkorderCaseId = workOrderCase.Id,
-                    UploadedDataId = pictureUploadedId
-                };
-                await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
-            }
-
-            i++;
+            // foreach (var pictureUploadedId in pictureListUploadedIds)
+            // {
+            //     var workOrderCaseImage = new WorkorderCaseImage
+            //     {
+            //         WorkorderCaseId = workOrderCase.Id,
+            //         UploadedDataId = pictureUploadedId
+            //     };
+            //     await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
+            // }
         }
+    }
+    
+    private async Task<string> InsertImage(string imageName, string itemsHtml, int imageSize, int imageWidth, string basePicturePath)
+    {
+        var core = await _coreHelper.GetCore();
+        var filePath = Path.Combine(basePicturePath, imageName);
+        Stream stream;
+        var storageResult = await core.GetFileFromS3Storage(imageName);
+        stream = storageResult.ResponseStream;
+
+        using (var image = new MagickImage(stream))
+        {
+            var profile = image.GetExifProfile();
+            // Write all values to the console
+            try
+            {
+                foreach (var value in profile.Values)
+                {
+                    Console.WriteLine("{0}({1}): {2}", value.Tag, value.DataType, value.ToString());
+                }
+            } catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+            image.Rotate(90);
+            var base64String = image.ToBase64();
+            itemsHtml +=
+                $@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>";
+        }
+
+        await stream.DisposeAsync();
+
+        return itemsHtml;
+    }
+    
+    private async Task<string> GeneratePdf(List<string> picturesOfTasks)
+    {
+        var core = await _coreHelper.GetCore();
+        var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
+        var assembly = Assembly.GetExecutingAssembly();
+        string html;
+        await using (var resourceStream = assembly.GetManifestResourceStream(resourceString))
+        {
+            using var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null"));
+            html = await reader.ReadToEndAsync();
+        }
+
+        // Read docx stream
+        resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
+        var docxFileResourceStream = assembly.GetManifestResourceStream(resourceString);
+        if (docxFileResourceStream == null)
+        {
+            throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
+        }
+
+        var docxFileStream = new MemoryStream();
+        await docxFileResourceStream.CopyToAsync(docxFileStream);
+        await docxFileResourceStream.DisposeAsync();
+        string basePicturePath = Path.Combine(Path.GetTempPath(), "pictures", "workorders");
+        Directory.CreateDirectory(basePicturePath);
+        var word = new WordProcessor(docxFileStream);
+        string imagesHtml = "";
+
+        foreach (var imagesName in picturesOfTasks)
+        {
+            Console.WriteLine($"Trying to insert image into document : {imagesName}");
+            imagesHtml = await InsertImage(imagesName, imagesHtml, 700, 650, basePicturePath);
+        }
+
+        html = html.Replace("{%Content%}", imagesHtml);
+
+        word.AddHtml(html);
+        word.Dispose();
+        docxFileStream.Position = 0;
+
+        // Build docx
+        string downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
+        Directory.CreateDirectory(downloadPath);
+        string timeStamp = DateTime.UtcNow.ToString("yyyyMMdd") + "_" + DateTime.UtcNow.ToString("hhmmss");
+        Random rnd = new Random();
+        var rndNumber = rnd.Next(0, 1000);
+        string docxFileName = $"{timeStamp}{rndNumber}_temp.docx";
+        string tempPDFFileName = $"{timeStamp}{rndNumber}_temp.pdf";
+        string tempPDFFilePath = Path.Combine(downloadPath, tempPDFFileName);
+        await using (var docxFile = new FileStream(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName), FileMode.Create, FileAccess.Write))
+        {
+            docxFileStream.WriteTo(docxFile);
+        }
+
+        // Convert to PDF
+        ReportHelper.ConvertToPdf(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName), downloadPath);
+        File.Delete(docxFileName);
+
+        // Upload PDF
+        // string pdfFileName = null;
+        string hash = await core.PdfUpload(tempPDFFilePath);
+        if (hash != null)
+        {
+            //rename local file
+            FileInfo fileInfo = new FileInfo(tempPDFFilePath);
+            fileInfo.CopyTo(downloadPath + "/" + hash + ".pdf", true);
+            fileInfo.Delete();
+            await core.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf");
+        }
+
+        return hash;
     }
 }

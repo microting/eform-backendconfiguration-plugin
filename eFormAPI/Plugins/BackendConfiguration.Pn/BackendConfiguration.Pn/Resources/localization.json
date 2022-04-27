@@ -445,6 +445,48 @@
     }
   },
   {
+    "Key": "AssignedTo",
+    "LocalizedValue": {
+      "da": "Tildelt til",
+      "en-US": "AssignedTo" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Ongoing",
+    "LocalizedValue": {
+      "da": "Igangværende",
+      "en-US": "Ongoing" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "CreatedDate",
+    "LocalizedValue": {
+      "da": "Oprettet dato",
+      "en-US": "CreatedDate" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "CreatedBy",
+    "LocalizedValue": {
+      "da": "Oprettet af",
+      "en-US": "CreatedBy" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Description",
+    "LocalizedValue": {
+      "da": "Beskrivelse",
+      "en-US": "Description" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Area",
+    "LocalizedValue": {
+      "da": "Område",
+      "en-US": "Area" // todo maybe need add more translates
+    }
+  },
+  {
     "Key": "StartDate",
     "LocalizedValue": {
       "da": "Startdato",
