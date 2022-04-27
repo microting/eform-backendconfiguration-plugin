@@ -108,7 +108,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             {
                 query = query
                     .Where(x => x.CreatedAt >= filtersModel.DateFrom.Value)
-                    .Where(x => x.CreatedAt <= filtersModel.DateTo.Value);
+                    .Where(x => x.CreatedAt <= new DateTime(filtersModel.DateTo.Value.Year, filtersModel.DateTo.Value.Month, filtersModel.DateTo.Value.Day, 23, 59, 59));
             }
 
             var excludeSort = new List<string>

@@ -158,5 +158,21 @@ export const da = {
   'Plan and assign': 'Planlæg og tildel',
   'Workorder flow enable': 'Aktivér opgavestyring',
   'Date is required': 'Dato er påkrævet',
-  'Edit list of stables for tailbites': 'Rediger liste med stalde til halebid'
+  'Edit list of stables for tailbites': 'Rediger liste med stalde til halebid',
+  'Task management': 'Opgavestyring',
+  'Property - Areas': 'Områder',
+  'Last assigned to': 'Sidst tildelt til',
+  'CreatedDate': 'Oprettet',
+  'Created by 1': 'Oprettet af',
+  'Created by 2': 'Oprettet af (2)',
+  'LastAssignedTo': 'Sidst tildelt til',
+  'LastUpdateDate':'Sidst opdateret',
+  'LastUpdateBy':'Sidst opdateret af',
+  'Show report': 'Vis rapport',
+  'Create new task': 'Opret ny opgave',
+  'Word report': 'Hent Word rapport',
+  'Excel report': 'Hent Excel rapport',
+  'View task': 'Vis opgave',
+  'Delete task': 'Slet opgave',
+  'View': 'Vis'
 };
