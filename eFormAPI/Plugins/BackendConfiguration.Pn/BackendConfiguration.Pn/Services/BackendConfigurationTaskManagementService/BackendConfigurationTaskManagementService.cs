@@ -376,37 +376,86 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             var picturesOfTasks = new List<string>();
             if (createModel.Files.Any())
             {
-                var folder = Path.Combine(Path.GetTempPath(), "pictures-for-case");
-                Directory.CreateDirectory(folder);
+                // var folder = Path.Combine(Path.GetTempPath(), "pictures-for-case");
+                // Directory.CreateDirectory(folder);
 
                 foreach (var picture in createModel.Files)
                 {
-                    var filePath = Path.Combine(folder, $"{DateTime.Now.Ticks}.{picture.ContentType.Split("/")[1]}");
+                    
 
+                    MemoryStream baseMemoryStream = new MemoryStream();
+                    await picture.CopyToAsync(baseMemoryStream);
+                    // await picture.DisposeAsync();
+                    // picture.Close();
                     var hash = "";
                     using (var md5 = MD5.Create())
                     {
-                        await using var stream = new FileStream(filePath, FileMode.Create);
-                        await picture.CopyToAsync(stream);
-                        var grr = await md5.ComputeHashAsync(stream);
+                        // await using var stream = new FileStream(filePath, FileMode.Create);
+                        // await picture.CopyToAsync(stream);
+                        var grr = await md5.ComputeHashAsync(baseMemoryStream);
                         hash = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
-
-                    await core.PutFileToStorageSystem(filePath, picture.FileName);
-
                     var uploadData = new Microting.eForm.Infrastructure.Data.Entities.UploadedData
                     {
                         Checksum = hash,
                         FileName = picture.FileName,
-                        FileLocation = filePath,
+                        FileLocation = "",
+                        Extension = picture.ContentType.Split("/")[1]
                     };
                     await uploadData.Create(sdkDbContext);
+
+                    var fileName = $"{uploadData.Id}_{hash}.{picture.ContentType.Split("/")[1]}";
+                    string smallFilename = $"{uploadData.Id}_300_{hash}.{picture.ContentType.Split("/")[1]}";
+                    string bigFilename = $"{uploadData.Id}_700_{hash}.{picture.ContentType.Split("/")[1]}";
+                    baseMemoryStream.Seek(0, SeekOrigin.Begin);
+                    MemoryStream s3Stream = new MemoryStream();
+                    await baseMemoryStream.CopyToAsync(s3Stream);
+                    s3Stream.Seek(0, SeekOrigin.Begin);
+                    await core.PutFileToS3Storage(s3Stream, fileName);
+                    baseMemoryStream.Seek(0, SeekOrigin.Begin);
+                    using (var image = new MagickImage(baseMemoryStream))
+                    {
+                        decimal currentRation = image.Height / (decimal) image.Width;
+                        int newWidth = 300;
+                        int newHeight = (int) Math.Round((currentRation * newWidth));
+
+                        image.Resize(newWidth, newHeight);
+                        image.Crop(newWidth, newHeight);
+                        MemoryStream memoryStream = new MemoryStream();
+                        await image.WriteAsync(memoryStream);
+                        await core.PutFileToS3Storage(memoryStream, smallFilename);
+                        await memoryStream.DisposeAsync();
+                        memoryStream.Close();
+                        image.Dispose();
+                        baseMemoryStream.Seek(0, SeekOrigin.Begin);
+                    }
+
+                    using (var image = new MagickImage(baseMemoryStream))
+                    {
+                        decimal currentRation = image.Height / (decimal) image.Width;
+                        int newWidth = 700;
+                        int newHeight = (int) Math.Round((currentRation * newWidth));
+
+                        image.Resize(newWidth, newHeight);
+                        image.Crop(newWidth, newHeight);
+                        MemoryStream memoryStream = new MemoryStream();
+                        await image.WriteAsync(memoryStream);
+                        await core.PutFileToS3Storage(memoryStream, bigFilename);
+                        await memoryStream.DisposeAsync();
+                        memoryStream.Close();
+                        image.Dispose();
+                    }
+                    await baseMemoryStream.DisposeAsync();
+                    baseMemoryStream.Close();
+
+                    // await core.PutFileToStorageSystem(filePath, picture.FileName);
+
                     var workOrderCaseImage = new WorkorderCaseImage
                     {
                         WorkorderCaseId = newWorkorderCase.Id,
                         UploadedDataId = uploadData.Id
                     };
-                    picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}");
+                    picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}.{uploadData.Extension}");
                     await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
                 }
             }
@@ -547,7 +596,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
     private async Task<string> InsertImage(string imageName, string itemsHtml, int imageSize, int imageWidth, string basePicturePath)
     {
         var core = await _coreHelper.GetCore();
-        var filePath = Path.Combine(basePicturePath, imageName);
+        // var filePath = Path.Combine(basePicturePath, imageName);
         Stream stream;
         var storageResult = await core.GetFileFromS3Storage(imageName);
         stream = storageResult.ResponseStream;
@@ -633,7 +682,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
         // Convert to PDF
         ReportHelper.ConvertToPdf(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName), downloadPath);
-        File.Delete(docxFileName);
+        File.Delete(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName));
 
         // Upload PDF
         // string pdfFileName = null;

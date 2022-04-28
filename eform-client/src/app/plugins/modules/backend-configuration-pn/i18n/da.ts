@@ -175,5 +175,7 @@ export const da = {
   'View task': 'Vis opgave',
   'Delete task': 'Slet opgave',
   'View': 'Vis',
-  'Description of task': 'Beskrivelse af opgave'
+  'Description of task': 'Beskrivelse af opgave',
+  'All': 'Alle',
+  'Ongoing': 'Igangværende'
 };
