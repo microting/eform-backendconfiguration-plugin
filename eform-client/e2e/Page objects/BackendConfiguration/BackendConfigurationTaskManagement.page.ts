@@ -178,8 +178,8 @@ export class BackendConfigurationTaskManagementPage extends Page {
 
   public async createNewTaskBtn() {
     const ele = await $('#createNewTaskBtn');
-    await ele.waitForDisplayed({ timeout: 60000 });
-    await ele.waitForClickable({ timeout: 60000 });
+    await ele.waitForDisplayed({ timeout: 90000 });
+    await ele.waitForClickable({ timeout: 90000 });
     return ele;
   }
 
@@ -192,7 +192,7 @@ export class BackendConfigurationTaskManagementPage extends Page {
 
   public async createdAtTableHeader() {
     const ele = await $('#createdAtTableHeader');
-    await ele.waitForDisplayed({ timeout: 40000 });
+    await ele.waitForDisplayed({ timeout: 90000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
@@ -292,7 +292,7 @@ export class BackendConfigurationTaskManagementPage extends Page {
     } else {
       await (await this.taskManagementCreateShowSaveBtn()).click();
     }
-    await (await this.createNewTaskBtn()).waitForClickable({ timeout: 60000 });
+    await (await this.createNewTaskBtn()).waitForClickable({ timeout: 90000 });
   }
 
   public async changeFilters(filerts: TaskManagementFilters) {

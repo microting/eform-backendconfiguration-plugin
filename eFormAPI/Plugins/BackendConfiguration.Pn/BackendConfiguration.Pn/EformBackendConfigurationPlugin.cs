@@ -84,15 +84,21 @@ namespace BackendConfiguration.Pn
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
-            services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
+            services
+                .AddTransient<IBackendConfigurationAssignmentWorkerService,
+                    BackendConfigurationAssignmentWorkerService>();
             services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
-            services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
+            services
+                .AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
             services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
-            services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
+            services
+                .AddTransient<IBackendConfigurationAreaRulePlanningsService,
+                    BackendConfigurationAreaRulePlanningsService>();
             services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
-            services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
+            services
+                .AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
             services.AddSingleton<IRebusService, RebusService>();
-            services.AddTransient<IWordService, WordService> ();
+            services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
             services.AddControllers();
             SeedEForms(services);
@@ -200,12 +206,11 @@ namespace BackendConfiguration.Pn
                 {
                     Console.WriteLine(exception.Message);
                 }
-
-
             }
 
             // Seed areas
-            foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed.Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id)))
+            foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed.Where(newArea =>
+                         !context.Areas.Any(x => x.Id == newArea.Id)))
             {
                 // create tag for area
                 var planningTag = new PlanningTag
@@ -266,27 +271,32 @@ namespace BackendConfiguration.Pn
                     translation.InfoBox = translationFromSeed.InfoBox;
                     needToUpdate = true;
                 }
+
                 if (translation.Placeholder != translationFromSeed.Placeholder)
                 {
                     translation.Placeholder = translationFromSeed.Placeholder;
                     needToUpdate = true;
                 }
+
                 if (translation.NewItemName != translationFromSeed.NewItemName)
                 {
                     translation.NewItemName = translationFromSeed.NewItemName;
                     needToUpdate = true;
                 }
+
                 if (translation.Description != translationFromSeed.Description)
                 {
                     translation.Description = translationFromSeed.Description;
                     needToUpdate = true;
                 }
+
                 if (translation.Name != translationFromSeed.Name)
                 {
                     translation.Name = translationFromSeed.Name;
                     needToUpdate = true;
                 }
-                if(needToUpdate)
+
+                if (needToUpdate)
                 {
                     await translation.Update(context);
                 }
@@ -374,7 +384,8 @@ namespace BackendConfiguration.Pn
                 await areaRulePlanning.Update(context);
             }
 
-            var areaRuleTranslations = await context.AreaRuleTranslations.Where(x => x.Name == "23.03.01 Skabelon Miljøledelse").ToListAsync();
+            var areaRuleTranslations = await context.AreaRuleTranslations
+                .Where(x => x.Name == "23.03.01 Skabelon Miljøledelse").ToListAsync();
 
             foreach (var areaRuleTranslation in areaRuleTranslations)
             {
@@ -382,7 +393,8 @@ namespace BackendConfiguration.Pn
                 await areaRuleTranslation.Update(context);
             }
 
-            areaRuleTranslations = await context.AreaRuleTranslations.Where(x => x.Name == "23.03.01 Template Environmental Management").ToListAsync();
+            areaRuleTranslations = await context.AreaRuleTranslations
+                .Where(x => x.Name == "23.03.01 Template Environmental Management").ToListAsync();
 
             foreach (var areaRuleTranslation in areaRuleTranslations)
             {
@@ -390,15 +402,20 @@ namespace BackendConfiguration.Pn
                 await areaRuleTranslation.Update(context);
             }
 
-            var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)").ToListAsync();
+            var clTranslations = await sdkDbContext.CheckListTranslations.Where(x =>
+                    x.Text ==
+                    "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)")
+                .ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
-                clTranslation.Text = "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.";
+                clTranslation.Text =
+                    "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.";
                 await clTranslation.Update(sdkDbContext);
             }
 
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.04 Varmekøle- og ventilationssystemer").ToListAsync();
+            clTranslations = await sdkDbContext.CheckListTranslations
+                .Where(x => x.Text == "23.02.04 Varmekøle- og ventilationssystemer").ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
@@ -406,7 +423,8 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.04.03 Tilsætningsstoffer i foder (Fytase eller andet)").ToListAsync();
+            clTranslations = await sdkDbContext.CheckListTranslations
+                .Where(x => x.Text == "23.04.03 Tilsætningsstoffer i foder (Fytase eller andet)").ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
@@ -414,7 +432,8 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.01 Gyllebeholdere").ToListAsync();
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.01 Gyllebeholdere")
+                .ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
@@ -422,7 +441,8 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.01.01 Fast overdækning af gyllebeholder").ToListAsync();
+            clTranslations = await sdkDbContext.CheckListTranslations
+                .Where(x => x.Text == "23.01.01 Fast overdækning af gyllebeholder").ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
@@ -430,7 +450,8 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.03.01 Skabelon Miljøledelse").ToListAsync();
+            clTranslations = await sdkDbContext.CheckListTranslations
+                .Where(x => x.Text == "23.03.01 Skabelon Miljøledelse").ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
@@ -438,7 +459,8 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "01. Miljøledelse skabelon").ToListAsync();
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "01. Miljøledelse skabelon")
+                .ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
@@ -446,7 +468,8 @@ namespace BackendConfiguration.Pn
                 await clTranslation.Update(sdkDbContext);
             }
 
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "17. Håndildslukkere").ToListAsync();
+            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "17. Håndildslukkere")
+                .ToListAsync();
 
             foreach (var clTranslation in clTranslations)
             {
@@ -465,7 +488,9 @@ namespace BackendConfiguration.Pn
                 "375237"
             };
 
-            var fields = await sdkDbContext.Fields.Where(x => fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            var fields = await sdkDbContext.Fields.Where(x =>
+                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
 
             foreach (var field in fields)
             {
@@ -498,7 +523,9 @@ namespace BackendConfiguration.Pn
                 "372112"
             };
 
-            fields = await sdkDbContext.Fields.Where(x => fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            fields = await sdkDbContext.Fields.Where(x =>
+                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
 
             foreach (var field in fields)
             {
@@ -506,14 +533,16 @@ namespace BackendConfiguration.Pn
                 await field.Update(sdkDbContext);
             }
 
-            var areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
+            var areaTranslation2 =
+                await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
             if (areaTranslation2 != null)
             {
                 areaTranslation2.Name = "17. Brandslukkere";
                 await areaTranslation2.Update(context);
                 // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
 
-                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "17. Håndildslukkere").ToListAsync();
+                var folderTranslations = await sdkDbContext.FolderTranslations
+                    .Where(x => x.Name == "17. Håndildslukkere").ToListAsync();
 
                 foreach (var folderTranslation2 in folderTranslations)
                 {
@@ -532,7 +561,8 @@ namespace BackendConfiguration.Pn
 
                 var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
 
-                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "17. Håndildslukkere")?.CheckListId;
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "17. Håndildslukkere")
+                    ?.CheckListId;
 
                 foreach (var areaRule in areaRules)
                 {
@@ -542,14 +572,16 @@ namespace BackendConfiguration.Pn
                 }
             }
 
-            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "23. IE-indberetning");
+            areaTranslation2 =
+                await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "23. IE-indberetning");
             if (areaTranslation2 != null)
             {
                 areaTranslation2.Name = "23. IE-indberetning (Gammel)";
                 await areaTranslation2.Update(context);
                 // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
 
-                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23. IE-indberetning").ToListAsync();
+                var folderTranslations = await sdkDbContext.FolderTranslations
+                    .Where(x => x.Name == "23. IE-indberetning").ToListAsync();
 
                 foreach (var folderTranslation2 in folderTranslations)
                 {
@@ -569,11 +601,15 @@ namespace BackendConfiguration.Pn
 
             List<KeyValuePair<string, string>> tags = new List<KeyValuePair<string, string>>();
             tags.Add(new KeyValuePair<string, string>("100. Diverse", "99. Diverse"));
-            tags.Add(new KeyValuePair<string, string>("01. Registreringer til Miljøledelse", "01. Fokusområder Miljøledelse"));
-            tags.Add(new KeyValuePair<string, string>("04. Fodringskrav (kun IE-husdyrbrug)", "04. Foderindlægssedler"));
-            tags.Add(new KeyValuePair<string, string>("05. Klargøring af stalde og dokumentation af halebid", "05. Stalde: Halebid og klargøring"));
+            tags.Add(new KeyValuePair<string, string>("01. Registreringer til Miljøledelse",
+                "01. Fokusområder Miljøledelse"));
+            tags.Add(new KeyValuePair<string, string>("04. Fodringskrav (kun IE-husdyrbrug)",
+                "04. Foderindlægssedler"));
+            tags.Add(new KeyValuePair<string, string>("05. Klargøring af stalde og dokumentation af halebid",
+                "05. Stalde: Halebid og klargøring"));
             tags.Add(new KeyValuePair<string, string>("13. Arbejdstilsynets Landbrugs APV", "13. APV Landbrug"));
-            tags.Add(new KeyValuePair<string, string>("20. Tilbagevendende opgaver (man-søn)", "20. Ugentlige rutineopgaver"));
+            tags.Add(new KeyValuePair<string, string>("20. Tilbagevendende opgaver (man-søn)",
+                "20. Ugentlige rutineopgaver"));
             tags.Add(new KeyValuePair<string, string>("23. IE-indberetning", "23. IE-indberetning (Gammel)"));
 
             foreach (var keyValuePair in tags)
@@ -594,7 +630,8 @@ namespace BackendConfiguration.Pn
                 areaTranslation2.Name = "99. Diverse";
                 await areaTranslation2.Update(context);
 
-                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Diverse").ToListAsync();
+                var folderTranslations =
+                    await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Diverse").ToListAsync();
 
                 foreach (var folderTranslation2 in folderTranslations)
                 {
@@ -613,7 +650,8 @@ namespace BackendConfiguration.Pn
 
                 var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
 
-                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Diverse")?.CheckListId;
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Diverse")
+                    ?.CheckListId;
 
                 foreach (var areaRule in areaRules)
                 {
@@ -629,7 +667,8 @@ namespace BackendConfiguration.Pn
                 areaTranslation2.Name = "99. Miscellaneous";
                 await areaTranslation2.Update(context);
 
-                var folderTranslations = await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Miscellaneous").ToListAsync();
+                var folderTranslations = await sdkDbContext.FolderTranslations
+                    .Where(x => x.Name == "100. Miscellaneous").ToListAsync();
 
                 foreach (var folderTranslation2 in folderTranslations)
                 {
@@ -648,7 +687,8 @@ namespace BackendConfiguration.Pn
 
                 var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
 
-                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Miscellaneous")?.CheckListId;
+                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Miscellaneous")
+                    ?.CheckListId;
 
                 foreach (var areaRule in areaRules)
                 {
@@ -658,7 +698,8 @@ namespace BackendConfiguration.Pn
                 }
             }
 
-            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Stalde: Halebid og klargøring");
+            areaTranslation2 =
+                await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Stalde: Halebid og klargøring");
             var area = await context.Areas.SingleAsync(x => x.Id == areaTranslation2.AreaId);
             area.Type = AreaTypesEnum.Type3;
             await area.Update(context);
@@ -670,7 +711,8 @@ namespace BackendConfiguration.Pn
                 await areaTranslation.Update(context);
             }
 
-            var ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.00 Aflæsninger miljøledelse").ToListAsync();
+            var ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.00 Aflæsninger miljøledelse")
+                .ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -686,7 +728,9 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.01 Logbøger for alle miljøteknologier" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations.Where(x =>
+                x.Name == "23.01 Logbøger for alle miljøteknologier" &&
+                x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -703,7 +747,9 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.02 Dokumentation af afsluttede inspektioner" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations.Where(x =>
+                x.Name == "23.02 Dokumentation af afsluttede inspektioner" &&
+                x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -720,7 +766,10 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.03 Dokumentation for miljøledelse" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations.Where(x =>
+                    x.Name == "23.03 Dokumentation for miljøledelse" &&
+                    x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -736,7 +785,10 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.04 Overholdelse af fodringskrav" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations.Where(x =>
+                    x.Name == "23.04 Overholdelse af fodringskrav" &&
+                    x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -752,7 +804,8 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Mandag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations
+                .Where(x => x.Name == "Mandag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -782,7 +835,8 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Tirsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations
+                .Where(x => x.Name == "Tirsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -812,7 +866,8 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Onsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations
+                .Where(x => x.Name == "Onsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -842,7 +897,8 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Torsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations
+                .Where(x => x.Name == "Torsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -872,7 +928,8 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Fredag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations
+                .Where(x => x.Name == "Fredag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -902,7 +959,8 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Lørdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations
+                .Where(x => x.Name == "Lørdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -932,7 +990,8 @@ namespace BackendConfiguration.Pn
                 await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
             }
 
-            ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "Søndag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+            ftList = await sdkDbContext.FolderTranslations
+                .Where(x => x.Name == "Søndag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -967,7 +1026,8 @@ namespace BackendConfiguration.Pn
             foreach (var dbFieldOption in dbFieldOptions)
             {
                 var dbFieldOptionTranslation =
-                    await sdkDbContext.FieldOptionTranslations.SingleOrDefaultAsync(x => x.Text == "Færdig" && x.FieldOptionId == dbFieldOption.Id);
+                    await sdkDbContext.FieldOptionTranslations.SingleOrDefaultAsync(x =>
+                        x.Text == "Færdig" && x.FieldOptionId == dbFieldOption.Id);
                 if (dbFieldOptionTranslation != null)
                 {
                     dbFieldOptionTranslation.Text = "Afsluttet";
@@ -976,7 +1036,8 @@ namespace BackendConfiguration.Pn
             }
 
             dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "371900");
-            var theDbFieldOption = await sdkDbContext.FieldOptions.SingleOrDefaultAsync(x => x.Key == "0" && x.FieldId == dbField.Id);
+            var theDbFieldOption =
+                await sdkDbContext.FieldOptions.SingleOrDefaultAsync(x => x.Key == "0" && x.FieldId == dbField.Id);
             if (theDbFieldOption == null)
             {
                 theDbFieldOption = new FieldOption()
@@ -1020,7 +1081,6 @@ namespace BackendConfiguration.Pn
                 tag.Name = "17. Brandslukkere";
                 await tag.Update(itemsPlanningContext);
             }
-
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
@@ -1054,7 +1114,6 @@ namespace BackendConfiguration.Pn
             SeedDatabase(connectionString);
 
             //SeedEForms(services, connectionString);
-
         }
 
         public void Configure(IApplicationBuilder appBuilder)
@@ -1090,21 +1149,21 @@ namespace BackendConfiguration.Pn
                     {
                         new()
                         {
-                             LocaleName = LocaleNames.English,
-                             Name = "Backend Configuration",
-                             Language = LanguageNames.English,
+                            LocaleName = LocaleNames.English,
+                            Name = "Backend Configuration",
+                            Language = LanguageNames.English,
                         },
                         new()
                         {
-                             LocaleName = LocaleNames.German,
-                             Name = "Aufbau",
-                             Language = LanguageNames.German,
+                            LocaleName = LocaleNames.German,
+                            Name = "Aufbau",
+                            Language = LanguageNames.German,
                         },
                         new()
                         {
-                             LocaleName = LocaleNames.Danish,
-                             Name = "Konfiguration",
-                             Language = LanguageNames.Danish,
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Konfiguration",
+                            Language = LanguageNames.Danish,
                         },
                         new()
                         {
@@ -1388,7 +1447,5 @@ namespace BackendConfiguration.Pn
 
             return new PluginPermissionsManager(context);
         }
-
-
     }
 }
