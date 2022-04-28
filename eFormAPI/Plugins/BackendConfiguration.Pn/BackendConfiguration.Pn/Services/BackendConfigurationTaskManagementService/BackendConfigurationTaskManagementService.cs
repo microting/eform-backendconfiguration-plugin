@@ -357,7 +357,12 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             var propertyWorkers = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToList();
-
+            
+            var site = await sdkDbContext.Sites
+                .Where(x => x.Id == createModel.AssignedSiteId)
+                .FirstOrDefaultAsync();
+            
+            createModel.Description = string.IsNullOrEmpty(createModel.Description) ? "" : createModel.Description.Replace("<div>", "").Replace("</div>", "");
             var newWorkorderCase = new WorkorderCase
             {
                 ParentWorkorderCaseId = null,
@@ -369,7 +374,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 CaseStatusesEnum = CaseStatusesEnum.Ongoing,
                 Description = createModel.Description,
                 CaseInitiated = DateTime.UtcNow,
-                LeadingCase = true
+                LeadingCase = true,
+                LastAssignedToName = site.Name
             };
             await newWorkorderCase.Create(_backendConfigurationPnDbContext);
             
@@ -472,18 +478,13 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 .Select(x => int.Parse(x.MicrotingUid))
                 .FirstAsync();
 
-            var site = await sdkDbContext.Sites
-                .Where(x => x.Id == createModel.AssignedSiteId)
-                .FirstOrDefaultAsync();
-            createModel.Description = createModel.Description.Replace("<div>", "").Replace("</div>", "");
-
             var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
-                        $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
-                        $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
-                        $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
-                        $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName()}<br>" +
-                        $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
-                        $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
+                              $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
+                              $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
+                              $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
+                              $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName()}<br>" +
+                              $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
+                              $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
 
             var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName) ? $"{property.Name}; {createModel.AreaName}" : $"{property.Name}";
             var pushMessageBody = createModel.Description;
