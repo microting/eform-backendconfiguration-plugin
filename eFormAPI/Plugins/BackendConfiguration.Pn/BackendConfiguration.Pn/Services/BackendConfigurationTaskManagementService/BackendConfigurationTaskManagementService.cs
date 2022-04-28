@@ -26,7 +26,6 @@ using System.Reflection;
 using BackendConfiguration.Pn.Services.WordService;
 using ImageMagick;
 using Microting.eForm.Helpers;
-using Microting.eForm.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;
 
@@ -49,36 +48,31 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
-public class BackendConfigurationTaskManagementService: IBackendConfigurationTaskManagementService
+public class BackendConfigurationTaskManagementService : IBackendConfigurationTaskManagementService
 {
     private readonly IEFormCoreService _coreHelper;
     private readonly IBackendConfigurationLocalizationService _localizationService;
     private readonly IUserService _userService;
+
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-    // private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-    private readonly WorkOrderHelper _workOrderHelper;
 
     public BackendConfigurationTaskManagementService(
         IBackendConfigurationLocalizationService localizationService,
         IEFormCoreService coreHelper, IUserService userService,
         // ItemsPlanningPnDbContext itemsPlanningPnDbContext,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext
-        )
+    )
     {
         _localizationService = localizationService;
         _coreHelper = coreHelper;
         _userService = userService;
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-        // _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-        _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _localizationService, _userService);
     }
 
     public async Task<List<WorkorderCaseModel>> GetReport(TaskManagementFiltersModel filtersModel)
     {
         try
         {
-            /*var core = await _coreHelper.GetCore();
-            var sdkDbContext = core.DbContextHelper.GetDbContext();*/
             var query = _backendConfigurationPnDbContext.WorkorderCases
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
@@ -114,7 +108,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             {
                 query = query
                     .Where(x => x.CaseInitiated >= filtersModel.DateFrom.Value)
-                    .Where(x => x.CaseInitiated <= new DateTime(filtersModel.DateTo.Value.Year, filtersModel.DateTo.Value.Month, filtersModel.DateTo.Value.Day, 23, 59, 59));
+                    .Where(x => x.CaseInitiated <= new DateTime(filtersModel.DateTo.Value.Year,
+                        filtersModel.DateTo.Value.Month, filtersModel.DateTo.Value.Day, 23, 59, 59));
             }
 
             var excludeSort = new List<string>
@@ -144,7 +139,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
             if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
             {
-                workorderCasesFromDb = workorderCasesFromDb.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo).ToList();
+                workorderCasesFromDb = workorderCasesFromDb.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo)
+                    .ToList();
             }
 
             if (excludeSort.Contains(filtersModel.Sort))
@@ -286,41 +282,45 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             {
                 await core.CaseDelete(workOrderCase.CaseId);
             }
+
             await workOrderCase.Delete(_backendConfigurationPnDbContext);
-            
+
             var allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .Where(x => x.ParentWorkorderCaseId == workOrderCase.Id)
-            .ToListAsync();
-            
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.ParentWorkorderCaseId == workOrderCase.Id)
+                .ToListAsync();
+
             foreach (var childTask in allChildTasks)
             {
                 childTask.UpdatedByUserId = _userService.UserId;
                 await childTask.Delete(_backendConfigurationPnDbContext);
-            
+
 
                 if (workOrderCase.CaseId != 0)
                 {
                     await core.CaseDelete(workOrderCase.CaseId);
                 }
+
                 await workOrderCase.Delete(_backendConfigurationPnDbContext);
             }
-            
-            if (workOrderCase.ParentWorkorderCaseId != null) {
+
+            if (workOrderCase.ParentWorkorderCaseId != null)
+            {
                 var parentTasks = await _backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == workOrderCase.ParentWorkorderCaseId)
                     .FirstOrDefaultAsync();
 
-                if(parentTasks != null)
+                if (parentTasks != null)
                 {
                     parentTasks.UpdatedByUserId = _userService.UserId;
                     await parentTasks.Delete(_backendConfigurationPnDbContext);
-                    
+
                     await core.CaseDelete(workOrderCase.CaseId);
                     await workOrderCase.Delete(_backendConfigurationPnDbContext);
                 }
             }
+
             return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
         }
         catch (Exception e)
@@ -331,7 +331,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 $"{_localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
         }
     }
-    
+
     private async Task RetractEform(WorkorderCase workOrderCase)
     {
         var core = await _coreHelper.GetCore();
@@ -354,15 +354,18 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
                     _localizationService.GetString("PropertyNotFound"));
             }
+
             var propertyWorkers = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToList();
-            
+
             var site = await sdkDbContext.Sites
                 .Where(x => x.Id == createModel.AssignedSiteId)
                 .FirstOrDefaultAsync();
-            
-            createModel.Description = string.IsNullOrEmpty(createModel.Description) ? "" : createModel.Description.Replace("<div>", "").Replace("</div>", "");
+
+            createModel.Description = string.IsNullOrEmpty(createModel.Description)
+                ? ""
+                : createModel.Description.Replace("<div>", "").Replace("</div>", "");
             var newWorkorderCase = new WorkorderCase
             {
                 ParentWorkorderCaseId = null,
@@ -378,29 +381,21 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 LastAssignedToName = site.Name
             };
             await newWorkorderCase.Create(_backendConfigurationPnDbContext);
-            
+
             var picturesOfTasks = new List<string>();
             if (createModel.Files.Any())
             {
-                // var folder = Path.Combine(Path.GetTempPath(), "pictures-for-case");
-                // Directory.CreateDirectory(folder);
-
                 foreach (var picture in createModel.Files)
                 {
-                    
-
                     MemoryStream baseMemoryStream = new MemoryStream();
                     await picture.CopyToAsync(baseMemoryStream);
-                    // await picture.DisposeAsync();
-                    // picture.Close();
                     var hash = "";
                     using (var md5 = MD5.Create())
                     {
-                        // await using var stream = new FileStream(filePath, FileMode.Create);
-                        // await picture.CopyToAsync(stream);
                         var grr = await md5.ComputeHashAsync(baseMemoryStream);
                         hash = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
+
                     var uploadData = new Microting.eForm.Infrastructure.Data.Entities.UploadedData
                     {
                         Checksum = hash,
@@ -421,9 +416,9 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     baseMemoryStream.Seek(0, SeekOrigin.Begin);
                     using (var image = new MagickImage(baseMemoryStream))
                     {
-                        decimal currentRation = image.Height / (decimal) image.Width;
+                        decimal currentRation = image.Height / (decimal)image.Width;
                         int newWidth = 300;
-                        int newHeight = (int) Math.Round((currentRation * newWidth));
+                        int newHeight = (int)Math.Round((currentRation * newWidth));
 
                         image.Resize(newWidth, newHeight);
                         image.Crop(newWidth, newHeight);
@@ -438,9 +433,9 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
                     using (var image = new MagickImage(baseMemoryStream))
                     {
-                        decimal currentRation = image.Height / (decimal) image.Width;
+                        decimal currentRation = image.Height / (decimal)image.Width;
                         int newWidth = 700;
-                        int newHeight = (int) Math.Round((currentRation * newWidth));
+                        int newHeight = (int)Math.Round((currentRation * newWidth));
 
                         image.Resize(newWidth, newHeight);
                         image.Crop(newWidth, newHeight);
@@ -451,11 +446,10 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                         memoryStream.Close();
                         image.Dispose();
                     }
+
                     await baseMemoryStream.DisposeAsync();
                     baseMemoryStream.Close();
-
-                    // await core.PutFileToStorageSystem(filePath, picture.FileName);
-
+                    
                     var workOrderCaseImage = new WorkorderCaseImage
                     {
                         WorkorderCaseId = newWorkorderCase.Id,
@@ -465,6 +459,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
                 }
             }
+
             var pdfHash = await GeneratePdf(picturesOfTasks);
 
             var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
@@ -472,7 +467,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 .Where(x => x.Text == "02. Ongoing task")
                 .Select(x => x.CheckListId)
                 .FirstOrDefaultAsync();
-            
+
             var deviceUsersGroupMicrotingUid = await sdkDbContext.EntityGroups
                 .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                 .Select(x => int.Parse(x.MicrotingUid))
@@ -486,7 +481,9 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                               $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                               $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
 
-            var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName) ? $"{property.Name}; {createModel.AreaName}" : $"{property.Name}";
+            var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName)
+                ? $"{property.Name}; {createModel.AreaName}"
+                : $"{property.Name}";
             var pushMessageBody = createModel.Description;
 
             // deploy eform to ongoing status
@@ -542,16 +539,18 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             mainElement.ElementList[0].QuickSyncEnabled = true;
             mainElement.EnableQuickSync = true;
             mainElement.ElementList[0].Label = " ";
-            mainElement.ElementList[0].Description.InderValue = description + "<center><strong>******************</strong></center>";
+            mainElement.ElementList[0].Description.InderValue =
+                description + "<center><strong>******************</strong></center>";
             mainElement.PushMessageTitle = pushMessageTitle;
             mainElement.PushMessageBody = pushMessageBody;
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
-            ((ShowPdf) ((DataElement) mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
+            ((ShowPdf)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
             if (deviceUsersGroupId != null)
             {
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source = (int)deviceUsersGroupId;
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
+                    (int)deviceUsersGroupId;
                 ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Mandatory = true;
                 ((Comment)((DataElement)mainElement.ElementList[0]).DataItemList[3]).Value = newDescription;
                 ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
@@ -581,20 +580,11 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 LeadingCase = false
             };
             await workOrderCase.Create(_backendConfigurationPnDbContext);
-
-            // foreach (var pictureUploadedId in pictureListUploadedIds)
-            // {
-            //     var workOrderCaseImage = new WorkorderCaseImage
-            //     {
-            //         WorkorderCaseId = workOrderCase.Id,
-            //         UploadedDataId = pictureUploadedId
-            //     };
-            //     await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
-            // }
         }
     }
-    
-    private async Task<string> InsertImage(string imageName, string itemsHtml, int imageSize, int imageWidth, string basePicturePath)
+
+    private async Task<string> InsertImage(string imageName, string itemsHtml, int imageSize, int imageWidth,
+        string basePicturePath)
     {
         var core = await _coreHelper.GetCore();
         // var filePath = Path.Combine(basePicturePath, imageName);
@@ -612,10 +602,12 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 {
                     Console.WriteLine("{0}({1}): {2}", value.Tag, value.DataType, value.ToString());
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Console.WriteLine(e);
             }
+
             image.Rotate(90);
             var base64String = image.ToBase64();
             itemsHtml +=
@@ -626,7 +618,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
         return itemsHtml;
     }
-    
+
     private async Task<string> GeneratePdf(List<string> picturesOfTasks)
     {
         var core = await _coreHelper.GetCore();
@@ -635,7 +627,9 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
         string html;
         await using (var resourceStream = assembly.GetManifestResourceStream(resourceString))
         {
-            using var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null"));
+            using var reader = new StreamReader(resourceStream ??
+                                                throw new InvalidOperationException(
+                                                    $"{nameof(resourceStream)} is null"));
             html = await reader.ReadToEndAsync();
         }
 
@@ -676,7 +670,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
         string docxFileName = $"{timeStamp}{rndNumber}_temp.docx";
         string tempPDFFileName = $"{timeStamp}{rndNumber}_temp.pdf";
         string tempPDFFilePath = Path.Combine(downloadPath, tempPDFFileName);
-        await using (var docxFile = new FileStream(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName), FileMode.Create, FileAccess.Write))
+        await using (var docxFile = new FileStream(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName),
+                         FileMode.Create, FileAccess.Write))
         {
             docxFileStream.WriteTo(docxFile);
         }
@@ -686,7 +681,6 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
         File.Delete(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName));
 
         // Upload PDF
-        // string pdfFileName = null;
         string hash = await core.PdfUpload(tempPDFFilePath);
         if (hash != null)
         {
