@@ -182,16 +182,16 @@ namespace BackendConfiguration.Pn.Services.WordService
             {
                 itemsHtml.Append(@"<tr style='font-size:11pt;'>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.Id}</td>");
-                itemsHtml.Append($@"<td>{workOrderCaseModel.CaseInitiated.ToString("F")}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.CaseInitiated:dd.MM.yyyy}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.PropertyName}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.AreaName}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedByName}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedByText}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.LastAssignedTo}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.Description}</td>");
-                itemsHtml.Append($@"<td>{(workOrderCaseModel.LastUpdateDate.HasValue ? workOrderCaseModel.LastUpdateDate.Value.ToString("F") : "")}</td>");
+                itemsHtml.Append($@"<td>{(workOrderCaseModel.LastUpdateDate.HasValue ? workOrderCaseModel.LastUpdateDate.Value.ToString("dd.MM.yyyy") : "")}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.LastUpdatedBy}</td>");
-                itemsHtml.Append($@"<td>{workOrderCaseModel.Status}</td>");
+                itemsHtml.Append($@"<td>{_localizationService.GetString(workOrderCaseModel.Status)}</td>");
                 itemsHtml.Append(@"</tr>");
             }
             itemsHtml.Append(@"</table>");

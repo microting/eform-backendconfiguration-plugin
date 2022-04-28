@@ -473,6 +473,20 @@
     }
   },
   {
+    "Key": "Property",
+    "LocalizedValue": {
+      "da": "Ejendom",
+      "en-US": "Property" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "PropertyArea",
+    "LocalizedValue": {
+      "da": "Område",
+      "en-US": "Property area" // todo maybe need add more translates
+    }
+  },
+  {
     "Key": "Description",
     "LocalizedValue": {
       "da": "Beskrivelse",
@@ -484,6 +498,48 @@
     "LocalizedValue": {
       "da": "Område",
       "en-US": "Area" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "LastAssignedTo",
+    "LocalizedValue": {
+      "da": "Sidst tildelt til",
+      "en-US": "Last assigned to" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "Date",
+    "LocalizedValue": {
+      "da": "Dato",
+      "en-US": "Date" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "CreatedBy1",
+    "LocalizedValue": {
+      "da": "Oprettet af",
+      "en-US": "Created by" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "LastUpdateDate",
+    "LocalizedValue": {
+      "da": "Sidst opdateret",
+      "en-US": "Last update date" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "LastUpdatedBy",
+    "LocalizedValue": {
+      "da": "Sidst opdateret af",
+      "en-US": "Last update by" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "CreatedBy2",
+    "LocalizedValue": {
+      "da": "Oprettet af (2)",
+      "en-US": "Created by (2)" // todo maybe need add more translates
     }
   },
   {
