@@ -113,8 +113,8 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             if (filtersModel.DateFrom.HasValue && filtersModel.DateTo.HasValue)
             {
                 query = query
-                    .Where(x => x.CreatedAt >= filtersModel.DateFrom.Value)
-                    .Where(x => x.CreatedAt <= new DateTime(filtersModel.DateTo.Value.Year, filtersModel.DateTo.Value.Month, filtersModel.DateTo.Value.Day, 23, 59, 59));
+                    .Where(x => x.CaseInitiated >= filtersModel.DateFrom.Value)
+                    .Where(x => x.CaseInitiated <= new DateTime(filtersModel.DateTo.Value.Year, filtersModel.DateTo.Value.Month, filtersModel.DateTo.Value.Day, 23, 59, 59));
             }
 
             var excludeSort = new List<string>
@@ -129,7 +129,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     AreaName = x.SelectedAreaName,
                     CreatedByName = x.CreatedByName,
                     CreatedByText = x.CreatedByText,
-                    CreatedDate = x.CreatedAt,
+                    CaseInitiated = x.CaseInitiated,
                     Id = x.Id,
                     Status = x.CaseStatusesEnum.ToString(),
                     Description = x.Description,
@@ -250,6 +250,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             var items = await sdkDbContext.EntityItems
                 .Where(x => x.EntityGroupId == entityListId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .OrderBy(x => x.DisplayIndex)
                 .Select(x => x.Name)
                 .ToListAsync();
             return new OperationDataResult<List<string>>(true, items);
@@ -265,44 +266,56 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
     public async Task<OperationResult> DeleteTaskById(int workOrderCaseId)
     {
+        var core = await _coreHelper.GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
         try
         {
-            var task = await _backendConfigurationPnDbContext.WorkorderCases
+            var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == workOrderCaseId)
                 .Include(x => x.PropertyWorker)
                 .FirstOrDefaultAsync();
 
-            if (task == null)
+            if (workOrderCase == null)
             {
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
                     _localizationService.GetString("TaskNotFound"));
             }
 
+            if (workOrderCase.CaseId != 0)
+            {
+                await core.CaseDelete(workOrderCase.CaseId);
+            }
+            await workOrderCase.Delete(_backendConfigurationPnDbContext);
+            
             var allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.ParentWorkorderCaseId == task.ParentWorkorderCaseId)
-                .ToListAsync();
-
-            var parentTasks = await _backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Id == task.ParentWorkorderCaseId)
-                .FirstOrDefaultAsync();
-
-            var propertyWorkerList = new List<PropertyWorker> { task.PropertyWorker };
-            await _workOrderHelper.RetractEform(propertyWorkerList, true);
-            await _workOrderHelper.RetractEform(propertyWorkerList, false);
-            await _workOrderHelper.RetractEform(propertyWorkerList, false);
-
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.ParentWorkorderCaseId == workOrderCase.Id)
+            .ToListAsync();
+            
             foreach (var childTask in allChildTasks)
             {
                 childTask.UpdatedByUserId = _userService.UserId;
                 await childTask.Delete(_backendConfigurationPnDbContext);
+            
+                await core.CaseDelete(workOrderCase.CaseId);
+                await workOrderCase.Delete(_backendConfigurationPnDbContext);
             }
-            if(parentTasks != null)
-            {
-                parentTasks.UpdatedByUserId = _userService.UserId;
-                await parentTasks.Delete(_backendConfigurationPnDbContext);
+            
+            if (workOrderCase.ParentWorkorderCaseId != null) {
+                var parentTasks = await _backendConfigurationPnDbContext.WorkorderCases
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == workOrderCase.ParentWorkorderCaseId)
+                    .FirstOrDefaultAsync();
+
+                if(parentTasks != null)
+                {
+                    parentTasks.UpdatedByUserId = _userService.UserId;
+                    await parentTasks.Delete(_backendConfigurationPnDbContext);
+                    
+                    await core.CaseDelete(workOrderCase.CaseId);
+                    await workOrderCase.Delete(_backendConfigurationPnDbContext);
+                }
             }
             return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
         }
@@ -313,6 +326,12 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             return new OperationResult(false,
                 $"{_localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
         }
+    }
+    
+    private async Task RetractEform(WorkorderCase workOrderCase)
+    {
+        var core = await _coreHelper.GetCore();
+        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
     }
 
     public async Task<OperationResult> CreateTask(WorkOrderCaseCreateModel createModel)
@@ -403,8 +422,9 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
             var site = await sdkDbContext.Sites
                 .Where(x => x.Id == createModel.AssignedSiteId)
                 .FirstOrDefaultAsync();
+            createModel.Description = createModel.Description.Replace("<div>", "").Replace("</div>", "");
 
-            var label = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
+            var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                         $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
                         $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
@@ -412,7 +432,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                         $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                         $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
 
-                        var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName) ? $"{property.Name}; {createModel.AreaName}" : $"{property.Name}";
+            var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName) ? $"{property.Name}; {createModel.AreaName}" : $"{property.Name}";
             var pushMessageBody = createModel.Description;
 
             // deploy eform to ongoing status
@@ -420,7 +440,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 propertyWorkers,
                 eformIdForOngoingTasks,
                 (int)property.FolderIdForOngoingTasks,
-                label,
+                description,
                 CaseStatusesEnum.Ongoing,
                 createModel.Description,
                 deviceUsersGroupMicrotingUid,

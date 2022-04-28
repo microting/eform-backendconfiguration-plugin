@@ -20,7 +20,7 @@ import {
 export class TaskManagementTableComponent implements OnInit {
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Id', sortable: true },
-    { name: 'CreatedAt', visibleName: 'CreatedDate', sortable: true },
+    { name: 'CaseInitiated', visibleName: 'CreatedDate', sortable: true },
     { name: 'PropertyName', visibleName: 'Property', sortable: false },
     { name: 'SelectedAreaName', visibleName: 'Area',sortable: true },
     { name: 'CreatedByName', visibleName: 'Created by 1', sortable: true },

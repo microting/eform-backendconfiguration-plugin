@@ -123,7 +123,7 @@ public class ExcelService: IExcelService
             currentColumn = startColumnForDataTable;
 
             worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Id;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedDate.ToString("F");
+            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CaseInitiated.ToString("F");
             worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.PropertyName;
             worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.AreaName;
             worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByName;

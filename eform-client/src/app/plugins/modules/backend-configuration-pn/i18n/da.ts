@@ -174,5 +174,6 @@ export const da = {
   'Excel report': 'Hent Excel rapport',
   'View task': 'Vis opgave',
   'Delete task': 'Slet opgave',
-  'View': 'Vis'
+  'View': 'Vis',
+  'Description of task': 'Beskrivelse af opgave'
 };

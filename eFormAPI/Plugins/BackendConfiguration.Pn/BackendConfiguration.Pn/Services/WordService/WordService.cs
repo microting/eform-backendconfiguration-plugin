@@ -182,7 +182,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             {
                 itemsHtml.Append(@"<tr style='font-size:11pt;'>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.Id}</td>");
-                itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedDate.ToString("F")}</td>");
+                itemsHtml.Append($@"<td>{workOrderCaseModel.CaseInitiated.ToString("F")}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.PropertyName}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.AreaName}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.CreatedByName}</td>");

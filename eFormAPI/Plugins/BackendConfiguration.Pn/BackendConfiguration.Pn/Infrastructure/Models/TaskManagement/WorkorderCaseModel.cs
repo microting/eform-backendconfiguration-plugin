@@ -30,7 +30,7 @@ public class WorkorderCaseModel
 {
     public int Id { get; set; }
 
-    public DateTime CreatedDate { get; set; }
+    public DateTime CaseInitiated { get; set; }
 
     public string PropertyName { get; set; }
 
