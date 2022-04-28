@@ -298,7 +298,11 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                 childTask.UpdatedByUserId = _userService.UserId;
                 await childTask.Delete(_backendConfigurationPnDbContext);
             
-                await core.CaseDelete(workOrderCase.CaseId);
+
+                if (workOrderCase.CaseId != 0)
+                {
+                    await core.CaseDelete(workOrderCase.CaseId);
+                }
                 await workOrderCase.Delete(_backendConfigurationPnDbContext);
             }
             
