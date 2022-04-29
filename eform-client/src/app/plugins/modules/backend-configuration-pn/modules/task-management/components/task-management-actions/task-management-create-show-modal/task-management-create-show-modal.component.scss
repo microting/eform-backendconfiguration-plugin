@@ -1,5 +1,5 @@
-img {
-  width: 200px; /* You can set the dimensions to whatever you want */
-  height: 200px;
-  object-fit: cover;
+:host ::ng-deep .img-fluid  {
+  width: 150px !important;
+  height: 200px !important;
+  object-fit: cover !important;
 }
