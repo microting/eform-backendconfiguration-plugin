@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System;
+
 namespace BackendConfiguration.Pn.Services.ExcelService;
 
 using System.Collections.Generic;
@@ -49,98 +51,121 @@ public class ExcelService: IExcelService
 
     public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels)
     {
-        var propertyName = await _backendConfigurationPnDbContext.Properties
-            .Where(x => x.Id == filtersModel.PropertyId)
-            .Select(x => x.Name)
-            .FirstOrDefaultAsync();
-        Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
-
-        var resultDocument = Path.Combine(Path.GetTempPath(), "results",
-            $"{propertyName}_{filtersModel.AreaName}.xlsx");
-
-        IXLWorkbook wb = new XLWorkbook();
-        var sheetName = $"{propertyName}_{filtersModel.AreaName}"
-            .Replace(":", "")
-            .Replace("\\", "")
-            .Replace("/", "")
-            .Replace("?", "")
-            .Replace("*", "")
-            .Replace("[", "")
-            .Replace("]", "");
-        var worksheet = wb.Worksheets.Add(sheetName);
-
-        // table with selected filters
-        //* header table
-        const int startColumnForHeaderTable = 5;
-        var currentRow = 2;
-        var currentColumn = startColumnForHeaderTable;
-        worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Font.Bold = true;
-        worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 5));
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Status");
-        worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Date"); 
-        
-        currentColumn = startColumnForHeaderTable;
-        //* table data
-        worksheet.Cell(currentRow, currentColumn++).Value = await _backendConfigurationPnDbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync();
-        worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
-        worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy;
-        worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.LastAssignedTo) ? "" : filtersModel.LastAssignedTo;
-        worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus());
-        worksheet.Cell(currentRow, currentColumn).Value = !filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d");
-        worksheet.Cell(currentRow, currentColumn).Value += !filtersModel.DateTo.HasValue? "" : " - ";
-        worksheet.Cell(currentRow++, currentColumn).Value += !filtersModel.DateTo.HasValue ? "" : " - " + filtersModel.DateTo.Value.ToString("d");
-
-        const int startColumnForDataTable = 2;
-        currentRow++;
-        currentColumn = startColumnForDataTable;
-        SetBorders(worksheet.Range(currentRow, startColumnForDataTable, workOrderCaseModels.Count + currentRow, startColumnForDataTable + 10));
-        worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style.Font.Bold = true;
-        worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-        // table report
-        //* header table
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Id");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedDate");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Area");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy1");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy2");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Description");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdateDate");
-        worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdatedBy");
-        worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Status");
-
-
-        //* table data
-        foreach (var workOrderCaseModel in workOrderCaseModels)
+        try
         {
+            var propertyName = await _backendConfigurationPnDbContext.Properties
+                .Where(x => x.Id == filtersModel.PropertyId)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync();
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+
+            var resultDocument = Path.Combine(Path.GetTempPath(), "results",
+                $"{propertyName}_{filtersModel.AreaName}.xlsx");
+
+            IXLWorkbook wb = new XLWorkbook();
+            var sheetName = $"{propertyName}_{filtersModel.AreaName}"
+                .Replace(":", "")
+                .Replace("\\", "")
+                .Replace("/", "")
+                .Replace("?", "")
+                .Replace("*", "")
+                .Replace("[", "")
+                .Replace("]", "");
+            var worksheet = wb.Worksheets.Add(sheetName);
+
+            // table with selected filters
+            //* header table
+            const int startColumnForHeaderTable = 5;
+            var currentRow = 2;
+            var currentColumn = startColumnForHeaderTable;
+            worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Font.Bold = true;
+            worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Alignment
+                .Horizontal = XLAlignmentHorizontalValues.Center;
+            SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 5));
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Status");
+            worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Date");
+
+            currentColumn = startColumnForHeaderTable;
+            //* table data
+            worksheet.Cell(currentRow, currentColumn++).Value = await _backendConfigurationPnDbContext.Properties
+                .Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync();
+            worksheet.Cell(currentRow, currentColumn++).Value =
+                string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
+            worksheet.Cell(currentRow, currentColumn++).Value =
+                string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy;
+            worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.LastAssignedTo)
+                ? ""
+                : filtersModel.LastAssignedTo;
+            worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus())
+                ? ""
+                : _localizationService.GetString(filtersModel.GetStringStatus());
+            worksheet.Cell(currentRow, currentColumn).Value =
+                !filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d");
+            worksheet.Cell(currentRow, currentColumn).Value += !filtersModel.DateTo.HasValue ? "" : " - ";
+            worksheet.Cell(currentRow++, currentColumn).Value += !filtersModel.DateTo.HasValue
+                ? ""
+                : " - " + filtersModel.DateTo.Value.ToString("d");
+
+            const int startColumnForDataTable = 2;
+            currentRow++;
             currentColumn = startColumnForDataTable;
+            SetBorders(worksheet.Range(currentRow, startColumnForDataTable, workOrderCaseModels.Count + currentRow,
+                startColumnForDataTable + 10));
+            worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style
+                .Font.Bold = true;
+            worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style
+                .Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Id;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedDate.ToString("F");
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.PropertyName;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.AreaName;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByName;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByText;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastAssignedTo;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description;
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdateDate.HasValue ? workOrderCaseModel.LastUpdateDate.Value.ToString("F") : "";
-            worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdatedBy;
-            worksheet.Cell(currentRow++, currentColumn).Value = workOrderCaseModel.Status;
+            // table report
+            //* header table
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Id");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedDate");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Area");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy1");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy2");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Description");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdateDate");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdatedBy");
+            worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Status");
+
+
+            //* table data
+            foreach (var workOrderCaseModel in workOrderCaseModels)
+            {
+                currentColumn = startColumnForDataTable;
+
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Id;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CaseInitiated.ToString("F");
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.PropertyName;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.AreaName;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByName;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByText;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastAssignedTo;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdateDate.HasValue
+                    ? workOrderCaseModel.LastUpdateDate.Value.ToString("F")
+                    : "";
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdatedBy;
+                worksheet.Cell(currentRow++, currentColumn).Value = workOrderCaseModel.Status;
+            }
+
+            // worksheet.Columns(startColumnForDataTable, currentColumn).AdjustToContents(); // This does not work inside Docker container
+
+            wb.SaveAs(resultDocument);
+
+            Stream result = File.Open(resultDocument, FileMode.Open);
+            return result;
+        } catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            throw;
         }
-
-        worksheet.Columns(startColumnForDataTable, currentColumn).AdjustToContents();
-
-        wb.SaveAs(resultDocument);
-
-        Stream result = File.Open(resultDocument, FileMode.Open);
-        return result;
     }
 
     private static void SetBorders(IXLRangeBase range, XLBorderStyleValues valueStyle = XLBorderStyleValues.Thin)

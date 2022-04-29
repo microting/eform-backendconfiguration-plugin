@@ -6,10 +6,12 @@
     <button
       mdbBtn
       id="createNewTaskBtn"
-      class="btn-success btn-small-height"
+      class="btn-success btn-icon"
+      mdbTooltip="{{ 'Create new task' | translate }}"
       (click)="openCreateModal()"
+      [placement]="'left'"
     >
-      {{ 'Create new task' | translate }}
+      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
     </button>
   </div>
 </eform-subheader>
@@ -32,24 +34,36 @@
       <button
         mdbBtn
         id="wordBtn"
-        class="btn-success btn-small-height"
+        color="info"
+        class="btn-icon"
         [disabled]="
           taskManagementStateService.getDisabledButtonsAsync() | async
         "
         (click)="onDownloadWordReport()"
+        mdbTooltip="{{ 'Word report' | translate }}"
       >
-        {{ 'Word' | translate }}
+        <fa-icon
+          icon="file-word"
+          [fixedWidth]="true"
+          size="lg"
+        ></fa-icon>
       </button>
       <button
         mdbBtn
         id="excelBtn"
-        class="btn-success btn-small-height"
+        color="success"
+        class="btn-icon"
         [disabled]="
           taskManagementStateService.getDisabledButtonsAsync() | async
         "
         (click)="onDownloadExcelReport()"
+        mdbTooltip="{{ 'Excel report' | translate }}"
       >
-        {{ 'Excel' | translate }}
+        <fa-icon
+          icon="file-excel"
+          [fixedWidth]="true"
+          size="lg"
+        ></fa-icon>
       </button>
     </div>
   </div>

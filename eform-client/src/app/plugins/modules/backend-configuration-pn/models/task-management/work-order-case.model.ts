@@ -1,6 +1,6 @@
 export class WorkOrderCaseModel {
   id: number;
-  createdDate: Date;
+  caseInitiated: Date;
   propertyName: string;
   areaName: string;
   createdByName: string;

@@ -30,7 +30,7 @@ public class WorkorderCaseModel
 {
     public int Id { get; set; }
 
-    public DateTime CreatedDate { get; set; }
+    public DateTime CaseInitiated { get; set; }
 
     public string PropertyName { get; set; }
 
@@ -49,4 +49,6 @@ public class WorkorderCaseModel
     public string LastUpdatedBy { get; set; }
 
     public string Status { get; set; }
+
+    public int? ParentWorkorderCaseId { get; set; }
 }
