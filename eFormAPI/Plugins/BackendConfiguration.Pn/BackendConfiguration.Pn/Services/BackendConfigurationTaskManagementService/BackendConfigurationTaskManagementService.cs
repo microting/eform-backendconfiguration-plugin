@@ -76,10 +76,16 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             var query = _backendConfigurationPnDbContext.WorkorderCases
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
-                .Where(x => x.PropertyWorker.PropertyId == filtersModel.PropertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PropertyWorker.Property.WorkorderEnable)
                 .Where(x => x.LeadingCase == true)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+
+            if (filtersModel.PropertyId != -1)
+            {
+                query = query
+                    .Where(x => x.PropertyWorker.PropertyId == filtersModel.PropertyId);
+            }
 
             if (filtersModel.Status != null)
             {
