@@ -190,8 +190,8 @@ export class BackendConfigurationTaskManagementPage extends Page {
     return ele;
   }
 
-  public async createdAtTableHeader() {
-    const ele = await $('#createdAtTableHeader');
+  public async caseInitiatedTableHeader() {
+    const ele = await $('#caseInitiatedTableHeader');
     await ele.waitForDisplayed({ timeout: 90000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;

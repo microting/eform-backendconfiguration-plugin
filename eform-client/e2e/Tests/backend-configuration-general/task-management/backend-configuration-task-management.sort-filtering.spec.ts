@@ -127,7 +127,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     expect(areas3.findIndex(x => x === taskRowObject.area)).not.eq(-1);
 
     await testSorting(await backendConfigurationTaskManagementPage.idTableHeader(), '#taskManagementTableBody #id', 'ID');
-    await testSorting(await backendConfigurationTaskManagementPage.createdAtTableHeader(), '#taskManagementTableBody #createdDate', 'Created date');
+    await testSorting(await backendConfigurationTaskManagementPage.caseInitiatedTableHeader(), '#taskManagementTableBody #createdDate', 'Created date');
     await testSorting(await backendConfigurationTaskManagementPage.selectedAreaNameTableHeader(), '#taskManagementTableBody #areaName', 'Area name');
     await testSorting(await backendConfigurationTaskManagementPage.createdByNameTableHeader(), '#taskManagementTableBody #createdByName', 'Created by name');
     await testSorting(await backendConfigurationTaskManagementPage.createdByTextTableHeader(), '#taskManagementTableBody #createdByText', 'Created by text');
