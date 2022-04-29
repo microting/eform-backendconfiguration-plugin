@@ -197,7 +197,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append(@"</table>");
             itemsHtml.Append("</div>");
 
-            html = html.Replace("{%ItemList%}", itemsHtml.ToString());
+            html = html.Replace("{%Content%}", itemsHtml.ToString());
 
             var word = new WordProcessor(docxFileStream);
             word.AddHtml(html, 284);

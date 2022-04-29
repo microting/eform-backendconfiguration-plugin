@@ -296,7 +296,16 @@ public class WorkOrderHelper
                     .FirstOrDefaultAsync();
                 if (workorderCase != null)
                 {
-                    await core.CaseDelete(workorderCase.CaseId);
+                    try
+                    {
+                        await core.CaseDelete(workorderCase.CaseId);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        // throw;
+                    }
+                    // await core.CaseDelete(workorderCase.CaseId);
                     workorderCase.UpdatedByUserId = _userService.UserId;
                     await workorderCase.Delete(_backendConfigurationPnDbContext);
                 }
@@ -319,13 +328,13 @@ public class WorkOrderHelper
                     {
                         try
                         {
-                            workorderCase.UpdatedByUserId = _userService.UserId;
                             await core.CaseDelete(workorderCase.CaseId);
                         }
                         catch (Exception e)
                         {
                             Console.WriteLine(e);
                         }
+                        workorderCase.UpdatedByUserId = _userService.UserId;
                         await workorderCase.Delete(_backendConfigurationPnDbContext);
                     }
                 }

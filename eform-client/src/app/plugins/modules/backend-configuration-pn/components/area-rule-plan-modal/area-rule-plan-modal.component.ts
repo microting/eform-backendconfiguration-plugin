@@ -20,6 +20,7 @@ import * as R from 'ramda';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {AuthStateService} from 'src/app/common/store';
 import {AreaRuleEntityListModalComponent} from '../../components';
+import {TranslateService} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -60,8 +61,10 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   constructor(
+    private translate: TranslateService,
     dateTimeAdapter: DateTimeAdapter<any>,
     private authStateService: AuthStateService,) {
+
     dateTimeAdapter.setLocale(authStateService.currentUserLocale);
   }
 
@@ -73,6 +76,16 @@ export class AreaRulePlanModalComponent implements OnInit {
     selectedArea: AreaModel,
     planning?: AreaRulePlanningModel
   ) {
+    this.repeatTypeDay = R.map(x => {
+      return {name: x === 1? this.translate.instant('Every') : x.toString(), id: x}
+    }, R.range(1, 31));// 1, 2, ..., 29, 30.
+    this.repeatTypeWeek = R.map(x => {
+      return {name: x === 1? this.translate.instant('Every') : x.toString(), id: x}
+    }, R.range(1, 51));// 1, 2, ..., 49, 50.
+    this.repeatTypeMonth = R.map(x => {
+      return {name: x === 1? this.translate.instant('Every') : x.toString(), id: x}
+    }, R.range(1, 25));// 1, 2, ..., 23, 24.
+
     this.selectedArea = {...selectedArea};
     this.selectedAreaRule = { ...rule };
     if (planning) {
