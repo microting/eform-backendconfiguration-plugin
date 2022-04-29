@@ -44,6 +44,7 @@ export const da = {
   'Plan rule': 'Planlæg',
   'Notifications on/off': 'Notifikationer på mobil/tablet',
   'Repeat every': 'Gentag hver',
+  'Every': 'Hver',
   Day: 'Dag',
   Week: 'Uge',
   Month: 'Måned',
