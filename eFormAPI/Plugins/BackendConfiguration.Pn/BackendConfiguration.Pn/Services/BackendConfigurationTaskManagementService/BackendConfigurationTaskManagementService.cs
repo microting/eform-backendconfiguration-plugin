@@ -180,6 +180,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
                     x.Description,
                     x.Id,
                     x.CaseId,
+                    x.ParentWorkorderCaseId,
                     x.PropertyWorker.PropertyId,
                 }).FirstOrDefaultAsync();
             if (task == null)
@@ -190,7 +191,7 @@ public class BackendConfigurationTaskManagementService: IBackendConfigurationTas
 
             var uploadIds = await _backendConfigurationPnDbContext.WorkorderCaseImages
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.WorkorderCaseId == task.Id)
+                .Where(x => x.WorkorderCaseId == task.ParentWorkorderCaseId)
                 .Select(x => x.UploadedDataId)
                 .ToListAsync();
 

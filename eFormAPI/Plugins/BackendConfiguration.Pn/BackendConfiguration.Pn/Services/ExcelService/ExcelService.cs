@@ -75,12 +75,12 @@ public class ExcelService: IExcelService
 
             // table with selected filters
             //* header table
-            const int startColumnForHeaderTable = 5;
-            var currentRow = 2;
+            const int startColumnForHeaderTable = 1;
+            var currentRow = 1;
             var currentColumn = startColumnForHeaderTable;
             worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Font.Bold = true;
-            worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Alignment
-                .Horizontal = XLAlignmentHorizontalValues.Center;
+            // worksheet.Range(currentRow, currentColumn, currentRow, currentColumn).Cells().Style.Alignment
+            //     .Horizontal = XLAlignmentHorizontalValues.Center;
             SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 5));
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
@@ -103,14 +103,18 @@ public class ExcelService: IExcelService
             worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus())
                 ? ""
                 : _localizationService.GetString(filtersModel.GetStringStatus());
-            worksheet.Cell(currentRow, currentColumn).Value =
-                !filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d");
-            worksheet.Cell(currentRow, currentColumn).Value += !filtersModel.DateTo.HasValue ? "" : " - ";
-            worksheet.Cell(currentRow++, currentColumn).Value += !filtersModel.DateTo.HasValue
+            var dateValue = !filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("dd.MM.yyyy");
+            dateValue += !filtersModel.DateTo.HasValue ? "" : "-";
+            dateValue+= !filtersModel.DateTo.HasValue
                 ? ""
-                : " - " + filtersModel.DateTo.Value.ToString("d");
+                : filtersModel.DateTo.Value.ToString("dd.MM.yyyy");
+            worksheet.Cell(currentRow, currentColumn).Value = dateValue;
+                
+            // worksheet.Cell(currentRow, currentColumn).Value 
+            // worksheet.Cell(currentRow++, currentColumn).Value 
 
-            const int startColumnForDataTable = 2;
+            const int startColumnForDataTable = 1;
+            currentRow++;
             currentRow++;
             currentColumn = startColumnForDataTable;
             SetBorders(worksheet.Range(currentRow, startColumnForDataTable, workOrderCaseModels.Count + currentRow,
@@ -118,7 +122,7 @@ public class ExcelService: IExcelService
             worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style
                 .Font.Bold = true;
             worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style
-                .Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                .Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
 
             // table report
             //* header table
@@ -141,7 +145,7 @@ public class ExcelService: IExcelService
                 currentColumn = startColumnForDataTable;
 
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Id;
-                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CaseInitiated.ToString("F");
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CaseInitiated.ToString("dd.MM.yyyy");
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.PropertyName;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.AreaName;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByName;
@@ -149,10 +153,10 @@ public class ExcelService: IExcelService
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastAssignedTo;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdateDate.HasValue
-                    ? workOrderCaseModel.LastUpdateDate.Value.ToString("F")
+                    ? workOrderCaseModel.LastUpdateDate.Value.ToString("dd.MM.yyyy")
                     : "";
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdatedBy;
-                worksheet.Cell(currentRow++, currentColumn).Value = workOrderCaseModel.Status;
+                worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString(workOrderCaseModel.Status);
             }
 
             // worksheet.Columns(startColumnForDataTable, currentColumn).AdjustToContents(); // This does not work inside Docker container
