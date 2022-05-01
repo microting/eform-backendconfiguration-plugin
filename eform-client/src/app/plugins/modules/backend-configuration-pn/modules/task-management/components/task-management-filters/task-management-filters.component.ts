@@ -258,6 +258,15 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
                 description: '',
               };
             });
+            this.assignedSitesToProperty = this.assignedSitesToProperty.sort((a, b) => {
+              if (a.name > b.name) {
+                return 1;
+              }
+              if (a.name < b.name) {
+                return -1;
+              }
+              return 0;
+            });
           }
         });
       }
