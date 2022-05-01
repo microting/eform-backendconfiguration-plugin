@@ -16,6 +16,7 @@ import {
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {SitesService} from 'src/app/common/services';
 import {format, set} from 'date-fns';
+import {TranslateService} from '@ngx-translate/core';
 
 @AutoUnsubscribe()
 @Component({
@@ -36,6 +37,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   areaNameValueChangesSub$: Subscription;
 
   constructor(
+    private translate: TranslateService,
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
     private sitesService: SitesService,
@@ -53,15 +55,15 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             propertyId: new FormControl(filters.propertyId),
             areaName: new FormControl({
               value: filters.areaName,
-              disabled: !filters.propertyId,
+              disabled: !filters.propertyId || filters.propertyId === -1,
             }),
             createdBy: new FormControl({
               value: filters.createdBy,
-              disabled: !filters.propertyId,
+              disabled: !filters.propertyId || filters.propertyId === -1,
             }),
             lastAssignedTo: new FormControl({
               value: filters.lastAssignedTo,
-              disabled: !filters.propertyId,
+              disabled: !filters.propertyId || filters.propertyId === -1,
             }),
             status: new FormControl({
               value: filters.status,
@@ -72,7 +74,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
               disabled: !filters.propertyId,
             }),
           });
-          if (filters.propertyId) {
+          if (filters.propertyId && filters.propertyId !== -1) {
             this.getPropertyAreas(filters.propertyId);
             this.getSites(filters.propertyId);
           }
@@ -85,8 +87,10 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           this.taskManagementStateService.store.getValue().filters
             .propertyId !== value
         ) {
-          this.getPropertyAreas(value);
-          this.getSites(value);
+          if(value !== -1) {
+            this.getPropertyAreas(value);
+            this.getSites(value);
+          }
           this.taskManagementStateService.store.update((state) => ({
             filters: {
               ...state.filters,
@@ -99,7 +103,6 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
               lastAssignedTo: null,
             },
           }));
-          this.filtersForm.get('areaName').enable({emitEvent: false});
           this.filtersForm
             .get('areaName')
             .setValue(undefined, {emitEvent: false});
@@ -113,8 +116,19 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             .get('status')
             .setValue(undefined, {emitEvent: false});
           this.filtersForm.get('date').setValue([], {emitEvent: false});
-          this.filtersForm.get('createdBy').enable({emitEvent: false});
-          this.filtersForm.get('lastAssignedTo').enable({emitEvent: false});
+          if(value !== -1) {
+            this.filtersForm.get('areaName').enable({emitEvent: false});
+          } else {
+            this.filtersForm.get('areaName').disable({emitEvent: false});
+          }
+          if(value !== -1) {
+            this.filtersForm.get('createdBy').enable({emitEvent: false});
+          } else {
+            this.filtersForm.get('createdBy').disable({emitEvent: false});}
+          if(value !== -1) {
+            this.filtersForm.get('lastAssignedTo').enable({emitEvent: false});
+          } else {
+            this.filtersForm.get('lastAssignedTo').disable({emitEvent: false});}
           this.filtersForm.get('status').enable({emitEvent: false});
           this.filtersForm.get('date').enable({emitEvent: false});
         }
@@ -230,9 +244,10 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
       pageIndex: 0
     }).subscribe((data) => {
       if (data && data.success && data.model) {
-        this.properties = data.model.entities.filter((x) => x.workorderEnable).map((x) => {
-          return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
-        });
+        this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities.filter((x) => x.workorderEnable)
+          .map((x) => {
+            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+          })];
       }
     });
   }

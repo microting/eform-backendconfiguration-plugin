@@ -1,6 +1,6 @@
 <div class="col" [formGroup]="filtersForm">
   <div class="row">
-    <div class="col-2 ng-select-wrapper">
+    <div class="col-6 ng-select-wrapper">
       <ng-select
         [placeholder]="'Property' | translate"
         [items]="properties"
@@ -12,7 +12,7 @@
       >
       </ng-select>
     </div>
-    <div class="col-2 ng-select-wrapper">
+    <div class="col-6 ng-select-wrapper">
       <ng-select
         [placeholder]="'Property - Areas' | translate"
         [items]="propertyAreas"
@@ -21,7 +21,9 @@
       >
       </ng-select>
     </div>
-    <div class="col-2 ng-select-wrapper">
+  </div>
+  <div class="row">
+    <div class="col-4 ng-select-wrapper">
       <ng-select
         [placeholder]="'Created by' | translate"
         bindLabel="name"
@@ -32,7 +34,7 @@
       >
       </ng-select>
     </div>
-    <div class="col-2 ng-select-wrapper">
+    <div class="col-4 ng-select-wrapper">
       <ng-select
         [placeholder]="'Last assigned to' | translate"
         bindLabel="name"
