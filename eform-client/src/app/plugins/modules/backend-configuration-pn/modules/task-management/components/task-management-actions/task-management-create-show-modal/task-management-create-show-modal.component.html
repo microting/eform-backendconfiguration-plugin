@@ -5,7 +5,7 @@
   #frame="mdbModal"
   style="overflow-y: scroll"
 >
-  <div class="modal-dialog modal-md">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <div>
@@ -16,91 +16,85 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="container-fluid">
-          <div class="col" [formGroup]="workOrderCaseForm">
-            <div class="row ng-select-wrapper">
-              <ng-select
-                [placeholder]="'Property' | translate"
-                [items]="properties"
-                bindLabel="name"
-                bindValue="id"
-                formControlName="propertyId"
-                id="propertyId"
-                [clearable]="false"
+        <div [formGroup]="workOrderCaseForm">
+          <div class="d-flex flex-row ng-select-wrapper">
+            <ng-select
+              [placeholder]="'Property' | translate"
+              [items]="properties"
+              bindLabel="name"
+              bindValue="id"
+              formControlName="propertyId"
+              id="propertyId"
+              [clearable]="false"
+              class="mr-2"
+            >
+            </ng-select>
+            <ng-select
+              [placeholder]="'Area' | translate"
+              [items]="propertyAreas"
+              formControlName="areaName"
+              id="areaName"
+              [clearable]="false"
+              class="mr-2"
+            >
+            </ng-select>
+            <ng-select
+              [placeholder]="'Assigned to' | translate"
+              bindLabel="name"
+              bindValue="id"
+              formControlName="assignedTo"
+              id="assignedTo"
+              [items]="assignedSitesToProperty"
+              [clearable]="isCreate"
+            >
+            </ng-select>
+          </div>
+          <div class="d-flex flex-column mb-2">
+            <div>
+              <button
+                *ngIf="isCreate"
+                mdbBtn
+                class="btn-success btn-icon m-1"
+                id="addNewImages"
+                mdbTooltip="{{ 'Add new image' | translate }}"
+                (click)="frame.hide(); addNewImageModal.show()"
               >
-              </ng-select>
+                <fa-icon icon="plus" size="lg"></fa-icon>
+              </button>
             </div>
-            <div class="row ng-select-wrapper">
-              <ng-select
-                [placeholder]="'Area' | translate"
-                [items]="propertyAreas"
-                formControlName="areaName"
-                id="areaName"
-                [clearable]="false"
+            <div class="d-flex flex-row flex-wrap">
+              <div
+                class="m-1 mr-2 mb-2"
+                *ngFor="let image of images; let i = index"
               >
-              </ng-select>
-            </div>
-            <div class="row ng-select-wrapper">
-              <ng-select
-                [placeholder]="'Assigned to' | translate"
-                bindLabel="name"
-                bindValue="id"
-                formControlName="assignedTo"
-                id="assignedTo"
-                [items]="assignedSitesToProperty"
-                [clearable]="isCreate"
-              >
-              </ng-select>
-            </div>
-            <div class="row mb-2">
-              <div class="row">
-                <button
-                  *ngIf="isCreate"
-                  mdbBtn
-                  class="btn-success btn-icon"
-                  id="addNewImages"
-                  mdbTooltip="{{ 'Add new image' | translate }}"
-                  (click)="frame.hide(); addNewImageModal.show()"
-                >
-                  <fa-icon icon="plus" size="lg"></fa-icon>
-                </button>
+                <mdb-card>
+                  <button
+                    *ngIf="isCreate"
+                    class="close"
+                    data-dismiss="modal"
+                    style="right: 5px; color: red"
+                    (click)="deleteImageByName(image.fileName)"
+                    mdbTooltip="{{ 'Delete picture' | translate }}"
+                  >
+                    <span>×</span>
+                  </button>
+                  <mdb-card-img
+                    (click)="openPicture(i)"
+                    [src]="image.src | authImage | async"
+                    alt="Card image cap"
+                  >
+                  </mdb-card-img>
+                </mdb-card>
               </div>
-              <div class="row">
-                <div
-                  class="col-md-3 col-sm-4 col-xs-12"
-                  *ngFor="let image of images; let i = index"
-                >
-                  <mdb-card>
-                    <button
-                      *ngIf="isCreate"
-                      class="close"
-                      data-dismiss="modal"
-                      style="right: 5px"
-                      (click)="deleteImageByName(image.fileName)"
-                      mdbTooltip="{{ 'Delete picture' | translate }}"
-                    >
-                      <span>×</span>
-                    </button>
-                    <mdb-card-img
-                      (click)="openPicture(i)"
-                      [src]="image.src | authImage | async"
-                      alt="Card image cap"
-                    >
-                    </mdb-card-img>
-                  </mdb-card>
-                </div>
-              </div>
-            </div>
-            <div style="margin-right: -15px; margin-left: -15px">
-              <formatting-text-editor
-                id="descriptionTask"
-                [placeholder]="'Description of task' | translate"
-                [(value)]="description"
-                [disabled]="!isCreate"
-              >
-              </formatting-text-editor>
             </div>
           </div>
+          <formatting-text-editor
+            id="descriptionTask"
+            [placeholder]="'Description of task' | translate"
+            [(value)]="description"
+            [disabled]="!isCreate"
+          >
+          </formatting-text-editor>
         </div>
       </div>
       <div class="modal-footer">

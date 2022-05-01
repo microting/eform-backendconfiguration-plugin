@@ -21,7 +21,7 @@ export class TaskManagementTableComponent implements OnInit {
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Id', sortable: true },
     { name: 'CaseInitiated', visibleName: 'CreatedDate', sortable: true },
-    { name: 'PropertyName', visibleName: 'Property', sortable: false },
+    { name: 'PropertyName', visibleName: 'Property', sortable: true },
     { name: 'SelectedAreaName', visibleName: 'Area',sortable: true },
     { name: 'CreatedByName', visibleName: 'Created by 1', sortable: true },
     { name: 'CreatedByText', visibleName: 'Created by 2', sortable: true },
