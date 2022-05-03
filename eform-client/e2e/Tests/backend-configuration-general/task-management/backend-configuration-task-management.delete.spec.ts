@@ -43,7 +43,8 @@ describe('Backend Configuration Task Manager Delete Task', function () {
       {
         areaName: areas[0],
         assignedTo: `${workerForCreate.name} ${workerForCreate.surname}`,
-        propertyName: `${property.cvrNumber} - ${property.chrNumber} - ${property.name}`
+        propertyName: `${property.cvrNumber} - ${property.chrNumber} - ${property.name}`,
+        description: generateRandmString()
       });
     await backendConfigurationTaskManagementPage.changeFilters(filters);
   });

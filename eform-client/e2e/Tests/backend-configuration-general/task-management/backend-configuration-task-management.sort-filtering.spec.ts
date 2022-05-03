@@ -81,7 +81,8 @@ describe('Backend Configuration Task Manager Delete Task', function () {
         {
           areaName: areas1[i],
           assignedTo: `${workers[0].name} ${workers[0].surname}`,
-          propertyName: `${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`
+          propertyName: `${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`,
+          description: generateRandmString(),
         });
     }
     for (let i = 0; i < areas2.length; i++) {
@@ -89,7 +90,8 @@ describe('Backend Configuration Task Manager Delete Task', function () {
         {
           areaName: areas2[i],
           assignedTo: `${workers[1].name} ${workers[1].surname}`,
-          propertyName: `${properties[1].cvrNumber} - ${properties[1].chrNumber} - ${properties[1].name}`
+          propertyName: `${properties[1].cvrNumber} - ${properties[1].chrNumber} - ${properties[1].name}`,
+          description: generateRandmString(),
         });
     }
     for (let i = 0; i < areas3.length; i++) {
@@ -97,7 +99,8 @@ describe('Backend Configuration Task Manager Delete Task', function () {
         {
           areaName: areas3[i],
           assignedTo: `${workers[2].name} ${workers[2].surname}`,
-          propertyName: `${properties[2].cvrNumber} - ${properties[2].chrNumber} - ${properties[2].name}`
+          propertyName: `${properties[2].cvrNumber} - ${properties[2].chrNumber} - ${properties[2].name}`,
+          description: generateRandmString(),
         });
     }
   });
