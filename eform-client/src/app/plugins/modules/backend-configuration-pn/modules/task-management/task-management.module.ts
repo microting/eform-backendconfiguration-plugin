@@ -19,7 +19,7 @@ import {TaskManagementRouting} from './task-management.routing';
 import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts/custom-date-time-adapter';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
-import {ReactiveFormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {NgSelectModule} from '@ng-select/ng-select';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 
@@ -45,6 +45,7 @@ import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-i
     ReactiveFormsModule,
     NgSelectModule,
     EformImportedModule,
+    FormsModule,
   ],
   providers: [
     {

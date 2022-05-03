@@ -133,7 +133,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     CaseInitiated = x.CaseInitiated,
                     Id = x.Id,
                     Status = x.CaseStatusesEnum.ToString(),
-                    Description = x.Description,
+                    Description = x.Description.Replace("\n", "<br />"),
                     PropertyName = x.PropertyWorker.Property.Name,
                     LastUpdateDate = x.UpdatedAt,
                     //x.CaseId,
@@ -217,7 +217,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             {
                 AreaName = task.SelectedAreaName,
                 AssignedSiteId = assignedSiteId,
-                Description = task.Description,
+                Description = task.Description.Replace("<div>", "").Replace("</div>", ""),
                 Id = task.Id,
                 PictureNames = fileNames,
                 PropertyId = task.PropertyId,

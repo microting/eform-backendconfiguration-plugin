@@ -63,6 +63,10 @@ export class TaskManagementCreateShowModalComponent
         value: null,
         disabled: false,
       }, Validators.required),
+      descriptionTask: new FormControl({
+        value: null,
+        disabled: false,
+      }, Validators.required),
     });
   }
 
@@ -76,6 +80,7 @@ export class TaskManagementCreateShowModalComponent
           propertyId: workOrderCase.propertyId,
           areaName: workOrderCase.areaName,
           assignedTo: workOrderCase.assignedSiteId,
+          descriptionTask: workOrderCase.description,
         },
         { emitEvent: false }
       );
@@ -103,6 +108,7 @@ export class TaskManagementCreateShowModalComponent
           propertyId: null,
           areaName: null,
           assignedTo: null,
+          descriptionTask: null,
         },
         { emitEvent: false }
       );
@@ -248,7 +254,7 @@ export class TaskManagementCreateShowModalComponent
       assignedSiteId: rawValue.assignedTo,
       areaName: rawValue.areaName,
       propertyId: rawValue.propertyId,
-      description: this.description,
+      description: rawValue.descriptionTask,
       files: this.images.map(x => x.file),
     }
     this.taskManagementService.createWorkOrderCase(workOrderCase)
