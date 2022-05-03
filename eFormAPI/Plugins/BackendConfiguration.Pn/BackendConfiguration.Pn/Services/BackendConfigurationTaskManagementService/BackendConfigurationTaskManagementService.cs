@@ -339,12 +339,6 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
     }
 
-    private async Task RetractEform(WorkorderCase workOrderCase)
-    {
-        var core = await _coreHelper.GetCore();
-        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-    }
-
     public async Task<OperationResult> CreateTask(WorkOrderCaseCreateModel createModel)
     {
         try
@@ -500,6 +494,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 (int)property.FolderIdForOngoingTasks,
                 description,
                 CaseStatusesEnum.Ongoing,
+                newWorkorderCase,
                 createModel.Description,
                 deviceUsersGroupMicrotingUid,
                 pdfHash,
@@ -524,6 +519,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         int folderId,
         string description,
         CaseStatusesEnum status,
+        WorkorderCase workorderCase,
         string newDescription,
         int? deviceUsersGroupId,
         string pdfHash,
@@ -584,7 +580,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 CaseInitiated = DateTime.UtcNow,
                 CreatedByUserId = _userService.UserId,
                 LastAssignedToName = site.Name,
-                LeadingCase = false
+                LeadingCase = false,
+                ParentWorkorderCaseId = workorderCase.Id
             };
             await workOrderCase.Create(_backendConfigurationPnDbContext);
         }
