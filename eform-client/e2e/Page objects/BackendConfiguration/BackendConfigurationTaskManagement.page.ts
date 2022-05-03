@@ -78,12 +78,12 @@ export class BackendConfigurationTaskManagementPage extends Page {
     return ele;
   }
 
-  public async descriptionTaskInput() {
-    const ele = await (await this.descriptionTask()).$('.NgxEditor__Content');
-    await ele.waitForDisplayed({ timeout: 40000 });
-    // await ele.waitForClickable({ timeout: 40000 });
-    return ele;
-  }
+  // public async descriptionTaskInput() {
+  //   const ele = await (await this.descriptionTask()).$('');
+  //   await ele.waitForDisplayed({ timeout: 40000 });
+  //   // await ele.waitForClickable({ timeout: 40000 });
+  //   return ele;
+  // }
 
   public async taskManagementCreateShowSaveBtn() {
     const ele = await $('#taskManagementCreateShowSaveBtn');
@@ -281,7 +281,7 @@ export class BackendConfigurationTaskManagementPage extends Page {
         await selectValueInNgSelector(await this.assignedTo(), task.assignedTo)
       }
       if(task.description) {
-        await (await this.descriptionTaskInput()).setValue(task.description);
+        await (await this.descriptionTask()).setValue(task.description);
       }
     }
   }

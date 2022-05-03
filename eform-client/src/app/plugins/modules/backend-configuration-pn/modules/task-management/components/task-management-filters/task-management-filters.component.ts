@@ -16,6 +16,7 @@ import {
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {SitesService} from 'src/app/common/services';
 import {format, set} from 'date-fns';
+import {TranslateService} from '@ngx-translate/core';
 
 @AutoUnsubscribe()
 @Component({
@@ -36,6 +37,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   areaNameValueChangesSub$: Subscription;
 
   constructor(
+    private translate: TranslateService,
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
     private sitesService: SitesService,
@@ -242,7 +244,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
       pageIndex: 0
     }).subscribe((data) => {
       if (data && data.success && data.model) {
-        this.properties = [{id: -1, name: 'All', description: ''}, ...data.model.entities.filter((x) => x.workorderEnable)
+        this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities.filter((x) => x.workorderEnable)
           .map((x) => {
             return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
           })];
@@ -270,6 +272,15 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
                 name: site ? site.name : '',
                 description: '',
               };
+            });
+            this.assignedSitesToProperty = this.assignedSitesToProperty.sort((a, b) => {
+              if (a.name > b.name) {
+                return 1;
+              }
+              if (a.name < b.name) {
+                return -1;
+              }
+              return 0;
             });
           }
         });

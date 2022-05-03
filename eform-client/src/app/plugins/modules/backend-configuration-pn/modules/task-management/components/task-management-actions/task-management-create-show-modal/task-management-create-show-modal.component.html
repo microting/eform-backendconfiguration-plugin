@@ -5,7 +5,7 @@
   #frame="mdbModal"
   style="overflow-y: scroll"
 >
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-fluid">
     <div class="modal-content">
       <div class="modal-header">
         <div>
@@ -88,13 +88,17 @@
               </div>
             </div>
           </div>
-          <formatting-text-editor
+          <textarea
+            mdbInput
+            type="text"
             id="descriptionTask"
+            class="md-textarea form-control"
+            formControlName="descriptionTask"
             [placeholder]="'Description of task' | translate"
-            [(value)]="description"
-            [disabled]="!isCreate"
-          >
-          </formatting-text-editor>
+            [readonly]="!isCreate"
+            rows="5"
+            cols="46"
+          ></textarea>
         </div>
       </div>
       <div class="modal-footer">

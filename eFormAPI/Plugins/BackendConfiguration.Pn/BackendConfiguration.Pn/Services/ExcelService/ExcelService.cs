@@ -151,7 +151,7 @@ public class ExcelService: IExcelService
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByName;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByText;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastAssignedTo;
-                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description;
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description.Replace("<br>", "").Replace("<br />", "\n");
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdateDate.HasValue
                     ? workOrderCaseModel.LastUpdateDate.Value.ToString("dd.MM.yyyy")
                     : "";
