@@ -543,10 +543,10 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             mainElement.EnableQuickSync = true;
             mainElement.ElementList[0].Label = " ";
             mainElement.ElementList[0].Description.InderValue =
-                description + "<center><strong>******************</strong></center>";
+                description.Replace("\r\n", "<br>") + "<center><strong>******************</strong></center>";
             mainElement.PushMessageTitle = pushMessageTitle;
             mainElement.PushMessageBody = pushMessageBody;
-            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\r\n", "<br>");
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
             ((ShowPdf)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
