@@ -339,12 +339,6 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
     }
 
-    private async Task RetractEform(WorkorderCase workOrderCase)
-    {
-        var core = await _coreHelper.GetCore();
-        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-    }
-
     public async Task<OperationResult> CreateTask(WorkOrderCaseCreateModel createModel)
     {
         try
@@ -500,6 +494,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 (int)property.FolderIdForOngoingTasks,
                 description,
                 CaseStatusesEnum.Ongoing,
+                newWorkorderCase,
                 createModel.Description,
                 deviceUsersGroupMicrotingUid,
                 pdfHash,
@@ -524,6 +519,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         int folderId,
         string description,
         CaseStatusesEnum status,
+        WorkorderCase workorderCase,
         string newDescription,
         int? deviceUsersGroupId,
         string pdfHash,
@@ -547,10 +543,10 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             mainElement.EnableQuickSync = true;
             mainElement.ElementList[0].Label = " ";
             mainElement.ElementList[0].Description.InderValue =
-                description + "<center><strong>******************</strong></center>";
+                description.Replace("\r\n", "<br>").Replace("\n", "<br>") + "<center><strong>******************</strong></center>";
             mainElement.PushMessageTitle = pushMessageTitle;
             mainElement.PushMessageBody = pushMessageBody;
-            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description;
+            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\r\n", "<br>").Replace("\n", "<br>");
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
             ((ShowPdf)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
@@ -584,7 +580,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 CaseInitiated = DateTime.UtcNow,
                 CreatedByUserId = _userService.UserId,
                 LastAssignedToName = site.Name,
-                LeadingCase = false
+                LeadingCase = false,
+                ParentWorkorderCaseId = workorderCase.Id
             };
             await workOrderCase.Create(_backendConfigurationPnDbContext);
         }

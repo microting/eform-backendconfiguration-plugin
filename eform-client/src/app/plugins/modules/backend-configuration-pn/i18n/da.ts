@@ -178,5 +178,6 @@ export const da = {
   'View': 'Vis',
   'Description of task': 'Beskrivelse af opgave',
   'All': 'Alle',
-  'Ongoing': 'Igangværende'
+  'Ongoing': 'Igangværende',
+  'Completed': 'Afsluttet'
 };
