@@ -17,6 +17,8 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 import {SitesService} from 'src/app/common/services';
 import {format, set} from 'date-fns';
 import {TranslateService} from '@ngx-translate/core';
+import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -37,12 +39,15 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   areaNameValueChangesSub$: Subscription;
 
   constructor(
+    dateTimeAdapter: DateTimeAdapter<any>,
     private translate: TranslateService,
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
     private sitesService: SitesService,
-    private taskManagementService: BackendConfigurationPnTaskManagementService
+    private taskManagementService: BackendConfigurationPnTaskManagementService,
+    authStateService: AuthStateService
   ) {
+    dateTimeAdapter.setLocale(authStateService.currentUserLocale);
   }
 
   ngOnInit(): void {
