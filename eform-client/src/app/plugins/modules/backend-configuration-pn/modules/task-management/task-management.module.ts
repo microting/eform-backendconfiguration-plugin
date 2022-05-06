@@ -16,7 +16,7 @@ import {
   TaskManagementDeleteModalComponent,
 } from './components';
 import {TaskManagementRouting} from './task-management.routing';
-import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts/custom-date-time-adapter';
+import {MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT} from '../../consts';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
@@ -50,7 +50,7 @@ import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-i
   providers: [
     {
       provide: OWL_DATE_TIME_FORMATS,
-      useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN,
+      useValue: MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT,
     },
   ],
 })

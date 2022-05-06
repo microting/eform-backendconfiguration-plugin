@@ -9,7 +9,7 @@ import {
 import { TaskWorkerAssignmentsRouting} from './task-worker-assignments.routing';
 import { TranslateModule } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import {AreaRulePlanModalModule} from 'src/app/plugins/modules/backend-configuration-pn/components/area-rule-plan-modal.module';
+import {AreaRulePlanModalModule} from '../../components/area-rule-plan-modal.module';
 
 @NgModule({
   imports: [
