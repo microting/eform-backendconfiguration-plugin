@@ -10,11 +10,10 @@ import {
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { CommonDictionaryModel } from 'src/app/common/models';
-import { DeviceUserModel } from 'src/app/common/models/device-users';
-import { DeviceUserService } from 'src/app/common/services/device-users';
-import {applicationLanguages2, applicationLanguagesTranslated} from 'src/app/common/const/application-languages.const';
+import { applicationLanguagesTranslated } from 'src/app/common/const/application-languages.const';
 import { PropertyAssignmentWorkerModel } from '../../../../models/properties/property-workers-assignment.model';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
+import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
 
 @AutoUnsubscribe()
 @Component({
@@ -80,7 +79,9 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
       this.selectedDeviceUserCopy.language !==
         this.selectedDeviceUser.language ||
       this.selectedDeviceUserCopy.languageCode !==
-        this.selectedDeviceUser.languageCode
+        this.selectedDeviceUser.languageCode ||
+      this.selectedDeviceUserCopy.timeRegistrationEnabled !==
+        this.selectedDeviceUser.timeRegistrationEnabled
     ) {
       // if fields device user edited
       this.deviceUserCreate$ = this.propertiesService
@@ -105,6 +106,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
       .updateAssignPropertiesToWorker({
         siteId: this.selectedDeviceUser.normalId,
         assignments: this.assignments,
+        timeRegistrationEnabled: false,
       })
       .subscribe((operation) => {
         if (operation && operation.success) {

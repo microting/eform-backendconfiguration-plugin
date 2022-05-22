@@ -1,6 +1,7 @@
 export class PropertyAssignWorkersModel {
   siteId: number;
   assignments: PropertyAssignmentWorkerModel[] = [];
+  timeRegistrationEnabled: boolean;
 }
 
 export class PropertyAssignmentWorkerModel {

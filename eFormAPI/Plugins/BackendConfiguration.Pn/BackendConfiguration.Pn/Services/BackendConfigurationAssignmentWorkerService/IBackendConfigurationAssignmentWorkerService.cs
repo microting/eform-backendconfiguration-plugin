@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Models;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
 {
@@ -40,7 +41,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         Task<OperationResult> Update(PropertyAssignWorkersModel updateModel);
 
         Task<OperationResult> Delete(int deviceUserId);
+        
+        Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel);
 
         Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel);
+        
+        Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel);
     }
 }

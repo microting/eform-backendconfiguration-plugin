@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AdvEntitySelectableItemModel,
-  CommonDictionaryModel, DeviceUserModel,
+  CommonDictionaryModel, DeviceUserRequestModel,
   OperationDataResult,
   OperationResult,
-  Paged,
+  Paged, SiteDto,
 } from 'src/app/common/models';
 import {
   PropertyCreateModel,
@@ -17,14 +17,17 @@ import {
   PropertyAssignWorkersModel,
 } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
+import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
 
 export let BackendConfigurationPnPropertiesMethods = {
   Properties: 'api/backend-configuration-pn/properties',
   PropertyAreas: 'api/backend-configuration-pn/property-areas',
   PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
   PropertiesIndex: 'api/backend-configuration-pn/properties/index',
-  UpdateSingle: 'api/backend-configuration-pn/properties/assignment/update-device-user',
+  UpdateDeviceUser: 'api/backend-configuration-pn/properties/assignment/update-device-user',
   CreateEntityList: 'api/backend-configuration-pn/property-areas/create-entity-list/',
+  CreateDeviceUser: 'api/backend-configuration-pn/properties/assignment/create-device-user',
+  GetAll: 'api/backend-configuration-pn/properties/assignment/index-device-user',
 };
 
 @Injectable({
@@ -129,9 +132,27 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
+  createSingleDeviceUser(
+    model: DeviceUserModel
+  ): Observable<OperationDataResult<number>> {
+    return this.apiBaseService.put<DeviceUserModel>(
+      BackendConfigurationPnPropertiesMethods.CreateDeviceUser,
+      model
+    );
+  }
+
   updateSingleDeviceUser(model: DeviceUserModel): Observable<OperationResult> {
     return this.apiBaseService.post<DeviceUserModel>(
-      BackendConfigurationPnPropertiesMethods.UpdateSingle,
+      BackendConfigurationPnPropertiesMethods.UpdateDeviceUser,
+      model
+    );
+  }
+
+  getDeviceUsersFiltered(
+    model: DeviceUserRequestModel
+  ): Observable<OperationDataResult<Array<DeviceUserModel>>> {
+    return this.apiBaseService.post<Array<DeviceUserModel>>(
+      BackendConfigurationPnPropertiesMethods.GetAll,
       model
     );
   }

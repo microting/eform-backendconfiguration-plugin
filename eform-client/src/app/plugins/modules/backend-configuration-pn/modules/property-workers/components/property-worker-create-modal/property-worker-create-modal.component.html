@@ -59,6 +59,27 @@
               </div>
             </div>
           </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="custom-control custom-switch">
+                <input
+                  type="checkbox"
+                  id="planAreaRuleStatusToggle"
+                  [value]="simpleSiteModel.timeRegistrationEnabled"
+                  [checked]="simpleSiteModel.timeRegistrationEnabled"
+                  [(ngModel)]="simpleSiteModel.timeRegistrationEnabled"
+                  class="custom-control-input"
+                />
+                <label
+                  for="planAreaRuleStatusToggle"
+                  class="custom-control-label"
+                >{{ 'Timeregistration enabled' | translate }}</label
+                >
+              </div>
+            </div>
+
+          </div>
+          <br>
           <div class="table-responsive">
             <table class="table table-xs table-bordered text-center z-depth-1">
               <thead>

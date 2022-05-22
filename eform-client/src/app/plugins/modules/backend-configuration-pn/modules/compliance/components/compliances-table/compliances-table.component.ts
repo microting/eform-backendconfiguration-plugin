@@ -53,7 +53,6 @@ export class CompliancesTableComponent implements OnInit {
   }
 
   getResponsibles(responsibles: string[]) {
-    debugger;
     return responsibles;
   }
 

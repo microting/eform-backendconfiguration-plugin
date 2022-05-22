@@ -25,8 +25,14 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using eFormCore;
+using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure;
+using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
+using Microting.TimePlanningBase.Infrastructure.Data;
+using Microting.TimePlanningBase.Infrastructure.Data.Entities;
+using Microting.TimePlanningBase.Infrastructure.Data.Models;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
 {
@@ -38,15 +44,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
     using Infrastructure.Models.AssignmentWorker;
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Infrastructure.Constants;
-    using Microting.eForm.Infrastructure.Data.Entities;
-    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn.Abstractions;
-    using Microting.eFormApi.BasePn.Infrastructure.Consts;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
     public class BackendConfigurationAssignmentWorkerService : IBackendConfigurationAssignmentWorkerService
     {
@@ -56,17 +58,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly WorkOrderHelper _workOrderHelper;
+        // private readonly IDeviceUsersService _deviceUsersService;
+        private readonly TimePlanningPnDbContext _timePlanningDbContext;
+        private readonly ILogger<BackendConfigurationAssignmentWorkerService> _logger;
+        private readonly IPluginDbOptions<TimePlanningBaseSettings> _options;
 
         public BackendConfigurationAssignmentWorkerService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext, TimePlanningPnDbContext timePlanningDbContext)
         {
             _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
+            // _deviceUsersService = deviceUsersService;
+            _timePlanningDbContext = timePlanningDbContext;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
         }
@@ -324,18 +332,84 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
         }
 
+        
+        public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                // var deviceUsers = new List<DeviceUser>();
+
+                var sitesQuery = sdkDbContext.Sites
+                    .Include(x => x.Units)
+                    .Include(x => x.SiteWorkers)
+                    .ThenInclude(x => x.Worker)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                try
+                {
+                    sitesQuery = QueryHelper.AddFilterAndSortToQuery(sitesQuery, requestModel, new List<string> { "Name" });
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+
+                var deviceUsers = await sitesQuery
+                    .Select(x => new DeviceUserModel
+                    {
+                        CustomerNo = x.Units
+                            .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(y => y.CustomerNo)
+                            .FirstOrDefault(),
+                        UserFirstName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.FirstName,
+                        UserLastName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.LastName,
+                        LanguageId = x.LanguageId,
+                        OtpCode = x.Units
+                            .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(y => y.OtpCode)
+                            .FirstOrDefault(),
+                        SiteId = x.Id,
+                        SiteUid = x.MicrotingUid,
+                        SiteName = x.Name,
+                        UnitId = x.Units
+                            .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(y => y.MicrotingUid)
+                            .FirstOrDefault(),
+                        WorkerUid = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.MicrotingUid,
+                        Language = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.Name).SingleOrDefault() ?? "Danish",
+                        LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
+                        IsLocked = x.IsLocked
+                    })
+                    .ToListAsync();
+
+                foreach (var deviceUserModel in deviceUsers)
+                {
+                    deviceUserModel.TimeRegistrationEnabled = _timePlanningDbContext.AssignedSites.Any(x =>
+                        x.SiteId == deviceUserModel.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed);
+                }
+                
+                return new OperationDataResult<List<DeviceUserModel>>(true, deviceUsers);
+            }
+            catch (Exception ex)
+            {
+                return new OperationDataResult<List<DeviceUserModel>>(false, _backendConfigurationLocalizationService.GetStringWithFormat("ErrorWhileGetDeviceUsers") + " " + ex.Message);
+            }
+        }
+        
         public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
         {
             try
             {
                 var core = await _coreHelper.GetCore();
-                await using var db = core.DbContextHelper.GetDbContext();
-                var language = db.Languages.Single(x => x.LanguageCode == deviceUserModel.LanguageCode);
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var language = sdkDbContext.Languages.Single(x => x.LanguageCode == deviceUserModel.LanguageCode);
                 var siteDto = await core.SiteRead(deviceUserModel.Id);
                 if (siteDto.WorkerUid != null)
                 {
                     // var workerDto = await core.Advanced_WorkerRead((int)siteDto.WorkerUid);
-                    var worker = await db.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid);
+                    var worker = await sdkDbContext.Workers.SingleOrDefaultAsync(x => x.MicrotingUid == siteDto.WorkerUid);
                     if (worker != null)
                     {
                         var fullName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
@@ -349,42 +423,94 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToListAsync();
 
-                            int propertyId = 0;
+                            int? propertyId = null;
                             foreach (var propertyWorker in propertyWorkers)
                             {
-                                var et = db.EntityItems.Single(x => x.Id == propertyWorker.EntityItemId);
+                                var et = sdkDbContext.EntityItems.Single(x => x.Id == propertyWorker.EntityItemId);
                                 await core.EntityItemUpdate((int)propertyWorker.EntityItemId, fullName, "", et.EntityItemUid,
                                     et.DisplayIndex);
                                 propertyId = propertyWorker.PropertyId;
                             }
 
-                            var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == propertyId);
-
-                            var entityItems = await db.EntityItems
-                                .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .OrderBy(x => x.Name)
-                                .AsNoTracking()
-                                .ToListAsync();
-
-                            int entityItemIncrementer = 0;
-                            foreach (var entityItem in entityItems)
+                            if (propertyId != null)
                             {
-                                await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
-                                    entityItem.EntityItemUid, entityItemIncrementer);
-                                entityItemIncrementer++;
-                            }
+                                var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == propertyId);
 
+                                var entityItems = await sdkDbContext.EntityItems
+                                    .Where(x => x.EntityGroupId == property.EntitySelectListDeviceUsers)
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .OrderBy(x => x.Name)
+                                    .AsNoTracking()
+                                    .ToListAsync();
+
+                                int entityItemIncrementer = 0;
+                                foreach (var entityItem in entityItems)
+                                {
+                                    await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
+                                        entityItem.EntityItemUid, entityItemIncrementer);
+                                    entityItemIncrementer++;
+                                }    
+                            }
                         }
-                            // {
-                            //     Site site = await db.Sites.SingleAsync(x => x.MicrotingUid == deviceUserModel.Id);
-                            //     site.LanguageId = language.Id;
-                            //     await site.Update(db);
-                            // }
-                            return isUpdated
-                                ? new OperationResult(true, _backendConfigurationLocalizationService.GetString("DeviceUserUpdatedSuccessfully"))
-                                : new OperationResult(false,
-                                    _backendConfigurationLocalizationService.GetString("DeviceUserParamCouldNotBeUpdated"));
+                        var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
+                        if (deviceUserModel.TimeRegistrationEnabled == false && _timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteId && x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            var assignmentForDelete = await _timePlanningDbContext.AssignedSites.SingleAsync(x =>
+                                x.SiteId == siteId && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                            if (assignmentForDelete.CaseMicrotingUid != null)
+                            {
+                                await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid);
+                            }
+                        }
+                        else
+                        {
+                            if (deviceUserModel.TimeRegistrationEnabled == true)
+                            {
+                                try
+                                {
+                                    var assignmentSite = new AssignedSite
+                                    {
+                                        SiteId = siteId,
+                                        CreatedByUserId = _userService.UserId,
+                                        UpdatedByUserId = _userService.UserId,
+                                    };
+                                    await assignmentSite.Create(_timePlanningDbContext);
+                                    // var option = 
+                                    var newTaskId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId");
+                                    var folderId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId");
+                                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value));
+                                    var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
+                                    var mainElement = await core.ReadeForm(int.Parse(newTaskId.Value), language);
+                                    mainElement.CheckListFolderName = folder.MicrotingUid.ToString();
+                                    mainElement.EndDate = DateTime.UtcNow.AddYears(10);
+                                    mainElement.DisplayOrder = int.MinValue;
+                                    mainElement.Repeated = 0;
+                                    mainElement.PushMessageTitle = mainElement.Label;
+                                    mainElement.EnableQuickSync = true;
+                                    var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, int.Parse(folderId.Value));
+                                    assignmentSite.CaseMicrotingUid = caseId;
+                                    await assignmentSite.Update(_timePlanningDbContext);
+
+                                    return new OperationDataResult<int>(true, siteId);
+                                }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine(e);
+                                    // _logger.LogError(e.Message);
+                                    return new OperationDataResult<int>(false, "");
+                                }
+                            }
+                        }
+                        // {
+                        //     Site site = await db.Sites.SingleAsync(x => x.MicrotingUid == deviceUserModel.Id);
+                        //     site.LanguageId = language.Id;
+                        //     await site.Update(db);
+                        // }
+                        return isUpdated
+                            ? new OperationResult(true, _backendConfigurationLocalizationService.GetString("DeviceUserUpdatedSuccessfully"))
+                            : new OperationResult(false,
+                                _backendConfigurationLocalizationService.GetString("DeviceUserParamCouldNotBeUpdated"));
                     }
 
                     return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserCouldNotBeObtained"));
@@ -392,10 +518,64 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                 return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserNotFound"));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserCouldNotBeUpdated"));
+                return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserCouldNotBeUpdated") + $" {ex.Message}");
             }
+        }
+
+        public async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel)
+        {
+            // var result = await _deviceUsersService.Create(deviceUserModel);
+            var core = await _coreHelper.GetCore();
+            var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
+            await using var db = core.DbContextHelper.GetDbContext();
+            var siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName, deviceUserModel.UserLastName,
+                null, deviceUserModel.LanguageCode);
+
+            var theCore = await _coreHelper.GetCore();
+            await using var sdkDbContext = theCore.DbContextHelper.GetDbContext();
+            var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
+
+            if (deviceUserModel.TimeRegistrationEnabled == true)
+            {
+                try
+                {
+                    var assignmentSite = new AssignedSite
+                    {
+                        SiteId = siteId,
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                    };
+                    await assignmentSite.Create(_timePlanningDbContext);
+                    // var option = 
+                    var newTaskId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId");
+                    var folderId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId");;
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value));
+                    var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
+                    var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
+                    var mainElement = await theCore.ReadeForm(int.Parse(newTaskId.Value), language);
+                    mainElement.CheckListFolderName = folder.MicrotingUid.ToString();
+                    mainElement.EndDate = DateTime.UtcNow.AddYears(10);
+                    mainElement.DisplayOrder = int.MinValue;
+                    mainElement.Repeated = 0;
+                    mainElement.PushMessageTitle = mainElement.Label;
+                    mainElement.EnableQuickSync = true;
+                    var caseId = await theCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, int.Parse(folderId.Value));
+                    assignmentSite.CaseMicrotingUid = caseId;
+                    await assignmentSite.Update(_timePlanningDbContext);
+
+                    return new OperationDataResult<int>(true, siteId);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    // _logger.LogError(e.Message);
+                    return new OperationDataResult<int>(false, "");
+                }
+            }
+
+            return new OperationDataResult<int>(true);
         }
 
         private async Task DeleteAllEntriesForPropertyAssignment(PropertyWorker propertyAssignment, Core core, Property property, MicrotingDbContext sdkDbContext)

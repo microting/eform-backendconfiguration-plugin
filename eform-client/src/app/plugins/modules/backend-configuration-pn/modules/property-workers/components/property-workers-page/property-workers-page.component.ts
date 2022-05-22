@@ -1,17 +1,16 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
-import { DeviceUserService } from 'src/app/common/services';
 import {
   CommonDictionaryModel,
   SiteDto,
   TableHeaderElementModel,
-  DeviceUserModel,
 } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import { PropertyAssignWorkersModel } from '../../../../models';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import { PropertyWorkersStateService } from '../store';
+import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
 
 @AutoUnsubscribe()
 @Component({
@@ -23,9 +22,9 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   @ViewChild('newOtpModal', { static: true }) newOtpModal;
   @ViewChild('deleteDeviceUserModal', { static: true }) deleteDeviceUserModal;
 
-  selectedSimpleSiteDto: SiteDto = new SiteDto();
+  selectedSimpleSiteDto: DeviceUserModel = new DeviceUserModel();
   selectedSimpleSite: DeviceUserModel = new DeviceUserModel();
-  sitesDto: Array<SiteDto>;
+  sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
   workersAssignments: PropertyAssignWorkersModel[];
 
@@ -61,7 +60,6 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    private deviceUsersService: DeviceUserService,
     private authStateService: AuthStateService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     public propertyWorkersStateService: PropertyWorkersStateService
@@ -72,13 +70,14 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.getPropertiesDictionary();
   }
 
-  openEditModal(simpleSiteDto: SiteDto) {
-    this.selectedSimpleSite.userFirstName = simpleSiteDto.firstName;
-    this.selectedSimpleSite.userLastName = simpleSiteDto.lastName;
+  openEditModal(simpleSiteDto: DeviceUserModel) {
+    this.selectedSimpleSite.userFirstName = simpleSiteDto.userFirstName;
+    this.selectedSimpleSite.userLastName = simpleSiteDto.userLastName;
     this.selectedSimpleSite.id = simpleSiteDto.siteUid;
     this.selectedSimpleSite.languageCode = simpleSiteDto.languageCode;
     this.selectedSimpleSite.normalId = simpleSiteDto.siteId;
     this.selectedSimpleSite.isLocked = simpleSiteDto.isLocked;
+    this.selectedSimpleSite.timeRegistrationEnabled = simpleSiteDto.timeRegistrationEnabled;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
@@ -89,7 +88,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  openOtpModal(siteDto: SiteDto) {
+  openOtpModal(siteDto: DeviceUserModel) {
     if (!siteDto.unitId) {
       return;
     }
@@ -97,7 +96,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.newOtpModal.show();
   }
 
-  openDeleteDeviceUserModal(simpleSiteDto: SiteDto) {
+  openDeleteDeviceUserModal(simpleSiteDto: DeviceUserModel) {
     this.selectedSimpleSiteDto = simpleSiteDto;
     this.deleteDeviceUserModal.show();
   }

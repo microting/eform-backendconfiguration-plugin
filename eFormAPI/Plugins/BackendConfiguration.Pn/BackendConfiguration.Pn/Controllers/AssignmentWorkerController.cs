@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Models;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
 namespace BackendConfiguration.Pn.Controllers
 {
@@ -68,12 +69,30 @@ namespace BackendConfiguration.Pn.Controllers
         {
             return _backendConfigurationAssignmentWorkerService.Delete(deviceUserId);
         }
+        
+        [HttpPost]
+        [Route("index-device-user")]
+        public async Task<OperationDataResult<List<DeviceUserModel>>> Index([FromBody] FilterAndSortModel requestModel)
+        {
+            return await _backendConfigurationAssignmentWorkerService.IndexDeviceUser(requestModel);
+        }
 
         [HttpPost]
         [Route("update-device-user")]
         public async Task<OperationResult> UpdateDeviceUser([FromBody] DeviceUserModel deviceUserModel)
         {
             return await _backendConfigurationAssignmentWorkerService.UpdateDeviceUser(deviceUserModel);
+        }
+
+        [HttpPut]
+        [Route("create-device-user")]
+        public async Task<OperationDataResult<int>> Create([FromBody] DeviceUserModel deviceUserModel)
+        {
+            // if (!ModelState.IsValid)
+            //     return new OperationDataResult<int>(false,
+            //         _localizationService.GetString("DeviceUserCouldNotBeCreated"));
+
+            return await _backendConfigurationAssignmentWorkerService.CreateDeviceUser(deviceUserModel);
         }
     }
 }

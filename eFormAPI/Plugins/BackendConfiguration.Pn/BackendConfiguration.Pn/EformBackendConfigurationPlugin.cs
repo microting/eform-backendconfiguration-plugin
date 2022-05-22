@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 
+using Microting.TimePlanningBase.Infrastructure.Data;
+
 namespace BackendConfiguration.Pn
 {
     using Infrastructure.Data.Seed;
@@ -1088,6 +1090,9 @@ namespace BackendConfiguration.Pn
             var itemsPlannigConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
                 "eform-angular-items-planning-plugin");
+            var timeRegistrationConnectionString = connectionString.Replace(
+                "eform-backend-configuration-plugin",
+                "eform-angular-time-planning-plugin");
 
             _connectionString = connectionString;
             services.AddDbContext<BackendConfigurationPnDbContext>(o =>
@@ -1100,6 +1105,14 @@ namespace BackendConfiguration.Pn
 
             services.AddDbContext<ItemsPlanningPnDbContext>(o =>
                 o.UseMySql(itemsPlannigConnectionString, new MariaDbServerVersion(
+                    new Version(10, 4, 0)), mySqlOptionsAction: builder =>
+                {
+                    builder.EnableRetryOnFailure();
+                    builder.MigrationsAssembly(PluginAssembly().FullName);
+                }));
+
+            services.AddDbContext<TimePlanningPnDbContext>(o =>
+                o.UseMySql(timeRegistrationConnectionString, new MariaDbServerVersion(
                     new Version(10, 4, 0)), mySqlOptionsAction: builder =>
                 {
                     builder.EnableRetryOnFailure();

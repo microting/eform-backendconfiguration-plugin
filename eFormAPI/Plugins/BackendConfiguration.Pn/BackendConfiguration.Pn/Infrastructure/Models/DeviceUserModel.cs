@@ -26,9 +26,45 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
     public class DeviceUserModel
     {
         public int Id { get; set; }
+        public int SiteId { get; set; }
+        public int? SiteUid { get; set; }
+        public string SiteName { get; set; }
         public string UserFirstName { get; set; }
         public string UserLastName { get; set; }
-        public int Language { get; set; }
+        public int LanguageId { get; set; }
+        public string Language { get; set; }
         public string LanguageCode { get; set; }
+        public bool? TimeRegistrationEnabled { get; set; }
+        public int? CustomerNo { get; set; }
+        public int? OtpCode { get; set; }
+        public int? UnitId { get; set; }
+        public int? WorkerUid { get; set; }
+        public bool IsLocked { get; set; }
+
+        public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
+        {
+            return new DeviceUserModel()
+            {
+                Id = model.Id,
+                LanguageId = model.Language,
+                LanguageCode = model.LanguageCode,
+                TimeRegistrationEnabled = null,
+                UserFirstName = model.UserFirstName,
+                UserLastName = model.UserLastName
+            };
+        }
+
+        public static implicit operator Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel(DeviceUserModel model)
+        {
+            
+            return new Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel()
+            {
+                Id = model.Id,
+                Language = model.LanguageId,
+                LanguageCode = model.LanguageCode,
+                UserFirstName = model.UserFirstName,
+                UserLastName = model.UserLastName
+            };
+        }
     }
 }
