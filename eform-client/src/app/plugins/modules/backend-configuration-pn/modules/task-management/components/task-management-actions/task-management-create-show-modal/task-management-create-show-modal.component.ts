@@ -155,12 +155,30 @@ export class TaskManagementCreateShowModalComponent
   }
 
   getProperties() {
-    this.propertyService.getAllPropertiesDictionary().subscribe((data) => {
+    this.propertyService.getAllProperties({
+      nameFilter: '',
+      sort: 'Id',
+      isSortDsc: false,
+      pageSize: 100000,
+      offset: 0,
+      pageIndex: 0
+    }).subscribe((data) => {
       if (data && data.success && data.model) {
-        this.properties = data.model;
+        this.properties = [...data.model.entities.filter((x) => x.workorderEnable)
+          .map((x) => {
+            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+          })];
       }
     });
   }
+
+  // getProperties() {
+  //   this.propertyService.getAllPropertiesDictionary().subscribe((data) => {
+  //     if (data && data.success && data.model) {
+  //       this.properties = data.model;
+  //     }
+  //   });
+  // }
 
   getSites(propertyId: number) {
     this.sitesService.getAllSitesDictionary().subscribe((result) => {
