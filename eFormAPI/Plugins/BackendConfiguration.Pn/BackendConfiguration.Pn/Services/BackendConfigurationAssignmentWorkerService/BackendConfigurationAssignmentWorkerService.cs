@@ -332,7 +332,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
         }
 
-        
+
         public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel)
         {
             try
@@ -389,7 +389,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     deviceUserModel.TimeRegistrationEnabled = _timePlanningDbContext.AssignedSites.Any(x =>
                         x.SiteId == deviceUserModel.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed);
                 }
-                
+
                 return new OperationDataResult<List<DeviceUserModel>>(true, deviceUsers);
             }
             catch (Exception ex)
@@ -397,7 +397,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 return new OperationDataResult<List<DeviceUserModel>>(false, _backendConfigurationLocalizationService.GetStringWithFormat("ErrorWhileGetDeviceUsers") + " " + ex.Message);
             }
         }
-        
+
         public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
         {
             try
@@ -449,7 +449,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
                                         entityItem.EntityItemUid, entityItemIncrementer);
                                     entityItemIncrementer++;
-                                }    
+                                }
                             }
                         }
                         var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
@@ -476,7 +476,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                         UpdatedByUserId = _userService.UserId,
                                     };
                                     await assignmentSite.Create(_timePlanningDbContext);
-                                    // var option = 
+                                    // var option =
                                     var newTaskId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId");
                                     var folderId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId");
                                     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value));
@@ -548,7 +548,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         UpdatedByUserId = _userService.UserId,
                     };
                     await assignmentSite.Create(_timePlanningDbContext);
-                    // var option = 
+                    // var option =
                     var newTaskId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId");
                     var folderId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId");;
                     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value));
@@ -575,7 +575,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 }
             }
 
-            return new OperationDataResult<int>(true);
+            return new OperationDataResult<int>(true, siteId);
         }
 
         private async Task DeleteAllEntriesForPropertyAssignment(PropertyWorker propertyAssignment, Core core, Property property, MicrotingDbContext sdkDbContext)
