@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subject, Subscription } from 'rxjs';
-import { Paged } from 'src/app/common/models';
+import {AdvEntitySelectableItemModel, Paged} from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import {
   PropertyCreateModalComponent,
@@ -16,6 +16,8 @@ import {
 import { BackendConfigurationPnPropertiesService} from '../../../../services';
 import { PropertiesStateService } from '../../store';
 import { debounceTime } from 'rxjs/operators';
+import {EntitySelectService} from 'src/app/common/services';
+import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 
 @AutoUnsubscribe()
 @Component({
@@ -32,6 +34,9 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   deletePropertyModal: PropertyDeleteModalComponent;
   @ViewChild('docxReportModal', { static: false })
   docxReportModal: PropertyDocxReportModalComponent;
+  @ViewChild('entityListEditModal', { static: false })
+  entityListEditModal: AreaRuleEntityListModalComponent;
+  selectedProperty: PropertyModel;
 
   nameSearchSubject = new Subject();
   propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
@@ -44,7 +49,8 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   constructor(
     private propertiesService: BackendConfigurationPnPropertiesService,
     public propertiesStateService: PropertiesStateService,
-    public authStateService: AuthStateService
+    public authStateService: AuthStateService,
+  private entitySelectService: EntitySelectService
   ) {
     this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertiesStateService.updateNameFilter(val.toString());
@@ -136,5 +142,27 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
 
   onNameFilterChanged(name: string) {
     this.nameSearchSubject.next(name);
+  }
+
+  onShowEditEntityListModal(propertyModel: PropertyModel) {
+    this.selectedProperty = propertyModel;
+    this.entityListEditModal.show(propertyModel.workorderEntityListId);
+  }
+
+  updateEntityList(model: Array<AdvEntitySelectableItemModel>) {
+    this.entitySelectService.getEntitySelectableGroup(this.selectedProperty.workorderEntityListId)
+      .subscribe(data => {
+        if (data.success) {
+          this.entitySelectService.updateEntitySelectableGroup({
+            advEntitySelectableItemModels: model,
+            groupUid: +data.model.microtingUUID,
+            ...data.model
+          }).subscribe(x => {
+            if (x.success) {
+              this.entityListEditModal.hide();
+            }
+          });
+        }
+      });
   }
 }

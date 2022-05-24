@@ -29,25 +29,27 @@ import {
   BackendConfigurationPnSettingsService,
 } from './services';
 import { backendConfigurationStoreProviders } from './store-providers.config';
+import {AreaRulePlanModalModule} from 'src/app/plugins/modules/backend-configuration-pn/components/area-rule-plan-modal.module';
 // import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from './consts/custom-date-time-adapter';
 
 @NgModule({
-  imports: [
-    CommonModule,
-    MDBBootstrapModule,
-    TranslateModule,
-    FormsModule,
-    NgSelectModule,
-    EformSharedModule,
-    FontAwesomeModule,
-    RouterModule,
-    BackendConfigurationPnRouting,
-    ReactiveFormsModule,
-    FileUploadModule,
-    OwlDateTimeModule,
-    EformCasesModule,
-    EformSharedTagsModule,
-  ],
+    imports: [
+        CommonModule,
+        MDBBootstrapModule,
+        TranslateModule,
+        FormsModule,
+        NgSelectModule,
+        EformSharedModule,
+        FontAwesomeModule,
+        RouterModule,
+        BackendConfigurationPnRouting,
+        ReactiveFormsModule,
+        FileUploadModule,
+        OwlDateTimeModule,
+        EformCasesModule,
+        EformSharedTagsModule,
+        AreaRulePlanModalModule,
+    ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
     BackendConfigurationSettingsComponent,

@@ -35,9 +35,9 @@
             </div>
           </div>
           <app-entity-list-elements
-          [entityItemModels]="entityList"
-          (entityItemModelsChanged)="entityList = $event"
-          (openEditNameModal)="onOpenEditNameModal($event)"
+            (entityItemModelsChanged)="entityList = $event"
+            (openEditNameModal)="onOpenEditNameModal($event)"
+            [entityItemModels]="entityList"
           >
           </app-entity-list-elements>
         </div>

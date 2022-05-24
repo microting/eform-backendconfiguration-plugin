@@ -86,9 +86,21 @@
                   [fixedWidth]="true"
                 ></fa-icon>
               </button>
+              <ng-container *ngIf="property.workorderEnable">
+                <button
+                  mdbBtn
+                  class="btn btn-success btn-icon mr-2"
+                  (click)="onShowEditEntityListModal(property)"
+                  mdbTooltip="{{ 'Edit list of areas for workorder' | translate }}"
+                  id="updateEntityList"
+                  [placement]="'left'"
+                >
+                  <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
+                </button>
+              </ng-container>
               <button
                 id="editPropertyBtn"
-                class="btn btn-accent text-black-50 btn-icon mb-2"
+                class="btn btn-accent text-black-50 btn-icon mr-2"
                 mdbTooltip="{{ 'Edit property' | translate }}"
                 (click)="onShowEditPropertyModal(property)"
               >
@@ -96,7 +108,7 @@
               </button>
               <button
                 id="deletePropertyBtn"
-                class="btn btn-danger btn-icon mb-2"
+                class="btn btn-danger btn-icon mr-2"
                 mdbTooltip="{{ 'Delete property' | translate }}"
                 (click)="onShowDeletePropertyModal(property)"
               >

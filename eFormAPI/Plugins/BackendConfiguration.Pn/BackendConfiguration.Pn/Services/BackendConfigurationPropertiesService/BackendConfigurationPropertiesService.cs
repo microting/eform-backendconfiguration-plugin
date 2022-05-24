@@ -119,6 +119,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             ComplianceStatus = x.ComplianceStatus,
                             ComplianceStatusThirty = x.ComplianceStatusThirty,
                             WorkorderEnable = x.WorkorderEnable,
+                            WorkorderEntityListId = x.EntitySelectListAreas
                         }).ToListAsync();
                 }
 

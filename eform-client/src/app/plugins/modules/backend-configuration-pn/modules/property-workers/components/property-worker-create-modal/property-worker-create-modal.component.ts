@@ -72,7 +72,6 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
     this.deviceUserCreate$ = this.propertiesService
       .createSingleDeviceUser(this.simpleSiteModel)
       .subscribe((operation) => {
-        debugger;
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {
             this.assignWorkerToProperties(operation.model);

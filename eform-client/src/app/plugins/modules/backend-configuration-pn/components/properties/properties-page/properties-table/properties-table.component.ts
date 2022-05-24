@@ -1,5 +1,5 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,} from '@angular/core';
-import {Paged, TableHeaderElementModel} from 'src/app/common/models';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, ViewChild,} from '@angular/core';
+import {AdvEntitySelectableItemModel, Paged, TableHeaderElementModel} from 'src/app/common/models';
 import {PropertyModel} from '../../../../models/properties';
 import {applicationLanguages} from 'src/app/common/const';
 import * as R from 'ramda';
@@ -13,6 +13,8 @@ import {
   BackendConfigurationPnPropertiesService
 } from 'src/app/plugins/modules/backend-configuration-pn/services';
 import {Observable, Subscription} from 'rxjs';
+import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {EntitySelectService} from 'src/app/common/services';
 
 @Component({
   selector: 'app-properties-table',
@@ -34,6 +36,8 @@ export class PropertiesTableComponent implements OnInit {
   sortUpdated: EventEmitter<void> = new EventEmitter<void>();
   @Output()
   showDocxReportModal: EventEmitter<number> = new EventEmitter<number>();
+  @Output()
+  showEditEntityListModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
 
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Id', elementId: 'idTableHeader', sortable: true },
@@ -68,29 +72,18 @@ export class PropertiesTableComponent implements OnInit {
   }
 
   constructor(public propertiesStateService: PropertiesStateService,
+              private entitySelectService: EntitySelectService,
               public authStateService: AuthStateService,) {}
 
   ngOnInit(): void {}
 
-  onShowDeletePropertyModal(planning: PropertyModel) {
-    this.showDeletePropertyModal.emit(planning);
+  onShowDeletePropertyModal(propertyModel: PropertyModel) {
+    this.showDeletePropertyModal.emit(propertyModel);
   }
 
-  onShowEditPropertyModal(planning: PropertyModel) {
-    this.showEditPropertyModal.emit(planning);
+  onShowEditPropertyModal(propertyModel: PropertyModel) {
+    this.showEditPropertyModal.emit(propertyModel);
   }
-
-  // getLanguageNameById(languageId: number): string {
-  //   return applicationLanguages.find((x) => x.id === languageId).text;
-  // }
-  //
-  // getLanguages(property: PropertyModel): string {
-  //   let languages = [];
-  //   for (const language of property.languages) {
-  //     languages = [...languages, this.getLanguageNameById(language.id)];
-  //   }
-  //   return R.join(' | ', languages);
-  // }
 
   sortTable(sort: string) {
     this.propertiesStateService.onSortTable(sort);
@@ -115,32 +108,7 @@ export class PropertiesTableComponent implements OnInit {
     this.showDocxReportModal.emit(propertyId);
   }
 
-  // getColorBadge(property: PropertyModel): string {
-  //   let complianceStatusBadge = 'badge bg-warning';
-  //   this.complianceService
-  //     .getComplianceStatus(property.id)
-  //     .subscribe((data) => {
-  //       if (data && data.success) {
-  //         console.log('badge is ' + data.model + ' for property ' + property.name);
-  //         // this.compliances = data.model.entities;
-  //         switch (data.model) {
-  //           case PropertyCompliancesColorBadgesEnum.Waiting:
-  //             return complianceStatusBadge = 'badge bg-warning';
-  //             break;
-  //           case PropertyCompliancesColorBadgesEnum.Success:
-  //             return complianceStatusBadge = 'badge bg-success';
-  //             break;
-  //           case PropertyCompliancesColorBadgesEnum.Danger:
-  //             return complianceStatusBadge = 'badge bg-danger';
-  //             break;
-  //           case PropertyCompliancesColorBadgesEnum.Warning:
-  //             return complianceStatusBadge = 'badge bg-warning';
-  //             break;
-  //           default:
-  //             return complianceStatusBadge = 'badge bg-success';
-  //             break;
-  //         }
-  //       }
-  //     });
-  // }
+  onShowEditEntityListModal(propertyModel: PropertyModel) {
+    this.showEditEntityListModal.emit(propertyModel);
+  }
 }
