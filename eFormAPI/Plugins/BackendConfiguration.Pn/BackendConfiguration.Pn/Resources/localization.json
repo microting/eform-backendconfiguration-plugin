@@ -378,6 +378,24 @@
     }
   },
   {
+    "Key": "All",
+    "LocalizedValue": {
+      "da": "Alle",
+      "de": "Alle",
+      "en": "All",
+      "uk-UA": "всі"
+    }
+  },
+  {
+    "Key": "Completed",
+    "LocalizedValue": {
+      "da": "Afsluttet",
+      "de": "Abgeschlossen",
+      "en": "Completed",
+      "uk-UA": "Завершено"
+    }
+  },
+  {
     "Key": "MaxChrNumbersReached",
     "LocalizedValue": {
       "da": "Maks antal CHR numre oprettet",

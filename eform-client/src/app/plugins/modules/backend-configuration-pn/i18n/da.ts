@@ -179,5 +179,6 @@ export const da = {
   'Description of task': 'Beskrivelse af opgave',
   'All': 'Alle',
   'Ongoing': 'Igangværende',
-  'Completed': 'Afsluttet'
+  'Completed': 'Afsluttet',
+  'Edit list of areas for workorder': 'Rediger områder til Opgavestyring'
 };
