@@ -109,13 +109,19 @@
       [tableHeaders]="tableHeadersT7"
       [stickyHeader]="true"
     ></thead>
+    <thead
+      *ngIf="selectedArea.type === 9"
+      table-headers
+      [tableHeaders]="tableHeadersT6"
+      [stickyHeader]="true"
+    ></thead>
     <tbody id="areaRulesTableBody">
       <tr *ngFor="let rule of areaRules; let i = index">
         <td>{{ rule.id }}</td>
-        <td id="ruleName">
+        <td id="ruleName" *ngIf="selectedArea.type !== 9">
           {{ rule.translatedName }}
         </td>
-        <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7 || selectedArea.type === 8">
+        <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7 || selectedArea.type === 8 || selectedArea.type === 9">
           <td id="ruleEformNameT1">
             {{ rule.eformName }}
           </td>
@@ -166,7 +172,7 @@
               <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
             </button>
             <ng-container *ngIf="!rule.isDefault">
-              <button
+              <button *ngIf="selectedArea.type !== 9"
                 id="showEditRuleBtn"
                 class="btn btn-accent text-black-50 btn-icon mb-2"
                 mdbTooltip="{{ 'Edit rule' | translate }}"
@@ -175,7 +181,7 @@
               >
                 <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
               </button>
-              <button
+              <button *ngIf="selectedArea.type !== 9"
                 id="deleteRuleBtn"
                 class="btn btn-danger btn-icon mb-2"
                 mdbTooltip="{{ 'Delete rule' | translate }}"

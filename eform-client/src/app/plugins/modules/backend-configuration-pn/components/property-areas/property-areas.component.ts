@@ -35,6 +35,7 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
     '05. Stalde: Halebid og klargøring',
     '21. DANISH Standard',
     '100. Diverse',
+    '25. Kemisk APV'
   ]
 
   getTranslateSub$: Subscription;

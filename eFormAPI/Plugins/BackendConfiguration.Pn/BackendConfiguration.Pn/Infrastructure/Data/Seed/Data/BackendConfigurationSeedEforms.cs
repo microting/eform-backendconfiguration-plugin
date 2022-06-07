@@ -775,6 +775,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("24.04.03 Tilsætningsstoffer i foder - fytase eller andet", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("25.01 Registrer produkter", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("25.02 Vis kemisk produkt", headers);
+			theList.Add(item);
 
 			return theList;
 		}

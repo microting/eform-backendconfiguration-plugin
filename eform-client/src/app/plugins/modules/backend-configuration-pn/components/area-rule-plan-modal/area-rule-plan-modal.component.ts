@@ -21,6 +21,7 @@ import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {AuthStateService} from 'src/app/common/store';
 import {AreaRuleEntityListModalComponent} from '../../components';
 import {TranslateService} from '@ngx-translate/core';
+import {SiteDto} from 'src/app/common/models';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -46,6 +47,7 @@ export class AreaRulePlanModalComponent implements OnInit {
   repeatTypeMonth: {name: string, id: number}[] = R.map(x => {
     return {name: x === 1? 'Every' : x.toString(), id: x}
   }, R.range(1, 25));// 1, 2, ..., 23, 24.
+  selectedSite: SiteDto = new SiteDto();
 
   get currentDate() {
     return set(new Date(), {
@@ -108,6 +110,11 @@ export class AreaRulePlanModalComponent implements OnInit {
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
     }
+    if (this.selectedArea.type == 9) {
+      this.selectedSite = this.selectedArea.availableWorkers.find(
+        (x) => x.siteId === this.selectedAreaRulePlanning.assignedSites[0].siteId
+      );
+    }
     this.frame.show();
   }
 
@@ -150,6 +157,16 @@ export class AreaRulePlanModalComponent implements OnInit {
         (x) => x.siteId !== siteId
       );
     }
+  }
+
+  addToArraySelect(e: any) {
+    const assignmentObject = new AreaRuleAssignedSitesModel();
+    assignmentObject.checked = true;
+    assignmentObject.siteId = e.siteId;
+    this.selectedAreaRulePlanning.assignedSites = [
+      ...this.selectedAreaRulePlanning.assignedSites,
+      assignmentObject,
+    ];
   }
 
   getAssignmentBySiteId(siteId: number) {
@@ -251,6 +268,11 @@ export class AreaRulePlanModalComponent implements OnInit {
           complianceModifiable: this.selectedAreaRule.typeSpecificFields.complianceModifiable,
           notifications: this.selectedAreaRule.typeSpecificFields.notifications,
           notificationsModifiable: this.selectedAreaRule.typeSpecificFields.notificationsModifiable,
+        };
+      }
+      case 9: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
         };
       }
       default: {

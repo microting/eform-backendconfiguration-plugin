@@ -208,6 +208,78 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .FirstAsync();
                     switch (area.Type)
                     {
+                        case AreaTypesEnum.Type9:
+                        {
+                            var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    // Name = "05. Halebid og klargøring af stalde",
+                                    Name = "25. Kemisk APV",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    // Name = "05. Tailbite and preparation of stables",
+                                    Name = "25. Chemical APV",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    // Name = "05. Stallungen",
+                                    Name = "25. Chemisches APV",
+                                    Description = "",
+                                },
+                            }, property.FolderId);
+                            var assignmentWithOneFolder = new ProperyAreaFolder
+                            {
+                                FolderId = folderId,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
+                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+
+                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false);
+
+                            property.EntitySearchListChemicals = Convert.ToInt32(groupCreate.MicrotingUid);
+                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Regno - {property.Name}", "", true, false);
+                            property.EntitySearchListChemicalRegNos = Convert.ToInt32(groupCreate.MicrotingUid);
+                            await property.Update(_backendConfigurationPnDbContext);
+                            string text = "25.01 Registrer produkter";
+
+                            var eformId = await sdkDbContext.CheckListTranslations
+                                .Where(x => x.Text == text)
+                                .Select(x => x.CheckListId)
+                                .FirstAsync();
+
+                            var areaRule = new AreaRule
+                            {
+                                PropertyId = property.Id,
+                                FolderId = folderId,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId,
+                                EformId = eformId,
+                                EformName = text,
+                                AreaId = area.Id
+                            };
+                            AreaInitialField areaInitialField = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id).FirstOrDefaultAsync();
+                            areaInitialField.EformName = text;
+                            await areaInitialField.Update(_backendConfigurationPnDbContext);
+                            await areaRule.Create(_backendConfigurationPnDbContext);
+                            AreaRuleInitialField areaRuleInitialField = new AreaRuleInitialField
+                            {
+                                AreaRuleId = areaRule.Id,
+                                Notifications = false,
+                                ComplianceEnabled = false,
+                                RepeatEvery = 0,
+                                RepeatType = 0,
+                                EformName = text,
+                            };
+                            await areaRuleInitialField.Create(_backendConfigurationPnDbContext);
+                            break;
+                        }
                         case AreaTypesEnum.Type3:
                         {
                             var folderId = await core.FolderCreate(new List<CommonTranslationsModel>

@@ -392,7 +392,7 @@
               </div>
             </ng-container>
           </ng-container>
-          <div class="table-responsive">
+          <div class="table-responsive" *ngIf="selectedArea.type !== 9">
             <table class="table table-xs table-bordered text-center z-depth-1">
               <thead>
                 <tr>
@@ -428,6 +428,23 @@
               </tbody>
             </table>
           </div>
+
+          <ng-container *ngIf="selectedAreaRulePlanning.status">
+            <ng-select *ngIf="selectedArea.type === 9"
+                       [items]="selectedArea.availableWorkers"
+                       [searchable]="false"
+                       [clearable]="false"
+                       [multiple]="false"
+                       [placeholder]="selectedSite.siteName"
+                       [(ngModel)]="selectedAreaRulePlanning.assignedSites"
+                       (change)="addToArraySelect($event)"
+                       bindLabel="siteName"
+                       bindValue="siteId"
+                       id="createAssignedWorkers">
+
+            </ng-select>
+          </ng-container>
+
         </div>
       </div>
       <div class="modal-footer">

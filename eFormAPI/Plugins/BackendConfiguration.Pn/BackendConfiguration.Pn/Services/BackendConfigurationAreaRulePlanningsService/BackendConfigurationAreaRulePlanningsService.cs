@@ -1,3 +1,4 @@
+using eFormCore;
 using Microting.eForm.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
@@ -1234,6 +1235,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         await CreatePlanningType6(areaRule, sdkDbContext, areaRulePlanningModel, core);
                         break;
                     }
+                case AreaTypesEnum.Type9: // heat pumps
+                    {
+                        await CreatePlanningType9(areaRule, sdkDbContext, areaRulePlanningModel, core);
+                        break;
+                    }
                 default:
                     {
                         await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core);
@@ -2106,6 +2112,100 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 _backendConfigurationPnDbContext);
             await areaRulePlanningForType6One.Create(_backendConfigurationPnDbContext);
             await areaRulePlanningForType6Two.Create(_backendConfigurationPnDbContext);
+        }
+
+
+        private async Task CreatePlanningType9(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, Core core)
+        {
+            // await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core);
+
+            var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
+            if (areaRulePlanningModel.Status)
+            {
+                var siteId = sites.First();
+                var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
+                var language =
+                    await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
+                var entityListUid = (int)await _backendConfigurationPnDbContext.Properties
+                    .Where(x => x.Id == areaRule.PropertyId)
+                    .Select(x => x.EntitySearchListChemicals)
+                    .FirstAsync().ConfigureAwait(false);
+                var entityListUidRegNo = (int)await _backendConfigurationPnDbContext.Properties
+                    .Where(x => x.Id == areaRule.PropertyId)
+                    .Select(x => x.EntitySearchListChemicalRegNos)
+                    .FirstAsync().ConfigureAwait(false);
+                // if (!sdkDbContext.CheckListSites
+                //         .Any(x =>
+                //             x.CheckListId == areaRule.EformId &&
+                //             x.SiteId == siteId &&
+                //             x.WorkflowState != Constants.WorkflowStates.Removed))
+                // {
+                var mainElement = await core.ReadeForm((int)areaRule.EformId, language);
+                // todo add group id to eform
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId);
+                var folderMicrotingId = folder.MicrotingUid.ToString();
+                mainElement.Repeated = 0;
+                mainElement.CheckListFolderName = folderMicrotingId;
+                mainElement.StartDate = DateTime.Now.ToUniversalTime();
+                mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                mainElement.DisplayOrder = 10000000;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[0]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[1]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[2]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[3]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[4]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[5]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[6]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[7]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[8]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[9]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[10]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[11]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[12]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[13]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[14]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[15]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[16]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[17]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[18]).EntityTypeId = entityListUid;
+                ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[19]).EntityTypeId = entityListUidRegNo;
+                /*var caseId = */
+                var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folder.Id);
+
+                var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName,
+                    areaRule.FolderId, areaRulePlanningModel, areaRule);
+                planning.RepeatEvery = 0;
+                planning.RepeatType = RepeatType.Day;
+                planning.StartDate = DateTime.Now.ToUniversalTime();
+                var now = DateTime.UtcNow;
+                planning.LastExecutedTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
+                await planning.Create(_itemsPlanningPnDbContext);
+                var planningCase = new PlanningCase
+                {
+                    PlanningId = planning.Id,
+                    Status = 66,
+                    MicrotingSdkeFormId = (int)areaRule.EformId
+                };
+                await planningCase.Create(_itemsPlanningPnDbContext);
+                var planningCaseSite = new PlanningCaseSite
+                {
+                    MicrotingSdkSiteId = siteId,
+                    MicrotingSdkeFormId = (int)areaRule.EformId,
+                    Status = 66,
+                    PlanningId = planning.Id,
+                    PlanningCaseId = planningCase.Id,
+                    MicrotingSdkCaseId = (int)caseId
+                };
+
+                await planningCaseSite.Create(_itemsPlanningPnDbContext);
+
+                var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
+                    areaRule.FolderId);
+
+
+                await areaRulePlanning.Create(_backendConfigurationPnDbContext);
+                // }
+            }
         }
 
         private async Task CreatePlanningDefaultType(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, eFormCore.Core core)
