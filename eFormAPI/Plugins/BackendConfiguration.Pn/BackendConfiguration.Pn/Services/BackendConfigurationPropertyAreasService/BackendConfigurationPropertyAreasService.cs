@@ -248,7 +248,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             await SeedTailBite(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
                             newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
                             await newAssignment.Update(_backendConfigurationPnDbContext);
-                            string text = $"05. Halebid - {property.Name}";
+                            string text = $"05. Halebid og risikovurdering - {property.Name}";
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                             {
                                 areaRule.PropertyId = property.Id;
@@ -1282,7 +1282,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Property property =
                                 await _backendConfigurationPnDbContext.Properties
                                     .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
-                            string eformName = $"05. Halebid - {property.Name}";
+                            string eformName = $"05. Halebid og risikovurdering - {property.Name}";
                             var eformId = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.Text == eformName)
                                 .Select(x => x.CheckListId)
@@ -1599,7 +1599,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
         private async Task SeedTailBite(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
         {
-            string text = $"05. Halebid - {propertyName}";
+            string text = $"05. Halebid og risikovurdering - {propertyName}";
             if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
             {
                 var assembly = Assembly.GetExecutingAssembly();

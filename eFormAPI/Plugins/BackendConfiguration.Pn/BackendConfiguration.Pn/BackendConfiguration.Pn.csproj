@@ -101,8 +101,6 @@
       <EmbeddedResource Include="Resources\eForms\22. Sigtetest.xml" />
       <None Remove="Resources\eForms\25. Markvandingsforbrug.xml" />
       <EmbeddedResource Include="Resources\eForms\25. Markvandingsforbrug.xml" />
-      <None Remove="Resources\eForms\05. Halebid.xml" />
-      <EmbeddedResource Include="Resources\eForms\05. Halebid.xml" />
       <None Remove="Resources\eForms\23.01.02 Gyllekøling.xml" />
       <EmbeddedResource Include="Resources\eForms\23.01.02 Gyllekøling.xml" />
       <None Remove="Resources\eForms\23.01.03 Forsuring.xml" />

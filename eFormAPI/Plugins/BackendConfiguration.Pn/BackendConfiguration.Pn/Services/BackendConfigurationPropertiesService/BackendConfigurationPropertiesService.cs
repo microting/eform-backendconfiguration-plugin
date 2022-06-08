@@ -717,7 +717,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             }
                         }
 
-                        string eformName = $"05. Halebid - {property.Name}";
+                        string eformName = $"05. Halebid og risikovurdering - {property.Name}";
                         var eForm = await sdkDbContext.CheckListTranslations
                             .Where(x => x.Text == eformName)
                             .FirstOrDefaultAsync();
