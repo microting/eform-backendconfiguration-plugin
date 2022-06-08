@@ -36,6 +36,7 @@ export class PropertyCreateModalComponent implements OnInit {
 
   show() {
     this.frame.show();
+    this.propertyIsFarm = false;
   }
 
   hide() {

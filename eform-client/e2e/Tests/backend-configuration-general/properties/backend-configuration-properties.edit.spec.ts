@@ -18,6 +18,7 @@ describe('Backend Configuration Property - Edit', function () {
       name: generateRandmString(),
       chrNumber: generateRandmString(),
       address: generateRandmString(),
+      cvrNumber: '1111111',
       // selectedLanguages: [
       //   { languageId: 1, languageName: 'Dansk' },
       //   { languageId: 2, languageName: 'Engelsk' },
@@ -61,6 +62,7 @@ describe('Backend Configuration Property - Edit', function () {
       name: generateRandmString(),
       chrNumber: generateRandmString(),
       address: generateRandmString(),
+      cvrNumber: '1111111',
       // selectedLanguages: [
       //   { languageId: 1, languageName: 'Dansk' },
       //   { languageId: 2, languageName: 'Engelsk' },

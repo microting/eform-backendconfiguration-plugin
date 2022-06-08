@@ -222,14 +222,14 @@ export class BackendConfigurationPropertiesPage extends Page {
       timeout: 40000,
     });
     if (property) {
+      if (property.cvrNumber) {
+        await (await this.createCVRNumber()).setValue(property.cvrNumber);
+      }
       if (property.name) {
         await (await this.createPropertyName()).setValue(property.name);
       }
       if (property.chrNumber) {
         await (await this.createCHRNumber()).setValue(property.chrNumber);
-      }
-      if (property.cvrNumber) {
-        await (await this.createCVRNumber()).setValue(property.cvrNumber);
       }
       if (property.address) {
         await (await this.createPropertyAddress()).setValue(property.address);
