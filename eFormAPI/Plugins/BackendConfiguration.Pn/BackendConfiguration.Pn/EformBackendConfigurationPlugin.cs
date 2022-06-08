@@ -105,7 +105,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
             services.AddControllers();
-            SeedEForms(services);
+            //SeedEForms(services);
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)

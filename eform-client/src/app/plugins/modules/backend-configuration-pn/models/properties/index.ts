@@ -5,3 +5,4 @@ export * from './properties-request.model';
 export * from './property-areas-update.model';
 export * from './property-area.model';
 export * from './property-workers-assignment.model';
+export * from './result.model';

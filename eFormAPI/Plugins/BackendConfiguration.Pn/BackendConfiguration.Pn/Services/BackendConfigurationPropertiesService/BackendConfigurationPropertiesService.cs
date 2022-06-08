@@ -894,5 +894,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingProperties")}: {ex.Message}");
             }
         }
+
+        public async Task<OperationDataResult<Result>> GetCompanyType(int cvrNumber)
+        {
+            var cvrHelper = new CvrHelper();
+            var cvr = await cvrHelper.GetCompanyInfo(cvrNumber);
+
+            return new OperationDataResult<Result>(true, cvr);
+        }
     }
 }

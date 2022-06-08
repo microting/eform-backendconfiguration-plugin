@@ -14,7 +14,7 @@ import {
   PropertyUpdateModel,
   PropertyAreaModel,
   PropertyAreasUpdateModel,
-  PropertyAssignWorkersModel,
+  PropertyAssignWorkersModel, ResultModel,
 } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
@@ -28,6 +28,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   CreateEntityList: 'api/backend-configuration-pn/property-areas/create-entity-list/',
   CreateDeviceUser: 'api/backend-configuration-pn/properties/assignment/create-device-user',
   GetAll: 'api/backend-configuration-pn/properties/assignment/index-device-user',
+  GetCompanyType: 'api/backend-configuration-pn/properties/get-company-type',
 };
 
 @Injectable({
@@ -129,6 +130,12 @@ export class BackendConfigurationPnPropertiesService {
     return this.apiBaseService.get(
       BackendConfigurationPnPropertiesMethods.Properties,
       { id: id }
+    );
+  }
+  getCompanyType(id: number): Observable<OperationDataResult<ResultModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.GetCompanyType,
+      { cvrNumber: id }
     );
   }
 

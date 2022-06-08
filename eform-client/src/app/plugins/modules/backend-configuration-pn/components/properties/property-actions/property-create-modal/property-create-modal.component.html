@@ -21,6 +21,7 @@
                   mdbInput
                   type="text"
                   [(ngModel)]="newProperty.cvr"
+                  (ngModelChange)="onNameFilterChanged($event)"
                   name="createCVRNumber"
                   class="form-control"
                   id="createCVRNumber"
@@ -31,7 +32,7 @@
               </div>
             </div>
           </div>
-          <div class="row">
+          <div class="row" *ngIf="propertyIsFarm">
             <div class="col-md-12">
               <div class="md-form">
                 <input
@@ -46,7 +47,7 @@
               </div>
             </div>
           </div>
-          <div class="row">
+          <div class="row" *ngIf="propertyIsFarm">
             <div class="col-md-12">
               <div class="md-form">
                 <input
