@@ -7,7 +7,7 @@ if (( "$GIT_STATUS" > 0 )); then
 	cd eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn
   CURRENT_NUMBER_OF_COMMITS=`git log --oneline | wc -l`
 
-	PACKAGES=('Microting.eForm' 'Microting.eFormApi.BasePn' 'Microting.EformBackendConfigurationBase' 'Magick.NET-Q16-x64' 'Microting.ItemsPlanningBase')
+	PACKAGES=('Microting.eForm' 'Microting.eFormApi.BasePn' 'Microting.EformBackendConfigurationBase' 'Magick.NET-Q16-x64' 'Microting.ItemsPlanningBase' 'Microting.TimePlanningBase' 'Microting.EformAngularFrontendBase')
 	PROJECT_NAME='BackendConfiguration.Pn.csproj'
 	REPOSITORY='eform-angular-backendconfiguration-plugin'
 
