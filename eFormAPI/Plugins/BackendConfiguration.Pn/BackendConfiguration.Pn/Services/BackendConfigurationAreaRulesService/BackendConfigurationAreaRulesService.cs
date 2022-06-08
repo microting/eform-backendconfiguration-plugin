@@ -147,8 +147,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                     if (property.ChemicalLastUpdatedAt == null || property.ChemicalLastUpdatedAt < DateTime.UtcNow.AddDays(-1))
                     {
-                        var url = "http://localhost:5001/get-all-chemicals";
-                        //var url = "https://chemicalbase.microting.com/get-all-chemicals";
+                        var url = "https://chemicalbase.microting.com/get-all-chemicals";
                         var client = new HttpClient();
                         var response = await client.GetAsync(url);
                         var result = await response.Content.ReadAsStringAsync();
