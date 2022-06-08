@@ -1101,6 +1101,47 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 1, // days
                     ComplianceEnabled = true,
                 },
+            },
+            new Area
+            {
+                Id = 28,
+                Type = AreaTypesEnum.Type9,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "25. Kemisk APV", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 1,// da
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "25. Chemical APV",
+                        Description = "", // todo add link
+                        LanguageId = 2,// en
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "25. Chemisches APV", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 3,// ge
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = false,
+                    RepeatType = 0, // days
+                    ComplianceEnabled = false,
+                },
             }
         };
 

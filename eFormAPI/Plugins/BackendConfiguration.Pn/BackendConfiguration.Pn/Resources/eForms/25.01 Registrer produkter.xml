@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>142719</Id>
+    <Repeated>0</Repeated>
+    <Label>25.01 Registrer produkter|25.01 Register products|25.01 Registrieren Sie Produkte</Label>
+    <StartDate>2022-06-04</StartDate>
+    <EndDate>2032-06-04</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>142719</Id>
+            <Label>25.01 Registrer produkter|25.01 Register products|25.01 Registrieren Sie Produkte</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>true</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type="choose_entity">
+                    <Id>376014</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376015</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376016</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>2</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376017</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>3</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376018</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>4</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376019</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>5</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376020</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>6</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376021</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>7</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376022</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>8</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376023</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>9</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376024</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>10</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376025</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>11</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376026</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>12</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376027</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>13</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376028</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>14</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376029</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>15</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376030</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>16</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376031</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>17</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376032</Id>
+                    <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>18</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <BarcodeEnabled>true</BarcodeEnabled>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376033</Id>
+                    <Label>Søg efter reg-nr|Search for reg-no|Suche nach Reg-Nr</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>19</DisplayOrder>
+                    <EntityTypeId>SOURCE_REPLACE_ME_2</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="SaveButton">
+                    <Id>376034</Id>
+                    <Label>Gem og send ind|Save and submit|Speichern und absenden</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>20</DisplayOrder>
+                    <Value/>
+                    <Color>f0f8db</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>

@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 
+using ChemicalsBase.Infrastructure;
+using ChemicalsBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn
@@ -142,6 +144,11 @@ namespace BackendConfiguration.Pn
                 {
                     var resourceStream =
                         assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.{eformName}.xml");
+
+                    if (eformName == "25.02 Vis kemisk produkt")
+                    {
+                        Console.WriteLine("weffw");
+                    }
                     if (resourceStream == null)
                     {
                         Console.WriteLine(eformName);
@@ -159,8 +166,16 @@ namespace BackendConfiguration.Pn
                             contents = contents.Replace("SOURCE_REPLACE_ME", "123");
                         }
 
+                        if (eformName == "25.01 Registrer produkter")
+                        {
+                            contents = contents.Replace("SOURCE_REPLACE_ME_2", "123");
+                            contents = contents.Replace("SOURCE_REPLACE_ME", "456");
+                        }
+
                         var newTemplate = await core.TemplateFromXml(contents);
-                        if (!await sdkDbContext.CheckLists.AnyAsync(x => x.OriginalId == newTemplate.OriginalId))
+                        if (!await sdkDbContext.CheckLists
+                                .AnyAsync(x => x.OriginalId == newTemplate.OriginalId
+                                               && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             var clId = await core.TemplateCreate(newTemplate);
                             var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
@@ -1093,6 +1108,9 @@ namespace BackendConfiguration.Pn
             var timeRegistrationConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
                 "eform-angular-time-planning-plugin");
+            var chemicalBaseConnectionString = connectionString.Replace(
+                "eform-backend-configuration-plugin",
+                "chemical-base-plugin");
 
             _connectionString = connectionString;
             services.AddDbContext<BackendConfigurationPnDbContext>(o =>
@@ -1118,6 +1136,18 @@ namespace BackendConfiguration.Pn
                     builder.EnableRetryOnFailure();
                     builder.MigrationsAssembly(PluginAssembly().FullName);
                 }));
+
+            services.AddDbContext<ChemicalsDbContext>(o =>
+                o.UseMySql(chemicalBaseConnectionString, new MariaDbServerVersion(
+                    new Version(10, 4, 0)), mySqlOptionsAction: builder =>
+                {
+                    builder.EnableRetryOnFailure();
+                    builder.MigrationsAssembly(PluginAssembly().FullName);
+                }));
+
+            var chemicalsContextFactory = new ChemicalsContextFactory();
+            var chemicalsDbContext = chemicalsContextFactory.CreateDbContext(new[] { chemicalBaseConnectionString });
+            chemicalsDbContext.Database.Migrate();
 
             var contextFactory = new BackendConfigurationPnContextFactory();
             var context = contextFactory.CreateDbContext(new[] { connectionString });

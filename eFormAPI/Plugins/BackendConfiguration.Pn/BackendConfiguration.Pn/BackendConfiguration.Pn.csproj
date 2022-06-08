@@ -275,15 +275,20 @@
       <EmbeddedResource Include="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml" />
       <None Remove="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
       <EmbeddedResource Include="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
+      <None Remove="Resources\eForms\25.01 Kemisk produkt registrering.xml" />
+      <EmbeddedResource Include="Resources\eForms\25.01 Registrer produkter.xml" />
+      <None Remove="Resources\eForms\25.02 Vis kemisk produkt.xml" />
+      <EmbeddedResource Include="Resources\eForms\25.02 Vis kemisk produkt.xml" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="ChemicalsBase" Version="1.0.0" />
       <PackageReference Include="Magick.NET-Q16-x64" Version="11.1.2" />
-      <PackageReference Include="Microting.eForm" Version="5.5.24" />
+      <PackageReference Include="Microting.eForm" Version="5.5.25" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="1.2.3" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.60" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.16" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.17" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.123" />
       <PackageReference Include="ClosedXML" Version="0.95.4" />

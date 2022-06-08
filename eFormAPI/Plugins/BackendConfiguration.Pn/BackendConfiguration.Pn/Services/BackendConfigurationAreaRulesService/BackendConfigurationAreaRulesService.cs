@@ -22,6 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using ChemicalsBase.Infrastructure;
+using ChemicalsBase.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 {
     using System;
@@ -49,19 +55,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
+        private readonly ChemicalsDbContext _chemicalsDbContext;
 
         public BackendConfigurationAreaRulesService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-            ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext, ChemicalsDbContext chemicalsDbContext)
         {
             _coreHelper = coreHelper;
             _userService = userService;
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
+            _chemicalsDbContext = chemicalsDbContext;
         }
 
         public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId)
@@ -73,7 +81,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == propertyAreaId)
-                    .Select(x => new {x.AreaId, x.PropertyId, x.Area.Type})
+                    .Select(x => new {x.AreaId, x.PropertyId, x.Area.Type, x.GroupMicrotingUuid})
                     .FirstAsync();
 
                 var currentUserLanguage = await _userService.GetCurrentUserLanguage();
@@ -129,6 +137,80 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 if (areaProperty.Type == AreaTypesEnum.Type7 || areaProperty.Type == AreaTypesEnum.Type8)
                 {
                     queryWithSelect = queryWithSelect.OrderBy(x => x.TranslatedName);
+                }
+
+                if (areaProperty.Type == AreaTypesEnum.Type9)
+                {
+                    var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == areaProperty.PropertyId);
+                    var entityGroup = await core.EntityGroupRead(property.EntitySearchListChemicals.ToString());
+                    var entityGroupRegNo = await core.EntityGroupRead(property.EntitySearchListChemicalRegNos.ToString());
+
+                    if (property.ChemicalLastUpdatedAt == null || property.ChemicalLastUpdatedAt < DateTime.UtcNow.AddDays(-1))
+                    {
+                        var url = "http://localhost:5001/get-all-chemicals";
+                        //var url = "https://chemicalbase.microting.com/get-all-chemicals";
+                        var client = new HttpClient();
+                        var response = await client.GetAsync(url);
+                        var result = await response.Content.ReadAsStringAsync();
+
+                        JsonSerializerOptions options = new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true,
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+                        };
+                        var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+
+                        List<Chemical> chemicals = JsonSerializer.Deserialize<List<Chemical>>(result, options);
+                        if (chemicals != null)
+                        {
+                            int i = 0;
+                            foreach (Chemical chemical in chemicals)
+                            {
+                                Chemical c = null;
+                                if (_chemicalsDbContext.Chemicals.Any(x => x.RemoteId == chemical.RemoteId))
+                                {
+                                    c = await _chemicalsDbContext.Chemicals.SingleAsync(x => x.RemoteId == chemical.RemoteId);
+                                    chemical.Id = c.Id;
+                                    await chemical.Update(_chemicalsDbContext);
+                                }
+                                else
+                                {
+                                    // chemical.BarcodeValue = new List<string>();
+                                    await chemical.Create(_chemicalsDbContext);
+                                    foreach (Product product in chemical.Products)
+                                    {
+                                        await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode, chemical.Name,
+                                            nextItemUid.ToString());
+                                        nextItemUid++;
+                                    }
+                                    await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo, chemical.Name,
+                                        nextItemUid.ToString());
+                                }
+
+                            }
+                        }
+                        property.ChemicalLastUpdatedAt = DateTime.UtcNow;
+                        await property.Update(_backendConfigurationPnDbContext);
+                    }
+                    else
+                    {
+                        if (!sdkDbContext.EntityItems.Any(x => x.EntityGroupId == entityGroup.Id))
+                        {
+                            var chemicals = await _chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync();
+                            var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+                            foreach (Chemical chemical in chemicals)
+                            {
+                                foreach (Product product in chemical.Products)
+                                {
+                                    await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode, chemical.Name,
+                                        nextItemUid.ToString());
+                                    nextItemUid++;
+                                }
+                                await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo, chemical.Name,
+                                    nextItemUid.ToString());
+                            }
+                        }
+                    }
                 }
 
                 var areaRules = await queryWithSelect
