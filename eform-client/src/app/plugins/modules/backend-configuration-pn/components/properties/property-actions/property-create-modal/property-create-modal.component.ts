@@ -69,6 +69,7 @@ export class PropertyCreateModalComponent implements OnInit {
               this.propertyIsFarm = true;
               if (data.model.error !== 'NOT_FOUND') {
                 this.newProperty.address = data.model.address + ', ' + data.model.city;
+                this.newProperty.name = data.model.name;
               }
             }
             else {
@@ -78,6 +79,7 @@ export class PropertyCreateModalComponent implements OnInit {
                 this.propertyIsFarm = false;
                 if (data.model.error !== 'NOT_FOUND') {
                   this.newProperty.address = data.model.address + ', ' + data.model.city;
+                  this.newProperty.name = data.model.name;
                 }
               }
             }
