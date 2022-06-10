@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using JetBrains.Annotations;
+
 namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 {
     using System.Collections.Generic;
@@ -40,7 +42,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public bool WorkorderEnable { get; set; }
 
-        public int? IndustryCode { get; set; }
+        [CanBeNull] public string IndustryCode { get; set; }
 
         public bool IsFarm { get; set; }
 
