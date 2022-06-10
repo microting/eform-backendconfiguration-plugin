@@ -119,7 +119,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             ComplianceStatus = x.ComplianceStatus,
                             ComplianceStatusThirty = x.ComplianceStatusThirty,
                             WorkorderEnable = x.WorkorderEnable,
-                            WorkorderEntityListId = x.EntitySelectListAreas
+                            WorkorderEntityListId = x.EntitySelectListAreas,
+                            IsFarm = x.IsFarm,
+                            IndustryCode = x.IndustryCode
                         }).ToListAsync();
                 }
 
@@ -185,6 +187,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     UpdatedByUserId = _userService.UserId,
                     ItemPlanningTagId = planningTag.Id,
                     WorkorderEnable = propertyCreateModel.WorkorderEnable,
+                    IndustryCode = propertyCreateModel.IndustryCode,
+                    IsFarm = propertyCreateModel.IsFarm
                 };
                 await newProperty.Create(_backendConfigurationPnDbContext);
 

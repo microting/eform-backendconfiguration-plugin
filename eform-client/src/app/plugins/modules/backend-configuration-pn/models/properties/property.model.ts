@@ -17,4 +17,6 @@ export class PropertyModel {
   getFullName(): string {
     return `${this.cvr} - ${this.chr} - ${this.name}`;
   }
+  industryCode: number;
+  isFarm: boolean;
 }

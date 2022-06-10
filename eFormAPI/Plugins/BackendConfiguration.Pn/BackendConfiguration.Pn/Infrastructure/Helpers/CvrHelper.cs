@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -16,14 +17,14 @@ public class CvrHelper
         {
             return new Result()
             {
-                Industrycode = 0,
+                Industrycode = "0",
             };
         }
         if (number == 1)
         {
             return new Result()
             {
-                Industrycode = 1,
+                Industrycode = "1",
             };
         }
         var client = new HttpClient();
@@ -35,9 +36,16 @@ public class CvrHelper
         {
             PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
+        options.Converters.Add(new StringConverter());
+
         var res = JsonSerializer.Deserialize<Result>(result, options);
 
+        if (res.Industrycode.Length == 5)
+        {
+            res.Industrycode = "0" + res.Industrycode;
+        }
         return res;
     }
 }
@@ -86,7 +94,7 @@ public class Result
     [CanBeNull] public string Enddate { get; set; }
     public int? Employees { get; set; }
     public string Addressco { get; set; }
-    public int Industrycode { get; set; }
+    [CanBeNull] public string Industrycode { get; set; }
     public string Industrydesc { get; set; }
     public int Companycode { get; set; }
     public string Companydesc { get; set; }
@@ -99,4 +107,29 @@ public class Result
     public int Version { get; set; }
     [CanBeNull] public string Error { get; set; }
     [CanBeNull] public string Message { get; set; }
+}
+
+public class StringConverter : System.Text.Json.Serialization.JsonConverter<string>
+{
+    public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+
+        if (reader.TokenType == JsonTokenType.Number)
+        {
+            var stringValue = reader.GetInt32();
+            return stringValue.ToString();
+        }
+        else if (reader.TokenType == JsonTokenType.String)
+        {
+            return reader.GetString();
+        }
+
+        throw new System.Text.Json.JsonException();
+    }
+
+    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value);
+    }
+
 }

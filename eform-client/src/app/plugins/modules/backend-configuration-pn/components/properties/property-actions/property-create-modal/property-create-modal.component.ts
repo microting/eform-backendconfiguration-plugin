@@ -67,24 +67,32 @@ export class PropertyCreateModalComponent implements OnInit {
           if (data && data.success) {
             if (data.model.industrycode.toString().slice(0, 2) == '01') {
               this.propertyIsFarm = true;
+              this.newProperty.isFarm = true;
               if (data.model.error !== 'NOT_FOUND') {
                 this.newProperty.address = data.model.address + ', ' + data.model.city;
                 this.newProperty.name = data.model.name;
+                this.newProperty.industryCode = data.model.industrycode;
               }
             }
             else {
               if (data.model.error == 'REQUIRES_PAID_SUBSCRIPTION') {
                 this.propertyIsFarm = true;
+                this.newProperty.isFarm = true;
               } else {
                 this.propertyIsFarm = false;
+                this.newProperty.isFarm = false;
                 if (data.model.error !== 'NOT_FOUND') {
                   this.newProperty.address = data.model.address + ', ' + data.model.city;
                   this.newProperty.name = data.model.name;
+                  this.newProperty.industryCode = data.model.industrycode;
                 }
               }
             }
           }
         });
+    } else {
+      this.newProperty.name = '';
+      this.newProperty.address = '';
     }
   }
 

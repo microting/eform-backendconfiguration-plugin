@@ -50,5 +50,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         public bool WorkorderEnable { get; set; }
 
         public int? WorkorderEntityListId { get; set; }
+
+        public int? IndustryCode { get; set; }
+
+        public bool IsFarm { get; set; }
     }
 }
