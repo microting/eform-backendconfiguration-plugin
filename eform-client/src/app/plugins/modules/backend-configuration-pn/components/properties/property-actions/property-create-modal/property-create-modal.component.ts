@@ -59,6 +59,7 @@ export class PropertyCreateModalComponent implements OnInit {
     }
     if (number == 1111111) {
       this.propertyIsFarm = true;
+      this.newProperty.isFarm = true;
     }
     if (number > 1111111) {
       if (number.toString().length > 7)
