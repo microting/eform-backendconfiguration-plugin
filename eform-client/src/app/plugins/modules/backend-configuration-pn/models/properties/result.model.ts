@@ -4,6 +4,6 @@ export class ResultModel {
   address: string;
   city: string;
   zipCode: string;
-  industrycode: number;
+  industrycode: string;
   error: string;
 }

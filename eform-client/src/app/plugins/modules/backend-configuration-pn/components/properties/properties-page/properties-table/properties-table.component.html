@@ -36,7 +36,7 @@
           <td id="propertyCVR">
             {{ property.cvr }}
           </td>
-          <td id="propertyCHR">
+          <td id="propertyCHR" *ngIf="isFarms">
             {{ property.chr }}
           </td>
           <td id="propertyAddress">

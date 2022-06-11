@@ -787,6 +787,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("25.02 Vis kemisk produkt", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("01. Aflæsninger", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("02. Fækale uheld", headers);
+			theList.Add(item);
 
 			return theList;
 		}

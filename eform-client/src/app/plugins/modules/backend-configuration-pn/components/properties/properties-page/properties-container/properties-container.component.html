@@ -31,6 +31,8 @@
   </div>
   <app-properties-table
     [propertiesModel]="propertiesModel"
+    [tableHeaders]="tableHeaders"
+    [isFarms]="isFarms"
     (showDeletePropertyModal)="showDeletePropertyModal($event)"
     (showEditPropertyModal)="showEditPropertyModal($event)"
     (sortUpdated)="getProperties()"

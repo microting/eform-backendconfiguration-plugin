@@ -279,6 +279,10 @@
       <EmbeddedResource Include="Resources\eForms\25.01 Registrer produkter.xml" />
       <None Remove="Resources\eForms\25.02 Vis kemisk produkt.xml" />
       <EmbeddedResource Include="Resources\eForms\25.02 Vis kemisk produkt.xml" />
+      <None Remove="Resources\eForms\01. Aflæsninger.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Aflæsninger.xml" />
+      <None Remove="Resources\eForms\02. Fækale uheld.xml" />
+      <EmbeddedResource Include="Resources\eForms\02. Fækale uheld.xml" />
     </ItemGroup>
 
     <ItemGroup>

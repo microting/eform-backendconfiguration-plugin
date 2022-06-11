@@ -245,6 +245,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         Chr = x.CHR,
                         Cvr = x.CVR,
                         Name = x.Name,
+                        IsFarm = x.IsFarm,
+                        IndustryCode = x.IndustryCode,
                         Languages = x.SelectedLanguages
                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                             .Select(y => new CommonDictionaryModel { Id = y.LanguageId })
@@ -324,7 +326,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 }
                 property.Address = updateModel.Address;
                 property.CHR = updateModel.Chr;
-                property.CVR = updateModel.Cvr;
+                // property.CVR = updateModel.Cvr;
                 property.Name = updateModel.Name;
                 property.UpdatedByUserId = _userService.UserId;
 

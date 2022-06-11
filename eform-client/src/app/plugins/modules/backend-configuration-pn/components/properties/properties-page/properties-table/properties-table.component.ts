@@ -24,6 +24,8 @@ import {EntitySelectService} from 'src/app/common/services';
 })
 export class PropertiesTableComponent implements OnInit {
   @Input() propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
+  @Input() tableHeaders: TableHeaderElementModel[];
+  @Input() isFarms: boolean = false;
   @Output()
   showEditPropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   @Output()
@@ -39,34 +41,6 @@ export class PropertiesTableComponent implements OnInit {
   @Output()
   showEditEntityListModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
 
-  tableHeaders: TableHeaderElementModel[] = [
-    { name: 'Id', elementId: 'idTableHeader', sortable: true },
-    { name: 'Name', elementId: 'nameTableHeader', sortable: true,
-      visibleName: 'Property name' },
-    {
-      name: 'CVR',
-      visibleName: 'CVR Number',
-      elementId: 'cvrNumberTableHeader',
-      sortable: true,
-    },
-    {
-      name: 'CHR',
-      visibleName: 'CHR Number',
-      elementId: 'chrNumberTableHeader',
-      sortable: true,
-    },
-    {
-      name: 'Address',
-      visibleName: 'Property address',
-      elementId: 'addressTableHeader',
-      sortable: true,
-    },
-    // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
-    { name: 'Compliance', sortable: false },
-    // { name: 'Compliance 30', sortable: false },
-    { name: 'Actions', elementId: '', sortable: false },
-  ];
-
   get propertyCompliancesColorBadgesEnum() {
     return PropertyCompliancesColorBadgesEnum;
   }
@@ -75,7 +49,7 @@ export class PropertiesTableComponent implements OnInit {
               private entitySelectService: EntitySelectService,
               public authStateService: AuthStateService,) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   onShowDeletePropertyModal(propertyModel: PropertyModel) {
     this.showDeletePropertyModal.emit(propertyModel);

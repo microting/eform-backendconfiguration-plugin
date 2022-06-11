@@ -6,4 +6,6 @@ export class PropertyUpdateModel {
   address: string;
   languagesIds: number[] = [];
   workorderEnable: boolean = false;
+  isFarm: boolean = false;
+  industryCode: string;
 }

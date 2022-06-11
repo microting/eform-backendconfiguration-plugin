@@ -166,6 +166,16 @@ namespace BackendConfiguration.Pn
                             contents = contents.Replace("SOURCE_REPLACE_ME", "123");
                         }
 
+                        if (eformName == "01. Aflæsninger")
+                        {
+                            contents = contents.Replace("REPLACE_ME", "123");
+                        }
+
+                        if (eformName == "02. Fækale uheld")
+                        {
+                            contents = contents.Replace("REPLACE_ME", "123");
+                        }
+
                         if (eformName == "25.01 Registrer produkter")
                         {
                             contents = contents.Replace("SOURCE_REPLACE_ME_2", "123");
