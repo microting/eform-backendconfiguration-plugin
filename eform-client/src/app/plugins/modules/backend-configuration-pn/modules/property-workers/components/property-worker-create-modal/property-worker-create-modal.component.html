@@ -59,7 +59,7 @@
               </div>
             </div>
           </div>
-          <div class="row">
+          <div class="row" *ngIf="authStateService.isAdmin">
             <div class="col-md-12">
               <div class="custom-control custom-switch">
                 <input

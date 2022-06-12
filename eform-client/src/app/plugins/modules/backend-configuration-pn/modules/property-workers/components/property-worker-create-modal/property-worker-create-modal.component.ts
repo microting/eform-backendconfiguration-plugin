@@ -14,6 +14,8 @@ import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/comm
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import { PropertyAssignmentWorkerModel } from '../../../../models/properties/property-workers-assignment.model';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
+import {AuthService} from 'src/app/common/services';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -33,7 +35,8 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
   deviceUserAssign$: Subscription;
 
   constructor(
-    public propertiesService: BackendConfigurationPnPropertiesService
+    public propertiesService: BackendConfigurationPnPropertiesService,
+    public authStateService: AuthStateService
   ) {}
 
   ngOnInit() {
