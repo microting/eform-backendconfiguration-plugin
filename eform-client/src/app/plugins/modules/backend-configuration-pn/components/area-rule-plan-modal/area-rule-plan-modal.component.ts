@@ -111,9 +111,11 @@ export class AreaRulePlanModalComponent implements OnInit {
       this.selectedAreaRulePlanning.complianceEnabled = false;
     }
     if (this.selectedArea.type == 9) {
-      this.selectedSite = this.selectedArea.availableWorkers.find(
-        (x) => x.siteId === this.selectedAreaRulePlanning.assignedSites[0].siteId
-      );
+      if (this.selectedAreaRulePlanning.assignedSites.length > 0) {
+        this.selectedSite = this.selectedArea.availableWorkers.find(
+          (x) => x.siteId === this.selectedAreaRulePlanning.assignedSites[0].siteId
+        );
+      }
     }
     this.frame.show();
   }

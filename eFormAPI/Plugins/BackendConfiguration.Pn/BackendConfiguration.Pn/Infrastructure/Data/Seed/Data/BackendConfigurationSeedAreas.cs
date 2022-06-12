@@ -1154,7 +1154,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Name = "00. Aflæsninger, målinger, forbrug og fækale uheld", // todo need beter translate
                         Description = "", // todo add link
                         LanguageId = 1,// da
-                        InfoBox = "",
+                        InfoBox = "Et bassin pr linie",
                         Placeholder = "",
                         NewItemName = ""
                     },
