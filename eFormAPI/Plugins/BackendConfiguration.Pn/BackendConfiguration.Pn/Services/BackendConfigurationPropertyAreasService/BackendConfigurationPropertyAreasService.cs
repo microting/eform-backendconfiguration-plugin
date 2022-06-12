@@ -78,6 +78,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
+                var property = await _backendConfigurationPnDbContext.Properties.FirstAsync(x => x.Id == propertyId);
                 var propertyAreas = new List<PropertyAreaModel>();
 
                 var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperties
@@ -90,6 +91,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 var areas = _backendConfigurationPnDbContext.Areas
                     .Include(x => x.AreaTranslations)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.IsFarm == property.IsFarm)
                     .ToList();
 
                 List<PropertyAreaModel> areasForAdd;

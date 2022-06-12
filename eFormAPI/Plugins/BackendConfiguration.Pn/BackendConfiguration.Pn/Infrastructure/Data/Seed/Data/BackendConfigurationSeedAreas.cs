@@ -1142,6 +1142,48 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 0, // days
                     ComplianceEnabled = false,
                 },
+            },
+            new Area
+            {
+                Id = 29,
+                Type = AreaTypesEnum.Type10,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "00. Aflæsninger, målinger, forbrug og fækale uheld", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 1,// da
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "00. Readings, measurements, consumption and fecal accidents",
+                        Description = "", // todo add link
+                        LanguageId = 2,// en
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "00. Messwerte, Messungen, Verbrauch und Fäkalunfälle", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 3,// ge
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = false,
+                    RepeatType = 0, // days
+                    ComplianceEnabled = false,
+                },
+                IsFarm = false
             }
         };
 
