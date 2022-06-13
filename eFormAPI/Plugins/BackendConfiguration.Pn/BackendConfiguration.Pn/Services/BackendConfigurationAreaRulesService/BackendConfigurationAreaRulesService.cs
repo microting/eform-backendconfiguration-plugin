@@ -25,6 +25,8 @@ SOFTWARE.
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using BackendConfiguration.Pn.Infrastructure.Models.Pools;
+using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Entities;
 
@@ -258,6 +260,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var languages = await sdkDbContext.Languages.AsNoTracking().ToListAsync();
 
+                var areaId = await _backendConfigurationPnDbContext.AreaRules
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == ruleId)
+                    .Select(x => new {x.AreaId})
+                    .FirstAsync();
+
+                var area = await _backendConfigurationPnDbContext.Areas
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == areaId.AreaId).FirstAsync();
+
                 var areaRule = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == ruleId)
@@ -274,11 +286,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 //Description = languages.First(z => z.Id == y.LanguageId).Name,
                             }).ToList(),
                         IsDefault = x.IsDefault,
-                        TypeSpecificFields = new
-                            {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery, x.RepeatType},
+                        TypeSpecificFields = new TypeSpecificFields()
+                        {
+                            Alarm = (AreaRuleT2AlarmsEnum)x.Alarm,
+                            DayOfWeek = x.DayOfWeek,
+                            RepeatEvery = x.RepeatEvery,
+                            Type = (AreaRuleT2TypesEnum)x.RepeatType,
+                            EformId = x.EformId
+                        },
+                            // {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery, x.RepeatType},
                         EformId = x.EformId,
                     })
                     .FirstOrDefaultAsync();
+
 
                 if (areaRule == null)
                 {
@@ -292,6 +312,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         languages.First(z => z.Id == areaRuleTranslatedName.Id).Name;
                 }
 
+                if (area.Type == AreaTypesEnum.Type10)
+                {
+                    areaRule.TypeSpecificFields.PoolHoursModel = new PoolHoursModel
+                    {
+                        Parrings = await _backendConfigurationPnDbContext.PoolHours.Where(x => x.AreaRuleId == areaRule.Id).Select(y => new PoolHourModel()
+                        {
+                            IsActive = y.IsActive,
+                            AreaRuleId = y.AreaRuleId,
+                            DayOfWeek = (int)y.DayOfWeek,
+                            Index = y.Index
+
+                        }).ToListAsync()
+                    };
+                }
 
                 return new OperationDataResult<AreaRuleModel>(true, areaRule);
             }
@@ -310,6 +344,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
             {
                 var core = await _coreHelper.GetCore();
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var areaId = await _backendConfigurationPnDbContext.AreaRules
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == updateModel.Id)
+                    .Select(x => new {x.AreaId})
+                    .FirstAsync();
+
+                var area = await _backendConfigurationPnDbContext.Areas
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == areaId.AreaId).FirstAsync();
+
                 var areaRule = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == updateModel.Id)
@@ -342,8 +386,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 {
                     areaRule.Type = updateModel.TypeSpecificFields.Type;
                     areaRule.Alarm = updateModel.TypeSpecificFields.Alarm;
-                    areaRule.DayOfWeek = updateModel.TypeSpecificFields.DayOfWeek;
-                    areaRule.RepeatEvery = updateModel.TypeSpecificFields.RepeatEvery;
+                    areaRule.DayOfWeek = (int)updateModel.TypeSpecificFields.DayOfWeek;
+                    areaRule.RepeatEvery = (int)updateModel.TypeSpecificFields.RepeatEvery;
                 }
 
                 if (areaRule.GroupItemId != 0)
@@ -380,6 +424,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         }
                     }
                 }
+                if (area.Type is AreaTypesEnum.Type10)
+                {
+                    foreach (var poolHourModel in updateModel.TypeSpecificFields!.PoolHoursModel.Parrings)
+                    {
+                        var poolHour = await _backendConfigurationPnDbContext.PoolHours
+                            .Where(x => x.AreaRuleId == updateModel.Id)
+                            .Where(x => x.Index == poolHourModel.Index)
+                            .Where(x => x.DayOfWeek == (DayOfWeekEnum)poolHourModel.DayOfWeek)
+                            .SingleAsync();
+                        poolHour.IsActive = poolHourModel.IsActive;
+
+                        // var poolHour = new PoolHour
+                        // {
+                        //     AreaRuleId = areaRule.Id,
+                        //     DayOfWeek = (DayOfWeekEnum)poolHourModel.DayOfWeek,
+                        //     Index = poolHourModel.Index,
+                        //     IsActive = poolHourModel.IsActive,
+                        //     CreatedByUserId = _userService.UserId,
+                        //     UpdatedByUserId = _userService.UserId,
+                        // };
+                        await poolHour.Update(_backendConfigurationPnDbContext);
+                    }
+                }
+
 
                 return new OperationDataResult<AreaRuleModel>(true,
                     _backendConfigurationLocalizationService.GetString("SuccessfullyUpdateAreaRule"));
@@ -636,9 +704,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     if (areaRuleCreateModel.TypeSpecificFields != null)
                     {
                         areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
-                        areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek;
+                        areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek ?? 0;
                         areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
-                        areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery;
+                        areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery ?? 0;
                     }
                     areaRule.ComplianceEnabled = true;
                     areaRule.ComplianceModifiable = true;
@@ -740,6 +808,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 CreatedByUserId = _userService.UserId,
                                 UpdatedByUserId = _userService.UserId,
                             }).ToList();
+                    }
+
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type10)
+                    {
+                        foreach (var poolHourModel in areaRuleCreateModel.TypeSpecificFields.PoolHoursModel.Parrings)
+                        {
+                            var poolHour = new PoolHour
+                            {
+                                AreaRuleId = areaRule.Id,
+                                DayOfWeek = (DayOfWeekEnum)poolHourModel.DayOfWeek,
+                                Index = poolHourModel.Index,
+                                IsActive = poolHourModel.IsActive,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId,
+                            };
+                            await poolHour.Create(_backendConfigurationPnDbContext);
+                        }
                     }
 
                     foreach (var translation in translations)

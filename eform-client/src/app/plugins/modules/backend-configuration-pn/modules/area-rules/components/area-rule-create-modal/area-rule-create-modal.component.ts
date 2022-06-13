@@ -15,11 +15,12 @@ import {
   AreaRuleT2TypesEnum,
 } from '../../../../enums';
 import {
-  AreaModel,
+  AreaModel, AreaRuleCreateModel,
   AreaRulesCreateModel, AreaRuleSimpleModel,
   AreaRuleTypeSpecificFields,
 } from '../../../../models';
 import {BackendConfigurationPnAreasService} from '../../../../services';
+import {PoolHourModel, PoolHoursModel} from 'src/app/plugins/modules/backend-configuration-pn/models/pools/pool-hour.model';
 
 @Component({
   selector: 'app-area-rule-create-modal',
@@ -45,6 +46,8 @@ export class AreaRuleCreateModalComponent implements OnInit {
   areaRulesForType8: { folderName: string; areaRuleNames: string[] }[] = [];
   newAreaRulesForType7: string[] = [];
   newAreaRulesForType8: string[] = [];
+  days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  hours = ['05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
 
   constructor(
     private eFormService: EFormService,
@@ -155,8 +158,16 @@ export class AreaRuleCreateModalComponent implements OnInit {
       };
     }
     if (this.selectedArea.type === 10) {
+      const poolHoursModel = new PoolHoursModel()
+      poolHoursModel.parrings = [];
+      for (let i = 0; i < this.days.length; i++) {
+        for (let j = 0; j < this.hours.length; j++) {
+          poolHoursModel.parrings.push(new PoolHourModel(i, j, false));
+        }
+      }
       return {
         eformId: 0,
+        poolHoursModel: poolHoursModel
       };
     }
     return null;
@@ -245,6 +256,14 @@ export class AreaRuleCreateModalComponent implements OnInit {
         return this.newAreaRulesForType8.length === 0;
       } else {
         return this.newAreaRules.areaRules.length === 0;
+      }
+    }
+  }
+
+  checked($event: any, i: number, j: number, areaRule: AreaRuleCreateModel) {
+    for (let k = 0; k < areaRule.typeSpecificFields.poolHoursModel.parrings.length; k++) {
+      if (areaRule.typeSpecificFields.poolHoursModel.parrings[k].dayOfWeek === i && areaRule.typeSpecificFields.poolHoursModel.parrings[k].index === j) {
+        areaRule.typeSpecificFields.poolHoursModel.parrings[k].isActive = $event.target.checked;
       }
     }
   }

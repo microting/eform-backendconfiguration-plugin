@@ -4,7 +4,7 @@
   class="modal fade overflow-auto"
   #frame="mdbModal"
 >
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog {{selectedArea.type === 10 ? 'modal-fluid' : 'modal-md' }}">
     <div class="modal-content">
       <div class="modal-header">
         <h3>{{ selectedArea.newItemName }}
@@ -372,6 +372,48 @@
                         </div>
                       </div>
                     </ng-container>
+                  </ng-container>
+
+                  <ng-container *ngIf="selectedArea.type === 10">
+                    <table
+                      mdbTable
+                      striped="true"
+                      hover="true"
+                      small="true"
+                      class="z-depth-1 text-center">
+                      <thead>
+                        <tr>
+                          <th>
+                            <span>
+                              {{ 'Weekdays' | translate }}
+                            </span>
+                          </th>
+                          <ng-container *ngFor="let hour of hours let j = index">
+                            <th>
+                            <span>
+                              kl {{ hour }}:00
+                            </span>
+                            </th>
+                          </ng-container>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let day of days; let i = index">
+                          <td>
+                            <span>
+                              {{ day | translate }}
+                            </span>
+                          </td>
+                          <ng-container *ngFor="let hour of hours let j = index">
+                            <td>
+                              <input
+                                type="checkbox"
+                                (click)="checked($event, i, j, newAreaRule)"
+                                [checked]="" />
+                            </td>
+                          </ng-container>
+                      </tbody>
+                    </table>
                   </ng-container>
                 </div>
               </div>
