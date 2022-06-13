@@ -154,6 +154,11 @@ export class AreaRuleCreateModalComponent implements OnInit {
         eformId: 0,
       };
     }
+    if (this.selectedArea.type === 10) {
+      return {
+        eformId: 0,
+      };
+    }
     return null;
   }
 

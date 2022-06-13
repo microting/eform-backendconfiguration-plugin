@@ -277,6 +277,13 @@ export class AreaRulePlanModalComponent implements OnInit {
           startDate: format(this.currentDate, this.standartDateTimeFormat),
         };
       }
+      case 10: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          repeatEvery: 0,
+          repeatType: 0,
+        };
+      }
       default: {
         return null;
       }

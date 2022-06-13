@@ -1240,6 +1240,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         await CreatePlanningType9(areaRule, sdkDbContext, areaRulePlanningModel, core);
                         break;
                     }
+                case AreaTypesEnum.Type10:
+                {
+                    break;
+                }
                 default:
                     {
                         await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core);
@@ -2114,7 +2118,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
             await areaRulePlanningForType6Two.Create(_backendConfigurationPnDbContext);
         }
 
-
         private async Task CreatePlanningType9(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, Core core)
         {
             // await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core);
@@ -2206,6 +2209,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 await areaRulePlanning.Create(_backendConfigurationPnDbContext);
                 // }
             }
+        }
+
+        private async Task CreatePlanningType10(AreaRule areaRule, MicrotingDbContext sdkDbContext,
+            AreaRulePlanningModel areaRulePlanningModel, Core core)
+        {
+            var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
         }
 
         private async Task CreatePlanningDefaultType(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, eFormCore.Core core)

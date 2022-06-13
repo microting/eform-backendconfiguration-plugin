@@ -4,7 +4,7 @@
   class="modal fade"
   #frame="mdbModal" style="overflow-y: scroll;"
 >
-  <div class="modal-dialog modal-md">
+  <div class="modal-dialog {{selectedArea.type === 10 ? 'modal-fluid' : 'modal-md' }}">
     <div class="modal-content">
       <div class="modal-header">
         <div>
@@ -212,8 +212,7 @@
                 </div>
               </div>
               <ng-container
-                *ngIf="selectedArea.type != 5 && selectedArea.type != 2 && selectedAreaRule.typeSpecificFields.notificationsModifiable"
-              >
+                *ngIf="selectedArea.type !== 5 && selectedArea.type !== 2 && selectedArea.type !== 10 && selectedAreaRule.typeSpecificFields.notificationsModifiable">
                 <div class="row" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid'">
                   <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
                     <ng-select
@@ -299,8 +298,9 @@
                 </div>
               </ng-container>
               <ng-container  *ngIf="selectedAreaRule.translatedName === '01. Registrer halebid'"><br></ng-container>
+              <ng-container  *ngIf="selectedArea.type === 10"><br></ng-container>
               <div class="row">
-                <div class="col-12" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid'">
+                <div class="col-12" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid' && selectedArea.type !== 10">
                   <div class="md-form" [owlDateTimeTrigger]="dt1">
                     <input
                       mdbInput
