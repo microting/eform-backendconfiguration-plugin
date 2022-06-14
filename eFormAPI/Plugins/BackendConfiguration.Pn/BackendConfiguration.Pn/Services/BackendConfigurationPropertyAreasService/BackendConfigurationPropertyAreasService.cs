@@ -285,6 +285,37 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         }
                         case AreaTypesEnum.Type10:
                         {
+                            var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    // Name = "05. Halebid og klargøring af stalde",
+                                    Name = "00. Aflæsninger, målinger, forbrug og fækale uheld",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    // Name = "05. Tailbite and preparation of stables",
+                                    Name = "00. Readings, measurements, consumption and fecal accidents",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    // Name = "05. Stallungen",
+                                    Name = "00. Messwerte, Messungen, Verbrauch und Fäkalunfälle",
+                                    Description = "",
+                                },
+                            }, property.FolderId);
+                            var assignmentWithOneFolder = new ProperyAreaFolder
+                            {
+                                FolderId = folderId,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            };
+
+                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
                             break;
                         }
                         case AreaTypesEnum.Type3:

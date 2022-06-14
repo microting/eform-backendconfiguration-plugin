@@ -1108,6 +1108,14 @@ namespace BackendConfiguration.Pn
                 tag.Name = "17. Brandslukkere";
                 await tag.Update(itemsPlanningContext);
             }
+
+            foreach (var planningSite in context.PlanningSites.Where(x => x.AreaId == null).ToList())
+            {
+                var areaRulePlanning = await context.AreaRulePlannings.SingleAsync(x => x.Id == planningSite.AreaRulePlanningsId);
+                planningSite.AreaRuleId = areaRulePlanning.AreaRuleId;
+                planningSite.AreaId = areaRulePlanning.AreaId;
+                await planningSite.Update(context);
+            }
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)

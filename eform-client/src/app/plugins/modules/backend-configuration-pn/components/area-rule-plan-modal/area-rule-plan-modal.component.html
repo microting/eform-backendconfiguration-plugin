@@ -36,7 +36,7 @@
                 >
               </div>
             </div>
-            <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined">
+            <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined && selectedArea.type !== 10">
               <ng-container *ngIf="selectedAreaRule.typeSpecificFields.complianceModifiable">
                 <div class="col-md-12" *ngIf="getShowCompliance()">
                   <div class="custom-control custom-switch">
@@ -183,7 +183,8 @@
               <div class="row">
                 <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
                                                selectedAreaRulePlanning.typeSpecificFields.repeatEvery)
-                                               && selectedArea.type !== 3">
+                                               && selectedArea.type !== 3
+                                               && selectedArea.type !== 10">
 
                   <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined">
                     <ng-container *ngIf="selectedAreaRule.typeSpecificFields.notificationsModifiable">
