@@ -47,7 +47,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
   newAreaRulesForType7: string[] = [];
   newAreaRulesForType8: string[] = [];
   days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  hours = ['05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
+  hours = ['00', '01', '02', '03' ,'04' ,'05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
 
   constructor(
     private eFormService: EFormService,
@@ -162,7 +162,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
       poolHoursModel.parrings = [];
       for (let i = 0; i < this.days.length; i++) {
         for (let j = 0; j < this.hours.length; j++) {
-          poolHoursModel.parrings.push(new PoolHourModel(i, j, false));
+          poolHoursModel.parrings.push(new PoolHourModel(i, j, false, this.hours[j]));
         }
       }
       return {

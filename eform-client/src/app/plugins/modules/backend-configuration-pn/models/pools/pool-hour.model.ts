@@ -4,10 +4,11 @@ export class PoolHoursModel {
 }
 
 export class PoolHourModel {
-  constructor(i: number, j: number, b: boolean) {
+  constructor(i: number, j: number, b: boolean, name: string) {
     this.dayOfWeek = i;
     this.index = j;
     this.isActive = b;
+    this.name = name;
   }
 
   areaRuleId: number;

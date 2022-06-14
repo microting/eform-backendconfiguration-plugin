@@ -241,7 +241,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                             mainElement.PushMessageBody = body;
                             mainElement.PushMessageTitle = planningNameTranslation?.Name;
                         }
-                        
+
                         if (planning.RepeatEvery == 0 && planning.RepeatType == RepeatType.Day)
                         {
                             mainElement.Repeated = 0;

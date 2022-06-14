@@ -243,6 +243,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             };
                             await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
 
+
                             var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false);
 
                             property.EntitySearchListChemicals = Convert.ToInt32(groupCreate.MicrotingUid);
@@ -280,6 +281,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 EformName = text,
                             };
                             await areaRuleInitialField.Create(_backendConfigurationPnDbContext);
+                            break;
+                        }
+                        case AreaTypesEnum.Type10:
+                        {
                             break;
                         }
                         case AreaTypesEnum.Type3:

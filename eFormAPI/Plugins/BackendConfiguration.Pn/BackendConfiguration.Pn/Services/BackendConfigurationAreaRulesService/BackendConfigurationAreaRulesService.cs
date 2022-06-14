@@ -320,7 +320,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         {
                             IsActive = y.IsActive,
                             AreaRuleId = y.AreaRuleId,
-                            DayOfWeek = (int)y.DayOfWeek,
+                            DayOfWeek = (int)y.DayOfWeek - 1,
                             Index = y.Index
 
                         }).ToListAsync()
@@ -431,7 +431,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         var poolHour = await _backendConfigurationPnDbContext.PoolHours
                             .Where(x => x.AreaRuleId == updateModel.Id)
                             .Where(x => x.Index == poolHourModel.Index)
-                            .Where(x => x.DayOfWeek == (DayOfWeekEnum)poolHourModel.DayOfWeek)
+                            .Where(x => x.DayOfWeek == (DayOfWeekEnum)(poolHourModel.DayOfWeek + 1))
                             .SingleAsync();
                         poolHour.IsActive = poolHourModel.IsActive;
 
@@ -636,8 +636,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 var areaProperty = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == createModel.PropertyAreaId)
-                    .Select(x => new {x.Area, x.GroupMicrotingUuid, x.PropertyId, x.ProperyAreaFolders})
+                    .Select(x => new {x.Id, x.Area, x.GroupMicrotingUuid, x.PropertyId, x.ProperyAreaFolders})
                     .FirstAsync();
+
+                var property = await _backendConfigurationPnDbContext.Properties
+                    .Where(x => x.Id == areaProperty.PropertyId)
+                    .SingleAsync();
 
                 var core = await _coreHelper.GetCore();
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -661,7 +665,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 .Contains(areaRuleCreateModel.TranslatedNames[0].Name));
                     }
                     var eformId = areaRuleCreateModel.TypeSpecificFields.EformId;
-                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7 or AreaTypesEnum.Type8)
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7 or AreaTypesEnum.Type8 or AreaTypesEnum.Type10)
                     {
                         var eformName = areaProperty.Area.Type switch
                         {
@@ -669,6 +673,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             AreaTypesEnum.Type6 => "10. Varmepumpe serviceaftale",
                             AreaTypesEnum.Type7 => areaRuleType7.EformName,
                             AreaTypesEnum.Type8 => areaRuleType8.EformName,
+                            AreaTypesEnum.Type10 => "01. Aflæsninger",
                             _ => ""
                         };
                         eformId = await sdkDbContext.CheckListTranslations
@@ -817,13 +822,188 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             var poolHour = new PoolHour
                             {
                                 AreaRuleId = areaRule.Id,
-                                DayOfWeek = (DayOfWeekEnum)poolHourModel.DayOfWeek,
+                                DayOfWeek = (DayOfWeekEnum)(poolHourModel.DayOfWeek + 1),
                                 Index = poolHourModel.Index,
                                 IsActive = poolHourModel.IsActive,
                                 CreatedByUserId = _userService.UserId,
                                 UpdatedByUserId = _userService.UserId,
+                                Name = poolHourModel.Name
                             };
                             await poolHour.Create(_backendConfigurationPnDbContext);
+                        }
+
+                        var folderId = await core.FolderCreate(
+                            areaRuleCreateModel.TranslatedNames.Select(x =>
+                            {
+                                var model = new Microting.eForm.Infrastructure.Models.CommonTranslationsModel
+                                {
+                                     Name = x.Name,
+                                     LanguageId = (int)x.Id,
+                                     Description = ""
+                                 };
+                                return model;
+                            }).ToList(),
+                            areaRule.FolderId);
+
+                        var folderIds = new List<int>
+                        {
+                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "7. Søn",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "7. Sun",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "7. Son",
+                                    Description = "",
+                                },
+                            }, folderId),
+                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "1. Man",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "1. Mon",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "1. Mon",
+                                    Description = "",
+                                },
+                            }, folderId),
+                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "2. Tir",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "2. Tue",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "2. Die",
+                                    Description = "",
+                                },
+                            }, folderId),
+                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "3. Ons",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "3. Wed",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "3. Mit",
+                                    Description = "",
+                                },
+                            }, folderId),
+                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "4. Tor",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "4. Thu",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "4. Don",
+                                    Description = "",
+                                },
+                            }, folderId),
+                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "5. Fre",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "5. Fri",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "5. Fre",
+                                    Description = "",
+                                },
+                            }, folderId),
+                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                            {
+                                new()
+                                {
+                                    LanguageId = 1, // da
+                                    Name = "6. Lør",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 2, // en
+                                    Name = "6. Sat",
+                                    Description = "",
+                                },
+                                new()
+                                {
+                                    LanguageId = 3, // ge
+                                    Name = "6. Sam",
+                                    Description = "",
+                                },
+                            }, folderId),
+                        };
+
+
+                        foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                        {
+                            FolderId = folderIdLocal,
+                            ProperyAreaAsignmentId = areaProperty.Id,
+                        }))
+                        {
+                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
                         }
                     }
 
