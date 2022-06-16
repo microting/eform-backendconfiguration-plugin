@@ -820,6 +820,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString());
                     }
 
+                    // delete entity search group. only for type 10 Pool inspections
+                    if (property.EntitySearchListPoolWorkers != 0)
+                    {
+                        await core.EntityGroupDelete(property.EntitySearchListPoolWorkers.ToString());
+                    }
+
                     areaProperty.UpdatedByUserId = _userService.UserId;
                     await areaProperty.Delete(_backendConfigurationPnDbContext);
                 }
