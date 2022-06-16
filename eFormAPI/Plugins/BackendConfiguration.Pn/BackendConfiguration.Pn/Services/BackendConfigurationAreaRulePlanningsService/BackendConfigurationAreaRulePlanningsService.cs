@@ -2419,6 +2419,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     .FirstOrDefaultAsync();
 
                 Regex regex = new Regex(@"(\d\.\s)");
+                DayOfWeek? currentWeekDay= null;
+                var clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == "02. Fækale uheld").Select(x => x.CheckListId).FirstOrDefault();
+                var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.CheckListId == clId).ToListAsync();
                 foreach (var poolHour in parrings)
                 {
                     var innerLookupName = $"{(int)poolHour.DayOfWeek}. {poolHour.DayOfWeek.ToString().Substring(0, 3)}";
@@ -2427,6 +2430,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         .Where(x=> x.ParentId == subfolder.Id)
                         .Where(x => x.FolderTranslations.Any(y => y.Name == innerLookupName))
                         .FirstAsync();
+                    if (currentWeekDay == null || currentWeekDay != (DayOfWeek)poolHour.DayOfWeek)
+                    {
+                        var planningStatic = await CreateItemPlanningObject(clId, "02. Fækale uheld",
+                            poolDayFolder.Id, areaRulePlanningModel, areaRule);
+                        planningStatic.RepeatEvery = 0;
+                        planningStatic.RepeatType = RepeatType.Day;
+                        planningStatic.SdkFolderName = innerLookupName;
+                        planningStatic.PushMessageOnDeployment = false;
+                        planningStatic.NameTranslations = areaRule.AreaRuleTranslations.Select(
+                            areaRuleAreaRuleTranslation => new PlanningNameTranslation
+                            {
+                                LanguageId = areaRuleAreaRuleTranslation.LanguageId,
+                                Name =
+                                    $"24. Fækale uheld - {areaRuleAreaRuleTranslation.Name}",
+                            }).ToList();
+                        await planningStatic.Create(_itemsPlanningPnDbContext);
+                        var areaRulePlanningStatic = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningStatic.Id,
+                            areaRule.FolderId);
+                        areaRulePlanningStatic.ComplianceEnabled = false;
+                        areaRulePlanningStatic.RepeatEvery = 0;
+                        areaRulePlanningStatic.RepeatType = (int)RepeatType.Day;
+                        areaRulePlanningStatic.FolderId = poolDayFolder.Id;
+
+                        await areaRulePlanningStatic.Create(_backendConfigurationPnDbContext);
+                    }
+
+                    currentWeekDay = (DayOfWeek)poolHour.DayOfWeek;
 
                     var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName,
                         poolDayFolder.Id, areaRulePlanningModel, areaRule);
@@ -2435,6 +2465,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     planning.RepeatEvery = 1;
                     planning.RepeatType = RepeatType.Week;
                     planning.SdkFolderName = innerLookupName;
+                    planning.PushMessageOnDeployment = false;
                     planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
                         areaRuleAreaRuleTranslation => new PlanningNameTranslation
                         {
