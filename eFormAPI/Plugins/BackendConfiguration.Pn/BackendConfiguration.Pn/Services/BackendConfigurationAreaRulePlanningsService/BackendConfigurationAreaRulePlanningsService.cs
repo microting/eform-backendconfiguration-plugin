@@ -2410,6 +2410,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     .Where(x => x.IsActive == true)
                     .ToListAsync();
 
+                var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == areaRule.PropertyId);
+
                 var lookupName = areaRule.AreaRuleTranslations.First().Name;
 
                 var subfolder = await sdkDbContext.Folders
@@ -2420,7 +2422,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                 Regex regex = new Regex(@"(\d\.\s)");
                 DayOfWeek? currentWeekDay= null;
-                var clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == "02. Fækale uheld").Select(x => x.CheckListId).FirstOrDefault();
+                var clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == $"02. Fækale uheld - {property.Name}").Select(x => x.CheckListId).FirstOrDefault();
                 var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.CheckListId == clId).ToListAsync();
                 foreach (var poolHour in parrings)
                 {
@@ -2432,7 +2434,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         .FirstAsync();
                     if (currentWeekDay == null || currentWeekDay != (DayOfWeek)poolHour.DayOfWeek)
                     {
-                        var planningStatic = await CreateItemPlanningObject(clId, "02. Fækale uheld",
+                        var planningStatic = await CreateItemPlanningObject(clId, $"02. Fækale uheld - {property.Name}",
                             poolDayFolder.Id, areaRulePlanningModel, areaRule);
                         planningStatic.RepeatEvery = 0;
                         planningStatic.RepeatType = RepeatType.Day;
@@ -2458,10 +2460,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                     currentWeekDay = (DayOfWeek)poolHour.DayOfWeek;
 
-                    var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName,
+                    clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == $"01. Aflæsninger - {property.Name}").Select(x => x.CheckListId).FirstOrDefault();
+                    var planning = await CreateItemPlanningObject(clId, $"01. Aflæsninger - {property.Name}",
                         poolDayFolder.Id, areaRulePlanningModel, areaRule);
                     planning.DayOfWeek = (DayOfWeek)poolHour.DayOfWeek;
-                    // planning.RelatedEFormId = (int)areaRule.EformId;
                     planning.RepeatEvery = 1;
                     planning.RepeatType = RepeatType.Week;
                     planning.SdkFolderName = innerLookupName;

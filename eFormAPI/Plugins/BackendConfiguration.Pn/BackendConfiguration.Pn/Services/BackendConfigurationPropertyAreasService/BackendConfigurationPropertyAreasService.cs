@@ -285,6 +285,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         }
                         case AreaTypesEnum.Type10:
                         {
+                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"00. Aflæsninger, målinger, forbrug og fækale uheld - {property.Name}", "", true, false);
+                            await SeedPoolEform(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
+                            await SeedFaeceseForm(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
+                            property.EntitySearchListPoolWorkers = int.Parse(groupCreate.MicrotingUid);
+                            await property.Update(_backendConfigurationPnDbContext);
                             var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
@@ -1733,6 +1738,75 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 cl.IsDoneAtEditable = true;
                 cl.ReportH1 = "05.Stalde: Halebid og klargøring";
                 cl.ReportH2 = "05.01Halebid";
+                cl.QuickSyncEnabled = 1;
+                await cl.Update(sdkDbContext);
+                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                subCl.QuickSyncEnabled = 1;
+                await subCl.Update(sdkDbContext);
+
+            }
+        }
+        private async Task SeedPoolEform(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
+        {
+            string text = $"01. Aflæsninger - {propertyName}";
+            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.01. Aflæsninger.xml");
+
+                string contents;
+                using(var sr = new StreamReader(resourceStream))
+                {
+                    contents = await sr.ReadToEndAsync();
+                }
+
+                contents = contents.Replace("REPLACE_ME", entityGroupId);
+                var mainElement = await core.TemplateFromXml(contents);
+                mainElement.Label = text;
+                mainElement.ElementList[0].Label = text;
+
+                int clId = await core.TemplateCreate(mainElement);
+                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
+                cl.IsLocked = true;
+                cl.IsEditable = false;
+                cl.IsDoneAtEditable = true;
+                //cl.ReportH1 = "05.Stalde: Halebid og klargøring";
+                //cl.ReportH2 = "05.01Halebid";
+                cl.QuickSyncEnabled = 1;
+                await cl.Update(sdkDbContext);
+                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                subCl.QuickSyncEnabled = 1;
+                await subCl.Update(sdkDbContext);
+
+            }
+        }
+
+        private async Task SeedFaeceseForm(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
+        {
+            string text = $"02. Fækale uheld - {propertyName}";
+            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.02. Fækale uheld.xml");
+
+                string contents;
+                using(var sr = new StreamReader(resourceStream))
+                {
+                    contents = await sr.ReadToEndAsync();
+                }
+
+                contents = contents.Replace("REPLACE_ME", entityGroupId);
+                var mainElement = await core.TemplateFromXml(contents);
+                mainElement.Label = text;
+                mainElement.ElementList[0].Label = text;
+
+                int clId = await core.TemplateCreate(mainElement);
+                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
+                cl.IsLocked = true;
+                cl.IsEditable = false;
+                cl.IsDoneAtEditable = true;
+                //cl.ReportH1 = "05.Stalde: Halebid og klargøring";
+                //cl.ReportH2 = "05.01Halebid";
                 cl.QuickSyncEnabled = 1;
                 await cl.Update(sdkDbContext);
                 var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
