@@ -35,7 +35,8 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
     '05. Stalde: Halebid og klargøring',
     '21. DANISH Standard',
     '100. Diverse',
-    '25. Kemisk APV'
+    '25. Kemisk APV',
+    '00. Aflæsninger, målinger, forbrug og fækale uheld'
   ]
 
   getTranslateSub$: Subscription;

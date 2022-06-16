@@ -32,7 +32,7 @@ export class AreaRuleEditModalComponent implements OnInit {
   templatesModel: TemplateListModel = new TemplateListModel();
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
   days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  hours = ['05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
+  hours = ['00', '01', '02', '03' ,'04' ,'05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
 
   constructor(
     private eFormService: EFormService,

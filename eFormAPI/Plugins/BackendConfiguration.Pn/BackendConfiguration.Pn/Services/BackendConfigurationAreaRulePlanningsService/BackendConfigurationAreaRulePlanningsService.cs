@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using eFormCore;
 using Microting.eForm.Infrastructure.Data.Entities;
 
@@ -2417,6 +2418,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     .Where(x => x.FolderTranslations.Any(y => y.Name == lookupName))
                     .FirstOrDefaultAsync();
 
+                Regex regex = new Regex(@"(\d\.\s)");
                 foreach (var poolHour in parrings)
                 {
                     var innerLookupName = $"{(int)poolHour.DayOfWeek}. {poolHour.DayOfWeek.ToString().Substring(0, 3)}";
@@ -2440,6 +2442,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             Name =
                                 $"{poolDayFolder.FolderTranslations.Where(x => x.LanguageId == areaRuleAreaRuleTranslation.LanguageId).Select(x => x.Name).First()} - {poolHour.Name}:00 - {areaRuleAreaRuleTranslation.Name}",
                         }).ToList();
+                    foreach (var planningNameTranslation in planning.NameTranslations)
+                    {
+                        planningNameTranslation.Name = regex.Replace(planningNameTranslation.Name, "");
+                        planningNameTranslation.Name = $"{poolHour.Name}. {planningNameTranslation.Name}";
+                    }
                     await planning.Create(_itemsPlanningPnDbContext);
 
                     var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
