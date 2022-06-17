@@ -2448,6 +2448,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     $"24. Fækale uheld - {areaRuleAreaRuleTranslation.Name}",
                             }).ToList();
                         await planningStatic.Create(_itemsPlanningPnDbContext);
+                        await _pairItemWichSiteHelper.Pair(
+                            areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), clId, planningStatic.Id,
+                            poolDayFolder.Id);
                         var areaRulePlanningStatic = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningStatic.Id,
                             areaRule.FolderId);
                         areaRulePlanningStatic.ComplianceEnabled = false;
