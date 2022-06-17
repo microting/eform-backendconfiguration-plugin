@@ -821,7 +821,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     }
 
                     // delete entity search group. only for type 10 Pool inspections
-                    if (property.EntitySearchListPoolWorkers != 0)
+                    if (property.EntitySearchListPoolWorkers != null)
                     {
                         await core.EntityGroupDelete(property.EntitySearchListPoolWorkers.ToString());
                     }
