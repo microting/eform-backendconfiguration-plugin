@@ -2432,6 +2432,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         .Where(x=> x.ParentId == subfolder.Id)
                         .Where(x => x.FolderTranslations.Any(y => y.Name == innerLookupName))
                         .FirstAsync();
+
+                    var globalPlanningTag = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                        x.Name == $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}");
+
+                    if (globalPlanningTag == null)
+                    {
+                        globalPlanningTag = new PlanningTag
+                        {
+                            Name = $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}",
+                            CreatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId,
+                        };
+
+                        await globalPlanningTag.Create(_itemsPlanningPnDbContext);
+                    }
+
                     if (currentWeekDay == null || currentWeekDay != (DayOfWeek)poolHour.DayOfWeek)
                     {
                         var planningStatic = await CreateItemPlanningObject(clId, $"02. Fækale uheld - {property.Name}",
@@ -2447,6 +2463,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                 Name =
                                     $"24. Fækale uheld - {areaRuleAreaRuleTranslation.Name}",
                             }).ToList();
+
+                        var planningTagStatic = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                            x.Name == $"{property.Name} - Fækale uheld");
+
+                        if (planningTagStatic == null)
+                        {
+                            planningTagStatic = new PlanningTag
+                            {
+                                Name = $"{property.Name} - Fækale uheld",
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId,
+                            };
+
+                            await planningTagStatic.Create(_itemsPlanningPnDbContext);
+                        }
+
+                        planningStatic.PlanningsTags.Add(new() {PlanningTagId = planningTagStatic.Id});
+                        planningStatic.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag.Id});
+
                         await planningStatic.Create(_itemsPlanningPnDbContext);
                         await _pairItemWichSiteHelper.Pair(
                             areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), clId, planningStatic.Id,
@@ -2483,6 +2518,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         planningNameTranslation.Name = regex.Replace(planningNameTranslation.Name, "");
                         planningNameTranslation.Name = $"{poolHour.Name}. {planningNameTranslation.Name}";
                     }
+
+                    var planningTag = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                        x.Name == $"{property.Name} - Fækale uheld");
+
+                    if (planningTag == null)
+                    {
+                        planningTag = new PlanningTag
+                        {
+                            Name = $"{property.Name} - Aflæsninger-Prøver",
+                            CreatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId,
+                        };
+
+                        await planningTag.Create(_itemsPlanningPnDbContext);
+                    }
+                    planning.PlanningsTags.Add(new() {PlanningTagId = planningTag.Id});
+                    planning.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag.Id});
+
                     await planning.Create(_itemsPlanningPnDbContext);
 
                     var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
