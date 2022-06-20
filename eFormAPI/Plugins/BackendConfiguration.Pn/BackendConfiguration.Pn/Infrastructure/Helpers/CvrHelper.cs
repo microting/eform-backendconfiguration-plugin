@@ -42,10 +42,17 @@ public class CvrHelper
 
         var res = JsonSerializer.Deserialize<Result>(result, options);
 
-        if (res.Industrycode.Length == 5)
+        try
         {
-            res.Industrycode = "0" + res.Industrycode;
+            if (res.Industrycode.Length == 5)
+            {
+                res.Industrycode = "0" + res.Industrycode;
+            }
+        } catch (Exception)
+        {
+            res.Industrycode = "0";
         }
+
         return res;
     }
 }
