@@ -31,7 +31,7 @@
       >
         {{ 'Show report' | translate }}
       </button>
-      <button
+      <button *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
         mdbBtn
         id="wordBtn"
         color="info"
@@ -48,7 +48,7 @@
           size="lg"
         ></fa-icon>
       </button>
-      <button
+      <button *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
         mdbBtn
         id="excelBtn"
         color="success"
