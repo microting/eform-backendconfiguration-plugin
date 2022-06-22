@@ -29,7 +29,9 @@ public class CvrHelper
         }
         var client = new HttpClient();
         client.DefaultRequestHeaders.Add("User-agent", "Microting eForm - CVR opslag");
-        var response = await client.GetAsync(string.Format("http://cvrapi.dk/api?vat={0}&country=dk", number.ToString()));
+        var url = $"http://cvrapi.dk/api?vat={number}&country=dk";
+        Console.WriteLine($"calling url = {url}");
+        var response = await client.GetAsync(url);
         var result = await response.Content.ReadAsStringAsync();
 
         JsonSerializerOptions options = new JsonSerializerOptions
