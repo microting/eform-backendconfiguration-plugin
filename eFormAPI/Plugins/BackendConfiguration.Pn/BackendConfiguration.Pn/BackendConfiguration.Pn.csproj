@@ -283,8 +283,8 @@
       <EmbeddedResource Include="Resources\eForms\01. Aflæsninger.xml" />
       <None Remove="Resources\eForms\02. Fækale uheld.xml" />
       <EmbeddedResource Include="Resources\eForms\02. Fækale uheld.xml" />
-      <None Remove="Resources\eForms\00. InfoBox.xml" />
-      <EmbeddedResource Include="Resources\eForms\00. InfoBox.xml" />
+      <None Remove="Resources\eForms\00. Info boks.xml" />
+      <EmbeddedResource Include="Resources\eForms\00. Info boks.xml" />
     </ItemGroup>
 
     <ItemGroup>
@@ -294,7 +294,7 @@
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="1.2.9" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.66" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.34" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.37" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.129" />
       <PackageReference Include="ClosedXML" Version="0.95.4" />

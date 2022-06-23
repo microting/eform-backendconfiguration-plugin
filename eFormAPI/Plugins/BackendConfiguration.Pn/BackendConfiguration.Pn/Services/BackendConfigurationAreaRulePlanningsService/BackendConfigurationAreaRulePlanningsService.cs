@@ -2524,7 +2524,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 Regex regex = new Regex(@"(\d\.\s)");
                 DayOfWeek? currentWeekDay= null;
                 var clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == $"02. Fækale uheld - {property.Name}").Select(x => x.CheckListId).FirstOrDefault();
-                var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.CheckListId == clId).ToListAsync();
+                // var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.CheckListId == clId).ToListAsync();
                 foreach (var poolHour in parrings)
                 {
                     var innerLookupName = $"{(int)poolHour.DayOfWeek}. {poolHour.DayOfWeek.ToString().Substring(0, 3)}";
@@ -2605,6 +2605,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     planning.DayOfWeek = (DayOfWeek)poolHour.DayOfWeek;
                     planning.RepeatEvery = 1;
                     planning.RepeatType = RepeatType.Week;
+                    var nextDay = GetNextWeekday(DateTime.UtcNow, (DayOfWeek) poolHour.DayOfWeek);
+                    planning.StartDate = new DateTime(nextDay.Year, nextDay.Month, nextDay.Day, 0, 0, 0);
                     planning.SdkFolderName = innerLookupName;
                     planning.PushMessageOnDeployment = false;
                     planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
@@ -2612,12 +2614,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         {
                             LanguageId = areaRuleAreaRuleTranslation.LanguageId,
                             Name =
-                                $"{poolDayFolder.FolderTranslations.Where(x => x.LanguageId == areaRuleAreaRuleTranslation.LanguageId).Select(x => x.Name).First()} - {poolHour.Name}:00 - {areaRuleAreaRuleTranslation.Name}",
+                                $"{poolDayFolder.FolderTranslations.Where(x => x.LanguageId == areaRuleAreaRuleTranslation.LanguageId).Select(x => x.Name).First()} - {areaRuleAreaRuleTranslation.Name}",
                         }).ToList();
                     foreach (var planningNameTranslation in planning.NameTranslations)
                     {
                         planningNameTranslation.Name = regex.Replace(planningNameTranslation.Name, "");
-                        planningNameTranslation.Name = $"{poolHour.Name}. {planningNameTranslation.Name}";
+                        planningNameTranslation.Name = $"{poolHour.Name}:00. {planningNameTranslation.Name}";
                     }
 
                     var planningTag = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
@@ -2643,9 +2645,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     await poolHour.Update(_backendConfigurationPnDbContext);
 
                     var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
-                        areaRule.FolderId);
+                        poolDayFolder.Id);
                     areaRulePlanning.ComplianceEnabled = false;
-                    areaRulePlanning.RepeatEvery = 1;
+                    areaRulePlanning.RepeatEvery = 0;
                     areaRulePlanning.RepeatType = (int)RepeatType.Day;
                     areaRulePlanning.DayOfWeek = (int)(DayOfWeek)poolHour.DayOfWeek;
                     areaRulePlanning.FolderId = poolDayFolder.Id;
@@ -2653,6 +2655,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     await areaRulePlanning.Create(_backendConfigurationPnDbContext);
                 }
             }
+        }
+        
+        private static DateTime GetNextWeekday(DateTime start, DayOfWeek day)
+        {
+            // The (... + 7) % 7 ensures we end up with a value in the range [0, 6]
+            int daysToAdd = ((int) day - (int) start.DayOfWeek + 7) % 7;
+            return start.AddDays(daysToAdd);
         }
 
         private async Task CreatePlanningDefaultType(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, eFormCore.Core core)

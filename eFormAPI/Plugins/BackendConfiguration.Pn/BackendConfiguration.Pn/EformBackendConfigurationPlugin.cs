@@ -145,7 +145,7 @@ namespace BackendConfiguration.Pn
                     var resourceStream =
                         assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.{eformName}.xml");
 
-                    if (eformName == "25.02 Vis kemisk produkt")
+                    if (eformName == "00. Info boks")
                     {
                         Console.WriteLine("weffw");
                     }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-    <Id>142657</Id>
+    <Id>22</Id>
     <Repeated>0</Repeated>
     <Label>00. Info boks</Label>
     <StartDate>2021-12-02</StartDate>
@@ -13,7 +13,7 @@
     <DisplayOrder>0</DisplayOrder>
     <ElementList>
         <Element type="DataElement">
-            <Id>142657</Id>
+            <Id>22</Id>
             <Label>00. Info boks</Label>
             <Description><![CDATA[]]></Description>
             <DisplayOrder>0</DisplayOrder>
