@@ -283,6 +283,8 @@
       <EmbeddedResource Include="Resources\eForms\01. Aflæsninger.xml" />
       <None Remove="Resources\eForms\02. Fækale uheld.xml" />
       <EmbeddedResource Include="Resources\eForms\02. Fækale uheld.xml" />
+      <None Remove="Resources\eForms\00. InfoBox.xml" />
+      <EmbeddedResource Include="Resources\eForms\00. InfoBox.xml" />
     </ItemGroup>
 
     <ItemGroup>

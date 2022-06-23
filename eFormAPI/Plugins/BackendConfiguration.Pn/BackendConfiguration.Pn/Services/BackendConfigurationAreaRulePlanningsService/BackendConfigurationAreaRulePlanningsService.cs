@@ -2639,6 +2639,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                     await planning.Create(_itemsPlanningPnDbContext);
 
+                    poolHour.ItemsPlanningId = planning.Id;
+                    await poolHour.Update(_backendConfigurationPnDbContext);
+
                     var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
                         areaRule.FolderId);
                     areaRulePlanning.ComplianceEnabled = false;
