@@ -97,6 +97,23 @@ export class PropertyCreateModalComponent implements OnInit {
     }
   }
 
+  onChrNumberChanged(number: number) {
+    if (number > 11111) {
+      if (number.toString().length > 5)
+        this.propertiesService.getChrInformation(number)
+          .subscribe((data) => {
+            if (data && data.success) {
+              //debugger;
+              if (data.model.ejendom.byNavn === '' || data.model.ejendom.byNavn === null) {
+                this.newProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.postDistrikt;
+              } else {
+                this.newProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.byNavn;
+              }
+            }
+          });
+    }
+  }
+
   // addToArray(e: any, languageId: number) {
   //   if (e.target.checked) {
   //     this.selectedLanguages = [

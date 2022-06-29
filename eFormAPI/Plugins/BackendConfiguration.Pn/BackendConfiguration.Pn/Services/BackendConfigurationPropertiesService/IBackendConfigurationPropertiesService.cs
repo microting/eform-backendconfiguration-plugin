@@ -46,5 +46,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
         Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary();
         Task<OperationDataResult<Result>> GetCompanyType(int number);
+        Task<OperationDataResult<ChrResult>> GetChrInformation(int number);
     }
 }

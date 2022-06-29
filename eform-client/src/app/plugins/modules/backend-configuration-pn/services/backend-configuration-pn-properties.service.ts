@@ -18,6 +18,7 @@ import {
 } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
+import {ChrResultModel} from 'src/app/plugins/modules/backend-configuration-pn/models/properties/chr-result.model';
 
 export let BackendConfigurationPnPropertiesMethods = {
   Properties: 'api/backend-configuration-pn/properties',
@@ -29,6 +30,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   CreateDeviceUser: 'api/backend-configuration-pn/properties/assignment/create-device-user',
   GetAll: 'api/backend-configuration-pn/properties/assignment/index-device-user',
   GetCompanyType: 'api/backend-configuration-pn/properties/get-company-type',
+  GetChrInformation: 'api/backend-configuration-pn/properties/get-chr-information',
 };
 
 @Injectable({
@@ -132,6 +134,14 @@ export class BackendConfigurationPnPropertiesService {
       { id: id }
     );
   }
+
+  getChrInformation(id: number): Observable<OperationDataResult<ChrResultModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.GetChrInformation,
+      { cvrNumber: id }
+    );
+  }
+
   getCompanyType(id: number): Observable<OperationDataResult<ResultModel>> {
     return this.apiBaseService.get(
       BackendConfigurationPnPropertiesMethods.GetCompanyType,

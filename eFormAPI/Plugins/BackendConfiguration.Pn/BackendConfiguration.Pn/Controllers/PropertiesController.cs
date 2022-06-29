@@ -91,5 +91,13 @@ namespace BackendConfiguration.Pn.Controllers
         {
             return await _backendConfigurationPropertiesService.GetCompanyType(cvrNumber);
         }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("get-chr-information")]
+        public async Task<OperationDataResult<ChrResult>> GetChrInformation(int cvrNumber)
+        {
+            return await _backendConfigurationPropertiesService.GetChrInformation(cvrNumber);
+        }
     }
 }

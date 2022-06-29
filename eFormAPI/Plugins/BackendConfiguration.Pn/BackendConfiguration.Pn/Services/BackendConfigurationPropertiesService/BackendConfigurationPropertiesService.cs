@@ -914,5 +914,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
             return new OperationDataResult<Result>(true, cvr);
         }
+
+        public async Task<OperationDataResult<ChrResult>> GetChrInformation(int chrNumber)
+        {
+            var chrHelper = new ChrHelper();
+            var chr = await chrHelper.GetCompanyInfo(chrNumber);
+
+            return new OperationDataResult<ChrResult>(true, chr);
+        }
     }
 }
