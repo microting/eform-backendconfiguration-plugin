@@ -185,7 +185,7 @@ namespace BackendConfiguration.Pn
                         var newTemplate = await core.TemplateFromXml(contents);
                         if (!await sdkDbContext.CheckLists
                                 .AnyAsync(x => x.OriginalId == newTemplate.OriginalId
-                                               && x.WorkflowState != Constants.WorkflowStates.Removed))
+                                               && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed))
                         {
                             var clId = await core.TemplateCreate(newTemplate);
                             var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
@@ -208,7 +208,7 @@ namespace BackendConfiguration.Pn
                             {
                                 var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
                                     x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
-                                    x.WorkflowState != Constants.WorkflowStates.Removed);
+                                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed);
                                 cl.IsLocked = true;
                                 cl.IsEditable = false;
                                 cl.ReportH1 = eform[0];
@@ -516,7 +516,7 @@ namespace BackendConfiguration.Pn
             };
 
             var fields = await sdkDbContext.Fields.Where(x =>
-                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
                 .ToListAsync();
 
             foreach (var field in fields)
@@ -551,7 +551,7 @@ namespace BackendConfiguration.Pn
             };
 
             fields = await sdkDbContext.Fields.Where(x =>
-                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
                 .ToListAsync();
 
             foreach (var field in fields)
@@ -757,7 +757,7 @@ namespace BackendConfiguration.Pn
 
             ftList = await sdkDbContext.FolderTranslations.Where(x =>
                 x.Name == "23.01 Logbøger for alle miljøteknologier" &&
-                x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -776,7 +776,7 @@ namespace BackendConfiguration.Pn
 
             ftList = await sdkDbContext.FolderTranslations.Where(x =>
                 x.Name == "23.02 Dokumentation af afsluttede inspektioner" &&
-                x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -795,7 +795,7 @@ namespace BackendConfiguration.Pn
 
             ftList = await sdkDbContext.FolderTranslations.Where(x =>
                     x.Name == "23.03 Dokumentation for miljøledelse" &&
-                    x.WorkflowState != Constants.WorkflowStates.Removed)
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
                 .ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
@@ -814,7 +814,7 @@ namespace BackendConfiguration.Pn
 
             ftList = await sdkDbContext.FolderTranslations.Where(x =>
                     x.Name == "23.04 Overholdelse af fodringskrav" &&
-                    x.WorkflowState != Constants.WorkflowStates.Removed)
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
                 .ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
@@ -832,7 +832,7 @@ namespace BackendConfiguration.Pn
             }
 
             ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Mandag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                .Where(x => x.Name == "Mandag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -863,7 +863,7 @@ namespace BackendConfiguration.Pn
             }
 
             ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Tirsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                .Where(x => x.Name == "Tirsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -894,7 +894,7 @@ namespace BackendConfiguration.Pn
             }
 
             ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Onsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                .Where(x => x.Name == "Onsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -925,7 +925,7 @@ namespace BackendConfiguration.Pn
             }
 
             ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Torsdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                .Where(x => x.Name == "Torsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -956,7 +956,7 @@ namespace BackendConfiguration.Pn
             }
 
             ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Fredag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                .Where(x => x.Name == "Fredag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -987,7 +987,7 @@ namespace BackendConfiguration.Pn
             }
 
             ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Lørdag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                .Where(x => x.Name == "Lørdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
@@ -1018,7 +1018,7 @@ namespace BackendConfiguration.Pn
             }
 
             ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Søndag" && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+                .Where(x => x.Name == "Søndag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
             foreach (var folderTranslation2 in ftList)
             {
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
