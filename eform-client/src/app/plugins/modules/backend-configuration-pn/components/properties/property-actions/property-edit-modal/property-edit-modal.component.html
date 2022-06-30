@@ -52,6 +52,7 @@
                   mdbInput
                   type="text"
                   [(ngModel)]="selectedProperty.chr"
+                  (ngModelChange)="onChrNumberChanged($event)"
                   name="editCHRNumber"
                   class="form-control"
                   id="editCHRNumber"
