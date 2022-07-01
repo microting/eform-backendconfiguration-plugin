@@ -36,11 +36,33 @@
                     <UnitName/>
                     <Color>e8eaf6</Color>
                 </DataItem>
+                <DataItem type="SingleSelect">
+                    <Id>376053</Id>
+                    <Label>Kvittering af pulsslag v. åbning|Acknowledgment of pulse rate at Opening|Quittierung des Pulsschlags beim Öffnung</Label>
+                    <Description><![CDATA[<i>Ja/Nej</i>]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[Ja|Yes|Ja]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Nej|No|Nein]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e8eaf6</Color>
+                </DataItem>
                 <DataItem type="Number">
                     <Id>376044</Id>
                     <Label>Aflæst pH|Read pH|pH-Wert ablesen</Label>
                     <Description><![CDATA[<i>pH</i>]]></Description>
-                    <DisplayOrder>1</DisplayOrder>
+                    <DisplayOrder>2</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -53,7 +75,7 @@
                     <Id>376045</Id>
                     <Label>Aflæst frit klor|Read free chlorine|Lesen Sie freies Chlor</Label>
                     <Description><![CDATA[<i>Mg/l</i>]]></Description>
-                    <DisplayOrder>2</DisplayOrder>
+                    <DisplayOrder>3</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -66,7 +88,7 @@
                     <Id>376046</Id>
                     <Label>Aflæst temp.|Read temp.|Temperatur ablesen.</Label>
                     <Description><![CDATA[<i>Celsius</i>]]></Description>
-                    <DisplayOrder>3</DisplayOrder>
+                    <DisplayOrder>4</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -79,7 +101,7 @@
                     <Id>376047</Id>
                     <Label>Antal gæster ved lukning|Number of guests at closing|Anzahl der Gäste bei Schließung</Label>
                     <Description><![CDATA[<i>Antal</i>]]></Description>
-                    <DisplayOrder>4</DisplayOrder>
+                    <DisplayOrder>5</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -92,7 +114,7 @@
                     <Id>376048</Id>
                     <Label>Klarhed|Clarity|Klarheit</Label>
                     <Description><![CDATA[<i>OK/Grumset</i>]]></Description>
-                    <DisplayOrder>5</DisplayOrder>
+                    <DisplayOrder>6</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <KeyValuePairList>
                         <KeyValuePair>
@@ -114,7 +136,7 @@
                     <Id>376049</Id>
                     <Label>Målt Frit klor|Measured Free chlorine|Gemessenes freies Chlor</Label>
                     <Description><![CDATA[<i>Mg/l</i>]]></Description>
-                    <DisplayOrder>6</DisplayOrder>
+                    <DisplayOrder>7</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -127,7 +149,7 @@
                     <Id>376050</Id>
                     <Label>Målt Total klor|Measured Total chlorine|Gemessenes Gesamtchlor</Label>
                     <Description><![CDATA[<i>Mg/l</i>]]></Description>
-                    <DisplayOrder>7</DisplayOrder>
+                    <DisplayOrder>8</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -140,7 +162,7 @@
                     <Id>376051</Id>
                     <Label>Målt Bundet klor|Measured Bound Chlorine|Gemessenes gebundenes Chlor</Label>
                     <Description><![CDATA[<i>Mg/l</i>]]></Description>
-                    <DisplayOrder>8</DisplayOrder>
+                    <DisplayOrder>9</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -153,35 +175,13 @@
                     <Id>376052</Id>
                     <Label>Målt pH|Measured pH|Gemessener pH-Wert</Label>
                     <Description><![CDATA[<i>pH</i>]]></Description>
-                    <DisplayOrder>9</DisplayOrder>
+                    <DisplayOrder>10</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
                     <Value/>
                     <DecimalCount>2</DecimalCount>
                     <UnitName/>
-                    <Color>e7e7e7</Color>
-                </DataItem>
-                <DataItem type="SingleSelect">
-                    <Id>376053</Id>
-                    <Label>Kvittering af pulsslag v. åbning|Acknowledgment of pulse rate at Opening|Quittierung des Pulsschlags beim Öffnung</Label>
-                    <Description><![CDATA[<i>Ja/Nej</i>]]></Description>
-                    <DisplayOrder>10</DisplayOrder>
-                    <Mandatory>false</Mandatory>
-                    <KeyValuePairList>
-                        <KeyValuePair>
-                            <Key>1</Key>
-                            <Value><![CDATA[Ja|Yes|Ja]]></Value>
-                            <Selected>false</Selected>
-                            <DisplayOrder>1</DisplayOrder>
-                        </KeyValuePair>
-                        <KeyValuePair>
-                            <Key>2</Key>
-                            <Value><![CDATA[Nej|No|Nein]]></Value>
-                            <Selected>false</Selected>
-                            <DisplayOrder>2</DisplayOrder>
-                        </KeyValuePair>
-                    </KeyValuePairList>
                     <Color>e7e7e7</Color>
                 </DataItem>
                 <DataItem type="Number">
