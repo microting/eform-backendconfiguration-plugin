@@ -78,7 +78,7 @@ public class PoductionUnit
     [CanBeNull] public string Fax { get; set; }
     public string Startdate { get; set; }
     [CanBeNull] public string Enddate { get; set; }
-    public int Employees { get; set; }
+    public int? Employees { get; set; }
     [CanBeNull] public string Addressco { get; set; }
     public int Industrycode { get; set; }
     public string Industrydesc { get; set; }
