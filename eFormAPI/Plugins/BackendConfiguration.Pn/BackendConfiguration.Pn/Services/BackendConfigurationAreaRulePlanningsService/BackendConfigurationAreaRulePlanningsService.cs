@@ -2461,8 +2461,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[17]).EntityTypeId = entityListUidRegNo;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[18]).EntityTypeId = entityListUid;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[19]).EntityTypeId = entityListUidRegNo;
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(18);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(16);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(14);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(12);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(10);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(8);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(6);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(4);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(2);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(0);
                 /*var caseId = */
-                var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folder.Id);
+                var caseId = await core.CaseCreate(mainElement, "", (int)site!.MicrotingUid!, folder.Id);
 
                 var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName,
                     areaRule.FolderId, areaRulePlanningModel, areaRule);
