@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using eFormCore;
+using Microting.eForm.Dto;
 using Microting.eForm.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
@@ -2442,25 +2443,45 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                 mainElement.DisplayOrder = 10000000;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[0]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[0]).DisplayOrder = 1;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[1]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[1]).DisplayOrder = 2;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[2]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[2]).DisplayOrder = 3;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[3]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[3]).DisplayOrder = 4;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[4]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).DisplayOrder = 5;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[5]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[5]).DisplayOrder = 6;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[6]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[6]).DisplayOrder = 7;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[7]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[7]).DisplayOrder = 8;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[8]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[8]).DisplayOrder = 9;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[9]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[9]).DisplayOrder = 10;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[10]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[10]).DisplayOrder = 11;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[11]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[11]).DisplayOrder = 12;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[12]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[12]).DisplayOrder = 13;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[13]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[13]).DisplayOrder = 14;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[14]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[14]).DisplayOrder = 15;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[15]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[15]).DisplayOrder = 16;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[16]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[16]).DisplayOrder = 17;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[17]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[17]).DisplayOrder = 18;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[18]).EntityTypeId = entityListUid;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[18]).DisplayOrder = 19;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[19]).EntityTypeId = entityListUidRegNo;
+                ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[19]).DisplayOrder = 20;
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(18);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(16);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(14);
@@ -2471,6 +2492,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(4);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(2);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(0);
+                var description = "I Bekæmpelsesmiddeldatabasen (BMD) som vedligeholdes af Miljøstyrelsen, kan du søge på alle godkendte sprøjtemidler og biocider.<br>" +
+                                  "For at søge på et middel, skal du indtaste registrerings-nr. som står på midlets etikette.<br>" +
+                                  "Hvis det indtastede registrerings-nr. ikke findes eller ikke kan aflæses, så fjern og bortskaf midlet.<br><br>" +
+                                  "<strong>Bortskaffelse</strong><br>" +
+                                  "Hvis midlet har et faresymbol, skal rester og tom emballage afleveres til den kommunale affaldsordning for farligt affald. Hvis midlet ikke har et faresymbol, kan du aflevere rester og tom emballage til den almindelige kommunale affaldsordning.";
+                None none = new None(1, false, true, "Vigtig info", description, Constants.FieldColors.Yellow, 0, false);
+                ((DataElement)mainElement.ElementList[0]).DataItemList.Add(none);
                 /*var caseId = */
                 var caseId = await core.CaseCreate(mainElement, "", (int)site!.MicrotingUid!, folder.Id);
 
