@@ -326,7 +326,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 }
                 property.Address = updateModel.Address;
                 property.CHR = updateModel.Chr;
-                // property.CVR = updateModel.Cvr;
+                property.CVR = updateModel.Cvr;
                 property.Name = updateModel.Name;
                 property.UpdatedByUserId = _userService.UserId;
 

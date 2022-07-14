@@ -21,6 +21,7 @@
                   mdbInput
                   type="text"
                   [(ngModel)]="selectedProperty.cvr"
+                  (ngModelChange)="onNameFilterChanged($event)"
                   name="editCVRNumber"
                   class="form-control"
                   id="editCVRNumber"
