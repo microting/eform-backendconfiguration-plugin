@@ -23,7 +23,9 @@ SOFTWARE.
 */
 
 
+using BackendConfiguration.Pn.Services.ChemicalService;
 using ChemicalsBase.Infrastructure;
+using ChemicalsBase.Infrastructure.Data.Entities;
 using ChemicalsBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
 
@@ -104,6 +106,7 @@ namespace BackendConfiguration.Pn
             services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
+            services.AddTransient<IChemicalService, ChemicalService>();
             services.AddControllers();
             SeedEForms(services);
         }

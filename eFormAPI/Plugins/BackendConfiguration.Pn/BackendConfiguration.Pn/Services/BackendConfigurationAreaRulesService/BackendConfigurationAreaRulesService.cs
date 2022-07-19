@@ -180,12 +180,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                     await chemical.Create(_chemicalsDbContext);
                                     foreach (Product product in chemical.Products)
                                     {
-                                        await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode, chemical.Name,
-                                            nextItemUid.ToString());
-                                        nextItemUid++;
+                                        if (product.Verified)
+                                        {
+                                            await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
+                                                chemical.Name,
+                                                nextItemUid.ToString());
+                                            nextItemUid++;
+                                        }
                                     }
-                                    await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo, chemical.Name,
-                                        nextItemUid.ToString());
+                                    if (chemical.Verified)
+                                    {
+                                        await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
+                                            chemical.Name,
+                                            nextItemUid.ToString());
+                                    }
                                 }
 
                             }
@@ -203,12 +211,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             {
                                 foreach (Product product in chemical.Products)
                                 {
-                                    await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode, chemical.Name,
-                                        nextItemUid.ToString());
-                                    nextItemUid++;
+                                    if (product.Verified)
+                                    {
+                                        await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
+                                            chemical.Name,
+                                            nextItemUid.ToString());
+                                        nextItemUid++;
+                                    }
                                 }
-                                await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo, chemical.Name,
-                                    nextItemUid.ToString());
+                                if (chemical.Verified)
+                                {
+                                    await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
+                                        chemical.Name,
+                                        nextItemUid.ToString());
+                                }
                             }
                         }
                     }

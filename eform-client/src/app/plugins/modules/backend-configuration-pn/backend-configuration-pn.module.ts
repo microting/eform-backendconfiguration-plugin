@@ -25,6 +25,7 @@ import {
 } from './components';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 import {
+  BackendConfigurationPnChemicalsService,
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnSettingsService,
 } from './services';
@@ -65,6 +66,7 @@ import {AreaRulePlanModalModule} from 'src/app/plugins/modules/backend-configura
   providers: [
     BackendConfigurationPnSettingsService,
     BackendConfigurationPnPropertiesService,
+    BackendConfigurationPnChemicalsService,
     ...backendConfigurationStoreProviders,
     // { provide: OWL_DATE_TIME_FORMATS, useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN },
   ],
