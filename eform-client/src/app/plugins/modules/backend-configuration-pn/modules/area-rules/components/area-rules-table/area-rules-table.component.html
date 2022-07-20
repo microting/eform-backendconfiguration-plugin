@@ -53,6 +53,7 @@
 </div>
 
 <div class="row p-1 mt-4 table-responsive no-gutters">
+
   <h3 *ngIf="selectedArea.type === 3">{{'Klargøring af stalde' | translate}}</h3>
   <table
     mdbTable
@@ -197,6 +198,87 @@
           </div>
         </td>
       </tr>
+    </tbody>
+  </table>
+</div>
+<div class="row p-1 mt-4 table-responsive no-gutters" *ngIf="selectedArea.type === 9">
+  <h3>{{'Chemicals' | translate}}</h3>
+  <table
+    mdbTable
+    striped="true"
+    hover="true"
+    small="true"
+    class="z-depth-1 text-center"
+  ><thead
+      *ngIf="selectedArea.type === 9"
+      table-headers
+      [tableHeaders]="tableHeadersT9"
+      [stickyHeader]="true"
+    ></thead>
+    <tbody id="tableBody">
+    <tr *ngFor="let chemical of chemicalsModel.entities; let i = index">
+      <td id="name">
+        {{ chemical.name }}
+      </td>
+      <td id="registrationNo">
+        {{ chemical.registrationNo }}
+      </td>
+      <td id="status">
+        {{ getStatus(chemical.status) }}
+      </td>
+      <td id="authorisationDate">
+        <date-formatter
+          [date]="chemical.authorisationDate"
+          [Format]="'date'"
+        ></date-formatter>
+      </td>
+      <td id="authorisationExpirationDate">
+        <date-formatter
+          [date]="chemical.authorisationExpirationDate"
+          [Format]="'date'"
+        ></date-formatter>
+      </td>
+      <td id="authorisationTerminationDate">
+        <date-formatter
+          [date]="chemical.authorisationTerminationDate"
+          [Format]="'date'"
+        ></date-formatter>
+      </td>
+      <td id="salesDeadline">
+        <date-formatter
+          [date]="chemical.salesDeadline"
+          [Format]="'date'"
+        ></date-formatter>
+      </td>
+      <td id="useAndPossesionDeadline">
+        <date-formatter
+          [date]="chemical.useAndPossesionDeadline"
+          [Format]="'date'"
+        ></date-formatter>
+      </td>
+      <td id="possessionDeadline">
+        <date-formatter
+          [date]="chemical.possessionDeadline"
+          [Format]="'date'"
+        ></date-formatter>
+      </td>
+      <td id="productName">
+        {{ chemical.productName }}
+      </td>
+      <td id="barcode">
+        {{ chemical.barcode }}
+      </td>
+      <td id="pdfFile">
+        <a
+          href="javascript:void(0)" (click)="getPdf(chemical.fileName)"
+          mdbBtn
+          id="planningCreateBtn"
+          class="btn-success btn-icon"z
+        >
+          <fa-icon icon="file-pdf" size="lg" [fixedWidth]="true"></fa-icon>
+        </a>
+      </td>
+    </tr>
     </tbody>
   </table>
 </div>

@@ -180,5 +180,15 @@ export const da = {
   'All': 'Alle',
   'Ongoing': 'Igangværende',
   'Completed': 'Afsluttet',
-  'Edit list of areas for workorder': 'Rediger områder til Opgavestyring'
+  'Edit list of areas for workorder': 'Rediger områder til Opgavestyring',
+  'Chemicals': 'Kemikalier',
+  'Registration No': 'Registrerings nr',
+  'Authorisation Date': 'Autorisationsdato',
+  'Authorisation Expiration Date': 'Autorisationens udløbsdato',
+  'Authorisation Termination Date': 'Autorisations ophørsdato',
+  'Sales Deadline': 'Salgsfrist',
+  'Use And Possesion Deadline': 'Deadline for brug og besiddelse',
+  'Possession Deadline': 'Frist for besiddelse',
+  'ProductName':'Produkt navn',
+  'Barcode': 'Stregkode'
 };

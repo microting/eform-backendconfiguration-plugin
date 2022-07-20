@@ -22,8 +22,13 @@ import {
 } from '../../../../services';
 import { TranslateService } from '@ngx-translate/core';
 import {AreaRuleEntityListModalComponent, AreaRulePlanModalComponent} from '../../../../components';
-import { AdvEntitySelectableItemModel } from 'src/app/common/models';
+import {AdvEntitySelectableItemModel, Paged} from 'src/app/common/models';
 import {EntitySelectService} from 'src/app/common/services';
+import {ChemicalModel} from 'src/app/plugins/modules/backend-configuration-pn/modules';
+import {
+  BackendConfigurationPnChemicalsService
+} from 'src/app/plugins/modules/backend-configuration-pn/services/backend-configuration-pn-chemicals.service';
+import {ChemicalsStateService} from 'src/app/plugins/modules/backend-configuration-pn/components/chemicals/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -69,6 +74,8 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   deleteAreaRulesSub$: Subscription;
   getTranslateSub$: Subscription;
   routerSub$: Subscription;
+  chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
+  getChemicalsSub$: Subscription;
 
   constructor(
     private areasService: BackendConfigurationPnAreasService,
@@ -77,6 +84,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
     private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
     private translateService: TranslateService,
     private entitySelectService: EntitySelectService,
+    public chemicalsStateService: ChemicalsStateService,
   ) {}
 
   ngOnInit() {
@@ -92,6 +100,30 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
     });
   }
 
+
+  getChemicals() {
+    this.getChemicalsSub$ = this.chemicalsStateService
+      .getAllChemicals()
+      .subscribe((data) => {
+        if (data && data.success) {
+          // map folder names to items
+          if (data.model.total > 0) {
+            this.chemicalsModel = {
+              ...data.model,
+              entities: data.model.entities.map((x) => {
+                return {
+                  ...x,
+                };
+              }),
+            };
+          } else {
+            this.chemicalsModel = data.model;
+          }
+          // Required if page or anything else was changed
+        }
+      });
+  }
+
   getArea(propertyAreaId: number) {
     this.getAreaSub$ = this.areasService
       .getAreaByPropertyAreaId(propertyAreaId)
@@ -99,6 +131,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
         if (operation && operation.success) {
           this.selectedArea = operation.model;
           this.breadcrumbs[2] = { name: this.selectedArea.name };
+          this.getChemicals();
         }
       });
   }
