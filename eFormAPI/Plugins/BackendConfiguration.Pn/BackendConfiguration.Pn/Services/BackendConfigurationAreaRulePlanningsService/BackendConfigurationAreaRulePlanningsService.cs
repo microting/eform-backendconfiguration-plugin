@@ -2378,8 +2378,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
         private async Task CreatePlanningType9(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, Core core)
         {
-            // await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core);
-
             var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
             if (areaRulePlanningModel.Status)
             {
@@ -2387,25 +2385,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId);
                 var language =
                     await sdkDbContext.Languages.SingleOrDefaultAsync(x => x.Id == site.LanguageId);
-                var entityListUid = (int)await _backendConfigurationPnDbContext.Properties
-                    .Where(x => x.Id == areaRule.PropertyId)
-                    .Select(x => x.EntitySearchListChemicals)
-                    .FirstAsync().ConfigureAwait(false);
-                var entityListUidRegNo = (int)await _backendConfigurationPnDbContext.Properties
-                    .Where(x => x.Id == areaRule.PropertyId)
-                    .Select(x => x.EntitySearchListChemicalRegNos)
-                    .FirstAsync().ConfigureAwait(false);
-                var entityListUidAreas = (int)await _backendConfigurationPnDbContext.Properties
-                    .Where(x => x.Id == areaRule.PropertyId)
-                    .Select(x => x.EntitySelectListChemicalAreas)
-                    .FirstAsync().ConfigureAwait(false);
-                // if (!sdkDbContext.CheckListSites
-                //         .Any(x =>
-                //             x.CheckListId == areaRule.EformId &&
-                //             x.SiteId == siteId &&
-                //             x.WorkflowState != Constants.WorkflowStates.Removed))
-                // {
-                var mainElement = await core.ReadeForm((int)areaRule.EformId, language);
+                var property = await _backendConfigurationPnDbContext.Properties
+                    .FirstAsync(x => x.Id == areaRule.PropertyId);
+                var entityListUid = (int)property.EntitySearchListChemicals!;
+                var entityListUidRegNo = (int)property.EntitySearchListChemicalRegNos!;
+                var entityListUidAreas = (int)property.EntitySelectListChemicalAreas!;
+                
+                var mainElement = await core.ReadeForm((int)areaRule.EformId!, language);
                 // todo add group id to eform
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId);
                 var folderMicrotingId = folder.MicrotingUid.ToString();
@@ -2474,7 +2460,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 EntitySelect entitySelect = new EntitySelect(1, true, false, "Vælg lokation", " ",
                     Constants.FieldColors.Yellow, 1, false, 0, entityListUidAreas);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.Add(entitySelect);
-                /*var caseId = */
                 var caseId = await core.CaseCreate(mainElement, "", (int)site!.MicrotingUid!, folder.Id);
 
                 var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName,
