@@ -249,6 +249,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             property.EntitySearchListChemicals = Convert.ToInt32(groupCreate.MicrotingUid);
                             groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Regno - {property.Name}", "", true, false);
                             property.EntitySearchListChemicalRegNos = Convert.ToInt32(groupCreate.MicrotingUid);
+                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, $"Chemicals - Areas - {property.Name}", "", true, false);
+                            property.EntitySelectListChemicalAreas = Convert.ToInt32(groupCreate.MicrotingUid);
                             await property.Update(_backendConfigurationPnDbContext);
                             string text = "25.01 Registrer produkter";
 
