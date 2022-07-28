@@ -32,6 +32,7 @@ using Chemicals.Pn.Infrastructure.Models.Chemical;
 using Chemicals.Pn.Infrastructure.Models.Planning;
 using ChemicalsBase.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
@@ -61,39 +62,35 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
         {
             try
             {
-                var chemicalIds = await _backendConfigurationPnDb.ChemicalProductProperties
-                    .Where(x => x.PropertyId == pnRequestModel.PropertyId).Select(x => x.ChemicalId).ToListAsync();
+                var chemicalProductProperties = await _backendConfigurationPnDb.ChemicalProductProperties
+                    .Where(x => x.PropertyId == pnRequestModel.PropertyId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
                 
                 var theList = new List<ChemicalPnModel>();
-                var chemicals = await _chemicalsDb.Chemicals
-                    .Include(x => x.Products)
-                    .Where(x => chemicalIds.Contains(x.Id))
-                    .ToListAsync();
-                foreach (var chemical in chemicals)
+                foreach (var chemicalProductProperty in chemicalProductProperties)
                 {
-                    foreach (var chemicalProduct in chemical.Products
-                                 .Where(x => x.Verified)
-                                 .Where(x=> x.Barcode.Length < 14))
+                    var chemical = await _chemicalsDb.Chemicals.Include(x => x.Products)
+                        .SingleAsync(x => chemicalProductProperty.ChemicalId == x.Id);
+                    
+                    var chemicalPnModel = new ChemicalPnModel
                     {
-                        var chemicalPnModel = new ChemicalPnModel
-                        {
-                            AuthorisationDate = chemical.AuthorisationDate,
-                            AuthorisationExpirationDate = chemical.AuthorisationExpirationDate,
-                            AuthorisationTerminationDate = chemical.AuthorisationTerminationDate,
-                            Barcode = chemicalProduct.Barcode,
-                            FileName = chemicalProduct.FileName,
-                            Id = chemical.Id,
-                            Name = chemical.Name,
-                            PossessionDeadline = chemical.PossessionDeadline,
-                            RegistrationNo = chemical.RegistrationNo,
-                            SalesDeadline = chemical.SalesDeadline,
-                            Status = chemical.Status,
-                            ProductName = chemicalProduct.Name,
-                            ProductId = chemicalProduct.Id,
-                            Verified = chemicalProduct.Verified
-                        };
-                        theList.Add(chemicalPnModel);
-                    }
+                        AuthorisationDate = chemical.AuthorisationDate,
+                        AuthorisationExpirationDate = chemical.AuthorisationExpirationDate,
+                        AuthorisationTerminationDate = chemical.AuthorisationTerminationDate,
+                        Barcode = chemical.Products.FirstOrDefault() == null ? "" : chemical.Products.First().Barcode,
+                        FileName = chemical.Products.FirstOrDefault() == null ? "" : chemical.Products.First().FileName,
+                        Id = chemical.Id,
+                        Name = chemical.Name,
+                        PossessionDeadline = chemical.PossessionDeadline,
+                        RegistrationNo = chemical.RegistrationNo,
+                        SalesDeadline = chemical.SalesDeadline,
+                        Status = chemical.Status,
+                        ProductName = chemical.Products.FirstOrDefault() == null ? "" : chemical.Products.First().Name,
+                        ProductId = chemical.Products.FirstOrDefault() == null ? 0 : chemical.Products.First().Id,
+                        Verified = chemical.Verified,
+                        Locations = chemicalProductProperty.Locations.Replace("|", ", ")
+                    };
+                    theList.Add(chemicalPnModel);
                 }
 
                 theList = theList.OrderBy(x => x.Verified).ThenBy(x => x.Status).ToList();

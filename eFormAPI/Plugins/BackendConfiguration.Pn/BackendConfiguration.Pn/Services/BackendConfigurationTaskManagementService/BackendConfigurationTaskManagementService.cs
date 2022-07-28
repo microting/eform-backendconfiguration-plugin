@@ -141,7 +141,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId
                 })
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
             {
@@ -170,7 +170,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var task = await _backendConfigurationPnDbContext.WorkorderCases
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -184,7 +184,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     x.CaseId,
                     x.ParentWorkorderCaseId,
                     x.PropertyWorker.PropertyId,
-                }).FirstOrDefaultAsync();
+                }).FirstOrDefaultAsync().ConfigureAwait(false);
             if (task == null)
             {
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
@@ -195,7 +195,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.WorkorderCaseId == task.ParentWorkorderCaseId)
                 .Select(x => x.UploadedDataId)
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             var fileNames = new List<string>();
             foreach (var uploadId in uploadIds)
@@ -203,7 +203,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 var fileName = await sdkDbContext.UploadedDatas
                     .Where(x => x.Id == uploadId)
                     .Select(x => x.FileName)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
                 fileNames.Add(fileName);
             }
 
@@ -211,7 +211,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 .Where(x => x.MicrotingUid == task.CaseId || x.Id == task.CaseId)
                 .Include(x => x.Site)
                 .Select(x => x.Site.Id)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
 
             var taskForReturn = new WorkOrderCaseReadModel
             {
@@ -237,13 +237,13 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var entityListId = await _backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == propertyId)
                 .Select(x => x.EntitySelectListAreas)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
             if (entityListId == null)
             {
                 return new OperationDataResult<List<string>>(false,
@@ -255,7 +255,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .OrderBy(x => x.DisplayIndex)
                 .Select(x => x.Name)
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
             return new OperationDataResult<List<string>>(true, items);
         }
         catch (Exception e)
@@ -269,7 +269,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
     public async Task<OperationResult> DeleteTaskById(int workOrderCaseId)
     {
-        var core = await _coreHelper.GetCore();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         try
         {
@@ -277,7 +277,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == workOrderCaseId)
                 .Include(x => x.PropertyWorker)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
 
             if (workOrderCase == null)
             {
@@ -287,28 +287,28 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             if (workOrderCase.CaseId != 0)
             {
-                await core.CaseDelete(workOrderCase.CaseId);
+                await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
             }
 
-            await workOrderCase.Delete(_backendConfigurationPnDbContext);
+            await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.ParentWorkorderCaseId == workOrderCase.Id)
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             foreach (var childTask in allChildTasks)
             {
                 childTask.UpdatedByUserId = _userService.UserId;
-                await childTask.Delete(_backendConfigurationPnDbContext);
+                await childTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
 
                 if (workOrderCase.CaseId != 0)
                 {
-                    await core.CaseDelete(workOrderCase.CaseId);
+                    await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
                 }
 
-                await workOrderCase.Delete(_backendConfigurationPnDbContext);
+                await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             if (workOrderCase.ParentWorkorderCaseId != null)
@@ -316,15 +316,15 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 var parentTasks = await _backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == workOrderCase.ParentWorkorderCaseId)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (parentTasks != null)
                 {
                     parentTasks.UpdatedByUserId = _userService.UserId;
-                    await parentTasks.Delete(_backendConfigurationPnDbContext);
+                    await parentTasks.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    await core.CaseDelete(workOrderCase.CaseId);
-                    await workOrderCase.Delete(_backendConfigurationPnDbContext);
+                    await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
+                    await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
 
@@ -343,13 +343,13 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     {
         try
         {
-            var core = await _coreHelper.GetCore();
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var property = await _backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == createModel.PropertyId)
                 .Include(x => x.PropertyWorkers)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
             if (property == null)
             {
                 return new OperationDataResult<WorkOrderCaseReadModel>(false,
@@ -362,7 +362,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             var site = await sdkDbContext.Sites
                 .Where(x => x.Id == createModel.AssignedSiteId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
 
             createModel.Description = string.IsNullOrEmpty(createModel.Description)
                 ? ""
@@ -373,7 +373,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 CaseId = 0,
                 PropertyWorkerId = propertyWorkers.First().Id,
                 SelectedAreaName = createModel.AreaName,
-                CreatedByName = await _userService.GetCurrentUserFullName(),
+                CreatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false),
                 CreatedByText = "",
                 CaseStatusesEnum = CaseStatusesEnum.Ongoing,
                 Description = createModel.Description,
@@ -381,7 +381,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 LeadingCase = true,
                 LastAssignedToName = site.Name
             };
-            await newWorkorderCase.Create(_backendConfigurationPnDbContext);
+            await newWorkorderCase.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var picturesOfTasks = new List<string>();
             if (createModel.Files.Any())
@@ -389,11 +389,11 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 foreach (var picture in createModel.Files)
                 {
                     MemoryStream baseMemoryStream = new MemoryStream();
-                    await picture.CopyToAsync(baseMemoryStream);
+                    await picture.CopyToAsync(baseMemoryStream).ConfigureAwait(false);
                     var hash = "";
                     using (var md5 = MD5.Create())
                     {
-                        var grr = await md5.ComputeHashAsync(baseMemoryStream);
+                        var grr = await md5.ComputeHashAsync(baseMemoryStream).ConfigureAwait(false);
                         hash = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
 
@@ -404,16 +404,16 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         FileLocation = "",
                         Extension = picture.ContentType.Split("/")[1]
                     };
-                    await uploadData.Create(sdkDbContext);
+                    await uploadData.Create(sdkDbContext).ConfigureAwait(false);
 
                     var fileName = $"{uploadData.Id}_{hash}.{picture.ContentType.Split("/")[1]}";
                     string smallFilename = $"{uploadData.Id}_300_{hash}.{picture.ContentType.Split("/")[1]}";
                     string bigFilename = $"{uploadData.Id}_700_{hash}.{picture.ContentType.Split("/")[1]}";
                     baseMemoryStream.Seek(0, SeekOrigin.Begin);
                     MemoryStream s3Stream = new MemoryStream();
-                    await baseMemoryStream.CopyToAsync(s3Stream);
+                    await baseMemoryStream.CopyToAsync(s3Stream).ConfigureAwait(false);
                     s3Stream.Seek(0, SeekOrigin.Begin);
-                    await core.PutFileToS3Storage(s3Stream, fileName);
+                    await core.PutFileToS3Storage(s3Stream, fileName).ConfigureAwait(false);
                     baseMemoryStream.Seek(0, SeekOrigin.Begin);
                     using (var image = new MagickImage(baseMemoryStream))
                     {
@@ -424,9 +424,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         image.Resize(newWidth, newHeight);
                         image.Crop(newWidth, newHeight);
                         MemoryStream memoryStream = new MemoryStream();
-                        await image.WriteAsync(memoryStream);
-                        await core.PutFileToS3Storage(memoryStream, smallFilename);
-                        await memoryStream.DisposeAsync();
+                        await image.WriteAsync(memoryStream).ConfigureAwait(false);
+                        await core.PutFileToS3Storage(memoryStream, smallFilename).ConfigureAwait(false);
+                        await memoryStream.DisposeAsync().ConfigureAwait(false);
                         memoryStream.Close();
                         image.Dispose();
                         baseMemoryStream.Seek(0, SeekOrigin.Begin);
@@ -441,14 +441,14 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         image.Resize(newWidth, newHeight);
                         image.Crop(newWidth, newHeight);
                         MemoryStream memoryStream = new MemoryStream();
-                        await image.WriteAsync(memoryStream);
-                        await core.PutFileToS3Storage(memoryStream, bigFilename);
-                        await memoryStream.DisposeAsync();
+                        await image.WriteAsync(memoryStream).ConfigureAwait(false);
+                        await core.PutFileToS3Storage(memoryStream, bigFilename).ConfigureAwait(false);
+                        await memoryStream.DisposeAsync().ConfigureAwait(false);
                         memoryStream.Close();
                         image.Dispose();
                     }
 
-                    await baseMemoryStream.DisposeAsync();
+                    await baseMemoryStream.DisposeAsync().ConfigureAwait(false);
                     baseMemoryStream.Close();
                     
                     var workOrderCaseImage = new WorkorderCaseImage
@@ -457,28 +457,28 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         UploadedDataId = uploadData.Id
                     };
                     picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}.{uploadData.Extension}");
-                    await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
+                    await workOrderCaseImage.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
 
-            var pdfHash = await GeneratePdf(picturesOfTasks);
+            var pdfHash = await GeneratePdf(picturesOfTasks).ConfigureAwait(false);
 
             var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Text == "02. Ongoing task")
                 .Select(x => x.CheckListId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
 
             var deviceUsersGroupMicrotingUid = await sdkDbContext.EntityGroups
                 .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                 .Select(x => int.Parse(x.MicrotingUid))
-                .FirstAsync();
+                .FirstAsync().ConfigureAwait(false);
 
             var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
                               $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
                               $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
                               $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
-                              $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName()}<br>" +
+                              $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
                               $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                               $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
 
@@ -500,7 +500,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 pdfHash,
                 pushMessageBody,
                 pushMessageTitle,
-                createModel.AreaName);
+                createModel.AreaName).ConfigureAwait(false);
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
@@ -527,17 +527,18 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         string pushMessageTitle,
         string areaName)
     {
-        var core = await _coreHelper.GetCore();
-        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        await using var _ = sdkDbContext.ConfigureAwait(false);
         foreach (var propertyWorker in propertyWorkers)
         {
-            var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
-            var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
-            var mainElement = await core.ReadeForm(eformId, siteLanguage);
+            var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId).ConfigureAwait(false);
+            var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+            var mainElement = await core.ReadeForm(eformId, siteLanguage).ConfigureAwait(false);
             mainElement.CheckListFolderName = await sdkDbContext.Folders
                 .Where(x => x.Id == folderId)
                 .Select(x => x.MicrotingUid.ToString())
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
             mainElement.Label = " ";
             mainElement.ElementList[0].QuickSyncEnabled = true;
             mainElement.EnableQuickSync = true;
@@ -568,7 +569,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             }
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
-            var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+            var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId).ConfigureAwait(false);
             var workOrderCase = new WorkorderCase
             {
                 CaseId = (int)caseId,
@@ -583,17 +584,17 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 LeadingCase = false,
                 ParentWorkorderCaseId = workorderCase.Id
             };
-            await workOrderCase.Create(_backendConfigurationPnDbContext);
+            await workOrderCase.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
         }
     }
 
     private async Task<string> InsertImage(string imageName, string itemsHtml, int imageSize, int imageWidth,
         string basePicturePath)
     {
-        var core = await _coreHelper.GetCore();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
         // var filePath = Path.Combine(basePicturePath, imageName);
         Stream stream;
-        var storageResult = await core.GetFileFromS3Storage(imageName);
+        var storageResult = await core.GetFileFromS3Storage(imageName).ConfigureAwait(false);
         stream = storageResult.ResponseStream;
 
         using (var image = new MagickImage(stream))
@@ -618,14 +619,14 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 $@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>";
         }
 
-        await stream.DisposeAsync();
+        await stream.DisposeAsync().ConfigureAwait(false);
 
         return itemsHtml;
     }
 
     private async Task<string> GeneratePdf(List<string> picturesOfTasks)
     {
-        var core = await _coreHelper.GetCore();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
         var assembly = Assembly.GetExecutingAssembly();
         string html;
@@ -634,7 +635,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             using var reader = new StreamReader(resourceStream ??
                                                 throw new InvalidOperationException(
                                                     $"{nameof(resourceStream)} is null"));
-            html = await reader.ReadToEndAsync();
+            html = await reader.ReadToEndAsync().ConfigureAwait(false);
         }
 
         // Read docx stream
@@ -646,8 +647,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
 
         var docxFileStream = new MemoryStream();
-        await docxFileResourceStream.CopyToAsync(docxFileStream);
-        await docxFileResourceStream.DisposeAsync();
+        await docxFileResourceStream.CopyToAsync(docxFileStream).ConfigureAwait(false);
+        await docxFileResourceStream.DisposeAsync().ConfigureAwait(false);
         string basePicturePath = Path.Combine(Path.GetTempPath(), "pictures", "workorders");
         Directory.CreateDirectory(basePicturePath);
         var word = new WordProcessor(docxFileStream);
@@ -656,7 +657,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         foreach (var imagesName in picturesOfTasks)
         {
             Console.WriteLine($"Trying to insert image into document : {imagesName}");
-            imagesHtml = await InsertImage(imagesName, imagesHtml, 700, 650, basePicturePath);
+            imagesHtml = await InsertImage(imagesName, imagesHtml, 700, 650, basePicturePath).ConfigureAwait(false);
         }
 
         html = html.Replace("{%Content%}", imagesHtml);
@@ -674,8 +675,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         string docxFileName = $"{timeStamp}{rndNumber}_temp.docx";
         string tempPDFFileName = $"{timeStamp}{rndNumber}_temp.pdf";
         string tempPDFFilePath = Path.Combine(downloadPath, tempPDFFileName);
-        await using (var docxFile = new FileStream(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName),
-                         FileMode.Create, FileAccess.Write))
+        var docxFile = new FileStream(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName),
+            FileMode.Create, FileAccess.Write);
+        await using (docxFile.ConfigureAwait(false))
         {
             docxFileStream.WriteTo(docxFile);
         }
@@ -685,14 +687,14 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         File.Delete(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName));
 
         // Upload PDF
-        string hash = await core.PdfUpload(tempPDFFilePath);
+        string hash = await core.PdfUpload(tempPDFFilePath).ConfigureAwait(false);
         if (hash != null)
         {
             //rename local file
             FileInfo fileInfo = new FileInfo(tempPDFFilePath);
             fileInfo.CopyTo(downloadPath + "/" + hash + ".pdf", true);
             fileInfo.Delete();
-            await core.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf");
+            await core.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf").ConfigureAwait(false);
         }
 
         return hash;

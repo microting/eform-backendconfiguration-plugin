@@ -17,6 +17,7 @@ export class ChemicalModel {
   fileName: string;
   productName: string;
   productId: number;
+  locations: string;
 }
 
 export class ChemicalAssignedSitesModel {

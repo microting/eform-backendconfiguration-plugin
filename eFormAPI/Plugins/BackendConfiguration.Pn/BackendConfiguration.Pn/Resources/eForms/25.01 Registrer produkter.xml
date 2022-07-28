@@ -23,6 +23,17 @@
             <DoneButtonDisabled>true</DoneButtonDisabled>
             <ApprovalEnabled>false</ApprovalEnabled>
             <DataItemList>
+                <DataItem type="EntitySelect">
+                    <OriginalId>376999</OriginalId>
+                    <Label>Vælg lokation|Select location|Ort auswählen</Label>
+                    <Description>
+                        <![CDATA[]]>
+                    </Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Source>SOURCE_REPLACE_ME</Source>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
                 <DataItem type="choose_entity">
                     <Id>376014</Id>
                     <Label>Scan stregkode|Scan barcode|Barcode scannen</Label>

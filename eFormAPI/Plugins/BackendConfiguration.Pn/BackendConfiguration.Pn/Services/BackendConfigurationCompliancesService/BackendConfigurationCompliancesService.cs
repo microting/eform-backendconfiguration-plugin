@@ -71,14 +71,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
         public async Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request)
         {
-            var language = await _userService.GetCurrentUserLanguage();
+            var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
             var result = new Paged<CompliancesModel>
             {
                 Entities = new List<CompliancesModel>()
             };
 
-            var core = await _coreHelper.GetCore();
-            await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            await using var _ = sdkDbContext.ConfigureAwait(false);
 
             var complianceList = _backendConfigurationPnDbContext.Compliances
                 .Where(x => x.PropertyId == request.PropertyId)
@@ -91,19 +92,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
             var theList = await complianceList.AsNoTracking()
                 .OrderBy(x => x.Deadline)
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             foreach (var compliance in theList)
             {
                 var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation
-                    .SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
+                    .SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id).ConfigureAwait(false);
 
                 if (planningNameTranslation == null)
                 {
                     continue;
                 }
                 var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations
-                    .SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);
+                    .SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id).ConfigureAwait(false);
 
                 if (areaTranslation == null)
                 {
@@ -115,9 +116,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Select(x => x.SiteId)
                     .Distinct()
-                    .ToListAsync();
+                    .ToListAsync().ConfigureAwait(false);
 
-                var sitesList = await sdkDbContext.Sites.Where(x => planningSites.Contains(x.Id)).ToListAsync();
+                var sitesList = await sdkDbContext.Sites.Where(x => planningSites.Contains(x.Id)).ToListAsync().ConfigureAwait(false);
 
                 var responsible = sitesList.Select(site => new KeyValuePair<int, string>(site.Id, site.Name)).ToList();
 
@@ -125,7 +126,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
                 if (result.Entities.Any(x => x.PlanningId == compliance.PlanningId && x.Deadline == compliance.Deadline.AddDays(-1)))
                 {
-                    await dbCompliance.Delete(_backendConfigurationPnDbContext);
+                    await dbCompliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
                 else
                 {
@@ -147,7 +148,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         if (dbCompliance.MicrotingSdkeFormId == 0)
                         {
                             var planning = await _itemsPlanningPnDbContext.Plannings
-                                .SingleAsync(x => x.Id == complianceModel.PlanningId);
+                                .SingleAsync(x => x.Id == complianceModel.PlanningId).ConfigureAwait(false);
                             dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
                         }
                         var caseEntity = new Case()
@@ -155,10 +156,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             CheckListId = dbCompliance.MicrotingSdkeFormId,
                         };
 
-                        await caseEntity.Create(sdkDbContext);
+                        await caseEntity.Create(sdkDbContext).ConfigureAwait(false);
                         complianceModel.CaseId = caseEntity.Id;
                         dbCompliance.MicrotingSdkCaseId = caseEntity.Id;
-                        await dbCompliance.Update(_backendConfigurationPnDbContext);
+                        await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                     result.Entities.Add(complianceModel);
                 }
@@ -172,7 +173,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
             var compliance = await Index(new CompliancesRequestModel
             {
                 PropertyId = propertyId
-            });
+            }).ConfigureAwait(false);
 
             return new OperationDataResult<int>(true, compliance.Model.Entities.Count == 0 ? 0 : 1);
         }
@@ -181,15 +182,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
         {
             try
             {
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 // var sdkDbContext = core.DbContextHelper.GetDbContext();
                 // var caseDto = await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == id);
                 // if (caseDto == null)
                 // {
                     // return new OperationDataResult<ReplyElement>(false, _localizationService.GetString("CaseNotFound"));
                 // }
-                var language = await _userService.GetCurrentUserLanguage();
-                var theCase = await core.CaseRead(id, language);
+                var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+                var theCase = await core.CaseRead(id, language).ConfigureAwait(false);
                 // theCase.Id = id;
 
                 return !theCase.Equals(null)
@@ -208,9 +209,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
         {
             var checkListValueList = new List<string>();
             var fieldValueList = new List<string>();
-            var core = await _coreHelper.GetCore();
-            var language = await _userService.GetCurrentUserLanguage();
-            var currentUser = await _userService.GetCurrentUserAsync();
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+            var currentUser = await _userService.GetCurrentUserAsync().ConfigureAwait(false);
             try
             {
                 model.ElementList.ForEach(element =>
@@ -228,10 +229,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
             try
             {
-                var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.Id == model.ExtraId);
+                var compliance = await _backendConfigurationPnDbContext.Compliances.SingleOrDefaultAsync(x => x.Id == model.ExtraId).ConfigureAwait(false);
                 if (compliance != null)
                 {
-                    await compliance.Delete(_backendConfigurationPnDbContext);
+                    await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
                 else
                 {
@@ -239,15 +240,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 }
 
 
-                await core.CaseUpdate(model.Id, fieldValueList, checkListValueList);
-                await core.CaseUpdateFieldValues(model.Id, language);
+                await core.CaseUpdate(model.Id, fieldValueList, checkListValueList).ConfigureAwait(false);
+                await core.CaseUpdateFieldValues(model.Id, language).ConfigureAwait(false);
 
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 var foundCase = await sdkDbContext.Cases
                     .Where(x => x.Id == model.Id
                                 && x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if(foundCase != null) {
                     // var now = DateTime.UtcNow;
@@ -261,7 +262,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Single(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}").Id;
                     foundCase.Status = 100;
-                    await foundCase.Update(sdkDbContext);
+                    await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
                     if (CaseUpdateDelegates.CaseUpdateDelegate != null)
                     {
@@ -275,20 +276,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     if (compliance.PlanningCaseSiteId != 0)
                     {
                         var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId);
+                            .SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
                         if (planningCaseSite != null)
                         {
                             planningCaseSite.Status = 100;
-                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
+                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
 
                             planningCaseSite.MicrotingSdkCaseDoneAt = newDoneAt;
                             planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
                             planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
                             planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                             var planningCase = await _itemsPlanningPnDbContext.PlanningCases
-                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
+                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
                             if (planningCase.Status != 100)
                             {
                                 planningCase.Status = 100;
@@ -298,31 +299,31 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                                 planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
                                 planningCase.WorkflowState = Constants.WorkflowStates.Processed;
 
-                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language);
-                                await planningCase.Update(_itemsPlanningPnDbContext);
+                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
+                                await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                             }
 
                             planningCaseSite.PlanningCaseId = planningCase.Id;
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
                     }
                     else
                     {
                         var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .SingleOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId);
+                            .SingleOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
                         if (planningCaseSite != null)
                         {
                             planningCaseSite.Status = 100;
-                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language);
+                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
 
                             planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
                             planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
                             planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
                             planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                             var planningCase = await _itemsPlanningPnDbContext.PlanningCases
-                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId);
+                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
                             if (planningCase.Status != 100)
                             {
                                 planningCase.Status = 100;
@@ -332,11 +333,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                                 planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
                                 planningCase.WorkflowState = Constants.WorkflowStates.Processed;
 
-                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language);
-                                await planningCase.Update(_itemsPlanningPnDbContext);
+                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
+                                await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                             }
                             planningCaseSite.PlanningCaseId = planningCase.Id;
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
                     }
                 }
@@ -345,7 +346,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     return new OperationResult(false, _localizationService.GetString("CaseNotFound"));
                 }
 
-                var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId);
+                var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
 
                 if (_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
                         x.Deadline < DateTime.UtcNow && x.PropertyId == property.Id &&
@@ -353,7 +354,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 {
                     property.ComplianceStatus = 2;
                     property.ComplianceStatusThirty = 2;
-                    await property.Update(_backendConfigurationPnDbContext);
+                    await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
                 else
                 {
@@ -362,7 +363,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         property.ComplianceStatusThirty = 0;
-                        await property.Update(_backendConfigurationPnDbContext);
+                        await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
 
                     if (!_backendConfigurationPnDbContext.Compliances.AsNoTracking().Any(x =>
@@ -370,7 +371,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         property.ComplianceStatus = 0;
-                        await property.Update(_backendConfigurationPnDbContext);
+                        await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 }
 
@@ -393,8 +394,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 planningCaseSite.MicrotingSdkCaseId
             };
 
-            var core = await _coreHelper.GetCore();
-            var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language);
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language).ConfigureAwait(false);
 
             if (planning == null)
             {
@@ -412,7 +413,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
         private async Task<PlanningCase> SetFieldValue(PlanningCase planningCase, int caseId, Language language)
         {
-            var core = await _coreHelper.GetCore();
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var planning = await _itemsPlanningPnDbContext.Plannings
                 .SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
             var caseIds = new List<int> { planningCase.MicrotingSdkCaseId };

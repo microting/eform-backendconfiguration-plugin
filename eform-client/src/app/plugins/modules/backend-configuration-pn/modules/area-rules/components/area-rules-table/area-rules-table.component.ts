@@ -128,6 +128,11 @@ export class AreaRulesTableComponent implements OnChanges {
       sortable: false,
     },
     {
+      name: 'Lokationer',
+      elementId: 'locationsTableHeader',
+      sortable: false,
+    },
+    {
       name: 'Authorisation Date',
       elementId: 'authorisationDateTableHeader',
       sortable: false,
@@ -145,16 +150,16 @@ export class AreaRulesTableComponent implements OnChanges {
       elementId: 'possessionDeadline',
       sortable: false,
     },
-    {
-      name: 'ProductName',
-      elementId: 'productName',
-      sortable: false,
-    },
-    {
-      name: 'Barcode',
-      elementId: 'barcode',
-      sortable: false,
-    },
+    // {
+    //   name: 'ProductName',
+    //   elementId: 'productName',
+    //   sortable: false,
+    // },
+    // {
+    //   name: 'Barcode',
+    //   elementId: 'barcode',
+    //   sortable: false,
+    // },
     {
       name: 'PDF',
       elementId: 'pdfFile',
@@ -211,6 +216,7 @@ export class AreaRulesTableComponent implements OnChanges {
 
   getPdf(fileName: string) {
     // TODO: CHECK
+    debugger;
     this.pdfSub$ = this.templateFilesService.getPdfFile(fileName).subscribe((blob) => {
       const fileURL = URL.createObjectURL(blob);
       window.open(fileURL, '_blank');

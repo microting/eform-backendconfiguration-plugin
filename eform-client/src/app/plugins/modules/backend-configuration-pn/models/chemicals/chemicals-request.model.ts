@@ -4,6 +4,7 @@ export class ChemicalsRequestModel extends PagedEntityRequest {
   nameFilter: string;
   descriptionFilter: string;
   tagIds: number[];
+  propertyId: number;
 
   constructor() {
     super();

@@ -56,7 +56,7 @@ namespace BackendConfiguration.Pn.Services.RebusService
                 , new RebusInstaller(connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitMqHost)
             );
 
-            Core _core = await _coreHelper.GetCore();
+            Core _core = await _coreHelper.GetCore().ConfigureAwait(false);
             _container.Register(Component.For<Core>().Instance(_core));
             _container.Register(Component.For<BackendConfigurationPnDbContext>().Instance(GetContext()));
             _bus = _container.Resolve<IBus>();

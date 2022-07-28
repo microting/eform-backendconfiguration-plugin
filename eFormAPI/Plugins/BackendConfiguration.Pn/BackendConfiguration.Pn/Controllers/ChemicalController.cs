@@ -27,7 +27,7 @@ public class ChemicalController : Controller
     [Route("api/chemicals-pn/chemicals/index")]
     public async Task<OperationDataResult<Paged<ChemicalPnModel>>> Index([FromBody] ChemicalsRequestModel requestModel)
     {
-        return await _chemicalService.Index(requestModel);
+        return await _chemicalService.Index(requestModel).ConfigureAwait(false);
     }
 
 }

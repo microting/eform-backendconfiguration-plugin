@@ -89,7 +89,7 @@ namespace BackendConfiguration.Pn.Controllers
         [Route("get-company-type")]
         public async Task<OperationDataResult<Result>> GetCompanyType(int cvrNumber)
         {
-            return await _backendConfigurationPropertiesService.GetCompanyType(cvrNumber);
+            return await _backendConfigurationPropertiesService.GetCompanyType(cvrNumber).ConfigureAwait(false);
         }
 
         [HttpGet]
@@ -97,7 +97,7 @@ namespace BackendConfiguration.Pn.Controllers
         [Route("get-chr-information")]
         public async Task<OperationDataResult<ChrResult>> GetChrInformation(int cvrNumber)
         {
-            return await _backendConfigurationPropertiesService.GetChrInformation(cvrNumber);
+            return await _backendConfigurationPropertiesService.GetChrInformation(cvrNumber).ConfigureAwait(false);
         }
     }
 }

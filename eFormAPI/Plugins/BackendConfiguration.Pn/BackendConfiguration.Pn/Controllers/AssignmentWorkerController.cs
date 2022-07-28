@@ -74,14 +74,14 @@ namespace BackendConfiguration.Pn.Controllers
         [Route("index-device-user")]
         public async Task<OperationDataResult<List<DeviceUserModel>>> Index([FromBody] FilterAndSortModel requestModel)
         {
-            return await _backendConfigurationAssignmentWorkerService.IndexDeviceUser(requestModel);
+            return await _backendConfigurationAssignmentWorkerService.IndexDeviceUser(requestModel).ConfigureAwait(false);
         }
 
         [HttpPost]
         [Route("update-device-user")]
         public async Task<OperationResult> UpdateDeviceUser([FromBody] DeviceUserModel deviceUserModel)
         {
-            return await _backendConfigurationAssignmentWorkerService.UpdateDeviceUser(deviceUserModel);
+            return await _backendConfigurationAssignmentWorkerService.UpdateDeviceUser(deviceUserModel).ConfigureAwait(false);
         }
 
         [HttpPut]
@@ -92,7 +92,7 @@ namespace BackendConfiguration.Pn.Controllers
             //     return new OperationDataResult<int>(false,
             //         _localizationService.GetString("DeviceUserCouldNotBeCreated"));
 
-            return await _backendConfigurationAssignmentWorkerService.CreateDeviceUser(deviceUserModel);
+            return await _backendConfigurationAssignmentWorkerService.CreateDeviceUser(deviceUserModel).ConfigureAwait(false);
         }
     }
 }

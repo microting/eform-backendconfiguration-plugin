@@ -60,12 +60,13 @@ export class ChemicalsStateService {
     return this.query.selectDeviceUsers$;
   }
 
-  getAllChemicals(): Observable<OperationDataResult<Paged<ChemicalModel>>> {
+  getAllChemicals(propertyId: number): Observable<OperationDataResult<Paged<ChemicalModel>>> {
     return this.service
       .getAllChemicals({
         ...this.query.pageSetting.pagination,
         ...this.query.pageSetting.filters,
         pageIndex: 0,
+        propertyId: propertyId
       })
       .pipe(
         map((response) => {

@@ -35,7 +35,7 @@ public class WorkOrderHelper
 
     public async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers)
     {
-        var core = await _coreHelper.GetCore();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         foreach (var propertyWorker in propertyWorkers)
         {
@@ -45,7 +45,7 @@ public class WorkOrderHelper
                 .Include(x => x.PropertyWorkers)
                 .ThenInclude(x => x.WorkorderCases)
                 .ThenInclude(x => x.ParentWorkorderCase)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
 
             if (property == null)
             {
@@ -75,9 +75,9 @@ public class WorkOrderHelper
                     //},
                 };
                 property.FolderIdForTasks =
-                    await core.FolderCreate(translatesFolderForTasks, property.FolderId);
+                    await core.FolderCreate(translatesFolderForTasks, property.FolderId).ConfigureAwait(false);
 
-                await property.Update(_backendConfigurationPnDbContext);
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 var translateFolderForNewTask = new List<CommonTranslationsModel>
                 {
@@ -101,7 +101,7 @@ public class WorkOrderHelper
                     //},
                 };
                 property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
-                    property.FolderIdForTasks);
+                    property.FolderIdForTasks).ConfigureAwait(false);
 
                 var translateFolderForOngoingTask = new List<CommonTranslationsModel>
                 {
@@ -125,7 +125,7 @@ public class WorkOrderHelper
                     //},
                 };
                 property.FolderIdForOngoingTasks =
-                    await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks);
+                    await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks).ConfigureAwait(false);
 
                 var translateFolderForCompletedTask = new List<CommonTranslationsModel>
                 {
@@ -149,14 +149,14 @@ public class WorkOrderHelper
                     //},
                 };
                 property.FolderIdForCompletedTasks =
-                    await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks);
+                    await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks).ConfigureAwait(false);
             }
 
             var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Text == "01. New task")
                 .Select(x => x.CheckListId)
-                .FirstAsync();
+                .FirstAsync().ConfigureAwait(false);
 
             var workorderCasesCompleted = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -173,63 +173,64 @@ public class WorkOrderHelper
             if (property.EntitySelectListAreas == null)
             {
                 var areasGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
-                    $"{property.Name} - Områder", "", true, true);
+                    $"{property.Name} - Områder", "", true, true).ConfigureAwait(false);
                 property.EntitySelectListAreas = areasGroup.Id;
-                await property.Update(_backendConfigurationPnDbContext);
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             if (property.EntitySelectListDeviceUsers == null)
             {
                 var deviceUsersGp = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
-                    $"{property.Name} - Device Users", "", true, false);
+                    $"{property.Name} - Device Users", "", true, false).ConfigureAwait(false);
                 property.EntitySelectListDeviceUsers = deviceUsersGp.Id;
-                await property.Update(_backendConfigurationPnDbContext);
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             var areasGroupUid = await sdkDbContext.EntityGroups
                 .Where(x => x.Id == property.EntitySelectListAreas)
                 .Select(x => x.MicrotingUid)
-                .SingleAsync();
+                .SingleAsync().ConfigureAwait(false);
 
             var deviceUsersGroupUid = await sdkDbContext.EntityGroups
                 .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                 .Select(x => x.MicrotingUid)
-                .SingleAsync();
+                .SingleAsync().ConfigureAwait(false);
 
-            var deviceUsersGroup = await core.EntityGroupRead(deviceUsersGroupUid);
+            var deviceUsersGroup = await core.EntityGroupRead(deviceUsersGroupUid).ConfigureAwait(false);
             var nextItemUid = deviceUsersGroup.EntityGroupItemLst.Count;
 
             var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
-                .FirstAsync();
-            var entityItem = await core.EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString());
+                .FirstAsync().ConfigureAwait(false);
+            var entityItem = await core.EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString()).ConfigureAwait(false);
             propertyWorker.EntityItemId = entityItem.Id;
-            await propertyWorker.Update(_backendConfigurationPnDbContext);
+            await propertyWorker.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var entityItems = await sdkDbContext.EntityItems
                 .Where(x => x.EntityGroupId == deviceUsersGroup.Id)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .OrderBy(x => x.Name)
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             int entityItemIncrementer = 0;
             foreach (var entity in entityItems)
             {
                 await core.EntityItemUpdate(entity.Id, entity.Name, entity.Description,
-                    entity.EntityItemUid, entityItemIncrementer);
+                    entity.EntityItemUid, entityItemIncrementer).ConfigureAwait(false);
                 entityItemIncrementer++;
             }
 
             await DeployEform(propertyWorker, eformIdForNewTasks, property.FolderIdForNewTasks,
-                $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid));
+                $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid)).ConfigureAwait(false);
         }
     }
 
     public async Task DeployEform(PropertyWorker propertyWorker, int eformId, int? folderId,
         string description, int? areasGroupUid, int? deviceUsersGroupId)
     {
-        var core = await _coreHelper.GetCore();
-        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        await using var _ = sdkDbContext.ConfigureAwait(false);
         if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
                 x.PropertyWorkerId == propertyWorker.Id
                 && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
@@ -237,9 +238,9 @@ public class WorkOrderHelper
         {
             return;
         }
-        var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
-        var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
-        var mainElement = await core.ReadeForm(eformId, language);
+        var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId).ConfigureAwait(false);
+        var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+        var mainElement = await core.ReadeForm(eformId, language).ConfigureAwait(false);
         mainElement.Repeated = 0;
         mainElement.ElementList[0].QuickSyncEnabled = true;
         mainElement.EnableQuickSync = true;
@@ -248,7 +249,7 @@ public class WorkOrderHelper
             mainElement.CheckListFolderName = await sdkDbContext.Folders
                 .Where(x => x.Id == folderId)
                 .Select(x => x.MicrotingUid.ToString())
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
         }
 
         if (!string.IsNullOrEmpty(description))
@@ -271,7 +272,7 @@ public class WorkOrderHelper
 
         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
         mainElement.StartDate = DateTime.Now.ToUniversalTime();
-        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId).ConfigureAwait(false);
         await new WorkorderCase
         {
             CaseId = (int)caseId,
@@ -279,13 +280,14 @@ public class WorkOrderHelper
             CaseStatusesEnum = CaseStatusesEnum.NewTask,
             CreatedByUserId = _userService.UserId,
             UpdatedByUserId = _userService.UserId,
-        }.Create(_backendConfigurationPnDbContext);
+        }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
     }
 
     public async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder)
     {
-        var core = await _coreHelper.GetCore();
-        await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        await using var _ = sdkDbContext.ConfigureAwait(false);
         foreach (var propertyWorker in propertyWorkers)
         {
             if (newWorkOrder)
@@ -293,12 +295,12 @@ public class WorkOrderHelper
                 var workorderCase = await _backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyWorkerId == propertyWorker.Id)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (workorderCase != null)
                 {
                     try
                     {
-                        await core.CaseDelete(workorderCase.CaseId);
+                        await core.CaseDelete(workorderCase.CaseId).ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
@@ -307,7 +309,7 @@ public class WorkOrderHelper
                     }
                     // await core.CaseDelete(workorderCase.CaseId);
                     workorderCase.UpdatedByUserId = _userService.UserId;
-                    await workorderCase.Delete(_backendConfigurationPnDbContext);
+                    await workorderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
             }
@@ -316,26 +318,26 @@ public class WorkOrderHelper
                 // var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
                 var pWorkers = await _backendConfigurationPnDbContext.PropertyWorkers.Where(x =>
                     x.WorkerId == propertyWorker.WorkerId
-                    && x.PropertyId == propertyWorker.PropertyId).ToListAsync();
+                    && x.PropertyId == propertyWorker.PropertyId).ToListAsync().ConfigureAwait(false);
 
                 foreach (var pWorker in pWorkers)
                 {
                     var workorderCases = await _backendConfigurationPnDbContext.WorkorderCases.Where(x =>
-                        x.PropertyWorkerId == pWorker.Id
-                        && x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .ToListAsync();
+                            x.PropertyWorkerId == pWorker.Id
+                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync().ConfigureAwait(false);
                     foreach (var workorderCase in workorderCases)
                     {
                         try
                         {
-                            await core.CaseDelete(workorderCase.CaseId);
+                            await core.CaseDelete(workorderCase.CaseId).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
                             Console.WriteLine(e);
                         }
                         workorderCase.UpdatedByUserId = _userService.UserId;
-                        await workorderCase.Delete(_backendConfigurationPnDbContext);
+                        await workorderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 }
             }

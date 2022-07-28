@@ -48,6 +48,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     return {name: x === 1? 'Every' : x.toString(), id: x}
   }, R.range(1, 25));// 1, 2, ..., 23, 24.
   selectedSite: SiteDto = new SiteDto();
+  type9assignedSite: number;
 
   get currentDate() {
     return set(new Date(), {
@@ -115,6 +116,7 @@ export class AreaRulePlanModalComponent implements OnInit {
         this.selectedSite = this.selectedArea.availableWorkers.find(
           (x) => x.siteId === this.selectedAreaRulePlanning.assignedSites[0].siteId
         );
+        this.type9assignedSite = this.selectedSite.siteId;
       }
     }
     this.frame.show();
@@ -165,10 +167,15 @@ export class AreaRulePlanModalComponent implements OnInit {
     const assignmentObject = new AreaRuleAssignedSitesModel();
     assignmentObject.checked = true;
     assignmentObject.siteId = e.siteId;
-    this.selectedAreaRulePlanning.assignedSites = [
-      ...this.selectedAreaRulePlanning.assignedSites,
-      assignmentObject,
-    ];
+    if (this.selectedArea.type !== 9) {
+      this.selectedAreaRulePlanning.assignedSites = [
+        ...this.selectedAreaRulePlanning.assignedSites,
+        assignmentObject,
+      ];
+    } else {
+      this.selectedAreaRulePlanning.assignedSites = [assignmentObject];
+      this.type9assignedSite = assignmentObject.siteId;
+    }
   }
 
   getAssignmentBySiteId(siteId: number) {
@@ -319,7 +326,9 @@ export class AreaRulePlanModalComponent implements OnInit {
   }*/
 
   isDisabledSaveBtn() {
-    return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
+    if (this.selectedArea.type !== 9) {
+      return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
+    }
   }
 
   repeatTypeMass() {

@@ -133,7 +133,7 @@ namespace BackendConfiguration.Pn
         {
             var serviceProvider = services.BuildServiceProvider();
 
-            var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore();
+            var core = await serviceProvider.GetRequiredService<IEFormCoreService>().GetCore().ConfigureAwait(false);
             var eforms = BackendConfigurationSeedEforms.GetForms();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
@@ -161,7 +161,7 @@ namespace BackendConfiguration.Pn
                         string contents;
                         using (var sr = new StreamReader(resourceStream))
                         {
-                            contents = await sr.ReadToEndAsync();
+                            contents = await sr.ReadToEndAsync().ConfigureAwait(false);
                         }
 
                         if (eformName == "05. Halebid og risikovurdering")
@@ -185,13 +185,13 @@ namespace BackendConfiguration.Pn
                             contents = contents.Replace("SOURCE_REPLACE_ME", "456");
                         }
 
-                        var newTemplate = await core.TemplateFromXml(contents);
+                        var newTemplate = await core.TemplateFromXml(contents).ConfigureAwait(false);
                         if (!await sdkDbContext.CheckLists
                                 .AnyAsync(x => x.OriginalId == newTemplate.OriginalId
-                                               && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed))
+                                               && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ConfigureAwait(false))
                         {
-                            var clId = await core.TemplateCreate(newTemplate);
-                            var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
+                            var clId = await core.TemplateCreate(newTemplate).ConfigureAwait(false);
+                            var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId).ConfigureAwait(false);
                             cl.IsLocked = true;
                             cl.IsEditable = false;
                             cl.ReportH1 = eform[0];
@@ -200,10 +200,10 @@ namespace BackendConfiguration.Pn
                             cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
                             cl.IsDoneAtEditable = true;
                             cl.QuickSyncEnabled = 1;
-                            await cl.Update(sdkDbContext);
-                            var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                            await cl.Update(sdkDbContext).ConfigureAwait(false);
+                            var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
                             subCl.QuickSyncEnabled = 1;
-                            await subCl.Update(sdkDbContext);
+                            await subCl.Update(sdkDbContext).ConfigureAwait(false);
                         }
                         else
                         {
@@ -211,7 +211,7 @@ namespace BackendConfiguration.Pn
                             {
                                 var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
                                     x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
-                                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed);
+                                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ConfigureAwait(false);
                                 cl.IsLocked = true;
                                 cl.IsEditable = false;
                                 cl.ReportH1 = eform[0];
@@ -220,10 +220,10 @@ namespace BackendConfiguration.Pn
                                 cl.ReportH4 = eform.Count == 4 ? eform[3] : "";
                                 cl.IsDoneAtEditable = true;
                                 cl.QuickSyncEnabled = 1;
-                                await cl.Update(sdkDbContext);
-                                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                                await cl.Update(sdkDbContext).ConfigureAwait(false);
+                                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
                                 subCl.QuickSyncEnabled = 1;
-                                await subCl.Update(sdkDbContext);
+                                await subCl.Update(sdkDbContext).ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
@@ -247,9 +247,9 @@ namespace BackendConfiguration.Pn
                 {
                     Name = newArea.AreaTranslations.First(x => x.LanguageId == 1).Name, // danish
                 };
-                await planningTag.Create(itemsPlanningContext);
+                await planningTag.Create(itemsPlanningContext).ConfigureAwait(false);
                 newArea.ItemPlanningTagId = planningTag.Id;
-                await newArea.Create(context);
+                await newArea.Create(context).ConfigureAwait(false);
             }
 
             /*
@@ -289,835 +289,878 @@ namespace BackendConfiguration.Pn
                 await areaTranslation.Update(context);
             }*/
 
-            foreach (var translation in context.AreaTranslations)
+            // foreach (var translation in context.AreaTranslations)
+            // {
+            //     var translationFromSeed = BackendConfigurationSeedAreas.AreasSeed
+            //         .Where(x => translation.AreaId == x.Id)
+            //         .SelectMany(x => x.AreaTranslations)
+            //         .FirstOrDefault(x => translation.LanguageId == x.LanguageId);
+            //     var needToUpdate = false;
+            //     if (translation.InfoBox != translationFromSeed.InfoBox)
+            //     {
+            //         translation.InfoBox = translationFromSeed.InfoBox;
+            //         needToUpdate = true;
+            //     }
+            //
+            //     if (translation.Placeholder != translationFromSeed.Placeholder)
+            //     {
+            //         translation.Placeholder = translationFromSeed.Placeholder;
+            //         needToUpdate = true;
+            //     }
+            //
+            //     if (translation.NewItemName != translationFromSeed.NewItemName)
+            //     {
+            //         translation.NewItemName = translationFromSeed.NewItemName;
+            //         needToUpdate = true;
+            //     }
+            //
+            //     if (translation.Description != translationFromSeed.Description)
+            //     {
+            //         translation.Description = translationFromSeed.Description;
+            //         needToUpdate = true;
+            //     }
+            //
+            //     if (translation.Name != translationFromSeed.Name)
+            //     {
+            //         translation.Name = translationFromSeed.Name;
+            //         needToUpdate = true;
+            //     }
+            //
+            //     if (needToUpdate)
+            //     {
+            //         await translation.Update(context).ConfigureAwait(false);
+            //     }
+            // }
+            //
+            // foreach (var areaInitialFieldFromDb in context.AreaInitialFields)
+            // {
+            //     var areaInitialFieldFromSeed = BackendConfigurationSeedAreas.AreasSeed
+            //         .Where(x => areaInitialFieldFromDb.AreaId == x.Id)
+            //         .Select(x => x.AreaInitialField)
+            //         .FirstOrDefault(x => areaInitialFieldFromDb.Id == x.Id);
+            //     if (areaInitialFieldFromSeed != null)
+            //     {
+            //         var needToUpdate = false;
+            //         if (areaInitialFieldFromDb.ComplianceEnabled != areaInitialFieldFromSeed.ComplianceEnabled)
+            //         {
+            //             areaInitialFieldFromDb.ComplianceEnabled = areaInitialFieldFromSeed.ComplianceEnabled;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.Type != areaInitialFieldFromSeed.Type)
+            //         {
+            //             areaInitialFieldFromDb.Type = areaInitialFieldFromSeed.Type;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.Alarm != areaInitialFieldFromSeed.Alarm)
+            //         {
+            //             areaInitialFieldFromDb.Alarm = areaInitialFieldFromSeed.Alarm;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.DayOfWeek != areaInitialFieldFromSeed.DayOfWeek)
+            //         {
+            //             areaInitialFieldFromDb.DayOfWeek = areaInitialFieldFromSeed.DayOfWeek;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.RepeatEvery != areaInitialFieldFromSeed.RepeatEvery)
+            //         {
+            //             areaInitialFieldFromDb.RepeatEvery = areaInitialFieldFromSeed.RepeatEvery;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.RepeatType != areaInitialFieldFromSeed.RepeatType)
+            //         {
+            //             areaInitialFieldFromDb.RepeatType = areaInitialFieldFromSeed.RepeatType;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.EformName != areaInitialFieldFromSeed.EformName)
+            //         {
+            //             areaInitialFieldFromDb.EformName = areaInitialFieldFromSeed.EformName;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.EndDate != areaInitialFieldFromSeed.EndDate)
+            //         {
+            //             areaInitialFieldFromDb.EndDate = areaInitialFieldFromSeed.EndDate;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (areaInitialFieldFromDb.Notifications != areaInitialFieldFromSeed.Notifications)
+            //         {
+            //             areaInitialFieldFromDb.Notifications = areaInitialFieldFromSeed.Notifications;
+            //             needToUpdate = true;
+            //         }
+            //
+            //         if (needToUpdate)
+            //         {
+            //             await areaInitialFieldFromDb.Update(context).ConfigureAwait(false);
+            //         }
+            //     }
+            // }
+            //
+            // // Upgrade AreaRules
+            // var areaRulePlannings = await context.AreaRulePlannings.Where(x => x.PropertyId == 0).ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var areaRulePlanning in areaRulePlannings)
+            // {
+            //     var areaRule = await context.AreaRules.SingleOrDefaultAsync(x => x.Id == areaRulePlanning.AreaRuleId).ConfigureAwait(false);
+            //     areaRulePlanning.PropertyId = areaRule.PropertyId;
+            //     areaRulePlanning.AreaId = areaRule.AreaId;
+            //
+            //     await areaRulePlanning.Update(context).ConfigureAwait(false);
+            // }
+            //
+            // var areaRuleTranslations = await context.AreaRuleTranslations
+            //     .Where(x => x.Name == "23.03.01 Skabelon Miljøledelse").ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var areaRuleTranslation in areaRuleTranslations)
+            // {
+            //     areaRuleTranslation.Name = "23.03.01 Miljøledelse";
+            //     await areaRuleTranslation.Update(context).ConfigureAwait(false);
+            // }
+            //
+            // areaRuleTranslations = await context.AreaRuleTranslations
+            //     .Where(x => x.Name == "23.03.01 Template Environmental Management").ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var areaRuleTranslation in areaRuleTranslations)
+            // {
+            //     areaRuleTranslation.Name = "23.03.01 Environmental Management";
+            //     await areaRuleTranslation.Update(context).ConfigureAwait(false);
+            // }
+            //
+            // var clTranslations = await sdkDbContext.CheckListTranslations.Where(x =>
+            //         x.Text ==
+            //         "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)")
+            //     .ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text =
+            //         "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // clTranslations = await sdkDbContext.CheckListTranslations
+            //     .Where(x => x.Text == "23.02.04 Varmekøle- og ventilationssystemer").ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text = "23.02.04 Varme-, køle- og ventilationssystemer";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // clTranslations = await sdkDbContext.CheckListTranslations
+            //     .Where(x => x.Text == "23.04.03 Tilsætningsstoffer i foder (Fytase eller andet)").ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text = "23.04.03 Tilsætningsstoffer i foder - fytase eller andet";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.01 Gyllebeholdere")
+            //     .ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text = "23.02.01 Årlig visuel kontrol af gyllebeholdere";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // clTranslations = await sdkDbContext.CheckListTranslations
+            //     .Where(x => x.Text == "23.01.01 Fast overdækning af gyllebeholder").ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text = "23.01.01 Fast overdækning gyllebeholder";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // clTranslations = await sdkDbContext.CheckListTranslations
+            //     .Where(x => x.Text == "23.03.01 Skabelon Miljøledelse").ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text = "23.03.01 Miljøledelse";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "01. Miljøledelse skabelon")
+            //     .ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text = "01. Miljøledelse";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "17. Håndildslukkere")
+            //     .ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var clTranslation in clTranslations)
+            // {
+            //     clTranslation.Text = "17. Brandslukkere";
+            //     await clTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // // Removing the old info fields for eForm 15,16,17
+            // var fieldOriginalIds = new List<string>
+            // {
+            //     "375221",
+            //     "375220",
+            //     "375208",
+            //     "375209",
+            //     "375236",
+            //     "375237"
+            // };
+            //
+            // var fields = await sdkDbContext.Fields.Where(x =>
+            //         fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            //     .ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var field in fields)
+            // {
+            //     await field.Delete(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // // Removing the old info fields for eForm 15,16,17
+            // fieldOriginalIds = new List<string>
+            // {
+            //     "372091",
+            //     "372092",
+            //     "372093",
+            //     "372094",
+            //     "372095",
+            //     "372096",
+            //     "372097",
+            //     "372098",
+            //     "372099",
+            //     "372100",
+            //     "372101",
+            //     "372102",
+            //     "372103",
+            //     "372104",
+            //     "372105",
+            //     "372106",
+            //     "372107",
+            //     "372108",
+            //     "372109",
+            //     "372110",
+            //     "372112"
+            // };
+            //
+            // fields = await sdkDbContext.Fields.Where(x =>
+            //         fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            //     .ToListAsync().ConfigureAwait(false);
+            //
+            // foreach (var field in fields)
+            // {
+            //     field.Mandatory = 1;
+            //     await field.Update(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // var areaTranslation2 =
+            //     await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere").ConfigureAwait(false);
+            // if (areaTranslation2 != null)
+            // {
+            //     areaTranslation2.Name = "17. Brandslukkere";
+            //     await areaTranslation2.Update(context).ConfigureAwait(false);
+            //     // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
+            //
+            //     var folderTranslations = await sdkDbContext.FolderTranslations
+            //         .Where(x => x.Name == "17. Håndildslukkere").ToListAsync().ConfigureAwait(false);
+            //
+            //     foreach (var folderTranslation2 in folderTranslations)
+            //     {
+            //         var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //         var folderTranslationList = new List<CommonTranslationsModel>();
+            //         var folderTranslation = new CommonTranslationsModel()
+            //         {
+            //             Description = "",
+            //             LanguageId = 1,
+            //             Name = "17. Brandslukkere",
+            //         };
+            //         folderTranslationList.Add(folderTranslation);
+            //
+            //         await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            //     }
+            //
+            //     var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync().ConfigureAwait(false);
+            //
+            //     var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "17. Håndildslukkere")
+            //         ?.CheckListId;
+            //
+            //     foreach (var areaRule in areaRules)
+            //     {
+            //         areaRule.EformId = eFormId;
+            //         areaRule.EformName = "17. Brandslukkere";
+            //         await areaRule.Update(context).ConfigureAwait(false);
+            //     }
+            // }
+            //
+            // areaTranslation2 =
+            //     await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "23. IE-indberetning").ConfigureAwait(false);
+            // if (areaTranslation2 != null)
+            // {
+            //     areaTranslation2.Name = "23. IE-indberetning (Gammel)";
+            //     await areaTranslation2.Update(context).ConfigureAwait(false);
+            //     // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
+            //
+            //     var folderTranslations = await sdkDbContext.FolderTranslations
+            //         .Where(x => x.Name == "23. IE-indberetning").ToListAsync().ConfigureAwait(false);
+            //
+            //     foreach (var folderTranslation2 in folderTranslations)
+            //     {
+            //         var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //         var folderTranslationList = new List<CommonTranslationsModel>();
+            //         var folderTranslation = new CommonTranslationsModel()
+            //         {
+            //             Description = "",
+            //             LanguageId = 1,
+            //             Name = "23. IE-indberetning (Gammel)",
+            //         };
+            //         folderTranslationList.Add(folderTranslation);
+            //
+            //         await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            //     }
+            // }
+            //
+            // List<KeyValuePair<string, string>> tags = new List<KeyValuePair<string, string>>();
+            // tags.Add(new KeyValuePair<string, string>("100. Diverse", "99. Diverse"));
+            // tags.Add(new KeyValuePair<string, string>("01. Registreringer til Miljøledelse",
+            //     "01. Fokusområder Miljøledelse"));
+            // tags.Add(new KeyValuePair<string, string>("04. Fodringskrav (kun IE-husdyrbrug)",
+            //     "04. Foderindlægssedler"));
+            // tags.Add(new KeyValuePair<string, string>("05. Klargøring af stalde og dokumentation af halebid",
+            //     "05. Stalde: Halebid og klargøring"));
+            // tags.Add(new KeyValuePair<string, string>("13. Arbejdstilsynets Landbrugs APV", "13. APV Landbrug"));
+            // tags.Add(new KeyValuePair<string, string>("20. Tilbagevendende opgaver (man-søn)",
+            //     "20. Ugentlige rutineopgaver"));
+            // tags.Add(new KeyValuePair<string, string>("23. IE-indberetning", "23. IE-indberetning (Gammel)"));
+            //
+            // foreach (var keyValuePair in tags)
+            // {
+            //     var theTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == keyValuePair.Key);
+            //     {
+            //         if (theTag != null)
+            //         {
+            //             theTag.Name = keyValuePair.Value;
+            //             await theTag.Update(itemsPlanningContext).ConfigureAwait(false);
+            //         }
+            //     }
+            // }
+            //
+            // areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Diverse").ConfigureAwait(false);
+            // if (areaTranslation2 != null)
+            // {
+            //     areaTranslation2.Name = "99. Diverse";
+            //     await areaTranslation2.Update(context).ConfigureAwait(false);
+            //
+            //     var folderTranslations =
+            //         await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Diverse").ToListAsync().ConfigureAwait(false);
+            //
+            //     foreach (var folderTranslation2 in folderTranslations)
+            //     {
+            //         var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //         var folderTranslationList = new List<CommonTranslationsModel>();
+            //         var folderTranslation = new CommonTranslationsModel()
+            //         {
+            //             Description = "",
+            //             LanguageId = 1,
+            //             Name = "99. Diverse",
+            //         };
+            //         folderTranslationList.Add(folderTranslation);
+            //
+            //         await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            //     }
+            //
+            //     var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync().ConfigureAwait(false);
+            //
+            //     var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Diverse")
+            //         ?.CheckListId;
+            //
+            //     foreach (var areaRule in areaRules)
+            //     {
+            //         areaRule.EformId = eFormId;
+            //         areaRule.EformName = "99. Diverse";
+            //         await areaRule.Update(context).ConfigureAwait(false);
+            //     }
+            // }
+            //
+            // areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Miscellaneous").ConfigureAwait(false);
+            // if (areaTranslation2 != null)
+            // {
+            //     areaTranslation2.Name = "99. Miscellaneous";
+            //     await areaTranslation2.Update(context).ConfigureAwait(false);
+            //
+            //     var folderTranslations = await sdkDbContext.FolderTranslations
+            //         .Where(x => x.Name == "100. Miscellaneous").ToListAsync().ConfigureAwait(false);
+            //
+            //     foreach (var folderTranslation2 in folderTranslations)
+            //     {
+            //         var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //         var folderTranslationList = new List<CommonTranslationsModel>();
+            //         var folderTranslation = new CommonTranslationsModel()
+            //         {
+            //             Description = "",
+            //             LanguageId = 2,
+            //             Name = "99. Miscellaneous",
+            //         };
+            //         folderTranslationList.Add(folderTranslation);
+            //
+            //         await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            //     }
+            //
+            //     var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync().ConfigureAwait(false);
+            //
+            //     var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Miscellaneous")
+            //         ?.CheckListId;
+            //
+            //     foreach (var areaRule in areaRules)
+            //     {
+            //         areaRule.EformId = eFormId;
+            //         areaRule.EformName = "99. Miscellaneous";
+            //         await areaRule.Update(context).ConfigureAwait(false);
+            //     }
+            // }
+            //
+            // areaTranslation2 =
+            //     await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Stalde: Halebid og klargøring").ConfigureAwait(false);
+            // var area = await context.Areas.SingleAsync(x => x.Id == areaTranslation2.AreaId).ConfigureAwait(false);
+            // area.Type = AreaTypesEnum.Type3;
+            // await area.Update(context).ConfigureAwait(false);
+            //
+            // var areaTranslations = await context.AreaTranslations.Where(x => x.Name.Contains("23.")).ToListAsync().ConfigureAwait(false);
+            // foreach (var areaTranslation in areaTranslations)
+            // {
+            //     areaTranslation.Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz";
+            //     await areaTranslation.Update(context).ConfigureAwait(false);
+            // }
+            //
+            // var ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.00 Aflæsninger miljøledelse")
+            //     .ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel()
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "23.00 Aflæsninger",
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations.Where(x =>
+            //     x.Name == "23.01 Logbøger for alle miljøteknologier" &&
+            //     x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>()
+            //     {
+            //         new CommonTranslationsModel()
+            //         {
+            //             Description = "",
+            //             LanguageId = 1,
+            //             Name = "23.01 Logbøger miljøteknologier",
+            //         }
+            //     };
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations.Where(x =>
+            //     x.Name == "23.02 Dokumentation af afsluttede inspektioner" &&
+            //     x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>()
+            //     {
+            //         new CommonTranslationsModel()
+            //         {
+            //             Description = "",
+            //             LanguageId = 1,
+            //             Name = "23.02 Dokumentation afsluttede inspektioner",
+            //         }
+            //     };
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations.Where(x =>
+            //         x.Name == "23.03 Dokumentation for miljøledelse" &&
+            //         x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            //     .ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel()
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "23.03 Dokumentation Miljøledelse",
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations.Where(x =>
+            //         x.Name == "23.04 Overholdelse af fodringskrav" &&
+            //         x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            //     .ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel()
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "23.04 Overholdelse fodringskrav",
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations
+            //     .Where(x => x.Name == "Mandag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "20.01 Mandag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 2,
+            //         Name = "20.01 Monday"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 3,
+            //         Name = "20.01 Montag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations
+            //     .Where(x => x.Name == "Tirsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "20.02 Tirsdag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 2,
+            //         Name = "20.02 Tuesday"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 3,
+            //         Name = "20.02 Diwstag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations
+            //     .Where(x => x.Name == "Onsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "20.03 Onsdag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 2,
+            //         Name = "20.03 Wednesday"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 3,
+            //         Name = "20.03 Mittwoch"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations
+            //     .Where(x => x.Name == "Torsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "20.04 Torsdag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 2,
+            //         Name = "20.04 Thursday"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 3,
+            //         Name = "20.04 Donnerstag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations
+            //     .Where(x => x.Name == "Fredag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "20.05 Fredag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 2,
+            //         Name = "20.05 Friday"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 3,
+            //         Name = "20.05 Freitag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations
+            //     .Where(x => x.Name == "Lørdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "20.06 Lørdag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 2,
+            //         Name = "20.06 Saturday"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 3,
+            //         Name = "20.06 Samstag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // ftList = await sdkDbContext.FolderTranslations
+            //     .Where(x => x.Name == "Søndag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+            // foreach (var folderTranslation2 in ftList)
+            // {
+            //     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId).ConfigureAwait(false);
+            //     var folderTranslationList = new List<CommonTranslationsModel>();
+            //     var folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 1,
+            //         Name = "20.07 Søndag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 2,
+            //         Name = "20.07 Sunday"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //     folderTranslation = new CommonTranslationsModel
+            //     {
+            //         Description = "",
+            //         LanguageId = 3,
+            //         Name = "20.07 Sonntag"
+            //     };
+            //     folderTranslationList.Add(folderTranslation);
+            //
+            //     await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId).ConfigureAwait(false);
+            // }
+            //
+            // var dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "375734").ConfigureAwait(false);
+            // var dbFieldOptions = await sdkDbContext.FieldOptions.Where(x => x.FieldId == dbField.Id).ToListAsync().ConfigureAwait(false);
+            // foreach (var dbFieldOption in dbFieldOptions)
+            // {
+            //     var dbFieldOptionTranslation =
+            //         await sdkDbContext.FieldOptionTranslations.SingleOrDefaultAsync(x =>
+            //             x.Text == "Færdig" && x.FieldOptionId == dbFieldOption.Id).ConfigureAwait(false);
+            //     if (dbFieldOptionTranslation != null)
+            //     {
+            //         dbFieldOptionTranslation.Text = "Afsluttet";
+            //         await dbFieldOptionTranslation.Update(sdkDbContext).ConfigureAwait(false);
+            //     }
+            // }
+            //
+            // dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "371900").ConfigureAwait(false);
+            // var theDbFieldOption =
+            //     await sdkDbContext.FieldOptions.SingleOrDefaultAsync(x => x.Key == "0" && x.FieldId == dbField.Id).ConfigureAwait(false);
+            // if (theDbFieldOption == null)
+            // {
+            //     theDbFieldOption = new FieldOption()
+            //     {
+            //         Key = "0",
+            //         DisplayOrder = "0",
+            //         Selected = false,
+            //         FieldId = dbField.Id
+            //     };
+            //     await theDbFieldOption.Create(sdkDbContext).ConfigureAwait(false);
+            //
+            //     var dbFieldOptionTranslation = new FieldOptionTranslation()
+            //     {
+            //         LanguageId = 1,
+            //         Text = " - ",
+            //         FieldOptionId = theDbFieldOption.Id
+            //     };
+            //     await dbFieldOptionTranslation.Create(sdkDbContext).ConfigureAwait(false);
+            //
+            //     dbFieldOptionTranslation = new FieldOptionTranslation()
+            //     {
+            //         LanguageId = 2,
+            //         Text = " - ",
+            //         FieldOptionId = theDbFieldOption.Id
+            //     };
+            //     await dbFieldOptionTranslation.Create(sdkDbContext).ConfigureAwait(false);
+            //
+            //     dbFieldOptionTranslation = new FieldOptionTranslation()
+            //     {
+            //         LanguageId = 3,
+            //         Text = " - ",
+            //         FieldOptionId = theDbFieldOption.Id
+            //     };
+            //     await dbFieldOptionTranslation.Create(sdkDbContext).ConfigureAwait(false);
+            // }
+            //
+            // var tag =
+            //     await itemsPlanningContext.PlanningTags.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere").ConfigureAwait(false);
+            // if (tag != null)
+            // {
+            //     tag.Name = "17. Brandslukkere";
+            //     await tag.Update(itemsPlanningContext).ConfigureAwait(false);
+            // }
+            //
+            // foreach (var planningSite in context.PlanningSites.Where(x => x.AreaId == null).ToList())
+            // {
+            //     var areaRulePlanning = await context.AreaRulePlannings.SingleAsync(x => x.Id == planningSite.AreaRulePlanningsId).ConfigureAwait(false);
+            //     planningSite.AreaRuleId = areaRulePlanning.AreaRuleId;
+            //     planningSite.AreaId = areaRulePlanning.AreaId;
+            //     await planningSite.Update(context).ConfigureAwait(false);
+            // }
+
+            var cltranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
+            var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == cltranslation.CheckListId);
+            
+            if (!sdkDbContext.Fields.Any(x => x.OriginalId == "376999"))
             {
-                var translationFromSeed = BackendConfigurationSeedAreas.AreasSeed
-                    .Where(x => translation.AreaId == x.Id)
-                    .SelectMany(x => x.AreaTranslations)
-                    .FirstOrDefault(x => translation.LanguageId == x.LanguageId);
-                var needToUpdate = false;
-                if (translation.InfoBox != translationFromSeed.InfoBox)
+                var field = new Microting.eForm.Infrastructure.Data.Entities.Field
                 {
-                    translation.InfoBox = translationFromSeed.InfoBox;
-                    needToUpdate = true;
-                }
-
-                if (translation.Placeholder != translationFromSeed.Placeholder)
-                {
-                    translation.Placeholder = translationFromSeed.Placeholder;
-                    needToUpdate = true;
-                }
-
-                if (translation.NewItemName != translationFromSeed.NewItemName)
-                {
-                    translation.NewItemName = translationFromSeed.NewItemName;
-                    needToUpdate = true;
-                }
-
-                if (translation.Description != translationFromSeed.Description)
-                {
-                    translation.Description = translationFromSeed.Description;
-                    needToUpdate = true;
-                }
-
-                if (translation.Name != translationFromSeed.Name)
-                {
-                    translation.Name = translationFromSeed.Name;
-                    needToUpdate = true;
-                }
-
-                if (needToUpdate)
-                {
-                    await translation.Update(context);
-                }
-            }
-
-            foreach (var areaInitialFieldFromDb in context.AreaInitialFields)
-            {
-                var areaInitialFieldFromSeed = BackendConfigurationSeedAreas.AreasSeed
-                    .Where(x => areaInitialFieldFromDb.AreaId == x.Id)
-                    .Select(x => x.AreaInitialField)
-                    .FirstOrDefault(x => areaInitialFieldFromDb.Id == x.Id);
-                if (areaInitialFieldFromSeed != null)
-                {
-                    var needToUpdate = false;
-                    if (areaInitialFieldFromDb.ComplianceEnabled != areaInitialFieldFromSeed.ComplianceEnabled)
+                    CheckListId = clCheckList.Id,
+                    Color = Microting.eForm.Infrastructure.Constants.Constants.FieldColors.Yellow,
+                    BarcodeEnabled = 0,
+                    BarcodeType = "",
+                    DisplayIndex = 0,
+                    FieldType = await sdkDbContext.FieldTypes.FirstAsync(x => x.Type == "EntitySelect"),
+                    EntityGroupId = 12345,
+                    Mandatory = 1,
+                    ReadOnly = 0,
+                    Dummy = 0,
+                    OriginalId = "376999",
+                    Translations = new List<FieldTranslation>
                     {
-                        areaInitialFieldFromDb.ComplianceEnabled = areaInitialFieldFromSeed.ComplianceEnabled;
-                        needToUpdate = true;
+                        new()
+                        {
+                            LanguageId = 1,
+                            Text = "Vælg lokation",
+                            Description = ""
+                        },
+                        new()
+                        {
+                            LanguageId = 2,
+                            Text = "Select location",
+                            Description = ""
+                        },
+                        new()
+                        {
+                            LanguageId = 3,
+                            Text = "Ort auswählen",
+                            Description = ""
+                        }
                     }
-
-                    if (areaInitialFieldFromDb.Type != areaInitialFieldFromSeed.Type)
-                    {
-                        areaInitialFieldFromDb.Type = areaInitialFieldFromSeed.Type;
-                        needToUpdate = true;
-                    }
-
-                    if (areaInitialFieldFromDb.Alarm != areaInitialFieldFromSeed.Alarm)
-                    {
-                        areaInitialFieldFromDb.Alarm = areaInitialFieldFromSeed.Alarm;
-                        needToUpdate = true;
-                    }
-
-                    if (areaInitialFieldFromDb.DayOfWeek != areaInitialFieldFromSeed.DayOfWeek)
-                    {
-                        areaInitialFieldFromDb.DayOfWeek = areaInitialFieldFromSeed.DayOfWeek;
-                        needToUpdate = true;
-                    }
-
-                    if (areaInitialFieldFromDb.RepeatEvery != areaInitialFieldFromSeed.RepeatEvery)
-                    {
-                        areaInitialFieldFromDb.RepeatEvery = areaInitialFieldFromSeed.RepeatEvery;
-                        needToUpdate = true;
-                    }
-
-                    if (areaInitialFieldFromDb.RepeatType != areaInitialFieldFromSeed.RepeatType)
-                    {
-                        areaInitialFieldFromDb.RepeatType = areaInitialFieldFromSeed.RepeatType;
-                        needToUpdate = true;
-                    }
-
-                    if (areaInitialFieldFromDb.EformName != areaInitialFieldFromSeed.EformName)
-                    {
-                        areaInitialFieldFromDb.EformName = areaInitialFieldFromSeed.EformName;
-                        needToUpdate = true;
-                    }
-
-                    if (areaInitialFieldFromDb.EndDate != areaInitialFieldFromSeed.EndDate)
-                    {
-                        areaInitialFieldFromDb.EndDate = areaInitialFieldFromSeed.EndDate;
-                        needToUpdate = true;
-                    }
-
-                    if (areaInitialFieldFromDb.Notifications != areaInitialFieldFromSeed.Notifications)
-                    {
-                        areaInitialFieldFromDb.Notifications = areaInitialFieldFromSeed.Notifications;
-                        needToUpdate = true;
-                    }
-
-                    if (needToUpdate)
-                    {
-                        await areaInitialFieldFromDb.Update(context);
-                    }
-                }
-            }
-
-            // Upgrade AreaRules
-            var areaRulePlannings = await context.AreaRulePlannings.Where(x => x.PropertyId == 0).ToListAsync();
-
-            foreach (var areaRulePlanning in areaRulePlannings)
-            {
-                var areaRule = await context.AreaRules.SingleOrDefaultAsync(x => x.Id == areaRulePlanning.AreaRuleId);
-                areaRulePlanning.PropertyId = areaRule.PropertyId;
-                areaRulePlanning.AreaId = areaRule.AreaId;
-
-                await areaRulePlanning.Update(context);
-            }
-
-            var areaRuleTranslations = await context.AreaRuleTranslations
-                .Where(x => x.Name == "23.03.01 Skabelon Miljøledelse").ToListAsync();
-
-            foreach (var areaRuleTranslation in areaRuleTranslations)
-            {
-                areaRuleTranslation.Name = "23.03.01 Miljøledelse";
-                await areaRuleTranslation.Update(context);
-            }
-
-            areaRuleTranslations = await context.AreaRuleTranslations
-                .Where(x => x.Name == "23.03.01 Template Environmental Management").ToListAsync();
-
-            foreach (var areaRuleTranslation in areaRuleTranslations)
-            {
-                areaRuleTranslation.Name = "23.03.01 Environmental Management";
-                await areaRuleTranslation.Update(context);
-            }
-
-            var clTranslations = await sdkDbContext.CheckListTranslations.Where(x =>
-                    x.Text ==
-                    "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)")
-                .ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text =
-                    "23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            clTranslations = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text == "23.02.04 Varmekøle- og ventilationssystemer").ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text = "23.02.04 Varme-, køle- og ventilationssystemer";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            clTranslations = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text == "23.04.03 Tilsætningsstoffer i foder (Fytase eller andet)").ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text = "23.04.03 Tilsætningsstoffer i foder - fytase eller andet";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "23.02.01 Gyllebeholdere")
-                .ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text = "23.02.01 Årlig visuel kontrol af gyllebeholdere";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            clTranslations = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text == "23.01.01 Fast overdækning af gyllebeholder").ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text = "23.01.01 Fast overdækning gyllebeholder";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            clTranslations = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text == "23.03.01 Skabelon Miljøledelse").ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text = "23.03.01 Miljøledelse";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "01. Miljøledelse skabelon")
-                .ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text = "01. Miljøledelse";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.Text == "17. Håndildslukkere")
-                .ToListAsync();
-
-            foreach (var clTranslation in clTranslations)
-            {
-                clTranslation.Text = "17. Brandslukkere";
-                await clTranslation.Update(sdkDbContext);
-            }
-
-            // Removing the old info fields for eForm 15,16,17
-            var fieldOriginalIds = new List<string>
-            {
-                "375221",
-                "375220",
-                "375208",
-                "375209",
-                "375236",
-                "375237"
-            };
-
-            var fields = await sdkDbContext.Fields.Where(x =>
-                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .ToListAsync();
-
-            foreach (var field in fields)
-            {
-                await field.Delete(sdkDbContext);
-            }
-
-            // Removing the old info fields for eForm 15,16,17
-            fieldOriginalIds = new List<string>
-            {
-                "372091",
-                "372092",
-                "372093",
-                "372094",
-                "372095",
-                "372096",
-                "372097",
-                "372098",
-                "372099",
-                "372100",
-                "372101",
-                "372102",
-                "372103",
-                "372104",
-                "372105",
-                "372106",
-                "372107",
-                "372108",
-                "372109",
-                "372110",
-                "372112"
-            };
-
-            fields = await sdkDbContext.Fields.Where(x =>
-                    fieldOriginalIds.Contains(x.OriginalId) && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .ToListAsync();
-
-            foreach (var field in fields)
-            {
-                field.Mandatory = 1;
-                await field.Update(sdkDbContext);
-            }
-
-            var areaTranslation2 =
-                await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
-            if (areaTranslation2 != null)
-            {
-                areaTranslation2.Name = "17. Brandslukkere";
-                await areaTranslation2.Update(context);
-                // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
-
-                var folderTranslations = await sdkDbContext.FolderTranslations
-                    .Where(x => x.Name == "17. Håndildslukkere").ToListAsync();
-
-                foreach (var folderTranslation2 in folderTranslations)
-                {
-                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                    var folderTranslationList = new List<CommonTranslationsModel>();
-                    var folderTranslation = new CommonTranslationsModel()
-                    {
-                        Description = "",
-                        LanguageId = 1,
-                        Name = "17. Brandslukkere",
-                    };
-                    folderTranslationList.Add(folderTranslation);
-
-                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-                }
-
-                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
-
-                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "17. Håndildslukkere")
-                    ?.CheckListId;
-
-                foreach (var areaRule in areaRules)
-                {
-                    areaRule.EformId = eFormId;
-                    areaRule.EformName = "17. Brandslukkere";
-                    await areaRule.Update(context);
-                }
-            }
-
-            areaTranslation2 =
-                await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "23. IE-indberetning");
-            if (areaTranslation2 != null)
-            {
-                areaTranslation2.Name = "23. IE-indberetning (Gammel)";
-                await areaTranslation2.Update(context);
-                // var area = await context.Areas.SingleOrDefaultAsync(x => x.Id == areaTranslation2.AreaId);
-
-                var folderTranslations = await sdkDbContext.FolderTranslations
-                    .Where(x => x.Name == "23. IE-indberetning").ToListAsync();
-
-                foreach (var folderTranslation2 in folderTranslations)
-                {
-                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                    var folderTranslationList = new List<CommonTranslationsModel>();
-                    var folderTranslation = new CommonTranslationsModel()
-                    {
-                        Description = "",
-                        LanguageId = 1,
-                        Name = "23. IE-indberetning (Gammel)",
-                    };
-                    folderTranslationList.Add(folderTranslation);
-
-                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-                }
-            }
-
-            List<KeyValuePair<string, string>> tags = new List<KeyValuePair<string, string>>();
-            tags.Add(new KeyValuePair<string, string>("100. Diverse", "99. Diverse"));
-            tags.Add(new KeyValuePair<string, string>("01. Registreringer til Miljøledelse",
-                "01. Fokusområder Miljøledelse"));
-            tags.Add(new KeyValuePair<string, string>("04. Fodringskrav (kun IE-husdyrbrug)",
-                "04. Foderindlægssedler"));
-            tags.Add(new KeyValuePair<string, string>("05. Klargøring af stalde og dokumentation af halebid",
-                "05. Stalde: Halebid og klargøring"));
-            tags.Add(new KeyValuePair<string, string>("13. Arbejdstilsynets Landbrugs APV", "13. APV Landbrug"));
-            tags.Add(new KeyValuePair<string, string>("20. Tilbagevendende opgaver (man-søn)",
-                "20. Ugentlige rutineopgaver"));
-            tags.Add(new KeyValuePair<string, string>("23. IE-indberetning", "23. IE-indberetning (Gammel)"));
-
-            foreach (var keyValuePair in tags)
-            {
-                var theTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == keyValuePair.Key);
-                {
-                    if (theTag != null)
-                    {
-                        theTag.Name = keyValuePair.Value;
-                        await theTag.Update(itemsPlanningContext);
-                    }
-                }
-            }
-
-            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Diverse");
-            if (areaTranslation2 != null)
-            {
-                areaTranslation2.Name = "99. Diverse";
-                await areaTranslation2.Update(context);
-
-                var folderTranslations =
-                    await sdkDbContext.FolderTranslations.Where(x => x.Name == "100. Diverse").ToListAsync();
-
-                foreach (var folderTranslation2 in folderTranslations)
-                {
-                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                    var folderTranslationList = new List<CommonTranslationsModel>();
-                    var folderTranslation = new CommonTranslationsModel()
-                    {
-                        Description = "",
-                        LanguageId = 1,
-                        Name = "99. Diverse",
-                    };
-                    folderTranslationList.Add(folderTranslation);
-
-                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-                }
-
-                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
-
-                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Diverse")
-                    ?.CheckListId;
-
-                foreach (var areaRule in areaRules)
-                {
-                    areaRule.EformId = eFormId;
-                    areaRule.EformName = "99. Diverse";
-                    await areaRule.Update(context);
-                }
-            }
-
-            areaTranslation2 = await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "100. Miscellaneous");
-            if (areaTranslation2 != null)
-            {
-                areaTranslation2.Name = "99. Miscellaneous";
-                await areaTranslation2.Update(context);
-
-                var folderTranslations = await sdkDbContext.FolderTranslations
-                    .Where(x => x.Name == "100. Miscellaneous").ToListAsync();
-
-                foreach (var folderTranslation2 in folderTranslations)
-                {
-                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                    var folderTranslationList = new List<CommonTranslationsModel>();
-                    var folderTranslation = new CommonTranslationsModel()
-                    {
-                        Description = "",
-                        LanguageId = 2,
-                        Name = "99. Miscellaneous",
-                    };
-                    folderTranslationList.Add(folderTranslation);
-
-                    await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-                }
-
-                var areaRules = await context.AreaRules.Where(x => x.AreaId == areaTranslation2.AreaId).ToListAsync();
-
-                var eFormId = sdkDbContext.CheckListTranslations.FirstOrDefault(x => x.Text == "100. Miscellaneous")
-                    ?.CheckListId;
-
-                foreach (var areaRule in areaRules)
-                {
-                    areaRule.EformId = eFormId;
-                    areaRule.EformName = "99. Miscellaneous";
-                    await areaRule.Update(context);
-                }
-            }
-
-            areaTranslation2 =
-                await context.AreaTranslations.SingleOrDefaultAsync(x => x.Name == "05. Stalde: Halebid og klargøring");
-            var area = await context.Areas.SingleAsync(x => x.Id == areaTranslation2.AreaId);
-            area.Type = AreaTypesEnum.Type3;
-            await area.Update(context);
-
-            var areaTranslations = await context.AreaTranslations.Where(x => x.Name.Contains("23.")).ToListAsync();
-            foreach (var areaTranslation in areaTranslations)
-            {
-                areaTranslation.Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz";
-                await areaTranslation.Update(context);
-            }
-
-            var ftList = await sdkDbContext.FolderTranslations.Where(x => x.Name == "23.00 Aflæsninger miljøledelse")
-                .ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel()
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "23.00 Aflæsninger",
                 };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations.Where(x =>
-                x.Name == "23.01 Logbøger for alle miljøteknologier" &&
-                x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>()
-                {
-                    new CommonTranslationsModel()
-                    {
-                        Description = "",
-                        LanguageId = 1,
-                        Name = "23.01 Logbøger miljøteknologier",
-                    }
-                };
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations.Where(x =>
-                x.Name == "23.02 Dokumentation af afsluttede inspektioner" &&
-                x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>()
-                {
-                    new CommonTranslationsModel()
-                    {
-                        Description = "",
-                        LanguageId = 1,
-                        Name = "23.02 Dokumentation afsluttede inspektioner",
-                    }
-                };
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations.Where(x =>
-                    x.Name == "23.03 Dokumentation for miljøledelse" &&
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel()
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "23.03 Dokumentation Miljøledelse",
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations.Where(x =>
-                    x.Name == "23.04 Overholdelse af fodringskrav" &&
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel()
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "23.04 Overholdelse fodringskrav",
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Mandag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "20.01 Mandag"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "20.01 Monday"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "20.01 Montag"
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Tirsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "20.02 Tirsdag"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "20.02 Tuesday"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "20.02 Diwstag"
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Onsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "20.03 Onsdag"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "20.03 Wednesday"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "20.03 Mittwoch"
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Torsdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "20.04 Torsdag"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "20.04 Thursday"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "20.04 Donnerstag"
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Fredag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "20.05 Fredag"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "20.05 Friday"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "20.05 Freitag"
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Lørdag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "20.06 Lørdag"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "20.06 Saturday"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "20.06 Samstag"
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            ftList = await sdkDbContext.FolderTranslations
-                .Where(x => x.Name == "Søndag" && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var folderTranslation2 in ftList)
-            {
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == folderTranslation2.FolderId);
-                var folderTranslationList = new List<CommonTranslationsModel>();
-                var folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "20.07 Søndag"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "20.07 Sunday"
-                };
-                folderTranslationList.Add(folderTranslation);
-                folderTranslation = new CommonTranslationsModel
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "20.07 Sonntag"
-                };
-                folderTranslationList.Add(folderTranslation);
-
-                await core.FolderUpdate(folderTranslation2.FolderId, folderTranslationList, folder.ParentId);
-            }
-
-            var dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "375734");
-            var dbFieldOptions = await sdkDbContext.FieldOptions.Where(x => x.FieldId == dbField.Id).ToListAsync();
-            foreach (var dbFieldOption in dbFieldOptions)
-            {
-                var dbFieldOptionTranslation =
-                    await sdkDbContext.FieldOptionTranslations.SingleOrDefaultAsync(x =>
-                        x.Text == "Færdig" && x.FieldOptionId == dbFieldOption.Id);
-                if (dbFieldOptionTranslation != null)
-                {
-                    dbFieldOptionTranslation.Text = "Afsluttet";
-                    await dbFieldOptionTranslation.Update(sdkDbContext);
-                }
-            }
-
-            dbField = await sdkDbContext.Fields.SingleAsync(x => x.OriginalId == "371900");
-            var theDbFieldOption =
-                await sdkDbContext.FieldOptions.SingleOrDefaultAsync(x => x.Key == "0" && x.FieldId == dbField.Id);
-            if (theDbFieldOption == null)
-            {
-                theDbFieldOption = new FieldOption()
-                {
-                    Key = "0",
-                    DisplayOrder = "0",
-                    Selected = false,
-                    FieldId = dbField.Id
-                };
-                await theDbFieldOption.Create(sdkDbContext);
-
-                var dbFieldOptionTranslation = new FieldOptionTranslation()
-                {
-                    LanguageId = 1,
-                    Text = " - ",
-                    FieldOptionId = theDbFieldOption.Id
-                };
-                await dbFieldOptionTranslation.Create(sdkDbContext);
-
-                dbFieldOptionTranslation = new FieldOptionTranslation()
-                {
-                    LanguageId = 2,
-                    Text = " - ",
-                    FieldOptionId = theDbFieldOption.Id
-                };
-                await dbFieldOptionTranslation.Create(sdkDbContext);
-
-                dbFieldOptionTranslation = new FieldOptionTranslation()
-                {
-                    LanguageId = 3,
-                    Text = " - ",
-                    FieldOptionId = theDbFieldOption.Id
-                };
-                await dbFieldOptionTranslation.Create(sdkDbContext);
-            }
-
-            var tag =
-                await itemsPlanningContext.PlanningTags.SingleOrDefaultAsync(x => x.Name == "17. Håndildslukkere");
-            if (tag != null)
-            {
-                tag.Name = "17. Brandslukkere";
-                await tag.Update(itemsPlanningContext);
-            }
-
-            foreach (var planningSite in context.PlanningSites.Where(x => x.AreaId == null).ToList())
-            {
-                var areaRulePlanning = await context.AreaRulePlannings.SingleAsync(x => x.Id == planningSite.AreaRulePlanningsId);
-                planningSite.AreaRuleId = areaRulePlanning.AreaRuleId;
-                planningSite.AreaId = areaRulePlanning.AreaId;
-                await planningSite.Update(context);
+                await field.Create(sdkDbContext);
             }
         }
 

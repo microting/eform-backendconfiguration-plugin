@@ -57,5 +57,7 @@ namespace Chemicals.Pn.Infrastructure.Models.Chemical
         public string ProductName { get; set; }
 
         public int ProductId { get; set; }
+        
+        public string Locations { get; set; }
     }
 }

@@ -90,7 +90,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 propertiesQuery = QueryHelper.AddFilterAndSortToQuery(propertiesQuery, request, nameFields);
 
                 // get total
-                var total = await propertiesQuery.Select(x => x.Id).CountAsync();
+                var total = await propertiesQuery.Select(x => x.Id).CountAsync().ConfigureAwait(false);
 
                 var properties = new List<PropertiesModel>();
 
@@ -122,7 +122,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             WorkorderEntityListId = x.EntitySelectListAreas,
                             IsFarm = x.IsFarm,
                             IndustryCode = x.IndustryCode
-                        }).ToListAsync();
+                        }).ToListAsync().ConfigureAwait(false);
                 }
 
                 return new OperationDataResult<Paged<PropertiesModel>>(true,
@@ -142,9 +142,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             var maxCvrNumbers = _options.Value.MaxCvrNumbers;
             var maxChrNumbers = _options.Value.MaxChrNumbers;
             var currentListOfCvrNumbers = await _backendConfigurationPnDbContext.Properties
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CVR).ToListAsync();
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CVR).ToListAsync().ConfigureAwait(false);
             var currentListOfChrNumbers = await _backendConfigurationPnDbContext.Properties
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CHR).ToListAsync();
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CHR).ToListAsync().ConfigureAwait(false);
             if (_backendConfigurationPnDbContext.Properties.Any(x =>
                     x.CHR == propertyCreateModel.Chr && x.WorkflowState != Constants.WorkflowStates.Removed &&
                     x.CVR == propertyCreateModel.Cvr))
@@ -169,14 +169,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
             try
             {
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 var planningTag = new PlanningTag
                 {
                     Name = propertyCreateModel.FullName(),
                 };
-                await planningTag.Create(_itemsPlanningPnDbContext);
+                await planningTag.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 var newProperty = new Property
                 {
                     Address = propertyCreateModel.Address,
@@ -190,7 +190,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     IndustryCode = propertyCreateModel.IndustryCode,
                     IsFarm = propertyCreateModel.IsFarm
                 };
-                await newProperty.Create(_backendConfigurationPnDbContext);
+                await newProperty.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 var selectedTranslates = propertyCreateModel.LanguagesIds
                     .Select(x => new PropertySelectedLanguage
@@ -203,7 +203,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 foreach (var selectedTranslate in selectedTranslates)
                 {
-                    await selectedTranslate.Create(_backendConfigurationPnDbContext);
+                    await selectedTranslate.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 var translatesForFolder = await sdkDbContext.Languages
@@ -214,9 +214,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             Name = propertyCreateModel.Name,
                             Description = ""
                         })
-                    .ToListAsync();
-                newProperty.FolderId = await core.FolderCreate(translatesForFolder, null);
-                await newProperty.Update(_backendConfigurationPnDbContext);
+                    .ToListAsync().ConfigureAwait(false);
+                newProperty.FolderId = await core.FolderCreate(translatesForFolder, null).ConfigureAwait(false);
+                await newProperty.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 return new OperationResult(true,
                     _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));
@@ -253,7 +253,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             .ToList(),
                         WorkorderEnable = x.WorkorderEnable,
                     })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (property == null)
                 {
@@ -276,14 +276,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         {
             try
             {
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var property = await _backendConfigurationPnDbContext.Properties
                     .Where(x => x.Id == updateModel.Id)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Include(x => x.SelectedLanguages)
                     .Include(x => x.PropertyWorkers)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (property == null)
                 {
@@ -310,19 +310,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         .Where(x => x.Id == property.EntitySelectListAreas)
                         //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(x => x.MicrotingUid)
-                        .FirstAsync();
-                    var areasGroup = await core.EntityGroupRead(areaGroupUid);
+                        .FirstAsync().ConfigureAwait(false);
+                    var areasGroup = await core.EntityGroupRead(areaGroupUid).ConfigureAwait(false);
                     areasGroup.Name = $"eForm Backend Configurations - {updateModel.Name} - Areas";
-                    await core.EntityGroupUpdate(areasGroup);
+                    await core.EntityGroupUpdate(areasGroup).ConfigureAwait(false);
 
                     var deviceUserGroupUid = await sdkDbContext.EntityGroups
                         .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                         //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(x => x.MicrotingUid)
-                        .FirstAsync();
-                    var deviceUserGroup = await core.EntityGroupRead(deviceUserGroupUid);
+                        .FirstAsync().ConfigureAwait(false);
+                    var deviceUserGroup = await core.EntityGroupRead(deviceUserGroupUid).ConfigureAwait(false);
                     deviceUserGroup.Name = $"eForm Backend Configurations - {updateModel.Name} - Device Users";
-                    await core.EntityGroupUpdate(deviceUserGroup);
+                    await core.EntityGroupUpdate(deviceUserGroup).ConfigureAwait(false);
                 }
                 property.Address = updateModel.Address;
                 property.CHR = updateModel.Chr;
@@ -333,12 +333,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var planningTag = await _itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.Id == property.ItemPlanningTagId)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (planningTag != null)
                 {
                     planningTag.Name = updateModel.FullName();
                     planningTag.UpdatedByUserId = _userService.UserId;
-                    await planningTag.Update(_itemsPlanningPnDbContext);
+                    await planningTag.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
                 var translatesForFolder = await sdkDbContext.Languages
@@ -349,9 +349,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             Name = property.Name,
                             Description = ""
                         })
-                    .ToListAsync();
+                    .ToListAsync().ConfigureAwait(false);
 
-                await core.FolderUpdate((int)property.FolderId, translatesForFolder, null);
+                await core.FolderUpdate((int)property.FolderId, translatesForFolder, null).ConfigureAwait(false);
 
                 if (property.WorkorderEnable != updateModel.WorkorderEnable)
                 {
@@ -384,7 +384,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //},
                                 };
                                 property.FolderIdForTasks =
-                                    await core.FolderCreate(translatesFolderForTasks, property.FolderId);
+                                    await core.FolderCreate(translatesFolderForTasks, property.FolderId).ConfigureAwait(false);
 
                                 var translateFolderForNewTask = new List<CommonTranslationsModel>
                                 {
@@ -408,7 +408,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //},
                                 };
                                 property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
-                                    property.FolderIdForTasks);
+                                    property.FolderIdForTasks).ConfigureAwait(false);
 
                                 var translateFolderForOngoingTask = new List<CommonTranslationsModel>
                                 {
@@ -431,7 +431,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //    Description = "",
                                     //},
                                 };
-                                property.FolderIdForOngoingTasks = await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks);
+                                property.FolderIdForOngoingTasks = await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks).ConfigureAwait(false);
 
                                 var translateFolderForCompletedTask = new List<CommonTranslationsModel>
                                 {
@@ -454,14 +454,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     //    Description = "",
                                     //},
                                 };
-                                property.FolderIdForCompletedTasks = await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks);
+                                property.FolderIdForCompletedTasks = await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks).ConfigureAwait(false);
                             }
 
                             var eformId = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.Text == "01. New task")
                                 .Select(x => x.CheckListId)
-                                .FirstAsync();
+                                .FirstAsync().ConfigureAwait(false);
 
                             var propertyWorkers = property.PropertyWorkers
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -469,30 +469,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                             // create area select list filled manually
                             var areasGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
-                                $"{property.Name} - Areas", "", true, true);
+                                $"{property.Name} - Areas", "", true, true).ConfigureAwait(false);
                             property.EntitySelectListAreas = areasGroup.Id;
                             // create device users select list filled automatically by workers bound to property
                             var deviceUsersGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
-                                $"{property.Name} - Device Users", "", true, false);
+                                $"{property.Name} - Device Users", "", true, false).ConfigureAwait(false);
                             property.EntitySelectListDeviceUsers = deviceUsersGroup.Id;
 
                             // read and fill list
-                            var entityGroup = await core.EntityGroupRead(deviceUsersGroup.MicrotingUid);
+                            var entityGroup = await core.EntityGroupRead(deviceUsersGroup.MicrotingUid).ConfigureAwait(false);
                             var nextItemUid = entityGroup.EntityGroupItemLst.Count;
                             for (var i = 0; i < propertyWorkers.Count; i++)
                             {
                                 var propertyWorker = propertyWorkers[i];
                                 var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
-                                    .FirstAsync();
-                                var entityItem = await core.EntitySelectItemCreate(entityGroup.Id, site.Name, i, nextItemUid.ToString());
+                                    .FirstAsync().ConfigureAwait(false);
+                                var entityItem = await core.EntitySelectItemCreate(entityGroup.Id, site.Name, i, nextItemUid.ToString()).ConfigureAwait(false);
                                 nextItemUid++;
                                 propertyWorker.EntityItemId = entityItem.Id;
-                                await propertyWorker.Update(_backendConfigurationPnDbContext);
+                                await propertyWorker.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                                 // todo need change language to site language for correct translates and change back after end translate
                                 await _workOrderHelper.DeployEform(propertyWorker, eformId, property.FolderIdForNewTasks,
                                     $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
-                                    int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid));
+                                    int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid)).ConfigureAwait(false);
                             }
 
                             var entityItems = await sdkDbContext.EntityItems
@@ -500,13 +500,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .OrderBy(x => x.Name)
                                 .AsNoTracking()
-                                .ToListAsync();
+                                .ToListAsync().ConfigureAwait(false);
 
                             int entityItemIncrementer = 0;
                             foreach (var entityItem in entityItems)
                             {
                                 await core.EntityItemUpdate(entityItem.Id, entityItem.Name, entityItem.Description,
-                                    entityItem.EntityItemUid, entityItemIncrementer);
+                                    entityItem.EntityItemUid, entityItemIncrementer).ConfigureAwait(false);
                                 entityItemIncrementer++;
                             }
                             break;
@@ -535,29 +535,29 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToList();
 
-                            await _workOrderHelper.RetractEform(propertyWorkerIds, true);
-                            await _workOrderHelper.RetractEform(propertyWorkerIds, false);
-                            await _workOrderHelper.RetractEform(propertyWorkerIds, false);
+                            await _workOrderHelper.RetractEform(propertyWorkerIds, true).ConfigureAwait(false);
+                            await _workOrderHelper.RetractEform(propertyWorkerIds, false).ConfigureAwait(false);
+                            await _workOrderHelper.RetractEform(propertyWorkerIds, false).ConfigureAwait(false);
 
 
                             var areaGroupUid = await sdkDbContext.EntityGroups
                                 .Where(x => x.Id == property.EntitySelectListAreas)
                                 //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(x => x.MicrotingUid)
-                                .FirstOrDefaultAsync();
+                                .FirstOrDefaultAsync().ConfigureAwait(false);
                             if (areaGroupUid != null)
                             {
-                                await core.EntityGroupDelete(areaGroupUid);
+                                await core.EntityGroupDelete(areaGroupUid).ConfigureAwait(false);
                             }
 
                             var deviceUserGroupUid = await sdkDbContext.EntityGroups
                                 .Where(x => x.Id == property.EntitySelectListDeviceUsers)
                                 //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(x => x.MicrotingUid)
-                                .FirstOrDefaultAsync();
+                                .FirstOrDefaultAsync().ConfigureAwait(false);
                             if (deviceUserGroupUid != null)
                             {
-                                await core.EntityGroupDelete(deviceUserGroupUid);
+                                await core.EntityGroupDelete(deviceUserGroupUid).ConfigureAwait(false);
                             }
                             property.EntitySelectListAreas = null;
                             property.EntitySelectListDeviceUsers = null;
@@ -567,7 +567,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 }
 
                 property.WorkorderEnable = updateModel.WorkorderEnable;
-                await property.Update(_backendConfigurationPnDbContext);
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 property.SelectedLanguages = property.SelectedLanguages
                     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -591,7 +591,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 foreach (var selectedLanguageForDelete in selectedLanguagesForDelete)
                 {
                     selectedLanguageForDelete.UpdatedByUserId = _userService.UserId;
-                    await selectedLanguageForDelete.Delete(_backendConfigurationPnDbContext);
+                    await selectedLanguageForDelete.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
 
@@ -599,7 +599,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 {
                     selectedLanguageForCreate.UpdatedByUserId = _userService.UserId;
                     selectedLanguageForCreate.CreatedByUserId = _userService.UserId;
-                    await selectedLanguageForCreate.Create(_backendConfigurationPnDbContext);
+                    await selectedLanguageForCreate.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 return new OperationResult(true,
@@ -625,7 +625,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Include(x => x.PropertyWorkers)
                     .Include(x => x.AreaProperties)
                     .ThenInclude(x => x.ProperyAreaFolders)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (property == null)
                 {
@@ -637,14 +637,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var planningTag = await _itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.Id == property.ItemPlanningTagId)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (planningTag != null)
                 {
                     planningTag.UpdatedByUserId = _userService.UserId;
-                    await planningTag.Delete(_itemsPlanningPnDbContext);
+                    await planningTag.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 // retract eforms
                 if (property.WorkorderEnable)
@@ -667,16 +667,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         .Select(x => x.CheckListId)
                         .FirstAsync();*/
 
-                    await _workOrderHelper.RetractEform(property.PropertyWorkers, true);
-                    await _workOrderHelper.RetractEform(property.PropertyWorkers, false);
-                    await _workOrderHelper.RetractEform(property.PropertyWorkers, false);
+                    await _workOrderHelper.RetractEform(property.PropertyWorkers, true).ConfigureAwait(false);
+                    await _workOrderHelper.RetractEform(property.PropertyWorkers, false).ConfigureAwait(false);
+                    await _workOrderHelper.RetractEform(property.PropertyWorkers, false).ConfigureAwait(false);
                 }
 
                 // delete property workers
                 foreach (var propertyWorker in property.PropertyWorkers)
                 {
                     propertyWorker.UpdatedByUserId = _userService.UserId;
-                    await propertyWorker.Delete(_backendConfigurationPnDbContext);
+                    await propertyWorker.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 // delete area properties
@@ -688,16 +688,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         var folder = await sdkDbContext.Folders
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .Where(x => x.Id == properyAreaFolder.FolderId)
-                            .FirstOrDefaultAsync();
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
                         if (folder != null) // if folder is not deleted
                         {
-                            await folder.Delete(sdkDbContext);
+                            await folder.Delete(sdkDbContext).ConfigureAwait(false);
                         }
                     }
 
                     if (areaProperty.GroupMicrotingUuid != 0)
                     {
-                        await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString());
+                        await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString()).ConfigureAwait(false);
                     }
                     // get areaRules and select all linked entity for delete
                     var areaRules = await _backendConfigurationPnDbContext.AreaRules
@@ -708,7 +708,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         .Include(x => x.AreaRulesPlannings)
                         .ThenInclude(x => x.PlanningSites)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .ToListAsync();
+                        .ToListAsync().ConfigureAwait(false);
 
                     foreach (var areaRule in areaRules)
                     {
@@ -716,23 +716,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         {
                             // delete item from selectable list
                             var entityGroupItem = await sdkDbContext.EntityItems
-                                .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync();
+                                .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync().ConfigureAwait(false);
                             if (entityGroupItem != null)
                             {
-                                await entityGroupItem.Delete(sdkDbContext);
+                                await entityGroupItem.Delete(sdkDbContext).ConfigureAwait(false);
                             }
                         }
 
                         string eformName = $"05. Halebid og risikovurdering - {property.Name}";
                         var eForm = await sdkDbContext.CheckListTranslations
                             .Where(x => x.Text == eformName)
-                            .FirstOrDefaultAsync();
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
                         if (eForm != null)
                         {
                             foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
                                          x.CheckListId == eForm.CheckListId))
                             {
-                                await core.CaseDelete(checkListSite.MicrotingUid);
+                                await core.CaseDelete(checkListSite.MicrotingUid).ConfigureAwait(false);
                             }
                         }
 
@@ -741,7 +741,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                      x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
-                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
+                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         // delete plannings area rules and items planning
@@ -752,7 +752,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                          .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                             {
                                 planningSite.UpdatedByUserId = _userService.UserId;
-                                await planningSite.Delete(_backendConfigurationPnDbContext);
+                                await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
 
                             if (areaRulePlanning.ItemPlanningId != 0)
@@ -761,44 +761,44 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                     .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
                                     .Include(x => x.NameTranslations)
-                                    .FirstOrDefaultAsync();
+                                    .FirstOrDefaultAsync().ConfigureAwait(false);
                                 if (planning != null)
                                 {
                                     foreach (var translation in planning.NameTranslations
                                                  .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                                     {
                                         translation.UpdatedByUserId = _userService.UserId;
-                                        await translation.Delete(_itemsPlanningPnDbContext);
+                                        await translation.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
                                     }
 
                                     planning.UpdatedByUserId = _userService.UserId;
-                                    await planning.Delete(_itemsPlanningPnDbContext);
+                                    await planning.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                                     var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
                                         .Where(x => x.PlanningId == planning.Id)
                                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
                                     foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
                                     {
                                         planningCaseSite.UpdatedByUserId = _userService.UserId;
-                                        await planningCaseSite.Delete(_itemsPlanningPnDbContext);
+                                        await planningCaseSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
                                         if (planningCaseSite.MicrotingSdkCaseId != 0)
                                         {
                                             var result =
                                                 await sdkDbContext.Cases.SingleOrDefaultAsync(x =>
-                                                    x.Id == planningCaseSite.MicrotingSdkCaseId);
-                                            if (result.MicrotingUid != null)
+                                                    x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
+                                            if (result is {MicrotingUid: { }})
                                             {
-                                                await core.CaseDelete((int)result.MicrotingUid);
+                                                await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
                                             }
                                         }
                                         else
                                         {
                                             var result = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
-                                                x.Id == planningCaseSite.MicrotingCheckListSitId);
+                                                x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
                                             if (result != null)
                                             {
-                                                await core.CaseDelete(result.MicrotingUid);
+                                                await core.CaseDelete(result.MicrotingUid).ConfigureAwait(false);
                                             }
                                         }
                                     }
@@ -806,70 +806,70 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             }
 
                             areaRulePlanning.UpdatedByUserId = _userService.UserId;
-                            await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+                            await areaRulePlanning.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         // delete area rule
                         areaRule.UpdatedByUserId = _userService.UserId;
-                        await areaRule.Delete(_backendConfigurationPnDbContext);
+                        await areaRule.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
 
                     // delete entity select group. only for type 3(tail bite and stables)
                     if (areaProperty.GroupMicrotingUuid != 0)
                     {
-                        await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString());
+                        await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString()).ConfigureAwait(false);
                     }
 
                     // delete entity search group. only for type 10 Pool inspections
                     if (property.EntitySearchListPoolWorkers != null)
                     {
-                        await core.EntityGroupDelete(property.EntitySearchListPoolWorkers.ToString());
+                        await core.EntityGroupDelete(property.EntitySearchListPoolWorkers.ToString()).ConfigureAwait(false);
                     }
 
                     areaProperty.UpdatedByUserId = _userService.UserId;
-                    await areaProperty.Delete(_backendConfigurationPnDbContext);
+                    await areaProperty.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 // delete selected languages
                 foreach (var selectedLanguage in property.SelectedLanguages)
                 {
                     selectedLanguage.UpdatedByUserId = _userService.UserId;
-                    await selectedLanguage.Delete(_backendConfigurationPnDbContext);
+                    await selectedLanguage.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 // delete property folder
                 var propertyFolder = await sdkDbContext.Folders
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == property.FolderId)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (propertyFolder != null) // if folder is not deleted
                 {
-                    await propertyFolder.Delete(sdkDbContext);
+                    await propertyFolder.Delete(sdkDbContext).ConfigureAwait(false);
                 }
 
                 // delete property folder for tasks
                 var propertyFolderForTasks = await sdkDbContext.Folders
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == property.FolderIdForTasks)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (propertyFolderForTasks != null) // if folder is not created
                 {
-                    await propertyFolderForTasks.Delete(sdkDbContext);
+                    await propertyFolderForTasks.Delete(sdkDbContext).ConfigureAwait(false);
                 }
 
                 // delete property
                 property.UpdatedByUserId = _userService.UserId;
-                await property.Delete(_backendConfigurationPnDbContext);
+                await property.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 if (property.EntitySelectListAreas != null)
                 {
-                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListAreas);
-                    await core.EntityGroupDelete(eg.MicrotingUid);
+                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListAreas).ConfigureAwait(false);
+                    await core.EntityGroupDelete(eg.MicrotingUid).ConfigureAwait(false);
                 }
 
                 if (property.EntitySelectListDeviceUsers != null) {
-                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListDeviceUsers);
-                    await core.EntityGroupDelete(eg.MicrotingUid);
+                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListDeviceUsers).ConfigureAwait(false);
+                    await core.EntityGroupDelete(eg.MicrotingUid).ConfigureAwait(false);
                 }
 
                 return new OperationResult(true,
@@ -895,7 +895,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         Id = x.Id,
                         Name = $"{x.CVR} - {x.CHR} - {x.Name}",
                         Description = "",
-                    }).ToListAsync();
+                    }).ToListAsync().ConfigureAwait(false);
                 return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
             }
             catch (Exception ex)
@@ -910,7 +910,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         public async Task<OperationDataResult<Result>> GetCompanyType(int cvrNumber)
         {
             var cvrHelper = new CvrHelper();
-            var cvr = await cvrHelper.GetCompanyInfo(cvrNumber);
+            var cvr = await cvrHelper.GetCompanyInfo(cvrNumber).ConfigureAwait(false);
 
             return new OperationDataResult<Result>(true, cvr);
         }
@@ -918,7 +918,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         public async Task<OperationDataResult<ChrResult>> GetChrInformation(int chrNumber)
         {
             var chrHelper = new ChrHelper();
-            var chr = await chrHelper.GetCompanyInfo(chrNumber);
+            var chr = await chrHelper.GetCompanyInfo(chrNumber).ConfigureAwait(false);
 
             return new OperationDataResult<ChrResult>(true, chr);
         }

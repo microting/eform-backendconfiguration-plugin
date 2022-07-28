@@ -78,7 +78,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
-                var property = await _backendConfigurationPnDbContext.Properties.FirstAsync(x => x.Id == propertyId);
+                var property = await _backendConfigurationPnDbContext.Properties.FirstAsync(x => x.Id == propertyId).ConfigureAwait(false);
                 var propertyAreas = new List<PropertyAreaModel>();
 
                 var propertyAreasQuery = _backendConfigurationPnDbContext.AreaProperties
@@ -95,7 +95,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .ToList();
 
                 List<PropertyAreaModel> areasForAdd;
-                var language = await _userService.GetCurrentUserLanguage();
+                var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
                 if (propertyAreasQuery.Any())
                 {
                     propertyAreas = await propertyAreasQuery
@@ -116,7 +116,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             AreaId = x.AreaId,
                             Type = x.Area.Type,
                         })
-                        .ToListAsync();
+                        .ToListAsync().ConfigureAwait(false);
                     areasForAdd = areas.Where(x => !propertyAreasQuery.Any(y => y.AreaId == x.Id))
                         .Select(x => new PropertyAreaModel
                         {
@@ -173,7 +173,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 var assignments = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyId == updateModel.PropertyId)
-                    .ToListAsync();
+                    .ToListAsync().ConfigureAwait(false);
 
                 var assignmentsForCreate = updateModel.Areas
                     .Where(x => x.Id == null)
@@ -184,15 +184,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .Where(x => !updateModel.Areas.Where(y => y.Id.HasValue).Select(y => y.Id).Contains(x.Id))
                     .ToList();
 
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
 
-                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                await using var _ = sdkDbContext.ConfigureAwait(false);
 
                 foreach (var assignmentForCreate in assignmentsForCreate)
                 {
                     var area = await _backendConfigurationPnDbContext.Areas
                         .Include(x => x.AreaTranslations)
-                        .FirstAsync(x => x.Id == assignmentForCreate.AreaId);
+                        .FirstAsync(x => x.Id == assignmentForCreate.AreaId).ConfigureAwait(false);
 
                     var newAssignment = new AreaProperty
                     {
@@ -202,12 +203,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         PropertyId = updateModel.PropertyId,
                         Checked = assignmentForCreate.Activated,
                     };
-                    await newAssignment.Create(_backendConfigurationPnDbContext);
+                    await newAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                     var property = await _backendConfigurationPnDbContext.Properties
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.Id == updateModel.PropertyId)
-                        .FirstAsync();
+                        .FirstAsync().ConfigureAwait(false);
                     switch (area.Type)
                     {
                         case AreaTypesEnum.Type9:
@@ -235,29 +236,29 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "25. Chemisches APV",
                                     Description = "",
                                 },
-                            }, property.FolderId);
+                            }, property.FolderId).ConfigureAwait(false);
                             var assignmentWithOneFolder = new ProperyAreaFolder
                             {
                                 FolderId = folderId,
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
-                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
 
-                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false);
+                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false).ConfigureAwait(false);
 
                             property.EntitySearchListChemicals = Convert.ToInt32(groupCreate.MicrotingUid);
-                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Regno - {property.Name}", "", true, false);
+                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Regno - {property.Name}", "", true, false).ConfigureAwait(false);
                             property.EntitySearchListChemicalRegNos = Convert.ToInt32(groupCreate.MicrotingUid);
-                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, $"Chemicals - Areas - {property.Name}", "", true, false);
+                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, $"Chemicals - Areas - {property.Name}", "", true, false).ConfigureAwait(false);
                             property.EntitySelectListChemicalAreas = Convert.ToInt32(groupCreate.MicrotingUid);
-                            await property.Update(_backendConfigurationPnDbContext);
+                            await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             string text = "25.01 Registrer produkter";
 
                             var eformId = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.Text == text)
                                 .Select(x => x.CheckListId)
-                                .FirstAsync();
+                                .FirstAsync().ConfigureAwait(false);
 
                             var areaRule = new AreaRule
                             {
@@ -269,10 +270,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 EformName = text,
                                 AreaId = area.Id
                             };
-                            AreaInitialField areaInitialField = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id).FirstOrDefaultAsync();
+                            AreaInitialField areaInitialField = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id).FirstOrDefaultAsync().ConfigureAwait(false);
                             areaInitialField.EformName = text;
-                            await areaInitialField.Update(_backendConfigurationPnDbContext);
-                            await areaRule.Create(_backendConfigurationPnDbContext);
+                            await areaInitialField.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             AreaRuleInitialField areaRuleInitialField = new AreaRuleInitialField
                             {
                                 AreaRuleId = areaRule.Id,
@@ -282,16 +283,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 RepeatType = 0,
                                 EformName = text,
                             };
-                            await areaRuleInitialField.Create(_backendConfigurationPnDbContext);
+                            await areaRuleInitialField.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             break;
                         }
                         case AreaTypesEnum.Type10:
                         {
-                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"00. Aflæsninger, målinger, forbrug og fækale uheld - {property.Name}", "", true, false);
-                            await SeedPoolEform(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
-                            await SeedFaeceseForm(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
+                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"00. Aflæsninger, målinger, forbrug og fækale uheld - {property.Name}", "", true, false).ConfigureAwait(false);
+                            await SeedPoolEform(property.Name, core, sdkDbContext, groupCreate.MicrotingUid).ConfigureAwait(false);
+                            await SeedFaeceseForm(property.Name, core, sdkDbContext, groupCreate.MicrotingUid).ConfigureAwait(false);
                             property.EntitySearchListPoolWorkers = int.Parse(groupCreate.MicrotingUid);
-                            await property.Update(_backendConfigurationPnDbContext);
+                            await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
@@ -315,14 +316,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "00. Messwerte, Messungen, Verbrauch und Fäkalunfälle",
                                     Description = "",
                                 },
-                            }, property.FolderId);
+                            }, property.FolderId).ConfigureAwait(false);
                             var assignmentWithOneFolder = new ProperyAreaFolder
                             {
                                 FolderId = folderId,
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
 
-                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             break;
                         }
                         case AreaTypesEnum.Type3:
@@ -350,21 +351,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "05. Ställe: Schwanzbeißen und Vorbereitung",
                                     Description = "",
                                 },
-                            }, property.FolderId);
+                            }, property.FolderId).ConfigureAwait(false);
                             var assignmentWithOneFolder = new ProperyAreaFolder
                             {
                                 FolderId = folderId,
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
 
-                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext);
+                            await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             // await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
 
-                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "", true, false);
+                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, property.Name, "", true, false).ConfigureAwait(false);
                             // TODO load tailbite eForm and seed it.
-                            await SeedTailBite(property.Name, core, sdkDbContext, groupCreate.MicrotingUid);
+                            await SeedTailBite(property.Name, core, sdkDbContext, groupCreate.MicrotingUid).ConfigureAwait(false);
                             newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
-                            await newAssignment.Update(_backendConfigurationPnDbContext);
+                            await newAssignment.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             string text = $"05. Halebid og risikovurdering - {property.Name}";
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                             {
@@ -377,11 +378,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     var eformId = await sdkDbContext.CheckListTranslations
                                         .Where(x => x.Text == text)
                                         .Select(x => x.CheckListId)
-                                        .FirstAsync();
+                                        .FirstAsync().ConfigureAwait(false);
                                     areaRule.EformName = text;
                                     areaRule.EformId = eformId;
                                 }
-                                await areaRule.Create(_backendConfigurationPnDbContext);
+                                await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             break;
                         }
@@ -395,7 +396,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     LanguageId = x.LanguageId,
                                     Description = "",
                                 }).ToList(),
-                                property.FolderId);
+                                property.FolderId).ConfigureAwait(false);
                             //create 7 folders
                             var folderIds = new List<int>
                             {
@@ -419,7 +420,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "20.07 Sonntag",
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -440,7 +441,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "20.01 Montag",
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -461,7 +462,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "20.02 Dienstag",
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -482,7 +483,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "20.03 Mittwoch",
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -503,7 +504,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "20.04 Donnerstag",
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -524,7 +525,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "20.05 Freitag",
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -545,14 +546,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "20.06 Samstag",
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                             };
 
                             await new ProperyAreaFolder
                             {
                                 FolderId = folderId,
                                 ProperyAreaAsignmentId = newAssignment.Id,
-                            }.Create(_backendConfigurationPnDbContext);
+                            }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                             foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                             {
@@ -560,7 +561,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             }))
                             {
-                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                             {
@@ -575,10 +576,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     var eformId = await sdkDbContext.CheckListTranslations
                                         .Where(x => x.Text == areaRule.EformName)
                                         .Select(x => x.CheckListId)
-                                        .FirstAsync();
+                                        .FirstAsync().ConfigureAwait(false);
                                     areaRule.EformId = eformId;
                                 }
-                                await areaRule.Create(_backendConfigurationPnDbContext);
+                                await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             break;
                         }
@@ -592,7 +593,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     LanguageId = x.LanguageId,
                                     Description = "",
                                 }).ToList(),
-                                property.FolderId);
+                                property.FolderId).ConfigureAwait(false);
                             //create 4 folders
                             var folderIds = new List<int>
                             {
@@ -616,7 +617,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "23.00 Messungen Umweltmanagement", // todo
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -637,7 +638,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "23.01 Fahrtenbücher für alle Umwelttechnologien", // todo
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -658,7 +659,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "23.02 Dokumentation abgeschlossener Inspektionen", // todo
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -679,7 +680,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "23.03 Dokumentation für das Umweltmanagement", // todo
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
                                 {
                                     new()
@@ -700,14 +701,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                         Name = "23.04 Einhaltung der Fütterungsanforderungen", // todo
                                         Description = "",
                                     },
-                                }, folderId),
+                                }, folderId).ConfigureAwait(false),
                             };
 
                             await new ProperyAreaFolder
                             {
                                 FolderId = folderId,
                                 ProperyAreaAsignmentId = newAssignment.Id,
-                            }.Create(_backendConfigurationPnDbContext);
+                            }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                             foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                             {
@@ -715,7 +716,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             }))
                             {
-                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                             {
@@ -728,10 +729,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     var eformId = await sdkDbContext.CheckListTranslations
                                         .Where(x => x.Text == areaRule.EformName)
                                         .Select(x => x.CheckListId)
-                                        .FirstAsync();
+                                        .FirstAsync().ConfigureAwait(false);
                                     areaRule.EformId = eformId;
                                 }
-                                await areaRule.Create(_backendConfigurationPnDbContext);
+                                await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             break;
                         }
@@ -746,7 +747,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     LanguageId = x.LanguageId,
                                     Description = "",
                                 }).ToList(),
-                                property.FolderId);
+                                property.FolderId).ConfigureAwait(false);
                             //create 4 folders
                             var folderIds = new List<int>();
 
@@ -770,7 +771,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.00 Messungen Umweltmanagement", // todo
                                     Description = "",
                                 },
-                            }, folderId);
+                            }, folderId).ConfigureAwait(false);
                             folderIds.Add(subFolderId);
                             subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -792,7 +793,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01 Fahrtenbücher für alle Umwelttechnologien", // todo
                                     Description = "",
                                 },
-                            }, folderId);
+                            }, folderId).ConfigureAwait(false);
                             folderIds.Add(subFolderId);
                             var subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -814,7 +815,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.01 Güllebehälter", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -836,7 +837,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.02 Schlammkühlung", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -858,7 +859,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.03 Versauerung", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -880,7 +881,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.04 Wöchentliche Gülleentsorgung", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -902,7 +903,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.05 Punktabsaugung in Mastschweineställen", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -924,7 +925,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.06 Wärmetauscher für traditionelle Masthähnchenställe", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -946,7 +947,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.07 Kotband für Legehennen", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -968,7 +969,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.08 Biologische Luftreinigung", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -990,7 +991,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.01.09 Chemische Luftreinigung", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1012,7 +1013,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02 Dokumentation abgeschlossener Inspektionen", // todo
                                     Description = "",
                                 },
-                            }, folderId);
+                            }, folderId).ConfigureAwait(false);
                             folderIds.Add(subFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1034,7 +1035,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.01 Sichtprüfung von leeren Güllefässern", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1056,7 +1057,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.02 Schlammpumpen", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1078,7 +1079,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.03 Wasser- und Futterversorgungssysteme", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1100,7 +1101,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.04 Heiz-, Kühl- und Lüftungssysteme", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1122,7 +1123,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.05 Silos und Einrichtungen in Transporteinrichtungen in Verbindung mit Beschickungssystemen - Rohre, Schnecken usw.", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1144,7 +1145,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.06 Luftreinigungssysteme", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1166,7 +1167,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.07 Ausrüstung für Trinkwasser", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1188,7 +1189,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.02.08 Maschinen zum Ausbringen von Viehmist und Dosiermechanismus", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1210,7 +1211,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.03 Dokumentation für das Umweltmanagement", // todo
                                     Description = "",
                                 },
-                            }, folderId);
+                            }, folderId).ConfigureAwait(false);
                             folderIds.Add(subFolderId);
                             subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1232,7 +1233,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.04 Einhaltung der Fütterungsanforderungen", // todo
                                     Description = "",
                                 },
-                            }, folderId);
+                            }, folderId).ConfigureAwait(false);
                             folderIds.Add(subFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1254,7 +1255,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.04.01 Phasenfütterung", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1276,7 +1277,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.04.02 Reduzierter Gehalt an Rohprotein", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
                             subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                             {
@@ -1298,14 +1299,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     Name = "24.04.03 Zusatzstoffe in Futtermitteln – Phytase oder andere", // todo
                                     Description = "",
                                 },
-                            }, subFolderId);
+                            }, subFolderId).ConfigureAwait(false);
                             folderIds.Add(subSubFolderId);
 
                                 await new ProperyAreaFolder
-                            {
-                                FolderId = folderId,
-                                ProperyAreaAsignmentId = newAssignment.Id,
-                            }.Create(_backendConfigurationPnDbContext);
+                                {
+                                    FolderId = folderId,
+                                    ProperyAreaAsignmentId = newAssignment.Id,
+                                }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                             foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                             {
@@ -1313,7 +1314,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             }))
                             {
-                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                             {
@@ -1326,10 +1327,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     var eformId = await sdkDbContext.CheckListTranslations
                                         .Where(x => x.Text == areaRule.EformName)
                                         .Select(x => x.CheckListId)
-                                        .FirstAsync();
+                                        .FirstAsync().ConfigureAwait(false);
                                     areaRule.EformId = eformId;
                                 }
-                                await areaRule.Create(_backendConfigurationPnDbContext);
+                                await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             break;
                         }
@@ -1342,13 +1343,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     LanguageId = x.LanguageId,
                                     Description = "",
                                 }).ToList(),
-                                property.FolderId);
+                                property.FolderId).ConfigureAwait(false);
                             var assignmentWithFolder = new ProperyAreaFolder
                             {
                                 FolderId = folderId,
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
-                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext);
+                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                             {
                                 areaRule.PropertyId = property.Id;
@@ -1362,10 +1363,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     var eformId = await sdkDbContext.CheckListTranslations
                                         .Where(x => x.Text == areaRule.EformName)
                                         .Select(x => x.CheckListId)
-                                        .FirstAsync();
+                                        .FirstAsync().ConfigureAwait(false);
                                     areaRule.EformId = eformId;
                                 }
-                                await areaRule.Create(_backendConfigurationPnDbContext);
+                                await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
                             break;
                         }
@@ -1383,7 +1384,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .Include(x => x.AreaRulesPlannings)
                         .ThenInclude(x => x.PlanningSites)
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .ToListAsync();
+                        .ToListAsync().ConfigureAwait(false);
 
                     foreach (var areaRule in areaRules)
                     {
@@ -1391,23 +1392,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         {
                             // delete item from selectable list
                             var entityGroupItem = await sdkDbContext.EntityItems
-                                .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync();
+                                .Where(x => x.Id == areaRule.GroupItemId).FirstOrDefaultAsync().ConfigureAwait(false);
                             if (entityGroupItem != null)
                             {
-                                await entityGroupItem.Delete(sdkDbContext);
+                                await entityGroupItem.Delete(sdkDbContext).ConfigureAwait(false);
                             }
                             Property property =
                                 await _backendConfigurationPnDbContext.Properties
-                                    .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId);
+                                    .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId).ConfigureAwait(false);
                             string eformName = $"05. Halebid og risikovurdering - {property.Name}";
                             var eformId = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.Text == eformName)
                                 .Select(x => x.CheckListId)
-                                .FirstAsync();
+                                .FirstAsync().ConfigureAwait(false);
                             foreach (CheckListSite checkListSite in sdkDbContext.CheckListSites.Where(x =>
                                 x.CheckListId == eformId))
                             {
-                                await core.CaseDelete(checkListSite.MicrotingUid);
+                                await core.CaseDelete(checkListSite.MicrotingUid).ConfigureAwait(false);
                             }
                         }
 
@@ -1415,7 +1416,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         foreach (var areaRuleAreaRuleTranslation in areaRule.AreaRuleTranslations.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
-                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext);
+                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         // delete plannings area rules and items planning
@@ -1426,7 +1427,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                             {
                                 planningSite.UpdatedByUserId = _userService.UserId;
-                                await planningSite.Delete(_backendConfigurationPnDbContext);
+                                await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
 
                             if (areaRulePlanning.ItemPlanningId != 0)
@@ -1435,54 +1436,54 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                     .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
                                     .Include(x => x.NameTranslations)
-                                    .FirstOrDefaultAsync();
+                                    .FirstOrDefaultAsync().ConfigureAwait(false);
                                 if (planning != null)
                                 {
                                     foreach (var translation in planning.NameTranslations
                                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                                     {
                                         translation.UpdatedByUserId = _userService.UserId;
-                                        await translation.Delete(_itemsPlanningPnDbContext);
+                                        await translation.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
                                     }
 
                                     planning.UpdatedByUserId = _userService.UserId;
-                                    await planning.Delete(_itemsPlanningPnDbContext);
+                                    await planning.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                                     var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
                                         .Where(x => x.PlanningId == planning.Id)
                                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                        .ToListAsync();
+                                        .ToListAsync().ConfigureAwait(false);
                                     foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
                                     {
                                         planningCaseSite.UpdatedByUserId = _userService.UserId;
-                                        await planningCaseSite.Delete(_itemsPlanningPnDbContext);
+                                        await planningCaseSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
                                         var result =
                                             await sdkDbContext.Cases.SingleAsync(x =>
-                                                x.Id == planningCaseSite.MicrotingSdkCaseId);
+                                                x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
                                         if (result.MicrotingUid != null)
                                         {
-                                            await core.CaseDelete((int)result.MicrotingUid);
+                                            await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
                                         }
                                     }
                                 }
                             }
 
                             areaRulePlanning.UpdatedByUserId = _userService.UserId;
-                            await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+                            await areaRulePlanning.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         // delete area rule
                         areaRule.UpdatedByUserId = _userService.UserId;
-                        await areaRule.Delete(_backendConfigurationPnDbContext);
+                        await areaRule.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
 
                     // delete entity select group. only for type 3(tail bite and stables)
                     if (areaPropertyForDelete.GroupMicrotingUuid != 0)
                     {
-                        await core.EntityGroupDelete(areaPropertyForDelete.GroupMicrotingUuid.ToString());
+                        await core.EntityGroupDelete(areaPropertyForDelete.GroupMicrotingUuid.ToString()).ConfigureAwait(false);
                     }
                     areaPropertyForDelete.UpdatedByUserId = _userService.UserId;
-                    await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext);
+                    await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                     var foldersIdForDelete = _backendConfigurationPnDbContext.ProperyAreaFolders
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1495,8 +1496,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         var folder = await sdkDbContext.Folders
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .Where(x => x.Id == folderIdForDelete)
-                            .FirstAsync();
-                        await folder.Delete(sdkDbContext);
+                            .FirstAsync().ConfigureAwait(false);
+                        await folder.Delete(sdkDbContext).ConfigureAwait(false);
                     }
                 }
 
@@ -1516,7 +1517,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContex = core.DbContextHelper.GetDbContext();
                 var areaProperties = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1529,7 +1530,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .Include(x => x.Property.PropertyWorkers)
                     .Where(x => x.Area.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Property.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (areaProperties.Property.PropertyWorkers.All(
                     x => x.WorkflowState == Constants.WorkflowStates.Removed))
@@ -1551,7 +1552,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 {
                     var site = await sdkDbContex.Sites
                         .Where(x => x.Id == worker)
-                        .FirstAsync();
+                        .FirstAsync().ConfigureAwait(false);
                     sites.Add(new SiteDto()
                     {
                         SiteId = worker,
@@ -1559,8 +1560,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     });
                 }
 
-                var languages = await sdkDbContex.Languages.AsNoTracking().ToListAsync();
-                var language = await _userService.GetCurrentUserLanguage();
+                var languages = await sdkDbContex.Languages.AsNoTracking().ToListAsync().ConfigureAwait(false);
+                var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
 
                 var areaModel = new AreaModel
                 {
@@ -1604,12 +1605,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .FirstOrDefault(),
                     GroupId = areaProperties.GroupMicrotingUuid,
                 };
+
+                if (areaModel.Type == AreaTypesEnum.Type9)
+                {
+                    areaModel.GroupId = (int)areaProperties.Property.EntitySelectListChemicalAreas!;
+                }
                 if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))
                 {
                     areaModel.InitialFields.EformId = await sdkDbContex.CheckListTranslations
                         .Where(x => x.Text == areaModel.InitialFields.EformName)
                         .Select(x => x.CheckListId)
-                        .FirstOrDefaultAsync();
+                        .FirstOrDefaultAsync().ConfigureAwait(false);
                 }
 
                 return new OperationDataResult<AreaModel>(true, areaModel);
@@ -1627,11 +1633,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContex = core.DbContextHelper.GetDbContext();
 
-                var languages = await sdkDbContex.Languages.Select(x => new { x.Id, x.Name }).ToListAsync();
-                var language = await _userService.GetCurrentUserLanguage();
+                var languages = await sdkDbContex.Languages.Select(x => new { x.Id, x.Name }).ToListAsync().ConfigureAwait(false);
+                var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
 
                 var areaRule = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1644,7 +1650,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     .ThenInclude(x => x.SelectedLanguages)
                     .Include(x => x.Property.PropertyWorkers)
                     .Where(x => x.Property.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (areaRule == null)
                 {
@@ -1658,7 +1664,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 {
                     var site = await sdkDbContex.Sites
                         .Where(x => x.Id == worker)
-                        .FirstAsync();
+                        .FirstAsync().ConfigureAwait(false);
                     sites.Add(new SiteDto()
                     {
                         SiteId = worker,
@@ -1700,7 +1706,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     areaModel.InitialFields.EformId = await sdkDbContex.CheckListTranslations
                         .Where(x => x.Text == areaModel.InitialFields.EformName)
                         .Select(x => x.CheckListId)
-                        .FirstOrDefaultAsync();
+                        .FirstOrDefaultAsync().ConfigureAwait(false);
                 }
 
                 return new OperationDataResult<AreaModel>(true, areaModel);
@@ -1717,7 +1723,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         private async Task SeedTailBite(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
         {
             string text = $"05. Halebid og risikovurdering - {propertyName}";
-            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
+            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text).ConfigureAwait(false))
             {
                 var assembly = Assembly.GetExecutingAssembly();
                 var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.05. Halebid og risikovurdering.xml");
@@ -1725,33 +1731,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 string contents;
                 using(var sr = new StreamReader(resourceStream))
                 {
-                    contents = await sr.ReadToEndAsync();
+                    contents = await sr.ReadToEndAsync().ConfigureAwait(false);
                 }
 
                 contents = contents.Replace("SOURCE_REPLACE_ME", entityGroupId);
-                var mainElement = await core.TemplateFromXml(contents);
+                var mainElement = await core.TemplateFromXml(contents).ConfigureAwait(false);
                 mainElement.Label = text;
                 mainElement.ElementList[0].Label = text;
 
-                int clId = await core.TemplateCreate(mainElement);
-                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
+                int clId = await core.TemplateCreate(mainElement).ConfigureAwait(false);
+                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId).ConfigureAwait(false);
                 cl.IsLocked = true;
                 cl.IsEditable = false;
                 cl.IsDoneAtEditable = true;
                 cl.ReportH1 = "05.Stalde: Halebid og klargøring";
                 cl.ReportH2 = "05.01Halebid";
                 cl.QuickSyncEnabled = 1;
-                await cl.Update(sdkDbContext);
-                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                await cl.Update(sdkDbContext).ConfigureAwait(false);
+                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
                 subCl.QuickSyncEnabled = 1;
-                await subCl.Update(sdkDbContext);
+                await subCl.Update(sdkDbContext).ConfigureAwait(false);
 
             }
         }
         private async Task SeedPoolEform(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
         {
             string text = $"01. Aflæsninger - {propertyName}";
-            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
+            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text).ConfigureAwait(false))
             {
                 var assembly = Assembly.GetExecutingAssembly();
                 var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.01. Aflæsninger.xml");
@@ -1759,26 +1765,26 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 string contents;
                 using(var sr = new StreamReader(resourceStream))
                 {
-                    contents = await sr.ReadToEndAsync();
+                    contents = await sr.ReadToEndAsync().ConfigureAwait(false);
                 }
 
                 contents = contents.Replace("REPLACE_ME", entityGroupId);
-                var mainElement = await core.TemplateFromXml(contents);
+                var mainElement = await core.TemplateFromXml(contents).ConfigureAwait(false);
                 mainElement.Label = text;
                 mainElement.ElementList[0].Label = text;
 
-                int clId = await core.TemplateCreate(mainElement);
-                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
+                int clId = await core.TemplateCreate(mainElement).ConfigureAwait(false);
+                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId).ConfigureAwait(false);
                 cl.IsLocked = true;
                 cl.IsEditable = false;
                 cl.IsDoneAtEditable = true;
                 //cl.ReportH1 = "05.Stalde: Halebid og klargøring";
                 //cl.ReportH2 = "05.01Halebid";
                 cl.QuickSyncEnabled = 1;
-                await cl.Update(sdkDbContext);
-                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                await cl.Update(sdkDbContext).ConfigureAwait(false);
+                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
                 subCl.QuickSyncEnabled = 1;
-                await subCl.Update(sdkDbContext);
+                await subCl.Update(sdkDbContext).ConfigureAwait(false);
 
             }
         }
@@ -1786,7 +1792,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         private async Task SeedFaeceseForm(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
         {
             string text = $"02. Fækale uheld - {propertyName}";
-            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text))
+            if (!await sdkDbContext.CheckListTranslations.AnyAsync(x => x.Text == text).ConfigureAwait(false))
             {
                 var assembly = Assembly.GetExecutingAssembly();
                 var resourceStream = assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.02. Fækale uheld.xml");
@@ -1794,26 +1800,26 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 string contents;
                 using(var sr = new StreamReader(resourceStream))
                 {
-                    contents = await sr.ReadToEndAsync();
+                    contents = await sr.ReadToEndAsync().ConfigureAwait(false);
                 }
 
                 contents = contents.Replace("REPLACE_ME", entityGroupId);
-                var mainElement = await core.TemplateFromXml(contents);
+                var mainElement = await core.TemplateFromXml(contents).ConfigureAwait(false);
                 mainElement.Label = text;
                 mainElement.ElementList[0].Label = text;
 
-                int clId = await core.TemplateCreate(mainElement);
-                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId);
+                int clId = await core.TemplateCreate(mainElement).ConfigureAwait(false);
+                var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId).ConfigureAwait(false);
                 cl.IsLocked = true;
                 cl.IsEditable = false;
                 cl.IsDoneAtEditable = true;
                 //cl.ReportH1 = "05.Stalde: Halebid og klargøring";
                 //cl.ReportH2 = "05.01Halebid";
                 cl.QuickSyncEnabled = 1;
-                await cl.Update(sdkDbContext);
-                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id);
+                await cl.Update(sdkDbContext).ConfigureAwait(false);
+                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
                 subCl.QuickSyncEnabled = 1;
-                await subCl.Update(sdkDbContext);
+                await subCl.Update(sdkDbContext).ConfigureAwait(false);
 
             }
         }
@@ -1823,33 +1829,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
         {
             try
             {
-                var core = await _coreHelper.GetCore();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var propertyArea = await _backendConfigurationPnDbContext.AreaProperties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == propertyAreaId)
                     .Include(x => x.Area)
                     .Include(x => x.Property)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (propertyArea == null)
                 {
                     return new OperationResult(false,
                         _backendConfigurationLocalizationService.GetString("AreaPropertyNotFound"));
                 }
-                var currentUserLanguage = await _userService.GetCurrentUserLanguage();
+                var currentUserLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
                 var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
                     $"{propertyArea.Property.Name} - {propertyArea.Area.AreaTranslations.Where(x => x.LanguageId == currentUserLanguage.Id).Select(x => x.Name).FirstOrDefault()}", "",
-                    true, true);
-                var entityGroup = await core.EntityGroupRead(groupCreate.MicrotingUid);
+                    true, true).ConfigureAwait(false);
+                var entityGroup = await core.EntityGroupRead(groupCreate.MicrotingUid).ConfigureAwait(false);
                 var nextItemUid = entityGroup.EntityGroupItemLst.Count;
                 foreach (var entityItem in entityItemsListForCreate)
                 {
                     await core.EntitySelectItemCreate(entityGroup.Id, entityItem.Name, entityItem.DisplayIndex,
-                        nextItemUid.ToString());
+                        nextItemUid.ToString()).ConfigureAwait(false);
                     nextItemUid++;
                 }
 
                 propertyArea.GroupMicrotingUuid = Convert.ToInt32(entityGroup.MicrotingUUID);
-                await propertyArea.Update(_backendConfigurationPnDbContext);
+                await propertyArea.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 return new OperationResult(true);
             }

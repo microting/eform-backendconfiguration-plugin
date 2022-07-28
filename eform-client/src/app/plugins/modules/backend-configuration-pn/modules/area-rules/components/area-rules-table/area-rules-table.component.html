@@ -55,6 +55,7 @@
 <div class="row p-1 mt-4 table-responsive no-gutters">
 
   <h3 *ngIf="selectedArea.type === 3">{{'Klargøring af stalde' | translate}}</h3>
+  <h3 *ngIf="selectedArea.type === 9">{{'Oprettelse af kemikalier' | translate}}</h3>
   <table
     mdbTable
     striped="true"
@@ -194,6 +195,16 @@
                   [fixedWidth]="true"
                 ></fa-icon>
               </button>
+              <button *ngIf="selectedArea.type === 9"
+                mdbBtn
+                class="btn btn-success btn-icon mr-2"
+                (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
+                mdbTooltip="{{ 'Edit list of areas' | translate }}"
+                id="updateEntityListChemicalAreas"
+                [placement]="'left'"
+              >
+                <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
+              </button>
             </ng-container>
           </div>
         </td>
@@ -225,6 +236,9 @@
       </td>
       <td id="status">
         {{ getStatus(chemical.status) }}
+      </td>
+      <td id="locations">
+        {{ chemical.locations }}
       </td>
       <td id="authorisationDate">
         <date-formatter
@@ -262,14 +276,15 @@
           [Format]="'date'"
         ></date-formatter>
       </td>
-      <td id="productName">
-        {{ chemical.productName }}
-      </td>
-      <td id="barcode">
-        {{ chemical.barcode }}
-      </td>
+<!--      <td id="productName">-->
+<!--        {{ chemical.productName }}-->
+<!--      </td>-->
+<!--      <td id="barcode">-->
+<!--        {{ chemical.barcode }}-->
+<!--      </td>-->
       <td id="pdfFile">
         <a
+          *ngIf="chemical.fileName !== ''"
           href="javascript:void(0)" (click)="getPdf(chemical.fileName)"
           mdbBtn
           id="planningCreateBtn"

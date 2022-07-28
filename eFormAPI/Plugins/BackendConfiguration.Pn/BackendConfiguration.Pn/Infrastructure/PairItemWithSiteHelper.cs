@@ -54,14 +54,15 @@ namespace BackendConfiguration.Pn.Infrastructure
         public async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId)
         {
             var sdkCore =
-                await _coreService.GetCore();
-            await using var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+                await _coreService.GetCore().ConfigureAwait(false);
+            var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
+            await using var _ = sdkDbContext.ConfigureAwait(false);
             foreach (var assignmentSiteId in assignmentSiteIds)
             {
 
-                var sdkSite = await sdkDbContext.Sites.SingleAsync(x => x.Id == assignmentSiteId);
-                var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == sdkSite.LanguageId);
-                var mainElement = await sdkCore.ReadeForm(relatedEFormId, language);
+                var sdkSite = await sdkDbContext.Sites.SingleAsync(x => x.Id == assignmentSiteId).ConfigureAwait(false);
+                var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == sdkSite.LanguageId).ConfigureAwait(false);
+                var mainElement = await sdkCore.ReadeForm(relatedEFormId, language).ConfigureAwait(false);
 
                 var planning = await _itemsPlanningPnDbContext.Plannings
                     .Where(x => x.Id == planningId)
@@ -72,9 +73,9 @@ namespace BackendConfiguration.Pn.Infrastructure
                         x.Id, x.Type, x.PlanningNumber, x.BuildYear, x.StartDate, x.PushMessageOnDeployment,
                         x.SdkFolderId, x.NameTranslations, x.RepeatEvery, x.RepeatType
                     })
-                    .FirstAsync();
+                    .FirstAsync().ConfigureAwait(false);
 
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == planningFolderId);
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == planningFolderId).ConfigureAwait(false);
                 var folderMicrotingId = folder.MicrotingUid.ToString();
 
                 // get planning cases
@@ -83,7 +84,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
                     .Where(x => x.PlanningId == planningId)
                     .Where(x => x.MicrotingSdkeFormId == relatedEFormId)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (planningCase == null)
                 {
@@ -93,7 +94,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                         Status = 66,
                         MicrotingSdkeFormId = relatedEFormId
                     };
-                    await planningCase.Create(_itemsPlanningPnDbContext);
+                    await planningCase.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
                 var casesToDelete = await _itemsPlanningPnDbContext.PlanningCaseSites
@@ -101,15 +102,15 @@ namespace BackendConfiguration.Pn.Infrastructure
                     .Where(x => x.MicrotingSdkSiteId == assignmentSiteId)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
-                    .ToListAsync();
+                    .ToListAsync().ConfigureAwait(false);
 
                 foreach (var caseToDelete in casesToDelete)
                 {
-                    var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId);
+                    var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId).ConfigureAwait(false);
                     if (caseDto.MicrotingUId != null)
-                        await sdkCore.CaseDelete((int)caseDto.MicrotingUId);
+                        await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
                     caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
-                    await caseToDelete.Update(_itemsPlanningPnDbContext);
+                    await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
                 if (planningCase.Status == 100)
@@ -118,7 +119,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                         await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x =>
                             x.PlanningCaseId == planningCase.Id
                             && x.MicrotingSdkSiteId == assignmentSiteId
-                            && x.WorkflowState != Constants.WorkflowStates.Removed);
+                            && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
 
                     if (planningCaseSite == null)
                     {
@@ -131,12 +132,12 @@ namespace BackendConfiguration.Pn.Infrastructure
                             PlanningCaseId = planningCase.Id
                         };
 
-                        await planningCaseSite.Create(_itemsPlanningPnDbContext);
+                        await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
 
                     planningCaseSite.Status = planningCaseSite.Status == 100 ? planningCaseSite.Status : 2;
                     planningCaseSite.WorkflowState = Constants.WorkflowStates.Retracted;
-                    await planningCaseSite.Update(_itemsPlanningPnDbContext);
+                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
                 else
                 {
@@ -192,7 +193,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                             .Where(x => x.MicrotingSdkSiteId == assignmentSiteId)
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .FirstOrDefaultAsync();
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
 
                     if (planningCaseSite == null)
                     {
@@ -205,7 +206,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                             PlanningCaseId = planningCase.Id
                         };
 
-                        await planningCaseSite.Create(_itemsPlanningPnDbContext);
+                        await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
 
                     if (planningCaseSite.MicrotingSdkCaseDoneAt.HasValue)
@@ -223,7 +224,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                         if (planning.PushMessageOnDeployment)
                         {
                             var body = "";
-                            folder = await GetTopFolder((int)planning.SdkFolderId, sdkDbContext);
+                            folder = await GetTopFolder((int)planning.SdkFolderId, sdkDbContext).ConfigureAwait(false);
                             if (folder != null)
                             {
                                 //planningPnModel.SdkFolderId = sdkDbContext.Folders
@@ -231,7 +232,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 //    ?.Id;
                                 var folderTranslation =
                                     await sdkDbContext.FolderTranslations.SingleOrDefaultAsync(x =>
-                                        x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId);
+                                        x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId).ConfigureAwait(false);
                                 body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:dd.MM.yyyy})";
                             }
 
@@ -247,7 +248,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                             mainElement.Repeated = 0;
                         }
 
-                        var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null);
+                        var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null).ConfigureAwait(false);
                         if (caseId != null)
                         {
                             if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
@@ -260,11 +261,11 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 planningCaseSite.MicrotingCheckListSitId =
                                     sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId).Id;
                             }
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext);
+                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
 
                         var now = DateTime.UtcNow;
-                        var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id);
+                        var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id).ConfigureAwait(false);
                         switch (dbPlanning.RepeatType)
                         {
                             case RepeatType.Day:
@@ -287,7 +288,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 break;
                         }
                         dbPlanning.LastExecutedTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
-                        await dbPlanning.Update(_itemsPlanningPnDbContext);
+                        await dbPlanning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
                 }
             }
@@ -295,10 +296,10 @@ namespace BackendConfiguration.Pn.Infrastructure
 
         private static async Task<Folder> GetTopFolder(int folderId, MicrotingDbContext dbContext)
         {
-            var result = await dbContext.Folders.FirstOrDefaultAsync(y => y.Id == folderId);
+            var result = await dbContext.Folders.FirstOrDefaultAsync(y => y.Id == folderId).ConfigureAwait(false);
             if (result.ParentId != null)
             {
-                result = await GetTopFolder((int)result.ParentId, dbContext);
+                result = await GetTopFolder((int)result.ParentId, dbContext).ConfigureAwait(false);
             }
             return result;
         }

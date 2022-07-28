@@ -41,7 +41,7 @@ public class ReportController : Controller
     [Route("word")]
     public async Task GetWordReport(int propertyId, int areaId, int year)
     {
-        var result = await _wordService.GenerateReport(propertyId, areaId, year);
+        var result = await _wordService.GenerateReport(propertyId, areaId, year).ConfigureAwait(false);
         const int bufferSize = 4086;
         var buffer = new byte[bufferSize];
         Response.OnStarting(async () =>
@@ -52,12 +52,13 @@ public class ReportController : Controller
                 Response.ContentType = "text/plain";
                 Response.StatusCode = 400;
                 var bytes = Encoding.UTF8.GetBytes(result.Message);
-                await Response.Body.WriteAsync(bytes, 0, result.Message.Length);
-                await Response.Body.FlushAsync();
+                await Response.Body.WriteAsync(bytes, 0, result.Message.Length).ConfigureAwait(false);
+                await Response.Body.FlushAsync().ConfigureAwait(false);
             }
             else
             {
-                await using var wordStream = result.Model;
+                var wordStream = result.Model;
+                await using var _ = wordStream.ConfigureAwait(false);
                 int bytesRead;
                 Response.ContentLength = wordStream.Length;
                 Response.ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -65,8 +66,8 @@ public class ReportController : Controller
                 while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
                        !HttpContext.RequestAborted.IsCancellationRequested)
                 {
-                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
-                    await Response.Body.FlushAsync();
+                    await Response.Body.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
+                    await Response.Body.FlushAsync().ConfigureAwait(false);
                 }
             }
         });

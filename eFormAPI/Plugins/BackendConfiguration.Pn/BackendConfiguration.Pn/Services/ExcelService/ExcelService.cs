@@ -56,7 +56,7 @@ public class ExcelService: IExcelService
             var propertyName = await _backendConfigurationPnDbContext.Properties
                 .Where(x => x.Id == filtersModel.PropertyId)
                 .Select(x => x.Name)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync().ConfigureAwait(false);
             Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
 
             var resultDocument = Path.Combine(Path.GetTempPath(), "results",
@@ -92,7 +92,7 @@ public class ExcelService: IExcelService
             currentColumn = startColumnForHeaderTable;
             //* table data
             worksheet.Cell(currentRow, currentColumn++).Value = await _backendConfigurationPnDbContext.Properties
-                .Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync();
+                .Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false);
             worksheet.Cell(currentRow, currentColumn++).Value =
                 string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
             worksheet.Cell(currentRow, currentColumn++).Value =

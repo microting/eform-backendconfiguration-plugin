@@ -74,14 +74,14 @@ namespace BackendConfiguration.Pn.Services.WordService
             {
                 var property = await _dbContext.Properties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync(x => x.Id == propertyId);
+                    .FirstOrDefaultAsync(x => x.Id == propertyId).ConfigureAwait(false);
                 var area = await _dbContext.Areas
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync(x => x.Id == areaId);
+                    .FirstOrDefaultAsync(x => x.Id == areaId).ConfigureAwait(false);
                 var isPropertyAndAreaLinked = await _dbContext.AreaProperties
                     .Where(x => x.AreaId == areaId)
                     .Where(x => x.PropertyId == propertyId)
-                    .AnyAsync();
+                    .AnyAsync().ConfigureAwait(false);
                 if (property == null)
                 {
                     return new OperationDataResult<Stream>(
@@ -103,7 +103,7 @@ namespace BackendConfiguration.Pn.Services.WordService
 
                 return area.Type switch
                 {
-                    AreaTypesEnum.Type7 => await GenerateReportType7(property, area, year),
+                    AreaTypesEnum.Type7 => await GenerateReportType7(property, area, year).ConfigureAwait(false),
                     _ => new OperationDataResult<Stream>(false,
                         _localizationService.GetString($"ReportFor{area.Type}NotSupported"))
                 };
@@ -127,7 +127,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             string html;
             using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
             {
-                html = await reader.ReadToEndAsync();
+                html = await reader.ReadToEndAsync().ConfigureAwait(false);
             }
 
             resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
@@ -137,7 +137,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                 throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
             }
             var docxFileStream = new MemoryStream();
-            await docxFileResourceStream.CopyToAsync(docxFileStream);
+            await docxFileResourceStream.CopyToAsync(docxFileStream).ConfigureAwait(false);
 
             var itemsHtml = new StringBuilder();
             itemsHtml.Append(@"<div style='font-family:Calibri;'>");
@@ -151,7 +151,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append($@"<td>{_localizationService.GetString("Date")}</td>");
             itemsHtml.Append(@"</tr>");
             itemsHtml.Append(@"<tr style='font-size:11pt;'>");
-            itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync()}</td>");
+            itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.LastAssignedTo) ? "" : filtersModel.LastAssignedTo)}</td>");
@@ -208,12 +208,12 @@ namespace BackendConfiguration.Pn.Services.WordService
 
         private async Task<OperationDataResult<Stream>> GenerateReportType7(Property property, Area area, int year)
         {
-            var core = await _coreHelper.GetCore();
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var curentLanguage = await _userService.GetCurrentUserLanguage();
+            var curentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
             if (curentLanguage.Name != "English" && curentLanguage.Name != "Danish") // reports only eng and da langs
             {
-                curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+                curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
             }
             var areaRulesForType7 = BackendConfigurationSeedAreas.AreaRulesForType7
                 .GroupBy(x => x.FolderName)
@@ -238,7 +238,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                     .SelectMany(x => x.Folder.FolderTranslations)
                     .Where(x => x.LanguageId == curentLanguage.Id)
                     .Select(x => x.Name)
-                    .LastOrDefaultAsync();
+                    .LastOrDefaultAsync().ConfigureAwait(false);
             }
 
             var areaRuleTranslations = await _dbContext.AreaRuleTranslations
@@ -249,7 +249,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                 .Where(x => x.AreaRule.PropertyId == property.Id)
                 .Where(x => x.AreaRule.AreaId == area.Id)
                 //.Select(x => x.AreaRule)
-                .ToListAsync();
+                .ToListAsync().ConfigureAwait(false);
 
             // Read html and template
             var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
@@ -258,7 +258,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             string html;
             using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
             {
-                html = await reader.ReadToEndAsync();
+                html = await reader.ReadToEndAsync().ConfigureAwait(false);
             }
 
             resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
@@ -268,7 +268,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                 throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
             }
             var docxFileStream = new MemoryStream();
-            await docxFileResourceStream.CopyToAsync(docxFileStream);
+            await docxFileResourceStream.CopyToAsync(docxFileStream).ConfigureAwait(false);
 
             var itemsHtml = new StringBuilder();
             itemsHtml.Append(@"<body style='font-family:Calibri;'>");
