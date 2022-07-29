@@ -170,7 +170,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 Chemical c = null;
                                 if (_chemicalsDbContext.Chemicals.Any(x => x.RemoteId == chemical.RemoteId))
                                 {
-                                    c = await _chemicalsDbContext.Chemicals.SingleAsync(x => x.RemoteId == chemical.RemoteId).ConfigureAwait(false);
+                                    c = await _chemicalsDbContext.Chemicals.AsNoTracking().SingleAsync(x => x.RemoteId == chemical.RemoteId).ConfigureAwait(false);
                                     chemical.Id = c.Id;
                                     await chemical.Update(_chemicalsDbContext).ConfigureAwait(false);
 

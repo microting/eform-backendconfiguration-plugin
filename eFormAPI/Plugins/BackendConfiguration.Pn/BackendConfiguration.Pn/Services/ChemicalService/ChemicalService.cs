@@ -70,27 +70,35 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                 foreach (var chemicalProductProperty in chemicalProductProperties)
                 {
                     var chemical = await _chemicalsDb.Chemicals.Include(x => x.Products)
-                        .SingleAsync(x => chemicalProductProperty.ChemicalId == x.Id);
-                    
-                    var chemicalPnModel = new ChemicalPnModel
+                        .SingleOrDefaultAsync(x => chemicalProductProperty.ChemicalId == x.Id);
+                    if (chemical != null)
                     {
-                        AuthorisationDate = chemical.AuthorisationDate,
-                        AuthorisationExpirationDate = chemical.AuthorisationExpirationDate,
-                        AuthorisationTerminationDate = chemical.AuthorisationTerminationDate,
-                        Barcode = chemical.Products.FirstOrDefault() == null ? "" : chemical.Products.First().Barcode,
-                        FileName = chemical.Products.FirstOrDefault() == null ? "" : chemical.Products.First().FileName,
-                        Id = chemical.Id,
-                        Name = chemical.Name,
-                        PossessionDeadline = chemical.PossessionDeadline,
-                        RegistrationNo = chemical.RegistrationNo,
-                        SalesDeadline = chemical.SalesDeadline,
-                        Status = chemical.Status,
-                        ProductName = chemical.Products.FirstOrDefault() == null ? "" : chemical.Products.First().Name,
-                        ProductId = chemical.Products.FirstOrDefault() == null ? 0 : chemical.Products.First().Id,
-                        Verified = chemical.Verified,
-                        Locations = chemicalProductProperty.Locations.Replace("|", ", ")
-                    };
-                    theList.Add(chemicalPnModel);
+                        var chemicalPnModel = new ChemicalPnModel
+                        {
+                            AuthorisationDate = chemical.AuthorisationDate,
+                            AuthorisationExpirationDate = chemical.AuthorisationExpirationDate,
+                            AuthorisationTerminationDate = chemical.AuthorisationTerminationDate,
+                            Barcode = chemical.Products.FirstOrDefault() == null
+                                ? ""
+                                : chemical.Products.First().Barcode,
+                            FileName = chemical.Products.FirstOrDefault() == null
+                                ? ""
+                                : chemical.Products.First().FileName,
+                            Id = chemical.Id,
+                            Name = chemical.Name,
+                            PossessionDeadline = chemical.PossessionDeadline,
+                            RegistrationNo = chemical.RegistrationNo,
+                            SalesDeadline = chemical.SalesDeadline,
+                            Status = chemical.Status,
+                            ProductName = chemical.Products.FirstOrDefault() == null
+                                ? ""
+                                : chemical.Products.First().Name,
+                            ProductId = chemical.Products.FirstOrDefault() == null ? 0 : chemical.Products.First().Id,
+                            Verified = chemical.Verified,
+                            Locations = chemicalProductProperty.Locations.Replace("|", ", ")
+                        };
+                        theList.Add(chemicalPnModel);
+                    }
                 }
 
                 theList = theList.OrderBy(x => x.Verified).ThenBy(x => x.Status).ToList();
