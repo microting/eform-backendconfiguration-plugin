@@ -169,6 +169,7 @@
               id="showAreaRulePlanningBtn"
               class="btn btn-success btn-icon mr-2"
               mdbTooltip="{{ 'Plan and assign' | translate }}"
+              [disabled]="rule.planningStatus && this.selectedArea.type === 9"
               (click)="onShowPlanAreaRule(rule)"
             >
               <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
