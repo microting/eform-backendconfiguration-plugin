@@ -243,6 +243,103 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
                             await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            
+                            var folderIds = new List<int>
+                            {
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "25.01 Opret kemiprodukt", // todo
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "25.01 Create chemical product",
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "25.01 Chemisches Produkt herstellen", // todo
+                                        Description = property.Name,
+                                    },
+                                }, folderId).ConfigureAwait(false),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "25.02 Mine kemiprodukter", // todo
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "25.02 My chemical products",
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "25.02 Meine chemischen Produkte", // todo
+                                        Description = property.Name,
+                                    },
+                                }, folderId).ConfigureAwait(false),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "25.02 Mine kemiprodukter", // todo
+                                        Description = $"Status: Udløber indenfor 30 dage<br>{property.Name}",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "25.02 My chemical products",
+                                        Description = $"Status: Expires within 30 days<br>{property.Name}",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "25.02 Meine chemischen Produkte", // todo
+                                        Description = $"Status: Läuft innerhalb von 30 Tagen ab<br>{property.Name}",
+                                    },
+                                }, folderId).ConfigureAwait(false),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "25.02 Mine kemiprodukter", // todo
+                                        Description = $"Status: Er udløbet<br>{property.Name}",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "25.02 My chemical products",
+                                        Description = $"Status: Expired<br>{property.Name}",
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "25.02 Meine chemischen Produkte", // todo
+                                        Description = $"Status: Abgelaufen<br>{property.Name}",
+                                    },
+                                }, folderId).ConfigureAwait(false)
+                            };
+                            
+                            foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                            {
+                                FolderId = folderIdLocal,
+                                ProperyAreaAsignmentId = newAssignment.Id,
+                            }))
+                            {
+                                await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            }
 
 
                             var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false).ConfigureAwait(false);

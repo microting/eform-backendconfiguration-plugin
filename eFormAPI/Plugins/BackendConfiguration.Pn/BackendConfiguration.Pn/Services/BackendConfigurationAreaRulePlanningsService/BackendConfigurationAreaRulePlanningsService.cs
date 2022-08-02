@@ -2395,12 +2395,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 var mainElement = await core.ReadeForm((int)areaRule.EformId!, language).ConfigureAwait(false);
                 // todo add group id to eform
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId).ConfigureAwait(false);
-                var folderMicrotingId = folder.MicrotingUid.ToString();
+                var folderTranslation = await sdkDbContext.Folders.Join(sdkDbContext.FolderTranslations,
+                    f => f.Id, translation => translation.FolderId, (f, translation) => new
+                    {
+                        f.Id,
+                        f.ParentId,
+                        translation.Name,
+                        f.MicrotingUid
+                    }).FirstAsync(x => x.Name == "25.01 Opret kemiprodukt" && x.ParentId == folder.Id);
+                var folderMicrotingId = folderTranslation.MicrotingUid.ToString();
                 mainElement.Repeated = 0;
                 mainElement.CheckListFolderName = folderMicrotingId;
                 mainElement.StartDate = DateTime.Now.ToUniversalTime();
                 mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                 mainElement.DisplayOrder = 10000000;
+                mainElement.Label = "25.01 Opret kemiprodukt";
+                mainElement.ElementList.First().Label = mainElement.Label;
+                mainElement.ElementList.First().Description.InderValue = property.Name;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[0]).EntityTypeId = entityListUid;
                 ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[0]).DisplayOrder = 2;
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[1]).EntityTypeId = entityListUidRegNo;
@@ -2463,13 +2474,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 // EntitySelect entitySelect = new EntitySelect(1, true, false, "Vælg lokation", " ",
                     // Constants.FieldColors.Yellow, 1, false, 0, entityListUidAreas);
                 // ((DataElement)mainElement.ElementList[0]).DataItemList.Add(entitySelect);
-                var caseId = await core.CaseCreate(mainElement, "", (int)site!.MicrotingUid!, folder.Id).ConfigureAwait(false);
+                var caseId = await core.CaseCreate(mainElement, "", (int)site!.MicrotingUid!, folderTranslation.Id).ConfigureAwait(false);
 
                 var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName,
                     areaRule.FolderId, areaRulePlanningModel, areaRule).ConfigureAwait(false);
                 planning.RepeatEvery = 0;
                 planning.RepeatType = RepeatType.Day;
                 planning.StartDate = DateTime.Now.ToUniversalTime();
+                planning.SdkFolderId = folderTranslation.Id;
                 var now = DateTime.UtcNow;
                 planning.LastExecutedTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
                 await planning.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
