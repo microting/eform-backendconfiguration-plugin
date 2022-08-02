@@ -147,116 +147,133 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     var entityGroup = await core.EntityGroupRead(property.EntitySearchListChemicals.ToString()).ConfigureAwait(false);
                     var entityGroupRegNo = await core.EntityGroupRead(property.EntitySearchListChemicalRegNos.ToString()).ConfigureAwait(false);
 
-                    if (property.ChemicalLastUpdatedAt == null || property.ChemicalLastUpdatedAt < DateTime.UtcNow.AddDays(-1))
+                    if (property.ChemicalLastUpdatedAt == null)
                     {
-                        var url = "https://chemicalbase.microting.com/get-all-chemicals";
-                        var client = new HttpClient();
-                        var response = await client.GetAsync(url).ConfigureAwait(false);
-                        var result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                        JsonSerializerOptions options = new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true,
-                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
-                        };
-                        var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-
-                        List<Chemical> chemicals = JsonSerializer.Deserialize<List<Chemical>>(result, options);
-                        if (chemicals != null)
-                        {
-                            int i = 0;
-                            foreach (Chemical chemical in chemicals)
-                            {
-                                Chemical c = null;
-                                if (_chemicalsDbContext.Chemicals.Any(x => x.RemoteId == chemical.RemoteId))
-                                {
-                                    c = await _chemicalsDbContext.Chemicals.AsNoTracking().SingleAsync(x => x.RemoteId == chemical.RemoteId).ConfigureAwait(false);
-                                    chemical.Id = c.Id;
-                                    await chemical.Update(_chemicalsDbContext).ConfigureAwait(false);
-
-                                    if (chemical.Verified)
-                                    {
-                                        if (!sdkDbContext.EntityItems.Any(x =>
-                                                x.Name == chemical.RegistrationNo &&
-                                                x.EntityGroupId == entityGroupRegNo.Id &&
-                                                x.WorkflowState != Constants.WorkflowStates.Removed))
-                                        {
-                                            await core.EntitySearchItemCreate(entityGroupRegNo.Id,
-                                                chemical.RegistrationNo,
-                                                chemical.Name,
-                                                nextItemUid.ToString()).ConfigureAwait(false);
-                                            nextItemUid++;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (sdkDbContext.EntityItems.Any(x =>
-                                                x.Name == chemical.RegistrationNo &&
-                                                x.EntityGroupId == entityGroupRegNo.Id &&
-                                                x.WorkflowState != Constants.WorkflowStates.Removed))
-                                        {
-                                            var item = await sdkDbContext.EntityItems.FirstAsync(x =>
-                                                x.Name == chemical.RegistrationNo &&
-                                                x.EntityGroupId == entityGroupRegNo.Id &&
-                                                x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
-                                            await core.EntityItemDelete(item.Id).ConfigureAwait(false);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    await chemical.Create(_chemicalsDbContext).ConfigureAwait(false);
-                                    foreach (Product product in chemical.Products)
-                                    {
-                                        if (product.Verified)
-                                        {
-                                            await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
-                                                chemical.Name,
-                                                nextItemUid.ToString()).ConfigureAwait(false);
-                                            nextItemUid++;
-                                        }
-                                    }
-                                    if (chemical.Verified)
-                                    {
-                                        await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
-                                            chemical.Name,
-                                            nextItemUid.ToString()).ConfigureAwait(false);
-                                        nextItemUid++;
-                                    }
-                                }
-
-                            }
-                        }
                         property.ChemicalLastUpdatedAt = DateTime.UtcNow;
                         await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        if (!sdkDbContext.EntityItems.Any(x => x.EntityGroupId == entityGroup.Id))
+                        // var url = "https://chemicalbase.microting.com/get-all-chemicals";
+                        // var client = new HttpClient();
+                        // var response = await client.GetAsync(url).ConfigureAwait(false);
+                        // var result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                        // JsonSerializerOptions options = new JsonSerializerOptions
+                        // {
+                        // PropertyNameCaseInsensitive = true,
+                        // DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+                        // };
+                        var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+
+                        // List<Chemical> chemicals = JsonSerializer.Deserialize<List<Chemical>>(result, options);
+                        var chemicals = await _chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync();
+                        // if (chemicals != null)
+                        // {
+                        // int i = 0;
+                        foreach (Chemical chemical in chemicals)
                         {
-                            var chemicals = await _chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync().ConfigureAwait(false);
-                            var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-                            foreach (Chemical chemical in chemicals)
+                            foreach (Product product in chemical.Products)
                             {
-                                foreach (Product product in chemical.Products)
+                                if (product.Verified)
                                 {
-                                    if (product.Verified)
-                                    {
-                                        await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
-                                            chemical.Name,
-                                            nextItemUid.ToString()).ConfigureAwait(false);
-                                        nextItemUid++;
-                                    }
-                                }
-                                if (chemical.Verified)
-                                {
-                                    await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
+                                    await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
                                         chemical.Name,
                                         nextItemUid.ToString()).ConfigureAwait(false);
+                                    nextItemUid++;
                                 }
+                            }
+
+                            if (chemical.Verified)
+                            {
+                                await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
+                                    chemical.Name,
+                                    nextItemUid.ToString()).ConfigureAwait(false);
+                                nextItemUid++;
                             }
                         }
                     }
+                    // Chemical c = null;
+                                // if (_chemicalsDbContext.Chemicals.Any(x => x.RemoteId == chemical.RemoteId))
+                                // {
+                                //     c = await _chemicalsDbContext.Chemicals.AsNoTracking().SingleAsync(x => x.RemoteId == chemical.RemoteId).ConfigureAwait(false);
+                                //     chemical.Id = c.Id;
+                                //     await chemical.Update(_chemicalsDbContext).ConfigureAwait(false);
+                                //
+                                //     if (chemical.Verified)
+                                //     {
+                                //         if (!sdkDbContext.EntityItems.Any(x =>
+                                //                 x.Name == chemical.RegistrationNo &&
+                                //                 x.EntityGroupId == entityGroupRegNo.Id &&
+                                //                 x.WorkflowState != Constants.WorkflowStates.Removed))
+                                //         {
+                                //             await core.EntitySearchItemCreate(entityGroupRegNo.Id,
+                                //                 chemical.RegistrationNo,
+                                //                 chemical.Name,
+                                //                 nextItemUid.ToString()).ConfigureAwait(false);
+                                //             nextItemUid++;
+                                //         }
+                                //     }
+                                //     else
+                                //     {
+                                //         if (sdkDbContext.EntityItems.Any(x =>
+                                //                 x.Name == chemical.RegistrationNo &&
+                                //                 x.EntityGroupId == entityGroupRegNo.Id &&
+                                //                 x.WorkflowState != Constants.WorkflowStates.Removed))
+                                //         {
+                                //             var item = await sdkDbContext.EntityItems.FirstAsync(x =>
+                                //                 x.Name == chemical.RegistrationNo &&
+                                //                 x.EntityGroupId == entityGroupRegNo.Id &&
+                                //                 x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                                //             await core.EntityItemDelete(item.Id).ConfigureAwait(false);
+                                //         }
+                                //     }
+                                // }
+                                // else
+                                // {
+                                //     await chemical.Create(_chemicalsDbContext).ConfigureAwait(false);
+                                    
+                                // }
+
+                            // }
+                        // }
+                    // }
+                    // else
+                    // {
+                    //     if (!sdkDbContext.EntityItems.Any(x => x.EntityGroupId == entityGroup.Id))
+                    //     {
+                    //         var chemicals = await _chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync().ConfigureAwait(false);
+                    //         var nextItemUid = entityGroup.EntityGroupItemLst.Count;
+                    //         foreach (Chemical chemical in chemicals)
+                    //         {
+                    //             foreach (Product product in chemical.Products)
+                    //             {
+                    //                 if (product.Verified)
+                    //                 {
+                    //                     if (!sdkDbContext.EntityItems.Any(x =>
+                    //                             x.Name == product.Barcode &&
+                    //                             x.EntityGroupId == entityGroup.Id &&
+                    //                             x.WorkflowState != Constants.WorkflowStates.Removed))
+                    //                     {
+                    //                         await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
+                    //                             chemical.Name,
+                    //                             nextItemUid.ToString()).ConfigureAwait(false);
+                    //                         nextItemUid++;
+                    //                     }
+                    //                 }
+                    //             }
+                    //             if (chemical.Verified)
+                    //             {
+                    //                 if (!sdkDbContext.EntityItems.Any(x =>
+                    //                         x.Name == chemical.RegistrationNo &&
+                    //                         x.EntityGroupId == entityGroupRegNo.Id &&
+                    //                         x.WorkflowState != Constants.WorkflowStates.Removed))
+                    //                 {
+                    //                     await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
+                    //                         chemical.Name,
+                    //                         nextItemUid.ToString()).ConfigureAwait(false);
+                    //                 }
+                    //             }
+                    //         }
+                    //     }
+                    // }
                 }
 
                 var areaRules = await queryWithSelect

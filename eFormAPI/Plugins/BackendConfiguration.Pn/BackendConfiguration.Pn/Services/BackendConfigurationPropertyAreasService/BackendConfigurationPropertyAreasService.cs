@@ -293,20 +293,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "25.02 Mine kemiprodukter", // todo
-                                        Description = $"Status: Udløber indenfor 30 dage<br>{property.Name}",
+                                        Name = "25.03 Udløber indenfor 30 dage", // todo
+                                        Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "25.02 My chemical products",
-                                        Description = $"Status: Expires within 30 days<br>{property.Name}",
+                                        Name = "25.03 Expires within 30 days",
+                                        Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "25.02 Meine chemischen Produkte", // todo
-                                        Description = $"Status: Läuft innerhalb von 30 Tagen ab<br>{property.Name}",
+                                        Name = "25.03 Läuft innerhalb von 30 Tagen ab", // todo
+                                        Description = property.Name,
                                     },
                                 }, folderId).ConfigureAwait(false),
                                 await core.FolderCreate(new List<CommonTranslationsModel>
@@ -314,20 +314,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "25.02 Mine kemiprodukter", // todo
-                                        Description = $"Status: Er udløbet<br>{property.Name}",
+                                        Name = "25.04 Udløbet", // todo
+                                        Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "25.02 My chemical products",
-                                        Description = $"Status: Expired<br>{property.Name}",
+                                        Name = "25.04 Expired",
+                                        Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "25.02 Meine chemischen Produkte", // todo
-                                        Description = $"Status: Abgelaufen<br>{property.Name}",
+                                        Name = "25.04 Abgelaufen", // todo
+                                        Description = property.Name,
                                     },
                                 }, folderId).ConfigureAwait(false)
                             };

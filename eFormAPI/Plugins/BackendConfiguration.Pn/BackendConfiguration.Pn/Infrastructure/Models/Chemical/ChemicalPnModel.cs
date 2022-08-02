@@ -59,5 +59,9 @@ namespace Chemicals.Pn.Infrastructure.Models.Chemical
         public int ProductId { get; set; }
         
         public string Locations { get; set; }
+        
+        public string PropertyName { get; set; }
+        
+        public string ExpiredState { get; set; }
     }
 }

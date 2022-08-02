@@ -18,6 +18,8 @@ export class ChemicalModel {
   productName: string;
   productId: number;
   locations: string;
+  propertyName: string;
+  expiredState: string;
 }
 
 export class ChemicalAssignedSitesModel {

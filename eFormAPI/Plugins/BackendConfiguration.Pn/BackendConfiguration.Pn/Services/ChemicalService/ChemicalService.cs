@@ -65,6 +65,8 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                 var chemicalProductProperties = await _backendConfigurationPnDb.ChemicalProductProperties
                     .Where(x => x.PropertyId == pnRequestModel.PropertyId)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+                var property =
+                    await _backendConfigurationPnDb.Properties.SingleAsync(x => x.Id == pnRequestModel.PropertyId);
                 
                 var theList = new List<ChemicalPnModel>();
                 foreach (var chemicalProductProperty in chemicalProductProperties)
@@ -95,13 +97,15 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                                 : chemical.Products.First().Name,
                             ProductId = chemical.Products.FirstOrDefault() == null ? 0 : chemical.Products.First().Id,
                             Verified = chemical.Verified,
-                            Locations = chemicalProductProperty.Locations.Replace("|", ", ")
+                            Locations = chemicalProductProperty.Locations.Replace("|", ", "),
+                            PropertyName = property.Name,
+                            ExpiredState = chemical.AuthorisationExpirationDate > DateTime.UtcNow ? chemical.AuthorisationExpirationDate < DateTime.UtcNow.AddDays(30) ? "Udløber inden for 30 dage" : "OK" : "Udløbet" 
                         };
                         theList.Add(chemicalPnModel);
                     }
                 }
 
-                theList = theList.OrderBy(x => x.Verified).ThenBy(x => x.Status).ToList();
+                theList = theList.OrderBy(x => x.AuthorisationExpirationDate).ToList();
 
                 var chemicalsModel = new Paged<ChemicalPnModel>
                 {

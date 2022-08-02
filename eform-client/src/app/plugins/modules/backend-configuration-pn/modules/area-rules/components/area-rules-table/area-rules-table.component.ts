@@ -128,28 +128,38 @@ export class AreaRulesTableComponent implements OnChanges {
       sortable: false,
     },
     {
-      name: 'Lokationer',
+      name: 'Property',
       elementId: 'locationsTableHeader',
       sortable: false,
     },
     {
-      name: 'Authorisation Date',
-      elementId: 'authorisationDateTableHeader',
+      name: 'Rum',
+      elementId: 'roomTableHeader',
       sortable: false,
     },
+    {
+      name: 'Expire state',
+      elementId: 'expireStateTableHeader',
+      sortable: false,
+    },
+    // {
+    //   name: 'Authorisation Date',
+    //   elementId: 'authorisationDateTableHeader',
+    //   sortable: false,
+    // },
     { name: 'Authorisation Expiration Date', elementId: 'authorisationExpirationDateTableHeader', sortable: false },
-    {
-      name: 'Authorisation Termination Date',
-      elementId: 'authorisationTerminationDateTableHeader',
-      sortable: false,
-    },
-    { name: 'Sales Deadline', elementId: 'salesDeadlineTableHeader', sortable: false },
-    { name: 'Use And Possesion Deadline', elementId: 'useAndPossesionDeadlineTableHeader', sortable: false },
-    {
-      name: 'Possession Deadline',
-      elementId: 'possessionDeadline',
-      sortable: false,
-    },
+    // {
+    //   name: 'Authorisation Termination Date',
+    //   elementId: 'authorisationTerminationDateTableHeader',
+    //   sortable: false,
+    // },
+    // { name: 'Sales Deadline', elementId: 'salesDeadlineTableHeader', sortable: false },
+    // { name: 'Use And Possesion Deadline', elementId: 'useAndPossesionDeadlineTableHeader', sortable: false },
+    // {
+    //   name: 'Possession Deadline',
+    //   elementId: 'possessionDeadline',
+    //   sortable: false,
+    // },
     // {
     //   name: 'ProductName',
     //   elementId: 'productName',

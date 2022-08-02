@@ -190,5 +190,6 @@ export const da = {
   'Use And Possesion Deadline': 'Deadline for brug og besiddelse',
   'Possession Deadline': 'Frist for besiddelse',
   'ProductName':'Produkt navn',
-  'Barcode': 'Stregkode'
+  'Barcode': 'Stregkode',
+  "Expire state": "Udløbsstatus"
 };
