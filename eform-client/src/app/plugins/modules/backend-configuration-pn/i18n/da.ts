@@ -186,6 +186,7 @@ export const da = {
   'Authorisation Date': 'Autorisationsdato',
   'Authorisation Expiration Date': 'Autorisationens udløbsdato',
   'Authorisation Termination Date': 'Autorisations ophørsdato',
+  'Expiration Date': 'Udløbsdato',
   'Sales Deadline': 'Salgsfrist',
   'Use And Possesion Deadline': 'Deadline for brug og besiddelse',
   'Possession Deadline': 'Frist for besiddelse',
