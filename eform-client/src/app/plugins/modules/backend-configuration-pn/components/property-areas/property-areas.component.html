@@ -4,7 +4,7 @@
   [title]="selectedProperty.name + ' - ' + ('Control area' | translate)"
 >
   <div class="p-3">
-    <button
+    <button *ngIf="authStateService.isAdmin"
       mdbBtn
       id="configurePropertyAreasBtn"
       class="btn-success btn-icon"

@@ -2392,7 +2392,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 var entityListUid = (int)property.EntitySearchListChemicals!;
                 var entityListUidRegNo = (int)property.EntitySearchListChemicalRegNos!;
                 var entityListUidAreas = (int)property.EntitySelectListChemicalAreas!;
-                
+
                 var mainElement = await core.ReadeForm((int)areaRule.EformId!, language).ConfigureAwait(false);
                 // todo add group id to eform
                 var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == areaRule.FolderId).ConfigureAwait(false);
@@ -2670,6 +2670,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     }
                     planning.PlanningsTags.Add(new() {PlanningTagId = planningTag.Id});
                     planning.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag.Id});
+                    planning.DaysBeforeRedeploymentPushMessageRepeat = false;
 
                     await planning.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
@@ -2688,7 +2689,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 }
             }
         }
-        
+
         private static DateTime GetNextWeekday(DateTime start, DayOfWeek day)
         {
             // The (... + 7) % 7 ensures we end up with a value in the range [0, 6]

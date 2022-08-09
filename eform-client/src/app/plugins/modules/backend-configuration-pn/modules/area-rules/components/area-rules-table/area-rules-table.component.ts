@@ -147,7 +147,7 @@ export class AreaRulesTableComponent implements OnChanges {
     //   elementId: 'authorisationDateTableHeader',
     //   sortable: false,
     // },
-    { name: 'Authorisation Expiration Date', elementId: 'authorisationExpirationDateTableHeader', sortable: false },
+    { name: 'Expiration Date', elementId: 'authorisationExpirationDateTableHeader', sortable: false },
     // {
     //   name: 'Authorisation Termination Date',
     //   elementId: 'authorisationTerminationDateTableHeader',
