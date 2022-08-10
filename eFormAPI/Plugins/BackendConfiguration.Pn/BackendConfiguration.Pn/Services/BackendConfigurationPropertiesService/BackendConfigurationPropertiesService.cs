@@ -188,7 +188,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     ItemPlanningTagId = planningTag.Id,
                     WorkorderEnable = propertyCreateModel.WorkorderEnable,
                     IndustryCode = propertyCreateModel.IndustryCode,
-                    IsFarm = propertyCreateModel.IsFarm
+                    IsFarm = propertyCreateModel.IsFarm,
+                    MainMailAddress = propertyCreateModel.MainMailAddress
                 };
                 await newProperty.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
@@ -247,6 +248,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         Name = x.Name,
                         IsFarm = x.IsFarm,
                         IndustryCode = x.IndustryCode,
+                        MainMailAddress = x.MainMailAddress,
                         Languages = x.SelectedLanguages
                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                             .Select(y => new CommonDictionaryModel { Id = y.LanguageId })
@@ -329,6 +331,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 property.CVR = updateModel.Cvr;
                 property.Name = updateModel.Name;
                 property.UpdatedByUserId = _userService.UserId;
+                property.MainMailAddress = updateModel.MainMailAddress;
 
                 var planningTag = await _itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.Id == property.ItemPlanningTagId)

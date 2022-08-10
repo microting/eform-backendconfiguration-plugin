@@ -7,4 +7,5 @@ export class PropertyCreateModel {
   languagesIds: number[] = [];
   industryCode: string;
   isFarm: boolean = false;
+  mainMailAddress: string;
 }

@@ -19,4 +19,5 @@ export class PropertyModel {
   }
   industryCode: string;
   isFarm: boolean;
+  mainMailAddress: string;
 }

@@ -56,5 +56,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
         [CanBeNull] public string IndustryCode { get; set; }
 
         public bool IsFarm { get; set; }
+
+        public string MainMailAddress { get; set; }
     }
 }

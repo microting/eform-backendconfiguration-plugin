@@ -46,6 +46,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public bool IsFarm { get; set; }
 
+        public string MainMailAddress { get; set; }
+
         public string FullName()
         {
             return $"00. {Name} - {Address}";

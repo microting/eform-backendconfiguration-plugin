@@ -8,4 +8,5 @@ export class PropertyUpdateModel {
   workorderEnable: boolean = false;
   isFarm: boolean = false;
   industryCode: string;
+  mainMailAddress: string;
 }

@@ -37,6 +37,22 @@
                 <input
                   mdbInput
                   type="text"
+                  [(ngModel)]="selectedProperty.mainMailAddress"
+                  name="editMainMailAddress"
+                  class="form-control"
+                  id="editMainMailAddress"
+                />
+                <label for="editCVRNumber">{{'e-mail addresses' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="md-form">
+                <input
+                  mdbInput
+                  type="text"
                   [(ngModel)]="selectedProperty.name"
                   name="editPropertyName"
                   class="form-control"

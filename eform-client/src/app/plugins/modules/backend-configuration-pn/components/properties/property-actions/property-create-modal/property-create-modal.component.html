@@ -38,6 +38,23 @@
                 <input
                   mdbInput
                   type="text"
+                  [(ngModel)]="newProperty.mainMailAddress"
+                  name="createMainMailAddress"
+                  class="form-control"
+                  id="createMainMailAddress"
+                />
+                <label for="createCVRNumber">{{
+                  'e-mail addresses' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="md-form">
+                <input
+                  mdbInput
+                  type="text"
                   [(ngModel)]="newProperty.name"
                   name="createPropertyName"
                   class="form-control"

@@ -67,7 +67,7 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
                 var property =
                     await _backendConfigurationPnDb.Properties.SingleAsync(x => x.Id == pnRequestModel.PropertyId);
-                
+
                 var theList = new List<ChemicalPnModel>();
                 foreach (var chemicalProductProperty in chemicalProductProperties)
                 {
@@ -99,7 +99,7 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                             Verified = chemical.Verified,
                             Locations = chemicalProductProperty.Locations.Replace("|", ", "),
                             PropertyName = property.Name,
-                            ExpiredState = chemical.AuthorisationExpirationDate > DateTime.UtcNow ? chemical.AuthorisationExpirationDate < DateTime.UtcNow.AddDays(30) ? "Udløber inden for 30 dage" : "OK" : "Udløbet" 
+                            ExpiredState = chemical.AuthorisationExpirationDate > DateTime.UtcNow ? chemical.AuthorisationExpirationDate < DateTime.UtcNow.AddDays(30) ? "Udløber inden for 30 dage" : "OK" : "Udløbet"
                         };
                         theList.Add(chemicalPnModel);
                     }
@@ -121,6 +121,6 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                 return new OperationDataResult<Paged<ChemicalPnModel>>(false,
                     "ErrorObtainingLists");
             }
-        } 
+        }
     }
 }
