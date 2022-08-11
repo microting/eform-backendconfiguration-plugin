@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Helpers;
+
 namespace BackendConfiguration.Pn.Services.RebusService
 {
     using System.Threading.Tasks;
@@ -40,25 +42,33 @@ namespace BackendConfiguration.Pn.Services.RebusService
         private IWindsorContainer _container;
         private string _connectionString;
         private readonly IEFormCoreService _coreHelper;
+        private BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
+        private ChemicalDbContextHelper _chemicalDbContextHelper;
 
         public RebusService(IEFormCoreService coreHelper)
         {
             //_dbContext = dbContext;
             _coreHelper = coreHelper;
+            _container = new WindsorContainer();
         }
 
         public async Task Start(string connectionString, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
         {
             _connectionString = connectionString;
-            _container = new WindsorContainer();
+            Core core = await _coreHelper.GetCore();
+            _backendConfigurationDbContextHelper = new BackendConfigurationDbContextHelper(connectionString);
+            var chemicalBaseConnectionString = connectionString.Replace(
+                "eform-backend-configuration-plugin",
+                "chemical-base-plugin");
+            _chemicalDbContextHelper = new ChemicalDbContextHelper(chemicalBaseConnectionString);
+            _container.Register(Component.For<Core>().Instance(core));
+            _container.Register(Component.For<BackendConfigurationDbContextHelper>().Instance(_backendConfigurationDbContextHelper));
+            _container.Register(Component.For<ChemicalDbContextHelper>().Instance(_chemicalDbContextHelper));
             _container.Install(
                 new RebusHandlerInstaller()
                 , new RebusInstaller(connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitMqHost)
             );
 
-            Core _core = await _coreHelper.GetCore().ConfigureAwait(false);
-            _container.Register(Component.For<Core>().Instance(_core));
-            _container.Register(Component.For<BackendConfigurationPnDbContext>().Instance(GetContext()));
             _bus = _container.Resolve<IBus>();
         }
 
@@ -70,6 +80,10 @@ namespace BackendConfiguration.Pn.Services.RebusService
         {
             var contextFactory = new BackendConfigurationPnContextFactory();
             return contextFactory.CreateDbContext(new[] {_connectionString});
+        }
+        public WindsorContainer GetContainer()
+        {
+            return (WindsorContainer)_container;
         }
     }
 }

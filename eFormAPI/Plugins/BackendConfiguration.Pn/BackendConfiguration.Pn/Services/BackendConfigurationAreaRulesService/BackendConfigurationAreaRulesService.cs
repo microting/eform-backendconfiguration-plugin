@@ -27,8 +27,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using BackendConfiguration.Pn.Infrastructure.Models.Pools;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+using BackendConfiguration.Pn.Messages;
+using BackendConfiguration.Pn.Services.RebusService;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Entities;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 {
@@ -58,13 +61,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly ChemicalsDbContext _chemicalsDbContext;
+        private readonly IBus _bus;
 
         public BackendConfigurationAreaRulesService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-            ItemsPlanningPnDbContext itemsPlanningPnDbContext, ChemicalsDbContext chemicalsDbContext)
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext, ChemicalsDbContext chemicalsDbContext, IRebusService rebusService)
         {
             _coreHelper = coreHelper;
             _userService = userService;
@@ -72,6 +76,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _chemicalsDbContext = chemicalsDbContext;
+            _bus = rebusService.GetBus();
         }
 
         public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId)
@@ -143,38 +148,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                 if (areaProperty.Type == AreaTypesEnum.Type9)
                 {
-                    var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == areaProperty.PropertyId).ConfigureAwait(false);
-                    var entityGroup = await core.EntityGroupRead(property.EntitySearchListChemicals.ToString()).ConfigureAwait(false);
-                    var entityGroupRegNo = await core.EntityGroupRead(property.EntitySearchListChemicalRegNos.ToString()).ConfigureAwait(false);
-
-                    if (property.ChemicalLastUpdatedAt == null)
-                    {
-                        property.ChemicalLastUpdatedAt = DateTime.UtcNow;
-                        await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                        var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-                        var chemicals = await _chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync();
-                        foreach (Chemical chemical in chemicals)
-                        {
-                            foreach (Product product in chemical.Products)
-                            {
-                                if (product.Verified)
-                                {
-                                    await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
-                                        chemical.Name,
-                                        nextItemUid.ToString()).ConfigureAwait(false);
-                                    nextItemUid++;
-                                }
-                            }
-
-                            if (chemical.Verified)
-                            {
-                                await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
-                                    chemical.Name,
-                                    nextItemUid.ToString()).ConfigureAwait(false);
-                                nextItemUid++;
-                            }
-                        }
-                    }
+                    await _bus.SendLocal(new ChemicalAreaCreated(areaProperty.PropertyId)).ConfigureAwait(false);
                 }
 
                 var areaRules = await queryWithSelect

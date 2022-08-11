@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2022 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Castle.Windsor;
+using ChemicalsBase.Infrastructure;
+using ChemicalsBase.Infrastructure.Data.Factories;
 
-namespace BackendConfiguration.Pn.Services.RebusService
+namespace BackendConfiguration.Pn.Infrastructure.Helpers
 {
-    using System.Threading.Tasks;
-    using Rebus.Bus;
-
-    public interface IRebusService
+    public class ChemicalDbContextHelper
     {
-        Task Start(string connectionString, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost);
-        IBus GetBus();
-        WindsorContainer GetContainer();
+        private string ConnectionString { get;}
+
+        public ChemicalDbContextHelper(string connectionString)
+        {
+            ConnectionString = connectionString;
+        }
+
+        public ChemicalsDbContext GetDbContext()
+        {
+            ChemicalsContextFactory contextFactory = new ChemicalsContextFactory();
+
+            return contextFactory.CreateDbContext(new[] { ConnectionString });
+        }
     }
 }

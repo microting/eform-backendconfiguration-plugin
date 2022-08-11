@@ -22,6 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Handlers;
+using BackendConfiguration.Pn.Messages;
+using Rebus.Handlers;
+
 namespace BackendConfiguration.Pn.Installers
 {
     using Castle.MicroKernel.Registration;
@@ -32,6 +36,7 @@ namespace BackendConfiguration.Pn.Installers
     {
         public void Install(IWindsorContainer container, IConfigurationStore store)
         {
+            container.Register(Component.For<IHandleMessages<ChemicalAreaCreated>>().ImplementedBy<ChemicalAreaCreatedHandler>().LifestyleTransient());
         }
     }
 }

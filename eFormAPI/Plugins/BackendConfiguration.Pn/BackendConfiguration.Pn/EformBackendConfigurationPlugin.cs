@@ -24,8 +24,9 @@ SOFTWARE.
 
 
 using BackendConfiguration.Pn.Services.ChemicalService;
+using Castle.MicroKernel.Registration;
+using Castle.Windsor;
 using ChemicalsBase.Infrastructure;
-using ChemicalsBase.Infrastructure.Data.Entities;
 using ChemicalsBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
 
@@ -108,7 +109,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IExcelService, ExcelService>();
             services.AddTransient<IChemicalService, ChemicalService>();
             services.AddControllers();
-            SeedEForms(services);
+            // SeedEForms(services);
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
@@ -1122,7 +1123,7 @@ namespace BackendConfiguration.Pn
 
             var cltranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
             var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == cltranslation.CheckListId);
-            
+
             if (!sdkDbContext.Fields.Any(x => x.OriginalId == "376999"))
             {
                 var field = new Microting.eForm.Infrastructure.Data.Entities.Field
@@ -1235,10 +1236,11 @@ namespace BackendConfiguration.Pn
                 rabbitMqHost = $"frontend-{dbPrefix}-rabbitmq";
             }
 
-            var rebusService = serviceProvider.GetService<IRebusService>();
-            rebusService?.Start(_connectionString, "admin", "password", rabbitMqHost);
+            IRebusService rebusService = serviceProvider.GetService<IRebusService>();
 
-            //_bus = rebusService.GetBus();
+            WindsorContainer container = rebusService.GetContainer();
+            container.Register(Component.For<EformBackendConfigurationPlugin>().Instance(this));
+            rebusService.Start(_connectionString, "admin", "password", rabbitMqHost);
         }
 
         public List<PluginMenuItemModel> GetNavigationMenu(IServiceProvider serviceProvider)

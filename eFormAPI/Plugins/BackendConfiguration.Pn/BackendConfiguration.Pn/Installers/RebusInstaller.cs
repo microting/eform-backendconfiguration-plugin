@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Rebus.Serialization.Json;
+
 namespace BackendConfiguration.Pn.Installers
 {
     using System;
@@ -54,8 +56,10 @@ namespace BackendConfiguration.Pn.Installers
         public void Install(IWindsorContainer container, IConfigurationStore store)
         {
             Configure.With(new CastleWindsorContainerAdapter(container))
+                .Serialization(s => s.UseNewtonsoftJson())
                 .Logging(l => l.ColoredConsole(LogLevel.Info))
-                .Transport(t => t.UseRabbitMq($"amqp://{_rabbitMqUser}:{_rabbitMqPassword}@{_rabbitMqHost}", "eform-angular-backend-configuration-plugin"))
+                .Transport(t => t.UseRabbitMq($"amqp://{_rabbitMqUser}:{_rabbitMqPassword}@{_rabbitMqHost}",
+                    "eform-angular-backend-configuration-plugin"))
                 .Options(o =>
                 {
                     o.SetMaxParallelism(_maxParallelism);
