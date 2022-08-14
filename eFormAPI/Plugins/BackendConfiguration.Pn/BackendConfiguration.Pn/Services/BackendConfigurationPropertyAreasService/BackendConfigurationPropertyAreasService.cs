@@ -243,7 +243,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 ProperyAreaAsignmentId = newAssignment.Id,
                             };
                             await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                            
+
                             var folderIds = new List<int>
                             {
                                 await core.FolderCreate(new List<CommonTranslationsModel>
@@ -293,19 +293,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "25.03 Udløber indenfor 30 dage", // todo
+                                        Name = "25.03 Udløber om senest 14 dage", // todo
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "25.03 Expires within 30 days",
+                                        Name = "25.03 Expires within 14 days",
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "25.03 Läuft innerhalb von 30 Tagen ab", // todo
+                                        Name = "25.03 Läuft innerhalb von 14 Tagen ab", // todo
                                         Description = property.Name,
                                     },
                                 }, folderId).ConfigureAwait(false),
@@ -314,24 +314,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "25.04 Udløbet", // todo
+                                        Name = "25.04 Udløber i dag eller er udløbet", // todo
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "25.04 Expired",
+                                        Name = "25.04 Expires today or has expired",
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "25.04 Abgelaufen", // todo
+                                        Name = "25.04 Läuft heute ab oder ist abgelaufen", // todo
                                         Description = property.Name,
                                     },
                                 }, folderId).ConfigureAwait(false)
                             };
-                            
+
                             foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                             {
                                 FolderId = folderIdLocal,

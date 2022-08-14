@@ -99,7 +99,16 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                             Verified = chemical.Verified,
                             Locations = chemicalProductProperty.Locations.Replace("|", ", "),
                             PropertyName = property.Name,
-                            ExpiredState = chemical.AuthorisationExpirationDate > DateTime.UtcNow ? chemical.AuthorisationExpirationDate < DateTime.UtcNow.AddDays(30) ? "Udløber inden for 30 dage" : "OK" : "Udløbet"
+                            ExpiredState = chemical.UseAndPossesionDeadline != null ? chemical.UseAndPossesionDeadline > DateTime.UtcNow
+                                    ? chemical.UseAndPossesionDeadline < DateTime.UtcNow.AddDays(14)
+                                        ? "Udløber inden for 14 dage"
+                                        : "OK"
+                                    : "Udløbet" :
+                                chemical.AuthorisationExpirationDate > DateTime.UtcNow
+                                    ? chemical.AuthorisationExpirationDate < DateTime.UtcNow.AddDays(14)
+                                        ? "Udløber inden for 14 dage"
+                                        : "OK"
+                                    : "Udløbet"
                         };
                         theList.Add(chemicalPnModel);
                     }

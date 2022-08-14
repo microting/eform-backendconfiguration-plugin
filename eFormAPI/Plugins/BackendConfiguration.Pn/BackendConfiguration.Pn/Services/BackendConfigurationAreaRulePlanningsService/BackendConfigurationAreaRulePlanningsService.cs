@@ -2454,7 +2454,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 ((EntitySearch)((DataElement)mainElement.ElementList[0]).DataItemList[19]).EntityTypeId = entityListUidRegNo;
                 ((EntitySearch) ((DataElement) mainElement.ElementList[0]).DataItemList[19]).DisplayOrder = 21;
                 ((EntitySelect) ((DataElement) mainElement.ElementList[0]).DataItemList[21]).Source = entityListUidAreas;
-                ((EntitySelect) ((DataElement) mainElement.ElementList[0]).DataItemList[21]).Label = "Vælg rum for kemiprodukt";
+                ((EntitySelect) ((DataElement) mainElement.ElementList[0]).DataItemList[21]).Label = "Vælg rum for produkt";
                 ((SaveButton) ((DataElement) mainElement.ElementList[0]).DataItemList[20]).DisplayOrder = 22;
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(18);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(16);
@@ -2466,24 +2466,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(4);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(2);
                 ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(0);
-                FieldContainer fieldContainer = new FieldContainer(0, "Hvordan opretter jeg kemiprodukter",
+                FieldContainer fieldContainer = new FieldContainer(0, "Hvordan opretter jeg produkter",
                     new CDataValue(), Constants.FieldColors.Yellow, -1, "", new List<DataItem>());
-                ((DataElement)mainElement.ElementList[0]).DataItemGroupList.Add(new FieldGroup("0", "Hvordan opretter jeg kemiprodukter",
+                ((DataElement)mainElement.ElementList[0]).DataItemGroupList.Add(new FieldGroup("0", "Hvordan opretter jeg produkter",
                     "", Constants.FieldColors.Yellow, -1, "", new List<DataItem>()));
 
                 var description = $"<br><strong>Placering</strong><br>Ejendom: {areaRule.Property.Name}<br><br>" +
                                   "I Bekæmpelsesmiddeldatabasen (BMD) som vedligeholdes af Miljøstyrelsen, kan du finde alle godkendte sprøjtemidler og biocider.<br>" +
-                                  "Når du opretter dine kemiprodukter, bliver du automatisk påmindet på din mobil, når kemiproduktet er tæt på at udløbe eller er udløbet<br><br>" +
-                                  "<strong>Gør følgende for at oprette dit kemiprodut:</strong><br><br>" +
-                                  "1. Vælg først hvilket rum kemiproduktet befinder sig i (fx kemirum).<br>" +
+                                  "Når du opretter dine produkter, bliver du automatisk påmindet på din mobil og på email, når produktets tilladelse udløber.<br><br>" +
+                                  "<strong>Gør følgende for at oprette dit produt:</strong><br><br>" +
+                                  "1. Vælg først hvilket rum produktet befinder sig i (fx kemirum).<br>" +
                                   "2. Fremsøg derefter kemiproduktet, ved at indtaste registrerings-nr. som står på produktets etikette (fx 1-202)<br>" +
-                                  "3. Gentag pkt. 2 indtil du har oprettet alle dine kemiprodukter.<br>" +
+                                  "3. Gentag pkt. 2 indtil du har oprettet alle dine produkter.<br>" +
                                   "4. Tryk på Opret<br><br>" +
                                   "Nu oprettes dine kemiprodukter, som efter få minutter bliver gjort tilgængelig i mappen \"25.02 Mine kemiprodukter\".<br><br>" +
                                   "<strong>Bemærk</strong><br>" +
-                                  "Du kan oprette op til 10 kemiprodukter ad gangen.<br><br>" +
-                                  "Hvis det indtastede registreringsnummer ikke findes eller ikke kan aflæses, så fjern og bortskaf kemiproduktet.<br><br>" +
-                                  "Hvis kemiproduktet har et faresymbol, skal rester og tom emballage afleveres til den kommunale affaldsordning for farligt affald. Hvis kemiproduktet ikke har et faresymbol, kan du aflevere rester og tom emballage til den almindelige kommunale affaldsordning.";
+                                  "Du kan oprette op til 10 produkter ad gangen.<br><br>" +
+                                  "Hvis det indtastede registreringsnummer ikke findes eller ikke kan aflæses, så fjern og bortskaf produktet.<br><br>" +
+                                  "Aflevér rester og tom emballage til den kommunale affaldsordning.";
 
                 None none = new None(1, false, false, " ", description, Constants.FieldColors.Yellow, -1, false);
                 ((FieldContainer) ((DataElement) mainElement.ElementList[0]).DataItemGroupList[0]).DataItemList.Add(none);

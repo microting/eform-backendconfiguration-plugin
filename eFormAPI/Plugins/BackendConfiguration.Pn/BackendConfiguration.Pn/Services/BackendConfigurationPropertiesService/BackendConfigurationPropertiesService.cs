@@ -121,7 +121,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             WorkorderEnable = x.WorkorderEnable,
                             WorkorderEntityListId = x.EntitySelectListAreas,
                             IsFarm = x.IsFarm,
-                            IndustryCode = x.IndustryCode
+                            IndustryCode = x.IndustryCode,
+                            MainMailAddress = x.MainMailAddress
                         }).ToListAsync().ConfigureAwait(false);
                 }
 
