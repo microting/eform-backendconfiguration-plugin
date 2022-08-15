@@ -111,7 +111,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
     }
-    if (this.selectedArea.type == 9) {
+    if (this.selectedArea.type === 9) {
       if (this.selectedAreaRulePlanning.assignedSites.length > 0) {
         this.selectedSite = this.selectedArea.availableWorkers.find(
           (x) => x.siteId === this.selectedAreaRulePlanning.assignedSites[0].siteId
@@ -131,12 +131,12 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   onUpdateAreaRulePlan() {
     if (this.selectedArea.type === 8) {
-      if (!this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable) {
-        this.selectedAreaRulePlanning.complianceEnabled = false;
-      }
-      if (!this.selectedAreaRulePlanning.typeSpecificFields.notificationsModifiable) {
-        this.selectedAreaRulePlanning.sendNotifications = false;
-      }
+      // if (!this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable) {
+      //   this.selectedAreaRulePlanning.complianceEnabled = false;
+      // }
+      // if (!this.selectedAreaRulePlanning.typeSpecificFields.notificationsModifiable) {
+      //   this.selectedAreaRulePlanning.sendNotifications = false;
+      // }
     }
     if (!this.selectedAreaRulePlanning.startDate) {
       this.selectedAreaRulePlanning.startDate = format(
