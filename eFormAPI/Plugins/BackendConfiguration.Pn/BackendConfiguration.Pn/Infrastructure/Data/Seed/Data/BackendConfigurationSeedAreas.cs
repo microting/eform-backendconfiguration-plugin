@@ -1110,7 +1110,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "25. Kemisk APV", // todo need beter translate
+                        Name = "25. KemiKontrol", // todo need beter translate
                         Description = "", // todo add link
                         LanguageId = 1,// da
                         InfoBox = "",
@@ -1119,7 +1119,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "25. Chemical APV",
+                        Name = "25. Chemistry Control",
                         Description = "", // todo add link
                         LanguageId = 2,// en
                         InfoBox = "",
@@ -1128,7 +1128,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "25. Chemisches APV", // todo need beter translate
+                        Name = "25. Chemiekontrolle", // todo need beter translate
                         Description = "", // todo add link
                         LanguageId = 3,// ge
                         InfoBox = "",

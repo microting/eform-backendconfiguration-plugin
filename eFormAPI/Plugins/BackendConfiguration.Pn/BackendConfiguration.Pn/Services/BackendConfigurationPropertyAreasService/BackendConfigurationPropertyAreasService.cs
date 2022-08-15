@@ -219,21 +219,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 {
                                     LanguageId = 1, // da
                                     // Name = "05. Halebid og klargøring af stalde",
-                                    Name = "25. Kemisk APV",
+                                    Name = "25. KemiKontrol",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     // Name = "05. Tailbite and preparation of stables",
-                                    Name = "25. Chemical APV",
+                                    Name = "25. Chemistry Control",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     // Name = "05. Stallungen",
-                                    Name = "25. Chemisches APV",
+                                    Name = "25. Chemiekontrolle",
                                     Description = "",
                                 },
                             }, property.FolderId).ConfigureAwait(false);
