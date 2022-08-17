@@ -238,7 +238,9 @@
                       <input
                         type="checkbox"
                         (click)="checked($event, i, j, selectedAreaRule)"
-                        [checked]="isChecked(i, j, selectedAreaRule)" />
+                        [checked]="isChecked(i, j, selectedAreaRule)"
+                        [disabled]="planningStatus"
+                      />
                     </td>
                   </ng-container>
                 </tbody>
@@ -248,7 +250,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button
+        <button *ngIf="!planningStatus"
           mdbBtn
           class="btn-success btn-small-height"
           (click)="onUpdateAreaRule()"
@@ -256,13 +258,21 @@
         >
           {{ 'Save' | translate }}
         </button>
-        <button
+        <button *ngIf="!planningStatus"
           mdbBtn
           class="btn-accent text-black-50 btn-small-height"
           (click)="frame.hide()"
           id="areaRuleEditSaveCancelBtn"
         >
           {{ 'Cancel' | translate }}
+        </button>
+        <button *ngIf="planningStatus"
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+          id="areaRuleEditCloseBtn"
+        >
+          {{ 'Close' | translate }}
         </button>
       </div>
     </div>

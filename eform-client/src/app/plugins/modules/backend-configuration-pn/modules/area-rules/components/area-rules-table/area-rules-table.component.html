@@ -180,7 +180,7 @@
                 class="btn btn-accent text-black-50 btn-icon mb-2"
                 mdbTooltip="{{ 'Edit rule' | translate }}"
                 (click)="onShowEditRuleModal(rule)"
-                [disabled]="rule.planningStatus"
+                [disabled]="rule.planningStatus && this.selectedArea.type === 9"
               >
                 <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
               </button>
