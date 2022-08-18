@@ -238,13 +238,13 @@
       <td id="status">
         {{ getStatus(chemical.status) }}
       </td>
-      <td id="locations">
+      <td id="propertyName">
         {{ chemical.propertyName }}
       </td>
       <td id="locations">
         {{ chemical.locations }}
       </td>
-      <td id="locations">
+      <td id="expiredState">
         {{ chemical.expiredState }}
       </td>
 <!--      <td id="authorisationDate">-->
@@ -255,7 +255,7 @@
 <!--      </td>-->
       <td id="authorisationExpirationDate">
         <date-formatter
-          [date]="chemical.authorisationExpirationDate"
+          [date]="chemical.expiredDate"
           [Format]="'date'"
         ></date-formatter>
       </td>

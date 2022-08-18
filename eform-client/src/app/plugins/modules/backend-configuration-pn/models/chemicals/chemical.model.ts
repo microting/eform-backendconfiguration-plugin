@@ -20,6 +20,7 @@ export class ChemicalModel {
   locations: string;
   propertyName: string;
   expiredState: string;
+  expiredDate: string;
 }
 
 export class ChemicalAssignedSitesModel {
