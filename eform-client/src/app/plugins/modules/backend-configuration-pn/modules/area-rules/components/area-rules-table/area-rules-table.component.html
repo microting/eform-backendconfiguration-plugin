@@ -167,12 +167,11 @@
           <div class="d-flex flex-row justify-content-center">
             <button
               id="showAreaRulePlanningBtn"
-              class="btn btn-success btn-icon mr-2"
+              class="btn btn-success btn-icon mb-2"
               mdbTooltip="{{ 'Plan and assign' | translate }}"
               [disabled]="rule.planningStatus && this.selectedArea.type === 9"
-              (click)="onShowPlanAreaRule(rule)"
-            >
-              <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
+              (click)="onShowPlanAreaRule(rule)">
+              <fa-icon icon="clipboard-list" size="lg" [fixedWidth]="true"></fa-icon>
             </button>
             <ng-container *ngIf="!rule.isDefault">
               <button *ngIf="selectedArea.type !== 9"
@@ -180,21 +179,15 @@
                 class="btn btn-accent text-black-50 btn-icon mb-2"
                 mdbTooltip="{{ 'Edit rule' | translate }}"
                 (click)="onShowEditRuleModal(rule)"
-                [disabled]="rule.planningStatus && this.selectedArea.type === 9"
-              >
+                [disabled]="rule.planningStatus && this.selectedArea.type === 9">
                 <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
               </button>
               <button *ngIf="selectedArea.type !== 9"
                 id="deleteRuleBtn"
                 class="btn btn-danger btn-icon mb-2"
                 mdbTooltip="{{ 'Delete rule' | translate }}"
-                (click)="onShowDeleteRuleModal(rule)"
-              >
-                <fa-icon
-                  icon="trash-alt"
-                  size="lg"
-                  [fixedWidth]="true"
-                ></fa-icon>
+                (click)="onShowDeleteRuleModal(rule)">
+                <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
               </button>
               <button *ngIf="selectedArea.type === 9"
                 mdbBtn
@@ -202,8 +195,7 @@
                 (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
                 mdbTooltip="{{ 'Edit list of areas' | translate }}"
                 id="updateEntityListChemicalAreas"
-                [placement]="'left'"
-              >
+                [placement]="'left'">
                 <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
               </button>
             </ng-container>
