@@ -7,4 +7,5 @@ export class AreaRuleUpdateModel {
   eformName: string;
   translatedNames: CommonDictionaryModel[] = [];
   typeSpecificFields: AreaRuleTypeSpecificFields;
+  planningStatus: boolean;
 }

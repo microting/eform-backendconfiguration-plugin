@@ -168,7 +168,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .getSingleAreaRule(rule.id, this.selectedPropertyId)
       .subscribe((operation) => {
         if (operation && operation.success) {
-          this.editAreaRuleModal.show(operation.model);
+          this.editAreaRuleModal.show(operation.model, rule.planningStatus);
         }
       });
   }

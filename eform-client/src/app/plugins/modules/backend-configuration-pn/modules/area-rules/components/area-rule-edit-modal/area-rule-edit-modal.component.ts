@@ -28,6 +28,7 @@ export class AreaRuleEditModalComponent implements OnInit {
   @Output()
   updateAreaRule: EventEmitter<AreaRuleUpdateModel> = new EventEmitter<AreaRuleUpdateModel>();
   selectedAreaRule: AreaRuleUpdateModel = new AreaRuleUpdateModel();
+  planningStatus: boolean;
   typeahead = new EventEmitter<string>();
   templatesModel: TemplateListModel = new TemplateListModel();
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
@@ -54,8 +55,9 @@ export class AreaRuleEditModalComponent implements OnInit {
 
   ngOnInit() {}
 
-  show(model: AreaRuleModel) {
+  show(model: AreaRuleModel, planningStatus: boolean) {
     // @ts-ignore
+    this.planningStatus = planningStatus;
     this.selectedAreaRule = R.clone(model);
     this.frame.show();
   }
@@ -78,6 +80,7 @@ export class AreaRuleEditModalComponent implements OnInit {
 
   checked($event: any, i: number, j: number, areaRule: AreaRuleCreateModel) {
     for (let k = 0; k < areaRule.typeSpecificFields.poolHoursModel.parrings.length; k++) {
+      // eslint-disable-next-line max-len
       if (areaRule.typeSpecificFields.poolHoursModel.parrings[k].dayOfWeek === i && areaRule.typeSpecificFields.poolHoursModel.parrings[k].index === j) {
         areaRule.typeSpecificFields.poolHoursModel.parrings[k].isActive = $event.target.checked;
       }
@@ -86,6 +89,7 @@ export class AreaRuleEditModalComponent implements OnInit {
 
   isChecked(i: number, j: number, areaRule: AreaRuleCreateModel) {
     for (let k = 0; k < areaRule.typeSpecificFields.poolHoursModel.parrings.length; k++) {
+      // eslint-disable-next-line max-len
       if (areaRule.typeSpecificFields.poolHoursModel.parrings[k].dayOfWeek === i && areaRule.typeSpecificFields.poolHoursModel.parrings[k].index === j) {
         return areaRule.typeSpecificFields.poolHoursModel.parrings[k].isActive;
       }
