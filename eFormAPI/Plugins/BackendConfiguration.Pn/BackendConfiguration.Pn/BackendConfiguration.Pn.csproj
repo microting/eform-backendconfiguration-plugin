@@ -282,6 +282,10 @@
       <EmbeddedResource Include="Resources\eForms\02. Fækale uheld.xml" />
       <None Remove="Resources\eForms\00. Info boks.xml" />
       <EmbeddedResource Include="Resources\eForms\00. Info boks.xml" />
+      <None Remove="Resources\eForms\26. Kornlager.xml" />
+      <EmbeddedResource Include="Resources\eForms\26. Kornlager.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>

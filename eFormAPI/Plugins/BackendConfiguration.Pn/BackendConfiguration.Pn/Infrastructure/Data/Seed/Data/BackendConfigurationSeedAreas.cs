@@ -1184,7 +1184,51 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                 },
                 IsFarm = false
-            }
+            },
+            new Area
+            {
+            Id = 30,
+            Type = AreaTypesEnum.Type1,
+            AreaTranslations = new List<AreaTranslation>
+            {
+                new()
+                {
+                    Name = "26. Kornlager",
+                    Description = "",
+                    LanguageId = 1,
+                    InfoBox = "Et lager pr. linje",
+                    Placeholder = "Kornlager",
+                    NewItemName = "Nyt kornlager"
+                },
+                new()
+                {
+                    Name = "26. Grain store",
+                    Description = "",
+                    LanguageId = 2,
+                    InfoBox = "One warehouse per line",
+                    Placeholder = "Grain store",
+                    NewItemName = "New grain store"
+                },
+                new()
+                {
+                    Name = "26. Getreidelagerung",
+                    Description = "",
+                    LanguageId = 3,
+                    InfoBox = "Nur ein Lager pro Linie",
+                    Placeholder = "Getreidelagerung",
+                    NewItemName = "Neues Getreidelagerung"
+                }
+            },
+            AreaInitialField = new AreaInitialField
+            {
+                Notifications = true,
+                EformName = "26. Kornlager",
+                RepeatEvery = 12, // 12
+                RepeatType = 3, // month
+                DayOfWeek = 1, // monday
+                ComplianceEnabled = true,
+            },
+        },
         };
 
         public static List<AreaRule> AreaRules => new()

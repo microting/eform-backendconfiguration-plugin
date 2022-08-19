@@ -108,13 +108,15 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                                     ? chemical.AuthorisationExpirationDate < DateTime.UtcNow.AddDays(14)
                                         ? "Udløber inden for 14 dage"
                                         : "OK"
-                                    : "Udløbet"
+                                    : "Udløbet",
+                            ExpiredDate = chemical.UseAndPossesionDeadline ?? chemical.AuthorisationExpirationDate,
+                            UseAndPossesionDeadline = chemical.UseAndPossesionDeadline
                         };
                         theList.Add(chemicalPnModel);
                     }
                 }
 
-                theList = theList.OrderBy(x => x.AuthorisationExpirationDate).ToList();
+                theList = theList.OrderBy(x => x.ExpiredDate).ToList();
 
                 var chemicalsModel = new Paged<ChemicalPnModel>
                 {
