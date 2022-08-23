@@ -58,6 +58,7 @@ export class AreaRuleEntityListModalComponent implements OnInit {
   addNewAdvEntitySelectableItem() {
     const item = new AdvEntitySelectableItemModel();
     item.entityItemUId = this.entityList.length.toString();
+    item.displayIndex = this.entityList.length;
     item.tempId = this.getRandId();
     this.entityList.push(item);
   }

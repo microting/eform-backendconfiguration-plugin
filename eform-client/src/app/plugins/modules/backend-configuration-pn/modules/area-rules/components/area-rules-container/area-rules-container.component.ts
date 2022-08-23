@@ -254,7 +254,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   }
 
   updateEntityList(model: Array<AdvEntitySelectableItemModel>) {
-    debugger;
     if(!this.selectedArea.groupId){
       this.backendConfigurationPnPropertiesService.createEntityList(model, this.propertyAreaId)
         .subscribe((x => {
