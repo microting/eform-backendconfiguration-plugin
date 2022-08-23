@@ -350,6 +350,14 @@ export class AreaRulePlanModalComponent implements OnInit {
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
     }
+    if (this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 3 && repeatEvery === 1) {
+      this.selectedAreaRulePlanning.typeSpecificFields.dayOfMonth = 1;
+    }
+    if (this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 2) {
+      if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek === 0) {
+        this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = 1;
+      }
+    }
     this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = repeatEvery;
   }
 
