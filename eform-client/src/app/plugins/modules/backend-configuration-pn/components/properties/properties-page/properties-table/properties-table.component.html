@@ -52,7 +52,7 @@
                     [routerLink]="['../compliances/', property.id]"
                     [disabled]="!property.isWorkersAssigned"
             >
-              <fa-icon icon="list-alt" [fixedWidth]="true"></fa-icon>
+              <fa-icon icon="list-alt" size="lg" [fixedWidth]="true"></fa-icon>
             </button>
 <!--            <button id="showComplianceThirtyBtn"-->
 <!--                    class="btn {{getColorBadge(property.complianceStatusThirty)}} btn-icon mr-2"-->
@@ -72,7 +72,7 @@
                 [routerLink]="'../property-areas/' + property.id"
                 [disabled]="!property.isWorkersAssigned"
               >
-                <fa-icon icon="toolbox" [fixedWidth]="true"></fa-icon>
+                <fa-icon icon="toolbox" size="lg" [fixedWidth]="true"></fa-icon>
               </button>
               <button *ngIf="authStateService.isAdmin"
                 id="docxReportBtn"
@@ -98,7 +98,7 @@
                   <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
                 </button>
               </ng-container>
-              <button
+              <button *ngIf="property.isFarm"
                 id="editPropertyBtn"
                 class="btn btn-accent text-black-50 btn-icon mr-2"
                 mdbTooltip="{{ 'Edit property' | translate }}"
