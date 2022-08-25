@@ -117,6 +117,12 @@
       [tableHeaders]="tableHeadersT6"
       [stickyHeader]="true"
     ></thead>
+    <thead
+      *ngIf="selectedArea.type === 10"
+      table-headers
+      [tableHeaders]="tableHeadersT10"
+      [stickyHeader]="true"
+    ></thead>
     <tbody id="areaRulesTableBody">
       <tr *ngFor="let rule of areaRules; let i = index">
         <td>{{ rule.id }}</td>
