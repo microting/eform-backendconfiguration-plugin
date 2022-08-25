@@ -37,6 +37,7 @@ namespace BackendConfiguration.Pn.Installers
         public void Install(IWindsorContainer container, IConfigurationStore store)
         {
             container.Register(Component.For<IHandleMessages<ChemicalAreaCreated>>().ImplementedBy<ChemicalAreaCreatedHandler>().LifestyleTransient());
+            container.Register(Component.For<IHandleMessages<WorkOrderCreated>>().ImplementedBy<WorkOrderCreatedHandler>().LifestyleTransient());
         }
     }
 }

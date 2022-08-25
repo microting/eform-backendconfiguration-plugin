@@ -52,10 +52,27 @@
   </table>
 </div>
 
+<div class="row p-1 mt-4 table-responsive no-gutters" *ngIf="selectedArea.type === 10">
+  <h3>{{'Morning tour' | translate}}</h3>
+  <table
+    mdbTable
+    striped="true"
+    hover="true"
+    small="true"
+    class="z-depth-1 text-center"
+  >
+    <thead
+      table-headers
+      [tableHeaders]="tableHeadersT1"
+      [stickyHeader]="true"
+    ></thead></table>
+</div>
+
 <div class="row p-1 mt-4 table-responsive no-gutters">
 
   <h3 *ngIf="selectedArea.type === 3">{{'Klargøring af stalde' | translate}}</h3>
   <h3 *ngIf="selectedArea.type === 9">{{'Oprettelse af kemikalier' | translate}}</h3>
+  <h3 *ngIf="selectedArea.type === 10">{{'Pools' | translate}}</h3>
   <table
     mdbTable
     striped="true"
@@ -302,3 +319,4 @@
     </tbody>
   </table>
 </div>
+
