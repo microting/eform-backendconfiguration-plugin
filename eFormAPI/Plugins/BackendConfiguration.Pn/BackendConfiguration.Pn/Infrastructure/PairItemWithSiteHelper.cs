@@ -106,11 +106,20 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                 foreach (var caseToDelete in casesToDelete)
                 {
-                    var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId).ConfigureAwait(false);
-                    if (caseDto.MicrotingUId != null)
-                        await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
-                    caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
-                    await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    try
+                    {
+                        var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId)
+                            .ConfigureAwait(false);
+                        if (caseDto.MicrotingUId != null)
+                            await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
+                        caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
+                        await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    } catch (Exception e)
+                    {
+                        caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
+                        await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        Console.WriteLine(e);
+                    }
                 }
 
                 if (planningCase.Status == 100)
