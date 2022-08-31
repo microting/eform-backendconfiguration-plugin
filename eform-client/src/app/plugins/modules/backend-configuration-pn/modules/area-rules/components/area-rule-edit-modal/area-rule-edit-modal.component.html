@@ -30,6 +30,7 @@
                     [(ngModel)]="translation.name"
                     class="form-control"
                     id="editRuleName{{ k }}"
+                    [disabled]="planningStatus && selectedArea.type === 10"
                   />
                   <label for="editRuleName{{ k }}">{{
                     translation.description | translate
