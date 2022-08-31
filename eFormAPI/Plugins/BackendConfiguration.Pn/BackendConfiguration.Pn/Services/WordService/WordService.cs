@@ -142,7 +142,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             var itemsHtml = new StringBuilder();
             itemsHtml.Append(@"<div style='font-family:Calibri;'>");
             itemsHtml.Append(@"<table width=""100%"" border=""1"">");
-            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:6pt;'>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("PropertyArea")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy")}</td>");
@@ -150,7 +150,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append($@"<td>{_localizationService.GetString("Status")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("Date")}</td>");
             itemsHtml.Append(@"</tr>");
-            itemsHtml.Append(@"<tr style='font-size:11pt;'>");
+            itemsHtml.Append(@"<tr style='font-size:6pt;'>");
             itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
@@ -164,7 +164,7 @@ namespace BackendConfiguration.Pn.Services.WordService
 
             itemsHtml.Append(@"<table width=""100%"" border=""1"">");
             // Table header
-            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:6pt;'>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedDate")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
@@ -180,7 +180,7 @@ namespace BackendConfiguration.Pn.Services.WordService
 
             foreach (var workOrderCaseModel in workOrderCaseModels)
             {
-                itemsHtml.Append(@"<tr style='font-size:11pt;'>");
+                itemsHtml.Append(@"<tr style='font-size:6pt;'>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.Id}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.CaseInitiated:dd.MM.yyyy}</td>");
                 itemsHtml.Append($@"<td>{workOrderCaseModel.PropertyName}</td>");
