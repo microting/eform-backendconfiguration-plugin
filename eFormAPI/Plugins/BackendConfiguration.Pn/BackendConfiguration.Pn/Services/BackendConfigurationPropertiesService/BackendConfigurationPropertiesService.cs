@@ -327,12 +327,30 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     deviceUserGroup.Name = $"eForm Backend Configurations - {updateModel.Name} - Device Users";
                     await core.EntityGroupUpdate(deviceUserGroup).ConfigureAwait(false);
                 }
-                property.Address = updateModel.Address;
-                property.CHR = updateModel.Chr;
-                property.CVR = updateModel.Cvr;
-                property.Name = updateModel.Name;
-                property.UpdatedByUserId = _userService.UserId;
-                property.MainMailAddress = updateModel.MainMailAddress;
+
+                var pooleForm = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == $"01. Aflæsninger - {property.Name}");
+
+                if (pooleForm != null)
+                {
+                    pooleForm.Text = $"01. Aflæsninger - {updateModel.Name}";
+                    await pooleForm.Update(sdkDbContext);
+                }
+                var faceseForm = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == $"02. Fækale uheld - {property.Name}");
+
+                if (faceseForm != null)
+                {
+                    faceseForm.Text = $"02. Fækale uheld - {updateModel.Name}";
+                    await faceseForm.Update(sdkDbContext);
+                }
+
+                var eg = await sdkDbContext.EntityGroups.FirstOrDefaultAsync(x =>
+                    x.Name == $"00. Aflæsninger, målinger, forbrug og fækale uheld - {property.Name}");
+
+                if (eg != null)
+                {
+                    eg.Name = $"00. Aflæsninger, målinger, forbrug og fækale uheld - {updateModel.Name}";
+                    await eg.Update(sdkDbContext);
+                }
 
                 var planningTag = await _itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.Id == property.ItemPlanningTagId)
@@ -343,6 +361,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     planningTag.Name = updateModel.FullName();
                     planningTag.UpdatedByUserId = _userService.UserId;
                     await planningTag.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+
+                var planningTags = await _itemsPlanningPnDbContext.PlanningTags
+                    .Where(x => x.Name.StartsWith(property.Name)).ToListAsync();
+
+                foreach (var tag in planningTags)
+                {
+                    tag.Name = tag.Name.Replace(property.Name, updateModel.FullName());
+                    tag.UpdatedByUserId = _userService.UserId;
+                    await tag.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
                 var translatesForFolder = await sdkDbContext.Languages
@@ -570,6 +598,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     }
                 }
 
+                property.Address = updateModel.Address;
+                property.CHR = updateModel.Chr;
+                property.CVR = updateModel.Cvr;
+                property.Name = updateModel.Name;
+                property.UpdatedByUserId = _userService.UserId;
+                property.MainMailAddress = updateModel.MainMailAddress;
                 property.WorkorderEnable = updateModel.WorkorderEnable;
                 await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
