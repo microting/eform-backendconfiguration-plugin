@@ -274,7 +274,6 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     public async Task<OperationResult> DeleteTaskById(int workOrderCaseId)
     {
         var core = await _coreHelper.GetCore().ConfigureAwait(false);
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
         try
         {
             var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
@@ -297,38 +296,49 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.ParentWorkorderCaseId == workOrderCase.Id)
                 .ToListAsync().ConfigureAwait(false);
 
             foreach (var childTask in allChildTasks)
             {
                 childTask.UpdatedByUserId = _userService.UserId;
-                await childTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-
-                if (workOrderCase.CaseId != 0)
+                if (childTask.CaseId != 0)
                 {
-                    await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
+                    await core.CaseDelete(childTask.CaseId).ConfigureAwait(false);
                 }
 
-                await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await childTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             if (workOrderCase.ParentWorkorderCaseId != null)
             {
-                var parentTasks = await _backendConfigurationPnDbContext.WorkorderCases
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                var parentTask = await _backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.Id == workOrderCase.ParentWorkorderCaseId)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
-                if (parentTasks != null)
+                if (parentTask != null)
                 {
-                    parentTasks.UpdatedByUserId = _userService.UserId;
-                    await parentTasks.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    parentTask.UpdatedByUserId = _userService.UserId;
+                    await parentTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
-                    await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
+
+                    allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
+                        .Where(x => x.ParentWorkorderCaseId == parentTask.Id)
+                        .ToListAsync().ConfigureAwait(false);
+
+                    foreach (var childTask in allChildTasks)
+                    {
+                        childTask.UpdatedByUserId = _userService.UserId;
+
+                        if (childTask.CaseId != 0)
+                        {
+                            await core.CaseDelete(childTask.CaseId).ConfigureAwait(false);
+                        }
+
+                        await childTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    }
                 }
             }
 
