@@ -255,6 +255,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             SiteId = i,
                                             CreatedByUserId = _userService.UserId,
                                             UpdatedByUserId = _userService.UserId,
+                                            AreaId = areaRule.AreaId,
+                                            AreaRuleId = areaRule.Id
                                         };
                                         await siteForCreate.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                                         var planningSite =
