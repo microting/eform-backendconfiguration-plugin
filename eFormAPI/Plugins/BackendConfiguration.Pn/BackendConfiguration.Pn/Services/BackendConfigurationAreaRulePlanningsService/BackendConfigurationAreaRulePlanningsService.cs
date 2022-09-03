@@ -171,7 +171,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             var currentPlanningSites = await _backendConfigurationPnDbContext.PlanningSites
                                 .Where(x => x.AreaRuleId == areaRulePlanningModel.RuleId)
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Select(x => x.SiteId)
+                                .Select(x => x.SiteId).Distinct()
                                 .ToListAsync().ConfigureAwait(false);
                             var forDelete = currentPlanningSites
                                 .Except(areaRulePlanningModel.AssignedSites.Select(x => x.SiteId)).ToList();
@@ -279,109 +279,203 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                 x.RelatedEFormId
                                             })
                                             .FirstAsync().ConfigureAwait(false);
-                                        var sdkSite = await sdkDbContext.Sites.SingleAsync(x => x.Id == i).ConfigureAwait(false);
-                                        var language =
-                                            await sdkDbContext.Languages.SingleAsync(x => x.Id == sdkSite.LanguageId).ConfigureAwait(false);
-                                        var mainElement = await core.ReadeForm(planning.RelatedEFormId, language).ConfigureAwait(false);
-                                        var translation = planning.NameTranslations
+
+                                        if (planning.RelatedEFormId == clId)
+                                        {
+                                            var sdkSite = await sdkDbContext.Sites.SingleAsync(x => x.Id == i).ConfigureAwait(false);
+                                            var language =
+                                                await sdkDbContext.Languages.SingleAsync(x => x.Id == sdkSite.LanguageId).ConfigureAwait(false);
+                                            var mainElement = await core.ReadeForm(planning.RelatedEFormId, language).ConfigureAwait(false);
+                                            var translation = planning.NameTranslations
                                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                             .Where(x => x.LanguageId == language.Id)
                                             .Select(x => x.Name)
                                             .FirstOrDefault();
-                                        var planningCase = await _itemsPlanningPnDbContext.PlanningCases
-                                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
-                                            .Where(x => x.PlanningId == planning.Id)
-                                            .Where(x => x.MicrotingSdkeFormId == planning.RelatedEFormId)
-                                            .FirstOrDefaultAsync().ConfigureAwait(false);
+                                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
+                                                .Where(x => x.PlanningId == planning.Id)
+                                                .Where(x => x.MicrotingSdkeFormId == planning.RelatedEFormId)
+                                                .FirstOrDefaultAsync().ConfigureAwait(false);
 
-                                        if (planningCase == null)
-                                        {
-                                            planningCase = new PlanningCase
+                                            if (planningCase == null)
                                             {
-                                                PlanningId = planning.Id,
+                                                planningCase = new PlanningCase
+                                                {
+                                                    PlanningId = planning.Id,
+                                                    Status = 66,
+                                                    MicrotingSdkeFormId = planning.RelatedEFormId
+                                                };
+                                                await planningCase.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                            }
+
+                                            mainElement.Label = string.IsNullOrEmpty(planning.PlanningNumber)
+                                                ? ""
+                                                : planning.PlanningNumber;
+                                            if (!string.IsNullOrEmpty(translation))
+                                            {
+                                                mainElement.Label +=
+                                                    string.IsNullOrEmpty(mainElement.Label)
+                                                        ? $"{translation}"
+                                                        : $" - {translation}";
+                                            }
+
+                                            if (!string.IsNullOrEmpty(planning.BuildYear))
+                                            {
+                                                mainElement.Label += string.IsNullOrEmpty(mainElement.Label)
+                                                    ? $"{planning.BuildYear}"
+                                                    : $" - {planning.BuildYear}";
+                                            }
+
+                                            if (!string.IsNullOrEmpty(planning.Type))
+                                            {
+                                                mainElement.Label += string.IsNullOrEmpty(mainElement.Label)
+                                                    ? $"{planning.Type}"
+                                                    : $" - {planning.Type}";
+                                            }
+
+                                            if (mainElement.ElementList.Count == 1)
+                                            {
+                                                mainElement.ElementList[0].Label = mainElement.Label;
+                                            }
+
+                                            var folder =
+                                                await sdkDbContext.Folders.SingleAsync(x => x.Id == planning.SdkFolderId).ConfigureAwait(false);
+                                            var folderMicrotingId = folder.MicrotingUid.ToString();
+
+                                            mainElement.CheckListFolderName = folderMicrotingId;
+                                            mainElement.StartDate = DateTime.Now.ToUniversalTime();
+                                            mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                                            var planningCaseSite = new PlanningCaseSite
+                                            {
+                                                MicrotingSdkSiteId = i,
+                                                MicrotingSdkeFormId = planning.RelatedEFormId,
                                                 Status = 66,
-                                                MicrotingSdkeFormId = planning.RelatedEFormId
+                                                PlanningId = planning.Id,
+                                                PlanningCaseId = planningCase.Id
                                             };
-                                            await planningCase.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                                        }
 
-                                        mainElement.Label = string.IsNullOrEmpty(planning.PlanningNumber)
-                                            ? ""
-                                            : planning.PlanningNumber;
-                                        if (!string.IsNullOrEmpty(translation))
-                                        {
-                                            mainElement.Label +=
-                                                string.IsNullOrEmpty(mainElement.Label)
-                                                    ? $"{translation}"
-                                                    : $" - {translation}";
-                                        }
-
-                                        if (!string.IsNullOrEmpty(planning.BuildYear))
-                                        {
-                                            mainElement.Label += string.IsNullOrEmpty(mainElement.Label)
-                                                ? $"{planning.BuildYear}"
-                                                : $" - {planning.BuildYear}";
-                                        }
-
-                                        if (!string.IsNullOrEmpty(planning.Type))
-                                        {
-                                            mainElement.Label += string.IsNullOrEmpty(mainElement.Label)
-                                                ? $"{planning.Type}"
-                                                : $" - {planning.Type}";
-                                        }
-
-                                        if (mainElement.ElementList.Count == 1)
-                                        {
-                                            mainElement.ElementList[0].Label = mainElement.Label;
-                                        }
-
-                                        var folder =
-                                            await sdkDbContext.Folders.SingleAsync(x => x.Id == planning.SdkFolderId).ConfigureAwait(false);
-                                        var folderMicrotingId = folder.MicrotingUid.ToString();
-
-                                        mainElement.CheckListFolderName = folderMicrotingId;
-                                        mainElement.StartDate = DateTime.Now.ToUniversalTime();
-                                        mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-                                        var planningCaseSite = new PlanningCaseSite
-                                        {
-                                            MicrotingSdkSiteId = i,
-                                            MicrotingSdkeFormId = planning.RelatedEFormId,
-                                            Status = 66,
-                                            PlanningId = planning.Id,
-                                            PlanningCaseId = planningCase.Id
-                                        };
-
-                                        await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                                        mainElement.Repeated = 0;
-                                        var caseId = await core.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid,
-                                            null).ConfigureAwait(false);
-                                        if (caseId != null)
-                                        {
-                                            if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
+                                            await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                            mainElement.Repeated = 0;
+                                            var caseId = await core.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid,
+                                                null).ConfigureAwait(false);
+                                            if (caseId != null)
                                             {
-                                                planningCaseSite.MicrotingSdkCaseId =
-                                                    sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
-                                            }
-                                            else
-                                            {
-                                                planningCaseSite.MicrotingCheckListSitId =
-                                                    sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId)
-                                                        .Id;
-                                            }
+                                                if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
+                                                {
+                                                    planningCaseSite.MicrotingSdkCaseId =
+                                                        sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
+                                                }
+                                                else
+                                                {
+                                                    planningCaseSite.MicrotingCheckListSitId =
+                                                        sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId)
+                                                            .Id;
+                                                }
 
-                                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                            }
                                         }
 
-                                        var now = DateTime.UtcNow;
-                                        var dbPlanning =
-                                            await _itemsPlanningPnDbContext.Plannings.SingleAsync(x =>
-                                                x.Id == planning.Id).ConfigureAwait(false);
-                                        dbPlanning.NextExecutionTime =
-                                            new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
-                                        dbPlanning.LastExecutedTime =
-                                            new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
-                                        await dbPlanning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                        // var translation = planning.NameTranslations
+                                        //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        //     .Where(x => x.LanguageId == language.Id)
+                                        //     .Select(x => x.Name)
+                                        //     .FirstOrDefault();
+                                        // var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                                        //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                        //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Retracted)
+                                        //     .Where(x => x.PlanningId == planning.Id)
+                                        //     .Where(x => x.MicrotingSdkeFormId == planning.RelatedEFormId)
+                                        //     .FirstOrDefaultAsync().ConfigureAwait(false);
+                                        //
+                                        // if (planningCase == null)
+                                        // {
+                                        //     planningCase = new PlanningCase
+                                        //     {
+                                        //         PlanningId = planning.Id,
+                                        //         Status = 66,
+                                        //         MicrotingSdkeFormId = planning.RelatedEFormId
+                                        //     };
+                                        //     await planningCase.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                        // }
+                                        //
+                                        // mainElement.Label = string.IsNullOrEmpty(planning.PlanningNumber)
+                                        //     ? ""
+                                        //     : planning.PlanningNumber;
+                                        // if (!string.IsNullOrEmpty(translation))
+                                        // {
+                                        //     mainElement.Label +=
+                                        //         string.IsNullOrEmpty(mainElement.Label)
+                                        //             ? $"{translation}"
+                                        //             : $" - {translation}";
+                                        // }
+                                        //
+                                        // if (!string.IsNullOrEmpty(planning.BuildYear))
+                                        // {
+                                        //     mainElement.Label += string.IsNullOrEmpty(mainElement.Label)
+                                        //         ? $"{planning.BuildYear}"
+                                        //         : $" - {planning.BuildYear}";
+                                        // }
+                                        //
+                                        // if (!string.IsNullOrEmpty(planning.Type))
+                                        // {
+                                        //     mainElement.Label += string.IsNullOrEmpty(mainElement.Label)
+                                        //         ? $"{planning.Type}"
+                                        //         : $" - {planning.Type}";
+                                        // }
+                                        //
+                                        // if (mainElement.ElementList.Count == 1)
+                                        // {
+                                        //     mainElement.ElementList[0].Label = mainElement.Label;
+                                        // }
+                                        //
+                                        // var folder =
+                                        //     await sdkDbContext.Folders.SingleAsync(x => x.Id == planning.SdkFolderId).ConfigureAwait(false);
+                                        // var folderMicrotingId = folder.MicrotingUid.ToString();
+                                        //
+                                        // mainElement.CheckListFolderName = folderMicrotingId;
+                                        // mainElement.StartDate = DateTime.Now.ToUniversalTime();
+                                        // mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                                        // var planningCaseSite = new PlanningCaseSite
+                                        // {
+                                        //     MicrotingSdkSiteId = i,
+                                        //     MicrotingSdkeFormId = planning.RelatedEFormId,
+                                        //     Status = 66,
+                                        //     PlanningId = planning.Id,
+                                        //     PlanningCaseId = planningCase.Id
+                                        // };
+                                        //
+                                        // await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                        // mainElement.Repeated = 0;
+                                        // var caseId = await core.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid,
+                                        //     null).ConfigureAwait(false);
+                                        // if (caseId != null)
+                                        // {
+                                        //     if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
+                                        //     {
+                                        //         planningCaseSite.MicrotingSdkCaseId =
+                                        //             sdkDbContext.Cases.Single(x => x.MicrotingUid == caseId).Id;
+                                        //     }
+                                        //     else
+                                        //     {
+                                        //         planningCaseSite.MicrotingCheckListSitId =
+                                        //             sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId)
+                                        //                 .Id;
+                                        //     }
+                                        //
+                                        //     await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                        // }
+                                        //
+                                        // var now = DateTime.UtcNow;
+                                        // var dbPlanning =
+                                        //     await _itemsPlanningPnDbContext.Plannings.SingleAsync(x =>
+                                        //         x.Id == planning.Id).ConfigureAwait(false);
+                                        // dbPlanning.NextExecutionTime =
+                                        //     new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
+                                        // dbPlanning.LastExecutedTime =
+                                        //     new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
+                                        // await dbPlanning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                                     }
                                 }
 
