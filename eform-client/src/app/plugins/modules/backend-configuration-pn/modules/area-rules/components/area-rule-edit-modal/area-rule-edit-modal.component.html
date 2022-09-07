@@ -30,7 +30,7 @@
                     [(ngModel)]="translation.name"
                     class="form-control"
                     id="editRuleName{{ k }}"
-                    [disabled]="planningStatus && selectedArea.type === 10"
+                    [disabled]="planningStatus && selectedArea.type === 10 || selectedAreaRule.secondaryeFormName === 'Morgenrundtur'"
                   />
                   <label for="editRuleName{{ k }}">{{
                     translation.description | translate
@@ -45,7 +45,8 @@
               *ngIf="
                 selectedArea.type === 1 ||
                 selectedArea.type === 5 ||
-                selectedArea.type === 3
+                selectedArea.type === 3 ||
+                selectedAreaRule.secondaryeFormName === 'Morgenrundtur'
               "
             >
               <div class="row">
@@ -204,7 +205,7 @@
                 </div>
               </div>
             </ng-container>
-            <ng-container *ngIf="selectedArea.type === 10">
+            <ng-container *ngIf="selectedArea.type === 10 &&  selectedAreaRule.secondaryeFormName !== 'Morgenrundtur'">
               <table
                 mdbTable
                 striped="true"

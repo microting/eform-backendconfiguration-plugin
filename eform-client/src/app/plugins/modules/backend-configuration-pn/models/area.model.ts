@@ -11,6 +11,8 @@ export class AreaModel {
   placeholder: string;
   groupId: number;
   newItemName: string;
+  secondaryeFormId: number;
+  secondaryeFormName?: string;
 }
 
 export class AreaInitialFieldsModel {

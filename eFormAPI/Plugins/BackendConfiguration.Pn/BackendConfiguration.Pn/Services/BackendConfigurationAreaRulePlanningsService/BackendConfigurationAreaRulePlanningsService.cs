@@ -247,6 +247,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     var clId = sdkDbContext.CheckListTranslations
                                         .Where(x => x.Text == $"02. Fækale uheld - {property.Name}")
                                         .Select(x => x.CheckListId).FirstOrDefault();
+
                                     foreach (int i in forAdd)
                                     {
                                         var siteForCreate = new PlanningSite
@@ -282,7 +283,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             })
                                             .FirstAsync().ConfigureAwait(false);
 
-                                        if (planning.RelatedEFormId == clId)
+                                        if (planning.RelatedEFormId == clId || areaRule.SecondaryeFormName == "Morgenrundtur")
                                         {
                                             var sdkSite = await sdkDbContext.Sites.SingleAsync(x => x.Id == i).ConfigureAwait(false);
                                             var language =
@@ -2642,6 +2643,51 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == areaRule.PropertyId).ConfigureAwait(false);
 
                 var lookupName = areaRule.AreaRuleTranslations.First().Name;
+
+                if (lookupName == "Morgenrundtur" || lookupName == "Morning tour")
+                {
+                    var globalPlanningTag = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                            x.Name == $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}")
+                        .ConfigureAwait(false);
+
+                    if (globalPlanningTag == null)
+                    {
+                        globalPlanningTag = new PlanningTag
+                        {
+                            Name = $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}",
+                            CreatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId,
+                        };
+
+                        await globalPlanningTag.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    }
+
+                    var planning = await CreateItemPlanningObject((int) areaRule.EformId, areaRule.EformName,
+                        areaRule.FolderId, areaRulePlanningModel, areaRule).ConfigureAwait(false);
+                    planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
+                        areaRuleAreaRuleTranslation => new PlanningNameTranslation
+                        {
+                            LanguageId = areaRuleAreaRuleTranslation.LanguageId,
+                            Name = areaRuleAreaRuleTranslation.Name,
+                        }).ToList();
+
+                    planning.RepeatEvery = 0;
+                    planning.RepeatType = RepeatType.Day;
+                    planning.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag.Id});
+
+                    await planning.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    await _pairItemWichSiteHelper.Pair(
+                        areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int) areaRule.EformId,
+                        planning.Id,
+                        areaRule.FolderId).ConfigureAwait(false);
+
+                    var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
+                        areaRule.FolderId);
+
+                    await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
+                    return;
+                }
 
                 var subfolder = await sdkDbContext.Folders
                     .Include(x => x.FolderTranslations)

@@ -46,5 +46,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
         public TypeSpecificFields TypeSpecificFields { get; set; }
 
         public AreaRulePlanningModel Planning { get; set; }
+
+        public int SecondaryeFormId { get; set; }
+
+        public string SecondaryeFormName { get; set; }
     }
 }

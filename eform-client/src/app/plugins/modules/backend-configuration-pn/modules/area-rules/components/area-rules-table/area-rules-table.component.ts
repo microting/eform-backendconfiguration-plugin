@@ -189,6 +189,12 @@ export class AreaRulesTableComponent implements OnChanges {
     { name: 'Status', elementId: 'statusTableHeader', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
+  tableHeadersT10b: TableHeaderElementModel[] = [
+    { name: 'ID', elementId: 'ID', sortable: false},
+    { name: 'eForm', elementId: 'eformTableHeader', sortable: false },
+    { name: 'Status', elementId: 'statusTableHeader', sortable: false },
+    { name: 'Actions', elementId: '', sortable: false },
+  ];
 
   constructor(
     private templateFilesService: TemplateFilesService) {}

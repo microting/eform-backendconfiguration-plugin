@@ -63,9 +63,47 @@
   >
     <thead
       table-headers
-      [tableHeaders]="tableHeadersT1"
+      [tableHeaders]="tableHeadersT10b"
       [stickyHeader]="true"
-    ></thead></table>
+    ></thead>
+
+    <tbody id="areaRulesTableBodyAlternativeeForms">
+    <ng-container *ngFor="let rule of areaRules; let i = index">
+      <ng-container *ngIf="rule.secondaryeFormId !== 0 || rule.translatedName === 'Morgenrundtur' || rule.translatedName === 'Morning tour'">
+        <tr>
+          <td>
+            {{ rule.id }}
+          </td>
+          <td>
+            {{ rule.eformName }}
+          </td>
+
+          <td>
+            {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
+          </td>
+          <td>
+            <div class="d-flex flex-row justify-content-center">
+              <button
+                class="btn btn-success btn-icon mb-2"
+                mdbTooltip="{{ 'Plan and assign' | translate }}"
+                (click)="onShowPlanAreaRule(rule)">
+                <fa-icon icon="clipboard-list" size="lg" [fixedWidth]="true"></fa-icon>
+              </button>
+              <ng-container *ngIf="!rule.isDefault">
+                <button *ngIf="selectedArea.type !== 9"
+                        class="btn btn-accent text-black-50 btn-icon mb-2"
+                        mdbTooltip="{{ 'Edit rule' | translate }}"
+                        (click)="onShowEditRuleModal(rule)">
+                  <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+      </ng-container>
+
+    </ng-container></tbody>
+  </table>
 </div>
 
 <div class="row p-1 mt-4 table-responsive no-gutters">
@@ -141,90 +179,95 @@
       [stickyHeader]="true"
     ></thead>
     <tbody id="areaRulesTableBody">
-      <tr *ngFor="let rule of areaRules; let i = index">
-        <td>{{ rule.id }}</td>
-        <td id="ruleName" *ngIf="selectedArea.type !== 9">
-          {{ rule.translatedName }}
-        </td>
-        <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7 || selectedArea.type === 8 || selectedArea.type === 9">
-          <td id="ruleEformNameT1">
-            {{ rule.eformName }}
-          </td>
-        </ng-container>
-        <ng-container *ngIf="selectedArea.type === 2">
-          <td id="ruleType">
-            {{ areaRuleTypes[rule.typeSpecificFields.type] | translate }}
-          </td>
-          <td id="ruleAlarm">
-            {{ areaRuleAlarms[rule.typeSpecificFields.alarm] | translate }}
-          </td>
-        </ng-container>
-        <ng-container *ngIf="selectedArea.type === 3">
-          <!--<td id="ruleChecklistStable">
-            {{
-              (rule.typeSpecificFields.checklistStable ? 'Yes' : 'No')
-                | translate
-            }}
-          </td>-->
-          <td id="ruleEformNameT3">
-            {{ rule.eformName }}
-          </td>
-          <!--<td id="ruleTailBite">
-            {{ (rule.typeSpecificFields.tailBite ? 'Yes' : 'No') | translate }}
-          </td>-->
-        </ng-container>
-        <ng-container *ngIf="selectedArea.type === 5">
-          <td id="ruleWeekDay">
-            {{ getWeekDayName(rule) | translate }}
-          </td>
-          <td id="ruleEformNameT5">
-            {{ rule.eformName }}
-          </td>
-        </ng-container>
-
-        <td id="rulePlanningStatus">
-          {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
-        </td>
-
-        <td>
-          <div class="d-flex flex-row justify-content-center">
-            <button
-              id="showAreaRulePlanningBtn"
-              class="btn btn-success btn-icon mb-2"
-              mdbTooltip="{{ 'Plan and assign' | translate }}"
-              [disabled]="rule.planningStatus && (this.selectedArea.type === 9)"
-              (click)="onShowPlanAreaRule(rule)">
-              <fa-icon icon="clipboard-list" size="lg" [fixedWidth]="true"></fa-icon>
-            </button>
-            <ng-container *ngIf="!rule.isDefault">
-              <button *ngIf="selectedArea.type !== 9"
-                id="showEditRuleBtn"
-                class="btn btn-accent text-black-50 btn-icon mb-2"
-                mdbTooltip="{{ 'Edit rule' | translate }}"
-                (click)="onShowEditRuleModal(rule)"
-                [disabled]="rule.planningStatus && this.selectedArea.type === 9">
-                <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
-              <button *ngIf="selectedArea.type !== 9"
-                id="deleteRuleBtn"
-                class="btn btn-danger btn-icon mb-2"
-                mdbTooltip="{{ 'Delete rule' | translate }}"
-                (click)="onShowDeleteRuleModal(rule)">
-                <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
-              <button *ngIf="selectedArea.type === 9"
-                mdbBtn
-                class="btn btn-success btn-icon mr-2"
-                (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
-                mdbTooltip="{{ 'Edit list of areas' | translate }}"
-                id="updateEntityListChemicalAreas"
-                [placement]="'left'">
-                <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
+      <ng-container *ngFor="let rule of areaRules; let i = index">
+        <ng-container *ngIf="rule.secondaryeFormId === 0 && rule.secondaryeFormName !== 'Morgenrundtur'">
+          <tr>
+            <td>{{ rule.id }}</td>
+            <td id="ruleName" *ngIf="selectedArea.type !== 9">
+              {{ rule.translatedName }}
+            </td>
+            <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7 || selectedArea.type === 8 || selectedArea.type === 9">
+              <td id="ruleEformNameT1">
+                {{ rule.eformName }}
+              </td>
             </ng-container>
-          </div>
-        </td>
-      </tr>
+            <ng-container *ngIf="selectedArea.type === 2">
+              <td id="ruleType">
+                {{ areaRuleTypes[rule.typeSpecificFields.type] | translate }}
+              </td>
+              <td id="ruleAlarm">
+                {{ areaRuleAlarms[rule.typeSpecificFields.alarm] | translate }}
+              </td>
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 3">
+              <!--<td id="ruleChecklistStable">
+                {{
+                  (rule.typeSpecificFields.checklistStable ? 'Yes' : 'No')
+                    | translate
+                }}
+              </td>-->
+              <td id="ruleEformNameT3">
+                {{ rule.eformName }}
+              </td>
+              <!--<td id="ruleTailBite">
+                {{ (rule.typeSpecificFields.tailBite ? 'Yes' : 'No') | translate }}
+              </td>-->
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 5">
+              <td id="ruleWeekDay">
+                {{ getWeekDayName(rule) | translate }}
+              </td>
+              <td id="ruleEformNameT5">
+                {{ rule.eformName }}
+              </td>
+            </ng-container>
+
+            <td id="rulePlanningStatus">
+              {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
+            </td>
+
+            <td>
+              <div class="d-flex flex-row justify-content-center">
+                <button
+                  id="showAreaRulePlanningBtn"
+                  class="btn btn-success btn-icon mb-2"
+                  mdbTooltip="{{ 'Plan and assign' | translate }}"
+                  [disabled]="rule.planningStatus && (this.selectedArea.type === 9)"
+                  (click)="onShowPlanAreaRule(rule)">
+                  <fa-icon icon="clipboard-list" size="lg" [fixedWidth]="true"></fa-icon>
+                </button>
+                <ng-container *ngIf="!rule.isDefault">
+                  <button *ngIf="selectedArea.type !== 9"
+                          id="showEditRuleBtn"
+                          class="btn btn-accent text-black-50 btn-icon mb-2"
+                          mdbTooltip="{{ 'Edit rule' | translate }}"
+                          (click)="onShowEditRuleModal(rule)"
+                          [disabled]="rule.planningStatus && this.selectedArea.type === 9">
+                    <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+                  </button>
+                  <button *ngIf="selectedArea.type !== 9"
+                          id="deleteRuleBtn"
+                          class="btn btn-danger btn-icon mb-2"
+                          mdbTooltip="{{ 'Delete rule' | translate }}"
+                          (click)="onShowDeleteRuleModal(rule)">
+                    <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
+                  </button>
+                  <button *ngIf="selectedArea.type === 9"
+                          mdbBtn
+                          class="btn btn-success btn-icon mr-2"
+                          (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
+                          mdbTooltip="{{ 'Edit list of areas' | translate }}"
+                          id="updateEntityListChemicalAreas"
+                          [placement]="'left'">
+                    <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
+                  </button>
+                </ng-container>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+
+      </ng-container>
     </tbody>
   </table>
 </div>

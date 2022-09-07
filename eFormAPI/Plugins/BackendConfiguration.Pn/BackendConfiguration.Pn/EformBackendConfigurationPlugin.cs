@@ -109,7 +109,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IExcelService, ExcelService>();
             services.AddTransient<IChemicalService, ChemicalService>();
             services.AddControllers();
-            SeedEForms(services);
+            // SeedEForms(services);
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)

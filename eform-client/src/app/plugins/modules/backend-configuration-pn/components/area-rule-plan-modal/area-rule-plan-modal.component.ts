@@ -100,6 +100,7 @@ export class AreaRulePlanModalComponent implements OnInit {
         id: 0,
         isDefault: false,
         planningStatus: false,
+        secondaryeFormId: 0,
         ...rule}, selectedPropertyId);
     }
     if (this.selectedArea.type === 5) {

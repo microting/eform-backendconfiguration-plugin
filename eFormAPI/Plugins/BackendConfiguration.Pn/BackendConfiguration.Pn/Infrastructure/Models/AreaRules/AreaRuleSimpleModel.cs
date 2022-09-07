@@ -35,5 +35,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
         public bool PlanningStatus { get; set; }
 
         public AreaRuleInitialFields InitialFields { get; set; }
+
+        public int SecondaryeFormId { get; set; }
+
+        public string SecondaryeFormName { get; set; }
     }
 }

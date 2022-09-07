@@ -811,6 +811,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("26. Kornlager", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Morgenrundtur","",""
+			};
+			item = new KeyValuePair<string, List<string>>("00. Morgenrundtur", headers);
+			theList.Add(item);
 
 			return theList;
 		}

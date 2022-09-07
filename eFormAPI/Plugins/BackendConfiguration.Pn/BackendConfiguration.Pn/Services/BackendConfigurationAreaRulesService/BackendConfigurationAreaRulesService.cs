@@ -112,6 +112,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .Select(y => y.Name)
                             .FirstOrDefault(),
                         IsDefault = x.IsDefault,
+                        SecondaryeFormId = x.SecondaryeFormId,
+                        SecondaryeFormName = x.SecondaryeFormName,
                         TypeSpecificFields = new TypeSpecificField
                             {
                                 EformId = x.EformId,
@@ -153,6 +155,76 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
                 var areaRules = await queryWithSelect
                     .ToListAsync().ConfigureAwait(false);
+
+                if (areaProperty.Type == AreaTypesEnum.Type10)
+                {
+                    if (!areaRules.Any(x => x.SecondaryeFormName == "Morgenrundtur"))
+                    {
+                        var areaRule = new AreaRule
+                        {
+                            AreaId = areaProperty.AreaId,
+                            UpdatedByUserId = _userService.UserId,
+                            CreatedByUserId = _userService.UserId,
+                            EformId = null,
+                            PropertyId = areaProperty.PropertyId,
+                            SecondaryeFormId = 0,
+                            SecondaryeFormName = "Morgenrundtur"
+                        };
+                        areaRule.ComplianceEnabled = false;
+                        areaRule.ComplianceModifiable = false;
+                        areaRule.Notifications = false;
+                        areaRule.NotificationsModifiable = false;
+
+                        var folderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
+                            .Include(x => x.AreaProperty)
+                            .Where(x => x.AreaProperty.Id == propertyAreaId)
+                            .Select(x => x.FolderId)
+                            .FirstOrDefaultAsync().ConfigureAwait(false);
+
+                        areaRule.FolderId = await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
+                        {
+                            new()
+                            {
+                                LanguageId = 1, // da
+                                Name = "00. Morgenrundtur",
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 2, // en
+                                Name = "00. Morning tour",
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 3, // ge
+                                Name = "00. Morgentour",
+                                Description = "",
+                            },
+                        }, folderId).ConfigureAwait(false);
+                        areaRule.FolderName = "00. Morgenrundtur";
+
+                        await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        var areaRuleTranslation = new AreaRuleTranslation
+                        {
+                            AreaRuleId = areaRule.Id,
+                            LanguageId = 1,
+                            Name = "Morgenrundtur",
+                            CreatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId,
+                        };
+                        await areaRuleTranslation.Create(_backendConfigurationPnDbContext);
+                        areaRuleTranslation = new AreaRuleTranslation
+                        {
+                            AreaRuleId = areaRule.Id,
+                            LanguageId = 2,
+                            Name = "Morning tour",
+                            CreatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId,
+                        };
+                        await areaRuleTranslation.Create(_backendConfigurationPnDbContext);
+                    }
+                }
 
                 foreach (var areaRule in areaRules)
                 {
@@ -215,6 +287,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     {
                         Id = x.Id,
                         EformName = x.EformName,
+                        SecondaryeFormId = x.SecondaryeFormId,
+                        SecondaryeFormName = x.SecondaryeFormName,
                         TranslatedNames = x.AreaRuleTranslations
                             .Select(y => new CommonDictionaryModel
                             {
@@ -316,6 +390,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         .Where(x => x.Text == updateModel.EformName)
                         .Select(x => x.CheckListId)
                         .First();
+                    if (areaRule.SecondaryeFormName == "Morgenrundtur")
+                    {
+                        areaRule.SecondaryeFormId = (int)areaRule.EformId;
+                    }
                 }
 
                 areaRule.UpdatedByUserId = _userService.UserId;
