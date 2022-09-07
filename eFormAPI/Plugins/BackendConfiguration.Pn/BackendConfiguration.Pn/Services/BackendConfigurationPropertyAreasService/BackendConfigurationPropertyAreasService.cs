@@ -272,19 +272,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "25.02 Mine kemiprodukter", // todo
+                                        Name = "25.02 Udløber i dag eller er udløbet", // todo
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "25.02 My chemical products",
+                                        Name = "25.02 Expires today or has expired",
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "25.02 Meine chemischen Produkte", // todo
+                                        Name = "25.02 Läuft heute ab oder ist abgelaufen", // todo
                                         Description = property.Name,
                                     },
                                 }, folderId).ConfigureAwait(false),
@@ -293,19 +293,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "25.03 Udløber om senest 14 dage", // todo
+                                        Name = "25.03 Udløber om senest 1 mdr.", // todo
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "25.03 Expires within 14 days",
+                                        Name = "25.03 Expires in 1 month at the latest",
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "25.03 Läuft innerhalb von 14 Tagen ab", // todo
+                                        Name = "25.03 Läuft spätestens in 1 Monat ab", // todo
                                         Description = property.Name,
                                     },
                                 }, folderId).ConfigureAwait(false),
@@ -314,19 +314,82 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                     new()
                                     {
                                         LanguageId = 1, // da
-                                        Name = "25.04 Udløber i dag eller er udløbet", // todo
+                                        Name = "25.04 Udløber om senest 3 mdr.", // todo
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 2, // en
-                                        Name = "25.04 Expires today or has expired",
+                                        Name = "25.04 Expires in 3 months at the latest",
                                         Description = property.Name,
                                     },
                                     new()
                                     {
                                         LanguageId = 3, // ge
-                                        Name = "25.04 Läuft heute ab oder ist abgelaufen", // todo
+                                        Name = "25.04 Läuft spätestens in 3 Monaten ab", // todo
+                                        Description = property.Name,
+                                    },
+                                }, folderId).ConfigureAwait(false),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "25.05 Udløber om senest 6 mdr.", // todo
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "25.05 Expires in 6 months at the latest",
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "25.05 Läuft spätestens in 6 Monaten ab", // todo
+                                        Description = property.Name,
+                                    },
+                                }, folderId).ConfigureAwait(false),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "25.06 Udløber om senest 12 mdr.", // todo
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "25.06 Expires in 12 months at the latest",
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "25.06 Läuft spätestens in 12 Monaten ab", // todo
+                                        Description = property.Name,
+                                    },
+                                }, folderId).ConfigureAwait(false),
+                                await core.FolderCreate(new List<CommonTranslationsModel>
+                                {
+                                    new()
+                                    {
+                                        LanguageId = 1, // da
+                                        Name = "25.07 Udløber om mere end 12 mdr.", // todo
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 2, // en
+                                        Name = "25.07 Expires in more than 12 months.",
+                                        Description = property.Name,
+                                    },
+                                    new()
+                                    {
+                                        LanguageId = 3, // ge
+                                        Name = "25.07 Läuft in mehr als 12 Monaten ab.", // todo
                                         Description = property.Name,
                                     },
                                 }, folderId).ConfigureAwait(false)

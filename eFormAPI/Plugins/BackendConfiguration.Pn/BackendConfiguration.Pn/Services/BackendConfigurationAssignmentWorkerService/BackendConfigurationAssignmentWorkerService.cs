@@ -60,8 +60,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         private readonly WorkOrderHelper _workOrderHelper;
         // private readonly IDeviceUsersService _deviceUsersService;
         private readonly TimePlanningPnDbContext _timePlanningDbContext;
-        private readonly ILogger<BackendConfigurationAssignmentWorkerService> _logger;
-        private readonly IPluginDbOptions<TimePlanningBaseSettings> _options;
+        // private readonly ILogger<BackendConfigurationAssignmentWorkerService> _logger;
+        // private readonly IPluginDbOptions<TimePlanningBaseSettings> _options;
 
         public BackendConfigurationAssignmentWorkerService(
             IEFormCoreService coreHelper,
