@@ -109,7 +109,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IExcelService, ExcelService>();
             services.AddTransient<IChemicalService, ChemicalService>();
             services.AddControllers();
-            // SeedEForms(services);
+            SeedEForms(services);
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
@@ -236,6 +236,20 @@ namespace BackendConfiguration.Pn
                 catch (Exception exception)
                 {
                     Console.WriteLine(exception.Message);
+                }
+            }
+            var cls = await sdkDbContext.CheckLists.Where(x =>
+                x.OriginalId == "142719" && x.WorkflowState != Microting.eForm.Infrastructure.Constants
+                    .Constants.WorkflowStates.Removed).ToListAsync();
+            foreach (var checkList in cls)
+            {
+                await checkList.Delete(sdkDbContext);
+                var clts = await sdkDbContext.CheckListTranslations.Where(x =>
+                    x.CheckListId == checkList.Id).ToListAsync();
+
+                foreach (var clt in clts)
+                {
+                    await clt.Delete(sdkDbContext);
                 }
             }
 
