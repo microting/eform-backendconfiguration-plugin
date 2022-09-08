@@ -2698,6 +2698,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 Regex regex = new Regex(@"(\d\.\s)");
                 DayOfWeek? currentWeekDay= null;
                 // var clTranslations = await sdkDbContext.CheckListTranslations.Where(x => x.CheckListId == clId).ToListAsync();
+
+                var planningTag = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                    x.Name == $"{property.Name} - Aflæsninger-Prøver").ConfigureAwait(false);
+
+                if (planningTag == null)
+                {
+                    planningTag = new PlanningTag
+                    {
+                        Name = $"{property.Name} - Aflæsninger-Prøver",
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                    };
+
+                    await planningTag.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+
                 foreach (var poolHour in parrings)
                 {
                     var clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == $"02. Fækale uheld - {property.Name}").Select(x => x.CheckListId).FirstOrDefault();
@@ -2796,20 +2812,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         planningNameTranslation.Name = $"{poolHour.Name}:00. {planningNameTranslation.Name}";
                     }
 
-                    var planningTag = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
-                        x.Name == $"{property.Name} - Fækale uheld").ConfigureAwait(false);
-
-                    if (planningTag == null)
-                    {
-                        planningTag = new PlanningTag
-                        {
-                            Name = $"{property.Name} - Aflæsninger-Prøver",
-                            CreatedByUserId = _userService.UserId,
-                            UpdatedByUserId = _userService.UserId,
-                        };
-
-                        await planningTag.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                    }
                     planning.PlanningsTags.Add(new() {PlanningTagId = planningTag.Id});
                     planning.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag.Id});
                     planning.DaysBeforeRedeploymentPushMessageRepeat = false;
