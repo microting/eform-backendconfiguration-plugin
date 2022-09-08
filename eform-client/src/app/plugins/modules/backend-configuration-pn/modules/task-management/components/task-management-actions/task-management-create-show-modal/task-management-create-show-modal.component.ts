@@ -58,7 +58,7 @@ export class TaskManagementCreateShowModalComponent
       areaName: new FormControl({
         value: null,
         disabled: false,
-      }, Validators.required),
+      }),
       assignedTo: new FormControl({
         value: null,
         disabled: false,
