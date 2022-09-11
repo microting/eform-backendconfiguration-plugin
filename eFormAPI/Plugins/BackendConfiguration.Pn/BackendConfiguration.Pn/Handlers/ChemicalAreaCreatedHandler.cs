@@ -1,10 +1,12 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
 using ChemicalsBase.Infrastructure.Data.Entities;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
 using Rebus.Handlers;
 
 namespace BackendConfiguration.Pn.Handlers;
@@ -29,62 +31,53 @@ public class ChemicalAreaCreatedHandler : IHandleMessages<ChemicalAreaCreated>
             _backendConfigurationDbContextHelper.GetDbContext();
         await using var chemicalsDbContext = _chemicalDbContextHelper.GetDbContext();
         var property = await backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == message.PropertyId).ConfigureAwait(false);
-        var entityGroup = await _sdkCore.EntityGroupRead(property.EntitySearchListChemicals.ToString()).ConfigureAwait(false);
-        var entityGroupRegNo = await _sdkCore.EntityGroupRead(property.EntitySearchListChemicalRegNos.ToString()).ConfigureAwait(false);
 
-        if (property.ChemicalLastUpdatedAt == null)
+        if (property.EntitySearchListChemicals == null && property.EntitySearchListChemicalRegNos == null)
         {
-            property.ChemicalLastUpdatedAt = DateTime.UtcNow;
-            await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
-            var nextItemUid = entityGroup.EntityGroupItemLst.Count;
-            var chemicals = await chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync();
-            // foreach (Chemical chemical in chemicals)
-            // {
-            //     foreach (Product product in chemical.Products)
-            //     {
-            //         if (product.Verified)
-            //         {
-            //             await core.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
-            //                 chemical.Name,
-            //                 nextItemUid.ToString()).ConfigureAwait(false);
-            //             nextItemUid++;
-            //         }
-            //     }
-            //
-            //     if (chemical.Verified)
-            //     {
-            //         await core.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
-            //             chemical.Name,
-            //             nextItemUid.ToString()).ConfigureAwait(false);
-            //         nextItemUid++;
-            //     }
-            // }
-            var options = new ParallelOptions()
-            {
-                MaxDegreeOfParallelism = 20
-            };
+            var entityGroup = await sdkDbContext.EntityGroups.FirstOrDefaultAsync(x => x.Name == "Chemicals - Barcode").ConfigureAwait(false) ??
+                              await _sdkCore.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode", "", true, false).ConfigureAwait(false);
+            //var
+            property.EntitySearchListChemicals = Convert.ToInt32(entityGroup.MicrotingUid);
 
-            await Parallel.ForEachAsync(chemicals, options, async (chemical, token) =>
+            var entityGroupRegNo = await sdkDbContext.EntityGroups.FirstOrDefaultAsync(x => x.Name == "Chemicals - RegNo").ConfigureAwait(false) ??
+                                   await _sdkCore.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - RegNo", "", true, false).ConfigureAwait(false);
+
+            property.EntitySearchListChemicalRegNos = Convert.ToInt32(entityGroupRegNo.MicrotingUid);
+            property.ChemicalLastUpdatedAt = DateTime.UtcNow;
+
+            await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+
+            if (sdkDbContext.EntityItems.Count(x => x.EntityGroupId == entityGroup.Id) == 0)
             {
-                foreach (Product product in chemical.Products)
+                var nextItemUid = 0;
+                var chemicals = await chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync();
+                var options = new ParallelOptions()
                 {
-                    if (product.Verified)
+                    MaxDegreeOfParallelism = 20
+                };
+
+                await Parallel.ForEachAsync(chemicals, options, async (chemical, token) =>
+                {
+                    foreach (Product product in chemical.Products)
                     {
-                        await _sdkCore.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
+                        if (product.Verified)
+                        {
+                            await _sdkCore.EntitySearchItemCreate(entityGroup.Id, product.Barcode,
+                                chemical.Name,
+                                nextItemUid.ToString()).ConfigureAwait(false);
+                            nextItemUid++;
+                        }
+                    }
+
+                    if (chemical.Verified)
+                    {
+                        await _sdkCore.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
                             chemical.Name,
                             nextItemUid.ToString()).ConfigureAwait(false);
                         nextItemUid++;
                     }
-                }
-
-                if (chemical.Verified)
-                {
-                    await _sdkCore.EntitySearchItemCreate(entityGroupRegNo.Id, chemical.RegistrationNo,
-                        chemical.Name,
-                        nextItemUid.ToString()).ConfigureAwait(false);
-                    nextItemUid++;
-                }
-            }).ConfigureAwait(false);
+                }).ConfigureAwait(false);
+            }
         }
     }
 }

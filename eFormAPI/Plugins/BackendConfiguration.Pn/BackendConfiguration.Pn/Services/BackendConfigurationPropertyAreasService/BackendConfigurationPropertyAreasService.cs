@@ -405,18 +405,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             }
 
 
-                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false).ConfigureAwait(false);
-
-                            property.EntitySearchListChemicals = Convert.ToInt32(groupCreate.MicrotingUid);
-                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Regno - {property.Name}", "", true, false).ConfigureAwait(false);
-                            property.EntitySearchListChemicalRegNos = Convert.ToInt32(groupCreate.MicrotingUid);
-                            groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, $"Chemicals - Areas - {property.Name}", "", true, false).ConfigureAwait(false);
+                            // var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false).ConfigureAwait(false);
+                            // property.EntitySearchListChemicals = Convert.ToInt32(groupCreate.MicrotingUid);
+                            // groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Regno - {property.Name}", "", true, false).ConfigureAwait(false);
+                            // property.EntitySearchListChemicalRegNos = Convert.ToInt32(groupCreate.MicrotingUid);
+                            var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect, $"Chemicals - Areas - {property.Name}", "", true, false).ConfigureAwait(false);
                             property.EntitySelectListChemicalAreas = Convert.ToInt32(groupCreate.MicrotingUid);
                             await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                             string text = "25.01 Registrer produkter";
 
                             var eformId = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.Text == text)
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Select(x => x.CheckListId)
                                 .FirstAsync().ConfigureAwait(false);
 
