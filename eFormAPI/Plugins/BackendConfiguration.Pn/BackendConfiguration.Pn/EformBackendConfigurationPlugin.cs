@@ -267,59 +267,32 @@ namespace BackendConfiguration.Pn
                 await newArea.Create(context).ConfigureAwait(false);
             }
 
-            var f = await sdkDbContext.Fields.FirstOrDefaultAsync(x => x.OriginalId == "37");
-            if (f == null)
+            var pT = await itemsPlanningContext.PlanningTags.FirstAsync(x => x.Name.Contains("- fækale uheld")).ConfigureAwait(false);
+
+            var planningTags =
+                await itemsPlanningContext.PlanningsTags
+                    .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningTagId == pT.Id).ToListAsync();
+
+            foreach (var planningTag in planningTags)
             {
-                var cl = await sdkDbContext.CheckLists.FirstAsync(x => x.OriginalId == "142721" && x.ParentId != null).ConfigureAwait(false);
-                f = new Microting.eForm.Infrastructure.Data.Entities.Field
+                var planningNameTranslation = await itemsPlanningContext.PlanningNameTranslation
+                    .FirstAsync(x => x.PlanningId == planningTag.PlanningId).ConfigureAwait(false);
+                if (!planningNameTranslation.Name.Contains("24. Fækale uheld"))
                 {
-                    CheckListId = cl.Id,
-                    FieldTypeId = sdkDbContext.FieldTypes.Single(x => x.Type == "Number").Id,
-                    DecimalCount = 2,
-                    MinValue = int.MinValue.ToString(),
-                    MaxValue = int.MaxValue.ToString(),
-                    Color = Microting.eForm.Infrastructure.Constants.Constants.FieldColors.Grey,
-                    DisplayIndex = 11,
-                    OriginalId = "37"
-                };
-                await f.Create(sdkDbContext).ConfigureAwait(false);
-                var ft = new FieldTranslation
-                {
-                    FieldId = f.Id,
-                    LanguageId = 1,
-                    Text = "Målt saltindhold",
-                    Description = "<i>%</i>",
-                };
-                await ft.Create(sdkDbContext).ConfigureAwait(false);
-                ft = new FieldTranslation
-                {
-                    FieldId = f.Id,
-                    LanguageId = 2,
-                    Text = "Measured salt content",
-                    Description = "<i>%</i>",
-                };
-                await ft.Create(sdkDbContext).ConfigureAwait(false);
-                ft = new FieldTranslation
-                {
-                    FieldId = f.Id,
-                    LanguageId = 3,
-                    Text = "Salzgehalt messen",
-                    Description = "<i>%</i>",
-                };
-                await ft.Create(sdkDbContext).ConfigureAwait(false);
-                f = await sdkDbContext.Fields.FirstAsync(x => x.CheckListId == cl.Id && x.OriginalId == "376054");
-                f.DisplayIndex = 12;
-                await f.Update(sdkDbContext).ConfigureAwait(false);
-                f = await sdkDbContext.Fields.FirstAsync(x => x.CheckListId == cl.Id && x.OriginalId == "376055");
-                f.DisplayIndex = 13;
-                await f.Update(sdkDbContext).ConfigureAwait(false);
-                f = await sdkDbContext.Fields.FirstAsync(x => x.CheckListId == cl.Id && x.OriginalId == "376056");
-                f.DisplayIndex = 14;
-                await f.Update(sdkDbContext).ConfigureAwait(false);
-                f = await sdkDbContext.Fields.FirstAsync(x => x.CheckListId == cl.Id && x.OriginalId == "376057");
-                f.DisplayIndex = 15;
-                await f.Update(sdkDbContext).ConfigureAwait(false);
+                    await planningTag.Delete(itemsPlanningContext);
+                }
             }
+
+            /*
+            if (context.AreaTranslations.Any(x => x.Name == "11. Pillefyr" && x.LanguageId == 1))
+            {
+                var planningTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "11. Pillefyr");
+                if (planningTag != null)
+                {
+                    planningTag.Name = "11. Varmekilder";
+                    await planningTag.Update(itemsPlanningContext);
+                }
 
             var areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Kemisk APV");
             if (areaTranslation != null)
