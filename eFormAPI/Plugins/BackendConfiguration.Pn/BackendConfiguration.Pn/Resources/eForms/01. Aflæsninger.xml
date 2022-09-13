@@ -185,10 +185,23 @@
                     <Color>e7e7e7</Color>
                 </DataItem>
                 <DataItem type="Number">
+                    <Id>37</Id>
+                    <Label>Målt saltindhold|Measure salt content|Salzgehalt messen</Label>
+                    <Description><![CDATA[<i>%</i>]]></Description>
+                    <DisplayOrder>11</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Number">
                     <Id>376054</Id>
                     <Label>Målt temp. i løbet af dagen|Measured temp. during the day|Gemessene Temp. während des Tages</Label>
                     <Description><![CDATA[<i>Celsius</i>]]></Description>
-                    <DisplayOrder>11</DisplayOrder>
+                    <DisplayOrder>12</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <MinValue/>
                     <MaxValue/>
@@ -201,7 +214,7 @@
                     <Id>376055</Id>
                     <Label>Kommentar|Comment|Kommentar</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>12</DisplayOrder>
+                    <DisplayOrder>13</DisplayOrder>
                     <Multi>1</Multi>
                     <GeolocationEnabled>false</GeolocationEnabled>
                     <Split>false</Split>
@@ -214,7 +227,7 @@
                     <Id>376056</Id>
                     <Label>Udført af|Carried out by|Ausgeführt von</Label>
                     <Description><![CDATA[<i>Søg efter og vælg dit navn</i>|<i>Search for and select your name</i>|<i>Suchen Sie nach Ihrem Namen und wählen Sie ihn aus</i>]]></Description>
-                    <DisplayOrder>13</DisplayOrder>
+                    <DisplayOrder>14</DisplayOrder>
                     <EntityTypeId>REPLACE_ME</EntityTypeId>
                     <Mandatory>false</Mandatory>
                     <Color>ffe4e4</Color>
@@ -223,7 +236,7 @@
                     <Id>376057</Id>
                     <Label>Indsend registrering|Submit registration|Anmeldung absenden</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>14</DisplayOrder>
+                    <DisplayOrder>15</DisplayOrder>
                     <Value>INDSEND</Value>
                     <Color>f0f8db</Color>
                 </DataItem>
