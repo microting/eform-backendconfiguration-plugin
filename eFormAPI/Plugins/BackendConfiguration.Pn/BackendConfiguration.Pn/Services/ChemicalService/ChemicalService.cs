@@ -99,17 +99,8 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                             Verified = chemical.Verified,
                             Locations = chemicalProductProperty.Locations.Replace("|", ", "),
                             PropertyName = property.Name,
-                            ExpiredState = chemical.UseAndPossesionDeadline != null ? chemical.UseAndPossesionDeadline > DateTime.UtcNow
-                                    ? chemical.UseAndPossesionDeadline < DateTime.UtcNow.AddDays(14)
-                                        ? "Udløber inden for 14 dage"
-                                        : "OK"
-                                    : "Udløbet" :
-                                chemical.AuthorisationExpirationDate > DateTime.UtcNow
-                                    ? chemical.AuthorisationExpirationDate < DateTime.UtcNow.AddDays(14)
-                                        ? "Udløber inden for 14 dage"
-                                        : "OK"
-                                    : "Udløbet",
-                            ExpiredDate = chemical.UseAndPossesionDeadline ?? chemical.AuthorisationExpirationDate,
+                            ExpiredState = GetExpiredState(chemicalProductProperty.ExpireDate),
+                            ExpiredDate = chemicalProductProperty.ExpireDate,
                             UseAndPossesionDeadline = chemical.UseAndPossesionDeadline
                         };
                         theList.Add(chemicalPnModel);
@@ -132,6 +123,36 @@ namespace BackendConfiguration.Pn.Services.ChemicalService
                 return new OperationDataResult<Paged<ChemicalPnModel>>(false,
                     "ErrorObtainingLists");
             }
+        }
+
+        private string GetExpiredState(DateTime? expireDateTime)
+        {
+            if (expireDateTime <= DateTime.UtcNow)
+            {
+                return "Udløber i dag eller er udløbet";
+            }
+
+            if (expireDateTime <= DateTime.UtcNow.AddMonths(1))
+            {
+                return "Udløber om senest 1 mdr.";
+            }
+
+            if (expireDateTime <= DateTime.UtcNow.AddMonths(3))
+            {
+                return "Udløber om senest 3 mdr.";
+            }
+
+            if (expireDateTime <= DateTime.UtcNow.AddMonths(6))
+            {
+                return "Udløber om senest 6 mdr.";
+            }
+
+            if (expireDateTime <= DateTime.UtcNow.AddMonths(12))
+            {
+                return "Udløber om senest 12 mdr.";
+            }
+
+            return "Udløber om mere end 12 mdr.";
         }
     }
 }

@@ -321,6 +321,25 @@ namespace BackendConfiguration.Pn
                 await f.Update(sdkDbContext).ConfigureAwait(false);
             }
 
+            var areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Kemisk APV");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "25. Kemikontrol";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Chemical APV");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "25. Chemical control";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Chemisches APV");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "25. Chemische Kontrolle";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+
             var cltranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
             var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == cltranslation.CheckListId);
 
