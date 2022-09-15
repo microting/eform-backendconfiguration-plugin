@@ -267,32 +267,27 @@ namespace BackendConfiguration.Pn
                 await newArea.Create(context).ConfigureAwait(false);
             }
 
-            var pT = await itemsPlanningContext.PlanningTags.FirstAsync(x => x.Name.Contains("- fækale uheld")).ConfigureAwait(false);
+            var pT = await itemsPlanningContext.PlanningTags.FirstOrDefaultAsync(x => x.Name.Contains("- fækale uheld")).ConfigureAwait(false);
 
-            var planningTags =
-                await itemsPlanningContext.PlanningsTags
-                    .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                    .Where(x => x.PlanningTagId == pT.Id).ToListAsync();
-
-            foreach (var planningTag in planningTags)
+            if (pT != null)
             {
-                var planningNameTranslation = await itemsPlanningContext.PlanningNameTranslation
-                    .FirstAsync(x => x.PlanningId == planningTag.PlanningId).ConfigureAwait(false);
-                if (!planningNameTranslation.Name.Contains("24. Fækale uheld"))
+                var planningTags =
+                    await itemsPlanningContext.PlanningsTags
+                        .Where(x => x.WorkflowState !=
+                                    Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                        .Where(x => x.PlanningTagId == pT.Id).ToListAsync();
+
+                foreach (var planningTag in planningTags)
                 {
-                    await planningTag.Delete(itemsPlanningContext);
+                    var planningNameTranslation = await itemsPlanningContext.PlanningNameTranslation
+                        .FirstAsync(x => x.PlanningId == planningTag.PlanningId).ConfigureAwait(false);
+                    if (!planningNameTranslation.Name.Contains("24. Fækale uheld"))
+                    {
+                        await planningTag.Delete(itemsPlanningContext);
+                    }
                 }
             }
 
-            /*
-            if (context.AreaTranslations.Any(x => x.Name == "11. Pillefyr" && x.LanguageId == 1))
-            {
-                var planningTag = itemsPlanningContext.PlanningTags.SingleOrDefault(x => x.Name == "11. Pillefyr");
-                if (planningTag != null)
-                {
-                    planningTag.Name = "11. Varmekilder";
-                    await planningTag.Update(itemsPlanningContext);
-                }
 
             var areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Kemisk APV");
             if (areaTranslation != null)
