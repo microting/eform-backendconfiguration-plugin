@@ -27,6 +27,7 @@
                   [value]="selectedAreaRulePlanning.status"
                   [checked]="selectedAreaRulePlanning.status"
                   [(ngModel)]="selectedAreaRulePlanning.status"
+                  [disabled]="selectedArea.type === 9"
                   class="custom-control-input"
                 />
                 <label
@@ -301,7 +302,7 @@
               <ng-container  *ngIf="selectedAreaRule.translatedName === '01. Registrer halebid'"><br></ng-container>
               <ng-container  *ngIf="selectedArea.type === 10"><br></ng-container>
               <div class="row">
-                <div class="col-12" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid' && selectedArea.type !== 10">
+                <div class="col-12" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid' && selectedArea.type !== 10 && selectedArea.type !== 9">
                   <div class="md-form" [owlDateTimeTrigger]="dt1">
                     <input
                       mdbInput
@@ -430,7 +431,7 @@
             </table>
           </div>
 
-          <ng-container *ngIf="selectedAreaRulePlanning.status">
+          <ng-container *ngIf="!selectedAreaRulePlanning.status">
             <ng-select *ngIf="selectedArea.type === 9"
                        [items]="selectedArea.availableWorkers"
                        [searchable]="false"
@@ -439,11 +440,21 @@
                        [placeholder]="selectedSite.siteName"
                        [(ngModel)]="type9assignedSite"
                        (change)="addToArraySelect($event)"
+                       [disabled]="selectedAreaRulePlanning.status"
                        bindLabel="siteName"
                        bindValue="siteId"
                        id="createAssignedWorkers">
 
             </ng-select>
+          </ng-container>
+          <ng-container *ngIf="selectedAreaRulePlanning.status">
+            <div class="md-form">
+              <input
+                mdbInput
+                type="text"
+                value="{{selectedSite.siteName}}" disabled>
+              <label>{{ 'Assigned worker' | translate }}</label>
+            </div>
           </ng-container>
 
         </div>
