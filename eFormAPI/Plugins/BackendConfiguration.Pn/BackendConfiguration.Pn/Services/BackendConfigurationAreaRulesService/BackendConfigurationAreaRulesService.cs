@@ -386,10 +386,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 if (!string.IsNullOrEmpty(updateModel.EformName))
                 {
                     areaRule.EformName = updateModel.EformName;
-                    areaRule.EformId = sdkDbContext.CheckListTranslations
-                        .Where(x => x.Text == updateModel.EformName)
-                        .Select(x => x.CheckListId)
-                        .First();
+                    areaRule.EformId = updateModel.EformId;
+                    // areaRule.EformId = sdkDbContext.CheckListTranslations
+                    //     .Where(x => x.Text == updateModel.EformName)
+                    //     .Select(x => x.CheckListId)
+                    //     .First();
                     if (areaRule.SecondaryeFormName == "Morgenrundtur")
                     {
                         areaRule.SecondaryeFormId = (int)areaRule.EformId;
