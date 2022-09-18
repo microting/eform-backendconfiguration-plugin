@@ -2635,9 +2635,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
             //var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
             if (areaRulePlanningModel.Status)
             {
-                var parrings = await _backendConfigurationPnDbContext.PoolHours
+                var poolHours = await _backendConfigurationPnDbContext.PoolHours
                     .Where(x => x.AreaRuleId == areaRule.Id)
-                    .Where(x => x.IsActive == true)
+                    //.Where(x => x.IsActive == true)
                     .ToListAsync().ConfigureAwait(false);
 
                 var property = await _backendConfigurationPnDbContext.Properties.SingleAsync(x => x.Id == areaRule.PropertyId).ConfigureAwait(false);
@@ -2714,7 +2714,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     await planningTag.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
 
-                foreach (var poolHour in parrings)
+
+                var globalPlanningTag1 = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                    x.Name == $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}").ConfigureAwait(false);
+
+                if (globalPlanningTag1 == null)
+                {
+                    globalPlanningTag1 = new PlanningTag
+                    {
+                        Name = $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}",
+                        CreatedByUserId = _userService.UserId,
+                        UpdatedByUserId = _userService.UserId,
+                    };
+
+                    await globalPlanningTag1.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+
+                foreach (var poolHour in poolHours)
                 {
                     var clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == $"02. Fækale uheld - {property.Name}").Select(x => x.CheckListId).FirstOrDefault();
                     var innerLookupName = $"{(int)poolHour.DayOfWeek}. {poolHour.DayOfWeek.ToString().Substring(0, 3)}";
@@ -2724,20 +2740,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         .Where(x => x.FolderTranslations.Any(y => y.Name == innerLookupName))
                         .FirstAsync().ConfigureAwait(false);
 
-                    var globalPlanningTag = await _itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
-                        x.Name == $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}").ConfigureAwait(false);
-
-                    if (globalPlanningTag == null)
-                    {
-                        globalPlanningTag = new PlanningTag
-                        {
-                            Name = $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}",
-                            CreatedByUserId = _userService.UserId,
-                            UpdatedByUserId = _userService.UserId,
-                        };
-
-                        await globalPlanningTag.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                    }
 
                     if (currentWeekDay == null || currentWeekDay != (DayOfWeek)poolHour.DayOfWeek)
                     {
@@ -2771,7 +2773,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         }
 
                         planningStatic.PlanningsTags.Add(new() {PlanningTagId = planningTagStatic.Id});
-                        planningStatic.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag.Id});
+                        planningStatic.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag1.Id});
 
                         await planningStatic.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         await _pairItemWichSiteHelper.Pair(
@@ -2789,47 +2791,53 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                     currentWeekDay = (DayOfWeek)poolHour.DayOfWeek;
 
-                    clId = sdkDbContext.CheckListTranslations.Where(x => x.Text == $"01. Aflæsninger - {property.Name}").Select(x => x.CheckListId).FirstOrDefault();
-                    var planning = await CreateItemPlanningObject(clId, $"01. Aflæsninger - {property.Name}",
-                        poolDayFolder.Id, areaRulePlanningModel, areaRule).ConfigureAwait(false);
-                    planning.DayOfWeek = (DayOfWeek)poolHour.DayOfWeek;
-                    planning.RepeatEvery = 1;
-                    planning.RepeatType = RepeatType.Week;
-                    var nextDay = GetNextWeekday(DateTime.UtcNow, (DayOfWeek) poolHour.DayOfWeek);
-                    planning.StartDate = new DateTime(nextDay.Year, nextDay.Month, nextDay.Day, 0, 0, 0);
-                    planning.SdkFolderName = innerLookupName;
-                    planning.PushMessageOnDeployment = false;
-                    planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
-                        areaRuleAreaRuleTranslation => new PlanningNameTranslation
-                        {
-                            LanguageId = areaRuleAreaRuleTranslation.LanguageId,
-                            Name =
-                                $"{poolDayFolder.FolderTranslations.Where(x => x.LanguageId == areaRuleAreaRuleTranslation.LanguageId).Select(x => x.Name).First()} - {areaRuleAreaRuleTranslation.Name}",
-                        }).ToList();
-                    foreach (var planningNameTranslation in planning.NameTranslations)
+                    if (poolHour.IsActive)
                     {
-                        planningNameTranslation.Name = regex.Replace(planningNameTranslation.Name, "");
-                        planningNameTranslation.Name = $"{poolHour.Name}:00. {planningNameTranslation.Name}";
+                        clId = sdkDbContext.CheckListTranslations
+                            .Where(x => x.Text == $"01. Aflæsninger - {property.Name}").Select(x => x.CheckListId)
+                            .FirstOrDefault();
+                        var planning = await CreateItemPlanningObject(clId, $"01. Aflæsninger - {property.Name}",
+                            poolDayFolder.Id, areaRulePlanningModel, areaRule).ConfigureAwait(false);
+                        planning.DayOfWeek = (DayOfWeek)poolHour.DayOfWeek;
+                        planning.RepeatEvery = 1;
+                        planning.RepeatType = RepeatType.Week;
+                        var nextDay = GetNextWeekday(DateTime.UtcNow, (DayOfWeek)poolHour.DayOfWeek);
+                        planning.StartDate = new DateTime(nextDay.Year, nextDay.Month, nextDay.Day, 0, 0, 0);
+                        planning.SdkFolderName = innerLookupName;
+                        planning.PushMessageOnDeployment = false;
+                        planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
+                            areaRuleAreaRuleTranslation => new PlanningNameTranslation
+                            {
+                                LanguageId = areaRuleAreaRuleTranslation.LanguageId,
+                                Name =
+                                    $"{poolDayFolder.FolderTranslations.Where(x => x.LanguageId == areaRuleAreaRuleTranslation.LanguageId).Select(x => x.Name).First()} - {areaRuleAreaRuleTranslation.Name}",
+                            }).ToList();
+                        foreach (var planningNameTranslation in planning.NameTranslations)
+                        {
+                            planningNameTranslation.Name = regex.Replace(planningNameTranslation.Name, "");
+                            planningNameTranslation.Name = $"{poolHour.Name}:00. {planningNameTranslation.Name}";
+                        }
+
+                        planning.PlanningsTags.Add(new() { PlanningTagId = planningTag.Id });
+                        planning.PlanningsTags.Add(new() { PlanningTagId = globalPlanningTag1.Id });
+                        planning.DaysBeforeRedeploymentPushMessageRepeat = false;
+
+                        await planning.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                        poolHour.ItemsPlanningId = planning.Id;
+                        await poolHour.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
+                        var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+                            planning.Id,
+                            poolDayFolder.Id);
+                        areaRulePlanning.ComplianceEnabled = false;
+                        areaRulePlanning.RepeatEvery = 0;
+                        areaRulePlanning.RepeatType = (int)RepeatType.Day;
+                        areaRulePlanning.DayOfWeek = (int)(DayOfWeek)poolHour.DayOfWeek;
+                        areaRulePlanning.FolderId = poolDayFolder.Id;
+
+                        await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
-
-                    planning.PlanningsTags.Add(new() {PlanningTagId = planningTag.Id});
-                    planning.PlanningsTags.Add(new() {PlanningTagId = globalPlanningTag.Id});
-                    planning.DaysBeforeRedeploymentPushMessageRepeat = false;
-
-                    await planning.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-
-                    poolHour.ItemsPlanningId = planning.Id;
-                    await poolHour.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-
-                    var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
-                        poolDayFolder.Id);
-                    areaRulePlanning.ComplianceEnabled = false;
-                    areaRulePlanning.RepeatEvery = 0;
-                    areaRulePlanning.RepeatType = (int)RepeatType.Day;
-                    areaRulePlanning.DayOfWeek = (int)(DayOfWeek)poolHour.DayOfWeek;
-                    areaRulePlanning.FolderId = poolDayFolder.Id;
-
-                    await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
         }
