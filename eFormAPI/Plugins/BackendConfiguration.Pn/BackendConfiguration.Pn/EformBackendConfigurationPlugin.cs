@@ -28,6 +28,7 @@ using Castle.MicroKernel.Registration;
 using Castle.Windsor;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Factories;
+using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn
@@ -363,11 +364,14 @@ namespace BackendConfiguration.Pn
             var chemicalBaseConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
                 "chemical-base-plugin");
+            var documentsConnectionString = connectionString.Replace(
+                "eform-backend-configuration-plugin",
+                "eform-angular-case-template-plugin");
 
             _connectionString = connectionString;
             services.AddDbContext<BackendConfigurationPnDbContext>(o =>
                 o.UseMySql(connectionString, new MariaDbServerVersion(
-                    new Version(10, 4, 0)), mySqlOptionsAction: builder =>
+                    ServerVersion.AutoDetect(connectionString)), mySqlOptionsAction: builder =>
                 {
                     builder.EnableRetryOnFailure();
                     builder.MigrationsAssembly(PluginAssembly().FullName);
@@ -375,7 +379,7 @@ namespace BackendConfiguration.Pn
 
             services.AddDbContext<ItemsPlanningPnDbContext>(o =>
                 o.UseMySql(itemsPlannigConnectionString, new MariaDbServerVersion(
-                    new Version(10, 4, 0)), mySqlOptionsAction: builder =>
+                    ServerVersion.AutoDetect(itemsPlannigConnectionString)), mySqlOptionsAction: builder =>
                 {
                     builder.EnableRetryOnFailure();
                     builder.MigrationsAssembly(PluginAssembly().FullName);
@@ -383,7 +387,7 @@ namespace BackendConfiguration.Pn
 
             services.AddDbContext<TimePlanningPnDbContext>(o =>
                 o.UseMySql(timeRegistrationConnectionString, new MariaDbServerVersion(
-                    new Version(10, 4, 0)), mySqlOptionsAction: builder =>
+                    ServerVersion.AutoDetect(timeRegistrationConnectionString)), mySqlOptionsAction: builder =>
                 {
                     builder.EnableRetryOnFailure();
                     builder.MigrationsAssembly(PluginAssembly().FullName);
@@ -391,7 +395,15 @@ namespace BackendConfiguration.Pn
 
             services.AddDbContext<ChemicalsDbContext>(o =>
                 o.UseMySql(chemicalBaseConnectionString, new MariaDbServerVersion(
-                    new Version(10, 4, 0)), mySqlOptionsAction: builder =>
+                    ServerVersion.AutoDetect(chemicalBaseConnectionString)), mySqlOptionsAction: builder =>
+                {
+                    builder.EnableRetryOnFailure();
+                    builder.MigrationsAssembly(PluginAssembly().FullName);
+                }));
+
+            services.AddDbContext<CaseTemplatePnDbContext>(o =>
+                o.UseMySql(documentsConnectionString, new MariaDbServerVersion(
+                    ServerVersion.AutoDetect(documentsConnectionString)), mySqlOptionsAction: builder =>
                 {
                     builder.EnableRetryOnFailure();
                     builder.MigrationsAssembly(PluginAssembly().FullName);
