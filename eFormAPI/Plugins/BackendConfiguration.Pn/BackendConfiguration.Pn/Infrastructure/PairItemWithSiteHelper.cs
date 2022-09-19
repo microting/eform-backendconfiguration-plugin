@@ -188,11 +188,6 @@ namespace BackendConfiguration.Pn.Infrastructure
                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
 
-                    if (mainElement.Label == "Morgenrundtur")
-                    {
-                        mainElement.Repeated = 1;
-                    }
-
                     // mainElement.PushMessageBody = mainElement.Label;
                     // mainElement.PushMessageTitle = folder.Name;
                     // if (folder.ParentId != null)
@@ -261,6 +256,11 @@ namespace BackendConfiguration.Pn.Infrastructure
                         if (planning.RepeatEvery == 0 && planning.RepeatType == RepeatType.Day)
                         {
                             mainElement.Repeated = 0;
+                        }
+
+                        if (mainElement.Label == "Morgenrundtur")
+                        {
+                            mainElement.Repeated = 1;
                         }
 
                         var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null).ConfigureAwait(false);

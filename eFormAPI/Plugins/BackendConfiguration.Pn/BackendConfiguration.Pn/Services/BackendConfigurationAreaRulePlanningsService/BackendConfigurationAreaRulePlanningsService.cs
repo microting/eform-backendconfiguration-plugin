@@ -242,7 +242,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     }
                                 }
 
-                                foreach (var areaRulePlanning in areaRule.AreaRulesPlannings)
+                                foreach (var areaRulePlanning in areaRule.AreaRulesPlannings.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                                 {
                                     var clId = sdkDbContext.CheckListTranslations
                                         .Where(x => x.Text == $"02. Fækale uheld - {property.Name}")
@@ -359,7 +359,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             };
 
                                             await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                                            mainElement.Repeated = 0;
+                                            mainElement.Repeated = 1;
                                             var caseId = await core.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid,
                                                 null).ConfigureAwait(false);
                                             if (caseId != null)
