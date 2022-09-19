@@ -187,6 +187,12 @@ namespace BackendConfiguration.Pn.Infrastructure
                     mainElement.CheckListFolderName = folderMicrotingId;
                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+
+                    if (mainElement.Label == "Morgenrundtur")
+                    {
+                        mainElement.Repeated = 1;
+                    }
+
                     // mainElement.PushMessageBody = mainElement.Label;
                     // mainElement.PushMessageTitle = folder.Name;
                     // if (folder.ParentId != null)
