@@ -448,7 +448,7 @@
             </ng-select>
           </ng-container>
           <ng-container *ngIf="selectedAreaRulePlanning.status">
-            <div class="md-form">
+            <div class="md-form" *ngIf="selectedArea.type === 9">
               <input
                 mdbInput
                 type="text"
