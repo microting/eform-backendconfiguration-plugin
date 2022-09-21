@@ -225,16 +225,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                     var result =
                                                         await sdkDbContext.Cases.SingleOrDefaultAsync(x =>
                                                             x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
-                                                    if (result is {MicrotingUid: { }})
+                                                    if (result != null)
                                                     {
                                                         await core.CaseDelete((int) result.MicrotingUid).ConfigureAwait(false);
-                                                    }
-                                                    else
-                                                    {
-                                                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
-                                                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                                                        await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
                                                     }
                                                 }
                                             }
@@ -257,7 +250,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             CreatedByUserId = _userService.UserId,
                                             UpdatedByUserId = _userService.UserId,
                                             AreaId = areaRule.AreaId,
-                                            AreaRuleId = areaRule.Id
+                                            AreaRuleId = areaRule.Id,
                                         };
                                         await siteForCreate.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                                         var planningSite =
@@ -1456,7 +1449,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         break;
                                 }
                             }
-
                         }
                     }
 
