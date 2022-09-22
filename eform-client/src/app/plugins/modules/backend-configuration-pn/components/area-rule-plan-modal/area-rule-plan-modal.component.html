@@ -431,7 +431,7 @@
             </table>
           </div>
 
-          <ng-container *ngIf="!selectedAreaRulePlanning.status">
+          <ng-container *ngIf="selectedSite.siteName === undefined">
             <ng-select *ngIf="selectedArea.type === 9"
                        [items]="selectedArea.availableWorkers"
                        [searchable]="false"
@@ -440,15 +440,14 @@
                        [placeholder]="selectedSite.siteName"
                        [(ngModel)]="type9assignedSite"
                        (change)="addToArraySelect($event)"
-                       [disabled]="selectedAreaRulePlanning.status"
                        bindLabel="siteName"
                        bindValue="siteId"
                        id="createAssignedWorkers">
 
             </ng-select>
           </ng-container>
-          <ng-container *ngIf="selectedAreaRulePlanning.status">
-            <div class="md-form">
+          <ng-container *ngIf="selectedSite.siteName !== undefined">
+            <div class="md-form" *ngIf="selectedArea.type === 9">
               <input
                 mdbInput
                 type="text"
