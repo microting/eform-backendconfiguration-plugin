@@ -31,7 +31,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   GetAll: 'api/backend-configuration-pn/properties/assignment/index-device-user',
   GetCompanyType: 'api/backend-configuration-pn/properties/get-company-type',
   GetChrInformation: 'api/backend-configuration-pn/properties/get-chr-information',
-};
+}
 
 @Injectable({
   providedIn: 'root',

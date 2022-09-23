@@ -71,6 +71,14 @@ export const routes: Routes = [
             (m) => m.TaskManagementModule
           ),
       },
+      {
+        path: 'documents',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/documents/documents.module').then(
+            (m) => m.DocumentsModule
+          ),
+      },
     ],
   },
 ];

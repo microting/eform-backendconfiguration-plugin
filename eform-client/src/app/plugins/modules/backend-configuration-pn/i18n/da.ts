@@ -193,5 +193,10 @@ export const da = {
   'ProductName':'Produkt navn',
   'Barcode': 'Stregkode',
   "Expire state": "Udløbsstatus",
-  "e-mail addresses": "e-mail adresser"
+  "e-mail addresses": "e-mail adresser",
+  "Expires in less than 1 month": "Udløber om mindre end 1 måned",
+  "Expires in 1-3 months": "Udløber om 1-3 måneder",
+  "Expires in 4-6 months": "Udløber om 4-6 måneder",
+  "Expires in 6-12 months": "Udløber om 6-12 måneder",
+  "Expires in over 12 months": "Udløber om over 12 måneder",
 };

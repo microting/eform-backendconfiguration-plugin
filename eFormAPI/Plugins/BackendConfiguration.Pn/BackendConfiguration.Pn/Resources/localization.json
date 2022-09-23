@@ -27,6 +27,15 @@
     }
   },
   {
+    "Key": "Documents",
+    "LocalizedValue": {
+      "da": "Dokumenter",
+      "de": "Unterlagen",
+      "en-US": "Documents",
+      "uk-UA": "Документи"
+    }
+  },
+  {
     "Key": "ErrorWhileObtainingProperties",
     "LocalizedValue": {
       "da": "Fejl under hentning af ejendomme",

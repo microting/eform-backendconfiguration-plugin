@@ -81,16 +81,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         {
             try
             {
-                var propertiesQuery = _backendConfigurationPnDbContext.Properties
+                var query = _backendConfigurationPnDbContext.Properties
                     .Include(x => x.SelectedLanguages)
                     .Include(x => x.PropertyWorkers)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
                 var nameFields = new List<string> { "Name", "CHR", "Address", "CVR" };
-                propertiesQuery = QueryHelper.AddFilterAndSortToQuery(propertiesQuery, request, nameFields);
+                query = QueryHelper.AddFilterAndSortToQuery(query, request, nameFields);
 
                 // get total
-                var total = await propertiesQuery.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+                var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
 
                 var properties = new List<PropertiesModel>();
 
@@ -102,7 +102,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     //    .Take(request.PageSize);
 
                     // add select to query and get from db
-                    properties = await propertiesQuery
+                    properties = await query
                         .Select(x => new PropertiesModel
                         {
                             Id = x.Id,

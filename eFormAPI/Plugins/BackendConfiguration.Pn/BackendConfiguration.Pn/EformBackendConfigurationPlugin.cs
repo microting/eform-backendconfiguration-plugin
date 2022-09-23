@@ -29,6 +29,7 @@ using Castle.Windsor;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Factories;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
+using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn
@@ -413,6 +414,10 @@ namespace BackendConfiguration.Pn
             var chemicalsDbContext = chemicalsContextFactory.CreateDbContext(new[] { chemicalBaseConnectionString });
             chemicalsDbContext.Database.Migrate();
 
+            var caseTemplatePnContextFactory = new CaseTemplatePnContextFactory();
+            var caseTemplateContext = caseTemplatePnContextFactory.CreateDbContext(new[] { documentsConnectionString });
+            caseTemplateContext.Database.Migrate();
+
             var contextFactory = new BackendConfigurationPnContextFactory();
             var context = contextFactory.CreateDbContext(new[] { connectionString });
             context.Database.Migrate();
@@ -689,6 +694,75 @@ namespace BackendConfiguration.Pn
                                 }
                             }
                         },
+                        new()
+                        {
+                            Name = "Documents",
+                            E2EId = "backend-configuration-pn-documents",
+                            Link = "/plugins/backend-configuration-pn/documents",
+                            Type = MenuItemTypeEnum.Link,
+                            Position = 1,
+                            MenuTemplate = new PluginMenuTemplateModel
+                            {
+                                Name = "Documents",
+                                E2EId = "backend-configuration-pn-documents",
+                                DefaultLink = "/plugins/backend-configuration-pn/documents",
+                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                                Translations = new List<PluginMenuTranslationModel>
+                                {
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.English,
+                                        Name = "Documents",
+                                        Language = LanguageNames.English,
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.German,
+                                        Name = "Unterlagen",
+                                        Language = LanguageNames.German,
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Danish,
+                                        Name = "Dokumenter",
+                                        Language = LanguageNames.Danish,
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Ukrainian,
+                                        Name = "Документи",
+                                        Language = LanguageNames.Ukrainian,
+                                    }
+                                }
+                            },
+                            Translations = new List<PluginMenuTranslationModel>
+                            {
+                                new()
+                                {
+                                    LocaleName = LocaleNames.English,
+                                    Name = "Documents",
+                                    Language = LanguageNames.English,
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.German,
+                                    Name = "Unterlagen",
+                                    Language = LanguageNames.German,
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Danish,
+                                    Name = "Dokumenter",
+                                    Language = LanguageNames.Danish,
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Ukrainian,
+                                    Name = "Документи",
+                                    Language = LanguageNames.Ukrainian,
+                                }
+                            }
+                        },
                     }
                 }
             };
@@ -731,6 +805,14 @@ namespace BackendConfiguration.Pn
                         Name = localizationService?.GetString("Task management"),
                         E2EId = "backend-configuration-task-management",
                         Link = "/plugins/backend-configuration/task-management",
+                        Guards = new List<string>(),
+                        Position = 2,
+                    },
+                    new()
+                    {
+                        Name = localizationService?.GetString("Documents"),
+                        E2EId = "backend-configuration-documents",
+                        Link = "/plugins/backend-configuration/documents",
                         Guards = new List<string>(),
                         Position = 2,
                     },

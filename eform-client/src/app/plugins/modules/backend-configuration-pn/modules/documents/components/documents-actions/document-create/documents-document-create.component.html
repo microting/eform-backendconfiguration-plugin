@@ -1,0 +1,165 @@
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade"
+  #frame="mdbModal"
+>
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <!--        <h3 *ngIf="selectedParentFolder">-->
+        <!--          {{ 'Create Nested Folder' | translate }}-->
+        <!--        </h3>-->
+        <h3>{{ 'Create document' | translate }}</h3>
+        <button class="close" data-dismiss="modal" (click)="hide()">
+          <span>×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <mdb-card class="mb-3">
+          <mdb-card-body *ngIf="folders !== undefined">
+            <div class="row">
+              <div class="ng-select-wrapper col-md-12">
+                <ng-select
+                  class="custom"
+                  dropdownPosition="'bottom'"
+                  [placeholder]="'Selected folder' | translate"
+                  [clearable]="false"
+                  [bindLabel]="'documentFolderTranslations[0].name'"
+                  [bindValue]="'id'"
+                  [(ngModel)]="selectedFolder"
+                  id="createLanguageSelector"
+                  [items]="folders.entities"
+                ></ng-select>
+              </div>
+            </div>
+          </mdb-card-body>
+        </mdb-card>
+        <mdb-card class="mb-3">
+          <mdb-card-body *ngIf="availableProperties !== undefined">
+            <div class="row">
+              <ng-container *ngFor="let property of availableProperties; let propertyIndex = index">
+                <div class="col-md-6">
+                  <div class="mat-checkbox">
+                    <input
+                      id="property{{ propertyIndex }}"
+                      (change)="
+                          addToArray(
+                            $event,
+                            getAssignmentByPropertyId(property.id).propertyId
+                          )
+                        "
+                      [checked]="
+                          getAssignmentIsCheckedByPropertyId(property.id)
+                        "
+                      [value]="
+                          getAssignmentIsCheckedByPropertyId(property.id)
+                        "
+                      type="checkbox"
+                      color="primary"
+                    />
+                    <label for="property{{ propertyIndex }}">
+                      {{ property.name }}
+                    </label>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </mdb-card-body>
+        </mdb-card>
+        <mdb-card class="mb-3">
+          <mdb-card-body>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="md-form" [owlDateTimeTrigger]="dt2">
+                <input
+                  mdbInput
+                  [owlDateTime]="dt2"
+                  [ngModel]="newDocumentModel.endDate"
+                  (ngModelChange)="updateStartDate($event)"
+                  type="text"
+                  id="createStartFrom"
+                  name="createStartFrom"
+                  class="form-control"
+                />
+                <owl-date-time [pickerType]="'calendar'" #dt2></owl-date-time>
+                <label for="createStartFrom">{{
+                  'End date' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          </mdb-card-body>
+        </mdb-card>
+        <mdb-card>
+          <mdb-card-body>
+            <ng-container
+              *ngFor="
+                let translation of newDocumentModel.documentTranslations;
+                let translationIndex = index
+              "
+            >
+<!--              <ng-container *ngIf="selectedLanguage === translation.languageId">-->
+                <div class="row">
+                  <div class="col-12">
+                    <h4>
+                      {{ languages[translationIndex].text }}
+                    </h4>
+                    <div class="md-form">
+                      <input
+                        mdbInput
+                        type="text"
+                        id="createFolderNameTranslation_{{ translationIndex }}"
+                        name="createFolderNameTranslation_{{
+                          translationIndex
+                        }}"
+                        [(ngModel)]="translation.name"
+                        class="form-control"
+                      />
+                      <label
+                        for="createFolderNameTranslation_{{ translationIndex }}"
+                      >
+                        {{ 'Name' | translate }}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-12">
+                    <formatting-text-editor
+                      [(value)]="translation.description"
+                      [placeholder]="'Description' | translate"
+                      id="createFolderDescriptionTranslation_{{
+                        translationIndex
+                      }}"
+                    >
+                    </formatting-text-editor>
+                  </div>
+                </div>
+            <br />
+<!--              </ng-container>-->
+            </ng-container>
+          </mdb-card-body>
+        </mdb-card>
+      </div>
+      <div class="modal-footer">
+        <button
+          mdbBtn
+          class="btn-success btn-small-height"
+          id="folderSaveBtn"
+          (click)="createDocument()"
+        >
+          {{ 'Create' | translate }}
+        </button>
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          id="cancelCreateBtn"
+          (click)="cancelCreate()"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
