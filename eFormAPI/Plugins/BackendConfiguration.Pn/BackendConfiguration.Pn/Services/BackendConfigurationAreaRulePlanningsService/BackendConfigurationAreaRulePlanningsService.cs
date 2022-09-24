@@ -2646,7 +2646,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     {
                         globalPlanningTag = new PlanningTag
                         {
-                            Name = $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}",
+                            Name = $"{property.Name} - Morgenrundtur",
                             CreatedByUserId = _userService.UserId,
                             UpdatedByUserId = _userService.UserId,
                         };
