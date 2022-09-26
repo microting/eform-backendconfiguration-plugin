@@ -100,42 +100,69 @@
               "
             >
 <!--              <ng-container *ngIf="selectedLanguage === translation.languageId">-->
-                <div class="row">
-                  <div class="col-12">
-                    <h4>
-                      {{ languages[translationIndex].text }}
-                    </h4>
-                    <div class="md-form">
-                      <input
-                        mdbInput
-                        type="text"
-                        id="createFolderNameTranslation_{{ translationIndex }}"
-                        name="createFolderNameTranslation_{{
-                          translationIndex
-                        }}"
-                        [(ngModel)]="translation.name"
-                        class="form-control"
-                      />
-                      <label
-                        for="createFolderNameTranslation_{{ translationIndex }}"
+              <div class="row">
+                <div class="col-12">
+                  <p>
+                    {{ languages[translationIndex].text }}
+                  </p>
+                  <div class="md-form">
+                    <input
+                      mdbInput
+                      type="text"
+                      id="createFolderNameTranslation_{{ translationIndex }}"
+                      name="createFolderNameTranslation_{{
+                        translationIndex
+                      }}"
+                      [(ngModel)]="translation.name"
+                      class="form-control"
+                    />
+                    <label
+                      for="createFolderNameTranslation_{{ translationIndex }}"
+                    >
+                      {{ 'Name' | translate }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12">
+                  <formatting-text-editor
+                    [(value)]="translation.description"
+                    [placeholder]="'Description' | translate"
+                    id="createFolderDescriptionTranslation_{{
+                      translationIndex
+                    }}"
+                  >
+                  </formatting-text-editor>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-12">
+                  <div class="md-form">
+                    <input
+                      type="file"
+                      hidden
+                      [accept]="'application/pdf'"
+                      (change)="onFileSelected($event, languages[translationIndex].id)"
+                      id="pdfInput{{ translationIndex }}"
+                      #fileUpload
+                    />
+                    <div>
+                      {{
+                      getFileNameByLanguage(languages[translationIndex].id) ||
+                      'No file uploaded yet.' | translate
+                      }}
+                      <button
+                        mdbBtn
+                        class="btn-primary btn-small-height"
+                        (click)="fileUpload.click()"
                       >
-                        {{ 'Name' | translate }}
-                      </label>
+                        {{ 'Upload' | translate }}
+                      </button>
                     </div>
                   </div>
                 </div>
-                <div class="row">
-                  <div class="col-12">
-                    <formatting-text-editor
-                      [(value)]="translation.description"
-                      [placeholder]="'Description' | translate"
-                      id="createFolderDescriptionTranslation_{{
-                        translationIndex
-                      }}"
-                    >
-                    </formatting-text-editor>
-                  </div>
-                </div>
+              </div>
             <br />
 <!--              </ng-container>-->
             </ng-container>

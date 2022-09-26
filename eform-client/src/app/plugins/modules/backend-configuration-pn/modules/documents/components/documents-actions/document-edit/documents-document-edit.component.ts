@@ -9,6 +9,8 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/services';
 import {format, set} from 'date-fns';
 import {DocumentPropertyModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-property.model';
+import * as R from 'ramda';
+import {TemplateFilesService} from 'src/app/common/services';
 
 @Component({
   selector: 'app-documents-document-edit',
@@ -23,11 +25,13 @@ export class DocumentsDocumentEditComponent implements OnInit {
   folders: Paged<DocumentFolderModel>;
   getPropertiesDictionary$: Subscription;
   availableProperties: CommonDictionaryModel[];
+  pdfSub$: Subscription;
 
   get languages() {
     return applicationLanguagesTranslated;
   }
   constructor(
+    private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
 
@@ -63,7 +67,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
 
 
   updateDocument() {
-    // this.newDocumentModel.folderId = this.selectedFolder;
+    this.newDocumentModel.folderId = this.selectedFolder;
     this.backendConfigurationPnDocumentsService.updateDocument(this.newDocumentModel)
       .subscribe((data) => {
         // debugger;
@@ -129,5 +133,41 @@ export class DocumentsDocumentEditComponent implements OnInit {
         documentId: this.newDocumentModel.id,
       }
     );
+  }
+
+  onFileSelected(event: Event, selectedLanguage: number) {
+    // @ts-ignore
+    const files: File[] = event.target.files;
+    const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
+      (x) => x.languageId === selectedLanguage || x.id === selectedLanguage
+    );
+    if (filesIndexByLanguage !== -1) {
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = R.last(files);
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = R.last(files).name;
+    }
+  }
+
+  getFileNameByLanguage(languageId: number): string {
+    // console.log("in here");
+    if (this.newDocumentModel.documentUploadedDatas.length>0) {
+      if (this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).id) {
+        return this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).name;
+      } else {
+        // return '';
+        const file = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).file;
+        if (file) {
+          return file.name;
+        }
+      }
+    }
+  }
+
+  getPdf(languageId: number) {
+    // TODO: CHECK
+    const fileName = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).fileName;
+    this.pdfSub$ = this.templateFilesService.getImage(fileName).subscribe((blob) => {
+      const fileURL = URL.createObjectURL(blob);
+      window.open(fileURL, '_blank');
+    });
   }
 }

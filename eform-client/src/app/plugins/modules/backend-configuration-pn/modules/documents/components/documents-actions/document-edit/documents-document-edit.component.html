@@ -136,6 +136,43 @@
                   </formatting-text-editor>
                 </div>
               </div>
+              <div class="row">
+                <div class="col-12">
+                  <div class="md-form">
+                    <input
+                      type="file"
+                      hidden
+                      [accept]="'application/pdf'"
+                      (change)="onFileSelected($event, languages[translationIndex].id)"
+                      id="pdfInput{{ translationIndex }}"
+                      #fileUpload
+                    />
+                    <div>
+                      {{
+                      getFileNameByLanguage(languages[translationIndex].id) ||
+                      'No file uploaded yet.' | translate
+                      }}
+                      <button
+                        mdbBtn
+                        class="btn-primary btn-small-height"
+                        (click)="fileUpload.click()"
+                      >
+                        {{ 'Upload' | translate }}
+                      </button>
+                      <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id) !== null">
+                        <button
+                          mdbBtn
+                          class="btn-success btn-icon mb-2"
+                          (click)="getPdf(languages[translationIndex].id)"
+                          mdbTooltip="{{ 'Download PDF' | translate }}"
+                        >
+                          <fa-icon icon="file-pdf" size="lg" [fixedWidth]="true"></fa-icon>
+                        </button>
+                      </ng-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <br />
               <!--              </ng-container>-->
             </ng-container>

@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Documents;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
@@ -38,6 +41,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         var query = _caseTemplatePnDbContext.Documents
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentProperties)
+            .Include(x => x.DocumentUploadedDatas)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
         var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
 
@@ -52,6 +56,17 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     StartDate = x.StartAt,
                     EndDate = x.EndAt,
                     FolderId = x.FolderId,
+                    DocumentUploadedDatas = x.DocumentUploadedDatas
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => new BackendConfigurationDocumentUploadedData
+                        {
+                            Id = x.Id,
+                            DocumentId = x.DocumentId,
+                            LanguageId = x.LanguageId,
+                            Name = x.Name,
+                            Hash = x.Hash,
+                            FileName = x.File
+                        }).ToList(),
                     DocumentTranslations = x.DocumentTranslations
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => new BackendConfigurationDocumentTranslationModel
@@ -96,6 +111,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         var document = await _caseTemplatePnDbContext.Documents
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentProperties)
+            .Include(x => x.DocumentUploadedDatas)
             .FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
 
         if (document == null)
@@ -110,6 +126,17 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             StartDate = document.StartAt,
             EndDate = document.EndAt,
             FolderId = document.FolderId,
+            DocumentUploadedDatas = document.DocumentUploadedDatas
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Select(x => new BackendConfigurationDocumentUploadedData
+                {
+                    Id = x.Id,
+                    DocumentId = x.DocumentId,
+                    LanguageId = x.LanguageId,
+                    Name = x.Name,
+                    Hash = x.Hash,
+                    FileName = x.File
+                }).ToList(),
             DocumentTranslations = document.DocumentTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => new BackendConfigurationDocumentTranslationModel
@@ -137,6 +164,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         var document = await _caseTemplatePnDbContext.Documents
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentProperties)
+            .Include(x => x.DocumentUploadedDatas)
             .FirstOrDefaultAsync(x => x.Id == model.Id).ConfigureAwait(false);
 
         if (document == null)
@@ -145,7 +173,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 _backendConfigurationLocalizationService.GetString("DocumentNotFound"));
         }
 
-        document.StartAt = model.StartDate;
+        // document.StartAt = model.StartDate;
         document.EndAt = model.EndDate;
         document.FolderId = model.FolderId;
         await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -167,19 +195,88 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-        foreach (var property in model.DocumentProperties)
+        if (model.DocumentProperties != null)
         {
-            var documentProperty = document.DocumentProperties
-                .FirstOrDefault(x => x.Id == property.Id);
-            if (documentProperty == null)
+            foreach (var property in model.DocumentProperties)
             {
-                documentProperty = new DocumentProperty
+                var documentProperty = document.DocumentProperties
+                    .FirstOrDefault(x => x.Id == property.Id);
+                if (documentProperty == null)
+                {
+                    documentProperty = new DocumentProperty
+                    {
+                        DocumentId = document.Id,
+                        PropertyId = property.PropertyId
+                    };
+
+                    await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
+                }
+            }
+        }
+
+        var core = await _coreHelper.GetCore();
+        foreach (var documentUploadedData in model.DocumentUploadedDatas)
+        {
+            var documentUploadedDataDb = document.DocumentUploadedDatas
+                .FirstOrDefault(x => x.Id == documentUploadedData.Id);
+
+            if (documentUploadedDataDb == null)
+            {
+                documentUploadedDataDb = new DocumentUploadedData
                 {
                     DocumentId = document.Id,
-                    PropertyId = property.PropertyId
+                    LanguageId = documentUploadedData.LanguageId,
+                    Name = documentUploadedData.Name,
                 };
 
-                await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
+                await documentUploadedDataDb.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
+                MemoryStream memoryStream = new MemoryStream();
+
+                if (documentUploadedData.File != null)
+                {
+                    await documentUploadedData.File.CopyToAsync(memoryStream);
+                    string checkSum = "";
+                    using (var md5 = MD5.Create())
+                    {
+                        byte[] grr = md5.ComputeHash(memoryStream.ToArray());
+                        checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
+                    }
+
+                    var fileName = checkSum + "." + documentUploadedDataDb.Name.Split(".")[1];
+
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    await core.PutFileToS3Storage(memoryStream, fileName);
+                    documentUploadedDataDb.File = fileName;
+                    documentUploadedDataDb.Hash = checkSum;
+                    await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                MemoryStream memoryStream = new MemoryStream();
+
+                if (documentUploadedData.File != null)
+                {
+                    await documentUploadedData.File.CopyToAsync(memoryStream);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    string checkSum = "";
+                    using (var md5 = MD5.Create())
+                    {
+                        byte[] grr = md5.ComputeHash(memoryStream.ToArray());
+                        checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
+                    }
+
+                    var fileName = checkSum + "." + documentUploadedData.Name.Split(".")[1];
+                    if (documentUploadedDataDb.File != fileName)
+                    {
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+                        await core.PutFileToS3Storage(memoryStream, fileName);
+                        documentUploadedDataDb.File = fileName;
+                        documentUploadedDataDb.Hash = checkSum;
+                        documentUploadedDataDb.Name = documentUploadedData.Name;
+                        await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+                    }
+                }
             }
         }
 
@@ -204,9 +301,10 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
     public async Task<OperationResult> CreateDocumentAsync(BackendConfigurationDocumentModel model)
     {
+        var core = await _coreHelper.GetCore();
         var document = new Document
         {
-            StartAt = model.StartDate,
+            // StartAt = model.StartDate,
             EndAt = model.EndDate,
             FolderId = model.FolderId
         };
@@ -226,17 +324,51 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await documentTranslation.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-        foreach (var property in model.DocumentProperties)
+        foreach (var documentUploadedData in model.DocumentUploadedDatas)
         {
-            var documentProperty = new DocumentProperty
+            var documentUploadedDataModel = new DocumentUploadedData
             {
                 DocumentId = document.Id,
-                PropertyId = property.PropertyId
+                LanguageId = documentUploadedData.LanguageId,
+                Name = documentUploadedData.Name,
             };
 
-            await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
+            await documentUploadedDataModel.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
+            MemoryStream memoryStream = new MemoryStream();
+
+            if (documentUploadedData.File != null)
+            {
+                await documentUploadedData.File.CopyToAsync(memoryStream);
+                string checkSum = "";
+                using (var md5 = MD5.Create())
+                {
+                    byte[] grr = md5.ComputeHash(memoryStream.ToArray());
+                    checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
+                }
+
+                var fileName = checkSum + "." + documentUploadedDataModel.Name.Split(".")[1];
+
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                await core.PutFileToS3Storage(memoryStream, fileName);
+                documentUploadedDataModel.File = fileName;
+                documentUploadedDataModel.Hash = checkSum;
+                await documentUploadedDataModel.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+            }
         }
 
+        if (model.DocumentProperties != null)
+        {
+            foreach (var property in model.DocumentProperties)
+            {
+                var documentProperty = new DocumentProperty
+                {
+                    DocumentId = document.Id,
+                    PropertyId = property.PropertyId
+                };
+
+                await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
+            }
+        }
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentCreatedSuccessfully"));
     }

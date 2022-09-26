@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Documents;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
@@ -28,9 +29,19 @@ public class DocumentController : Controller
 
     [HttpPost]
     [Route("create")]
-    public async Task<OperationResult> Create([FromBody] BackendConfigurationDocumentModel createModel)
+    public async Task<OperationResult> Create([FromForm] BackendConfigurationDocumentModel model)
     {
-        return await _backendConfigurationDocumentService.CreateDocumentAsync(createModel);
+        // set files with help reflection. for some unknown reason, the field with the file in a deeply nested object is not set,
+        // unlike the adjacent fields. if you know what it can be replaced,
+        // or the reason why the files are not set and you know how to eliminate this reason,
+        // then fix this **crutch**
+        foreach (var formFile in HttpContext.Request.Form.Files)
+        {
+            // path to property(formFile.Name) can be 'Fields[0][PdfFiles][0][File]' or 'Fields[1]Fields[0][PdfFiles][0][File]'
+            // or 'Checklists[1]Fields[0][PdfFiles][0][File]' or 'Checklists[1]Fields[1]Fields[0][PdfFiles][0][File]' or a **deeper nesting**
+            ReflectionSetProperty.SetProperty(model, formFile.Name.Replace("][", ".").Replace("[", ".").Replace("]", ""), formFile);
+        }
+        return await _backendConfigurationDocumentService.CreateDocumentAsync(model);
     }
 
     [HttpGet]
@@ -42,9 +53,15 @@ public class DocumentController : Controller
 
     [HttpPut]
     [Route("update/{id}")]
-    public async Task<OperationResult> Update([FromBody] BackendConfigurationDocumentModel updateModel)
+    public async Task<OperationResult> Update([FromForm] BackendConfigurationDocumentModel model)
     {
-        return await _backendConfigurationDocumentService.UpdateDocumentAsync(updateModel);
+        foreach (var formFile in HttpContext.Request.Form.Files)
+        {
+            // path to property(formFile.Name) can be 'Fields[0][PdfFiles][0][File]' or 'Fields[1]Fields[0][PdfFiles][0][File]'
+            // or 'Checklists[1]Fields[0][PdfFiles][0][File]' or 'Checklists[1]Fields[1]Fields[0][PdfFiles][0][File]' or a **deeper nesting**
+            ReflectionSetProperty.SetProperty(model, formFile.Name.Replace("][", ".").Replace("[", ".").Replace("]", ""), formFile);
+        }
+        return await _backendConfigurationDocumentService.UpdateDocumentAsync(model);
     }
 
     [HttpDelete]

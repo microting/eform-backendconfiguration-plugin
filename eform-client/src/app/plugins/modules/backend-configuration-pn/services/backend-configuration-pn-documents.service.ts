@@ -34,11 +34,11 @@ export class BackendConfigurationPnDocumentsService {
   }
 
   updateDocument(model: DocumentModel): Observable<OperationDataResult<DocumentModel>> {
-    return this.apiBaseService.put(BackendConfigurationPnDocumentsMethods.DocumentUpdate + '/' + model.id, model);
+    return this.apiBaseService.putFormData(BackendConfigurationPnDocumentsMethods.DocumentUpdate + '/' + model.id, model);
   }
 
   createDocument(model: DocumentModel): Observable<OperationDataResult<DocumentModel>> {
-    return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.DocumentCreate, model);
+    return this.apiBaseService.postFormData(BackendConfigurationPnDocumentsMethods.DocumentCreate, model);
   }
 
   deleteDocument(documentId: number): Observable<OperationDataResult<boolean>> {

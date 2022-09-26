@@ -14,6 +14,7 @@ import {
 import {Subscription} from 'rxjs';
 import {format, set} from 'date-fns';
 import {DocumentPropertyModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-property.model';
+import * as R from 'ramda';
 
 @Component({
   selector: 'app-documents-document-create',
@@ -51,6 +52,10 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     for (const language of applicationLanguagesTranslated) {
       this.newDocumentModel = {
         ...this.newDocumentModel,
+        documentUploadedDatas: [
+          ...this.newDocumentModel.documentUploadedDatas,
+          { languageId: language.id, name: '', file: null },
+        ],
         documentTranslations: [
           ...this.newDocumentModel.documentTranslations,
           { languageId: language.id, description: '', name: '' },
@@ -144,5 +149,34 @@ export class DocumentsDocumentCreateComponent implements OnInit {
         documentId: this.newDocumentModel.id,
       }
     );
+  }
+
+  onFileSelected(event: Event, selectedLanguage: number) {
+    // @ts-ignore
+    const files: File[] = event.target.files;
+    debugger;
+    const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
+      (x) => x.languageId === selectedLanguage || x.id === selectedLanguage
+    );
+    if (filesIndexByLanguage !== -1) {
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = R.last(files);
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = R.last(files).name;
+    }
+  }
+
+  getFileNameByLanguage(languageId: number): string {
+    // debugger;
+    // console.log("in here");
+    if (this.newDocumentModel.documentUploadedDatas.length>0) {
+      if (this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).id) {
+        return this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).name;
+      } else {
+        // return '';
+        const file = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).file;
+        if (file) {
+          return file.name;
+        }
+      }
+    }
   }
 }
