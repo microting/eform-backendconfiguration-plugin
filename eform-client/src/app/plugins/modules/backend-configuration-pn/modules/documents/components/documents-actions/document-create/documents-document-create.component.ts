@@ -15,6 +15,7 @@ import {Subscription} from 'rxjs';
 import {format, set} from 'date-fns';
 import {DocumentPropertyModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-property.model';
 import * as R from 'ramda';
+import {TemplateFilesService} from 'src/app/common/services';
 
 @Component({
   selector: 'app-documents-document-create',
@@ -24,6 +25,7 @@ import * as R from 'ramda';
 export class DocumentsDocumentCreateComponent implements OnInit {
   @ViewChild('frame') frame;
   newDocumentModel: DocumentModel = new DocumentModel();
+  pdfSub$: Subscription;
   selectedFolder: number;
   @Output() documentCreated: EventEmitter<void> = new EventEmitter<void>();
   folders: Paged<DocumentFolderModel>;
@@ -35,6 +37,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     return applicationLanguagesTranslated;
   }
   constructor(
+    private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
 
@@ -167,8 +170,19 @@ export class DocumentsDocumentCreateComponent implements OnInit {
         const file = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).file;
         if (file) {
           return file.name;
+        } else {
+          return '';
         }
       }
     }
+  }
+
+  getPdf(languageId: number) {
+    // TODO: CHECK
+    const fileName = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).fileName;
+    this.pdfSub$ = this.templateFilesService.getImage(fileName).subscribe((blob) => {
+      const fileURL = URL.createObjectURL(blob);
+      window.open(fileURL, '_blank');
+    });
   }
 }

@@ -50,6 +50,7 @@
         [folderId]="folder.id"
         [documents]="documents"
         (openEditModal)="showEditDocumentModal($event)"
+        (openDeleteModal)="showDeleteDocumentModal($event)"
         >
         </app-documents-table>
       </ng-container>
@@ -71,4 +72,9 @@
     #editDocumentModal
     (documentCreated)="getFolders()">
   </app-documents-document-edit>
+  <app-documents-document-delete
+    #deleteDocumentModal
+    (documentDeleted)="getFolders()">
+  #deleteDocumentModal>
+  </app-documents-document-delete>
 </ng-container>

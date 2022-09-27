@@ -22,7 +22,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   @ViewChild('manageFoldersModal') manageFoldersModal: DocumentsFoldersComponent;
   @ViewChild('createDocumentModal') createDocumentModal: DocumentsDocumentCreateComponent;
   @ViewChild('editDocumentModal') editDocumentModal: DocumentsDocumentEditComponent;
-  // @ViewChild('editDocumentModal') deleteDocumentModal: DocumentsDocumentEditComponent;
+  @ViewChild('deleteDocumentModal') deleteDocumentModal: DocumentsDocumentEditComponent;
   folders: Paged<DocumentFolderModel>;
   documents: Paged<DocumentModel>;
 
@@ -47,9 +47,9 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     this.editDocumentModal.show(documentModel);
   }
 
-  // showDeleteDocumentModal(documentModel: DocumentModel) {
-  //   this.deleteDocumentModal.show(documentModel);
-  // }
+  showDeleteDocumentModal(documentModel: DocumentModel) {
+    this.deleteDocumentModal.show(documentModel);
+  }
 
 
   updateTable() {

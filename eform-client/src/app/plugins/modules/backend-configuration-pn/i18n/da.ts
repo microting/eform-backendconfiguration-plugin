@@ -199,4 +199,5 @@ export const da = {
   "Expires in 4-6 months": "Udløber om 4-6 måneder",
   "Expires in 6-12 months": "Udløber om 6-12 måneder",
   "Expires in over 12 months": "Udløber om over 12 måneder",
+  'Rather than deleting the file, you can also hide the display of the file on your mobile. You do this by selecting Plan next to the document you want to hide and then de-activating the display of the PDF file.': 'Fremfor at slette filen, kan du også skjule visningen af filen på din mobil. Det gør du ved at vælge Plan ud for det dokument du ønsker at skjule og derefter de-aktivere visning af PDF-filen.'
 };

@@ -159,6 +159,16 @@
                       >
                         {{ 'Upload' | translate }}
                       </button>
+                      <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id) !== ''">
+                        <button
+                          mdbBtn
+                          class="btn-success btn-icon mb-2"
+                          (click)="getPdf(languages[translationIndex].id)"
+                          mdbTooltip="{{ 'Show PDF' | translate }}"
+                        >
+                          <fa-icon icon="file-pdf" size="lg" [fixedWidth]="true"></fa-icon>
+                        </button>
+                      </ng-container>
                     </div>
                   </div>
                 </div>
