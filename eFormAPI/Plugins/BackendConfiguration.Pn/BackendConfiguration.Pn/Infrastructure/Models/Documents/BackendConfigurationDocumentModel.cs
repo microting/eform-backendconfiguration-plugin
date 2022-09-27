@@ -19,4 +19,5 @@ public class BackendConfigurationDocumentModel
     public List<BackendConfigurationDocumentProperty> DocumentProperties { get; set; }
     public List<BackendConfigurationDocumentUploadedData> DocumentUploadedDatas { get; set; }
         = new();
+    public bool Status { get; set; }
 }

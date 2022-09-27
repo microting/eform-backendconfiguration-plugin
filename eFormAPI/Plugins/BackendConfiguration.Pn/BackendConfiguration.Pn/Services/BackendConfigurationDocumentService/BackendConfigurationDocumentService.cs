@@ -56,6 +56,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     StartDate = x.StartAt,
                     EndDate = x.EndAt,
                     FolderId = x.FolderId,
+                    Status = x.Status,
                     DocumentUploadedDatas = x.DocumentUploadedDatas
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(x => new BackendConfigurationDocumentUploadedData
@@ -126,6 +127,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             StartDate = document.StartAt,
             EndDate = document.EndAt,
             FolderId = document.FolderId,
+            Status = document.Status,
             DocumentUploadedDatas = document.DocumentUploadedDatas
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => new BackendConfigurationDocumentUploadedData
@@ -500,22 +502,59 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
             await folderTranslation.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
-
+        var core = await _coreHelper.GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
         foreach (var property in properties)
         {
+            var folders = await sdkDbContext.FolderTranslations.Join(sdkDbContext.Folders,
+                folderTranslation => folderTranslation.FolderId,
+                folder1 => folder1.Id,
+                (folderTranslation, folder1) => new { folderTranslation, folder1 })
+                .Where(x => x.folder1.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.folderTranslation.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.folder1.ParentId == property.FolderId)
+                .Where(x => x.folderTranslation.Name == "26. Dokumenter")
+                .Select(x => x.folder1)
+                .FirstOrDefaultAsync().ConfigureAwait(false);
 
+            var folderId = 0;
 
+            if (folders != null) {
+                folderId = folders.Id;
+            }
+            else
+            {
+                var documentFolderTranslations = new List<CommonTranslationsModel>();
+                documentFolderTranslations.Add(new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 1,
+                    Name = "26. Dokumenter"
+                });
+                documentFolderTranslations.Add(new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 2,
+                    Name = "26. Documents"
+                });
+                documentFolderTranslations.Add(new CommonTranslationsModel()
+                {
+                    Description = "",
+                    LanguageId = 3,
+                    Name = "26. Dokumenten"
+                });
 
-            // var core = await _coreHelper.GetCore();
-            // var sdkFolder = await core.FolderCreate(folderTranslations, property.FolderId);
-            //
-            // var folderProperty = new FolderProperty
-            // {
-            //     SdkFolderId = sdkFolder,
-            //     FolderId = folder.Id,
-            // };
-            //
-            // await folderProperty.Create(_caseTemplatePnDbContext);
+                folderId = await core.FolderCreate(documentFolderTranslations, property.FolderId).ConfigureAwait(false);
+            }
+
+            folderId = await core.FolderCreate(folderTranslations, folderId).ConfigureAwait(false);
+
+            var folderProperty = new FolderProperty
+            {
+                FolderId = folder.Id,
+                SdkFolderId = folderId,
+            };
+            await folderProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
         return new OperationResult(true,
@@ -535,6 +574,10 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 _backendConfigurationLocalizationService.GetString("FolderNotFound"));
         }
 
+        var core = await _coreHelper.GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+        var folderTranslations = new List<CommonTranslationsModel>();
+
         foreach (var backendConfigurationDocumentFolderTranslationModel in model.DocumentFolderTranslations)
         {
             var translation = folder.FolderTranslations.FirstOrDefault(x => x.Id == backendConfigurationDocumentFolderTranslationModel.Id);
@@ -549,10 +592,24 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 };
                 await translation.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
+            else
+            {
+                translation.Name = backendConfigurationDocumentFolderTranslationModel.Name;
+                translation.Description = backendConfigurationDocumentFolderTranslationModel.Description;
+                await translation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+            }
+            folderTranslations.Add(new CommonTranslationsModel()
+            {
+                Description = translation.Description,
+                LanguageId = translation.LanguageId,
+                Name = translation.Name
+            });
+        }
 
-            translation.Name = backendConfigurationDocumentFolderTranslationModel.Name;
-            translation.Description = backendConfigurationDocumentFolderTranslationModel.Description;
-            await translation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+        foreach (var folderProperty in folder.FolderProperties)
+        {
+            var sdkFolder = await sdkDbContext.Folders.FirstAsync(x => x.Id == folderProperty.SdkFolderId).ConfigureAwait(false);
+            await core.FolderUpdate(folderProperty.SdkFolderId, folderTranslations, sdkFolder.ParentId).ConfigureAwait(false);
         }
 
         return new OperationResult(true,
