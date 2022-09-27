@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Documents;
@@ -104,6 +105,13 @@ public class DocumentController : Controller
     public async Task<OperationResult> DeleteFolder(int id)
     {
         return await _backendConfigurationDocumentService.DeleteFolder(id);
+    }
+
+    [HttpGet]
+    [Route("folders")]
+    public async Task<OperationDataResult<List<BackendConfigurationDocumentSimpleFolderModel>>> GetFolders([FromQuery] int languageId)
+    {
+        return await _backendConfigurationDocumentService.GetFolders(languageId);
     }
 
 

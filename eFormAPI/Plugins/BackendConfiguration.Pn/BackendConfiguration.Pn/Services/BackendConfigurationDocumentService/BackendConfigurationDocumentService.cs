@@ -303,6 +303,18 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
     public async Task<OperationResult> CreateDocumentAsync(BackendConfigurationDocumentModel model)
     {
+        if (model.FolderId == 0)
+        {
+            return new OperationResult(false,
+                _backendConfigurationLocalizationService.GetString("FolderCannotBeEmpty"));
+        }
+
+        if (model.EndDate.Year == 1)
+        {
+            return new OperationResult(false,
+                _backendConfigurationLocalizationService.GetString("EndDateCannotBeEmpty"));
+        }
+
         var core = await _coreHelper.GetCore();
         var document = new Document
         {
@@ -473,6 +485,27 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         };
 
         return new OperationDataResult<BackendConfigurationDocumentFolderModel>(true, result);
+    }
+
+    public async Task<OperationDataResult<List<BackendConfigurationDocumentSimpleFolderModel>>> GetFolders(
+        int languageId)
+    {
+        var folders = await _caseTemplatePnDbContext.Folders
+            .Include(x => x.FolderTranslations)
+            .Include(x => x.FolderProperties)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
+
+        List<BackendConfigurationDocumentSimpleFolderModel> result = new List<BackendConfigurationDocumentSimpleFolderModel>();
+        foreach (var folder in folders)
+        {
+            result.Add(new BackendConfigurationDocumentSimpleFolderModel()
+            {
+                Id = folder.Id,
+                Name = folder.FolderTranslations.FirstOrDefault(x => x.LanguageId == languageId)!.Name,
+            });
+        }
+
+        return new OperationDataResult<List<BackendConfigurationDocumentSimpleFolderModel>>(true, result);
     }
 
     public async Task<OperationResult> CreateFolder(BackendConfigurationDocumentFolderModel model)

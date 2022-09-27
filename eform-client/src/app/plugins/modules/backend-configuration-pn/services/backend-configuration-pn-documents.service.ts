@@ -6,6 +6,7 @@ import {DocumentModel} from 'src/app/plugins/modules/backend-configuration-pn/mo
 import {DocumentsRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/documents-request.model';
 import {DocumentFolderRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-folder-request.model';
 import {DocumentFolderModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-folder.model';
+import {DocumentSimpleFolderModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 
 export let BackendConfigurationPnDocumentsMethods = {
   Documents: 'api/backend-configuration-pn/documents',
@@ -47,6 +48,10 @@ export class BackendConfigurationPnDocumentsService {
 
   getAllFolders(model: DocumentFolderRequestModel): Observable<OperationDataResult<Paged<DocumentFolderModel>>> {
     return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.Folders, model);
+  }
+
+  getSimpleFolders(languageId: number): Observable<OperationDataResult<Paged<DocumentSimpleFolderModel>>> {
+    return this.apiBaseService.get(BackendConfigurationPnDocumentsMethods.Folders + '?languageId=' + languageId);
   }
 
   getSingleFolder(folderId: number): Observable<OperationDataResult<DocumentFolderModel>> {

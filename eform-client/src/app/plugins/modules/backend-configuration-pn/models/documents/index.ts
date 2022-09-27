@@ -4,3 +4,4 @@ export * from './document-folder-translation.model';
 export * from './document-translation.model';
 export * from './document.model';
 export * from './documents-request.model';
+export * from './document-simple-folder.model';

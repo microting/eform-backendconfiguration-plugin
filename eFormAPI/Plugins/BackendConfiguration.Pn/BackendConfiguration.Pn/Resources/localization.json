@@ -27,6 +27,24 @@
     }
   },
   {
+    "Key": "FolderCannotBeEmpty",
+    "LocalizedValue": {
+      "da": "Der skal vælges en mappe",
+      "de": "Es muss ein Ordner ausgewählt werden",
+      "en-US": "A folder must be selected",
+      "uk-UA": "Необхідно вибрати папку"
+    }
+  },
+  {
+    "Key": "EndDateCannotBeEmpty",
+    "LocalizedValue": {
+      "da": "Der skal sættes en slut dato",
+      "de": "Es muss ein Enddatum festgelegt werden",
+      "en-US": "An end date must be set",
+      "uk-UA": "Потрібно встановити кінцеву дату"
+    }
+  },
+  {
     "Key": "Documents",
     "LocalizedValue": {
       "da": "Dokumenter",

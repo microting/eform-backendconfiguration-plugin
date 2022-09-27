@@ -25,11 +25,11 @@
                   dropdownPosition="'bottom'"
                   [placeholder]="'Selected folder' | translate"
                   [clearable]="false"
-                  [bindLabel]="'documentFolderTranslations[0].name'"
+                  [bindLabel]="'name'"
                   [bindValue]="'id'"
                   [(ngModel)]="selectedFolder"
                   id="createLanguageSelector"
-                  [items]="folders.entities"
+                  [items]="folders"
                 ></ng-select>
               </div>
             </div>

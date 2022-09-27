@@ -1,5 +1,10 @@
 import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
-import {DocumentFolderModel, DocumentFolderRequestModel, DocumentModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {
+  DocumentFolderModel,
+  DocumentFolderRequestModel,
+  DocumentModel,
+  DocumentSimpleFolderModel
+} from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {CommonDictionaryModel, Paged} from 'src/app/common/models';
 import {Subscription} from 'rxjs';
 import {applicationLanguagesTranslated} from 'src/app/common/const';
@@ -10,7 +15,7 @@ import {
 import {format, set} from 'date-fns';
 import {DocumentPropertyModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-property.model';
 import * as R from 'ramda';
-import {TemplateFilesService} from 'src/app/common/services';
+import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 
 @Component({
   selector: 'app-documents-document-edit',
@@ -22,11 +27,12 @@ export class DocumentsDocumentEditComponent implements OnInit {
   newDocumentModel: DocumentModel = new DocumentModel();
   selectedFolder: number;
   @Output() documentCreated: EventEmitter<void> = new EventEmitter<void>();
-  folders: Paged<DocumentFolderModel>;
+  folders: Paged<DocumentSimpleFolderModel>;
   getPropertiesDictionary$: Subscription;
   availableProperties: CommonDictionaryModel[];
   pdfSub$: Subscription;
   documentSub$: Subscription;
+  selectedLanguage: number;
 
   get languages() {
     return applicationLanguagesTranslated;
@@ -34,7 +40,12 @@ export class DocumentsDocumentEditComponent implements OnInit {
   constructor(
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
-    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
+    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
+    localeService: LocaleService) {
+    this.selectedLanguage = applicationLanguagesTranslated.find(
+      (x) => x.locale === localeService.getCurrentUserLocale()
+    ).id;
+  }
 
   ngOnInit(): void {}
 
@@ -90,7 +101,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
   getFolders() {
     const requestModel = new DocumentFolderRequestModel();
 
-    this.backendConfigurationPnDocumentsService.getAllFolders(requestModel).subscribe((data) => {
+    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
       if (data && data.success) {
         this.folders = data.model;
         this.getPropertiesDictionary();

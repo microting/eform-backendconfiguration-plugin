@@ -4,7 +4,7 @@ import {CommonDictionaryModel, FolderCreateModel, Paged} from 'src/app/common/mo
 import {
   DocumentFolderModel,
   DocumentFolderRequestModel,
-  DocumentModel,
+  DocumentModel, DocumentSimpleFolderModel,
   PropertyAssignmentWorkerModel
 } from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {
@@ -15,7 +15,7 @@ import {Subscription} from 'rxjs';
 import {format, set} from 'date-fns';
 import {DocumentPropertyModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-property.model';
 import * as R from 'ramda';
-import {TemplateFilesService} from 'src/app/common/services';
+import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 
 @Component({
   selector: 'app-documents-document-create',
@@ -28,9 +28,10 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   pdfSub$: Subscription;
   selectedFolder: number;
   @Output() documentCreated: EventEmitter<void> = new EventEmitter<void>();
-  folders: Paged<DocumentFolderModel>;
+  folders: Paged<DocumentSimpleFolderModel>;
   getPropertiesDictionary$: Subscription;
   availableProperties: CommonDictionaryModel[];
+  selectedLanguage: number;
   // assignments: DocumentPropertyModel[] = [];
 
   get languages() {
@@ -39,7 +40,12 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   constructor(
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
-    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
+    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
+    localeService: LocaleService) {
+    this.selectedLanguage = applicationLanguagesTranslated.find(
+      (x) => x.locale === localeService.getCurrentUserLocale()
+    ).id;
+  }
 
   ngOnInit(): void {}
 
@@ -101,9 +107,8 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   getFolders() {
-    const requestModel = new DocumentFolderRequestModel();
 
-    this.backendConfigurationPnDocumentsService.getAllFolders(requestModel).subscribe((data) => {
+    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
       if (data && data.success) {
         this.folders = data.model;
       }

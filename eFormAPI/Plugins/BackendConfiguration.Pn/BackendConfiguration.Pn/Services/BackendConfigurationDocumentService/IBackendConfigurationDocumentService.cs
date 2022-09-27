@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Documents;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -18,6 +19,8 @@ public interface IBackendConfigurationDocumentService
     Task<OperationResult> DeleteDocumentAsync(int id);
 
     Task<OperationDataResult<Paged<BackendConfigurationDocumentFolderModel>>> GetFolders(BackendConfigurationDocumentFolderRequestModel pnRequestModel);
+
+    Task<OperationDataResult<List<BackendConfigurationDocumentSimpleFolderModel>>> GetFolders(int languageId);
 
     Task<OperationDataResult<BackendConfigurationDocumentFolderModel>> GetFolderAsync(int id);
 
