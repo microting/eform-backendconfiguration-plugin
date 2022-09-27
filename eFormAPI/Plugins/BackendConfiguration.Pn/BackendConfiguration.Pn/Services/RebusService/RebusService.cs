@@ -44,10 +44,10 @@ namespace BackendConfiguration.Pn.Services.RebusService
         private readonly IEFormCoreService _coreHelper;
         private BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
         private ChemicalDbContextHelper _chemicalDbContextHelper;
+        private DocumentDbContextHelper _documentDbContextHelper;
 
         public RebusService(IEFormCoreService coreHelper)
         {
-            //_dbContext = dbContext;
             _coreHelper = coreHelper;
             _container = new WindsorContainer();
         }
@@ -60,10 +60,15 @@ namespace BackendConfiguration.Pn.Services.RebusService
             var chemicalBaseConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
                 "chemical-base-plugin");
+            var documentBaseConnectionString = connectionString.Replace(
+                "eform-backend-configuration-plugin",
+                "eform-angular-case-template-plugin");
             _chemicalDbContextHelper = new ChemicalDbContextHelper(chemicalBaseConnectionString);
+            _documentDbContextHelper = new DocumentDbContextHelper(documentBaseConnectionString);
             _container.Register(Component.For<Core>().Instance(core));
             _container.Register(Component.For<BackendConfigurationDbContextHelper>().Instance(_backendConfigurationDbContextHelper));
             _container.Register(Component.For<ChemicalDbContextHelper>().Instance(_chemicalDbContextHelper));
+            _container.Register(Component.For<DocumentDbContextHelper>().Instance(_documentDbContextHelper));
             _container.Install(
                 new RebusHandlerInstaller()
                 , new RebusInstaller(connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitMqHost)

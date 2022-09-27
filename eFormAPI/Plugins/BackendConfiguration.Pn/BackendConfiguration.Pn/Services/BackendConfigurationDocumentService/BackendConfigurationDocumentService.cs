@@ -5,7 +5,9 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Documents;
+using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using BackendConfiguration.Pn.Services.RebusService;
 using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
@@ -15,6 +17,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Entities;
+using Rebus.Bus;
 using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
@@ -26,14 +29,16 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
     private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
     private readonly IUserService _userService;
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+    private readonly IBus _bus;
 
-    public BackendConfigurationDocumentService(CaseTemplatePnDbContext caseTemplatePnDbContext, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext)
+    public BackendConfigurationDocumentService(CaseTemplatePnDbContext caseTemplatePnDbContext, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService)
     {
         _caseTemplatePnDbContext = caseTemplatePnDbContext;
         _coreHelper = coreHelper;
         _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
         _userService = userService;
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
+        _bus = rebusService.GetBus();
     }
 
     public async Task<OperationDataResult<Paged<BackendConfigurationDocumentModel>>> Index(BackendConfigurationDocumentRequestModel pnRequestModel)
@@ -167,6 +172,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentProperties)
             .Include(x => x.DocumentUploadedDatas)
+            .Include(x => x.DocumentSites)
             .FirstOrDefaultAsync(x => x.Id == model.Id).ConfigureAwait(false);
 
         if (document == null)
@@ -297,6 +303,18 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             // }
         }
 
+        foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+        {
+            if (documentSite.SdkCaseId != 0)
+            {
+                await core.CaseDelete(documentSite.SdkCaseId);
+            }
+
+            await documentSite.Delete(_caseTemplatePnDbContext);
+        }
+
+        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentUpdatedSuccessfully"));
     }
@@ -383,6 +401,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
         }
+
+        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentCreatedSuccessfully"));
     }
@@ -586,6 +607,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             {
                 FolderId = folder.Id,
                 SdkFolderId = folderId,
+                PropertyId = property.Id
             };
             await folderProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
