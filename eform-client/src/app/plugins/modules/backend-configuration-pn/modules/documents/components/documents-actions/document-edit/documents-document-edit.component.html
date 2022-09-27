@@ -36,13 +36,13 @@
           </mdb-card-body>
         </mdb-card>
         <mdb-card class="mb-3">
-          <mdb-card-body *ngIf="availableProperties !== undefined">
+          <mdb-card-body *ngIf="availableProperties !== undefined && newDocumentModel !== undefined">
             <div class="row">
               <ng-container *ngFor="let property of availableProperties; let propertyIndex = index">
                 <div class="col-md-6">
                   <div class="mat-checkbox">
                     <input
-                      id="property{{ propertyIndex }}"
+                      id="property{{ propertyIndex }}{{newDocumentModel.id}}"
                       (change)="
                           addToArray(
                             $event,
@@ -58,7 +58,7 @@
                       type="checkbox"
                       color="primary"
                     />
-                    <label for="property{{ propertyIndex }}">
+                    <label for="property{{ propertyIndex }}{{newDocumentModel.id}}">
                       {{ property.name }}
                     </label>
                   </div>

@@ -87,11 +87,9 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   createDocument() {
-    debugger;
     this.newDocumentModel.folderId = this.selectedFolder;
     this.backendConfigurationPnDocumentsService.createDocument(this.newDocumentModel)
       .subscribe((data) => {
-      debugger;
       if (data && data.success) {
         this.documentCreated.emit();
         this.hide();
@@ -122,7 +120,6 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   addToArray(e: any, propertyId: number) {
     const assignmentObject = new DocumentPropertyModel();
     if (e.target.checked) {
-      // assignmentObject.isChecked = true;
       assignmentObject.propertyId = propertyId;
       this.newDocumentModel.documentProperties = [...this.newDocumentModel.documentProperties, assignmentObject];
     } else {
@@ -137,9 +134,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     const assignment = this.newDocumentModel.documentProperties.find(
       (x) => x.propertyId === propertyId
     );
-    // debugger;
     return assignment === undefined ? false : true;
-    // return assignment ? assignment.isChecked : false;
   }
 
   getAssignmentByPropertyId(propertyId: number): DocumentPropertyModel {
@@ -154,7 +149,6 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   onFileSelected(event: Event, selectedLanguage: number) {
     // @ts-ignore
     const files: File[] = event.target.files;
-    debugger;
     const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
       (x) => x.languageId === selectedLanguage || x.id === selectedLanguage
     );
@@ -165,8 +159,6 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   getFileNameByLanguage(languageId: number): string {
-    // debugger;
-    // console.log("in here");
     if (this.newDocumentModel.documentUploadedDatas.length>0) {
       if (this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).id) {
         return this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).name;

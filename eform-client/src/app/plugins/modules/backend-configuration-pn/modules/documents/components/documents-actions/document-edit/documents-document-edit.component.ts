@@ -26,6 +26,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
   getPropertiesDictionary$: Subscription;
   availableProperties: CommonDictionaryModel[];
   pdfSub$: Subscription;
+  documentSub$: Subscription;
 
   get languages() {
     return applicationLanguagesTranslated;
@@ -38,10 +39,9 @@ export class DocumentsDocumentEditComponent implements OnInit {
   ngOnInit(): void {}
 
   show(documentModel: DocumentModel) {
-    this.getFolders();
-    this.frame.show();
-    this.newDocumentModel = documentModel;
-    this.selectedFolder = documentModel.folderId;
+    // this.frame.show();
+    this.getDocument(documentModel.id);
+    // this.selectedFolder = documentModel.folderId;
   }
 
   updateStartDate(e: any) {
@@ -65,20 +65,26 @@ export class DocumentsDocumentEditComponent implements OnInit {
     this.frame.hide();
   }
 
+  getDocument(documentId: number) {
+    this.documentSub$ = this.backendConfigurationPnDocumentsService.getSingleDocument(documentId).subscribe((data) => {
+      if (data && data.success) {
+        this.newDocumentModel = data.model;
+        this.selectedFolder = this.newDocumentModel.folderId;
+        this.getFolders();
+      }
+    });
+  }
+
 
   updateDocument() {
     this.newDocumentModel.folderId = this.selectedFolder;
     this.backendConfigurationPnDocumentsService.updateDocument(this.newDocumentModel)
       .subscribe((data) => {
-        // debugger;
         if (data && data.success) {
           this.documentCreated.emit();
           this.hide();
         }
       });
-    // this.folderCreate.emit(this.newFolderModel);
-    // this.folderCreated.emit();
-    // this.name = '';
   }
 
   getFolders() {
@@ -98,7 +104,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.availableProperties = operation.model;
-          // this.initCreateForm();
+          this.frame.show();
         }
       });
   }
@@ -106,7 +112,6 @@ export class DocumentsDocumentEditComponent implements OnInit {
   addToArray(e: any, propertyId: number) {
     const assignmentObject = new DocumentPropertyModel();
     if (e.target.checked) {
-      // assignmentObject.isChecked = true;
       assignmentObject.propertyId = propertyId;
       this.newDocumentModel.documentProperties = [...this.newDocumentModel.documentProperties, assignmentObject];
     } else {
@@ -121,9 +126,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
     const assignment = this.newDocumentModel.documentProperties.find(
       (x) => x.propertyId === propertyId
     );
-    // debugger;
     return assignment === undefined ? false : true;
-    // return assignment ? assignment.isChecked : false;
   }
 
   getAssignmentByPropertyId(propertyId: number): DocumentPropertyModel {
@@ -148,7 +151,6 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   getFileNameByLanguage(languageId: number): string {
-    // console.log("in here");
     if (this.newDocumentModel.documentUploadedDatas.length>0) {
       if (this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).id) {
         return this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).name;
