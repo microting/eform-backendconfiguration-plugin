@@ -253,9 +253,12 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     var fileName = checkSum + "." + documentUploadedDataDb.Name.Split(".")[1];
 
                     memoryStream.Seek(0, SeekOrigin.Begin);
+                    await core.PdfUpload(memoryStream, checkSum, fileName);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
                     await core.PutFileToS3Storage(memoryStream, fileName);
                     documentUploadedDataDb.File = fileName;
                     documentUploadedDataDb.Hash = checkSum;
+                    documentUploadedDataDb.Name = documentUploadedData.Name;
                     await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
                 }
             }
@@ -277,6 +280,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     var fileName = checkSum + "." + documentUploadedData.Name.Split(".")[1];
                     if (documentUploadedDataDb.File != fileName)
                     {
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+                        await core.PdfUpload(memoryStream, checkSum, fileName);
                         memoryStream.Seek(0, SeekOrigin.Begin);
                         await core.PutFileToS3Storage(memoryStream, fileName);
                         documentUploadedDataDb.File = fileName;
@@ -380,6 +385,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
                 var fileName = checkSum + "." + documentUploadedDataModel.Name.Split(".")[1];
 
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                await core.PdfUpload(memoryStream, checkSum, fileName);
                 memoryStream.Seek(0, SeekOrigin.Begin);
                 await core.PutFileToS3Storage(memoryStream, fileName);
                 documentUploadedDataModel.File = fileName;
