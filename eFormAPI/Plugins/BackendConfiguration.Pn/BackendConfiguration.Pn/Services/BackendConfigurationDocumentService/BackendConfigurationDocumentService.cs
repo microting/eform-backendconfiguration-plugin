@@ -419,6 +419,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
     {
         var document = await _caseTemplatePnDbContext.Documents
             .Include(x => x.DocumentTranslations)
+            .Include(x => x.DocumentProperties)
+            .Include(x => x.DocumentUploadedDatas)
+            .Include(x => x.DocumentSites)
             .FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
 
         if (document == null)
@@ -432,6 +435,18 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         foreach (var translation in document.DocumentTranslations)
         {
             await translation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+        }
+
+        var core = await _coreHelper.GetCore();
+
+        foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+        {
+            if (documentSite.SdkCaseId != 0)
+            {
+                await core.CaseDelete(documentSite.SdkCaseId);
+            }
+
+            await documentSite.Delete(_caseTemplatePnDbContext);
         }
 
         return new OperationResult(true,
