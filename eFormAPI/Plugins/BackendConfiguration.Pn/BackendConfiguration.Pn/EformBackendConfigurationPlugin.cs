@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 
+using BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
 using BackendConfiguration.Pn.Services.ChemicalService;
 using Castle.MicroKernel.Registration;
 using Castle.Windsor;
@@ -106,6 +107,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
             services
                 .AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
+            services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
