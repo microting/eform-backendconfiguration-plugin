@@ -30,6 +30,7 @@ public class DocumentController : Controller
 
     [HttpPost]
     [Route("create")]
+    [Consumes("multipart/form-data")]
     public async Task<OperationResult> Create([FromForm] BackendConfigurationDocumentModel model)
     {
         // set files with help reflection. for some unknown reason, the field with the file in a deeply nested object is not set,
@@ -54,6 +55,7 @@ public class DocumentController : Controller
 
     [HttpPut]
     [Route("update/{id}")]
+    [Consumes("multipart/form-data")]
     public async Task<OperationResult> Update([FromForm] BackendConfigurationDocumentModel model)
     {
         foreach (var formFile in HttpContext.Request.Form.Files)
