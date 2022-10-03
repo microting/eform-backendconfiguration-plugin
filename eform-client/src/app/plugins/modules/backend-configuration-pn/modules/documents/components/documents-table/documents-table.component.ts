@@ -22,10 +22,10 @@ export class DocumentsTableComponent implements OnInit {
   tableHeaders: TableHeaderElementModel[] = [
     { name: 'Id', sortable: false },
     { name: 'PropertyNames', visibleName: 'Properties', sortable: false },
-    { name: 'Name', visibleName: 'Name', sortable: false },
-    { name: 'Description', visibleName: 'Description', sortable: false },
+    { name: 'Name', visibleName: 'Document name', sortable: false },
+    { name: 'Description', visibleName: 'Document description', sortable: false },
     { name: 'EndDate', visibleName: 'End date',sortable: false },
-    { name: 'Status', visibleName: 'Status', sortable: false },
+    // { name: 'Status', visibleName: 'Status', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
   @Input() documents: Paged<DocumentModel>;
