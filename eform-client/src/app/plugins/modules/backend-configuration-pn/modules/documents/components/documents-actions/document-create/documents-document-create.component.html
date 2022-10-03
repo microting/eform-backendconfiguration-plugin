@@ -38,6 +38,13 @@
         <mdb-card class="mb-3">
           <mdb-card-body *ngIf="availableProperties !== undefined">
             <div class="row">
+              <div class="col-12">
+                <p>
+                  {{ 'Assign to property' | translate }}
+                </p>
+              </div>
+            </div>
+            <div class="row">
               <ng-container *ngFor="let property of availableProperties; let propertyIndex = index">
                 <div class="col-md-6">
                   <div class="mat-checkbox">
@@ -65,30 +72,6 @@
                 </div>
               </ng-container>
             </div>
-          </mdb-card-body>
-        </mdb-card>
-        <mdb-card class="mb-3">
-          <mdb-card-body>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="md-form" [owlDateTimeTrigger]="dt2">
-                <input
-                  mdbInput
-                  [owlDateTime]="dt2"
-                  [ngModel]="newDocumentModel.endDate"
-                  (ngModelChange)="updateStartDate($event)"
-                  type="text"
-                  id="createStartFrom"
-                  name="createStartFrom"
-                  class="form-control"
-                />
-                <owl-date-time [pickerType]="'calendar'" #dt2></owl-date-time>
-                <label for="createStartFrom">{{
-                  'End date' | translate
-                  }}</label>
-              </div>
-            </div>
-          </div>
           </mdb-card-body>
         </mdb-card>
         <mdb-card>
@@ -173,9 +156,33 @@
                   </div>
                 </div>
               </div>
-            <br />
 <!--              </ng-container>-->
             </ng-container>
+          </mdb-card-body>
+        </mdb-card>
+        <br>
+        <mdb-card class="mb-3">
+          <mdb-card-body>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="md-form" [owlDateTimeTrigger]="dt2">
+                  <input
+                    mdbInput
+                    [owlDateTime]="dt2"
+                    [ngModel]="newDocumentModel.endDate"
+                    (ngModelChange)="updateStartDate($event)"
+                    type="text"
+                    id="createStartFrom"
+                    name="createStartFrom"
+                    class="form-control"
+                  />
+                  <owl-date-time [pickerType]="'calendar'" #dt2></owl-date-time>
+                  <label for="createStartFrom">{{
+                    'End date' | translate
+                    }}</label>
+                </div>
+              </div>
+            </div>
           </mdb-card-body>
         </mdb-card>
       </div>
