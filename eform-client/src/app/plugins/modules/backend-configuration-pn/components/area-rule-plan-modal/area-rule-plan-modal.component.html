@@ -38,8 +38,8 @@
               </div>
             </div>
             <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined && selectedArea.type !== 10">
-              <ng-container *ngIf="selectedAreaRule.typeSpecificFields.complianceModifiable">
-                <div class="col-md-12" *ngIf="getShowCompliance()">
+              <ng-container>
+                <div class="col-md-12">
                   <div class="custom-control custom-switch">
                     <input
                       type="checkbox"
@@ -47,6 +47,7 @@
                       [value]="selectedAreaRulePlanning.complianceEnabled"
                       [checked]="selectedAreaRulePlanning.complianceEnabled"
                       [(ngModel)]="selectedAreaRulePlanning.complianceEnabled"
+                      [disabled]="selectedAreaRule.typeSpecificFields.complianceModifiable === false"
                       class="custom-control-input"
                     />
                     <label
