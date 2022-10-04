@@ -51,7 +51,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
     //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
-      // enableCompliance: false,
+      enableCompliance: false,
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
     // areaRulePlanning.startDate = format(
