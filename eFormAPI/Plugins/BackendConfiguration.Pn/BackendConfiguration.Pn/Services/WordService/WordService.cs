@@ -103,10 +103,14 @@ namespace BackendConfiguration.Pn.Services.WordService
 
                 return area.Type switch
                 {
-                    AreaTypesEnum.Type7 => await GenerateReportType7(property, area, year).ConfigureAwait(false),
+                    AreaTypesEnum.Type8 => await GenerateReportType8(property, area, year).ConfigureAwait(false),
                     _ => new OperationDataResult<Stream>(false,
                         _localizationService.GetString($"ReportFor{area.Type}NotSupported"))
                 };
+                //var result = await GenerateReportType8(property, area, year).ConfigureAwait(false);
+                //return result;
+                //return new OperationDataResult<Stream>(false,
+                //    _localizationService.GetString($"ReportFor{area.Type}NotSupported"));
             }
             catch (Exception e)
             {
@@ -206,7 +210,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             return docxFileStream;
         }
 
-        private async Task<OperationDataResult<Stream>> GenerateReportType7(Property property, Area area, int year)
+        private async Task<OperationDataResult<Stream>> GenerateReportType8(Property property, Area area, int year)
         {
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -215,9 +219,9 @@ namespace BackendConfiguration.Pn.Services.WordService
             {
                 curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
             }
-            var areaRulesForType7 = BackendConfigurationSeedAreas.AreaRulesForType7
+            var areaRulesForType8 = BackendConfigurationSeedAreas.AreaRulesForType8
                 .GroupBy(x => x.FolderName)
-                .Select(x => new AreaRulesForType7
+                .Select(x => new AreaRulesForType8
                 {
                     FolderName = x.Key,
                     AreaRuleNames = x.Select(y => y)
@@ -229,12 +233,12 @@ namespace BackendConfiguration.Pn.Services.WordService
                 })
                 .ToList();
 
-            foreach (var areaRuleForType7 in areaRulesForType7)
+            foreach (var areaRuleForType8 in areaRulesForType8)
             {
-                areaRuleForType7.FolderName = await sdkDbContext.FolderTranslations
+                areaRuleForType8.FolderName = await sdkDbContext.FolderTranslations
                     .OrderBy(x => x.Id)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Name == areaRuleForType7.FolderName)
+                    .Where(x => x.Name == areaRuleForType8.FolderName)
                     .SelectMany(x => x.Folder.FolderTranslations)
                     .Where(x => x.LanguageId == curentLanguage.Id)
                     .Select(x => x.Name)
@@ -299,7 +303,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
             itemsHtml.Append(@"</tr>");
 
-            foreach (var areaRuleForType7 in areaRulesForType7)
+            foreach (var areaRuleForType7 in areaRulesForType8)
             {
                 itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
                 itemsHtml.Append($@"<td>{areaRuleForType7.FolderName}</td>");
@@ -326,8 +330,19 @@ namespace BackendConfiguration.Pn.Services.WordService
                         // ReSharper disable once PossibleInvalidOperationException
                         var repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
                         var firstChar = repeatType.First().ToString();
+                        string repeatEvery = "";
+                        switch (areaRulePlanning.RepeatEvery)
+                        {
+                            case 0:
+                            case 1:
+                                repeatEvery = _localizationService.GetString("every");
+                                break;
+                            default:
+                                repeatEvery = _localizationService.GetString("every") + " " + areaRulePlanning.RepeatEvery;
+                                break;
+                        }
                         repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
-                        itemsHtml.Append($@"<td>{areaRulePlanning.RepeatEvery} - {_localizationService.GetString(repeatType)}</td>");
+                        itemsHtml.Append($@"<td>{repeatEvery} - {_localizationService.GetString(repeatType)}</td>");
                     }
                     //itemsHtml.Append(@"<tr><td></td><td></td><td></td></tr>");
                 }
@@ -336,7 +351,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append(@"</table>");
             itemsHtml.Append("</body>");
 
-            html = html.Replace("{%ItemList%}", itemsHtml.ToString());
+            html = html.Replace("{%Content%}", itemsHtml.ToString());
 
             var word = new WordProcessor(docxFileStream);
             word.AddHtml(html);

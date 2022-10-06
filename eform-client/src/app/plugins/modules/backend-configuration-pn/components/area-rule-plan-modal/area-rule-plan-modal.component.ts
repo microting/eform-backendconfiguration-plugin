@@ -108,7 +108,8 @@ export class AreaRulePlanModalComponent implements OnInit {
           this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = rule.typeSpecificFields.dayOfWeek;
         }
     }
-    if(!this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery && !this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery){
+    if (this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery === 0
+      && this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 0){
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
     }

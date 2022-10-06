@@ -10,6 +10,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [a,b,c]
     steps:
     - uses: actions/checkout@v2
       with:
@@ -95,7 +99,7 @@ jobs:
         cp -av main/eform-client/e2e/Tests/backend-configuration-general eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
         cp -av main/eform-client/e2e/Page\ objects/BackendConfiguration eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
         cp -av eform-angular-items-planning-plugin/eform-client/e2e/Page\ objects/ItemsPlanning eform-angular-frontend/eform-client/e2e/Page\ objects/ItemsPlanning
-        cp -av main/eform-client/wdio-headless-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-headless-plugin-step2.conf.js
+        cp -av main/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js eform-angular-frontend/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js
         cp -av main/eform-client/wdio-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
         mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
         cp -av eform-angular-items-planning-plugin/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning
@@ -119,7 +123,7 @@ jobs:
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
     - name: Plugin testing
-      run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin
+      run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
     - name: The job has failed
       if: always()
       run: |
