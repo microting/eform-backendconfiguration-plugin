@@ -24,15 +24,19 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
+using BackendConfiguration.Pn.Messages;
+using BackendConfiguration.Pn.Services.RebusService;
 using eFormCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Microting.TimePlanningBase.Infrastructure.Data.Models;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
 {
@@ -60,14 +64,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         private readonly WorkOrderHelper _workOrderHelper;
         // private readonly IDeviceUsersService _deviceUsersService;
         private readonly TimePlanningPnDbContext _timePlanningDbContext;
+        private readonly CaseTemplatePnDbContext _caseTemplatePnDbContext;
         // private readonly ILogger<BackendConfigurationAssignmentWorkerService> _logger;
         // private readonly IPluginDbOptions<TimePlanningBaseSettings> _options;
+        private readonly IBus _bus;
 
         public BackendConfigurationAssignmentWorkerService(
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext, TimePlanningPnDbContext timePlanningDbContext)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext, TimePlanningPnDbContext timePlanningDbContext, CaseTemplatePnDbContext caseTemplatePnDbContext, IRebusService rebusService)
         {
             _coreHelper = coreHelper;
             _userService = userService;
@@ -75,8 +81,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             // _deviceUsersService = deviceUsersService;
             _timePlanningDbContext = timePlanningDbContext;
+            _caseTemplatePnDbContext = caseTemplatePnDbContext;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
+            _bus = rebusService.GetBus();
         }
 
         public async Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment()
@@ -137,7 +145,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 //     .Select(x => x.PropertyId)
                 //     .Distinct()
                 //     .ToList();
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 List<PropertyWorker> propertyWorkers = new List<PropertyWorker>();
+                List<int> documentIds = new List<int>();
                 foreach (var propertyAssignment in createModel.Assignments
                              .Select(propertyAssignmentWorkerModel => new PropertyWorker
                              {
@@ -148,7 +158,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                              }))
                 {
                     await propertyAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    var documents = await _caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
+                    foreach (var document in documents)
+                    {
+                        if (!documentIds.Contains(document.DocumentId))
+                        {
+                            documentIds.Add(document.Id);
+                        }
+                    }
                     propertyWorkers.Add(propertyAssignment);
+
+                }
+                foreach (var documentId in documentIds)
+                {
+                    var document = await _caseTemplatePnDbContext.Documents
+                        .Include(x => x.DocumentSites)
+                        .FirstAsync(x => x.Id == documentId).ConfigureAwait(false);
+                    foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                    {
+                        if (documentSite.SdkCaseId != 0)
+                        {
+                            await core.CaseDelete(documentSite.SdkCaseId);
+                        }
+
+                        await documentSite.Delete(_caseTemplatePnDbContext);
+                    }
+
+                    await _bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
                 await _workOrderHelper.WorkorderFlowDeployEform(propertyWorkers).ConfigureAwait(false);
@@ -183,6 +219,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(x => !assignments.Select(y => y.PropertyId).Contains(x))
                     .ToList();
                 List<PropertyWorker> propertyWorkers = new List<PropertyWorker>();
+                List<int> documentIds = new List<int>();
 
                 foreach (var propertyAssignment in assignmentsForCreate
                              .Select(propertyAssignmentWorkerModel => new PropertyWorker
@@ -194,6 +231,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                              }))
                 {
                     await propertyAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
+                    var documents = await _caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
+                    foreach (var document in documents)
+                    {
+                        if (!documentIds.Contains(document.DocumentId))
+                        {
+                            documentIds.Add(document.Id);
+                        }
+                    }
                     propertyWorkers.Add(propertyAssignment);
                 }
 
@@ -237,6 +283,38 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     await _workOrderHelper.RetractEform(assignmentsForDelete, true).ConfigureAwait(false);
                     await _workOrderHelper.RetractEform(assignmentsForDelete, false).ConfigureAwait(false);
                     await _workOrderHelper.RetractEform(assignmentsForDelete, false).ConfigureAwait(false);
+
+                    foreach (var propertyWorker in assignmentsForDelete)
+                    {
+                        var documentSites = await _caseTemplatePnDbContext.DocumentSites.Where(x => x.PropertyId == propertyWorker.PropertyId
+                        && x.SdkSiteId == propertyWorker.WorkerId).ToListAsync();
+                        foreach (var documentSite in documentSites)
+                        {
+                            if (documentSite.SdkCaseId != 0)
+                            {
+                                await core.CaseDelete(documentSite.SdkCaseId);
+                            }
+                        }
+                    }
+
+                }
+
+                foreach (var documentId in documentIds)
+                {
+                    var document = await _caseTemplatePnDbContext.Documents
+                        .Include(x => x.DocumentSites)
+                        .FirstAsync(x => x.Id == documentId).ConfigureAwait(false);
+                    foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                    {
+                        if (documentSite.SdkCaseId != 0)
+                        {
+                            await core.CaseDelete(documentSite.SdkCaseId);
+                        }
+
+                        await documentSite.Delete(_caseTemplatePnDbContext);
+                    }
+
+                    await _bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
                 await _workOrderHelper.WorkorderFlowDeployEform(propertyWorkers).ConfigureAwait(false);

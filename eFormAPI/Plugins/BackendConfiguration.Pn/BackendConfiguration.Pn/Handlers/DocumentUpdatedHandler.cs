@@ -41,10 +41,11 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
         foreach (var documentProperty in document.DocumentProperties)
         {
             var propertySites = await backendConfigurationDbContext.PropertyWorkers
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyId == documentProperty.PropertyId)
                 .ToListAsync();
 
-            foreach (var propertyWorker in propertySites)
+            foreach (var propertyWorker in propertySites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
             {
                 var documentSite = document.DocumentSites
                     .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed
