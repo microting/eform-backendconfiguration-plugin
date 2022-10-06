@@ -74,6 +74,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 mainElement.ElementList[0].Label = mainElement.Label;
                 // mainElement.ElementList[0].Description.InderValue = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
                 mainElement.ElementList[0].DoneButtonEnabled = false;
+                mainElement.ElementList[0].Description.InderValue = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
                 mainElement.Repeated = 0;
 
                 if (document.DocumentUploadedDatas.Count(x => x.Hash != null && x.LanguageId == language.Id) > 0)
