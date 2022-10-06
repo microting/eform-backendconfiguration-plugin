@@ -621,5 +621,33 @@
       "da": "Måned",
       "en-US": "Month" // todo maybe need add more translates
     }
+  },
+  {
+    "Key": "day",
+    "LocalizedValue": {
+      "da": "dag",
+      "en-US": "Day" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "week",
+    "LocalizedValue": {
+      "da": "uge",
+      "en-US": "Week" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "month",
+    "LocalizedValue": {
+      "da": "måned",
+      "en-US": "Month" // todo maybe need add more translates
+    }
+  },
+  {
+    "Key": "every",
+    "LocalizedValue": {
+      "da": "hver",
+      "en-US": "every" // todo maybe need add more translates
+    }
   }
 ]
