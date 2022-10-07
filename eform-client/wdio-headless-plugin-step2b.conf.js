@@ -12,7 +12,6 @@ exports.config = {
     //
     specs: [
       'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-      'e2e/Tests/backend-configuration-general/property-workers/backend-configuration-property-workers.create.spec.ts',
       'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t1.spec.ts',
       'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t2.spec.ts',
       'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t3.spec.ts',
