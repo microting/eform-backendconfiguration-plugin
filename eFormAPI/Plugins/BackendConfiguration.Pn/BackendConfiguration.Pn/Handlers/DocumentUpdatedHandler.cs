@@ -36,7 +36,12 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentUploadedDatas)
             .Include(x => x.DocumentSites)
-            .FirstAsync(x => x.Id == message.DocumentId);
+            .FirstOrDefaultAsync(x => x.Id == message.DocumentId && x.Status == true);
+
+        if (document == null)
+        {
+            return;
+        }
 
         foreach (var documentProperty in document.DocumentProperties)
         {

@@ -7,7 +7,7 @@ export class DocumentModel {
   documentTranslations: DocumentTranslationModel[] = [];
   folderId?: number;
   endDate?: string;
-  status: string;
+  status: boolean;
   propertyNames: string;
   documentProperties: DocumentPropertyModel[] = [];
   documentUploadedDatas: DocumentUploadedDataModel[] = [];

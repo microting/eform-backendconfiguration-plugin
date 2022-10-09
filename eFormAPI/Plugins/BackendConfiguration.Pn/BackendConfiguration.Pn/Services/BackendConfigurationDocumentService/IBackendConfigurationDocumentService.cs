@@ -12,6 +12,9 @@ public interface IBackendConfigurationDocumentService
 
     Task<OperationDataResult<BackendConfigurationDocumentModel>> GetDocumentAsync(int id);
 
+    Task<OperationDataResult<List<BackendConfigurationDocumentSimpleModel>>> GetDocuments(int languageId,
+        int? propertyId);
+
     Task<OperationResult> UpdateDocumentAsync(BackendConfigurationDocumentModel model);
 
     Task<OperationResult> CreateDocumentAsync(BackendConfigurationDocumentModel model);

@@ -210,4 +210,6 @@ export const da = {
   'Create new document': 'Opret nyt dokument',
   'Manage folders': 'Administrer mapper',
   'Selected folder': 'Valgt mappe',
+  'Show': 'Vis',
+  'Expiration': 'Udløb',
 };

@@ -16,7 +16,9 @@
       <ng-select
         [placeholder]="'Folders' | translate"
         [items]="folders"
-        formControlName="areaName"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="folderId"
         id="foldersFilter"
       >
       </ng-select>
@@ -24,8 +26,10 @@
     <div class="col-3 ng-select-wrapper">
       <ng-select
         [placeholder]="'Document name' | translate"
-        [items]="documentNames"
-        formControlName="areaName"
+        [items]="documents"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="documentId"
         id="documentNameFilter"
       >
       </ng-select>
@@ -34,11 +38,11 @@
       <ng-select
         [placeholder]="'Expiration' | translate"
         [items]="[
-          {id: 1, name: ('Expires in less than 1 month' | translate), description: ''},
+          {id: 0, name: ('Expires in less than 1 month' | translate), description: ''},
           {id: 1, name: ('Expires in 1-3 months' | translate), description: ''},
-          {id: 1, name: ('Expires in 4-6 months' | translate), description: ''},
-          {id: 1, name: ('Expires in 6-12 months' | translate), description: ''},
-          {id: 1, name: ('Expires in over 12 months' | translate), description: ''},
+          {id: 2, name: ('Expires in 4-6 months' | translate), description: ''},
+          {id: 3, name: ('Expires in 6-12 months' | translate), description: ''},
+          {id: 4, name: ('Expires in over 12 months' | translate), description: ''},
         ]"
         bindLabel="name"
         bindValue="id"

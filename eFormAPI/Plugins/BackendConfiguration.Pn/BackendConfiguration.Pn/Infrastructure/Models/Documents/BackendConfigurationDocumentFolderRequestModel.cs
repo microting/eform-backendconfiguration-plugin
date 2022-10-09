@@ -9,4 +9,6 @@ public class BackendConfigurationDocumentFolderRequestModel : FilterAndSortModel
     public int PageSize { get; set; }
 
     public int Offset { get; set; }
+
+    public int? FolderId { get; set; }
 }

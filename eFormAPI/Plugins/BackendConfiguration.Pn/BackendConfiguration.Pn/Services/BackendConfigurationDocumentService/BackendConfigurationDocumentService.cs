@@ -8,7 +8,6 @@ using BackendConfiguration.Pn.Infrastructure.Models.Documents;
 using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.RebusService;
-using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -27,16 +26,14 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
     private readonly CaseTemplatePnDbContext _caseTemplatePnDbContext;
     private readonly IEFormCoreService _coreHelper;
     private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-    private readonly IUserService _userService;
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
     private readonly IBus _bus;
 
-    public BackendConfigurationDocumentService(CaseTemplatePnDbContext caseTemplatePnDbContext, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService)
+    public BackendConfigurationDocumentService(CaseTemplatePnDbContext caseTemplatePnDbContext, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService)
     {
         _caseTemplatePnDbContext = caseTemplatePnDbContext;
         _coreHelper = coreHelper;
         _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-        _userService = userService;
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         _bus = rebusService.GetBus();
     }
@@ -48,6 +45,48 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             .Include(x => x.DocumentProperties)
             .Include(x => x.DocumentUploadedDatas)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+
+        if (pnRequestModel.PropertyId != -1)
+        {
+            query = query
+                .Where(x => x.DocumentProperties.Count(y => y.PropertyId == pnRequestModel.PropertyId) > 0);
+        }
+
+        if (pnRequestModel.FolderId != null)
+        {
+            query = query.Where(x => x.FolderId == pnRequestModel.FolderId);
+        }
+
+        if (pnRequestModel.DocumentId != null)
+        {
+            query = query.Where(x => x.Id == pnRequestModel.DocumentId);
+        }
+
+        if (pnRequestModel.Expiration != null)
+        {
+            switch (pnRequestModel.Expiration)
+            {
+                case 0:
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1));
+                    break;
+                case 1:
+                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(1) && x.EndAt <= DateTime.UtcNow.AddMonths(3));
+                    break;
+                case 2:
+                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(3) && x.EndAt <= DateTime.UtcNow.AddMonths(6));
+                    break;
+                case 3:
+                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(6) && x.EndAt <= DateTime.UtcNow.AddYears(1));
+                    break;
+                case 4:
+                    query = query.Where(x => x.EndAt > DateTime.UtcNow.AddYears(1));
+                    break;
+
+            }
+//            query = query.Where(x => x.ExpirationDate == pnRequestModel.ExpirationDate);
+        }
+
         var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
 
         var results = new List<BackendConfigurationDocumentModel>();
@@ -63,15 +102,15 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     FolderId = x.FolderId,
                     Status = x.Status,
                     DocumentUploadedDatas = x.DocumentUploadedDatas
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => new BackendConfigurationDocumentUploadedData
+                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(y => new BackendConfigurationDocumentUploadedData
                         {
-                            Id = x.Id,
-                            DocumentId = x.DocumentId,
-                            LanguageId = x.LanguageId,
-                            Name = x.Name,
-                            Hash = x.Hash,
-                            FileName = x.File
+                            Id = y.Id,
+                            DocumentId = y.DocumentId,
+                            LanguageId = y.LanguageId,
+                            Name = y.Name,
+                            Hash = y.Hash,
+                            FileName = y.File
                         }).ToList(),
                     DocumentTranslations = x.DocumentTranslations
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -83,7 +122,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                             LanguageId = y.LanguageId
                         }).ToList(),
                     DocumentProperties = x.DocumentProperties
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => new BackendConfigurationDocumentProperty
                     {
                         Id = y.Id,
@@ -166,6 +205,34 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         return new OperationDataResult<BackendConfigurationDocumentModel>(true, result);
     }
 
+    public async Task<OperationDataResult<List<BackendConfigurationDocumentSimpleModel>>> GetDocuments(int languageId, int? propertyId)
+    {
+        var query = _caseTemplatePnDbContext.Documents
+            .Include(x => x.DocumentTranslations)
+            .Include(x => x.DocumentProperties)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (propertyId != null)
+        {
+            query = query.Where(x => x.DocumentProperties.Any(y => y.PropertyId == propertyId));
+        }
+        var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+
+        var results = new List<BackendConfigurationDocumentSimpleModel>();
+
+        if (total > 0)
+        {
+            results = await query
+                .Select(x => new BackendConfigurationDocumentSimpleModel
+                {
+                    Id = x.Id,
+                    Name = x.DocumentTranslations.FirstOrDefault(y => y.LanguageId == languageId)!.Name
+                }).ToListAsync().ConfigureAwait(false);
+        }
+        return new OperationDataResult<List<BackendConfigurationDocumentSimpleModel>>(true,
+            results);
+    }
+
     public async Task<OperationResult> UpdateDocumentAsync(BackendConfigurationDocumentModel model)
     {
         var document = await _caseTemplatePnDbContext.Documents
@@ -184,6 +251,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         // document.StartAt = model.StartDate;
         document.EndAt = model.EndDate;
         document.FolderId = model.FolderId;
+        document.Status = model.Status;
         await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 
         foreach (var translation in model.DocumentTranslations)
@@ -243,7 +311,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 if (documentUploadedData.File != null)
                 {
                     await documentUploadedData.File.CopyToAsync(memoryStream);
-                    string checkSum = "";
+                    string checkSum;
                     using (var md5 = MD5.Create())
                     {
                         byte[] grr = md5.ComputeHash(memoryStream.ToArray());
@@ -270,7 +338,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 {
                     await documentUploadedData.File.CopyToAsync(memoryStream);
                     memoryStream.Seek(0, SeekOrigin.Begin);
-                    string checkSum = "";
+                    string checkSum;
                     using (var md5 = MD5.Create())
                     {
                         byte[] grr = md5.ComputeHash(memoryStream.ToArray());
@@ -376,7 +444,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             if (documentUploadedData.File != null)
             {
                 await documentUploadedData.File.CopyToAsync(memoryStream);
-                string checkSum = "";
+                string checkSum;
                 using (var md5 = MD5.Create())
                 {
                     byte[] grr = md5.ComputeHash(memoryStream.ToArray());
@@ -459,6 +527,11 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             .Include(x => x.FolderTranslations)
             .Include(x => x.FolderProperties)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+        if (pnRequestModel.FolderId != null)
+        {
+            query = query.Where(x => x.Id == pnRequestModel.FolderId);
+        }
 
         var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
 
@@ -593,32 +666,34 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 .Select(x => x.folder1)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
 
-            var folderId = 0;
+            int folderId;
 
             if (folders != null) {
                 folderId = folders.Id;
             }
             else
             {
-                var documentFolderTranslations = new List<CommonTranslationsModel>();
-                documentFolderTranslations.Add(new CommonTranslationsModel()
+                var documentFolderTranslations = new List<CommonTranslationsModel>
                 {
-                    Description = "",
-                    LanguageId = 1,
-                    Name = "26. Dokumenter"
-                });
-                documentFolderTranslations.Add(new CommonTranslationsModel()
-                {
-                    Description = "",
-                    LanguageId = 2,
-                    Name = "26. Documents"
-                });
-                documentFolderTranslations.Add(new CommonTranslationsModel()
-                {
-                    Description = "",
-                    LanguageId = 3,
-                    Name = "26. Dokumenten"
-                });
+                    new()
+                    {
+                        Description = "",
+                        LanguageId = 1,
+                        Name = "26. Dokumenter"
+                    },
+                    new()
+                    {
+                        Description = "",
+                        LanguageId = 2,
+                        Name = "26. Documents"
+                    },
+                    new()
+                    {
+                        Description = "",
+                        LanguageId = 3,
+                        Name = "26. Dokumenten"
+                    }
+                };
 
                 folderId = await core.FolderCreate(documentFolderTranslations, property.FolderId).ConfigureAwait(false);
             }

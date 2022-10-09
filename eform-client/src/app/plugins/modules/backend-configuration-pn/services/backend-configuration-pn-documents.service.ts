@@ -6,7 +6,7 @@ import {DocumentModel} from 'src/app/plugins/modules/backend-configuration-pn/mo
 import {DocumentsRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/documents-request.model';
 import {DocumentFolderRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-folder-request.model';
 import {DocumentFolderModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-folder.model';
-import {DocumentSimpleFolderModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {DocumentSimpleFolderModel, DocumentSimpleModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 
 export let BackendConfigurationPnDocumentsMethods = {
   Documents: 'api/backend-configuration-pn/documents',
@@ -26,12 +26,17 @@ export let BackendConfigurationPnDocumentsMethods = {
 export class BackendConfigurationPnDocumentsService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getAllDocuments(model: DocumentsRequestModel): Observable<OperationDataResult<Paged<DocumentModel>>> {
+  getAllDocuments(model: { documentId?: string; expiration?: string; propertyId: number; folderId?: string }):
+    Observable<OperationDataResult<Paged<DocumentModel>>> {
     return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.Documents, model);
   }
 
   getSingleDocument(documentId: number): Observable<OperationDataResult<DocumentModel>> {
     return this.apiBaseService.get(BackendConfigurationPnDocumentsMethods.Documents + '/' + documentId);
+  }
+
+  getSimpleDocuments(languageId: number, propertyId: number): Observable<OperationDataResult<DocumentSimpleModel[]>> {
+    return this.apiBaseService.get(BackendConfigurationPnDocumentsMethods.Documents + '?languageId=' + languageId + '&propertyId=' + propertyId, {});
   }
 
   updateDocument(model: DocumentModel): Observable<OperationDataResult<DocumentModel>> {
@@ -46,11 +51,12 @@ export class BackendConfigurationPnDocumentsService {
     return this.apiBaseService.delete(BackendConfigurationPnDocumentsMethods.DocumentDelete + '/' + documentId);
   }
 
-  getAllFolders(model: DocumentFolderRequestModel): Observable<OperationDataResult<Paged<DocumentFolderModel>>> {
+  getAllFolders(model: { documentId?: string; expiration?: string; propertyId: number; folderId?: string }):
+    Observable<OperationDataResult<Paged<DocumentFolderModel>>> {
     return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.Folders, model);
   }
 
-  getSimpleFolders(languageId: number): Observable<OperationDataResult<Paged<DocumentSimpleFolderModel>>> {
+  getSimpleFolders(languageId: number): Observable<OperationDataResult<DocumentSimpleFolderModel[]>> {
     return this.apiBaseService.get(BackendConfigurationPnDocumentsMethods.Folders + '?languageId=' + languageId);
   }
 

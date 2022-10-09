@@ -25,7 +25,7 @@ export class DocumentsTableComponent implements OnInit {
     { name: 'Name', visibleName: 'Document name', sortable: false },
     { name: 'Description', visibleName: 'Document description', sortable: false },
     { name: 'EndDate', visibleName: 'End date',sortable: false },
-    // { name: 'Status', visibleName: 'Status', sortable: false },
+    { name: 'Status', visibleName: 'Status', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
   @Input() documents: Paged<DocumentModel>;
@@ -40,7 +40,7 @@ export class DocumentsTableComponent implements OnInit {
   ngOnInit(): void {}
 
   sortTable(sort: string) {
-    // this.documentsService.onSortTable(sort);
+    //this.documentsService.onSortTable(sort);
     this.updateTable.emit();
   }
 
