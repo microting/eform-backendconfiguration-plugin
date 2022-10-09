@@ -168,18 +168,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             EformId = null,
                             PropertyId = areaProperty.PropertyId,
                             SecondaryeFormId = 0,
-                            SecondaryeFormName = "Morgenrundtur"
+                            SecondaryeFormName = "Morgenrundtur",
+                            ComplianceEnabled = false,
+                            ComplianceModifiable = false,
+                            Notifications = false,
+                            NotificationsModifiable = false
                         };
-                        areaRule.ComplianceEnabled = false;
-                        areaRule.ComplianceModifiable = false;
-                        areaRule.Notifications = false;
-                        areaRule.NotificationsModifiable = false;
 
-                        var folderId = await _backendConfigurationPnDbContext.ProperyAreaFolders
-                            .Include(x => x.AreaProperty)
-                            .Where(x => x.AreaProperty.Id == propertyAreaId)
-                            .Select(x => x.FolderId)
-                            .FirstOrDefaultAsync().ConfigureAwait(false);
+                        var property = await _backendConfigurationPnDbContext.Properties
+                            .Where(x => x.Id == areaProperty.PropertyId)
+                            .FirstAsync().ConfigureAwait(false);
 
                         areaRule.FolderId = await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
                         {
@@ -201,7 +199,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 Name = "00. Morgentour",
                                 Description = "",
                             },
-                        }, folderId).ConfigureAwait(false);
+                        }, property.FolderId).ConfigureAwait(false);
                         areaRule.FolderName = "00. Morgenrundtur";
 
                         await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
