@@ -22,6 +22,11 @@ import {
   PropertyAreasEditModalComponent,
   PropertyAreasComponent,
   PropertyDocxReportModalComponent,
+  ReportContainerComponent,
+  ReportHeaderComponent,
+  ReportImagesComponent,
+  ReportTableComponent,
+  CaseDeleteComponent,
 } from './components';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 import {
@@ -34,23 +39,23 @@ import {AreaRulePlanModalModule} from 'src/app/plugins/modules/backend-configura
 // import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from './consts/custom-date-time-adapter';
 
 @NgModule({
-    imports: [
-        CommonModule,
-        MDBBootstrapModule,
-        TranslateModule,
-        FormsModule,
-        NgSelectModule,
-        EformSharedModule,
-        FontAwesomeModule,
-        RouterModule,
-        BackendConfigurationPnRouting,
-        ReactiveFormsModule,
-        FileUploadModule,
-        OwlDateTimeModule,
-        EformCasesModule,
-        EformSharedTagsModule,
-        AreaRulePlanModalModule,
-    ],
+  imports: [
+    CommonModule,
+    MDBBootstrapModule,
+    TranslateModule,
+    FormsModule,
+    NgSelectModule,
+    EformSharedModule,
+    FontAwesomeModule,
+    RouterModule,
+    BackendConfigurationPnRouting,
+    ReactiveFormsModule,
+    FileUploadModule,
+    OwlDateTimeModule,
+    EformCasesModule,
+    EformSharedTagsModule,
+    AreaRulePlanModalModule,
+  ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
     BackendConfigurationSettingsComponent,
@@ -62,6 +67,11 @@ import {AreaRulePlanModalModule} from 'src/app/plugins/modules/backend-configura
     PropertiesTableComponent,
     PropertyAreasEditModalComponent,
     PropertyAreasComponent,
+    ReportContainerComponent,
+    ReportHeaderComponent,
+    ReportImagesComponent,
+    ReportTableComponent,
+    CaseDeleteComponent
   ],
   providers: [
     BackendConfigurationPnSettingsService,

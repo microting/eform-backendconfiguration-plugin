@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Models.Report;
+
 namespace BackendConfiguration.Pn.Services.WordService
 {
     using System.Collections.Generic;
@@ -35,5 +37,7 @@ namespace BackendConfiguration.Pn.Services.WordService
         Task<OperationDataResult<Stream>> GenerateReport(int propertyId, int areaId, int year);
 
         Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
+
+        Task<OperationDataResult<Stream>> GenerateWordDashboard(List<ReportEformModel> reportModel);
     }
 }

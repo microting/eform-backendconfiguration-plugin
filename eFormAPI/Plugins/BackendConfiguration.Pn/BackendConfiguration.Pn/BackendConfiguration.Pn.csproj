@@ -291,16 +291,16 @@
     <ItemGroup>
       <PackageReference Include="ChemicalsBase" Version="1.0.9" />
       <PackageReference Include="Magick.NET-Q16-x64" Version="12.1.0" />
-      <PackageReference Include="Microting.eForm" Version="5.5.67" />
-      <PackageReference Include="Microting.EformAngularFrontendBase" Version="1.2.36" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.95" />
+      <PackageReference Include="Microting.eForm" Version="5.5.64" />
+      <PackageReference Include="Microting.EformAngularFrontendBase" Version="1.2.34" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.92" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.78" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.75" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="5.0.18" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.158" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.155" />
       <PackageReference Include="ClosedXML" Version="0.96.0" />
-      <PackageReference Include="Microting.TimePlanningBase" Version="2.1.41" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="2.1.38" />
     </ItemGroup>
 
     <ItemGroup>

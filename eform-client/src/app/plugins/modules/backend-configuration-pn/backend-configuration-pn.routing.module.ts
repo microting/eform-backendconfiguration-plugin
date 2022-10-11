@@ -3,7 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard, PermissionGuard } from 'src/app/common/guards';
 import {
   PropertiesContainerComponent,
-  PropertyAreasComponent,
+  PropertyAreasComponent, ReportContainerComponent,
 } from './components';
 import { BackendConfigurationPnClaims } from './enums';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
@@ -77,6 +77,23 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./modules/documents/documents.module').then(
             (m) => m.DocumentsModule
+          ),
+      },
+      {
+        path: 'reports',
+        canActivate: [AuthGuard],
+        component: ReportContainerComponent,
+      },
+      {
+        path: 'reports/:dateFrom/:dateTo',
+        canActivate: [AuthGuard],
+        component: ReportContainerComponent,
+      },
+      {
+        path: 'case',
+        loadChildren: () =>
+          import('./components/backend-configuration-case/backend-configuration-case.module').then(
+            (m) => m.BackendConfigurationCaseModule
           ),
       },
     ],

@@ -22,6 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Models.Report;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+
 namespace BackendConfiguration.Pn.Services.ExcelService;
 
 using System.Collections.Generic;
@@ -32,4 +35,6 @@ using Infrastructure.Models.TaskManagement;
 public interface IExcelService
 {
     Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
+
+    Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel);
 }

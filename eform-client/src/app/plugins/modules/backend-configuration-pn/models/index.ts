@@ -6,3 +6,4 @@ export * from './area.model';
 export * from './compliances';
 export * from './task-management';
 export * from './documents';
+export * from './report';

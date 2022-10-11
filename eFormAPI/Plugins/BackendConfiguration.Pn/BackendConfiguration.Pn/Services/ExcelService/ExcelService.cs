@@ -23,6 +23,10 @@ SOFTWARE.
 */
 
 using System;
+using System.Diagnostics;
+using BackendConfiguration.Pn.Infrastructure.Models.Report;
+using Microsoft.Extensions.Logging;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
 namespace BackendConfiguration.Pn.Services.ExcelService;
 
@@ -38,13 +42,15 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 
 public class ExcelService: IExcelService
 {
+    private readonly ILogger<ExcelService> _logger;
     private readonly IBackendConfigurationLocalizationService _localizationService;
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 
-    public ExcelService(
+    public ExcelService(ILogger<ExcelService> logger,
         IBackendConfigurationLocalizationService localizationService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext)
     {
+        _logger = logger;
         _localizationService = localizationService;
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
     }
@@ -109,9 +115,9 @@ public class ExcelService: IExcelService
                 ? ""
                 : filtersModel.DateTo.Value.ToString("dd.MM.yyyy");
             worksheet.Cell(currentRow, currentColumn).Value = dateValue;
-                
-            // worksheet.Cell(currentRow, currentColumn).Value 
-            // worksheet.Cell(currentRow++, currentColumn).Value 
+
+            // worksheet.Cell(currentRow, currentColumn).Value
+            // worksheet.Cell(currentRow++, currentColumn).Value
 
             const int startColumnForDataTable = 1;
             currentRow++;
@@ -179,4 +185,126 @@ public class ExcelService: IExcelService
         range.Cells().Style.Border.SetRightBorder(valueStyle);
         range.Cells().Style.Border.SetTopBorder(valueStyle);
     }
+
+    #pragma warning disable CS1998
+        public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
+#pragma warning restore CS1998
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+
+                var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
+
+                var resultDocument = Path.Combine(Path.GetTempPath(), "results",
+                    $"{timeStamp}_.xlsx");
+
+                IXLWorkbook wb = new XLWorkbook();
+
+                foreach (var eformModel in reportModel)
+                {
+                    if (eformModel.FromDate != null)
+                    {
+                        var x = 0;
+                        var y = 0;
+                        var sheetName = eformModel.TemplateName;
+
+                        sheetName = sheetName
+                            .Replace(":", "")
+                            .Replace("\\", "")
+                            .Replace("/", "")
+                            .Replace("?", "")
+                            .Replace("*", "")
+                            .Replace("[", "")
+                            .Replace("]", "");
+
+                        if (sheetName.Length > 30)
+                        {
+                            sheetName = sheetName.Substring(0, 30);
+                        }
+                        var worksheet = wb.Worksheets.Add(sheetName);
+
+
+                        if (eformModel.Items.Any())
+                        {
+                            worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Id");
+                            worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+                            y++;
+                            worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("CreatedAt");
+                            worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+                            y++;
+                            worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
+                            worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+                            y++;
+                            worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("ItemName");
+                            worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+                            foreach (var itemHeader in eformModel.ItemHeaders)
+                            {
+                                y++;
+                                worksheet.Cell(x + 1, y + 1).Value = itemHeader.Value;
+                                worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+                            }
+                        }
+
+                        x = 1;
+                        foreach (var dataModel in eformModel.Items)
+                        {
+                            y = 0;
+                            worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseId;
+                            y++;
+                            worksheet.Cell(x + 1, y + 1).Value = $"{dataModel.MicrotingSdkCaseDoneAt:dd.MM.yyyy HH:mm:ss}";
+                            y++;
+                            worksheet.Cell(x + 1, y + 1).Value = dataModel.DoneBy;
+                            y++;
+                            worksheet.Cell(x + 1, y + 1).Value = dataModel.ItemName;
+                            y++;
+                            foreach (var dataModelCaseField in dataModel.CaseFields)
+                            {
+                                if (dataModelCaseField.Value == "checked")
+                                {
+                                    worksheet.Cell(x + 1, y + 1).Value = 1;
+                                }
+                                else
+                                {
+                                    var value = dataModelCaseField.Value == "unchecked" ? "0" : dataModelCaseField.Value == "checked" ? "1" : dataModelCaseField.Value;
+
+                                    worksheet.Cell(x + 1, y + 1).Value = value;
+                                    switch (dataModelCaseField.Key)
+                                    {
+                                        case "date":
+                                            worksheet.Cell(x + 1, y + 1).DataType = XLDataType.DateTime;
+                                            break;
+                                        case "number":
+                                            //worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
+                                            worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
+                                            break;
+                                        default:
+                                            worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Text;
+                                            break;
+                                    }
+                                    //worksheet.Cell(x + 1, y + 1).Value =
+                                }
+
+                                y++;
+                            }
+
+                            x++;
+                        }
+                    }
+                }
+                wb.SaveAs(resultDocument);
+
+                Stream result = File.Open(resultDocument, FileMode.Open);
+                return new OperationDataResult<Stream>(true, result);
+            }
+            catch (Exception e)
+            {
+                Trace.TraceError(e.Message);
+                _logger.LogError(e.Message);
+                return new OperationDataResult<Stream>(
+                    false,
+                    _localizationService.GetString("ErrorWhileCreatingWordFile"));
+            }
+        }
+
 }

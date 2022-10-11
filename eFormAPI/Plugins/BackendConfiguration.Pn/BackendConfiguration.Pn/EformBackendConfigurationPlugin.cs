@@ -23,13 +23,14 @@ SOFTWARE.
 */
 
 
+using BackendConfiguration.Pn.Services.BackendConfigurationCaseService;
 using BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
+using BackendConfiguration.Pn.Services.BackendConfigurationReportService;
 using BackendConfiguration.Pn.Services.ChemicalService;
 using Castle.MicroKernel.Registration;
 using Castle.Windsor;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Factories;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
@@ -109,6 +110,8 @@ namespace BackendConfiguration.Pn
             services
                 .AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
             services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
+            services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
+            services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
             services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
@@ -354,72 +357,6 @@ namespace BackendConfiguration.Pn
                     }
                 };
                 await field.Create(sdkDbContext);
-            }
-
-            areaTranslation = await context.AreaTranslations
-                .FirstOrDefaultAsync(x => x.Name == "03. Gyllebeholdere");
-
-            var areaRules = await context.AreaRules
-                .Where(x => x.AreaId == areaTranslation.AreaId)
-                .Where(x =>
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .ToListAsync();
-            foreach (var areaRule in areaRules)
-            {
-                areaRule.ComplianceEnabled = true;
-                areaRule.ComplianceModifiable = false;
-
-                await areaRule.Update(context);
-
-                var areaRulePlannings = await context.AreaRulePlannings
-                    .Where(x => x.AreaRuleId == areaRule.Id)
-                    .ToListAsync();
-
-                foreach (var areaRulePlanning in areaRulePlannings)
-                {
-                    if (areaRulePlanning.ItemPlanningId != 0)
-                    {
-                        var planning = await itemsPlanningContext.Plannings
-                            .FirstOrDefaultAsync(x => x.Id == areaRulePlanning.ItemPlanningId);
-
-                        if (planning != null)
-                        {
-                            var planningCaseSites = await itemsPlanningContext.PlanningCaseSites
-                                .Where(x => x.Status != 100)
-                                .Where(x => x.WorkflowState ==
-                                            Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Retracted)
-                                .Where(x => x.PlanningId == planning.Id).ToListAsync();
-
-                            foreach (var planningCaseSite in planningCaseSites)
-                            {
-                                var compliance =
-                                    await context.Compliances.FirstOrDefaultAsync(x =>
-                                        x.PlanningCaseSiteId == planningCaseSite.Id);
-
-                                if (compliance == null)
-                                {
-                                    var deadLine = (DateTime)planningCaseSite.UpdatedAt;
-                                    compliance = new Compliance()
-                                    {
-                                        PropertyId = areaRule.PropertyId,
-                                        PlanningId = planningCaseSite.PlanningId,
-                                        AreaId = areaRule.AreaId,
-                                        Deadline = new DateTime(deadLine.Year, deadLine.Month, deadLine.Day, 0, 0,
-                                            0),
-                                        StartDate = (DateTime)planningCaseSite.CreatedAt,
-                                        MicrotingSdkeFormId = planning.RelatedEFormId,
-                                        PlanningCaseSiteId = planningCaseSite.Id
-                                    };
-
-                                    await compliance.Create(context);
-                                }
-                            }
-                        }
-                    }
-                    areaRulePlanning.ComplianceEnabled = true;
-
-                    await areaRulePlanning.Update(context);
-                }
             }
         }
 
@@ -763,6 +700,75 @@ namespace BackendConfiguration.Pn
                                 }
                             }
                         },
+                        new PluginMenuItemModel
+                            {
+                                Name = "Reports",
+                                E2EId = "backend-configuration-pn-reports",
+                                Link = "/plugins/backend-configuration-pn/reports",
+                                Type = MenuItemTypeEnum.Link,
+                                Position = 1,
+                                MenuTemplate = new PluginMenuTemplateModel()
+                                {
+                                    Name = "Reports",
+                                    E2EId = "backend-configuration-pn-reports",
+                                    DefaultLink = "/plugins/backend-configuration-pn/reports",
+                                    Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                                    Translations = new List<PluginMenuTranslationModel>
+                                    {
+                                        new PluginMenuTranslationModel
+                                        {
+                                            LocaleName = LocaleNames.English,
+                                            Name = "Reports",
+                                            Language = LanguageNames.English,
+                                        },
+                                        new PluginMenuTranslationModel
+                                        {
+                                            LocaleName = LocaleNames.German,
+                                            Name = "Berichte",
+                                            Language = LanguageNames.German,
+                                        },
+                                        new PluginMenuTranslationModel
+                                        {
+                                            LocaleName = LocaleNames.Danish,
+                                            Name = "Rapporter",
+                                            Language = LanguageNames.Danish,
+                                        },
+                                        new PluginMenuTranslationModel
+                                        {
+                                            LocaleName = LocaleNames.Ukrainian,
+                                            Name = "Звіти",
+                                            Language = LanguageNames.Ukrainian,
+                                        }
+                                    }
+                                },
+                                Translations = new List<PluginMenuTranslationModel>
+                                {
+                                    new PluginMenuTranslationModel
+                                    {
+                                        LocaleName = LocaleNames.English,
+                                        Name = "Reports",
+                                        Language = LanguageNames.English,
+                                    },
+                                    new PluginMenuTranslationModel
+                                    {
+                                        LocaleName = LocaleNames.German,
+                                        Name = "Berichte",
+                                        Language = LanguageNames.German,
+                                    },
+                                    new PluginMenuTranslationModel
+                                    {
+                                        LocaleName = LocaleNames.Danish,
+                                        Name = "Rapporter",
+                                        Language = LanguageNames.Danish,
+                                    },
+                                    new PluginMenuTranslationModel
+                                    {
+                                        LocaleName = LocaleNames.Ukrainian,
+                                        Name = "Звіти",
+                                        Language = LanguageNames.Ukrainian,
+                                    }
+                                }
+                            },
                         new()
                         {
                             Name = "Documents",

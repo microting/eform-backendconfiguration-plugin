@@ -18,6 +18,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using BackendConfiguration.Pn.Infrastructure.Models.Report;
+using BackendConfiguration.Pn.Services.BackendConfigurationReportService;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
+
 namespace BackendConfiguration.Pn.Controllers;
 
 using System.Text;
@@ -31,10 +39,12 @@ using Services.WordService;
 public class ReportController : Controller
 {
     private readonly IWordService _wordService;
+    private readonly IBackendConfigurationReportService _reportService;
 
-    public ReportController(IWordService wordService)
+    public ReportController(IWordService wordService, IBackendConfigurationReportService reportService)
     {
         _wordService = wordService;
+        _reportService = reportService;
     }
 
     [HttpGet]
@@ -71,5 +81,75 @@ public class ReportController : Controller
                 }
             }
         });
+    }
+
+    [HttpPost]
+    [Route("reports")]
+    public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReport([FromBody]GenerateReportModel requestModel)
+    {
+        return await _reportService.GenerateReport(requestModel, false);
+    }
+
+    /// <summary>
+    /// Download records export word
+    /// </summary>
+    /// <param name="requestModel">The request model.</param>
+    /// <param name="type">docx or xlsx</param>
+    [HttpGet]
+    [Route("file")]
+
+    [ProducesResponseType(typeof(string), 400)]
+    public async Task GenerateReportFile([FromQuery]DateTime dateFrom, [FromQuery]DateTime dateTo, [FromQuery]string tagIds, [FromQuery]string type)
+    {
+        var requestModel = new GenerateReportModel();
+        var tags = tagIds?.Split(",").ToList();
+        if (tags != null)
+        {
+            foreach (string tag in tags)
+            {
+                requestModel.TagIds.Add(int.Parse(tag));
+            }
+        }
+        requestModel.DateFrom = dateFrom;
+        requestModel.DateTo = dateTo;
+        requestModel.Type = type;
+        var result = await _reportService.GenerateReportFile(requestModel);
+        const int bufferSize = 4086;
+        byte[] buffer = new byte[bufferSize];
+        Response.OnStarting(async () =>
+        {
+            if (!result.Success)
+            {
+                Response.ContentLength = result.Message.Length;
+                Response.ContentType = "text/plain";
+                Response.StatusCode = 400;
+                byte[] bytes = Encoding.UTF8.GetBytes(result.Message);
+                await Response.Body.WriteAsync(bytes, 0, result.Message.Length);
+                await Response.Body.FlushAsync();
+            }
+            else
+            {
+                await using var wordStream = result.Model;
+                int bytesRead;
+                Response.ContentLength = wordStream.Length;
+                Response.ContentType = requestModel.Type == "docx"
+                    ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+                while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
+                       !HttpContext.RequestAborted.IsCancellationRequested)
+                {
+                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
+                    await Response.Body.FlushAsync();
+                }
+            }
+        });
+    }
+
+    [HttpPut]
+    [Route("cases")]
+    public async Task<IActionResult> Update([FromBody] ReplyRequest model)
+    {
+        return Ok(await _reportService.Update(model));
     }
 }
