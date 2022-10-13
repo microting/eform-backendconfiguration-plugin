@@ -41,6 +41,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.CasePosts;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 
@@ -56,6 +57,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
         private readonly ICasePostBaseService _casePostBaseService;
         private readonly ItemsPlanningPnDbContext _dbContext;
         private readonly IUserService _userService;
+        private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 
         // ReSharper disable once SuggestBaseTypeForParameter
         public BackendConfigurationReportService(
@@ -66,7 +68,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             IExcelService excelService,
             ICasePostBaseService casePostBaseService,
             ItemsPlanningPnDbContext dbContext,
-            IUserService userService)
+            IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext)
         {
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _logger = logger;
@@ -76,6 +78,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             _casePostBaseService = casePostBaseService;
             _dbContext = dbContext;
             _userService = userService;
+            _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         }
 
         public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx)
@@ -309,34 +312,34 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         }
 
                         // posts
-                        var casePostRequest = new CasePostsRequestCommonModel
-                        {
-                            Offset = 0,
-                            PageSize = int.MaxValue,
-                            TemplateId = checkList.Id,
-                        };
+                        // var casePostRequest = new CasePostsRequestCommonModel
+                        // {
+                        //     Offset = 0,
+                        //     PageSize = int.MaxValue,
+                        //     TemplateId = checkList.Id,
+                        // };
 
-                        var casePostListResult = await _casePostBaseService.GetCommonPosts(casePostRequest);
+                        // var casePostListResult = await _casePostBaseService.GetCommonPosts(casePostRequest);
+                        //
+                        // if (!casePostListResult.Success)
+                        // {
+                        //     return new OperationDataResult<List<ReportEformModel>>(
+                        //         false,
+                        //         casePostListResult.Message);
+                        // }
 
-                        if (!casePostListResult.Success)
-                        {
-                            return new OperationDataResult<List<ReportEformModel>>(
-                                false,
-                                casePostListResult.Message);
-                        }
-
-                        foreach (var casePostCommonModel in casePostListResult.Model.Entities)
-                        {
-                            reportModel.Posts.Add(new ReportEformPostModel
-                            {
-                                CaseId = casePostCommonModel.CaseId,
-                                PostId = casePostCommonModel.PostId,
-                                Comment = casePostCommonModel.Text,
-                                SentTo = casePostCommonModel.ToRecipients,
-                                SentToTags = casePostCommonModel.ToRecipientsTags,
-                                PostDate = casePostCommonModel.PostDate
-                            });
-                        }
+                        // foreach (var casePostCommonModel in casePostListResult.Model.Entities)
+                        // {
+                        //     reportModel.Posts.Add(new ReportEformPostModel
+                        //     {
+                        //         CaseId = casePostCommonModel.CaseId,
+                        //         PostId = casePostCommonModel.PostId,
+                        //         Comment = casePostCommonModel.Text,
+                        //         SentTo = casePostCommonModel.ToRecipients,
+                        //         SentToTags = casePostCommonModel.ToRecipientsTags,
+                        //         PostDate = casePostCommonModel.PostDate
+                        //     });
+                        // }
 
                         // add cases
                         //var caseIds = groupedCase.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).Select(x => x.MicrotingSdkCaseId).ToList();
@@ -348,6 +351,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             var planningNameTranslation =
                                 await _dbContext.PlanningNameTranslation.SingleOrDefaultAsync(x =>
                                     x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
+                            string propertyName = "";
+
+                            var areaRulePlanning =
+                                await _backendConfigurationPnDbContext.AreaRulePlannings.FirstOrDefaultAsync(x =>
+                                    x.ItemPlanningId == planningCase.PlanningId);
+
+                            if (areaRulePlanning != null)
+                            {
+                                propertyName = _backendConfigurationPnDbContext.Properties
+                                    .First(x => x.Id == areaRulePlanning.PropertyId).Name;
+                            }
+
                             if (planningNameTranslation != null)
                             {
                                 var item = new ReportEformItemModel
@@ -359,6 +374,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                     DoneBy = planningCase.DoneByUserName,
                                     ItemName = planningNameTranslation.Name,
                                     ItemDescription = planningCase.Planning.Description,
+                                    PropertyName = propertyName
                                 };
 
 
@@ -464,10 +480,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                     .Select(x => x.Id)
                                     .CountAsync();
 
-                                item.PostsCount = casePostListResult.Model.Entities
-                                    .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId)
-                                    .Select(x => x.PostId)
-                                    .Count();
+                                // item.PostsCount = casePostListResult.Model.Entities
+                                //     .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId)
+                                //     .Select(x => x.PostId)
+                                //     .Count();
 
                                 reportModel.Items.Add(item);
                             }

@@ -27,6 +27,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Report;
 using eFormCore;
 using ImageMagick;
 using Microting.eForm.Dto;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.WordService
 {
@@ -58,6 +59,7 @@ namespace BackendConfiguration.Pn.Services.WordService
         private readonly IBackendConfigurationLocalizationService  _localizationService;
         private readonly IEFormCoreService _coreHelper;
         private readonly BackendConfigurationPnDbContext _dbContext;
+        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly IUserService _userService;
         private bool _s3Enabled;
         private bool _swiftEnabled;
@@ -67,13 +69,14 @@ namespace BackendConfiguration.Pn.Services.WordService
             IBackendConfigurationLocalizationService localizationService,
             IEFormCoreService coreHelper,
             BackendConfigurationPnDbContext dbContext,
-            IUserService userService)
+            IUserService userService, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             _logger = logger;
             _localizationService = localizationService;
             _coreHelper = coreHelper;
             _dbContext = dbContext;
             _userService = userService;
+            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
         }
 
         public async Task<OperationDataResult<Stream>> GenerateReport(int propertyId, int areaId, int year)
@@ -359,12 +362,12 @@ namespace BackendConfiguration.Pn.Services.WordService
             {
                 // get core
                 var core = await _coreHelper.GetCore();
-                var headerImageName = _dbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportImageName").Value;
+                // var headerImageName = _dbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportImageName").Value;
 
                 _s3Enabled = core.GetSdkSetting(Settings.s3Enabled).Result.ToLower() == "true";
                 _swiftEnabled = core.GetSdkSetting(Settings.swiftEnabled).Result.ToLower() == "true";
                 // Read html and template
-                var resourceString = "ItemsPlanning.Pn.Resources.Templates.WordExport.page.html";
+                var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
                 var assembly = Assembly.GetExecutingAssembly();
                 var resourceStream = assembly.GetManifestResourceStream(resourceString);
                 string html;
@@ -373,7 +376,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                     html = await reader.ReadToEndAsync();
                 }
 
-                resourceString = "ItemsPlanning.Pn.Resources.Templates.WordExport.file.docx";
+                resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
                 var docxFileResourceStream = assembly.GetManifestResourceStream(resourceString);
                 if (docxFileResourceStream == null)
                 {
@@ -386,8 +389,8 @@ namespace BackendConfiguration.Pn.Services.WordService
                 var word = new WordProcessor(docxFileStream);
 
                 var itemsHtml = new StringBuilder();;
-                var header = _dbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
-                var subHeader = _dbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
+                var header = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
+                var subHeader = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
                 itemsHtml.Append("<body>");
                 itemsHtml.Append(@"<p style='display:flex;align-content:center;justify-content:center;flex-wrap:wrap;'>");
                 for (var i = 0; i < 8; i++)
@@ -464,6 +467,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         // Table header
                         itemsHtml.Append(@"<tr style='background-color:#f5f5f5;font-weight:bold;font-size: 7pt;'>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
+                        itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedAt")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("DoneBy")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("ItemName")}</td>");
@@ -481,6 +485,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         {
                             itemsHtml.Append(@"<tr style='font-size: 7pt;'>");
                             itemsHtml.Append($@"<td>{dataModel.MicrotingSdkCaseId}</td>");
+                            itemsHtml.Append($@"<td>{dataModel.PropertyName}</td>");
 
                             itemsHtml.Append($@"<td>{dataModel.MicrotingSdkCaseDoneAt:dd.MM.yyyy}</td>");
                             itemsHtml.Append($@"<td>{dataModel.DoneBy}</td>");
@@ -563,7 +568,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                 itemsHtml.Append(@"</div>");
                 itemsHtml.Append("</body>");
 
-                html = html.Replace("{%ItemList%}", itemsHtml.ToString());
+                html = html.Replace("{%Content%}", itemsHtml.ToString());
 
                 word.AddHtml(html);
                 word.Dispose();

@@ -621,5 +621,32 @@
       "da": "Måned",
       "en-US": "Month" // todo maybe need add more translates
     }
+  },
+  {
+    "Key": "CreatedAt",
+    "LocalizedValue": {
+      "da": "Dato",
+      "de": "Hergestellt in",
+      "en-US": "Created At",
+      "uk-UA": "Створено в"
+    }
+  },
+  {
+    "Key": "DoneBy",
+    "LocalizedValue": {
+      "da": "Udført af",
+      "de": "Gemacht von",
+      "en-US": "Done By",
+      "uk-UA": "Зроблено"
+    }
+  },
+  {
+    "Key": "ItemName",
+    "LocalizedValue": {
+      "da": "Område",
+      "de": "Artikelname",
+      "en-US": "Item name",
+      "uk-UA": "Назва елементу"
+    }
   }
 ]

@@ -230,6 +230,9 @@ public class ExcelService: IExcelService
                             worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Id");
                             worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
                             y++;
+                            worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Property");
+                            worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+                            y++;
                             worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("CreatedAt");
                             worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
                             y++;
@@ -252,6 +255,8 @@ public class ExcelService: IExcelService
                             y = 0;
                             worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseId;
                             y++;
+                            worksheet.Cell(x + 1, y + 1).Value = dataModel.PropertyName;
+                            y++;
                             worksheet.Cell(x + 1, y + 1).Value = $"{dataModel.MicrotingSdkCaseDoneAt:dd.MM.yyyy HH:mm:ss}";
                             y++;
                             worksheet.Cell(x + 1, y + 1).Value = dataModel.DoneBy;
@@ -268,21 +273,22 @@ public class ExcelService: IExcelService
                                 {
                                     var value = dataModelCaseField.Value == "unchecked" ? "0" : dataModelCaseField.Value == "checked" ? "1" : dataModelCaseField.Value;
 
-                                    worksheet.Cell(x + 1, y + 1).Value = value;
                                     switch (dataModelCaseField.Key)
                                     {
                                         case "date":
+                                            worksheet.Cell(x + 1, y + 1).Value = value;
                                             worksheet.Cell(x + 1, y + 1).DataType = XLDataType.DateTime;
                                             break;
                                         case "number":
+                                            worksheet.Cell(x + 1, y + 1).Value = value;
                                             //worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
                                             worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
                                             break;
                                         default:
+                                            worksheet.Cell(x + 1, y + 1).Value = "'" + value;
                                             worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Text;
                                             break;
                                     }
-                                    //worksheet.Cell(x + 1, y + 1).Value =
                                 }
 
                                 y++;

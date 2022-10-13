@@ -9,6 +9,7 @@
     <thead>
       <tr>
         <th>{{ 'Id' | translate }}</th>
+        <th>{{ 'Property name' | translate }}</th>
         <th>{{ 'CreatedAt' | translate }}</th>
         <th>{{ 'Done by' | translate }}</th>
         <th>{{ 'Item name' | translate }}</th>
@@ -22,6 +23,9 @@
       <tr *ngFor="let item of items">
         <td>
           {{ item.microtingSdkCaseId }}
+        </td>
+        <td>
+          {{ item.propertyName }}
         </td>
         <td>
           <date-formatter

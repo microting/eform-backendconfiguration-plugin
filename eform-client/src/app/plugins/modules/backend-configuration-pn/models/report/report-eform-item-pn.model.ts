@@ -8,4 +8,5 @@ export class ReportEformItemModel {
   postsCount: number;
   imagesCount: number;
   caseFields: { key: number, value: string; }[] = [];
+  propertyName: string;
 }

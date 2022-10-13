@@ -96,7 +96,7 @@ public class ReportController : Controller
     /// <param name="requestModel">The request model.</param>
     /// <param name="type">docx or xlsx</param>
     [HttpGet]
-    [Route("file")]
+    [Route("reports/file")]
 
     [ProducesResponseType(typeof(string), 400)]
     public async Task GenerateReportFile([FromQuery]DateTime dateFrom, [FromQuery]DateTime dateTo, [FromQuery]string tagIds, [FromQuery]string type)
