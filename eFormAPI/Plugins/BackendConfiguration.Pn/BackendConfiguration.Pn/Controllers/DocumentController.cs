@@ -53,6 +53,12 @@ public class DocumentController : Controller
         return await _backendConfigurationDocumentService.GetDocumentAsync(id);
     }
 
+    [HttpGet]
+    public async Task<OperationDataResult<List<BackendConfigurationDocumentSimpleModel>>> GetDocuments([FromQuery] int languageId,[FromQuery] int? propertyId)
+    {
+        return await _backendConfigurationDocumentService.GetDocuments(languageId, propertyId);
+    }
+
     [HttpPut]
     [Route("update/{id}")]
     [Consumes("multipart/form-data")]

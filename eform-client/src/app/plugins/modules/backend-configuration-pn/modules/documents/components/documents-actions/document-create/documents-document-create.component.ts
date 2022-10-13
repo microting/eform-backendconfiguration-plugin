@@ -28,7 +28,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   pdfSub$: Subscription;
   selectedFolder: number;
   @Output() documentCreated: EventEmitter<void> = new EventEmitter<void>();
-  folders: Paged<DocumentSimpleFolderModel>;
+  folders: DocumentSimpleFolderModel[];
   getPropertiesDictionary$: Subscription;
   availableProperties: CommonDictionaryModel[];
   selectedLanguage: number;

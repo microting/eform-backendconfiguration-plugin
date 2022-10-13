@@ -209,4 +209,7 @@ export const da = {
   'Document description': 'Dokumentbeskrivelse',
   'Create new document': 'Opret nyt dokument',
   'Manage folders': 'Administrer mapper',
+  'Selected folder': 'Valgt mappe',
+  'Show': 'Vis',
+  'Expiration': 'Udløb',
 };

@@ -3,5 +3,6 @@ export * from './document-folder.model';
 export * from './document-folder-translation.model';
 export * from './document-translation.model';
 export * from './document.model';
+export * from './document-simple.model';
 export * from './documents-request.model';
 export * from './document-simple-folder.model';

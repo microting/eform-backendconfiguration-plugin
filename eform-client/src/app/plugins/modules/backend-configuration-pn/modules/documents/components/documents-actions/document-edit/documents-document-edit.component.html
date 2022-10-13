@@ -19,6 +19,25 @@
         <mdb-card class="mb-3">
           <mdb-card-body *ngIf="folders !== undefined">
             <div class="row">
+              <div class="col-md-12">
+                <div class="custom-control custom-switch">
+                  <input
+                    type="checkbox"
+                    id="planAreaRuleStatusToggle"
+                    [value]="newDocumentModel.status"
+                    [checked]="newDocumentModel.status"
+                    [(ngModel)]="newDocumentModel.status"
+                    class="custom-control-input"
+                  />
+                  <label
+                    for="planAreaRuleStatusToggle"
+                    class="custom-control-label"
+                  >{{ 'Enabled' | translate }}</label
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="row">
               <div class="ng-select-wrapper col-md-12">
                 <ng-select
                   class="custom"

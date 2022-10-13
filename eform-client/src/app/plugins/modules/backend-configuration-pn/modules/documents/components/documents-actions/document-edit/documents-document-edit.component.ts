@@ -26,8 +26,8 @@ export class DocumentsDocumentEditComponent implements OnInit {
   @ViewChild('frame') frame;
   newDocumentModel: DocumentModel = new DocumentModel();
   selectedFolder: number;
-  @Output() documentCreated: EventEmitter<void> = new EventEmitter<void>();
-  folders: Paged<DocumentSimpleFolderModel>;
+  @Output() documentUpdated: EventEmitter<void> = new EventEmitter<void>();
+  folders: DocumentSimpleFolderModel[];
   getPropertiesDictionary$: Subscription;
   availableProperties: CommonDictionaryModel[];
   pdfSub$: Subscription;
@@ -92,7 +92,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
     this.backendConfigurationPnDocumentsService.updateDocument(this.newDocumentModel)
       .subscribe((data) => {
         if (data && data.success) {
-          this.documentCreated.emit();
+          this.documentUpdated.emit();
           this.hide();
         }
       });

@@ -31,7 +31,7 @@
                 [date]="document.endDate"
                 [Format]="'date'"
               ></date-formatter></td>
-<!--            <td>{{document.status}}</td>-->
+            <td>{{(document.status ? ('ON' | translate) : 'OFF' | translate )}}</td>
             <td>
               <div class="d-flex flex-row justify-content-center">
                 <button

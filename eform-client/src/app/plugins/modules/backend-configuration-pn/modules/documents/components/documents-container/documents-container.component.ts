@@ -12,6 +12,8 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
+import {Subscription} from "rxjs";
+import {DocumentsStateService} from "src/app/plugins/modules/backend-configuration-pn/modules/documents/store";
 
 @Component({
   selector: 'app-documents-container',
@@ -25,12 +27,14 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   @ViewChild('deleteDocumentModal') deleteDocumentModal: DocumentsDocumentEditComponent;
   folders: Paged<DocumentFolderModel>;
   documents: Paged<DocumentModel>;
+  subscription: Subscription;
 
-  constructor(public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-              public localeService: LocaleService) {}
+  constructor(
+    public documentsStateService: DocumentsStateService,
+    public localeService: LocaleService) {}
 
   ngOnInit(): void {
-    this.getFolders();
+    //this.getFolders();
   }
 
   ngOnDestroy(): void {
@@ -53,32 +57,18 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
 
 
   updateTable() {
-    // this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
-    //   .getAllWorkOrderCases()
-    //   .subscribe((data) => {
-    //     if (data && data.success && data.model) {
+     this.subscription = this.documentsStateService
+       .getFolders()
+       .subscribe((data) => {
+         if (data && data.success && data.model) {
+           this.folders = data.model;
+           this.documentsStateService.getDocuments().subscribe((data) => {
+              if (data && data.success && data.model) {
+                this.documents = data.model;
+              }
+           });
     //       this.workOrderCases = data.model;
-    //     }
-    //   });
-  }
-
-  getFolders() {
-    const requestModel = new DocumentFolderRequestModel();
-
-    this.backendConfigurationPnDocumentsService.getAllFolders(requestModel).subscribe((data) => {
-      if (data && data.success) {
-        this.folders = data.model;
-        this.getDocuments();
-      }
-    });
-  }
-
-  getDocuments() {
-    const requestModel = new DocumentsRequestModel();
-    this.backendConfigurationPnDocumentsService.getAllDocuments(requestModel).subscribe((data) => {
-      if (data && data.success) {
-        this.documents = data.model;
-      }
-    });
+         }
+       });
   }
 }
