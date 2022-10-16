@@ -83,6 +83,7 @@
       "en-US": "An end date must be set",
       "uk-UA": "Потрібно встановити кінцеву дату",
       "pl-Pl": "Należy ustawić datę zakończenia"
+
     }
   },
   {
@@ -118,7 +119,17 @@
       "da": "Fejl under oprettelse af ejendomme",
       "de": "Fehler beim Erstellen der Property",
       "en-US": "Error while creating properties",
-      "uk-UA": "Помилка при створенні властивостей"
+      "uk-UA": "Помилка при створенні властивостей",
+      "pl-PL": "Błąd podczas tworzenia właściwości",
+      "no-NO": "Feil under oppretting av egenskaper",
+      "sv-SE": "Fel vid skapande av egenskaper",
+      "es-ES": "Error al crear propiedades",
+      "fr-FR": "Erreur lors de la création des propriétés",
+      "it-IT": "Errore durante la creazione delle proprietà",
+      "nl-NL": "Fout bij het maken van eigenschappen",
+      "pt-BR": "Erro ao criar propriedades",
+      "pt-PT": "Erro ao criar propriedades",
+      "fi-FI": "Virhe ominaisuuksien luonnissa"
     }
   },
   {
@@ -127,7 +138,17 @@
       "da": "Ikke fundet",
       "de": "Nicht gefunden",
       "en-US": "Not found",
-      "uk-UA": "Не знайдено"
+      "uk-UA": "Не знайдено",
+      "pl-PL": "Nie znaleziono",
+      "no-NO": "Ikke funnet",
+      "sv-SE": "Hittades inte",
+      "es-ES": "No encontrado",
+      "fr-FR": "Non trouvé",
+      "it-IT": "Non trovato",
+      "nl-NL": "Niet gevonden",
+      "pt-BR": "Não encontrado",
+      "pt-PT": "Não encontrado",
+      "fi-FI": "Ei löytynyt"
     }
   },
   {
@@ -136,7 +157,17 @@
       "da": "Ejendommen blev ikke fundet",
       "de": "Das Objekt wurde nicht gefunden",
       "en-US": "Error while read property",
-      "uk-UA": "Помилка при читанні властивості"
+      "uk-UA": "Помилка при читанні властивості",
+      "pl-PL": "Błąd podczas odczytu właściwości",
+      "no-NO": "Feil under leseegenskap",
+      "sv-SE": "Fel vid läsning av egenskap",
+      "es-ES": "Error al leer la propiedad",
+      "fr-FR": "Erreur lors de la lecture de la propriété",
+      "it-IT": "Errore durante la lettura della proprietà",
+      "nl-NL": "Fout bij het lezen van eigenschap",
+      "pt-BR": "Erro ao ler a propriedade",
+      "pt-PT": "Erro ao ler a propriedade",
+      "fi-FI": "Virhe luettaessa ominaisuutta"
     }
   },
   {
@@ -145,7 +176,17 @@
       "da": "Ændringer gemt",
       "de": "Änderungen gespeichert",
       "en-US": "Successfully updated",
-      "uk-UA": "успішно оновлено"
+      "uk-UA": "успішно оновлено",
+      "pl-PL": "Zaktualizowano pomyślnie",
+      "no-NO": "Oppdatert",
+      "sv-SE": "Uppdaterad",
+      "es-ES": "Actualizado",
+      "fr-FR": "Mis à jour",
+      "it-IT": "Aggiornato",
+      "nl-NL": "Bijgewerkt",
+      "pt-BR": "Atualizado",
+      "pt-PT": "Atualizado",
+      "fi-FI": "Päivitetty"
     }
   },
   {
@@ -154,7 +195,17 @@
       "da": "Fejl under opdatering",
       "de": "Fehler beim Aktualisieren",
       "en-US": "Error while updating",
-      "uk-UA": "Помилка під час оновлення"
+      "uk-UA": "Помилка під час оновлення",
+      "pl-PL": "Błąd podczas aktualizacji",
+      "no-NO": "Feil under oppdatering",
+      "sv-SE": "Fel vid uppdatering",
+      "es-ES": "Error al actualizar",
+      "fr-FR": "Erreur lors de la mise à jour",
+      "it-IT": "Errore durante l'aggiornamento",
+      "nl-NL": "Fout bij bijwerken",
+      "pt-BR": "Erro ao atualizar",
+      "pt-PT": "Erro ao atualizar",
+      "fi-FI": "Virhe päivittäessä"
     }
   },
   {
@@ -163,7 +214,17 @@
       "da": "Slettet",
       "de": "Gelöscht",
       "en-US": "Successfully deleted",
-      "uk-UA": "Видалено"
+      "uk-UA": "Видалено",
+      "pl-PL": "Pomyślnie usunięto",
+      "no-NO": "Slettet",
+      "sv-SE": "Borttagen",
+      "es-ES": "Eliminado",
+      "fr-FR": "Supprimé",
+      "it-IT": "Eliminato",
+      "nl-NL": "Verwijderd",
+      "pt-BR": "Excluído",
+      "pt-PT": "Excluído",
+      "fi-FI": "Poistettu"
     }
   },
   {
@@ -172,7 +233,17 @@
       "da": "Fejl under sletning",
       "de": "Fehler beim Löschen",
       "en-US": "Error while deleting",
-      "uk-UA": "Помилка видалення"
+      "uk-UA": "Помилка видалення",
+      "pl-PL": "Błąd podczas usuwania",
+      "no-NO": "Feil under sletting",
+      "sv-SE": "Fel vid borttagning",
+      "es-ES": "Error al eliminar",
+      "fr-FR": "Erreur lors de la suppression",
+      "it-IT": "Errore durante l'eliminazione",
+      "nl-NL": "Fout bij verwijderen",
+      "pt-BR": "Erro ao excluir",
+      "pt-PT": "Erro ao excluir",
+      "fi-FI": "Virhe poistettaessa"
     }
   },
   {
@@ -181,7 +252,17 @@
       "da": "Fejl",
       "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "Помилка"
+      "uk-UA": "Помилка",
+      "pl-PL": "Błąd podczas odczytu planowania",
+      "no-NO": "Feil under lesing",
+      "sv-SE": "Fel vid läsning",
+      "es-ES": "Error al leer",
+      "fr-FR": "Erreur lors de la lecture",
+      "it-IT": "Errore durante la lettura",
+      "nl-NL": "Fout bij lezen",
+      "pt-BR": "Erro ao ler",
+      "pt-PT": "Erro ao ler",
+      "fi-FI": "Virhe luettaessa"
     }
   },
   {
@@ -190,7 +271,17 @@
       "da": "Ændringer gemt",
       "de": "Änderungen gespeichert",
       "en-US": "Successfully updated",
-      "uk-UA": "успішно оновлено"
+      "uk-UA": "успішно оновлено",
+      "pl-PL": "Pomyślnie zaktualizowano",
+      "no-NO": "Oppdatert",
+      "sv-SE": "Uppdaterad",
+      "es-ES": "Actualizado",
+      "fr-FR": "Mis à jour",
+      "it-IT": "Aggiornato",
+      "nl-NL": "Bijgewerkt",
+      "pt-BR": "Atualizado",
+      "pt-PT": "Atualizado",
+      "fi-FI": "Päivitetty"
     }
   },
   {
@@ -199,7 +290,17 @@
       "da": "Fejl under opdatering",
       "de": "Fehler beim Aktualisieren",
       "en-US": "Error while updating",
-      "uk-UA": "Помилка під час оновлення"
+      "uk-UA": "Помилка під час оновлення",
+      "pl-PL": "Błąd podczas aktualizacji",
+      "no-NO": "Feil under oppdatering",
+      "sv-SE": "Fel vid uppdatering",
+      "es-ES": "Error al actualizar",
+      "fr-FR": "Erreur lors de la mise à jour",
+      "it-IT": "Errore durante l'aggiornamento",
+      "nl-NL": "Fout bij bijwerken",
+      "pt-BR": "Erro ao atualizar",
+      "pt-PT": "Erro ao atualizar",
+      "fi-FI": "Virhe päivittäessä"
     }
   },
   {
@@ -208,7 +309,17 @@
       "da": "Ikke fundet",
       "de": "Nicht gefunden",
       "en-US": "Not found",
-      "uk-UA": "Не знайдено"
+      "uk-UA": "Не знайдено",
+      "pl-PL": "Nie znaleziono",
+      "no-NO": "Ikke funnet",
+      "sv-SE": "Hittades inte",
+      "es-ES": "No encontrado",
+      "fr-FR": "Non trouvé",
+      "it-IT": "Non trovato",
+      "nl-NL": "Niet gevonden",
+      "pt-BR": "Não encontrado",
+      "pt-PT": "Não encontrado",
+      "fi-FI": "Ei löytynyt"
     }
   },
   {
@@ -217,7 +328,17 @@
       "da": "Fejl",
       "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "Помилка"
+      "uk-UA": "Помилка",
+      "pl-PL": "Błąd podczas odczytu planowania",
+      "no-NO": "Feil under lesing",
+      "sv-SE": "Fel vid läsning",
+      "es-ES": "Error al leer",
+      "fr-FR": "Erreur lors de la lecture",
+      "it-IT": "Errore durante la lettura",
+      "nl-NL": "Fout bij lezen",
+      "pt-BR": "Erro ao ler",
+      "pt-PT": "Erro ao ler",
+      "fi-FI": "Virhe luettaessa"
     }
   },
   {
@@ -226,7 +347,17 @@
       "da": "Fejl",
       "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "Помилка"
+      "uk-UA": "Помилка",
+      "pl-PL": "Błąd podczas odczytu planowania",
+      "no-NO": "Feil under lesing",
+      "sv-SE": "Fel vid läsning",
+      "es-ES": "Error al leer",
+      "fr-FR": "Erreur lors de la lecture",
+      "it-IT": "Errore durante la lettura",
+      "nl-NL": "Fout bij lezen",
+      "pt-BR": "Erro ao ler",
+      "pt-PT": "Erro ao ler",
+      "fi-FI": "Virhe luettaessa"
     }
   },
   {
@@ -235,7 +366,17 @@
       "da": "Gemt",
       "de": "Gerettet",
       "en-US": "Saved",
-      "uk-UA": "Збережено"
+      "uk-UA": "Збережено",
+      "pl-PL": "Zapisano",
+      "no-NO": "Lagret",
+      "sv-SE": "Sparad",
+      "es-ES": "Guardado",
+      "fr-FR": "Sauvegardé",
+      "it-IT": "Salvato",
+      "nl-NL": "Opgeslagen",
+      "pt-BR": "Salvo",
+      "pt-PT": "Salvo",
+      "fi-FI": "Tallennettu"
     }
   },
   {
@@ -244,7 +385,17 @@
       "da": "Fejl under oprettelse",
       "de": "Fehler beim Erstellen",
       "en-US": "Error while creating",
-      "uk-UA": "Помилка створення"
+      "uk-UA": "Помилка створення",
+      "pl-PL": "Błąd podczas tworzenia",
+      "no-NO": "Feil under oppretting",
+      "sv-SE": "Fel vid skapande",
+      "es-ES": "Error al crear",
+      "fr-FR": "Erreur lors de la création",
+      "it-IT": "Errore durante la creazione",
+      "nl-NL": "Fout bij maken",
+      "pt-BR": "Erro ao criar",
+      "pt-PT": "Erro ao criar",
+      "fi-FI": "Virhe luotaessa"
     }
   },
   {
@@ -253,7 +404,17 @@
       "da": "Ændringer gemt",
       "de": "Änderungen gespeichert",
       "en-US": "Successfully updated",
-      "uk-UA": "успішно оновлено"
+      "uk-UA": "успішно оновлено",
+      "pl-PL": "Zaktualizowano pomyślnie",
+      "no-NO": "Oppdatert",
+      "sv-SE": "Uppdaterad",
+      "es-ES": "Actualizado",
+      "fr-FR": "Mis à jour",
+      "it-IT": "Aggiornato",
+      "nl-NL": "Bijgewerkt",
+      "pt-BR": "Atualizado",
+      "pt-PT": "Atualizado",
+      "fi-FI": "Päivitetty"
     }
   },
   {
@@ -262,7 +423,17 @@
       "da": "Fejl under opdatering",
       "de": "Fehler beim Aktualisieren",
       "en-US": "Error while updating",
-      "uk-UA": "Помилка під час оновлення"
+      "uk-UA": "Помилка під час оновлення",
+      "pl-PL": "Błąd podczas aktualizacji",
+      "no-NO": "Feil under oppdatering",
+      "sv-SE": "Fel vid uppdatering",
+      "es-ES": "Error al actualizar",
+      "fr-FR": "Erreur lors de la mise à jour",
+      "it-IT": "Errore durante l'aggiornamento",
+      "nl-NL": "Fout bij bijwerken",
+      "pt-BR": "Erro ao atualizar",
+      "pt-PT": "Erro ao atualizar",
+      "fi-FI": "Virhe päivittäessä"
     }
   },
   {
@@ -271,7 +442,17 @@
       "da": "Slettet",
       "de": "Gelöscht",
       "en-US": "Successfully deleted",
-      "uk-UA": "Видалено"
+      "uk-UA": "Видалено",
+      "pl-PL": "Pomyślnie usunięto",
+      "no-NO": "Slettet",
+      "sv-SE": "Borttagen",
+      "es-ES": "Eliminado",
+      "fr-FR": "Supprimé",
+      "it-IT": "Eliminato",
+      "nl-NL": "Verwijderd",
+      "pt-BR": "Excluído",
+      "pt-PT": "Excluído",
+      "fi-FI": "Poistettu"
     }
   },
   {
@@ -280,7 +461,17 @@
       "da": "Fejl under sletning",
       "de": "Fehler beim Löschen",
       "en-US": "Error while deleting",
-      "uk-UA": "Помилка видалення"
+      "uk-UA": "Помилка видалення",
+      "pl-PL": "Błąd podczas usuwania",
+      "no-NO": "Feil under sletting",
+      "sv-SE": "Fel vid borttagning",
+      "es-ES": "Error al eliminar",
+      "fr-FR": "Erreur lors de la suppression",
+      "it-IT": "Errore durante l'eliminazione",
+      "nl-NL": "Fout bij verwijderen",
+      "pt-BR": "Erro ao excluir",
+      "pt-PT": "Erro ao excluir",
+      "fi-FI": "Virhe poistaessa"
     }
   },
   {
@@ -289,7 +480,17 @@
       "da": "Fejl",
       "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "Помилка"
+      "uk-UA": "Помилка",
+      "pl-PL": "Błąd podczas odczytu planowania",
+      "no-NO": "Feil under lesing av planlegging",
+      "sv-SE": "Fel vid läsning av planering",
+      "es-ES": "Error al leer la planificación",
+      "fr-FR": "Erreur lors de la lecture de la planification",
+      "it-IT": "Errore durante la lettura della pianificazione",
+      "nl-NL": "Fout bij lezen planning",
+      "pt-BR": "Erro ao ler planejamento",
+      "pt-PT": "Erro ao ler planejamento",
+      "fi-FI": "Virhe luettaessa suunnittelua"
     }
   },
   {
@@ -298,7 +499,17 @@
       "da": "Ikke fundet",
       "de": "Nicht gefunden",
       "en-US": "Not found",
-      "uk-UA": "Не знайдено"
+      "uk-UA": "Не знайдено",
+      "pl-PL": "Nie znaleziono",
+      "no-NO": "Ikke funnet",
+      "sv-SE": "Hittades inte",
+      "es-ES": "No encontrado",
+      "fr-FR": "Non trouvé",
+      "it-IT": "Non trovato",
+      "nl-NL": "Niet gevonden",
+      "pt-BR": "Não encontrado",
+      "pt-PT": "Não encontrado",
+      "fi-FI": "Ei löytynyt"
     }
   },
   {
@@ -307,7 +518,17 @@
       "da": "Fejl",
       "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "Помилка"
+      "uk-UA": "Помилка",
+      "pl-PL": "Błąd podczas odczytu planowania",
+      "no-NO": "Feil under lesing av planlegging",
+      "sv-SE": "Fel vid läsning av planering",
+      "es-ES": "Error al leer la planificación",
+      "fr-FR": "Erreur lors de la lecture de la planification",
+      "it-IT": "Errore durante la lettura della pianificazione",
+      "nl-NL": "Fout bij lezen planning",
+      "pt-BR": "Erro ao ler planejamento",
+      "pt-PT": "Erro ao ler planejamento",
+      "fi-FI": "Virhe luettaessa suunnittelua"
     }
   },
   {
@@ -316,7 +537,17 @@
       "da": "Fejl under opdatering",
       "de": "Fehler beim Aktualisieren",
       "en-US": "Error while updating",
-      "uk-UA": "Помилка під час оновлення"
+      "uk-UA": "Помилка під час оновлення",
+      "pl-PL": "Błąd podczas aktualizacji",
+      "no-NO": "Feil under oppdatering",
+      "sv-SE": "Fel vid uppdatering",
+      "es-ES": "Error al actualizar",
+      "fr-FR": "Erreur lors de la mise à jour",
+      "it-IT": "Errore durante l'aggiornamento",
+      "nl-NL": "Fout bij bijwerken",
+      "pt-BR": "Erro ao atualizar",
+      "pt-PT": "Erro ao atualizar",
+      "fi-FI": "Virhe päivittäessä"
     }
   },
   {
@@ -325,7 +556,17 @@
       "da": "Ændringer gemt",
       "de": "Änderungen gespeichert",
       "en-US": "Successfully updated",
-      "uk-UA": "успішно оновлено"
+      "uk-UA": "успішно оновлено",
+      "pl-PL": "Zaktualizowano pomyślnie",
+      "no-NO": "Oppdatert",
+      "sv-SE": "Uppdaterad",
+      "es-ES": "Actualizado",
+      "fr-FR": "Mis à jour",
+      "it-IT": "Aggiornato",
+      "nl-NL": "Bijgewerkt",
+      "pt-BR": "Atualizado",
+      "pt-PT": "Atualizado",
+      "fi-FI": "Päivitetty"
     }
   },
   {
@@ -334,7 +575,17 @@
       "da": "Fejl under opdatering",
       "de": "Fehler beim Aktualisieren",
       "en-US": "Error while updating",
-      "uk-UA": "Помилка під час оновлення"
+      "uk-UA": "Помилка під час оновлення",
+      "pl-PL": "Błąd podczas aktualizacji",
+      "no-NO": "Feil under oppdatering",
+      "sv-SE": "Fel vid uppdatering",
+      "es-ES": "Error al actualizar",
+      "fr-FR": "Erreur lors de la mise à jour",
+      "it-IT": "Errore durante l'aggiornamento",
+      "nl-NL": "Fout bij bijwerken",
+      "pt-BR": "Erro ao atualizar",
+      "pt-PT": "Erro ao atualizar",
+      "fi-FI": "Virhe päivittäessä"
     }
   },
   {
@@ -343,7 +594,17 @@
       "da": "Fejl under sletning",
       "de": "Fehler beim Löschen",
       "en-US": "Error while deleting",
-      "uk-UA": "Помилка видалення"
+      "uk-UA": "Помилка видалення",
+      "pl-PL": "Błąd podczas usuwania",
+      "no-NO": "Feil under sletting",
+      "sv-SE": "Fel vid borttagning",
+      "es-ES": "Error al eliminar",
+      "fr-FR": "Erreur lors de la suppression",
+      "it-IT": "Errore durante l'eliminazione",
+      "nl-NL": "Fout bij verwijderen",
+      "pt-BR": "Erro ao excluir",
+      "pt-PT": "Erro ao excluir",
+      "fi-FI": "Virhe poistettaessa"
     }
   },
   {
@@ -352,7 +613,17 @@
       "da": "Slettet",
       "de": "Gelöscht",
       "en-US": "Successfully deleted",
-      "uk-UA": "Видалено"
+      "uk-UA": "Видалено",
+      "pl-PL": "Usunięto pomyślnie",
+      "no-NO": "Slettet",
+      "sv-SE": "Borttagen",
+      "es-ES": "Eliminado",
+      "fr-FR": "Supprimé",
+      "it-IT": "Eliminato",
+      "nl-NL": "Verwijderd",
+      "pt-BR": "Excluído",
+      "pt-PT": "Excluído",
+      "fi-FI": "Poistettu"
     }
   },
   {
@@ -361,7 +632,17 @@
       "da": "Fejl under sletning",
       "de": "Fehler beim Löschen",
       "en-US": "Error while deleting",
-      "uk-UA": "Помилка видалення"
+      "uk-UA": "Помилка видалення",
+      "pl-PL": "Błąd podczas usuwania",
+      "no-NO": "Feil under sletting",
+      "sv-SE": "Fel vid borttagning",
+      "es-ES": "Error al eliminar",
+      "fr-FR": "Erreur lors de la suppression",
+      "it-IT": "Errore durante l'eliminazione",
+      "nl-NL": "Fout bij verwijderen",
+      "pt-BR": "Erro ao excluir",
+      "pt-PT": "Erro ao excluir",
+      "fi-FI": "Virhe poistettaessa"
     }
   },
   {
@@ -370,7 +651,17 @@
       "da": "Gemt",
       "de": "Gerettet",
       "en-US": "Saved",
-      "uk-UA": "Збережено"
+      "uk-UA": "Збережено",
+      "pl-PL": "Zapisano",
+      "no-NO": "Lagret",
+      "sv-SE": "Sparad",
+      "es-ES": "Guardado",
+      "fr-FR": "Sauvegardé",
+      "it-IT": "Salvato",
+      "nl-NL": "Opgeslagen",
+      "pt-BR": "Salvo",
+      "pt-PT": "Salvo",
+      "fi-FI": "Tallennettu"
     }
   },
   {
@@ -379,7 +670,17 @@
       "da": "Fejl under oprettelse",
       "de": "Fehler beim Erstellen",
       "en-US": "Error while creating",
-      "uk-UA": "Помилка створення"
+      "uk-UA": "Помилка створення",
+      "pl-PL": "Błąd podczas tworzenia",
+      "no-NO": "Feil under opprettelse",
+      "sv-SE": "Fel vid skapande",
+      "es-ES": "Error al crear",
+      "fr-FR": "Erreur lors de la création",
+      "it-IT": "Errore durante la creazione",
+      "nl-NL": "Fout bij aanmaken",
+      "pt-BR": "Erro ao criar",
+      "pt-PT": "Erro ao criar",
+      "fi-FI": "Virhe luotaessa"
     }
   },
   {
@@ -388,7 +689,17 @@
       "da": "Ændringer gemt",
       "de": "Änderungen gespeichert",
       "en-US": "Successfully updated",
-      "uk-UA": "успішно оновлено"
+      "uk-UA": "успішно оновлено",
+      "pl-PL": "Zaktualizowano pomyślnie",
+      "no-NO": "Oppdatert",
+      "sv-SE": "Uppdaterad",
+      "es-ES": "Actualizado",
+      "fr-FR": "Mis à jour",
+      "it-IT": "Aggiornato",
+      "nl-NL": "Bijgewerkt",
+      "pt-BR": "Atualizado",
+      "pt-PT": "Atualizado",
+      "fi-FI": "Päivitetty"
     }
   },
   {
@@ -397,7 +708,17 @@
       "da": "Fejl under opdatering",
       "de": "Fehler beim Aktualisieren",
       "en-US": "Error while updating",
-      "uk-UA": "Помилка під час оновлення"
+      "uk-UA": "Помилка під час оновлення",
+      "pl-PL": "Błąd podczas aktualizacji",
+      "no-NO": "Feil under oppdatering",
+      "sv-SE": "Fel vid uppdatering",
+      "es-ES": "Error al actualizar",
+      "fr-FR": "Erreur lors de la mise à jour",
+      "it-IT": "Errore durante l'aggiornamento",
+      "nl-NL": "Fout bij bijwerken",
+      "pt-BR": "Erro ao atualizar",
+      "pt-PT": "Erro ao atualizar",
+      "fi-FI": "Virhe päivittäessä"
     }
   },
   {
@@ -406,7 +727,17 @@
       "da": "Fejl",
       "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "Помилка"
+      "uk-UA": "Помилка",
+      "pl-PL": "Błąd podczas odczytu planu",
+      "no-NO": "Feil under lesing av plan",
+      "sv-SE": "Fel vid läsning av plan",
+      "es-ES": "Error al leer la planificación",
+      "fr-FR": "Erreur lors de la lecture de la planification",
+      "it-IT": "Errore durante la lettura della pianificazione",
+      "nl-NL": "Fout bij lezen planning",
+      "pt-BR": "Erro ao ler planejamento",
+      "pt-PT": "Erro ao ler planejamento",
+      "fi-FI": "Virhe luettaessa suunnitelmaa"
     }
   },
   {
@@ -415,7 +746,17 @@
       "da": "Ikke fundet",
       "de": "Nicht gefunden",
       "en-US": "Not found",
-      "uk-UA": "Не знайдено"
+      "uk-UA": "Не знайдено",
+      "pl-PL": "Nie znaleziono",
+      "no-NO": "Ikke funnet",
+      "sv-SE": "Hittades inte",
+      "es-ES": "No encontrado",
+      "fr-FR": "Non trouvé",
+      "it-IT": "Non trovato",
+      "nl-NL": "Niet gevonden",
+      "pt-BR": "Não encontrado",
+      "pt-PT": "Não encontrado",
+      "fi-FI": "Ei löytynyt"
     }
   },
   {
@@ -424,7 +765,17 @@
       "da": "Fejl",
       "de": "Fehler",
       "en-US": "Error while read planning",
-      "uk-UA": "Помилка"
+      "uk-UA": "Помилка",
+      "pl-PL": "Błąd podczas odczytu planu",
+      "no-NO": "Feil under lesing av plan",
+      "sv-SE": "Fel vid läsning av plan",
+      "es-ES": "Error al leer la planificación",
+      "fr-FR": "Erreur lors de la lecture de la planification",
+      "it-IT": "Errore durante la lettura della pianificazione",
+      "nl-NL": "Fout bij lezen planning",
+      "pt-BR": "Erro ao ler planejamento",
+      "pt-PT": "Erro ao ler planejamento",
+      "fi-FI": "Virhe luettaessa suunnitelmaa"
     }
   },
   {
@@ -433,7 +784,17 @@
       "da": "Gemt",
       "de": "Gerettet",
       "en-US": "Saved",
-      "uk-UA": "Збережено"
+      "uk-UA": "Збережено",
+      "pl-PL": "Zapisano",
+      "no-NO": "Lagret",
+      "sv-SE": "Sparad",
+      "es-ES": "Guardado",
+      "fr-FR": "Sauvegardé",
+      "it-IT": "Salvato",
+      "nl-NL": "Opgeslagen",
+      "pt-BR": "Salvo",
+      "pt-PT": "Salvo",
+      "fi-FI": "Tallennettu"
     }
   },
   {
@@ -442,7 +803,17 @@
       "da": "Ejendommen findes allered",
       "de": "Die Immobilie ist schon da",
       "en": "Property already exits",
-      "uk-UA": "Майно вже є"
+      "uk-UA": "Майно вже є",
+      "pl-PL": "Nieruchomość już istnieje",
+      "no-NO": "Eiendommen finnes allerede",
+      "sv-SE": "Fastigheten finns redan",
+      "es-ES": "La propiedad ya existe",
+      "fr-FR": "La propriété existe déjà",
+      "it-IT": "La proprietà esiste già",
+      "nl-NL": "Eigendom bestaat al",
+      "pt-BR": "A propriedade já existe",
+      "pt-PT": "A propriedade já existe",
+      "fi-FI": "Ominaisuus on jo olemassa"
     }
   },
   {
@@ -451,7 +822,17 @@
       "da": "Alle",
       "de": "Alle",
       "en": "All",
-      "uk-UA": "всі"
+      "uk-UA": "всі",
+      "pl-PL": "Wszystko",
+      "no-NO": "Alle",
+      "sv-SE": "Alla",
+      "es-ES": "Todo",
+      "fr-FR": "Tout",
+      "it-IT": "Tutto",
+      "nl-NL": "Alle",
+      "pt-BR": "Tudo",
+      "pt-PT": "Tudo",
+      "fi-FI": "Kaikki"
     }
   },
   {
@@ -460,7 +841,17 @@
       "da": "Afsluttet",
       "de": "Abgeschlossen",
       "en": "Completed",
-      "uk-UA": "Завершено"
+      "uk-UA": "Завершено",
+      "pl-PL": "Zakończono",
+      "no-NO": "Fullført",
+      "sv-SE": "Avslutad",
+      "es-ES": "Completado",
+      "fr-FR": "Terminé",
+      "it-IT": "Completato",
+      "nl-NL": "Voltooid",
+      "pt-BR": "Concluído",
+      "pt-PT": "Concluído",
+      "fi-FI": "Valmis"
     }
   },
   {
@@ -469,7 +860,17 @@
       "da": "Maks antal CHR numre oprettet",
       "de": "Maximale Anzahl erstellter CHR-Nummern",
       "en": "Maximum number of CHR numbers reached",
-      "Uk-UA": "Максимальна кількість створених номерів CHR"
+      "Uk-UA": "Максимальна кількість створених номерів CHR",
+      "pl-PL": "Osiągnięto maksymalną liczbę numerów CHR",
+      "no-NO": "Maksimalt antall CHR-numre opprettet",
+      "sv-SE": "Max antal CHR-nummer skapade",
+      "es-ES": "Número máximo de números CHR alcanzado",
+      "fr-FR": "Nombre maximum de numéros CHR atteint",
+      "it-IT": "Numero massimo di numeri CHR raggiunto",
+      "nl-NL": "Maximaal aantal CHR-nummers bereikt",
+      "pt-BR": "Número máximo de números CHR atingido",
+      "pt-PT": "Número máximo de números CHR atingido",
+      "fi-FI": "Maksimi CHR-numerojen määrä saavutettu"
     }
   },
   {
@@ -478,7 +879,17 @@
       "da": "Maks antal CVR numre oprettet",
       "de": "Maximale Anzahl erstellter CVR-Nummern",
       "en": "Maximum number of CVR numbers reached",
-      "Uk-UA": "Максимальна кількість створених номерів CVR"
+      "Uk-UA": "Максимальна кількість створених номерів CVR",
+      "pl-PL": "Osiągnięto maksymalną liczbę numerów CVR",
+      "no-NO": "Maksimalt antall CVR-numre opprettet",
+      "sv-SE": "Max antal CVR-nummer skapade",
+      "es-ES": "Número máximo de números CVR alcanzado",
+      "fr-FR": "Nombre maximum de numéros CVR atteint",
+      "it-IT": "Numero massimo di numeri CVR raggiunto",
+      "nl-NL": "Maximaal aantal CVR-nummers bereikt",
+      "pt-BR": "Número máximo de números CVR atingido",
+      "pt-PT": "Número máximo de números CVR atingido",
+      "fi-FI": "Maksimi CVR-numerojen määrä saavutettu"
     }
   },
   {
@@ -487,7 +898,17 @@
       "da": "Kontrolplan",
       "en-US": "Controlplan IE-reporting",
       "uk-UA": "Контрольний план",
-      "de": "Kontrollplan"
+      "de": "Kontrollplan",
+      "pl-PL": "Plan kontroli",
+      "no-NO": "Kontrollplan",
+      "sv-SE": "Kontrollplan",
+      "es-ES": "Plan de control",
+      "fr-FR": "Plan de contrôle",
+      "it-IT": "Piano di controllo",
+      "nl-NL": "Controleplan",
+      "pt-BR": "Plano de controle",
+      "pt-PT": "Plano de controlo",
+      "fi-FI": "Valvontasuunnitelma"
     }
   },
   {
@@ -496,7 +917,17 @@
       "da": "År",
       "en-US": "Year",
       "uk-UA": "Рік",
-      "de": "Jahr"
+      "de": "Jahr",
+      "pl-PL": "Rok",
+      "no-NO": "År",
+      "sv-SE": "År",
+      "es-ES": "Año",
+      "fr-FR": "Année",
+      "it-IT": "Anno",
+      "nl-NL": "Jaar",
+      "pt-BR": "Ano",
+      "pt-PT": "Ano",
+      "fi-FI": "Vuosi"
     }
   },
   {
@@ -505,7 +936,17 @@
       "da": "CVR-nr.",
       "en-US": "CVR-no",
       "uk-UA": "CVR-номер",
-      "de": "CVR-Nummer"
+      "de": "CVR-Nummer",
+      "pl-PL": "Numer CVR",
+      "no-NO": "CVR-nummer",
+      "sv-SE": "CVR-nummer",
+      "es-ES": "Número CVR",
+      "fr-FR": "Numéro CVR",
+      "it-IT": "Numero CVR",
+      "nl-NL": "CVR-nummer",
+      "pt-BR": "Número CVR",
+      "pt-PT": "Número CVR",
+      "fi-FI": "CVR-numero"
     }
   },
   {
@@ -514,7 +955,17 @@
       "da": "CHR-nr.",
       "en-US": "CHR-no",
       "uk-UA": "CHR-номер",
-      "de": "CHR-Nr."
+      "de": "CHR-Nr.",
+      "pl-PL": "Numer CHR",
+      "no-NO": "CHR-nummer",
+      "sv-SE": "CHR-nummer",
+      "es-ES": "Número CHR",
+      "fr-FR": "Numéro CHR",
+      "it-IT": "Numero CHR",
+      "nl-NL": "CHR-nummer",
+      "pt-BR": "Número CHR",
+      "pt-PT": "Número CHR",
+      "fi-FI": "CHR-numero"
     }
   },
   {
@@ -523,7 +974,17 @@
       "da": "Ejendomsnavn",
       "en-US": "Name",
       "uk-UA": "Назва",
-      "de": "Name"
+      "de": "Name",
+      "pl-PL": "Nazwa",
+      "no-NO": "Navn",
+      "sv-SE": "Namn",
+      "es-ES": "Nombre",
+      "fr-FR": "Nom",
+      "it-IT": "Nome",
+      "nl-NL": "Naam",
+      "pt-BR": "Nome",
+      "pt-PT": "Nome",
+      "fi-FI": "Nimi"
     }
   },
   {
@@ -532,7 +993,17 @@
       "da": "Adresse",
       "en-US": "Address",
       "uk-UA": "Адреса",
-      "de": "Adresse"
+      "de": "Adresse",
+      "pl-PL": "Adres",
+      "no-NO": "Adresse",
+      "sv-SE": "Adress",
+      "es-ES": "Dirección",
+      "fr-FR": "Adresse",
+      "it-IT": "Indirizzo",
+      "nl-NL": "Adres",
+      "pt-BR": "Endereço",
+      "pt-PT": "Endereço",
+      "fi-FI": "Osoite"
     }
   },
   {
@@ -541,7 +1012,17 @@
       "da": "Lokation",
       "en-US": "Location",
       "uk-UA": "Місцезнаходження",
-      "de": "Lage"
+      "de": "Lage",
+      "pl-PL": "Lokalizacja",
+      "no-NO": "Lokasjon",
+      "sv-SE": "Plats",
+      "es-ES": "Ubicación",
+      "fr-FR": "Emplacement",
+      "it-IT": "Posizione",
+      "nl-NL": "Locatie",
+      "pt-BR": "Localização",
+      "pt-PT": "Localização",
+      "fi-FI": "Sijainti"
     }
   },
   {
@@ -550,7 +1031,17 @@
       "da": "Tildelt til",
       "en-US": "AssignedTo",
       "uk-UA": "Призначено",
-      "de": "Zugewiesen an"
+      "de": "Zugewiesen an",
+      "pl-PL": "Przypisane do",
+      "no-NO": "Tildelt til",
+      "sv-SE": "Tilldelad till",
+      "es-ES": "Asignado a",
+      "fr-FR": "Assigné à",
+      "it-IT": "Assegnato a",
+      "nl-NL": "Toegewezen aan",
+      "pt-BR": "Atribuído a",
+      "pt-PT": "Atribuído a",
+      "fi-FI": "Määritetty"
     }
   },
   {
@@ -559,7 +1050,17 @@
       "da": "Igangværende",
       "en-US": "Ongoing",
       "uk-UA": "В процесі",
-      "de": "In Bearbeitung"
+      "de": "In Bearbeitung",
+      "pl-PL": "W toku",
+      "no-NO": "Pågående",
+      "sv-SE": "Pågående",
+      "es-ES": "En curso",
+      "fr-FR": "En cours",
+      "it-IT": "In corso",
+      "nl-NL": "Lopend",
+      "pt-BR": "Em andamento",
+      "pt-PT": "Em andamento",
+      "fi-FI": "Käynnissä"
     }
   },
   {
@@ -568,7 +1069,17 @@
       "da": "Oprettet dato",
       "en-US": "CreatedDate",
       "uk-UA": "Дата створення",
-      "de": "Erstellungsdatum"
+      "de": "Erstellungsdatum",
+      "pl-PL": "Data utworzenia",
+      "no-NO": "Opprettet dato",
+      "sv-SE": "Skapad datum",
+      "es-ES": "Fecha de creación",
+      "fr-FR": "Date de création",
+      "it-IT": "Data di creazione",
+      "nl-NL": "Aanmaakdatum",
+      "pt-BR": "Data de criação",
+      "pt-PT": "Data de criação",
+      "fi-FI": "Luontipäivä"
     }
   },
   {
@@ -577,7 +1088,17 @@
       "da": "Oprettet af",
       "en-US": "CreatedBy",
       "uk-UA": "Створено",
-      "de": "Erstellt von"
+      "de": "Erstellt von",
+      "pl-PL": "Utworzono przez",
+      "no-NO": "Opprettet av",
+      "sv-SE": "Skapad av",
+      "es-ES": "Creado por",
+      "fr-FR": "Créé par",
+      "it-IT": "Creato da",
+      "nl-NL": "Aangemaakt door",
+      "pt-BR": "Criado por",
+      "pt-PT": "Criado por",
+      "fi-FI": "Luonut"
     }
   },
   {
@@ -586,7 +1107,17 @@
       "da": "Ejendom",
       "en-US": "Property",
       "uk-UA": "Майно",
-      "de": "Immobilie"
+      "de": "Immobilie",
+      "pl-PL": "Nieruchomość",
+      "no-NO": "Eiendom",
+      "sv-SE": "Fastighet",
+      "es-ES": "Propiedad",
+      "fr-FR": "Propriété",
+      "it-IT": "Proprietà",
+      "nl-NL": "Eigendom",
+      "pt-BR": "Propriedade",
+      "pt-PT": "Propriedade",
+      "fi-FI": "Kiinteistö"
     }
   },
   {
@@ -595,7 +1126,17 @@
       "da": "Område",
       "en-US": "Property area",
       "uk-UA": "Область",
-      "de": "Bereich"
+      "de": "Bereich",
+      "pl-PL": "Obszar nieruchomości",
+      "no-NO": "Eiendomsområde",
+      "sv-SE": "Fastighetsområde",
+      "es-ES": "Área de propiedad",
+      "fr-FR": "Zone de propriété",
+      "it-IT": "Area proprietà",
+      "nl-NL": "Eigendomsgebied",
+      "pt-BR": "Área da propriedade",
+      "pt-PT": "Área da propriedade",
+      "fi-FI": "Kiinteistöalue"
     }
   },
   {
@@ -604,7 +1145,17 @@
       "da": "Beskrivelse",
       "en-US": "Description",
       "uk-UA": "Опис",
-      "de": "Beschreibung"
+      "de": "Beschreibung",
+      "pl-PL": "Opis",
+      "no-NO": "Beskrivelse",
+      "sv-SE": "Beskrivning",
+      "es-ES": "Descripción",
+      "fr-FR": "Description",
+      "it-IT": "Descrizione",
+      "nl-NL": "Beschrijving",
+      "pt-BR": "Descrição",
+      "pt-PT": "Descrição",
+      "fi-FI": "Kuvaus"
     }
   },
   {
@@ -613,7 +1164,17 @@
       "da": "Område",
       "en-US": "Area",
       "uk-UA": "Область",
-      "de": "Bereich"
+      "de": "Bereich",
+      "pl-PL": "Obszar",
+      "no-NO": "Område",
+      "sv-SE": "Område",
+      "es-ES": "Área",
+      "fr-FR": "Zone",
+      "it-IT": "Area",
+      "nl-NL": "Gebied",
+      "pt-BR": "Área",
+      "pt-PT": "Área",
+      "fi-FI": "Alue"
     }
   },
   {
@@ -622,7 +1183,17 @@
       "da": "Sidst tildelt til",
       "en-US": "Last assigned to",
       "uk-UA": "Останній призначений",
-      "de": "Zuletzt zugewiesen an"
+      "de": "Zuletzt zugewiesen an",
+      "pl-PL": "Ostatnio przypisano do",
+      "no-NO": "Sist tildelt til",
+      "sv-SE": "Senast tilldelad till",
+      "es-ES": "Últimamente asignado a",
+      "fr-FR": "Dernièrement assigné à",
+      "it-IT": "Ultimamente assegnato a",
+      "nl-NL": "Laatst toegewezen aan",
+      "pt-BR": "Último atribuído a",
+      "pt-PT": "Último atribuído a",
+      "fi-FI": "Viimeksi määritetty"
     }
   },
   {
@@ -631,7 +1202,17 @@
       "da": "Dato",
       "en-US": "Date",
       "uk-UA": "Дата",
-      "de": "Datum"
+      "de": "Datum",
+      "pl-PL": "Data",
+      "no-NO": "Dato",
+      "sv-SE": "Datum",
+      "es-ES": "Fecha",
+      "fr-FR": "Date",
+      "it-IT": "Data",
+      "nl-NL": "Datum",
+      "pt-BR": "Data",
+      "pt-PT": "Data",
+      "fi-FI": "Päiväys"
     }
   },
   {
@@ -640,7 +1221,17 @@
       "da": "Oprettet af",
       "en-US": "Created by",
       "uk-UA": "Створено",
-      "de": "Erstellt von"
+      "de": "Erstellt von",
+      "pl-PL": "Utworzono przez",
+      "no-NO": "Opprettet av",
+      "sv-SE": "Skapad av",
+      "es-ES": "Creado por",
+      "fr-FR": "Créé par",
+      "it-IT": "Creato da",
+      "nl-NL": "Aangemaakt door",
+      "pt-BR": "Criado por",
+      "pt-PT": "Criado por",
+      "fi-FI": "Luonut"
     }
   },
   {
@@ -649,7 +1240,17 @@
       "da": "Sidst opdateret",
       "en-US": "Last update date",
       "uk-UA": "Останнє оновлення",
-      "de": "Zuletzt aktualisiert"
+      "de": "Zuletzt aktualisiert",
+      "pl-PL": "Ostatnia data aktualizacji",
+      "no-NO": "Sist oppdatert",
+      "sv-SE": "Senast uppdaterad",
+      "es-ES": "Última fecha de actualización",
+      "fr-FR": "Dernière date de mise à jour",
+      "it-IT": "Ultimo aggiornamento",
+      "nl-NL": "Laatste update datum",
+      "pt-BR": "Última data de atualização",
+      "pt-PT": "Última data de atualização",
+      "fi-FI": "Viimeisin päivitys"
     }
   },
   {
@@ -658,7 +1259,17 @@
       "da": "Sidst opdateret af",
       "en-US": "Last update by",
       "uk-UA": "Останнє оновлення",
-      "de": "Zuletzt aktualisiert von"
+      "de": "Zuletzt aktualisiert von",
+      "pl-PL": "Ostatnia aktualizacja przez",
+      "no-NO": "Sist oppdatert av",
+      "sv-SE": "Senast uppdaterad av",
+      "es-ES": "Última actualización por",
+      "fr-FR": "Dernière mise à jour par",
+      "it-IT": "Ultimo aggiornamento da",
+      "nl-NL": "Laatste update door",
+      "pt-BR": "Última atualização por",
+      "pt-PT": "Última atualização por",
+      "fi-FI": "Viimeisin päivitys"
     }
   },
   {
@@ -667,7 +1278,17 @@
       "da": "Oprettet af (2)",
       "en-US": "Created by (2)",
       "uk-UA": "Створено (2)",
-      "de": "Erstellt von (2)"
+      "de": "Erstellt von (2)",
+      "pl-PL": "Utworzono przez (2)",
+      "no-NO": "Opprettet av (2)",
+      "sv-SE": "Skapad av (2)",
+      "es-ES": "Creado por (2)",
+      "fr-FR": "Créé par (2)",
+      "it-IT": "Creato da (2)",
+      "nl-NL": "Aangemaakt door (2)",
+      "pt-BR": "Criado por (2)",
+      "pt-PT": "Criado por (2)",
+      "fi-FI": "Luonut (2)"
     }
   },
   {
@@ -676,7 +1297,17 @@
       "da": "Startdato",
       "en-US": "StartDate",
       "uk-UA": "Дата початку",
-      "de": "Startdatum"
+      "de": "Startdatum",
+      "pl-PL": "Data rozpoczęcia",
+      "no-NO": "Startdato",
+      "sv-SE": "Startdatum",
+      "es-ES": "Fecha de inicio",
+      "fr-FR": "Date de début",
+      "it-IT": "Data di inizio",
+      "nl-NL": "Startdatum",
+      "pt-BR": "Data de início",
+      "pt-PT": "Data de início",
+      "fi-FI": "Aloituspäivä"
     }
   },
   {
@@ -685,7 +1316,17 @@
       "da": "Gentages hver",
       "en-US": "Frequence",
       "uk-UA": "Повторюється кожні",
-      "de": "Wiederholung alle"
+      "de": "Wiederholung alle",
+      "pl-PL": "Częstotliwość",
+      "no-NO": "Gjentas hver",
+      "sv-SE": "Upprepas varje",
+      "es-ES": "Frecuencia",
+      "fr-FR": "Fréquence",
+      "it-IT": "Frequenza",
+      "nl-NL": "Frequentie",
+      "pt-BR": "Frequência",
+      "pt-PT": "Frequência",
+      "fi-FI": "Toistuu joka"
     }
   },
   {
@@ -694,7 +1335,17 @@
       "da": "Dag",
       "en-US": "Day",
       "uk-UA": "День",
-      "de": "Tag"
+      "de": "Tag",
+      "pl-PL": "Dzień",
+      "no-NO": "Dag",
+      "sv-SE": "Dag",
+      "es-ES": "Día",
+      "fr-FR": "Jour",
+      "it-IT": "Giorno",
+      "nl-NL": "Dag",
+      "pt-BR": "Dia",
+      "pt-PT": "Dia",
+      "fi-FI": "Päivä"
     }
   },
   {
@@ -703,7 +1354,17 @@
       "da": "Uge",
       "en-US": "Week",
       "uk-UA": "Тиждень",
-      "de": "Woche"
+      "de": "Woche",
+      "pl-PL": "Tydzień",
+      "no-NO": "Uke",
+      "sv-SE": "Vecka",
+      "es-ES": "Semana",
+      "fr-FR": "Semaine",
+      "it-IT": "Settimana",
+      "nl-NL": "Week",
+      "pt-BR": "Semana",
+      "pt-PT": "Semana",
+      "fi-FI": "Viikko"
     }
   },
   {
@@ -712,7 +1373,17 @@
       "da": "Måned",
       "en-US": "Month",
       "Uk-UA": "Місяць",
-      "de": "Monat"
+      "de": "Monat",
+      "pl-PL": "Miesiąc",
+      "no-NO": "Måned",
+      "sv-SE": "Månad",
+      "es-ES": "Mes",
+      "fr-FR": "Mois",
+      "it-IT": "Mese",
+      "nl-NL": "Maand",
+      "pt-BR": "Mês",
+      "pt-PT": "Mês",
+      "fi-FI": "Kuukausi"
     }
   },
   {
@@ -721,7 +1392,17 @@
       "da": "Dato",
       "de": "Hergestellt in",
       "en-US": "Created At",
-      "uk-UA": "Створено в"
+      "uk-UA": "Створено в",
+      "pl-PL": "Utworzono",
+      "no-NO": "Opprettet",
+      "sv-SE": "Skapad",
+      "es-ES": "Creado en",
+      "fr-FR": "Créé à",
+      "it-IT": "Creato il",
+      "nl-NL": "Aangemaakt op",
+      "pt-BR": "Criado em",
+      "pt-PT": "Criado em",
+      "fi-FI": "Luotu"
     }
   },
   {
@@ -730,7 +1411,17 @@
       "da": "Udført af",
       "de": "Gemacht von",
       "en-US": "Done By",
-      "uk-UA": "Зроблено"
+      "uk-UA": "Зроблено",
+      "pl-PL": "Wykonane przez",
+      "no-NO": "Utført av",
+      "sv-SE": "Utförd av",
+      "es-ES": "Realizado por",
+      "fr-FR": "Effectué par",
+      "it-IT": "Eseguito da",
+      "nl-NL": "Uitgevoerd door",
+      "pt-BR": "Feito por",
+      "pt-PT": "Feito por",
+      "fi-FI": "Suorittanut"
     }
   },
   {
@@ -739,7 +1430,17 @@
       "da": "Område",
       "de": "Artikelname",
       "en-US": "Item name",
-      "uk-UA": "Назва елементу"
+      "uk-UA": "Назва елементу",
+      "pl-PL": "Nazwa elementu",
+      "no-NO": "Elementnavn",
+      "sv-SE": "Artikelnamn",
+      "es-ES": "Nombre del elemento",
+      "fr-FR": "Nom de l'élément",
+      "it-IT": "Nome dell'elemento",
+      "nl-NL": "Itemnaam",
+      "pt-BR": "Nome do item",
+      "pt-PT": "Nome do item",
+      "fi-FI": "Kohteen nimi"
     }
   }
 ]
