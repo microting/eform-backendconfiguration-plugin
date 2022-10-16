@@ -362,11 +362,30 @@ namespace BackendConfiguration.Pn.Services.WordService
         {
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var curentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
-            if (curentLanguage.Name != "English" && curentLanguage.Name != "Danish") // reports only eng and da langs
+            var currentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+            if (currentLanguage.Name != "English" && currentLanguage.Name != "Danish") // reports only eng and da langs
             {
-                curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
+                currentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
             }
+
+            var areaProperty =
+                await _dbContext.AreaProperties.FirstOrDefaultAsync(x =>
+                        x.PropertyId == property.Id && x.AreaId == area.Id)
+                    .ConfigureAwait(false);
+
+            var propertyAreaFolders = await _dbContext.ProperyAreaFolders
+                .Where(x => x.ProperyAreaAsignmentId == areaProperty.Id)
+                .Select(x => x.FolderId)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            var folderTranslations = await sdkDbContext.FolderTranslations
+                .Where(x => propertyAreaFolders.Contains(x.FolderId))
+                .Where(x => x.LanguageId == currentLanguage.Id)
+                .Select(x => x.Name)
+                .ToListAsync();
+
+
             var areaRulesForType8 = BackendConfigurationSeedAreas.AreaRulesForType8
                 .GroupBy(x => x.FolderName)
                 .Select(x => new AreaRulesForType8
@@ -375,7 +394,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                     AreaRuleNames = x.Select(y => y)
                         .Where(y => y.FolderName == x.Key)
                         .SelectMany(y => y.AreaRuleTranslations
-                            .Where(z => z.LanguageId == curentLanguage.Id)
+                            .Where(z => z.LanguageId == currentLanguage.Id)
                             .Select(z => z.Name))
                         .ToList(),
                 })
@@ -388,7 +407,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Name == areaRuleForType8.FolderName)
                     .SelectMany(x => x.Folder.FolderTranslations)
-                    .Where(x => x.LanguageId == curentLanguage.Id)
+                    .Where(x => x.LanguageId == currentLanguage.Id)
                     .Select(x => x.Name)
                     .LastOrDefaultAsync().ConfigureAwait(false);
             }
@@ -451,58 +470,66 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
             itemsHtml.Append(@"</tr>");
 
-            foreach (var rulesForType8 in areaRulesForType8)
+            folderTranslations.RemoveAt(0);
+
+            foreach (var folderTranslation in folderTranslations)
             {
-                itemsHtml.Append(rulesForType8.FolderName.Count(x => x == '.') > 1
+                itemsHtml.Append(folderTranslation.Count(x => x == '.') > 1
                     ? @"<tr style='font-weight:bold;font-size:9pt;'>"
                     : @"<tr style='background-color:#e2efd9;font-weight:bold;font-size:9pt;'>");
-                // itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
-                itemsHtml.Append($@"<td>{rulesForType8.FolderName}</td>");
+                itemsHtml.Append($@"<td>{folderTranslation}</td>");
                 itemsHtml.Append(@"<td></td>");
                 itemsHtml.Append(@"<td></td>");
                 itemsHtml.Append(@"</tr>");
-                foreach (var areaRuleName in rulesForType8.AreaRuleNames)
-                {
-                    var areaRulePlanning = areaRuleTranslations
-                        .Where(x => x.Name == areaRuleName)
-                        .Select(x => x.AreaRule)
-                        .SelectMany(x => x.AreaRulesPlannings)
-                        .FirstOrDefault();
-                    itemsHtml.Append(@"<tr style='font-size:9pt;'>");
-                    itemsHtml.Append($@"<td>{areaRuleName}</td>");
-                    if (areaRulePlanning == null)
-                    {
-                        itemsHtml.Append(@"<td></td>");
-                        itemsHtml.Append(@"<td></td>");
-                    }
-                    else
-                    {
-                        itemsHtml.Append($@"<td>{areaRulePlanning.StartDate:dd.MM.yyyy}</td>");
-                        string repeatEvery = "";
-                        var repeatType = "";
-                        if (areaRulePlanning.RepeatType != null)
-                        {
-                            repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
-                            var firstChar = repeatType.First().ToString();
-                            switch (areaRulePlanning.RepeatEvery)
-                            {
-                                case 0:
-                                case 1:
-                                    repeatEvery = _localizationService.GetString("every");
-                                    break;
-                                default:
-                                    repeatEvery = _localizationService.GetString("every") + " " + areaRulePlanning.RepeatEvery;
-                                    break;
-                            }
-                            repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
-                            repeatType = _localizationService.GetString(repeatType);
-                        }
 
-                        itemsHtml.Append($@"<td>{repeatEvery} - {repeatType}</td>");
+                var areaRules = areaRulesForType8
+                    .Where(x => x.FolderName == folderTranslation)
+                    .ToList();
+
+                foreach (var areaRule in areaRules)
+                {
+                    foreach (var areaRuleName in areaRule.AreaRuleNames)
+                    {
+                        var areaRulePlanning = areaRuleTranslations
+                            .Where(x => x.Name == areaRuleName)
+                            .Select(x => x.AreaRule)
+                            .SelectMany(x => x.AreaRulesPlannings)
+                            .FirstOrDefault();
+                        itemsHtml.Append(@"<tr style='font-size:9pt;'>");
+                        itemsHtml.Append($@"<td>{areaRuleName}</td>");
+                        if (areaRulePlanning == null)
+                        {
+                            itemsHtml.Append(@"<td></td>");
+                            itemsHtml.Append(@"<td></td>");
+                        }
+                        else
+                        {
+                            itemsHtml.Append($@"<td>{areaRulePlanning.StartDate:dd.MM.yyyy}</td>");
+                            string repeatEvery = "";
+                            var repeatType = "";
+                            if (areaRulePlanning.RepeatType != null)
+                            {
+                                repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
+                                var firstChar = repeatType.First().ToString();
+                                switch (areaRulePlanning.RepeatEvery)
+                                {
+                                    case 0:
+                                    case 1:
+                                        repeatEvery = _localizationService.GetString("every");
+                                        break;
+                                    default:
+                                        repeatEvery = _localizationService.GetString("every") + " " + areaRulePlanning.RepeatEvery;
+                                        break;
+                                }
+                                repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
+                                repeatType = _localizationService.GetString(repeatType);
+                            }
+
+                            itemsHtml.Append($@"<td>{repeatEvery} - {repeatType}</td>");
+                        }
                     }
-                    //itemsHtml.Append(@"<tr><td></td><td></td><td></td></tr>");
+                    itemsHtml.Append(@"</tr>");
                 }
-                itemsHtml.Append(@"</tr>");
             }
             itemsHtml.Append(@"</table>");
             itemsHtml.Append("</body>");

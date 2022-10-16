@@ -2509,7 +2509,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.03 Dokumentation miljøledelse",
+                FolderName = "24.03 Miljøledelse",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
@@ -2529,7 +2529,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.03 Dokumentation miljøledelse",
+                FolderName = "24.03 Miljøledelse",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = false,
