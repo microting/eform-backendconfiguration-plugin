@@ -445,20 +445,23 @@ namespace BackendConfiguration.Pn.Services.WordService
 
             itemsHtml.Append(@"<table width=""100%"" border=""1"">");
             // Table header
-            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:9pt;'>");
-            itemsHtml.Append(@"<td></td>");
+            itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("IE-Control Areas")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
             itemsHtml.Append(@"</tr>");
 
-            foreach (var areaRuleForType7 in areaRulesForType8)
+            foreach (var rulesForType8 in areaRulesForType8)
             {
-                itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
-                itemsHtml.Append($@"<td>{areaRuleForType7.FolderName}</td>");
+                itemsHtml.Append(rulesForType8.FolderName.Count(x => x == '.') > 1
+                    ? @"<tr style='font-weight:bold;font-size:9pt;'>"
+                    : @"<tr style='background-color:#e2efd9;font-weight:bold;font-size:9pt;'>");
+                // itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
+                itemsHtml.Append($@"<td>{rulesForType8.FolderName}</td>");
                 itemsHtml.Append(@"<td></td>");
                 itemsHtml.Append(@"<td></td>");
                 itemsHtml.Append(@"</tr>");
-                foreach (var areaRuleName in areaRuleForType7.AreaRuleNames)
+                foreach (var areaRuleName in rulesForType8.AreaRuleNames)
                 {
                     var areaRulePlanning = areaRuleTranslations
                         .Where(x => x.Name == areaRuleName)

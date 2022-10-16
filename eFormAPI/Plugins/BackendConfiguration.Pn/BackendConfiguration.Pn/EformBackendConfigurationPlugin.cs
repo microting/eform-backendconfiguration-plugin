@@ -358,6 +358,166 @@ namespace BackendConfiguration.Pn
                 };
                 await field.Create(sdkDbContext);
             }
+
+            var folderTranslations =
+                await sdkDbContext.FolderTranslations.Where(x =>
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                    && x.Name == "24.01 Logbøger miljøteknologier").ToListAsync();
+
+            foreach (var folderTranslation in folderTranslations)
+            {
+                if (folderTranslation != null)
+                {
+                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
+                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                        &&  x.Id == folderTranslation.FolderId);
+
+                    if (folder != null)
+                    {
+                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
+                        {
+                            new()
+                            {
+                                LanguageId = 1, // da
+                                Name = "24.01 Logbøger og bilag", // todo
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 2, // en
+                                Name = "24.01 Logbooks and appendices",
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 3, // ge
+                                Name = "24.01 Logbücher und Anhänge", // todo
+                                Description = "",
+                            },
+                        }, folder.ParentId);
+                    }
+                }
+            }
+
+            folderTranslations =
+                await sdkDbContext.FolderTranslations.Where(x =>
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                    && x.Name == "24.02 Dokumentation afsluttede inspektioner").ToListAsync();
+            foreach (var folderTranslation in folderTranslations)
+            {
+
+                if (folderTranslation != null)
+                {
+                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
+                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                        &&  x.Id == folderTranslation.FolderId);
+
+                    if (folder != null)
+                    {
+                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
+                        {
+                            new()
+                            {
+                                LanguageId = 1, // da
+                                Name = "24.02 Kontroller og bilag", // todo
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 2, // en
+                                Name = "24.02 Checks and attachments",
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 3, // ge
+                                Name = "24.02 Schecks und Anhänge", // todo
+                                Description = "",
+                            },
+                        }, folder.ParentId);
+                    }
+                }
+            }
+
+            folderTranslations =
+                await sdkDbContext.FolderTranslations.Where(x =>
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                    && x.Name == "24.03 Dokumentation miljøledelse").ToListAsync();
+            foreach (var folderTranslation in folderTranslations)
+            {
+
+                if (folderTranslation != null)
+                {
+                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
+                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                        &&  x.Id == folderTranslation.FolderId);
+
+                    if (folder != null)
+                    {
+                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
+                        {
+                            new()
+                            {
+                                LanguageId = 1, // da
+                                Name = "24.03 Miljøledelse", // todo
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 2, // en
+                                Name = "24.03 Environmental management",
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 3, // ge
+                                Name = "24.03 Umweltmanagement", // todo
+                                Description = "",
+                            },
+                        }, folder.ParentId);
+                    }
+                }
+            }
+
+            folderTranslations =
+                await sdkDbContext.FolderTranslations.Where(x =>
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                    && x.Name == "24.04 Overholdelse fodringskrav").ToListAsync();
+
+            foreach (var folderTranslation in folderTranslations)
+            {
+                if (folderTranslation != null)
+                {
+                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
+                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+                        &&  x.Id == folderTranslation.FolderId);
+                    if (folder != null)
+                    {
+                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
+                        {
+                            new()
+                            {
+                                LanguageId = 1, // da
+                                Name = "24.04 Fodringskrav", // todo
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 2, // en
+                                Name = "24.04 Feeding requirements",
+                                Description = "",
+                            },
+                            new()
+                            {
+                                LanguageId = 3, // ge
+                                Name = "24.04 Fütterungsanforderungen", // todo
+                                Description = "",
+                            },
+                        }, folder.ParentId);
+                    }
+                }
+            }
+
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)

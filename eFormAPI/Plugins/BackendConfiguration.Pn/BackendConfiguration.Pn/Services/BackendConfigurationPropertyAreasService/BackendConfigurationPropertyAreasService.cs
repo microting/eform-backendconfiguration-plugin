@@ -938,19 +938,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 new()
                                 {
                                     LanguageId = 1, // da
-                                    Name = "24.01 Logbøger miljøteknologier", // todo
+                                    Name = "24.01 Logbøger og bilag", // todo
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
-                                    Name = "24.01 Logbooks for any environmental technologies",
+                                    Name = "24.01 Logbooks and appendices",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
-                                    Name = "24.01 Fahrtenbücher für alle Umwelttechnologien", // todo
+                                    Name = "24.01 Logbücher und Anhänge", // todo
                                     Description = "",
                                 },
                             }, folderId).ConfigureAwait(false);
@@ -1158,19 +1158,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 new()
                                 {
                                     LanguageId = 1, // da
-                                    Name = "24.02 Dokumentation afsluttede inspektioner", // todo
+                                    Name = "24.02 Kontroller og bilag", // todo
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
-                                    Name = "24.02 Documentation of completed inspections",
+                                    Name = "24.02 Checks and attachments",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
-                                    Name = "24.02 Dokumentation abgeschlossener Inspektionen", // todo
+                                    Name = "24.02 Schecks und Anhänge", // todo
                                     Description = "",
                                 },
                             }, folderId).ConfigureAwait(false);
@@ -1356,19 +1356,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 new()
                                 {
                                     LanguageId = 1, // da
-                                    Name = "24.03 Dokumentation miljøledelse", // todo
+                                    Name = "24.03 Miljøledelse", // todo
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
-                                    Name = "24.03 Documentation for environmental management",
+                                    Name = "24.03 Environmental management",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
-                                    Name = "24.03 Dokumentation für das Umweltmanagement", // todo
+                                    Name = "24.03 Umweltmanagement", // todo
                                     Description = "",
                                 },
                             }, folderId).ConfigureAwait(false);
@@ -1378,19 +1378,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 new()
                                 {
                                     LanguageId = 1, // da
-                                    Name = "24.04 Overholdelse fodringskrav", // todo
+                                    Name = "24.04 Fodringskrav", // todo
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
-                                    Name = "24.04 Compliance with feeding requirements",
+                                    Name = "24.04 Feeding requirements",
                                     Description = "",
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
-                                    Name = "24.04 Einhaltung der Fütterungsanforderungen", // todo
+                                    Name = "24.04 Fütterungsanforderungen", // todo
                                     Description = "",
                                 },
                             }, folderId).ConfigureAwait(false);

@@ -1311,6 +1311,25 @@
     }
   },
   {
+    "Key": "IE-Control Areas",
+    "LocalizedValue": {
+      "da": "IE-Kontrolområder",
+      "en-US": "IE-Control Areas",
+      "uk-UA": "IE-контрольні області",
+      "de": "IE-Kontrollbereiche",
+      "pl-PL": "Obszary kontrolne IE",
+      "no-NO": "IE-kontrollområder",
+      "sv-SE": "IE-kontrollområden",
+      "es-ES": "Áreas de control IE",
+      "fr-FR": "Zones de contrôle IE",
+      "it-IT": "Aree di controllo IE",
+      "nl-NL": "IE-controlegebieden",
+      "pt-BR": "Áreas de controle IE",
+      "pt-PT": "Áreas de controle IE",
+      "fi-FI": "IE-kontrollialueet"
+    }
+  },
+  {
     "Key": "Frequence",
     "LocalizedValue": {
       "da": "Gentages hver",
