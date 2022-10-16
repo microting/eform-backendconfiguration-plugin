@@ -115,8 +115,10 @@ namespace BackendConfiguration.Pn.Services.WordService
                 return area.Type switch
                 {
                     AreaTypesEnum.Type7 => await GenerateReportType7(property, area, year).ConfigureAwait(false),
+                    AreaTypesEnum.Type8 => await GenerateReportType8(property, area, year).ConfigureAwait(false),
                     _ => new OperationDataResult<Stream>(false,
                         _localizationService.GetString($"ReportFor{area.Type}NotSupported"))
+
                 };
             }
             catch (Exception e)
@@ -348,6 +350,161 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append("</body>");
 
             html = html.Replace("{%ItemList%}", itemsHtml.ToString());
+
+            var word = new WordProcessor(docxFileStream);
+            word.AddHtml(html);
+            word.Dispose();
+            docxFileStream.Position = 0;
+            return new OperationDataResult<Stream>(true, docxFileStream);
+        }
+
+        private async Task<OperationDataResult<Stream>> GenerateReportType8(Property property, Area area, int year)
+        {
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var curentLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+            if (curentLanguage.Name != "English" && curentLanguage.Name != "Danish") // reports only eng and da langs
+            {
+                curentLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Name == "Danish").ConfigureAwait(false);
+            }
+            var areaRulesForType8 = BackendConfigurationSeedAreas.AreaRulesForType8
+                .GroupBy(x => x.FolderName)
+                .Select(x => new AreaRulesForType8
+                {
+                    FolderName = x.Key,
+                    AreaRuleNames = x.Select(y => y)
+                        .Where(y => y.FolderName == x.Key)
+                        .SelectMany(y => y.AreaRuleTranslations
+                            .Where(z => z.LanguageId == curentLanguage.Id)
+                            .Select(z => z.Name))
+                        .ToList(),
+                })
+                .ToList();
+
+            foreach (var areaRuleForType8 in areaRulesForType8)
+            {
+                areaRuleForType8.FolderName = await sdkDbContext.FolderTranslations
+                    .OrderBy(x => x.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Name == areaRuleForType8.FolderName)
+                    .SelectMany(x => x.Folder.FolderTranslations)
+                    .Where(x => x.LanguageId == curentLanguage.Id)
+                    .Select(x => x.Name)
+                    .LastOrDefaultAsync().ConfigureAwait(false);
+            }
+
+            var areaRuleTranslations = await _dbContext.AreaRuleTranslations
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //.Where(x => areaRulesForType7.SelectMany(y => y.AreaRuleNames).Any(y => y == x.Name))
+                .Include(x => x.AreaRule)
+                .ThenInclude(x => x.AreaRulesPlannings)
+                .Where(x => x.AreaRule.PropertyId == property.Id)
+                .Where(x => x.AreaRule.AreaId == area.Id)
+                //.Select(x => x.AreaRule)
+                .ToListAsync().ConfigureAwait(false);
+
+            // Read html and template
+            var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
+            var assembly = Assembly.GetExecutingAssembly();
+            var resourceStream = assembly.GetManifestResourceStream(resourceString);
+            string html;
+            using (var reader = new StreamReader(resourceStream ?? throw new InvalidOperationException($"{nameof(resourceStream)} is null")))
+            {
+                html = await reader.ReadToEndAsync().ConfigureAwait(false);
+            }
+
+            resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.file.docx";
+            var docxFileResourceStream = assembly.GetManifestResourceStream(resourceString);
+            if (docxFileResourceStream == null)
+            {
+                throw new InvalidOperationException($"{nameof(docxFileResourceStream)} is null");
+            }
+            var docxFileStream = new MemoryStream();
+            await docxFileResourceStream.CopyToAsync(docxFileStream).ConfigureAwait(false);
+
+            var itemsHtml = new StringBuilder();
+            itemsHtml.Append(@"<body style='font-family:Calibri;'>");
+            itemsHtml.Append($@"<p style='font-size:11pt;text-align:left;font-weight:bold;'>23. {_localizationService.GetString("Controlplan IE-reporting")}</p>");
+            itemsHtml.Append(@"<table width=""100%"" border=""1"">");
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:11pt;'>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Year")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CVR-no")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("CHR-no")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Name")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Address")}</td>");
+            itemsHtml.Append(@"</tr>");
+            itemsHtml.Append(@"<tr style='font-size:11pt;'>");
+            itemsHtml.Append($@"<td>{year}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.CVR) ? "" : property.CVR)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.CHR) ? "" : property.CHR)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.Name) ? "" : property.Name)}</td>");
+            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(property.Address) ? "" : property.Address)}</td>");
+            itemsHtml.Append(@"</tr>");
+            itemsHtml.Append(@"</table>");
+            itemsHtml.Append(@"<p></p>"); // enter
+
+            itemsHtml.Append(@"<table width=""100%"" border=""1"">");
+            // Table header
+            itemsHtml.Append(@"<tr style='font-weight:bold;font-size:9pt;'>");
+            itemsHtml.Append(@"<td></td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
+            itemsHtml.Append(@"</tr>");
+
+            foreach (var areaRuleForType7 in areaRulesForType8)
+            {
+                itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
+                itemsHtml.Append($@"<td>{areaRuleForType7.FolderName}</td>");
+                itemsHtml.Append(@"<td></td>");
+                itemsHtml.Append(@"<td></td>");
+                itemsHtml.Append(@"</tr>");
+                foreach (var areaRuleName in areaRuleForType7.AreaRuleNames)
+                {
+                    var areaRulePlanning = areaRuleTranslations
+                        .Where(x => x.Name == areaRuleName)
+                        .Select(x => x.AreaRule)
+                        .SelectMany(x => x.AreaRulesPlannings)
+                        .FirstOrDefault();
+                    itemsHtml.Append(@"<tr style='font-size:9pt;'>");
+                    itemsHtml.Append($@"<td>{areaRuleName}</td>");
+                    if (areaRulePlanning == null)
+                    {
+                        itemsHtml.Append(@"<td></td>");
+                        itemsHtml.Append(@"<td></td>");
+                    }
+                    else
+                    {
+                        itemsHtml.Append($@"<td>{areaRulePlanning.StartDate:dd.MM.yyyy}</td>");
+                        string repeatEvery = "";
+                        var repeatType = "";
+                        if (areaRulePlanning.RepeatType != null)
+                        {
+                            repeatType = ((RepeatType)areaRulePlanning.RepeatType).ToString();
+                            var firstChar = repeatType.First().ToString();
+                            switch (areaRulePlanning.RepeatEvery)
+                            {
+                                case 0:
+                                case 1:
+                                    repeatEvery = _localizationService.GetString("every");
+                                    break;
+                                default:
+                                    repeatEvery = _localizationService.GetString("every") + " " + areaRulePlanning.RepeatEvery;
+                                    break;
+                            }
+                            repeatType = repeatType.Replace(firstChar, firstChar.ToLower());
+                            repeatType = _localizationService.GetString(repeatType);
+                        }
+
+                        itemsHtml.Append($@"<td>{repeatEvery} - {repeatType}</td>");
+                    }
+                    //itemsHtml.Append(@"<tr><td></td><td></td><td></td></tr>");
+                }
+                itemsHtml.Append(@"</tr>");
+            }
+            itemsHtml.Append(@"</table>");
+            itemsHtml.Append("</body>");
+
+            html = html.Replace("{%Content%}", itemsHtml.ToString());
 
             var word = new WordProcessor(docxFileStream);
             word.AddHtml(html);

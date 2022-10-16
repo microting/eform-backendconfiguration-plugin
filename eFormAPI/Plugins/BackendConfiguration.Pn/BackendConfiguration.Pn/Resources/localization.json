@@ -1387,6 +1387,82 @@
     }
   },
   {
+    "Key": "day",
+    "LocalizedValue": {
+      "da": "dag",
+      "en-US": "Day",
+      "uk-UA": "день",
+      "de": "Tag",
+      "pl-PL": "Dzień",
+      "no-NO": "Dag",
+      "sv-SE": "Dag",
+      "es-ES": "Día",
+      "fr-FR": "Jour",
+      "it-IT": "Giorno",
+      "nl-NL": "Dag",
+      "pt-BR": "Dia",
+      "pt-PT": "Dia",
+      "fi-FI": "Päivä"
+    }
+  },
+  {
+    "Key": "week",
+    "LocalizedValue": {
+      "da": "uge",
+      "en-US": "Week",
+      "uk-UA": "тиждень",
+      "de": "Woche",
+      "pl-PL": "Tydzień",
+      "no-NO": "Uke",
+      "sv-SE": "Vecka",
+      "es-ES": "Semana",
+      "fr-FR": "Semaine",
+      "it-IT": "Settimana",
+      "nl-NL": "Week",
+      "pt-BR": "Semana",
+      "pt-PT": "Semana",
+      "fi-FI": "Viikko"
+    }
+  },
+  {
+    "Key": "month",
+    "LocalizedValue": {
+      "da": "måned",
+      "en-US": "Month",
+      "uk-UA": "місяць",
+      "de": "Monat",
+      "pl-PL": "Miesiąc",
+      "no-NO": "Måned",
+      "sv-SE": "Månad",
+      "es-ES": "Mes",
+      "fr-FR": "Mois",
+      "it-IT": "Mese",
+      "nl-NL": "Maand",
+      "pt-BR": "Mês",
+      "pt-PT": "Mês",
+      "fi-FI": "Kuukausi"
+    }
+  },
+  {
+    "Key": "every",
+    "LocalizedValue": {
+      "da": "hver",
+      "en-US": "every",
+      "uk-UA": "кожен",
+      "de": "jede",
+      "pl-PL": "każdy",
+      "no-NO": "hver",
+      "sv-SE": "varje",
+      "es-ES": "cada",
+      "fr-FR": "chaque",
+      "it-IT": "ogni",
+      "nl-NL": "elke",
+      "pt-BR": "cada",
+      "pt-PT": "cada",
+      "fi-FI": "joka"
+    }
+  },
+  {
     "Key": "CreatedAt",
     "LocalizedValue": {
       "da": "Dato",
