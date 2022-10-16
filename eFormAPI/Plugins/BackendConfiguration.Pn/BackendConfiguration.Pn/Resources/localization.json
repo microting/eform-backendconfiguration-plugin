@@ -5,7 +5,17 @@
       "da": "Konfiguration",
       "de": "Aufbau",
       "en-US": "Backend Configuration",
-      "uk-UA": "Конфігурація серверної частини"
+      "uk-UA": "Конфігурація серверної частини",
+      "pl-PL": "Konfiguracja",
+      "no-NO": "Konfigurasjon",
+      "sv-SE": "Konfiguration",
+      "es-ES": "Configuración",
+      "fr-FR": "Configuration",
+      "it-IT": "Configurazione",
+      "nl-NL": "Configuratie",
+      "pt-BR": "Configuração",
+      "pt-PT": "Configuração",
+      "fi-FI": "Konfigurointi"
     }
   },
   {
@@ -14,7 +24,17 @@
       "da": "Ejendomme",
       "de": "Eigentum",
       "en-US": "Properties",
-      "uk-UA": "Властивості"
+      "uk-UA": "Властивості",
+      "pl-PL": "Właściwości",
+      "no-NO": "Egenskaper",
+      "sv-SE": "Egenskaper",
+      "es-ES": "Propiedades",
+      "fr-FR": "Propriétés",
+      "it-IT": "Proprietà",
+      "nl-NL": "Eigenschappen",
+      "pt-BR": "Propriedades",
+      "pt-PT": "Propriedades",
+      "fi-FI": "Ominaisuudet"
     }
   },
   {
@@ -23,7 +43,17 @@
       "da": "Medarbejdere",
       "de": "Mitarbeiter",
       "en-US": "Workers",
-      "uk-UA": "Працівники"
+      "uk-UA": "Працівники",
+      "pl-PL": "Pracownicy",
+      "no-NO": "Arbeidere",
+      "sv-SE": "Arbetare",
+      "es-ES": "Trabajadores",
+      "fr-FR": "Ouvriers",
+      "it-IT": "Lavoratori",
+      "nl-NL": "Arbeiders",
+      "pt-BR": "Trabalhadores",
+      "pt-PT": "Trabalhadores",
+      "fi-FI": "Työntekijät"
     }
   },
   {
@@ -32,7 +62,17 @@
       "da": "Der skal vælges en mappe",
       "de": "Es muss ein Ordner ausgewählt werden",
       "en-US": "A folder must be selected",
-      "uk-UA": "Необхідно вибрати папку"
+      "uk-UA": "Необхідно вибрати папку",
+      "pl-PL": "Folder musi zostać wybrany",
+      "no-NO": "En mappe må velges",
+      "sv-SE": "En mapp måste väljas",
+      "es-ES": "Una carpeta debe ser seleccionada",
+      "fr-FR": "Un dossier doit être sélectionné",
+      "it-IT": "Una cartella deve essere selezionata",
+      "nl-NL": "Een map moet worden geselecteerd",
+      "pt-BR": "Uma pasta deve ser selecionada",
+      "pt-PT": "Uma pasta deve ser selecionada",
+      "fi-FI": "Kansion on valittava"
     }
   },
   {
@@ -41,7 +81,8 @@
       "da": "Der skal sættes en slut dato",
       "de": "Es muss ein Enddatum festgelegt werden",
       "en-US": "An end date must be set",
-      "uk-UA": "Потрібно встановити кінцеву дату"
+      "uk-UA": "Потрібно встановити кінцеву дату",
+      "pl-Pl": "Należy ustawić datę zakończenia"
     }
   },
   {
@@ -444,182 +485,234 @@
     "Key": "Controlplan IE-reporting",
     "LocalizedValue": {
       "da": "Kontrolplan",
-      "en-US": "Controlplan IE-reporting" // todo maybe need add more translates
+      "en-US": "Controlplan IE-reporting",
+      "uk-UA": "Контрольний план",
+      "de": "Kontrollplan"
     }
   },
   {
     "Key": "Year",
     "LocalizedValue": {
       "da": "År",
-      "en-US": "Year" // todo maybe need add more translates
+      "en-US": "Year",
+      "uk-UA": "Рік",
+      "de": "Jahr"
     }
   },
   {
     "Key": "CVR-no",
     "LocalizedValue": {
       "da": "CVR-nr.",
-      "en-US": "CVR-no" // todo maybe need add more translates
+      "en-US": "CVR-no",
+      "uk-UA": "CVR-номер",
+      "de": "CVR-Nummer"
     }
   },
   {
     "Key": "CHR-no",
     "LocalizedValue": {
       "da": "CHR-nr.",
-      "en-US": "CHR-no" // todo maybe need add more translates
+      "en-US": "CHR-no",
+      "uk-UA": "CHR-номер",
+      "de": "CHR-Nr."
     }
   },
   {
     "Key": "Name",
     "LocalizedValue": {
       "da": "Ejendomsnavn",
-      "en-US": "Name" // todo maybe need add more translates
+      "en-US": "Name",
+      "uk-UA": "Назва",
+      "de": "Name"
     }
   },
   {
     "Key": "Address",
     "LocalizedValue": {
       "da": "Adresse",
-      "en-US": "Address" // todo maybe need add more translates
+      "en-US": "Address",
+      "uk-UA": "Адреса",
+      "de": "Adresse"
     }
   },
   {
     "Key": "Location",
     "LocalizedValue": {
       "da": "Lokation",
-      "en-US": "Location" // todo maybe need add more translates
+      "en-US": "Location",
+      "uk-UA": "Місцезнаходження",
+      "de": "Lage"
     }
   },
   {
     "Key": "AssignedTo",
     "LocalizedValue": {
       "da": "Tildelt til",
-      "en-US": "AssignedTo" // todo maybe need add more translates
+      "en-US": "AssignedTo",
+      "uk-UA": "Призначено",
+      "de": "Zugewiesen an"
     }
   },
   {
     "Key": "Ongoing",
     "LocalizedValue": {
       "da": "Igangværende",
-      "en-US": "Ongoing" // todo maybe need add more translates
+      "en-US": "Ongoing",
+      "uk-UA": "В процесі",
+      "de": "In Bearbeitung"
     }
   },
   {
     "Key": "CreatedDate",
     "LocalizedValue": {
       "da": "Oprettet dato",
-      "en-US": "CreatedDate" // todo maybe need add more translates
+      "en-US": "CreatedDate",
+      "uk-UA": "Дата створення",
+      "de": "Erstellungsdatum"
     }
   },
   {
     "Key": "CreatedBy",
     "LocalizedValue": {
       "da": "Oprettet af",
-      "en-US": "CreatedBy" // todo maybe need add more translates
+      "en-US": "CreatedBy",
+      "uk-UA": "Створено",
+      "de": "Erstellt von"
     }
   },
   {
     "Key": "Property",
     "LocalizedValue": {
       "da": "Ejendom",
-      "en-US": "Property" // todo maybe need add more translates
+      "en-US": "Property",
+      "uk-UA": "Майно",
+      "de": "Immobilie"
     }
   },
   {
     "Key": "PropertyArea",
     "LocalizedValue": {
       "da": "Område",
-      "en-US": "Property area" // todo maybe need add more translates
+      "en-US": "Property area",
+      "uk-UA": "Область",
+      "de": "Bereich"
     }
   },
   {
     "Key": "Description",
     "LocalizedValue": {
       "da": "Beskrivelse",
-      "en-US": "Description" // todo maybe need add more translates
+      "en-US": "Description",
+      "uk-UA": "Опис",
+      "de": "Beschreibung"
     }
   },
   {
     "Key": "Area",
     "LocalizedValue": {
       "da": "Område",
-      "en-US": "Area" // todo maybe need add more translates
+      "en-US": "Area",
+      "uk-UA": "Область",
+      "de": "Bereich"
     }
   },
   {
     "Key": "LastAssignedTo",
     "LocalizedValue": {
       "da": "Sidst tildelt til",
-      "en-US": "Last assigned to" // todo maybe need add more translates
+      "en-US": "Last assigned to",
+      "uk-UA": "Останній призначений",
+      "de": "Zuletzt zugewiesen an"
     }
   },
   {
     "Key": "Date",
     "LocalizedValue": {
       "da": "Dato",
-      "en-US": "Date" // todo maybe need add more translates
+      "en-US": "Date",
+      "uk-UA": "Дата",
+      "de": "Datum"
     }
   },
   {
     "Key": "CreatedBy1",
     "LocalizedValue": {
       "da": "Oprettet af",
-      "en-US": "Created by" // todo maybe need add more translates
+      "en-US": "Created by",
+      "uk-UA": "Створено",
+      "de": "Erstellt von"
     }
   },
   {
     "Key": "LastUpdateDate",
     "LocalizedValue": {
       "da": "Sidst opdateret",
-      "en-US": "Last update date" // todo maybe need add more translates
+      "en-US": "Last update date",
+      "uk-UA": "Останнє оновлення",
+      "de": "Zuletzt aktualisiert"
     }
   },
   {
     "Key": "LastUpdatedBy",
     "LocalizedValue": {
       "da": "Sidst opdateret af",
-      "en-US": "Last update by" // todo maybe need add more translates
+      "en-US": "Last update by",
+      "uk-UA": "Останнє оновлення",
+      "de": "Zuletzt aktualisiert von"
     }
   },
   {
     "Key": "CreatedBy2",
     "LocalizedValue": {
       "da": "Oprettet af (2)",
-      "en-US": "Created by (2)" // todo maybe need add more translates
+      "en-US": "Created by (2)",
+      "uk-UA": "Створено (2)",
+      "de": "Erstellt von (2)"
     }
   },
   {
     "Key": "StartDate",
     "LocalizedValue": {
       "da": "Startdato",
-      "en-US": "StartDate" // todo maybe need add more translates
+      "en-US": "StartDate",
+      "uk-UA": "Дата початку",
+      "de": "Startdatum"
     }
   },
   {
     "Key": "Frequence",
     "LocalizedValue": {
       "da": "Gentages hver",
-      "en-US": "Frequence" // todo maybe need add more translates
+      "en-US": "Frequence",
+      "uk-UA": "Повторюється кожні",
+      "de": "Wiederholung alle"
     }
   },
   {
     "Key": "Day",
     "LocalizedValue": {
       "da": "Dag",
-      "en-US": "Day" // todo maybe need add more translates
+      "en-US": "Day",
+      "uk-UA": "День",
+      "de": "Tag"
     }
   },
   {
     "Key": "Week",
     "LocalizedValue": {
       "da": "Uge",
-      "en-US": "Week" // todo maybe need add more translates
+      "en-US": "Week",
+      "uk-UA": "Тиждень",
+      "de": "Woche"
     }
   },
   {
     "Key": "Month",
     "LocalizedValue": {
       "da": "Måned",
-      "en-US": "Month" // todo maybe need add more translates
+      "en-US": "Month",
+      "Uk-UA": "Місяць",
+      "de": "Monat"
     }
   },
   {
