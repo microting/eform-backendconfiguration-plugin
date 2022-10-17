@@ -68,18 +68,21 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             switch (pnRequestModel.Expiration)
             {
                 case 0:
-                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow);
                     break;
                 case 1:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(1) && x.EndAt <= DateTime.UtcNow.AddMonths(3));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1));
                     break;
                 case 2:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(3) && x.EndAt <= DateTime.UtcNow.AddMonths(6));
+                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(1) && x.EndAt <= DateTime.UtcNow.AddMonths(3));
                     break;
                 case 3:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(6) && x.EndAt <= DateTime.UtcNow.AddYears(1));
+                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(3) && x.EndAt <= DateTime.UtcNow.AddMonths(6));
                     break;
                 case 4:
+                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(6) && x.EndAt <= DateTime.UtcNow.AddYears(1));
+                    break;
+                case 5:
                     query = query.Where(x => x.EndAt > DateTime.UtcNow.AddYears(1));
                     break;
 
@@ -129,7 +132,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                         DocumentId = y.DocumentId,
                         PropertyId = y.PropertyId
                     }).ToList()
-                }).ToListAsync().ConfigureAwait(false);
+                })
+                .OrderBy(x => x.EndDate)
+                .ToListAsync().ConfigureAwait(false);
 
             foreach (var backendConfigurationDocumentModel in results)
             {
@@ -617,7 +622,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             result.Add(new BackendConfigurationDocumentSimpleFolderModel()
             {
                 Id = folder.Id,
-                Name = folder.FolderTranslations.FirstOrDefault(x => x.LanguageId == languageId)!.Name,
+                Name = folder.FolderTranslations.Any(x => x.LanguageId == languageId) ? folder.FolderTranslations.First(x => x.LanguageId == languageId).Name : folder.FolderTranslations.First().Name
             });
         }
 
