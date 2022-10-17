@@ -85,31 +85,19 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
        .subscribe((filters) => {
          if (!this.filtersForm) {
            this.filtersForm = new FormGroup({
-             propertyId: new FormControl(filters.propertyId),
+             propertyId: new FormControl(filters.propertyId || -1),
              folderId: new FormControl(filters.folderId),
              documentId: new FormControl(filters.documentId),
              expiration: new FormControl(filters.expiration),
-    //         areaName: new FormControl({
-    //           value: filters.areaName,
-    //           disabled: !filters.propertyId || filters.propertyId === -1,
              })
-    //         createdBy: new FormControl({
-    //           value: filters.createdBy,
-    //           disabled: !filters.propertyId || filters.propertyId === -1,
-    //         }),
-    //         lastAssignedTo: new FormControl({
-    //           value: filters.lastAssignedTo,
-    //           disabled: !filters.propertyId || filters.propertyId === -1,
-    //         }),
-    //         status: new FormControl({
-    //           value: filters.status,
-    //           disabled: !filters.propertyId,
-    //         }),
-    //         date: new FormControl({
-    //           value: [filters.dateFrom, filters.dateTo],
-    //           disabled: !filters.propertyId,
-    //         }),
-    //       });
+           if (filters.propertyId === null) {
+             this.documentsStateService.store.update((state) => ({
+               filters: {
+                 ...state.filters,
+                 propertyId: -1,
+               },
+             }));
+           }
            if (filters.propertyId && filters.propertyId !== -1) {
              this.getDocuments(filters.propertyId);
              //this.getSites(filters.propertyId);
@@ -124,51 +112,14 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
              .propertyId !== value
          ) {
            if(value !== -1) {
-             //this.getDocuments(value);
-             //this.getSites(value);
            } else {
-             //this.getDocuments(null);
            }
            this.documentsStateService.store.update((state) => ({
              filters: {
                ...state.filters,
                propertyId: value,
-    //           areaName: null,
-    //           dateFrom: null,
-    //           dateTo: null,
-    //           status: null,
-    //           createdBy: null,
-    //           lastAssignedTo: null,
              },
            }));
-    //       this.filtersForm
-    //         .get('areaName')
-    //         .setValue(undefined, {emitEvent: false});
-    //       this.filtersForm
-    //         .get('createdBy')
-    //         .setValue(undefined, {emitEvent: false});
-    //       this.filtersForm
-    //         .get('lastAssignedTo')
-    //         .setValue(undefined, {emitEvent: false});
-    //       this.filtersForm
-    //         .get('status')
-    //         .setValue(undefined, {emitEvent: false});
-    //       this.filtersForm.get('date').setValue([], {emitEvent: false});
-    //       if(value !== -1) {
-    //         this.filtersForm.get('areaName').enable({emitEvent: false});
-    //       } else {
-    //         this.filtersForm.get('areaName').disable({emitEvent: false});
-    //       }
-    //       if(value !== -1) {
-    //         this.filtersForm.get('createdBy').enable({emitEvent: false});
-    //       } else {
-    //         this.filtersForm.get('createdBy').disable({emitEvent: false});}
-    //       if(value !== -1) {
-    //         this.filtersForm.get('lastAssignedTo').enable({emitEvent: false});
-    //       } else {
-    //         this.filtersForm.get('lastAssignedTo').disable({emitEvent: false});}
-    //       this.filtersForm.get('status').enable({emitEvent: false});
-    //       this.filtersForm.get('date').enable({emitEvent: false});
          }
        });
     this.folderNameChangesSub$ = this.filtersForm
@@ -216,79 +167,6 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
            }));
          }
       });
-    //     /*if (value) {
-    //       this.filtersForm.get('createdBy').enable({ emitEvent: false });
-    //       this.filtersForm.get('lastAssignedTo').enable({ emitEvent: false });
-    //       this.filtersForm.get('status').enable({ emitEvent: false });
-    //       this.filtersForm.get('date').enable({ emitEvent: false });
-    //     } else {
-    //       this.filtersForm.get('createdBy').disable({ emitEvent: false });
-    //       this.filtersForm.get('lastAssignedTo').disable({ emitEvent: false });
-    //       this.filtersForm.get('status').disable({ emitEvent: false });
-    //       this.filtersForm.get('date').disable({ emitEvent: false });
-    //     }*/
-    //
-    // this.filtersForm
-    //   .get('createdBy')
-    //   .valueChanges.subscribe((value: string) => {
-    //   this.taskManagementStateService.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       createdBy: value,
-    //     },
-    //   }));
-    // });
-    // this.filtersForm
-    //   .get('lastAssignedTo')
-    //   .valueChanges.subscribe((value: string) => {
-    //   this.taskManagementStateService.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       lastAssignedTo: value,
-    //     },
-    //   }));
-    // });
-    // this.filtersForm.get('status').valueChanges.subscribe((value: number) => {
-    //   this.taskManagementStateService.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       status: value,
-    //     },
-    //   }));
-    // });
-    // this.filtersForm.get('date').valueChanges.subscribe((value: any[]) => {
-    //   if (value && value[0] && value[1]) {
-    //     let dateFrom = new Date(value[0]._d);
-    //     let dateTo = new Date(value[1]._d);
-    //     dateFrom = set(dateFrom, {
-    //       hours: 0,
-    //       minutes: 0,
-    //       seconds: 0,
-    //       milliseconds: 0,
-    //     });
-    //     dateTo = set(dateTo, {
-    //       hours: 0,
-    //       minutes: 0,
-    //       seconds: 0,
-    //       milliseconds: 0,
-    //     });
-    //     this.taskManagementStateService.store.update((state) => ({
-    //       filters: {
-    //         ...state.filters,
-    //         dateFrom: format(dateFrom, this.standartDateTimeFormat),
-    //         dateTo: format(dateTo, this.standartDateTimeFormat),
-    //       },
-    //     }));
-    //   } else {
-    //     this.taskManagementStateService.store.update((state) => ({
-    //       filters: {
-    //         ...state.filters,
-    //         dateFrom: null,
-    //         dateTo: null,
-    //       },
-    //     }));
-    //   }
-    // });
   }
 
 
