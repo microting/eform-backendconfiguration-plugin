@@ -19,7 +19,7 @@ const property: PropertyCreateUpdate = {
 const workerForCreate = {
   name: generateRandmString(),
   surname: generateRandmString(),
-  language: 'Dansk',
+  language: 'Danish',
   properties: [0],
 };
 
