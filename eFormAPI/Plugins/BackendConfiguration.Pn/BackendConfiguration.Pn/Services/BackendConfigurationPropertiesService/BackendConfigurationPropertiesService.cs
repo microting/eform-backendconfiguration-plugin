@@ -209,6 +209,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 }
 
                 var translatesForFolder = await sdkDbContext.Languages
+                    .Where(x => x.IsActive == true)
                     .Select(
                         x => new CommonTranslationsModel
                         {

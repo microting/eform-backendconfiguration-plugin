@@ -263,7 +263,7 @@ export class BackendConfigurationPropertiesPage extends Page {
       await (await this.propertyCreateSaveBtn()).click();
     }
     await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
-    await (await this.propertyCreateBtn()).waitForClickable({ timeout: 40000 });
+    await (await this.propertyCreateBtn()).waitForClickable({ timeout: 90000 });
   }
 
   public async getFirstPropertyRowObject(): Promise<PropertyRowObject> {

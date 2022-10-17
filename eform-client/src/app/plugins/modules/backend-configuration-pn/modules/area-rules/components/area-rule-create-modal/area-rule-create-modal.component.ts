@@ -112,6 +112,7 @@ export class AreaRuleCreateModalComponent implements OnInit {
   generateRules() {
     const lines = this.newAreaRulesString.split('\n');
     for (let i = 0; i < lines.length; i++) {
+      debugger;
       this.newAreaRules.areaRules = [
         ...this.newAreaRules.areaRules,
         {
@@ -262,7 +263,8 @@ export class AreaRuleCreateModalComponent implements OnInit {
 
   checked($event: any, i: number, j: number, areaRule: AreaRuleCreateModel) {
     for (let k = 0; k < areaRule.typeSpecificFields.poolHoursModel.parrings.length; k++) {
-      if (areaRule.typeSpecificFields.poolHoursModel.parrings[k].dayOfWeek === i && areaRule.typeSpecificFields.poolHoursModel.parrings[k].index === j) {
+      if (areaRule.typeSpecificFields.poolHoursModel.parrings[k].dayOfWeek === i
+        && areaRule.typeSpecificFields.poolHoursModel.parrings[k].index === j) {
         areaRule.typeSpecificFields.poolHoursModel.parrings[k].isActive = $event.target.checked;
       }
     }

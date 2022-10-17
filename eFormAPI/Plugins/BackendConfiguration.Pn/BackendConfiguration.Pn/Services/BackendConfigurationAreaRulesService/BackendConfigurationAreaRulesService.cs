@@ -265,7 +265,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
             {
                 var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
-                var languages = await sdkDbContext.Languages.AsNoTracking().ToListAsync().ConfigureAwait(false);
+                var languages = await sdkDbContext.Languages.Where(x => x.IsActive == true).AsNoTracking().ToListAsync().ConfigureAwait(false);
 
                 var areaId = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
