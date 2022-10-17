@@ -1720,7 +1720,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     });
                 }
 
-                var languages = await sdkDbContex.Languages.AsNoTracking().ToListAsync().ConfigureAwait(false);
+                var languages = await sdkDbContex.Languages.Where(x => x.IsActive == true).AsNoTracking().ToListAsync().ConfigureAwait(false);
                 var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
 
                 var areaModel = new AreaModel
