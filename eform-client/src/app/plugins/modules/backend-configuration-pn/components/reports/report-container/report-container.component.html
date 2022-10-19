@@ -1,0 +1,92 @@
+<eform-subheader [title]="'Generate Report' | translate"> </eform-subheader>
+
+<div class="container-fluid">
+  <app-items-planning-pn-report-header
+    [range]="range"
+    [availableTags]="availableTags"
+    (downloadReport)="onDownloadReport($event)"
+    (downloadExcelReport)="onDownloadExcelReport($event)"
+    (generateReport)="onGenerateReport($event)"
+  >
+  </app-items-planning-pn-report-header>
+  <ng-container *ngFor="let report of reportsModel; let i = index">
+    <div class="mb-4">
+      <ng-container *ngIf="report.textHeaders">
+        <h1 *ngIf="report.textHeaders.header1">
+          {{ report.textHeaders.header1 }}
+        </h1>
+        <h2 *ngIf="report.textHeaders.header2">
+          {{ report.textHeaders.header2 }}
+        </h2>
+        <h3 *ngIf="report.textHeaders.header3">
+          {{ report.textHeaders.header3 }}
+        </h3>
+        <h4 *ngIf="report.textHeaders.header4">
+          {{ report.textHeaders.header4 }}
+        </h4>
+        <h5 *ngIf="report.textHeaders.header5">
+          {{ report.textHeaders.header5 }}
+        </h5>
+      </ng-container>
+
+      <ng-container *ngIf="report.descriptionBlocks && report.descriptionBlocks.length > 0">
+        <button
+          mdbBtn
+          class="btn-icon mb-2 float-right text-black-50"
+          mdbTooltip="{{(isDescriptionBlockCollapsed[i] ? 'Expand all' : 'Collapse all') | translate}}"
+          (click)="toggleCollapse(i)"
+          id="expandAllBtn{{i}}"
+        >
+          <fa-icon
+            [icon]="
+              isDescriptionBlockCollapsed[i]
+              ? 'angle-double-right'
+              : 'angle-double-down'"
+            size="lg"
+            [fixedWidth]="true"
+          ></fa-icon>
+        </button>
+        <div
+          mdbCollapse
+          #collapse="bs-collapse"
+          [isCollapsed]="isDescriptionBlockCollapsed[i]"
+          >
+          <p
+            *ngFor="let descriptionBlock of report.descriptionBlocks"
+            [innerHTML]="descriptionBlock"
+          ></p>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="report.items.length > 0">
+<!--        <div>{{ 'Table' | translate }}: {{ report.tableName }}</div>-->
+        <app-report-table
+          [items]="report.items"
+          [reportIndex]="i"
+          [itemHeaders]="report.itemHeaders"
+          [dateFrom]="dateFrom"
+          [dateTo]="dateTo"
+          [newPostModal]="newPostModal"
+          (planningCaseDeleted)="onPlanningCaseDeleted()"
+          (btnViewPicturesClicked)="onClickViewPicture($event)"
+        ></app-report-table>
+<!--        <p>{{ report.templateName }}</p>-->
+<!--        <app-report-images-->
+<!--          [imageNames]="report.imageNames"-->
+<!--          *ngIf="report.imageNames.length > 0"-->
+<!--        ></app-report-images>-->
+      </ng-container>
+    </div>
+  </ng-container>
+</div>
+
+<!--<app-case-post-new-->
+<!--  #newPostModal-->
+<!--  (postCreated)="postDoneRedirect()"-->
+<!--  [pdfReportAvailable]="casePostsListModel.pdfReportAvailable"-->
+<!--  [currentUserFullName]="currentUserFullName"-->
+<!--  [availableRecipients]="availableEmailRecipients"-->
+<!--  [availableRecipientsAndTags]="availableEmailRecipientsAndTags"-->
+<!--  [eformId]="selectedEformId"-->
+<!--  [caseId]="selectedCaseId"-->
+<!--&gt;</app-case-post-new>-->

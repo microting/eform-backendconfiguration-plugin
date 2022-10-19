@@ -8,6 +8,7 @@ import {
 import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const';
 import { PropertyCreateModel } from '../../../../models';
 import {AuthStateService} from 'src/app/common/store';
+import {BackendConfigurationPnPropertiesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 
 @Component({
   selector: 'app-property-create-modal',
@@ -20,19 +21,22 @@ export class PropertyCreateModalComponent implements OnInit {
   propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();
   newProperty: PropertyCreateModel = new PropertyCreateModel();
   selectedLanguages: { id: number; checked: boolean }[] = [];
+  propertyIsFarm: boolean = false;
 
   get applicationLanguages() {
     return applicationLanguages;
   }
 
   constructor(
-    public authStateService: AuthStateService) {
+    public authStateService: AuthStateService,
+    private propertiesService: BackendConfigurationPnPropertiesService) {
   }
 
   ngOnInit() {}
 
   show() {
     this.frame.show();
+    this.propertyIsFarm = false;
   }
 
   hide() {
@@ -46,6 +50,68 @@ export class PropertyCreateModalComponent implements OnInit {
       ...this.newProperty,
       languagesIds: applicationLanguagesTranslated.map((x) => x.id),
     });
+  }
+
+
+  onNameFilterChanged(number: number) {
+    if (number == 0) {
+      this.propertyIsFarm = false;
+    }
+    if (number == 1111111) {
+      this.propertyIsFarm = true;
+      this.newProperty.isFarm = true;
+    }
+    if (number > 1111111) {
+      if (number.toString().length > 7)
+      this.propertiesService.getCompanyType(number)
+        .subscribe((data) => {
+          if (data && data.success) {
+            if (data.model.industrycode.toString().slice(0, 2) == '01') {
+              this.propertyIsFarm = true;
+              this.newProperty.isFarm = true;
+              if (data.model.error !== 'NOT_FOUND') {
+                this.newProperty.address = data.model.address + ', ' + data.model.city;
+                this.newProperty.name = data.model.name;
+                this.newProperty.industryCode = data.model.industrycode;
+              }
+            }
+            else {
+              if (data.model.error == 'REQUIRES_PAID_SUBSCRIPTION') {
+                this.propertyIsFarm = true;
+                this.newProperty.isFarm = true;
+              } else {
+                this.propertyIsFarm = false;
+                this.newProperty.isFarm = false;
+                if (data.model.error !== 'NOT_FOUND') {
+                  this.newProperty.address = data.model.address + ', ' + data.model.city;
+                  this.newProperty.name = data.model.name;
+                  this.newProperty.industryCode = data.model.industrycode;
+                }
+              }
+            }
+          }
+        });
+    } else {
+      this.newProperty.name = '';
+      this.newProperty.address = '';
+    }
+  }
+
+  onChrNumberChanged(number: number) {
+    if (number > 11111) {
+      if (number.toString().length > 5)
+        this.propertiesService.getChrInformation(number)
+          .subscribe((data) => {
+            if (data && data.success) {
+              //debugger;
+              if (data.model.ejendom.byNavn === '' || data.model.ejendom.byNavn === null) {
+                this.newProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.postDistrikt;
+              } else {
+                this.newProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.byNavn;
+              }
+            }
+          });
+    }
   }
 
   // addToArray(e: any, languageId: number) {

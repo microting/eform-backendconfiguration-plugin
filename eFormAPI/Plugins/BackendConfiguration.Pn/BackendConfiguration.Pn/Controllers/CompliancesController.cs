@@ -70,7 +70,7 @@ namespace BackendConfiguration.Pn.Controllers
                 // return Forbid();
             // }
 
-            return Ok(await _backendConfigurationCompliancesService.Read(id));
+            return Ok(await _backendConfigurationCompliancesService.Read(id).ConfigureAwait(false));
         }
 
         [HttpPut]
@@ -84,7 +84,7 @@ namespace BackendConfiguration.Pn.Controllers
             //     return Forbid();
             // }
 
-            return Ok(await _backendConfigurationCompliancesService.Update(model));
+            return Ok(await _backendConfigurationCompliancesService.Update(model).ConfigureAwait(false));
         }
     }
 }

@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Helpers;
+
 namespace BackendConfiguration.Pn.Controllers
 {
     using System.Collections.Generic;
@@ -43,14 +45,14 @@ namespace BackendConfiguration.Pn.Controllers
         {
             _backendConfigurationPropertiesService = backendConfigurationPropertiesService;
         }
-        
+
         [HttpPost]
         [Route("index")]
         public Task<OperationDataResult<Paged<PropertiesModel>>> Index([FromBody]ProperiesRequesModel request)
         {
             return _backendConfigurationPropertiesService.Index(request);
         }
-        
+
         [HttpPost]
         public Task<OperationResult> Create([FromBody] PropertyCreateModel createModel)
         {
@@ -80,6 +82,22 @@ namespace BackendConfiguration.Pn.Controllers
         public Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary()
         {
             return _backendConfigurationPropertiesService.GetCommonDictionary();
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("get-company-type")]
+        public async Task<OperationDataResult<Result>> GetCompanyType(int cvrNumber)
+        {
+            return await _backendConfigurationPropertiesService.GetCompanyType(cvrNumber).ConfigureAwait(false);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("get-chr-information")]
+        public async Task<OperationDataResult<ChrResult>> GetChrInformation(int cvrNumber)
+        {
+            return await _backendConfigurationPropertiesService.GetChrInformation(cvrNumber).ConfigureAwait(false);
         }
     }
 }

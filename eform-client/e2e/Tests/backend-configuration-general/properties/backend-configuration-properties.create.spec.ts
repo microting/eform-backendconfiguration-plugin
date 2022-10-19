@@ -18,6 +18,7 @@ describe('Backend Configuration Property - Add', function () {
       name: generateRandmString(),
       chrNumber: generateRandmString(),
       address: generateRandmString(),
+      cvrNumber: '1111111',
       // selectedLanguages: [
       //   { languageId: 1, languageName: 'Dansk' },
       //   { languageId: 2, languageName: 'Engelsk' },
@@ -42,6 +43,7 @@ describe('Backend Configuration Property - Add', function () {
   it('should create property with only name' /* and selected one language*/, async () => {
     const rowNumBeforeCreate = await backendConfigurationPropertiesPage.rowNum();
     const property: PropertyCreateUpdate = {
+      cvrNumber: '1111111',
       name: generateRandmString(),
       // selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
     };
@@ -55,6 +57,7 @@ describe('Backend Configuration Property - Add', function () {
   it('should not create property without name', async () => {
     const rowNumBeforeCreate = await backendConfigurationPropertiesPage.rowNum();
     const property: PropertyCreateUpdate = {
+      cvrNumber: '1111111',
       chrNumber: generateRandmString(),
       address: generateRandmString(),
       // selectedLanguages: [

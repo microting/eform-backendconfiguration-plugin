@@ -775,6 +775,48 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("24.04.03 Tilsætningsstoffer i foder - fytase eller andet", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("25.01 Registrer produkter", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("25.02 Vis kemisk produkt", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("01. Aflæsninger", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("02. Fækale uheld", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"26.Kornlager","",""
+			};
+			item = new KeyValuePair<string, List<string>>("26. Kornlager", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Morgenrundtur","",""
+			};
+			item = new KeyValuePair<string, List<string>>("00. Morgenrundtur", headers);
+			theList.Add(item);
 
 			return theList;
 		}

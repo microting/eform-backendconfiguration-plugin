@@ -13,7 +13,11 @@ export class PropertyModel {
   complianceStatusThirty: PropertyCompliancesColorBadgesEnum;
   complianceStatusBadge: string;
   workorderEnable: boolean;
+  workorderEntityListId: number;
   getFullName(): string {
     return `${this.cvr} - ${this.chr} - ${this.name}`;
   }
+  industryCode: string;
+  isFarm: boolean;
+  mainMailAddress: string;
 }

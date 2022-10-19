@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subject, Subscription } from 'rxjs';
-import { Paged } from 'src/app/common/models';
+import {AdvEntitySelectableItemModel, Paged, TableHeaderElementModel} from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import {
   PropertyCreateModalComponent,
@@ -16,6 +16,8 @@ import {
 import { BackendConfigurationPnPropertiesService} from '../../../../services';
 import { PropertiesStateService } from '../../store';
 import { debounceTime } from 'rxjs/operators';
+import {EntitySelectService} from 'src/app/common/services';
+import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 
 @AutoUnsubscribe()
 @Component({
@@ -32,6 +34,31 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   deletePropertyModal: PropertyDeleteModalComponent;
   @ViewChild('docxReportModal', { static: false })
   docxReportModal: PropertyDocxReportModalComponent;
+  @ViewChild('entityListEditModal', { static: false })
+  entityListEditModal: AreaRuleEntityListModalComponent;
+  selectedProperty: PropertyModel;
+  isFarms: boolean = false;
+  tableHeaders: TableHeaderElementModel[] = [
+    { name: 'Id', elementId: 'idTableHeader', sortable: true },
+    { name: 'Name', elementId: 'nameTableHeader', sortable: true,
+      visibleName: 'Property name' },
+    {
+      name: 'CVR',
+      visibleName: 'CVR Number',
+      elementId: 'cvrNumberTableHeader',
+      sortable: true,
+    },
+    {
+      name: 'Address',
+      visibleName: 'Property address',
+      elementId: 'addressTableHeader',
+      sortable: true,
+    },
+    // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
+    { name: 'Compliance', sortable: false },
+    // { name: 'Compliance 30', sortable: false },
+    { name: 'Actions', elementId: '', sortable: false },
+  ];
 
   nameSearchSubject = new Subject();
   propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
@@ -44,7 +71,8 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   constructor(
     private propertiesService: BackendConfigurationPnPropertiesService,
     public propertiesStateService: PropertiesStateService,
-    public authStateService: AuthStateService
+    public authStateService: AuthStateService,
+  private entitySelectService: EntitySelectService
   ) {
     this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertiesStateService.updateNameFilter(val.toString());
@@ -65,6 +93,58 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
       .getAllProperties()
       .subscribe((data) => {
         this.propertiesModel = data.model;
+        for (let i = 0; i < this.propertiesModel.entities.length; i++) {
+          if (this.propertiesModel.entities[i].isFarm) {
+            this.isFarms = true;
+          }
+        }
+        this.tableHeaders = this.isFarms ? [
+          { name: 'Id', elementId: 'idTableHeader', sortable: true },
+          { name: 'Name', elementId: 'nameTableHeader', sortable: true,
+            visibleName: 'Property name' },
+          {
+            name: 'CVR',
+            visibleName: 'CVR Number',
+            elementId: 'cvrNumberTableHeader',
+            sortable: true,
+          },
+          {
+            name: 'CHR',
+            visibleName: 'CHR Number',
+            elementId: 'chrNumberTableHeader',
+            sortable: true,
+          },
+          {
+            name: 'Address',
+            visibleName: 'Property address',
+            elementId: 'addressTableHeader',
+            sortable: true,
+          },
+          // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
+          { name: 'Compliance', sortable: false },
+          // { name: 'Compliance 30', sortable: false },
+          { name: 'Actions', elementId: '', sortable: false },
+        ] :  [
+          { name: 'Id', elementId: 'idTableHeader', sortable: true },
+          { name: 'Name', elementId: 'nameTableHeader', sortable: true,
+            visibleName: 'Property name' },
+          {
+            name: 'CVR',
+            visibleName: 'CVR Number',
+            elementId: 'cvrNumberTableHeader',
+            sortable: true,
+          },
+          {
+            name: 'Address',
+            visibleName: 'Property address',
+            elementId: 'addressTableHeader',
+            sortable: true,
+          },
+          // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
+          { name: 'Compliance', sortable: false },
+          // { name: 'Compliance 30', sortable: false },
+          { name: 'Actions', elementId: '', sortable: false },
+        ];
       });
   }
 
@@ -109,6 +189,7 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
         if (data && data.success) {
           this.getProperties();
           this.deletePropertyModal.hide();
+          this.isFarms = false;
         }
       });
   }
@@ -136,5 +217,27 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
 
   onNameFilterChanged(name: string) {
     this.nameSearchSubject.next(name);
+  }
+
+  onShowEditEntityListModal(propertyModel: PropertyModel) {
+    this.selectedProperty = propertyModel;
+    this.entityListEditModal.show(propertyModel.workorderEntityListId);
+  }
+
+  updateEntityList(model: Array<AdvEntitySelectableItemModel>) {
+    this.entitySelectService.getEntitySelectableGroup(this.selectedProperty.workorderEntityListId)
+      .subscribe(data => {
+        if (data.success) {
+          this.entitySelectService.updateEntitySelectableGroup({
+            advEntitySelectableItemModels: model,
+            groupUid: +data.model.microtingUUID,
+            ...data.model
+          }).subscribe(x => {
+            if (x.success) {
+              this.entityListEditModal.hide();
+            }
+          });
+        }
+      });
   }
 }

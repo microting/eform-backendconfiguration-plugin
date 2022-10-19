@@ -21,12 +21,30 @@
                   mdbInput
                   type="text"
                   [(ngModel)]="newProperty.cvr"
+                  (ngModelChange)="onNameFilterChanged($event)"
                   name="createCVRNumber"
                   class="form-control"
                   id="createCVRNumber"
                 />
                 <label for="createCVRNumber">{{
                   'CVR Number' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="md-form">
+                <input
+                  mdbInput
+                  type="text"
+                  [(ngModel)]="newProperty.mainMailAddress"
+                  name="createMainMailAddress"
+                  class="form-control"
+                  id="createMainMailAddress"
+                />
+                <label for="createCVRNumber">{{
+                  'e-mail addresses' | translate
                   }}</label>
               </div>
             </div>
@@ -46,13 +64,14 @@
               </div>
             </div>
           </div>
-          <div class="row">
+          <div class="row" *ngIf="propertyIsFarm">
             <div class="col-md-12">
               <div class="md-form">
                 <input
                   mdbInput
                   type="text"
                   [(ngModel)]="newProperty.chr"
+                  (ngModelChange)="onChrNumberChanged($event)"
                   name="createCHRNumber"
                   class="form-control"
                   id="createCHRNumber"
@@ -80,10 +99,10 @@
               </div>
             </div>
           </div>
-          <div class="row">
+          <div class="row" *ngIf="authStateService.isAdmin">
             <div class="col-md-12">
               <div class="custom-control custom-switch" style="margin-bottom: 2rem;">
-                <input *ngIf="authStateService.isAdmin"
+                <input
                   type="checkbox"
                   id="propertyCreateWorkorderFlowEnableToggle"
                   [value]="newProperty.workorderEnable"

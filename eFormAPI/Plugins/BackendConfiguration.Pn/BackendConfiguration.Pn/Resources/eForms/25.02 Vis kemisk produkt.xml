@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>142720</Id>
+    <Repeated>0</Repeated>
+    <Label>25.02 Vis kemisk produkt|25.02 Show chemical product|25.02 Chemisches Produkt zeigen</Label>
+    <StartDate>2022-06-04</StartDate>
+    <EndDate>2032-06-04</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>142720</Id>
+            <Label>25.02 Vis kemisk produkt|25.02 Show chemical product|25.02 Chemisches Produkt zeigen</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>false</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemGroupList>
+                <DataItemGroup type="FieldGroup">
+                    <Id>376036</Id>
+                    <Label>Anvendelse|Application|Anwendung</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Value>Closed</Value>
+                    <Color>fff6df</Color>
+                    <DataItemList>
+                        <DataItem type="None">
+                            <Id>376037</Id>
+                            <Label>Anvendelse|Application|Anwendung</Label>
+                            <Description><![CDATA[]]></Description>
+                            <DisplayOrder>0</DisplayOrder>
+                            <Color>e8eaf6</Color>
+                        </DataItem>
+                    </DataItemList>
+                </DataItemGroup>
+                <DataItemGroup type="FieldGroup">
+                    <Id>376040</Id>
+                    <Label>Fjern produkt!|Remove product!|Produkt entfernen!</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>4</DisplayOrder>
+                    <Value>Closed</Value>
+                    <Color>ffe4e4</Color>
+                    <DataItemList>
+                        <DataItem type="CheckBox">
+                            <Id>376041</Id>
+                            <Label>Fjern produkt!|Remove product!|Produkt entfernen!</Label>
+                            <Description><![CDATA[]]></Description>
+                            <DisplayOrder>0</DisplayOrder>
+                            <Selected>false</Selected>
+                            <Mandatory>true</Mandatory>
+                            <Color>ffe4e4</Color>
+                        </DataItem>
+                        <DataItem type="SaveButton">
+                            <Id>376042</Id>
+                            <Label>Produkt fjernet!|Product removed!|Produkt entfernt!</Label>
+                            <Description><![CDATA[]]></Description>
+                            <DisplayOrder>1</DisplayOrder>
+                            <Value>Bekræft|Confirm|Bestätigen</Value>
+                            <Color>ffe4e4</Color>
+                        </DataItem>
+                    </DataItemList>
+                </DataItemGroup>
+            </DataItemGroupList>
+            <DataItemList>
+                <DataItem type="None">
+                    <Id>376035</Id>
+                    <Label>Beskrivelse|Description|Beschreibung</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Color>f0f8db</Color>
+                </DataItem>
+                <DataItem type="ShowPDF">
+                    <Id>376038</Id>
+                    <Label>Etiket og brugsanvisning|Label and instructions for use|Etikett und Gebrauchsanweisung</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>2</DisplayOrder>
+                    <Value>12345678901234567890123456789012</Value>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="ShowPDF">
+                    <Id>376039</Id>
+                    <Label>GHS farepiktogrammer|GHS hazard pictograms|GHS-Gefahrenpiktogramme</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>3</DisplayOrder>
+                    <Value>12345678901234567890123456789012</Value>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>

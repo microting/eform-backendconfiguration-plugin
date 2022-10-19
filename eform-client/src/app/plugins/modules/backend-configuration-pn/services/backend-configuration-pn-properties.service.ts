@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   AdvEntitySelectableItemModel,
-  CommonDictionaryModel, DeviceUserModel,
+  CommonDictionaryModel, DeviceUserRequestModel,
   OperationDataResult,
   OperationResult,
-  Paged,
+  Paged, SiteDto,
 } from 'src/app/common/models';
 import {
   PropertyCreateModel,
@@ -14,18 +14,24 @@ import {
   PropertyUpdateModel,
   PropertyAreaModel,
   PropertyAreasUpdateModel,
-  PropertyAssignWorkersModel,
+  PropertyAssignWorkersModel, ResultModel,
 } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
+import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
+import {ChrResultModel} from 'src/app/plugins/modules/backend-configuration-pn/models/properties/chr-result.model';
 
 export let BackendConfigurationPnPropertiesMethods = {
   Properties: 'api/backend-configuration-pn/properties',
   PropertyAreas: 'api/backend-configuration-pn/property-areas',
   PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
   PropertiesIndex: 'api/backend-configuration-pn/properties/index',
-  UpdateSingle: 'api/backend-configuration-pn/properties/assignment/update-device-user',
+  UpdateDeviceUser: 'api/backend-configuration-pn/properties/assignment/update-device-user',
   CreateEntityList: 'api/backend-configuration-pn/property-areas/create-entity-list/',
-};
+  CreateDeviceUser: 'api/backend-configuration-pn/properties/assignment/create-device-user',
+  GetAll: 'api/backend-configuration-pn/properties/assignment/index-device-user',
+  GetCompanyType: 'api/backend-configuration-pn/properties/get-company-type',
+  GetChrInformation: 'api/backend-configuration-pn/properties/get-chr-information',
+}
 
 @Injectable({
   providedIn: 'root',
@@ -129,9 +135,41 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
+  getChrInformation(id: number): Observable<OperationDataResult<ChrResultModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.GetChrInformation,
+      { cvrNumber: id }
+    );
+  }
+
+  getCompanyType(id: number): Observable<OperationDataResult<ResultModel>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.GetCompanyType,
+      { cvrNumber: id }
+    );
+  }
+
+  createSingleDeviceUser(
+    model: DeviceUserModel
+  ): Observable<OperationDataResult<number>> {
+    return this.apiBaseService.put<DeviceUserModel>(
+      BackendConfigurationPnPropertiesMethods.CreateDeviceUser,
+      model
+    );
+  }
+
   updateSingleDeviceUser(model: DeviceUserModel): Observable<OperationResult> {
     return this.apiBaseService.post<DeviceUserModel>(
-      BackendConfigurationPnPropertiesMethods.UpdateSingle,
+      BackendConfigurationPnPropertiesMethods.UpdateDeviceUser,
+      model
+    );
+  }
+
+  getDeviceUsersFiltered(
+    model: DeviceUserRequestModel
+  ): Observable<OperationDataResult<Array<DeviceUserModel>>> {
+    return this.apiBaseService.post<Array<DeviceUserModel>>(
+      BackendConfigurationPnPropertiesMethods.GetAll,
       model
     );
   }

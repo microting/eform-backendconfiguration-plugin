@@ -4,7 +4,7 @@
   class="modal fade"
   #frame="mdbModal"
 >
-  <div class="modal-dialog modal-md">
+  <div class="modal-dialog {{selectedArea.type === 10 ? 'modal-fluid' : 'modal-md' }}">
     <div class="modal-content">
       <div class="modal-header">
         <h3>{{ 'Edit rule' | translate }}</h3>
@@ -30,6 +30,7 @@
                     [(ngModel)]="translation.name"
                     class="form-control"
                     id="editRuleName{{ k }}"
+                    [disabled]="planningStatus && selectedArea.type === 10 || selectedAreaRule.secondaryeFormName === 'Morgenrundtur'"
                   />
                   <label for="editRuleName{{ k }}">{{
                     translation.description | translate
@@ -44,7 +45,8 @@
               *ngIf="
                 selectedArea.type === 1 ||
                 selectedArea.type === 5 ||
-                selectedArea.type === 3
+                selectedArea.type === 3 ||
+                selectedAreaRule.secondaryeFormName === 'Morgenrundtur'
               "
             >
               <div class="row">
@@ -68,7 +70,7 @@
                     [ngModel]="selectedAreaRule.eformId"
                     (ngModelChange)="changeEform($event)"
                     id="editRuleEformId"
-                    [clearable]="false"
+                    [clearable]="true"
                   >
                   </ng-select>
                 </div>
@@ -111,45 +113,6 @@
                 </div>
               </div>
             </ng-container>
-            <!-- Rule type 3 -->
-            <!--<ng-container *ngIf="selectedArea.type === 3">
-              <div class="row">
-                <div class="col-12 ng-select-wrapper">
-                  <ng-select
-                    [items]="[
-                      { id: true, name: 'Yes' | translate },
-                      { id: false, name: 'No' | translate }
-                    ]"
-                    bindLabel="name"
-                    [placeholder]="'Checklist stable' | translate"
-                    bindValue="id"
-                    [(ngModel)]="
-                      selectedAreaRule.typeSpecificFields.checklistStable
-                    "
-                    id="editRuleChecklistStable"
-                    [clearable]="false"
-                  >
-                  </ng-select>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-12 ng-select-wrapper">
-                  <ng-select
-                    [items]="[
-                      { id: true, name: 'Yes' | translate },
-                      { id: false, name: 'No' | translate }
-                    ]"
-                    bindLabel="name"
-                    [placeholder]="'Tail bite' | translate"
-                    bindValue="id"
-                    [(ngModel)]="selectedAreaRule.typeSpecificFields.tailBite"
-                    id="editRuleTailBite"
-                    [clearable]="false"
-                  >
-                  </ng-select>
-                </div>
-              </div>
-            </ng-container>-->
             <!-- Rule type 5 -->
             <ng-container *ngIf="selectedArea.type === 5">
               <div class="row">
@@ -242,11 +205,54 @@
                 </div>
               </div>
             </ng-container>
+            <ng-container *ngIf="selectedArea.type === 10 &&  selectedAreaRule.secondaryeFormName !== 'Morgenrundtur'">
+              <table
+                mdbTable
+                striped="true"
+                hover="true"
+                small="true"
+                class="z-depth-1 text-center">
+                <thead>
+                <tr>
+                  <th>
+                            <span>
+                              {{ 'Weekdays' | translate }}
+                            </span>
+                  </th>
+                  <ng-container *ngFor="let hour of hours let j = index">
+                    <th>
+                            <span>
+                              kl {{ hour }}:00
+                            </span>
+                    </th>
+                  </ng-container>
+                </tr>
+                </thead>
+                <tbody>
+                <tr *ngFor="let day of days; let i = index">
+                  <td>
+                            <span>
+                              {{ day | translate }}
+                            </span>
+                  </td>
+                  <ng-container *ngFor="let hour of hours let j = index">
+                    <td>
+                      <input
+                        type="checkbox"
+                        (click)="checked($event, i, j, selectedAreaRule)"
+                        [checked]="isChecked(i, j, selectedAreaRule)"
+                        [disabled]="planningStatus"
+                      />
+                    </td>
+                  </ng-container>
+                </tbody>
+              </table>
+            </ng-container>
           </ng-container>
         </div>
       </div>
       <div class="modal-footer">
-        <button
+        <button *ngIf="!planningStatus"
           mdbBtn
           class="btn-success btn-small-height"
           (click)="onUpdateAreaRule()"
@@ -254,13 +260,21 @@
         >
           {{ 'Save' | translate }}
         </button>
-        <button
+        <button *ngIf="!planningStatus"
           mdbBtn
           class="btn-accent text-black-50 btn-small-height"
           (click)="frame.hide()"
           id="areaRuleEditSaveCancelBtn"
         >
           {{ 'Cancel' | translate }}
+        </button>
+        <button *ngIf="planningStatus"
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+          id="areaRuleEditCloseBtn"
+        >
+          {{ 'Close' | translate }}
         </button>
       </div>
     </div>

@@ -59,7 +59,7 @@ public class TaskManagementController : Controller
     {
         try
         {
-            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel);
+            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel).ConfigureAwait(false);
             return new OperationDataResult<List<WorkorderCaseModel>>(true, report);
         }
         catch (Exception e)
@@ -74,27 +74,27 @@ public class TaskManagementController : Controller
     [Route("{workOrderCaseId:int}")]
     public async Task<OperationDataResult<WorkOrderCaseReadModel>> GetTaskById(int workOrderCaseId)
     {
-        return await _backendConfigurationTaskManagementService.GetTaskById(workOrderCaseId);
+        return await _backendConfigurationTaskManagementService.GetTaskById(workOrderCaseId).ConfigureAwait(false);
     }
 
     [HttpGet]
     [Route("entity-items")]
     public async Task<OperationDataResult<List<string>>> GetItemsEntityListByPropertyId(int propertyId)
     {
-        return await _backendConfigurationTaskManagementService.GetItemsEntityListByPropertyId(propertyId);
+        return await _backendConfigurationTaskManagementService.GetItemsEntityListByPropertyId(propertyId).ConfigureAwait(false);
     }
 
     [HttpDelete]
     public async Task<OperationResult> DeleteTaskById(int workOrderCaseId)
     {
-        return await _backendConfigurationTaskManagementService.DeleteTaskById(workOrderCaseId);
+        return await _backendConfigurationTaskManagementService.DeleteTaskById(workOrderCaseId).ConfigureAwait(false);
     }
 
     [HttpPost]
     public async Task<OperationResult> CreateTask([FromForm]WorkOrderCaseCreateModel createModel)
     {
         createModel.Files = HttpContext.Request.Form.Files;
-        return await _backendConfigurationTaskManagementService.CreateTask(createModel);
+        return await _backendConfigurationTaskManagementService.CreateTask(createModel).ConfigureAwait(false);
     }
 
     [HttpGet]
@@ -105,14 +105,15 @@ public class TaskManagementController : Controller
         {
             filtersModel.Sort = "";
 
-            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel);
+            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel).ConfigureAwait(false);
 
-            var fileReport = await _wordService.GenerateWorkOrderCaseReport(filtersModel, report);
+            var fileReport = await _wordService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
             const int bufferSize = 4086;
             var buffer = new byte[bufferSize];
             Response.OnStarting(async () =>
             {
-                await using var wordStream = fileReport;
+                var wordStream = fileReport;
+                await using var _ = wordStream.ConfigureAwait(false);
                 int bytesRead;
                 Response.ContentLength = wordStream.Length;
                 Response.ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -120,8 +121,8 @@ public class TaskManagementController : Controller
                 while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
                        !HttpContext.RequestAborted.IsCancellationRequested)
                 {
-                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
-                    await Response.Body.FlushAsync();
+                    await Response.Body.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
+                    await Response.Body.FlushAsync().ConfigureAwait(false);
                 }
             });
         }
@@ -131,8 +132,8 @@ public class TaskManagementController : Controller
             Response.ContentType = "text/plain";
             Response.StatusCode = 400;
             var bytes = Encoding.UTF8.GetBytes(e.Message);
-            await Response.Body.WriteAsync(bytes, 0, e.Message.Length);
-            await Response.Body.FlushAsync();
+            await Response.Body.WriteAsync(bytes, 0, e.Message.Length).ConfigureAwait(false);
+            await Response.Body.FlushAsync().ConfigureAwait(false);
         }
     }
 
@@ -145,14 +146,15 @@ public class TaskManagementController : Controller
         {
             filtersModel.Sort = "";
 
-            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel);
+            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel).ConfigureAwait(false);
 
-            var fileReport = await _excelService.GenerateWorkOrderCaseReport(filtersModel, report);
+            var fileReport = await _excelService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
             const int bufferSize = 4086;
             var buffer = new byte[bufferSize];
             Response.OnStarting(async () =>
             {
-                await using var wordStream = fileReport;
+                var wordStream = fileReport;
+                await using var _ = wordStream.ConfigureAwait(false);
                 int bytesRead;
                 Response.ContentLength = wordStream.Length;
                 Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -160,8 +162,8 @@ public class TaskManagementController : Controller
                 while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
                        !HttpContext.RequestAborted.IsCancellationRequested)
                 {
-                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
-                    await Response.Body.FlushAsync();
+                    await Response.Body.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
+                    await Response.Body.FlushAsync().ConfigureAwait(false);
                 }
             });
         }
@@ -171,8 +173,8 @@ public class TaskManagementController : Controller
             Response.ContentType = "text/plain";
             Response.StatusCode = 400;
             var bytes = Encoding.UTF8.GetBytes(e.Message);
-            await Response.Body.WriteAsync(bytes, 0, e.Message.Length);
-            await Response.Body.FlushAsync();
+            await Response.Body.WriteAsync(bytes, 0, e.Message.Length).ConfigureAwait(false);
+            await Response.Body.FlushAsync().ConfigureAwait(false);
         }
     }
 }

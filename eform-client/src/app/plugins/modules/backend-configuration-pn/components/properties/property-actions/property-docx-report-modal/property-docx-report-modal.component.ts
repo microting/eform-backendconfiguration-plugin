@@ -45,7 +45,7 @@ export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
       .getPropertyAreas(propertyId)
       .subscribe((data) => {
         if (data && data.success && data.model) {
-          this.areasList = data.model.filter(x => x.activated && x.name === '23. IE-indberetning');
+          this.areasList = data.model.filter(x => x.activated && x.name === '24. IE-indberetning');
           this.frame.show();
         }
       });
@@ -72,7 +72,7 @@ export class PropertyDocxReportModalComponent implements OnInit, OnDestroy {
   }
 
   get isDisabledDownloadButton(): boolean {
-    return !this.propertyId || !this.selectedArea || this.selectedArea.type !== 7 || !this.selectedYear;
+    return !this.propertyId || !this.selectedArea || !this.selectedYear;
   }
 
   ngOnDestroy(): void {

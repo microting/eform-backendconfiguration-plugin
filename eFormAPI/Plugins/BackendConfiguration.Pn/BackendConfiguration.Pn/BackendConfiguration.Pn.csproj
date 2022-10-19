@@ -18,9 +18,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Remove="Handlers\**" />
-      <EmbeddedResource Remove="Handlers\**" />
-      <None Remove="Handlers\**" />
       <None Remove="Resources\eForms\01. Elforbrug.xml" />
       <EmbeddedResource Include="Resources\eForms\01. Elforbrug.xml" />
       <None Remove="Resources\eForms\01. Miljøledelse_skabelon.xml" />
@@ -101,8 +98,6 @@
       <EmbeddedResource Include="Resources\eForms\22. Sigtetest.xml" />
       <None Remove="Resources\eForms\25. Markvandingsforbrug.xml" />
       <EmbeddedResource Include="Resources\eForms\25. Markvandingsforbrug.xml" />
-      <None Remove="Resources\eForms\05. Halebid.xml" />
-      <EmbeddedResource Include="Resources\eForms\05. Halebid.xml" />
       <None Remove="Resources\eForms\23.01.02 Gyllekøling.xml" />
       <EmbeddedResource Include="Resources\eForms\23.01.02 Gyllekøling.xml" />
       <None Remove="Resources\eForms\23.01.03 Forsuring.xml" />
@@ -167,9 +162,13 @@
       <None Remove="Resources\eForms\23.00.02 Aflæsning el.xml" />
       <EmbeddedResource Include="Resources\eForms\23.00.02 Aflæsning el.xml" />
       <None Remove="Resources\Templates\WordExport\file.docx" />
-      <EmbeddedResource Include="Resources\Templates\WordExport\file.docx" />
+      <EmbeddedResource Include="Resources\Templates\WordExport\file.docx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\Templates\WordExport\page.html" />
-      <EmbeddedResource Include="Resources\Templates\WordExport\page.html" />
+      <EmbeddedResource Include="Resources\Templates\WordExport\page.html">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\eForms\00. Opret opgave.xml" />
       <EmbeddedResource Include="Resources\eForms\01. Ny opgave.xml" />
       <None Remove="Resources\eForms\02. Igangværende opgave.xml" />
@@ -277,17 +276,35 @@
       <EmbeddedResource Include="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml" />
       <None Remove="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
       <EmbeddedResource Include="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
+      <None Remove="Resources\eForms\25.01 Kemisk produkt registrering.xml" />
+      <EmbeddedResource Include="Resources\eForms\25.01 Registrer produkter.xml" />
+      <None Remove="Resources\eForms\25.02 Vis kemisk produkt.xml" />
+      <EmbeddedResource Include="Resources\eForms\25.02 Vis kemisk produkt.xml" />
+      <None Remove="Resources\eForms\01. Aflæsninger.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Aflæsninger.xml" />
+      <None Remove="Resources\eForms\02. Fækale uheld.xml" />
+      <EmbeddedResource Include="Resources\eForms\02. Fækale uheld.xml" />
+      <None Remove="Resources\eForms\00. Info boks.xml" />
+      <EmbeddedResource Include="Resources\eForms\00. Info boks.xml" />
+      <None Remove="Resources\eForms\26. Kornlager.xml" />
+      <EmbeddedResource Include="Resources\eForms\26. Kornlager.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Magick.NET-Q16-x64" Version="11.1.0" />
-      <PackageReference Include="Microting.eForm" Version="5.5.16" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.53" />
+      <PackageReference Include="ChemicalsBase" Version="1.0.10" />
+      <PackageReference Include="Magick.NET-Q16-x64" Version="12.2.0" />
+      <PackageReference Include="Microting.eForm" Version="5.5.71" />
+      <PackageReference Include="Microting.EformAngularFrontendBase" Version="1.2.39" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.98" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.7" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.81" />
+      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="5.0.28" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.117" />
-      <PackageReference Include="ClosedXML" Version="0.95.4" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.160" />
+      <PackageReference Include="ClosedXML" Version="0.96.0" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="2.1.44" />
     </ItemGroup>
 
     <ItemGroup>

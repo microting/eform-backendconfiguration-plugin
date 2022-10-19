@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Castle.Windsor;
+
 namespace BackendConfiguration.Pn.Services.RebusService
 {
     using System.Threading.Tasks;
@@ -31,5 +33,6 @@ namespace BackendConfiguration.Pn.Services.RebusService
     {
         Task Start(string connectionString, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost);
         IBus GetBus();
+        WindsorContainer GetContainer();
     }
 }

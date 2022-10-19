@@ -1101,7 +1101,134 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 1, // days
                     ComplianceEnabled = true,
                 },
-            }
+            },
+            new Area
+            {
+                Id = 28,
+                Type = AreaTypesEnum.Type9,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "25. KemiKontrol", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 1,// da
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "25. Chemistry Control",
+                        Description = "", // todo add link
+                        LanguageId = 2,// en
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "25. Chemiekontrolle", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 3,// ge
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = false,
+                    RepeatType = 0, // days
+                    ComplianceEnabled = false,
+                },
+            },
+            new Area
+            {
+                Id = 29,
+                Type = AreaTypesEnum.Type10,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "00. Aflæsninger, målinger, forbrug og fækale uheld", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 1,// da
+                        InfoBox = "Et bassin pr linie",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "00. Readings, measurements, consumption and fecal accidents",
+                        Description = "", // todo add link
+                        LanguageId = 2,// en
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    },
+                    new()
+                    {
+                        Name = "00. Messwerte, Messungen, Verbrauch und Fäkalunfälle", // todo need beter translate
+                        Description = "", // todo add link
+                        LanguageId = 3,// ge
+                        InfoBox = "",
+                        Placeholder = "",
+                        NewItemName = ""
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = false,
+                    RepeatType = 0, // days
+                    ComplianceEnabled = false,
+                },
+                IsFarm = false
+            },
+            new Area
+            {
+            Id = 30,
+            Type = AreaTypesEnum.Type1,
+            AreaTranslations = new List<AreaTranslation>
+            {
+                new()
+                {
+                    Name = "26. Kornlager",
+                    Description = "",
+                    LanguageId = 1,
+                    InfoBox = "Et lager pr. linje",
+                    Placeholder = "Kornlager",
+                    NewItemName = "Nyt kornlager"
+                },
+                new()
+                {
+                    Name = "26. Grain store",
+                    Description = "",
+                    LanguageId = 2,
+                    InfoBox = "One warehouse per line",
+                    Placeholder = "Grain store",
+                    NewItemName = "New grain store"
+                },
+                new()
+                {
+                    Name = "26. Getreidelagerung",
+                    Description = "",
+                    LanguageId = 3,
+                    InfoBox = "Nur ein Lager pro Linie",
+                    Placeholder = "Getreidelagerung",
+                    NewItemName = "Neues Getreidelagerung"
+                }
+            },
+            AreaInitialField = new AreaInitialField
+            {
+                Notifications = true,
+                EformName = "26. Kornlager",
+                RepeatEvery = 12, // 12
+                RepeatType = 3, // month
+                DayOfWeek = 1, // monday
+                ComplianceEnabled = true,
+            },
+        },
         };
 
         public static List<AreaRule> AreaRules => new()
@@ -2382,7 +2509,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.03 Dokumentation miljøledelse",
+                FolderName = "24.03 Miljøledelse",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
@@ -2402,7 +2529,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 27,
                 IsDefault = true,
-                FolderName = "24.03 Dokumentation miljøledelse",
+                FolderName = "24.03 Miljøledelse",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = false,

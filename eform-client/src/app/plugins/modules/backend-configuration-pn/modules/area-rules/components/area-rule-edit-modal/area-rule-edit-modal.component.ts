@@ -11,7 +11,7 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 import { TemplateListModel, TemplateRequestModel } from 'src/app/common/models';
 import { EFormService } from 'src/app/common/services';
 import {
-  AreaModel,
+  AreaModel, AreaRuleCreateModel,
   AreaRuleModel,
   AreaRuleUpdateModel,
 } from '../../../../models';
@@ -28,9 +28,12 @@ export class AreaRuleEditModalComponent implements OnInit {
   @Output()
   updateAreaRule: EventEmitter<AreaRuleUpdateModel> = new EventEmitter<AreaRuleUpdateModel>();
   selectedAreaRule: AreaRuleUpdateModel = new AreaRuleUpdateModel();
+  planningStatus: boolean;
   typeahead = new EventEmitter<string>();
   templatesModel: TemplateListModel = new TemplateListModel();
   templateRequestModel: TemplateRequestModel = new TemplateRequestModel();
+  days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  hours = ['00', '01', '02', '03' ,'04' ,'05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23'];
 
   constructor(
     private eFormService: EFormService,
@@ -52,8 +55,9 @@ export class AreaRuleEditModalComponent implements OnInit {
 
   ngOnInit() {}
 
-  show(model: AreaRuleModel) {
+  show(model: AreaRuleModel, planningStatus: boolean) {
     // @ts-ignore
+    this.planningStatus = planningStatus;
     this.selectedAreaRule = R.clone(model);
     this.frame.show();
   }
@@ -72,5 +76,23 @@ export class AreaRuleEditModalComponent implements OnInit {
     this.selectedAreaRule.eformName = this.templatesModel.templates.find(
       (x) => x.id === eformId
     ).label;
+  }
+
+  checked($event: any, i: number, j: number, areaRule: AreaRuleCreateModel) {
+    for (let k = 0; k < areaRule.typeSpecificFields.poolHoursModel.parrings.length; k++) {
+      // eslint-disable-next-line max-len
+      if (areaRule.typeSpecificFields.poolHoursModel.parrings[k].dayOfWeek === i && areaRule.typeSpecificFields.poolHoursModel.parrings[k].index === j) {
+        areaRule.typeSpecificFields.poolHoursModel.parrings[k].isActive = $event.target.checked;
+      }
+    }
+  }
+
+  isChecked(i: number, j: number, areaRule: AreaRuleCreateModel) {
+    for (let k = 0; k < areaRule.typeSpecificFields.poolHoursModel.parrings.length; k++) {
+      // eslint-disable-next-line max-len
+      if (areaRule.typeSpecificFields.poolHoursModel.parrings[k].dayOfWeek === i && areaRule.typeSpecificFields.poolHoursModel.parrings[k].index === j) {
+        return areaRule.typeSpecificFields.poolHoursModel.parrings[k].isActive;
+      }
+    }
   }
 }

@@ -15,6 +15,7 @@ const property: PropertyCreateUpdate = {
   name: generateRandmString(),
   chrNumber: generateRandmString(),
   address: generateRandmString(),
+  cvrNumber: '1111111',
   // selectedLanguages: [{ languageId: 1, languageName: 'Dansk' }],
 };
 const workerForCreate = {
@@ -42,7 +43,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     expect(rowNum, 'have some non-default area rules').eq(0);
     const areaRuleForCreate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: `05. Halebid - ${property.name}`,
+      eform: `05. Halebid og risikovurdering - ${property.name}`,
     };
     await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
 
@@ -50,7 +51,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
     //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
-      // enableCompliance: false,
+      enableCompliance: false,
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
     // areaRulePlanning.startDate = format(
@@ -71,7 +72,7 @@ describe('Backend Configuration Area Rules Planning Type3', function () {
     ).eq(1);
     const itemPlannings = await itemsPlanningPlanningPage.getAllPlannings();
     // first planning
-    expect(itemPlannings[0].eFormName).eq('05. Halebid - ' + property.name);
+    expect(itemPlannings[0].eFormName).eq('05. Halebid og risikovurdering - ' + property.name);
     expect(itemPlannings[0].name).eq(areaRule.name);
     expect(itemPlannings[0].folderName).eq(`${property.name} - 05. Stalde: Halebid og klargøring`);
     expect(itemPlannings[0].repeatEvery).eq(0);

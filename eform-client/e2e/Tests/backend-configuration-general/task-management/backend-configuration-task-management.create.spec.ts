@@ -12,9 +12,9 @@ import myEformsPage from '../../../Page objects/MyEforms.page';
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),
   chrNumber: generateRandmString(),
-  cvrNumber: generateRandmString(),
   address: generateRandmString(),
   workOrderFlow: true,
+  cvrNumber: '1111111',
 };
 const workerForCreate = {
   name: generateRandmString(),

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>22</Id>
+    <Repeated>0</Repeated>
+    <Label>00. Info boks</Label>
+    <StartDate>2021-12-02</StartDate>
+    <EndDate>2031-12-02</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>22</Id>
+            <Label>00. Info boks</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>true</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type="None">
+                    <Id>375661</Id>
+                    <Label>Info boks</Label>
+                    <Description><![CDATA[More information]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>

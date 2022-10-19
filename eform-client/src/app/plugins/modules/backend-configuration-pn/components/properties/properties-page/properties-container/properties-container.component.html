@@ -1,6 +1,6 @@
 <eform-subheader>
   <div class="p-3">
-    <button
+    <button *ngIf="authStateService.isAdmin"
       mdbBtn
       id="propertyCreateBtn"
       class="btn-success btn-icon"
@@ -31,10 +31,13 @@
   </div>
   <app-properties-table
     [propertiesModel]="propertiesModel"
+    [tableHeaders]="tableHeaders"
+    [isFarms]="isFarms"
     (showDeletePropertyModal)="showDeletePropertyModal($event)"
     (showEditPropertyModal)="showEditPropertyModal($event)"
     (sortUpdated)="getProperties()"
     (showDocxReportModal)="onShowDocxReportModal($event)"
+    (showEditEntityListModal)="onShowEditEntityListModal($event)"
   ></app-properties-table>
   <!--  <div class="row justify-content-between mr-2 ml-2">-->
   <!--    <div class="col-md-1 col-sm-3">-->
@@ -69,3 +72,8 @@
 
 <app-property-docx-report-modal #docxReportModal>
 </app-property-docx-report-modal>
+
+<app-area-rule-entity-list-modal
+  (entityListChanged)="updateEntityList($event)"
+  #entityListEditModal
+></app-area-rule-entity-list-modal>

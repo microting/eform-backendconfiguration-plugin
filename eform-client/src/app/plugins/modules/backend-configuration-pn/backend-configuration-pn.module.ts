@@ -22,13 +22,20 @@ import {
   PropertyAreasEditModalComponent,
   PropertyAreasComponent,
   PropertyDocxReportModalComponent,
+  ReportContainerComponent,
+  ReportHeaderComponent,
+  ReportImagesComponent,
+  ReportTableComponent,
+  CaseDeleteComponent,
 } from './components';
 import { BackendConfigurationPnLayoutComponent } from './layouts';
 import {
+  BackendConfigurationPnChemicalsService,
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnSettingsService,
 } from './services';
 import { backendConfigurationStoreProviders } from './store-providers.config';
+import {AreaRulePlanModalModule} from 'src/app/plugins/modules/backend-configuration-pn/components/area-rule-plan-modal.module';
 // import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from './consts/custom-date-time-adapter';
 
 @NgModule({
@@ -47,6 +54,7 @@ import { backendConfigurationStoreProviders } from './store-providers.config';
     OwlDateTimeModule,
     EformCasesModule,
     EformSharedTagsModule,
+    AreaRulePlanModalModule,
   ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
@@ -59,10 +67,16 @@ import { backendConfigurationStoreProviders } from './store-providers.config';
     PropertiesTableComponent,
     PropertyAreasEditModalComponent,
     PropertyAreasComponent,
+    ReportContainerComponent,
+    ReportHeaderComponent,
+    ReportImagesComponent,
+    ReportTableComponent,
+    CaseDeleteComponent
   ],
   providers: [
     BackendConfigurationPnSettingsService,
     BackendConfigurationPnPropertiesService,
+    BackendConfigurationPnChemicalsService,
     ...backendConfigurationStoreProviders,
     // { provide: OWL_DATE_TIME_FORMATS, useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN },
   ],

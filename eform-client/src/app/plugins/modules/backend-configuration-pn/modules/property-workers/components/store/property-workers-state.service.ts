@@ -6,6 +6,7 @@ import { updateTableSort, getOffset } from 'src/app/common/helpers';
 import { map } from 'rxjs/operators';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import { DeviceUserService } from 'src/app/common/services';
+import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
 
 @Injectable({ providedIn: 'root' })
 export class PropertyWorkersStateService {
@@ -13,7 +14,7 @@ export class PropertyWorkersStateService {
     private store: PropertyWorkersStore,
     private service: BackendConfigurationPnPropertiesService,
     private query: PropertyWorkersQuery,
-    private deviceUserService: DeviceUserService
+    // private deviceUserService: DeviceUserService
   ) {}
 
   // getPageSize(): Observable<number> {
@@ -28,8 +29,8 @@ export class PropertyWorkersStateService {
     return this.query.selectNameFilter$;
   }
 
-  getDeviceUsersFiltered(): Observable<OperationDataResult<SiteDto[]>> {
-    return this.deviceUserService
+  getDeviceUsersFiltered(): Observable<OperationDataResult<DeviceUserModel[]>> {
+    return this.service
       .getDeviceUsersFiltered({
         ...this.query.pageSetting.filters,
         ...this.query.pageSetting.pagination,

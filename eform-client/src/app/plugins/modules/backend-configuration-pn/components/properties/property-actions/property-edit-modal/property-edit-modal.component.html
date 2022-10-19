@@ -21,11 +21,28 @@
                   mdbInput
                   type="text"
                   [(ngModel)]="selectedProperty.cvr"
+                  (ngModelChange)="onNameFilterChanged($event)"
                   name="editCVRNumber"
                   class="form-control"
                   id="editCVRNumber"
                 />
                 <label for="editCVRNumber">{{'CVR Number' | translate
+                  }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="md-form">
+                <input
+                  mdbInput
+                  type="text"
+                  [(ngModel)]="selectedProperty.mainMailAddress"
+                  name="editMainMailAddress"
+                  class="form-control"
+                  id="editMainMailAddress"
+                />
+                <label for="editCVRNumber">{{'e-mail addresses' | translate
                   }}</label>
               </div>
             </div>
@@ -45,13 +62,14 @@
               </div>
             </div>
           </div>
-          <div class="row">
+          <div class="row" *ngIf="selectedProperty.isFarm">
             <div class="col-md-12">
               <div class="md-form">
                 <input
                   mdbInput
                   type="text"
                   [(ngModel)]="selectedProperty.chr"
+                  (ngModelChange)="onChrNumberChanged($event)"
                   name="editCHRNumber"
                   class="form-control"
                   id="editCHRNumber"

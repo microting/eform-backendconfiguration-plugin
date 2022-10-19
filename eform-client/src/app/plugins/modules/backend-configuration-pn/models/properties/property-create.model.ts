@@ -5,4 +5,7 @@ export class PropertyCreateModel {
   address: string;
   workorderEnable: boolean = false;
   languagesIds: number[] = [];
+  industryCode: string;
+  isFarm: boolean = false;
+  mainMailAddress: string;
 }

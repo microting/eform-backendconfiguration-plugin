@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Helpers;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 {
     using System.Collections.Generic;
@@ -43,5 +45,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         Task<OperationResult> Delete(int id);
 
         Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary();
+        Task<OperationDataResult<Result>> GetCompanyType(int number);
+        Task<OperationDataResult<ChrResult>> GetChrInformation(int number);
     }
 }

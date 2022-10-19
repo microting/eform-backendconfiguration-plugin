@@ -2,6 +2,7 @@ import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
 } from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {PoolHoursModel} from 'src/app/plugins/modules/backend-configuration-pn/models/pools/pool-hour.model';
 
 export class AreaRuleTypeSpecificFields {
   eformId?: number;
@@ -17,4 +18,5 @@ export class AreaRuleTypeSpecificFields {
   complianceModifiable?: boolean;
   notifications?: boolean;
   notificationsModifiable?: boolean;
+  poolHoursModel?: PoolHoursModel;
 }

@@ -21,6 +21,7 @@ import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {AuthStateService} from 'src/app/common/store';
 import {AreaRuleEntityListModalComponent} from '../../components';
 import {TranslateService} from '@ngx-translate/core';
+import {SiteDto} from 'src/app/common/models';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -46,6 +47,8 @@ export class AreaRulePlanModalComponent implements OnInit {
   repeatTypeMonth: {name: string, id: number}[] = R.map(x => {
     return {name: x === 1? 'Every' : x.toString(), id: x}
   }, R.range(1, 25));// 1, 2, ..., 23, 24.
+  selectedSite: SiteDto = new SiteDto();
+  type9assignedSite: number;
 
   get currentDate() {
     return set(new Date(), {
@@ -97,6 +100,7 @@ export class AreaRulePlanModalComponent implements OnInit {
         id: 0,
         isDefault: false,
         planningStatus: false,
+        secondaryeFormId: 0,
         ...rule}, selectedPropertyId);
     }
     if (this.selectedArea.type === 5) {
@@ -107,6 +111,14 @@ export class AreaRulePlanModalComponent implements OnInit {
     if(!this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery && !this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery){
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
+    }
+    if (this.selectedArea.type === 9) {
+      if (this.selectedAreaRulePlanning.assignedSites.length > 0) {
+        this.selectedSite = this.selectedArea.availableWorkers.find(
+          (x) => x.siteId === this.selectedAreaRulePlanning.assignedSites[0].siteId
+        );
+        this.type9assignedSite = this.selectedSite.siteId;
+      }
     }
     this.frame.show();
   }
@@ -120,12 +132,12 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   onUpdateAreaRulePlan() {
     if (this.selectedArea.type === 8) {
-      if (!this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable) {
-        this.selectedAreaRulePlanning.complianceEnabled = false;
-      }
-      if (!this.selectedAreaRulePlanning.typeSpecificFields.notificationsModifiable) {
-        this.selectedAreaRulePlanning.sendNotifications = false;
-      }
+      // if (!this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable) {
+      //   this.selectedAreaRulePlanning.complianceEnabled = false;
+      // }
+      // if (!this.selectedAreaRulePlanning.typeSpecificFields.notificationsModifiable) {
+      //   this.selectedAreaRulePlanning.sendNotifications = false;
+      // }
     }
     if (!this.selectedAreaRulePlanning.startDate) {
       this.selectedAreaRulePlanning.startDate = format(
@@ -149,6 +161,21 @@ export class AreaRulePlanModalComponent implements OnInit {
       this.selectedAreaRulePlanning.assignedSites = this.selectedAreaRulePlanning.assignedSites.filter(
         (x) => x.siteId !== siteId
       );
+    }
+  }
+
+  addToArraySelect(e: any) {
+    const assignmentObject = new AreaRuleAssignedSitesModel();
+    assignmentObject.checked = true;
+    assignmentObject.siteId = e.siteId;
+    if (this.selectedArea.type !== 9) {
+      this.selectedAreaRulePlanning.assignedSites = [
+        ...this.selectedAreaRulePlanning.assignedSites,
+        assignmentObject,
+      ];
+    } else {
+      this.selectedAreaRulePlanning.assignedSites = [assignmentObject];
+      this.type9assignedSite = assignmentObject.siteId;
     }
   }
 
@@ -253,6 +280,18 @@ export class AreaRulePlanModalComponent implements OnInit {
           notificationsModifiable: this.selectedAreaRule.typeSpecificFields.notificationsModifiable,
         };
       }
+      case 9: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+        };
+      }
+      case 10: {
+        return {
+          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          repeatEvery: 0,
+          repeatType: 0,
+        };
+      }
       default: {
         return null;
       }
@@ -288,7 +327,9 @@ export class AreaRulePlanModalComponent implements OnInit {
   }*/
 
   isDisabledSaveBtn() {
-    return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
+    if (this.selectedArea.type !== 9) {
+      return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
+    }
   }
 
   repeatTypeMass() {
@@ -309,6 +350,14 @@ export class AreaRulePlanModalComponent implements OnInit {
     if(this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 1 && repeatEvery === 1){
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
+    }
+    if (this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 3 && repeatEvery === 1) {
+      this.selectedAreaRulePlanning.typeSpecificFields.dayOfMonth = 1;
+    }
+    if (this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 2) {
+      if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek === 0) {
+        this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = 1;
+      }
     }
     this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = repeatEvery;
   }

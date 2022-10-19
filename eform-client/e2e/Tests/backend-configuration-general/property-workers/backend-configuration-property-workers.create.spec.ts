@@ -9,8 +9,8 @@ import backendConfigurationPropertyWorkersPage from '../../../Page objects/Backe
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),
   chrNumber: generateRandmString(),
-  cvrNumber: generateRandmString(),
   address: generateRandmString(),
+  cvrNumber: '1111111',
   // selectedLanguages: [
   //   { languageId: 1, languageName: 'Dansk' },
   //   { languageId: 2, languageName: 'Engelsk' },

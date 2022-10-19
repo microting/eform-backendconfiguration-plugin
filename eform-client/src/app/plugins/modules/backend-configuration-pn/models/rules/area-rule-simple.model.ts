@@ -14,6 +14,8 @@ export class AreaRuleSimpleModel extends AreaRuleNameAndTypeSpecificFields {
   planningStatus: boolean;
   planningId?: number;
   initialFields?: AreaRuleInitialFieldsModel;
+  secondaryeFormId?: number;
+  secondaryeFormName?: string;
 }
 
 export class AreaRuleModel {

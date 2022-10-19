@@ -26,15 +26,15 @@ export class AreaRuleEntityListModalComponent implements OnInit {
   ngOnInit() {}
 
   show(groupId?: number) {
-    if(!groupId){
+    if (!groupId){
       this.frame.show();
     } else {
       this.entitySelectService.getEntitySelectableGroup(groupId)
         .subscribe(data => {
-          if(data && data.success && data.model){
-            this.entityList = data.model.entityGroupItemLst;
+          if (data && data.success && data.model) {
+            this.entityList = [...data.model.entityGroupItemLst];
             this.entityList.forEach(x => {
-              if(!x.tempId)
+              if (!x.tempId)
               {
                 x.tempId = this.getRandId();
               }
@@ -58,6 +58,7 @@ export class AreaRuleEntityListModalComponent implements OnInit {
   addNewAdvEntitySelectableItem() {
     const item = new AdvEntitySelectableItemModel();
     item.entityItemUId = this.entityList.length.toString();
+    item.displayIndex = this.entityList.length;
     item.tempId = this.getRandId();
     this.entityList.push(item);
   }

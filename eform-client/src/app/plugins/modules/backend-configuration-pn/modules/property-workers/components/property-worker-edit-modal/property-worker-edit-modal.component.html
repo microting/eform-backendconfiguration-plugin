@@ -63,6 +63,27 @@
               </div>
             </div>
           </div>
+          <div class="row" *ngIf="authStateService.isAdmin">
+            <div class="col-md-12">
+              <div class="custom-control custom-switch">
+                <input
+                  type="checkbox"
+                  id="timeRegistrationEnabledToggle"
+                  [value]="selectedDeviceUser.timeRegistrationEnabled"
+                  [checked]="selectedDeviceUser.timeRegistrationEnabled"
+                  [(ngModel)]="selectedDeviceUser.timeRegistrationEnabled"
+                  class="custom-control-input"
+                />
+                <label
+                  for="timeRegistrationEnabledToggle"
+                  class="custom-control-label"
+                >{{ 'Timeregistration enabled' | translate }}</label
+                >
+              </div>
+            </div>
+
+          </div>
+          <br>
           <div class="table-responsive">
             <table class="table table-xs table-bordered text-center z-depth-1">
               <thead>

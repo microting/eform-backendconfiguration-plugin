@@ -1,0 +1,104 @@
+<div
+  [config]="{ ignoreBackdropClick: true }"
+  mdbModal
+  class="modal fade"
+  #frame="mdbModal"
+>
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{{ 'Are you sure you want to delete' | translate }}?</h3>
+        <button class="close" data-dismiss="modal" (click)="frame.hide()">
+          <span>×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-12">
+              <h6>{{'Rather than deleting the file, you can also hide the display of the file on your mobile. You do this by selecting Plan next to the document you want to hide and then de-activating the display of the PDF file.' | translate}}</h6>
+            </div>
+          </div>
+          <ng-container
+            *ngFor="
+            let translation of newDocumentModel.documentTranslations;
+            let translationIndex = index
+          "
+          >
+            <div class="row">
+              <div class="col-12">
+                <h4>
+                  {{ languages[translationIndex].text }}
+                </h4>
+                <div class="md-form">
+                  <input
+                    mdbInput
+                    type="text"
+                    id="createFolderNameTranslation_{{ translationIndex }}"
+                    name="createFolderNameTranslation_{{
+                      translationIndex
+                    }}"
+                    [(ngModel)]="translation.name"
+                    class="form-control"
+                    [disabled]="true"
+                  />
+                  <label
+                    for="createFolderNameTranslation_{{ translationIndex }}"
+                  >
+                    {{ 'Name' | translate }}
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <formatting-text-editor
+                  [disabled]="true"
+                  [(value)]="translation.description"
+                  [placeholder]="'Description' | translate"
+                  id="createFolderDescriptionTranslation_{{
+                    translationIndex
+                  }}"
+                >
+                </formatting-text-editor>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <div class="md-form">
+                    <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id) !== null">
+                      <button
+                        mdbBtn
+                        class="btn-success btn-icon mb-2"
+                        (click)="getPdf(languages[translationIndex].id)"
+                        mdbTooltip="{{ 'Show PDF' | translate }}"
+                      >
+                        <fa-icon icon="file-pdf" size="lg" [fixedWidth]="true"></fa-icon>
+                      </button>
+                    </ng-container>
+                </div>
+              </div>
+            </div>
+            <br />
+          </ng-container>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          mdbBtn
+          class="btn-danger btn-small-height"
+          (click)="submitCaseDelete()"
+        >
+          {{ 'Delete' | translate }}
+        </button>
+        <button
+          mdbBtn
+          class="btn-accent text-black-50 btn-small-height"
+          (click)="frame.hide()"
+        >
+          {{ 'Cancel' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

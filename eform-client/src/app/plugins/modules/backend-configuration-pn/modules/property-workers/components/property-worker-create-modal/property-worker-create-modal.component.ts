@@ -9,11 +9,13 @@ import {
 } from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
-import { CommonDictionaryModel, DeviceUserModel } from 'src/app/common/models';
-import { DeviceUserService } from 'src/app/common/services';
+import { CommonDictionaryModel } from 'src/app/common/models';
 import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const/application-languages.const';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import { PropertyAssignmentWorkerModel } from '../../../../models/properties/property-workers-assignment.model';
+import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
+import {AuthService} from 'src/app/common/services';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -33,8 +35,8 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
   deviceUserAssign$: Subscription;
 
   constructor(
-    private deviceUserService: DeviceUserService,
-    public propertiesService: BackendConfigurationPnPropertiesService
+    public propertiesService: BackendConfigurationPnPropertiesService,
+    public authStateService: AuthStateService
   ) {}
 
   ngOnInit() {
@@ -70,7 +72,7 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
   }
 
   createDeviceUser() {
-    this.deviceUserCreate$ = this.deviceUserService
+    this.deviceUserCreate$ = this.propertiesService
       .createSingleDeviceUser(this.simpleSiteModel)
       .subscribe((operation) => {
         if (operation && operation.success) {
@@ -86,7 +88,7 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
 
   assignWorkerToProperties(siteId: number) {
     this.deviceUserAssign$ = this.propertiesService
-      .assignPropertiesToWorker({ siteId, assignments: this.assignments })
+      .assignPropertiesToWorker({ siteId, assignments: this.assignments, timeRegistrationEnabled: false })
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.deviceUserCreated.emit();

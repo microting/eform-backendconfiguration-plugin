@@ -14,19 +14,6 @@ describe('Application settings page - site header section', function () {
     await (await $('#plugin-name')).waitForDisplayed({ timeout: 50000 });
 
     let plugin = await pluginPage.getFirstPluginRowObj();
-    if (plugin.name === 'Microting Items Planning Plugin') {
-      expect(plugin.name).equal('Microting Items Planning Plugin');
-    } else {
-      expect(plugin.name).equal('Microting Backend Configuration Plugin');
-    }
-    expect(plugin.version).equal('1.0.0.0');
-
-    plugin = await pluginPage.getPluginRowObjByIndex(2);
-    if (plugin.name === 'Microting Items Planning Plugin') {
-      expect(plugin.name).equal('Microting Items Planning Plugin');
-    } else {
-      expect(plugin.name).equal('Microting Backend Configuration Plugin');
-    }
     expect(plugin.version).equal('1.0.0.0');
   });
 
@@ -36,14 +23,38 @@ describe('Application settings page - site header section', function () {
       await plugin.enableOrDisablePlugin();
     } else {
       plugin = await pluginPage.getPluginRowObjByIndex(2);
-      await plugin.enableOrDisablePlugin();
+      if (plugin.name === 'Microting Items Planning Plugin') {
+        await plugin.enableOrDisablePlugin();
+      } else {
+        plugin = await pluginPage.getPluginRowObjByIndex(3);
+        await plugin.enableOrDisablePlugin();
+      }
     }
+
     plugin = await pluginPage.getFirstPluginRowObj();
-    if (plugin.name === 'Microting Items Planning Plugin') {
-      plugin = await pluginPage.getPluginRowObjByIndex(2);
+    if (plugin.name === 'Microting Backend Configuration Plugin') {
       await plugin.enableOrDisablePlugin();
     } else {
+      plugin = await pluginPage.getPluginRowObjByIndex(2);
+      if (plugin.name === 'Microting Backend Configuration Plugin') {
+        await plugin.enableOrDisablePlugin();
+      } else {
+        plugin = await pluginPage.getPluginRowObjByIndex(3);
+        await plugin.enableOrDisablePlugin();
+      }
+    }
+
+    plugin = await pluginPage.getFirstPluginRowObj();
+    if (plugin.name === 'Microting Time Planning Plugin') {
       await plugin.enableOrDisablePlugin();
+    } else {
+      plugin = await pluginPage.getPluginRowObjByIndex(2);
+      if (plugin.name === 'Microting Time Planning Plugin') {
+        await plugin.enableOrDisablePlugin();
+      } else {
+        plugin = await pluginPage.getPluginRowObjByIndex(3);
+        await plugin.enableOrDisablePlugin();
+      }
     }
 
     plugin = await pluginPage.getFirstPluginRowObj();
@@ -51,8 +62,13 @@ describe('Application settings page - site header section', function () {
       expect(plugin.name).equal('Microting Items Planning Plugin');
       expect(plugin.status, 'Microting Items Planning Plugin is not enabled').eq(true);
     } else {
-      expect(plugin.name).equal('Microting Backend Configuration Plugin');
-      expect(plugin.status, 'Microting Backend Configuration Plugin is not enabled').eq(true);
+      if (plugin.name === 'Microting Backend Configuration Plugin') {
+        expect(plugin.name).equal('Microting Backend Configuration Plugin');
+        expect(plugin.status, 'Microting Backend Configuration Plugin is not enabled').eq(true);
+      } else {
+        expect(plugin.name).equal('Microting Time Planning Plugin');
+        expect(plugin.status, 'Microting Time Planning Plugin is not enabled').eq(true);
+      }
     }
 
     plugin = await pluginPage.getPluginRowObjByIndex(2);
@@ -60,8 +76,27 @@ describe('Application settings page - site header section', function () {
       expect(plugin.name).equal('Microting Items Planning Plugin');
       expect(plugin.status, 'Microting Items Planning Plugin is not enabled').eq(true);
     } else {
-      expect(plugin.name).equal('Microting Backend Configuration Plugin');
-      expect(plugin.status, 'Microting Backend Configuration Plugin is not enabled').eq(true);
+      if (plugin.name === 'Microting Backend Configuration Plugin') {
+        expect(plugin.name).equal('Microting Backend Configuration Plugin');
+        expect(plugin.status, 'Microting Backend Configuration Plugin is not enabled').eq(true);
+      } else {
+        expect(plugin.name).equal('Microting Time Planning Plugin');
+        expect(plugin.status, 'Microting Time Planning Plugin is not enabled').eq(true);
+      }
+    }
+
+    plugin = await pluginPage.getPluginRowObjByIndex(3);
+    if (plugin.name === 'Microting Items Planning Plugin') {
+      expect(plugin.name).equal('Microting Items Planning Plugin');
+      expect(plugin.status, 'Microting Items Planning Plugin is not enabled').eq(true);
+    } else {
+      if (plugin.name === 'Microting Backend Configuration Plugin') {
+        expect(plugin.name).equal('Microting Backend Configuration Plugin');
+        expect(plugin.status, 'Microting Backend Configuration Plugin is not enabled').eq(true);
+      } else {
+        expect(plugin.name).equal('Microting Time Planning Plugin');
+        expect(plugin.status, 'Microting Time Planning Plugin is not enabled').eq(true);
+      }
     }
   });
 });

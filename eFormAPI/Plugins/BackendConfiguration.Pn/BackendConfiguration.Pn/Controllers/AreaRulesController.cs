@@ -47,73 +47,73 @@ namespace BackendConfiguration.Pn.Controllers
         [Route("index")]
         public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId)
         {
-            return await _backendConfigurationAreaRulesService.Index(propertyAreaId);
+            return await _backendConfigurationAreaRulesService.Index(propertyAreaId).ConfigureAwait(false);
         }
 
         [HttpGet]
         public async Task<OperationDataResult<AreaRuleModel>> Read(int ruleId, int propertyId)
         {
-            return await _backendConfigurationAreaRulesService.Read(ruleId);
+            return await _backendConfigurationAreaRulesService.Read(ruleId).ConfigureAwait(false);
         }
 
         [HttpPut]
         public async Task<OperationResult> Update([FromBody] AreaRuleUpdateModel updateModel)
         {
-            return await _backendConfigurationAreaRulesService.Update(updateModel);
+            return await _backendConfigurationAreaRulesService.Update(updateModel).ConfigureAwait(false);
         }
 
         [HttpDelete]
         public async Task<OperationResult> Delete(int areaId)
         {
-            return await _backendConfigurationAreaRulesService.Delete(areaId);
+            return await _backendConfigurationAreaRulesService.Delete(areaId).ConfigureAwait(false);
         }
 
         [HttpPost]
         [Route("multiple-delete")]
         public async Task<OperationResult> Delete([FromBody]List<int> areaRuleIds)
         {
-            return await _backendConfigurationAreaRulesService.Delete(areaRuleIds);
+            return await _backendConfigurationAreaRulesService.Delete(areaRuleIds).ConfigureAwait(false);
         }
 
         [HttpPost]
         public async Task<OperationResult> Create([FromBody] AreaRulesCreateModel createModel)
         {
-            return await _backendConfigurationAreaRulesService.Create(createModel);
+            return await _backendConfigurationAreaRulesService.Create(createModel).ConfigureAwait(false);
         }
 
         [HttpPut]
         [Route("planning")]
         public async Task<OperationResult> UpdatePlanning([FromBody] AreaRulePlanningModel areaRulePlanningModel)
         {
-            return await _backendConfigurationAreaRulePlanningsService.UpdatePlanning(areaRulePlanningModel);
+            return await _backendConfigurationAreaRulePlanningsService.UpdatePlanning(areaRulePlanningModel).ConfigureAwait(false);
         }
 
         [HttpGet]
         [Route("planning")]
         public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId)
         {
-            return await _backendConfigurationAreaRulePlanningsService.GetPlanningByRuleId(ruleId);
+            return await _backendConfigurationAreaRulePlanningsService.GetPlanningByRuleId(ruleId).ConfigureAwait(false);
         }
 
         [HttpGet]
         [Route("type-7")]
         public async Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7()
         {
-            return await _backendConfigurationAreaRulesService.GetAreaRulesForType7();
+            return await _backendConfigurationAreaRulesService.GetAreaRulesForType7().ConfigureAwait(false);
         }
 
         [HttpGet]
         [Route("type-8")]
         public async Task<OperationDataResult<List<AreaRulesForType8>>> GetAreaRulesForType8()
         {
-            return await _backendConfigurationAreaRulesService.GetAreaRulesForType8();
+            return await _backendConfigurationAreaRulesService.GetAreaRulesForType8().ConfigureAwait(false);
         }
 
         [HttpGet]
         [Route("worker-plannings")]
         public async Task<OperationDataResult<Paged<TaskWorkerModel>>> GetPlanningsBySiteId(int siteId, FilterAndSortModel filterAndSortModel)
         {
-            return await _backendConfigurationAreaRulePlanningsService.GetPlanningsBySiteId(siteId, filterAndSortModel);
+            return await _backendConfigurationAreaRulePlanningsService.GetPlanningsBySiteId(siteId, filterAndSortModel).ConfigureAwait(false);
         }
 
 
@@ -121,7 +121,7 @@ namespace BackendConfiguration.Pn.Controllers
         [Route("planning-by-id")]
         public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningById(int planningId)
         {
-            return await _backendConfigurationAreaRulePlanningsService.GetPlanningById(planningId);
+            return await _backendConfigurationAreaRulePlanningsService.GetPlanningById(planningId).ConfigureAwait(false);
         }
     }
 }

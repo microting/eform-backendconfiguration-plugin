@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>142721</Id>
+    <Repeated>0</Repeated>
+    <Label>01. Aflæsninger</Label>
+    <StartDate>2022-06-10</StartDate>
+    <EndDate>2032-06-10</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>142721</Id>
+            <Label>01. Aflæsninger</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>true</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type="Number">
+                    <Id>376043</Id>
+                    <Label>Pulsslag v. åbning|Pulse beat at Opening|Herzfrequenz beim Öffnen</Label>
+                    <Description><![CDATA[<i>Antal</i>]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount/>
+                    <UnitName/>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SingleSelect">
+                    <Id>376053</Id>
+                    <Label>Kvittering af pulsslag v. åbning|Acknowledgment of pulse rate at Opening|Quittierung des Pulsschlags beim Öffnung</Label>
+                    <Description><![CDATA[<i>Ja/Nej</i>]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[Ja|Yes|Ja]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Nej|No|Nein]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376044</Id>
+                    <Label>Aflæst pH|Read pH|pH-Wert ablesen</Label>
+                    <Description><![CDATA[<i>pH</i>]]></Description>
+                    <DisplayOrder>2</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376045</Id>
+                    <Label>Aflæst frit klor|Read free chlorine|Lesen Sie freies Chlor</Label>
+                    <Description><![CDATA[<i>Mg/l</i>]]></Description>
+                    <DisplayOrder>3</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376046</Id>
+                    <Label>Aflæst temp.|Read temp.|Temperatur ablesen.</Label>
+                    <Description><![CDATA[<i>Celsius</i>]]></Description>
+                    <DisplayOrder>4</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376047</Id>
+                    <Label>Antal gæster ved lukning|Number of guests at closing|Anzahl der Gäste bei Schließung</Label>
+                    <Description><![CDATA[<i>Antal</i>]]></Description>
+                    <DisplayOrder>5</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount/>
+                    <UnitName/>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SingleSelect">
+                    <Id>376048</Id>
+                    <Label>Klarhed|Clarity|Klarheit</Label>
+                    <Description><![CDATA[<i>OK/Grumset</i>]]></Description>
+                    <DisplayOrder>6</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[OK|OK|OK]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Grumset|Murky|Trübe|]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376049</Id>
+                    <Label>Målt Frit klor|Measured Free chlorine|Gemessenes freies Chlor</Label>
+                    <Description><![CDATA[<i>Mg/l</i>]]></Description>
+                    <DisplayOrder>7</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376050</Id>
+                    <Label>Målt Total klor|Measured Total chlorine|Gemessenes Gesamtchlor</Label>
+                    <Description><![CDATA[<i>Mg/l</i>]]></Description>
+                    <DisplayOrder>8</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376051</Id>
+                    <Label>Målt Bundet klor|Measured Bound Chlorine|Gemessenes gebundenes Chlor</Label>
+                    <Description><![CDATA[<i>Mg/l</i>]]></Description>
+                    <DisplayOrder>9</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376052</Id>
+                    <Label>Målt pH|Measured pH|Gemessener pH-Wert</Label>
+                    <Description><![CDATA[<i>pH</i>]]></Description>
+                    <DisplayOrder>10</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>37</Id>
+                    <Label>Målt saltindhold|Measure salt content|Salzgehalt messen</Label>
+                    <Description><![CDATA[<i>%</i>]]></Description>
+                    <DisplayOrder>11</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Number">
+                    <Id>376054</Id>
+                    <Label>Målt temp. i løbet af dagen|Measured temp. during the day|Gemessene Temp. während des Tages</Label>
+                    <Description><![CDATA[<i>Celsius</i>]]></Description>
+                    <DisplayOrder>12</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <MinValue/>
+                    <MaxValue/>
+                    <Value/>
+                    <DecimalCount>2</DecimalCount>
+                    <UnitName/>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="Comment">
+                    <Id>376055</Id>
+                    <Label>Kommentar|Comment|Kommentar</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>13</DisplayOrder>
+                    <Multi>1</Multi>
+                    <GeolocationEnabled>false</GeolocationEnabled>
+                    <Split>false</Split>
+                    <Value/>
+                    <ReadOnly>false</ReadOnly>
+                    <Mandatory>false</Mandatory>
+                    <Color>e7e7e7</Color>
+                </DataItem>
+                <DataItem type="choose_entity">
+                    <Id>376056</Id>
+                    <Label>Udført af|Carried out by|Ausgeführt von</Label>
+                    <Description><![CDATA[<i>Søg efter og vælg dit navn</i>|<i>Search for and select your name</i>|<i>Suchen Sie nach Ihrem Namen und wählen Sie ihn aus</i>]]></Description>
+                    <DisplayOrder>14</DisplayOrder>
+                    <EntityTypeId>REPLACE_ME</EntityTypeId>
+                    <Mandatory>false</Mandatory>
+                    <Color>ffe4e4</Color>
+                </DataItem>
+                <DataItem type="SaveButton">
+                    <Id>376057</Id>
+                    <Label>Indsend registrering|Submit registration|Anmeldung absenden</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>15</DisplayOrder>
+                    <Value>INDSEND</Value>
+                    <Color>f0f8db</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>

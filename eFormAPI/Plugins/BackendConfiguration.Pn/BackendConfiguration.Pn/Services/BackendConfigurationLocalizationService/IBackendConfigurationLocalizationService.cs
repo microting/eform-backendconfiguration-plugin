@@ -28,5 +28,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationLocalizationServi
     {
         string GetString(string key);
         string GetString(string format, params object[] args);
+
+        string GetStringWithFormat(string format,
+            params object[] args);
     }
 }

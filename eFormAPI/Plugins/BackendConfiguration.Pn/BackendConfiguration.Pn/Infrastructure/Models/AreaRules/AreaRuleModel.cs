@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+
 namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
     using System.Collections.Generic;
@@ -36,13 +38,17 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
         public string EformName { get; set; }
 
         public bool IsDefault { get; set; }
-        
+
         public List<CommonDictionaryModel> TranslatedNames { get; set; }
             = new();
 
         // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
-        public object TypeSpecificFields { get; set; }
+        public TypeSpecificFields TypeSpecificFields { get; set; }
 
         public AreaRulePlanningModel Planning { get; set; }
+
+        public int SecondaryeFormId { get; set; }
+
+        public string SecondaryeFormName { get; set; }
     }
 }

@@ -27,6 +27,7 @@
                   [value]="selectedAreaRulePlanning.status"
                   [checked]="selectedAreaRulePlanning.status"
                   [(ngModel)]="selectedAreaRulePlanning.status"
+                  [disabled]="selectedArea.type === 9"
                   class="custom-control-input"
                 />
                 <label
@@ -36,9 +37,9 @@
                 >
               </div>
             </div>
-            <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined">
-              <ng-container *ngIf="selectedAreaRule.typeSpecificFields.complianceModifiable">
-                <div class="col-md-12" *ngIf="getShowCompliance()">
+            <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined && selectedArea.type !== 10">
+              <ng-container>
+                <div class="col-md-12">
                   <div class="custom-control custom-switch">
                     <input
                       type="checkbox"
@@ -46,6 +47,7 @@
                       [value]="selectedAreaRulePlanning.complianceEnabled"
                       [checked]="selectedAreaRulePlanning.complianceEnabled"
                       [(ngModel)]="selectedAreaRulePlanning.complianceEnabled"
+                      [disabled]="selectedAreaRule.typeSpecificFields.complianceModifiable === false"
                       class="custom-control-input"
                     />
                     <label
@@ -183,7 +185,8 @@
               <div class="row">
                 <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
                                                selectedAreaRulePlanning.typeSpecificFields.repeatEvery)
-                                               && selectedArea.type !== 3">
+                                               && selectedArea.type !== 3
+                                               && selectedArea.type !== 10">
 
                   <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined">
                     <ng-container *ngIf="selectedAreaRule.typeSpecificFields.notificationsModifiable">
@@ -212,8 +215,7 @@
                 </div>
               </div>
               <ng-container
-                *ngIf="selectedArea.type != 5 && selectedArea.type != 2 && selectedAreaRule.typeSpecificFields.notificationsModifiable"
-              >
+                *ngIf="selectedArea.type !== 5 && selectedArea.type !== 2 && selectedArea.type !== 10 && selectedAreaRule.typeSpecificFields.notificationsModifiable">
                 <div class="row" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid'">
                   <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
                     <ng-select
@@ -299,8 +301,9 @@
                 </div>
               </ng-container>
               <ng-container  *ngIf="selectedAreaRule.translatedName === '01. Registrer halebid'"><br></ng-container>
+              <ng-container  *ngIf="selectedArea.type === 10"><br></ng-container>
               <div class="row">
-                <div class="col-12" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid'">
+                <div class="col-12" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid' && selectedArea.type !== 10 && selectedArea.type !== 9">
                   <div class="md-form" [owlDateTimeTrigger]="dt1">
                     <input
                       mdbInput
@@ -392,7 +395,7 @@
               </div>
             </ng-container>
           </ng-container>
-          <div class="table-responsive">
+          <div class="table-responsive" *ngIf="selectedArea.type !== 9">
             <table class="table table-xs table-bordered text-center z-depth-1">
               <thead>
                 <tr>
@@ -428,6 +431,32 @@
               </tbody>
             </table>
           </div>
+
+          <ng-container *ngIf="selectedSite.siteName === undefined">
+            <ng-select *ngIf="selectedArea.type === 9"
+                       [items]="selectedArea.availableWorkers"
+                       [searchable]="false"
+                       [clearable]="false"
+                       [multiple]="false"
+                       [placeholder]="selectedSite.siteName"
+                       [(ngModel)]="type9assignedSite"
+                       (change)="addToArraySelect($event)"
+                       bindLabel="siteName"
+                       bindValue="siteId"
+                       id="createAssignedWorkers">
+
+            </ng-select>
+          </ng-container>
+          <ng-container *ngIf="selectedSite.siteName !== undefined">
+            <div class="md-form" *ngIf="selectedArea.type === 9">
+              <input
+                mdbInput
+                type="text"
+                value="{{selectedSite.siteName}}" disabled>
+              <label>{{ 'Assigned worker' | translate }}</label>
+            </div>
+          </ng-container>
+
         </div>
       </div>
       <div class="modal-footer">

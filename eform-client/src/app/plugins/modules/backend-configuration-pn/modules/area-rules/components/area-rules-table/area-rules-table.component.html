@@ -52,8 +52,65 @@
   </table>
 </div>
 
+<div class="row p-1 mt-4 table-responsive no-gutters" *ngIf="selectedArea.type === 10">
+  <h3>{{'Morning tour' | translate}}</h3>
+  <table
+    mdbTable
+    striped="true"
+    hover="true"
+    small="true"
+    class="z-depth-1 text-center"
+  >
+    <thead
+      table-headers
+      [tableHeaders]="tableHeadersT10b"
+      [stickyHeader]="true"
+    ></thead>
+
+    <tbody id="areaRulesTableBodyAlternativeeForms">
+    <ng-container *ngFor="let rule of areaRules; let i = index">
+      <ng-container *ngIf="rule.secondaryeFormId !== 0 || rule.translatedName === 'Morgenrundtur' || rule.translatedName === 'Morning tour'">
+        <tr>
+          <td>
+            {{ rule.id }}
+          </td>
+          <td>
+            {{ rule.eformName }}
+          </td>
+
+          <td>
+            {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
+          </td>
+          <td>
+            <div class="d-flex flex-row justify-content-center">
+              <button
+                class="btn btn-success btn-icon mb-2"
+                mdbTooltip="{{ 'Plan and assign' | translate }}"
+                (click)="onShowPlanAreaRule(rule)">
+                <fa-icon icon="clipboard-list" size="lg" [fixedWidth]="true"></fa-icon>
+              </button>
+              <ng-container *ngIf="!rule.isDefault">
+                <button *ngIf="selectedArea.type !== 9"
+                        class="btn btn-accent text-black-50 btn-icon mb-2"
+                        mdbTooltip="{{ 'Edit rule' | translate }}"
+                        (click)="onShowEditRuleModal(rule)">
+                  <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+      </ng-container>
+
+    </ng-container></tbody>
+  </table>
+</div>
+
 <div class="row p-1 mt-4 table-responsive no-gutters">
+
   <h3 *ngIf="selectedArea.type === 3">{{'Klargøring af stalde' | translate}}</h3>
+  <h3 *ngIf="selectedArea.type === 9">{{'Oprettelse af kemikalier' | translate}}</h3>
+  <h3 *ngIf="selectedArea.type === 10">{{'Pools' | translate}}</h3>
   <table
     mdbTable
     striped="true"
@@ -109,88 +166,199 @@
       [tableHeaders]="tableHeadersT7"
       [stickyHeader]="true"
     ></thead>
+    <thead
+      *ngIf="selectedArea.type === 9"
+      table-headers
+      [tableHeaders]="tableHeadersT6"
+      [stickyHeader]="true"
+    ></thead>
+    <thead
+      *ngIf="selectedArea.type === 10"
+      table-headers
+      [tableHeaders]="tableHeadersT10"
+      [stickyHeader]="true"
+    ></thead>
     <tbody id="areaRulesTableBody">
-      <tr *ngFor="let rule of areaRules; let i = index">
-        <td>{{ rule.id }}</td>
-        <td id="ruleName">
-          {{ rule.translatedName }}
-        </td>
-        <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7 || selectedArea.type === 8">
-          <td id="ruleEformNameT1">
-            {{ rule.eformName }}
-          </td>
-        </ng-container>
-        <ng-container *ngIf="selectedArea.type === 2">
-          <td id="ruleType">
-            {{ areaRuleTypes[rule.typeSpecificFields.type] | translate }}
-          </td>
-          <td id="ruleAlarm">
-            {{ areaRuleAlarms[rule.typeSpecificFields.alarm] | translate }}
-          </td>
-        </ng-container>
-        <ng-container *ngIf="selectedArea.type === 3">
-          <!--<td id="ruleChecklistStable">
-            {{
-              (rule.typeSpecificFields.checklistStable ? 'Yes' : 'No')
-                | translate
-            }}
-          </td>-->
-          <td id="ruleEformNameT3">
-            {{ rule.eformName }}
-          </td>
-          <!--<td id="ruleTailBite">
-            {{ (rule.typeSpecificFields.tailBite ? 'Yes' : 'No') | translate }}
-          </td>-->
-        </ng-container>
-        <ng-container *ngIf="selectedArea.type === 5">
-          <td id="ruleWeekDay">
-            {{ getWeekDayName(rule) | translate }}
-          </td>
-          <td id="ruleEformNameT5">
-            {{ rule.eformName }}
-          </td>
-        </ng-container>
-
-        <td id="rulePlanningStatus">
-          {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
-        </td>
-
-        <td>
-          <div class="d-flex flex-row justify-content-center">
-            <button
-              id="showAreaRulePlanningBtn"
-              class="btn btn-success btn-icon mr-2"
-              mdbTooltip="{{ 'Plan and assign' | translate }}"
-              (click)="onShowPlanAreaRule(rule)"
-            >
-              <fa-icon icon="clipboard-list" [fixedWidth]="true"></fa-icon>
-            </button>
-            <ng-container *ngIf="!rule.isDefault">
-              <button
-                id="showEditRuleBtn"
-                class="btn btn-accent text-black-50 btn-icon mb-2"
-                mdbTooltip="{{ 'Edit rule' | translate }}"
-                (click)="onShowEditRuleModal(rule)"
-                [disabled]="rule.planningStatus"
-              >
-                <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
-              <button
-                id="deleteRuleBtn"
-                class="btn btn-danger btn-icon mb-2"
-                mdbTooltip="{{ 'Delete rule' | translate }}"
-                (click)="onShowDeleteRuleModal(rule)"
-              >
-                <fa-icon
-                  icon="trash-alt"
-                  size="lg"
-                  [fixedWidth]="true"
-                ></fa-icon>
-              </button>
+      <ng-container *ngFor="let rule of areaRules; let i = index">
+        <ng-container *ngIf="rule.secondaryeFormId === 0 && rule.secondaryeFormName !== 'Morgenrundtur'">
+          <tr>
+            <td>{{ rule.id }}</td>
+            <td id="ruleName" *ngIf="selectedArea.type !== 9">
+              {{ rule.translatedName }}
+            </td>
+            <ng-container *ngIf="selectedArea.type === 1 || selectedArea.type === 7 || selectedArea.type === 8 || selectedArea.type === 9">
+              <td id="ruleEformNameT1">
+                {{ rule.eformName }}
+              </td>
             </ng-container>
-          </div>
-        </td>
-      </tr>
+            <ng-container *ngIf="selectedArea.type === 2">
+              <td id="ruleType">
+                {{ areaRuleTypes[rule.typeSpecificFields.type] | translate }}
+              </td>
+              <td id="ruleAlarm">
+                {{ areaRuleAlarms[rule.typeSpecificFields.alarm] | translate }}
+              </td>
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 3">
+              <!--<td id="ruleChecklistStable">
+                {{
+                  (rule.typeSpecificFields.checklistStable ? 'Yes' : 'No')
+                    | translate
+                }}
+              </td>-->
+              <td id="ruleEformNameT3">
+                {{ rule.eformName }}
+              </td>
+              <!--<td id="ruleTailBite">
+                {{ (rule.typeSpecificFields.tailBite ? 'Yes' : 'No') | translate }}
+              </td>-->
+            </ng-container>
+            <ng-container *ngIf="selectedArea.type === 5">
+              <td id="ruleWeekDay">
+                {{ getWeekDayName(rule) | translate }}
+              </td>
+              <td id="ruleEformNameT5">
+                {{ rule.eformName }}
+              </td>
+            </ng-container>
+
+            <td id="rulePlanningStatus">
+              {{ (rule.planningStatus ? 'ON' : 'OFF') | translate }}
+            </td>
+
+            <td>
+              <div class="d-flex flex-row justify-content-center">
+                <button
+                  id="showAreaRulePlanningBtn"
+                  class="btn btn-success btn-icon mb-2"
+                  mdbTooltip="{{ 'Plan and assign' | translate }}"
+                  (click)="onShowPlanAreaRule(rule)">
+                  <fa-icon icon="clipboard-list" size="lg" [fixedWidth]="true"></fa-icon>
+                </button>
+                <ng-container *ngIf="!rule.isDefault">
+                  <button *ngIf="selectedArea.type !== 9"
+                          id="showEditRuleBtn"
+                          class="btn btn-accent text-black-50 btn-icon mb-2"
+                          mdbTooltip="{{ 'Edit rule' | translate }}"
+                          (click)="onShowEditRuleModal(rule)"
+                          [disabled]="rule.planningStatus && this.selectedArea.type === 9">
+                    <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
+                  </button>
+                  <button *ngIf="selectedArea.type !== 9"
+                          id="deleteRuleBtn"
+                          class="btn btn-danger btn-icon mb-2"
+                          mdbTooltip="{{ 'Delete rule' | translate }}"
+                          (click)="onShowDeleteRuleModal(rule)">
+                    <fa-icon icon="trash-alt" size="lg" [fixedWidth]="true"></fa-icon>
+                  </button>
+                  <button *ngIf="selectedArea.type === 9"
+                          mdbBtn
+                          class="btn btn-success btn-icon mb-2"
+                          (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
+                          mdbTooltip="{{ 'Edit list of areas' | translate }}"
+                          id="updateEntityListChemicalAreas"
+                          [placement]="'left'">
+                    <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
+                  </button>
+                </ng-container>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+
+      </ng-container>
     </tbody>
   </table>
 </div>
+<div class="row p-1 mt-4 table-responsive no-gutters" *ngIf="selectedArea.type === 9">
+  <h3>{{'Chemicals' | translate}}</h3>
+  <table
+    mdbTable
+    striped="true"
+    hover="true"
+    small="true"
+    class="z-depth-1 text-center"
+  ><thead
+      *ngIf="selectedArea.type === 9"
+      table-headers
+      [tableHeaders]="tableHeadersT9"
+      [stickyHeader]="true"
+    ></thead>
+    <tbody id="tableBody">
+    <tr *ngFor="let chemical of chemicalsModel.entities; let i = index">
+      <td id="name">
+        {{ chemical.name }}
+      </td>
+      <td id="registrationNo">
+        {{ chemical.registrationNo }}
+      </td>
+      <td id="status">
+        {{ getStatus(chemical.status) }}
+      </td>
+      <td id="propertyName">
+        {{ chemical.propertyName }}
+      </td>
+      <td id="locations">
+        {{ chemical.locations }}
+      </td>
+      <td id="expiredState">
+        {{ chemical.expiredState }}
+      </td>
+<!--      <td id="authorisationDate">-->
+<!--        <date-formatter-->
+<!--          [date]="chemical.authorisationDate"-->
+<!--          [Format]="'date'"-->
+<!--        ></date-formatter>-->
+<!--      </td>-->
+      <td id="authorisationExpirationDate">
+        <date-formatter
+          [date]="chemical.expiredDate"
+          [Format]="'date'"
+        ></date-formatter>
+      </td>
+<!--      <td id="authorisationTerminationDate">-->
+<!--        <date-formatter-->
+<!--          [date]="chemical.authorisationTerminationDate"-->
+<!--          [Format]="'date'"-->
+<!--        ></date-formatter>-->
+<!--      </td>-->
+<!--      <td id="salesDeadline">-->
+<!--        <date-formatter-->
+<!--          [date]="chemical.salesDeadline"-->
+<!--          [Format]="'date'"-->
+<!--        ></date-formatter>-->
+<!--      </td>-->
+<!--      <td id="useAndPossesionDeadline">-->
+<!--        <date-formatter-->
+<!--          [date]="chemical.useAndPossesionDeadline"-->
+<!--          [Format]="'date'"-->
+<!--        ></date-formatter>-->
+<!--      </td>-->
+<!--      <td id="possessionDeadline">-->
+<!--        <date-formatter-->
+<!--          [date]="chemical.possessionDeadline"-->
+<!--          [Format]="'date'"-->
+<!--        ></date-formatter>-->
+<!--      </td>-->
+<!--      <td id="productName">-->
+<!--        {{ chemical.productName }}-->
+<!--      </td>-->
+<!--      <td id="barcode">-->
+<!--        {{ chemical.barcode }}-->
+<!--      </td>-->
+      <td id="pdfFile">
+        <a
+          *ngIf="chemical.fileName !== ''"
+          href="javascript:void(0)" (click)="getPdf(chemical.fileName)"
+          mdbBtn
+          id="planningCreateBtn"
+          class="btn-success btn-icon"z
+        >
+          <fa-icon icon="file-pdf" size="lg" [fixedWidth]="true"></fa-icon>
+        </a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
