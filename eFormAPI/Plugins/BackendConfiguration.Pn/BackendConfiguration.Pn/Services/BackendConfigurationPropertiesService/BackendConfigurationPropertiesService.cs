@@ -379,7 +379,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         x => new CommonTranslationsModel
                         {
                             LanguageId = x.Id,
-                            Name = property.Name,
+                            Name = updateModel.Name,
                             Description = ""
                         })
                     .ToListAsync().ConfigureAwait(false);
