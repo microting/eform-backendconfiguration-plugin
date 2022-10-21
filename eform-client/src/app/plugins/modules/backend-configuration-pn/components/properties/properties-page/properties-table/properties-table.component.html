@@ -103,7 +103,7 @@
                 class="btn btn-accent text-black-50 btn-icon mr-2"
                 mdbTooltip="{{ 'Edit property' | translate }}"
                 (click)="onShowEditPropertyModal(property)"
-                [disabled]="!authStateService.checkClaim('property_edit')"
+                [disabled]="!authStateService.checkClaim('property_edit') && !authStateService.isAdmin"
               >
                 <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
               </button>
@@ -112,7 +112,7 @@
                 class="btn btn-danger btn-icon mr-2"
                 mdbTooltip="{{ 'Delete property' | translate }}"
                 (click)="onShowDeletePropertyModal(property)"
-                [disabled]="!authStateService.checkClaim('property_delete')"
+                [disabled]="!authStateService.checkClaim('property_delete') && !authStateService.isAdmin"
               >
                 <fa-icon
                   icon="trash-alt"
