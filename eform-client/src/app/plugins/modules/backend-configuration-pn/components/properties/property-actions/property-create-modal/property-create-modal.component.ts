@@ -1,27 +1,31 @@
 import {
   Component,
   EventEmitter,
+  OnDestroy,
   OnInit,
-  Output,
-  ViewChild,
 } from '@angular/core';
 import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const';
-import { PropertyCreateModel } from '../../../../models';
+import {PropertyCreateModel} from '../../../../models';
 import {AuthStateService} from 'src/app/common/store';
-import {BackendConfigurationPnPropertiesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {BackendConfigurationPnPropertiesService} from '../../../../services';
+import {MatDialogRef} from '@angular/material/dialog';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Subscription} from 'rxjs';
 
+@AutoUnsubscribe()
 @Component({
   selector: 'app-property-create-modal',
   templateUrl: './property-create-modal.component.html',
   styleUrls: ['./property-create-modal.component.scss'],
 })
-export class PropertyCreateModalComponent implements OnInit {
-  @ViewChild('frame', { static: false }) frame;
-  @Output()
+export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   propertyCreate: EventEmitter<PropertyCreateModel> = new EventEmitter<PropertyCreateModel>();
   newProperty: PropertyCreateModel = new PropertyCreateModel();
   selectedLanguages: { id: number; checked: boolean }[] = [];
   propertyIsFarm: boolean = false;
+
+  getCompanyTypeSub$: Subscription;
+  getChrInformationSub$: Subscription;
 
   get applicationLanguages() {
     return applicationLanguages;
@@ -29,18 +33,20 @@ export class PropertyCreateModalComponent implements OnInit {
 
   constructor(
     public authStateService: AuthStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService) {
-  }
-
-  ngOnInit() {}
-
-  show() {
-    this.frame.show();
+    private propertiesService: BackendConfigurationPnPropertiesService,
+    public dialogRef: MatDialogRef<PropertyCreateModalComponent>,
+  ) {
     this.propertyIsFarm = false;
   }
 
+  ngOnDestroy(): void {
+  }
+
+  ngOnInit() {
+  }
+
   hide() {
-    this.frame.hide();
+    this.dialogRef.close();
     this.newProperty = new PropertyCreateModel();
     this.selectedLanguages = [];
   }
@@ -54,43 +60,43 @@ export class PropertyCreateModalComponent implements OnInit {
 
 
   onNameFilterChanged(number: number) {
-    if (number == 0) {
+    if (number === 0) {
       this.propertyIsFarm = false;
     }
-    if (number == 1111111) {
+    if (number === 1111111) {
       this.propertyIsFarm = true;
       this.newProperty.isFarm = true;
     }
     if (number > 1111111) {
-      if (number.toString().length > 7)
-      this.propertiesService.getCompanyType(number)
-        .subscribe((data) => {
-          if (data && data.success) {
-            if (data.model.industrycode.toString().slice(0, 2) == '01') {
-              this.propertyIsFarm = true;
-              this.newProperty.isFarm = true;
-              if (data.model.error !== 'NOT_FOUND') {
-                this.newProperty.address = data.model.address + ', ' + data.model.city;
-                this.newProperty.name = data.model.name;
-                this.newProperty.industryCode = data.model.industrycode;
-              }
-            }
-            else {
-              if (data.model.error == 'REQUIRES_PAID_SUBSCRIPTION') {
+      if (number.toString().length > 7) {
+        this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(number)
+          .subscribe((data) => {
+            if (data && data.success) {
+              if (data.model.industrycode.toString().slice(0, 2) === '01') {
                 this.propertyIsFarm = true;
                 this.newProperty.isFarm = true;
-              } else {
-                this.propertyIsFarm = false;
-                this.newProperty.isFarm = false;
                 if (data.model.error !== 'NOT_FOUND') {
                   this.newProperty.address = data.model.address + ', ' + data.model.city;
                   this.newProperty.name = data.model.name;
                   this.newProperty.industryCode = data.model.industrycode;
                 }
+              } else {
+                if (data.model.error === 'REQUIRES_PAID_SUBSCRIPTION') {
+                  this.propertyIsFarm = true;
+                  this.newProperty.isFarm = true;
+                } else {
+                  this.propertyIsFarm = false;
+                  this.newProperty.isFarm = false;
+                  if (data.model.error !== 'NOT_FOUND') {
+                    this.newProperty.address = data.model.address + ', ' + data.model.city;
+                    this.newProperty.name = data.model.name;
+                    this.newProperty.industryCode = data.model.industrycode;
+                  }
+                }
               }
             }
-          }
-        });
+          });
+      }
     } else {
       this.newProperty.name = '';
       this.newProperty.address = '';
@@ -99,8 +105,8 @@ export class PropertyCreateModalComponent implements OnInit {
 
   onChrNumberChanged(number: number) {
     if (number > 11111) {
-      if (number.toString().length > 5)
-        this.propertiesService.getChrInformation(number)
+      if (number.toString().length > 5) {
+        this.getChrInformationSub$ = this.propertiesService.getChrInformation(number)
           .subscribe((data) => {
             if (data && data.success) {
               //debugger;
@@ -111,6 +117,7 @@ export class PropertyCreateModalComponent implements OnInit {
               }
             }
           });
+      }
     }
   }
 

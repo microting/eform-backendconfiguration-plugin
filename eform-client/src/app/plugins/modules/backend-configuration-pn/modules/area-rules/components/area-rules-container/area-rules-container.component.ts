@@ -22,12 +22,9 @@ import {
 } from '../../../../services';
 import { TranslateService } from '@ngx-translate/core';
 import {AreaRuleEntityListModalComponent, AreaRulePlanModalComponent} from '../../../../components';
-import {AdvEntitySelectableItemModel, Paged} from 'src/app/common/models';
+import {EntityItemModel, Paged} from 'src/app/common/models';
 import {EntitySelectService} from 'src/app/common/services';
 import {ChemicalModel} from 'src/app/plugins/modules/backend-configuration-pn/modules';
-import {
-  BackendConfigurationPnChemicalsService
-} from 'src/app/plugins/modules/backend-configuration-pn/services/backend-configuration-pn-chemicals.service';
 import {ChemicalsStateService} from 'src/app/plugins/modules/backend-configuration-pn/components/chemicals/store';
 
 @AutoUnsubscribe()
@@ -253,7 +250,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
   }
 
-  updateEntityList(model: Array<AdvEntitySelectableItemModel>) {
+  updateEntityList(model: Array<EntityItemModel>) {
     if(!this.selectedArea.groupId){
       this.backendConfigurationPnPropertiesService.createEntityList(model, this.propertyAreaId)
         .subscribe((x => {
@@ -267,7 +264,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .subscribe(data => {
         if (data.success) {
           this.entitySelectService.updateEntitySelectableGroup({
-            advEntitySelectableItemModels: model,
+            entityItemModels: model,
             groupUid: +data.model.microtingUUID,
             ...data.model
           }).subscribe(x => {

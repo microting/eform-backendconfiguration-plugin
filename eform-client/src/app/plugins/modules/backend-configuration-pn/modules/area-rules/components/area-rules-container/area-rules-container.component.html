@@ -25,9 +25,9 @@
     (showDeleteRuleModal)="showDeleteAreaRuleModal($event)"
     (showEditRuleModal)="showEditAreaRuleModal($event)"
     (showPlanAreaRuleModal)="showPlanAreaRuleModal($event)"
-    (showEditEntityListModal)="entityListEditModal.show($event)"
     [chemicalsModel]="chemicalsModel"
   ></app-area-rules-table>
+<!--  (showEditEntityListModal)="entityListEditModal.show($event)"-->
 </div>
 
 <app-area-rule-delete-modal
@@ -54,7 +54,7 @@
   (updateAreaRulePlan)="onUpdateAreaRulePlan($event)"
 ></app-area-rule-plan-modal>
 
-<app-area-rule-entity-list-modal
+<!--<app-area-rule-entity-list-modal
   (entityListChanged)="updateEntityList($event)"
   #entityListEditModal
-></app-area-rule-entity-list-modal>
+></app-area-rule-entity-list-modal>-->

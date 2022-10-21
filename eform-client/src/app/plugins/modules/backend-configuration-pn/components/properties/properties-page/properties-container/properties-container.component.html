@@ -1,79 +1,24 @@
-<eform-subheader>
-  <div class="p-3">
-    <button *ngIf="authStateService.isAdmin"
-      mdbBtn
-      id="propertyCreateBtn"
-      class="btn-success btn-icon"
-      mdbTooltip="{{ 'Create Property' | translate }}"
-      (click)="showPropertyCreateModal()"
-      [placement]="'left'"
-    >
-      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
-    </button>
-  </div>
-</eform-subheader>
+<eform-new-subheader>
+  <button
+    *ngIf="authStateService.isAdmin"
+    mat-icon-button
+    color="accent"
+    id="propertyCreateBtn"
+    matTooltip="{{ 'Create Property' | translate }}"
+    (click)="showPropertyCreateModal()"
+    [matTooltipPosition]="'left'"
+  >
+    <mat-icon>add</mat-icon>
+  </button>
+</eform-new-subheader>
 
-<div class="container-fluid">
-  <div class="row pl-1">
-    <div class="col-md-2">
-      <div class="md-form">
-        <input
-          mdbInput
-          (ngModelChange)="onNameFilterChanged($event)"
-          [ngModel]="propertiesStateService.getNameFilter() | async"
-          type="text"
-          class="form-control"
-          id="nameInput"
-        />
-        <label for="nameInput">{{ 'Search' | translate }}</label>
-      </div>
-    </div>
-  </div>
-  <app-properties-table
-    [propertiesModel]="propertiesModel"
-    [tableHeaders]="tableHeaders"
-    [isFarms]="isFarms"
-    (showDeletePropertyModal)="showDeletePropertyModal($event)"
-    (showEditPropertyModal)="showEditPropertyModal($event)"
-    (sortUpdated)="getProperties()"
-    (showDocxReportModal)="onShowDocxReportModal($event)"
-    (showEditEntityListModal)="onShowEditEntityListModal($event)"
-  ></app-properties-table>
-  <!--  <div class="row justify-content-between mr-2 ml-2">-->
-  <!--    <div class="col-md-1 col-sm-3">-->
-  <!--      <eform-page-size-->
-  <!--        [pageSize]="propertysStateService.getPageSize() | async"-->
-  <!--        (onPageSizeChanged)="onPageSizeChanged($event)"-->
-  <!--      >-->
-  <!--      </eform-page-size>-->
-  <!--    </div>-->
-  <!--    <div class="col-md-4 ml-auto d-flex justify-content-end p-2">-->
-  <!--      <eform-pagination-->
-  <!--        [pagination]="propertysStateService.getPagination() | async"-->
-  <!--        (onPageChanged)="changePage($event)"-->
-  <!--      ></eform-pagination>-->
-  <!--    </div>-->
-  <!--  </div>-->
-</div>
-<app-property-delete-modal
-  #deletePropertyModal
-  (propertyDelete)="onPropertyDelete($event)"
-></app-property-delete-modal>
-
-<app-property-create-modal
-  #createPropertyModal
-  (propertyCreate)="onPropertyCreate($event)"
-></app-property-create-modal>
-
-<app-property-edit-modal
-  #editPropertyModal
-  (propertyUpdate)="onPropertyUpdate($event)"
-></app-property-edit-modal>
-
-<app-property-docx-report-modal #docxReportModal>
-</app-property-docx-report-modal>
-
-<app-area-rule-entity-list-modal
-  (entityListChanged)="updateEntityList($event)"
-  #entityListEditModal
-></app-area-rule-entity-list-modal>
+<app-properties-table
+  [propertiesModel]="propertiesModel"
+  [tableHeaders]="tableHeaders"
+  [nameSearchSubject]="nameSearchSubject"
+  (showDeletePropertyModal)="showDeletePropertyModal($event)"
+  (showEditPropertyModal)="showEditPropertyModal($event)"
+  (sortUpdated)="getProperties()"
+  (showDocxReportModal)="onShowDocxReportModal($event)"
+  (showEditEntityListModal)="onShowEditEntityListModal($event)"
+></app-properties-table>

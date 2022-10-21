@@ -12,6 +12,9 @@ import {
   AreaRuleEntityListModalComponent,
 } from './';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
+import {MatDialogModule} from '@angular/material/dialog';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
 
 @NgModule({
   imports: [
@@ -23,6 +26,9 @@ import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-share
     MDBBootstrapModule,
     FontAwesomeModule,
     EformSharedModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
   ],
   declarations: [
     AreaRulePlanModalComponent,

@@ -1,23 +1,29 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
-import { Subject, Subscription } from 'rxjs';
-import {AdvEntitySelectableItemModel, Paged, TableHeaderElementModel} from 'src/app/common/models';
-import { AuthStateService } from 'src/app/common/store';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Subject, Subscription} from 'rxjs';
+import {EntityItemModel, Paged} from 'src/app/common/models';
+import {AuthStateService} from 'src/app/common/store';
 import {
   PropertyCreateModalComponent,
-  PropertyDeleteModalComponent, PropertyDocxReportModalComponent,
+  PropertyDeleteModalComponent,
+  PropertyDocxReportModalComponent,
   PropertyEditModalComponent,
-} from '../../property-actions';
+  AreaRuleEntityListModalComponent
+} from '../../../';
 import {
   PropertyCreateModel,
   PropertyModel,
   PropertyUpdateModel,
 } from '../../../../models';
-import { BackendConfigurationPnPropertiesService} from '../../../../services';
-import { PropertiesStateService } from '../../store';
-import { debounceTime } from 'rxjs/operators';
+import {BackendConfigurationPnPropertiesService} from '../../../../services';
+import {PropertiesStateService} from '../../store';
+import {debounceTime} from 'rxjs/operators';
 import {EntitySelectService} from 'src/app/common/services';
-import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {TranslateService} from '@ngx-translate/core';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
 
 @AutoUnsubscribe()
 @Component({
@@ -26,55 +32,74 @@ import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-
   styleUrls: ['./properties-container.component.scss'],
 })
 export class PropertiesContainerComponent implements OnInit, OnDestroy {
-  @ViewChild('createPropertyModal', { static: false })
-  createPropertyModal: PropertyCreateModalComponent;
-  @ViewChild('editPropertyModal', { static: false })
-  editPropertyModal: PropertyEditModalComponent;
-  @ViewChild('deletePropertyModal', { static: false })
-  deletePropertyModal: PropertyDeleteModalComponent;
-  @ViewChild('docxReportModal', { static: false })
-  docxReportModal: PropertyDocxReportModalComponent;
-  @ViewChild('entityListEditModal', { static: false })
-  entityListEditModal: AreaRuleEntityListModalComponent;
   selectedProperty: PropertyModel;
   isFarms: boolean = false;
-  tableHeaders: TableHeaderElementModel[] = [
-    { name: 'Id', elementId: 'idTableHeader', sortable: true },
-    { name: 'Name', elementId: 'nameTableHeader', sortable: true,
-      visibleName: 'Property name' },
+  tableHeaders: MtxGridColumn[] = [
     {
-      name: 'CVR',
-      visibleName: 'CVR Number',
-      elementId: 'cvrNumberTableHeader',
+      header: this.translateService.stream('Id'),
+      field: 'id',
+      sortProp: {id: 'Id'},
       sortable: true,
     },
     {
-      name: 'Address',
-      visibleName: 'Property address',
-      elementId: 'addressTableHeader',
+      header: this.translateService.stream('Property name'),
+      sortProp: {id: 'Name'},
+      field: 'name',
       sortable: true,
     },
-    // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
-    { name: 'Compliance', sortable: false },
-    // { name: 'Compliance 30', sortable: false },
-    { name: 'Actions', elementId: '', sortable: false },
+    {
+      header: this.translateService.stream('CVR Number'),
+      field: 'cvr',
+      sortable: true,
+      sortProp: {id: 'CVR'},
+    },
+    {
+      header: this.translateService.stream('CHR Number'),
+      field: 'chr',
+      sortProp: {id: 'CHR'},
+      sortable: true,
+      hide: this.isFarms,
+    },
+    {
+      header: this.translateService.stream('Property address'),
+      field: 'address',
+      sortProp: {id: 'Address'},
+      sortable: true,
+    },
+    {
+      header: this.translateService.stream('Compliance'),
+      field: 'compliance',
+    },
+    {
+      header: this.translateService.stream('Actions'),
+      field: 'actions',
+    },
   ];
 
   nameSearchSubject = new Subject();
   propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
 
   getPropertiesSub$: Subscription;
+  deletePropertySub$: Subscription;
   createPropertySub$: Subscription;
   editPropertySub$: Subscription;
-  deletePropertySub$: Subscription;
+  propertyDeleteSub$: Subscription;
+  propertyCreateSub$: Subscription;
+  propertyUpdateSub$: Subscription;
+  getEntitySelectableGroupSub$: Subscription;
+  updateEntitySelectableGroupSub$: Subscription;
+  nameSearchSubjectSub$: Subscription;
 
   constructor(
     private propertiesService: BackendConfigurationPnPropertiesService,
     public propertiesStateService: PropertiesStateService,
     public authStateService: AuthStateService,
-  private entitySelectService: EntitySelectService
+    private entitySelectService: EntitySelectService,
+    private translateService: TranslateService,
+    private dialog: MatDialog,
+    private overlay: Overlay,
   ) {
-    this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
+    this.nameSearchSubjectSub$ = this.nameSearchSubject.pipe(debounceTime(500)).subscribe((val) => {
       this.propertiesStateService.updateNameFilter(val.toString());
       this.getProperties();
     });
@@ -98,146 +123,91 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
             this.isFarms = true;
           }
         }
-        this.tableHeaders = this.isFarms ? [
-          { name: 'Id', elementId: 'idTableHeader', sortable: true },
-          { name: 'Name', elementId: 'nameTableHeader', sortable: true,
-            visibleName: 'Property name' },
-          {
-            name: 'CVR',
-            visibleName: 'CVR Number',
-            elementId: 'cvrNumberTableHeader',
-            sortable: true,
-          },
-          {
-            name: 'CHR',
-            visibleName: 'CHR Number',
-            elementId: 'chrNumberTableHeader',
-            sortable: true,
-          },
-          {
-            name: 'Address',
-            visibleName: 'Property address',
-            elementId: 'addressTableHeader',
-            sortable: true,
-          },
-          // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
-          { name: 'Compliance', sortable: false },
-          // { name: 'Compliance 30', sortable: false },
-          { name: 'Actions', elementId: '', sortable: false },
-        ] :  [
-          { name: 'Id', elementId: 'idTableHeader', sortable: true },
-          { name: 'Name', elementId: 'nameTableHeader', sortable: true,
-            visibleName: 'Property name' },
-          {
-            name: 'CVR',
-            visibleName: 'CVR Number',
-            elementId: 'cvrNumberTableHeader',
-            sortable: true,
-          },
-          {
-            name: 'Address',
-            visibleName: 'Property address',
-            elementId: 'addressTableHeader',
-            sortable: true,
-          },
-          // { name: 'Languages', elementId: 'languagesTableHeader', sortable: false },
-          { name: 'Compliance', sortable: false },
-          // { name: 'Compliance 30', sortable: false },
-          { name: 'Actions', elementId: '', sortable: false },
-        ];
       });
   }
 
   showPropertyCreateModal() {
-    this.createPropertyModal.show();
+    const modal = this.dialog.open(PropertyCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 400});
+    this.propertyCreateSub$ = modal.componentInstance.propertyCreate.subscribe(x => this.onPropertyCreate(x, modal));
   }
 
   showEditPropertyModal(property: PropertyModel) {
-    this.editPropertyModal.show(property);
+    const modal = this.dialog.open(PropertyEditModalComponent, {...dialogConfigHelper(this.overlay, property), minWidth: 400});
+    this.propertyUpdateSub$ = modal.componentInstance.propertyUpdate.subscribe(x => this.onPropertyUpdate(x, modal));
   }
 
   showDeletePropertyModal(property: PropertyModel) {
-    this.deletePropertyModal.show(property);
+    const modal = this.dialog.open(PropertyDeleteModalComponent, {...dialogConfigHelper(this.overlay, property)});
+    this.propertyDeleteSub$ = modal.componentInstance.propertyDelete.subscribe(x => this.onPropertyDelete(x, modal));
   }
 
-  onPropertyCreate(model: PropertyCreateModel) {
+  onShowDocxReportModal(propertyId: number) {
+    this.dialog.open(PropertyDocxReportModalComponent, {...dialogConfigHelper(this.overlay, propertyId)});
+  }
+
+  onShowEditEntityListModal(propertyModel: PropertyModel) {
+    const modal = this.dialog
+      .open(AreaRuleEntityListModalComponent, {...dialogConfigHelper(this.overlay, propertyModel.workorderEntityListId)});
+    this.propertyUpdateSub$ = modal.componentInstance.entityListChanged.subscribe(x => this.updateEntityList(x, modal));
+    this.selectedProperty = propertyModel;
+  }
+
+  onPropertyCreate(model: PropertyCreateModel, modal: MatDialogRef<PropertyCreateModalComponent>) {
     this.createPropertySub$ = this.propertiesService
       .createProperty(model)
       .subscribe((data) => {
         if (data && data.success) {
+          modal.close();
           this.getProperties();
-          this.createPropertyModal.hide();
         }
       });
   }
 
-  onPropertyUpdate(model: PropertyUpdateModel) {
+  onPropertyUpdate(model: PropertyUpdateModel, modal: MatDialogRef<PropertyEditModalComponent>) {
     this.editPropertySub$ = this.propertiesService
       .updateProperty(model)
       .subscribe((data) => {
         if (data && data.success) {
+          modal.close();
           this.getProperties();
-          this.editPropertyModal.hide();
         }
       });
   }
 
-  onPropertyDelete(propertyId: number) {
+  onPropertyDelete(propertyId: number, modal: MatDialogRef<PropertyDeleteModalComponent>) {
     this.deletePropertySub$ = this.propertiesService
       .deleteProperty(propertyId)
       .subscribe((data) => {
         if (data && data.success) {
           this.getProperties();
-          this.deletePropertyModal.hide();
+          modal.close();
           this.isFarms = false;
         }
       });
   }
 
-  onShowDocxReportModal(propertyId: number) {
-    this.docxReportModal.show(propertyId);
-  }
-
-  ngOnDestroy(): void {}
-
-  // onPageSizeChanged(newPageSize: number) {
-  //   this.propertiesStateService.updatePageSize(newPageSize);
-  //   this.getProperties();
-  // }
-
-  // sortTable(sort: string) {
-  //   this.propertiesStateService.onSortTable(sort);
-  //   this.getProperties();
-  // }
-  //
-  // changePage(newPage: any) {
-  //   this.propertiesStateService.changePage(newPage);
-  //   this.getProperties();
-  // }
-
   onNameFilterChanged(name: string) {
     this.nameSearchSubject.next(name);
   }
 
-  onShowEditEntityListModal(propertyModel: PropertyModel) {
-    this.selectedProperty = propertyModel;
-    this.entityListEditModal.show(propertyModel.workorderEntityListId);
+  updateEntityList(model: Array<EntityItemModel>, modal: MatDialogRef<AreaRuleEntityListModalComponent>) {
+    if(this.selectedProperty.workorderEntityListId) {
+      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(this.selectedProperty.workorderEntityListId)
+        .subscribe(data => {
+          if (data.success) {
+            this.updateEntitySelectableGroupSub$ = this.entitySelectService.updateEntitySelectableGroup({
+              entityItemModels: model,
+              groupUid: +data.model.microtingUUID,
+              ...data.model
+            }).subscribe(x => {
+              if (x.success) {
+                modal.close();
+              }
+            });
+          }
+        });
+    }
   }
 
-  updateEntityList(model: Array<AdvEntitySelectableItemModel>) {
-    this.entitySelectService.getEntitySelectableGroup(this.selectedProperty.workorderEntityListId)
-      .subscribe(data => {
-        if (data.success) {
-          this.entitySelectService.updateEntitySelectableGroup({
-            advEntitySelectableItemModels: model,
-            groupUid: +data.model.microtingUUID,
-            ...data.model
-          }).subscribe(x => {
-            if (x.success) {
-              this.entityListEditModal.hide();
-            }
-          });
-        }
-      });
-  }
+  ngOnDestroy(): void {}
 }
