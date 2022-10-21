@@ -503,9 +503,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                             int? propertyId = null;
                             foreach (var propertyWorker in propertyWorkers)
                             {
-                                var et = sdkDbContext.EntityItems.Single(x => x.Id == propertyWorker.EntityItemId);
-                                await core.EntityItemUpdate((int)propertyWorker.EntityItemId, fullName, "", et.EntityItemUid,
-                                    et.DisplayIndex).ConfigureAwait(false);
+                                if (propertyWorker.EntityItemId != null)
+                                {
+                                    var et = sdkDbContext.EntityItems.Single(x => x.Id == propertyWorker.EntityItemId);
+                                    await core.EntityItemUpdate((int)propertyWorker.EntityItemId, fullName, "", et.EntityItemUid,
+                                        et.DisplayIndex).ConfigureAwait(false);
+                                }
                                 propertyId = propertyWorker.PropertyId;
                             }
 
@@ -597,6 +600,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserCouldNotBeUpdated") + $" {ex.Message}");
             }
         }

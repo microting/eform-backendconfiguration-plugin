@@ -12,18 +12,18 @@ export const routes: Routes = [
   {
     path: '',
     component: BackendConfigurationPnLayoutComponent,
-    // canActivate: [PermissionGuard],
-    // data: {
-    //   requiredPermission:
-    //     BackendConfigurationPnClaims.accessBackendConfigurationPlugin,
-    // },
+    canActivate: [PermissionGuard],
+    data: {
+      requiredPermission:
+        BackendConfigurationPnClaims.accessBackendConfigurationPlugin,
+    },
     children: [
       {
         path: 'properties',
-        // canActivate: [PermissionGuard],
-        // data: {
-        //   requiredPermission: BackendConfigurationPnClaims.getProperties,
-        // },
+        canActivate: [PermissionGuard],
+        data: {
+          requiredPermission: BackendConfigurationPnClaims.getProperties,
+        },
         component: PropertiesContainerComponent,
       },
       {
@@ -65,15 +65,20 @@ export const routes: Routes = [
       },
       {
         path: 'task-management',
-        canActivate: [AuthGuard],
+        canActivate: [PermissionGuard],
+        data: {
+          requiredPermission: BackendConfigurationPnClaims.enableTaskManagement,
+        },
         loadChildren: () =>
           import('./modules/task-management/task-management.module').then(
             (m) => m.TaskManagementModule
           ),
       },
       {
-        path: 'documents',
-        canActivate: [AuthGuard],
+        path: 'documents',canActivate: [PermissionGuard],
+        data: {
+          requiredPermission: BackendConfigurationPnClaims.enableDocumentManagement,
+        },
         loadChildren: () =>
           import('./modules/documents/documents.module').then(
             (m) => m.DocumentsModule

@@ -1,5 +1,5 @@
 import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
-import {applicationLanguages2, applicationLanguagesTranslated} from 'src/app/common/const';
+import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {CommonDictionaryModel, FolderCreateModel, Paged} from 'src/app/common/models';
 import {
   DocumentFolderModel,
@@ -35,14 +35,14 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   // assignments: DocumentPropertyModel[] = [];
 
   get languages() {
-    return applicationLanguages2;
+    return applicationLanguagesTranslated;
   }
   constructor(
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     localeService: LocaleService) {
-    this.selectedLanguage = applicationLanguages2.find(
+    this.selectedLanguage = applicationLanguagesTranslated.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
   }
@@ -58,7 +58,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
 
   initCreateForm() {
     this.newDocumentModel = new DocumentModel();
-    for (const language of applicationLanguages2) {
+    for (const language of applicationLanguagesTranslated) {
       this.newDocumentModel = {
         ...this.newDocumentModel,
         documentUploadedDatas: [
