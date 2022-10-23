@@ -210,4 +210,5 @@ export const deDE = {
   To: 'An',
   'Customer no & OTP': 'Kundennummer & OTP',
   'New OTP': 'Neuer OTP',
+  'Select filter': 'Filter auswählen',
 };

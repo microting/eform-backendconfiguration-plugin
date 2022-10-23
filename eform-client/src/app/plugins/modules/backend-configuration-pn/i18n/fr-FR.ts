@@ -212,4 +212,5 @@ export const frFR = {
   To: 'À',
   'Customer no & OTP': 'Numéro de client & OTP',
   'New OTP': 'Nouvel OTP',
+  'Select filter': 'Sélectionner un filtre',
 };
