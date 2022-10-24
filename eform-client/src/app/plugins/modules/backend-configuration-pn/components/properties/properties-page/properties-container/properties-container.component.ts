@@ -32,7 +32,6 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
   styleUrls: ['./properties-container.component.scss'],
 })
 export class PropertiesContainerComponent implements OnInit, OnDestroy {
-  selectedProperty: PropertyModel;
   isFarms: boolean = false;
   tableHeaders: MtxGridColumn[] = [
     {
@@ -148,8 +147,7 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
   onShowEditEntityListModal(propertyModel: PropertyModel) {
     const modal = this.dialog
       .open(AreaRuleEntityListModalComponent, {...dialogConfigHelper(this.overlay, propertyModel.workorderEntityListId)});
-    this.propertyUpdateSub$ = modal.componentInstance.entityListChanged.subscribe(x => this.updateEntityList(x, modal));
-    this.selectedProperty = propertyModel;
+    this.propertyUpdateSub$ = modal.componentInstance.entityListChanged.subscribe(x => this.updateEntityList(propertyModel, x, modal));
   }
 
   onPropertyCreate(model: PropertyCreateModel, modal: MatDialogRef<PropertyCreateModalComponent>) {
@@ -190,9 +188,9 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
     this.nameSearchSubject.next(name);
   }
 
-  updateEntityList(model: Array<EntityItemModel>, modal: MatDialogRef<AreaRuleEntityListModalComponent>) {
-    if(this.selectedProperty.workorderEntityListId) {
-      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(this.selectedProperty.workorderEntityListId)
+  updateEntityList(propertyModel: PropertyModel, model: Array<EntityItemModel>, modal: MatDialogRef<AreaRuleEntityListModalComponent>) {
+    if(propertyModel.workorderEntityListId) {
+      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(propertyModel.workorderEntityListId)
         .subscribe(data => {
           if (data.success) {
             this.updateEntitySelectableGroupSub$ = this.entitySelectService.updateEntitySelectableGroup({

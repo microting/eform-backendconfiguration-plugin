@@ -1,14 +1,12 @@
 import {
   Component,
-  EventEmitter,
-  Input,
+  Inject,
   OnInit,
-  Output,
-  ViewChild,
 } from '@angular/core';
-import { SiteDto } from 'src/app/common/models/dto';
-import { DeviceUserService } from 'src/app/common/services';
-import { BackendConfigurationPnPropertiesService } from '../../../../services';
+import {DeviceUserService} from 'src/app/common/services';
+import {BackendConfigurationPnPropertiesService} from '../../../../services';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {DeviceUserModel} from '../../../../models';
 
 @Component({
   selector: 'app-property-worker-delete-modal',
@@ -16,19 +14,19 @@ import { BackendConfigurationPnPropertiesService } from '../../../../services';
   styleUrls: ['./property-worker-delete-modal.component.scss'],
 })
 export class PropertyWorkerDeleteModalComponent implements OnInit {
-  @Input() selectedDeviceUser: SiteDto = new SiteDto();
-  @Output() onUserDeleted: EventEmitter<void> = new EventEmitter<void>();
-  @ViewChild('frame', { static: true }) frame;
-
   constructor(
     private deviceUserService: DeviceUserService,
-    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService
-  ) {}
+    private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
+    public dialogRef: MatDialogRef<PropertyWorkerDeleteModalComponent>,
+    @Inject(MAT_DIALOG_DATA) public selectedDeviceUser: DeviceUserModel = new DeviceUserModel()
+  ) {
+  }
 
-  ngOnInit() {}
+  ngOnInit() {
+  }
 
-  show() {
-    this.frame.show();
+  hide(result = false) {
+    this.dialogRef.close(result);
   }
 
   deleteSingle() {
@@ -40,8 +38,7 @@ export class PropertyWorkerDeleteModalComponent implements OnInit {
             .removeWorkerAssignments(this.selectedDeviceUser.siteId) // remove user from plugin
             .subscribe((data) => {
               if (data && data.success) {
-                this.onUserDeleted.emit();
-                this.frame.hide();
+                this.hide(true);
               }
             });
         }
