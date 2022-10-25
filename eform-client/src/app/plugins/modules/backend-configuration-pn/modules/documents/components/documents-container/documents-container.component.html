@@ -59,7 +59,7 @@
   </ng-container>
 </div>
 
-<ng-container *ngIf="folders !== undefined">
+<ng-container>
   <app-documents-folders
     #manageFoldersModal
     (foldersChanged)="updateTable()"
