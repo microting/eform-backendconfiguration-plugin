@@ -17,7 +17,6 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatInputModule} from '@angular/material/input';
-import {MatSortModule} from '@angular/material/sort';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
@@ -36,7 +35,6 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     MatTooltipModule,
     MtxGridModule,
     MatInputModule,
-    MatSortModule,
     MatDialogModule,
     MtxSelectModule,
     MatSlideToggleModule,

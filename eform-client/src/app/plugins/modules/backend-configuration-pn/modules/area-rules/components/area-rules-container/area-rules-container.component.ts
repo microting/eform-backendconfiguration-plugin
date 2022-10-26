@@ -148,15 +148,15 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       this.getAreaRulePlanningSub$ = this.areasService
         .getAreaRulePlanningByRuleId(rule.id)
         .subscribe((operation) => {
-          this.planAreaRuleModal.show(
-            rule,
-            this.selectedPropertyId,
-            this.selectedArea,
-            operation.model
-          );
+          // this.planAreaRuleModal.show( todo
+          //   rule,
+          //   this.selectedPropertyId,
+          //   this.selectedArea,
+          //   operation.model
+          // );
         });
     } else {
-      this.planAreaRuleModal.show(rule, this.selectedPropertyId, this.selectedArea);
+      // this.planAreaRuleModal.show(rule, this.selectedPropertyId, this.selectedArea); todo
     }
   }
 

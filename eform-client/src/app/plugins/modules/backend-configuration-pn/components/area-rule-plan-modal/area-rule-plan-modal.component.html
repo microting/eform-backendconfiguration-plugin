@@ -1,483 +1,276 @@
-<div
-  [config]="{ ignoreBackdropClick: true }"
-  mdbModal
-  class="modal fade"
-  #frame="mdbModal" style="overflow-y: scroll;"
->
-  <div class="modal-dialog modal-md">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div>
-          <h3>{{ 'Plan rule' | translate }}</h3>
-          <h5>{{ 'Area' | translate }}: {{ selectedArea.name }}</h5>
+<h3 mat-dialog-title>{{ 'Plan rule' | translate }}</h3>
+<h4>{{ 'Area' | translate }}: {{ selectedArea.name }}</h4>
+<div mat-dialog-content>
+  <div class="d-flex flex-column">
+    <mat-slide-toggle
+      color="primary"
+      id="planAreaRuleStatusToggle"
+      [checked]="selectedAreaRulePlanning.status"
+      [(ngModel)]="selectedAreaRulePlanning.status"
+      [disabled]="selectedArea.type === 9">
+      {{ selectedAreaRule.translatedName }}
+    </mat-slide-toggle>
+    <mat-slide-toggle
+      *ngIf="selectedAreaRule.typeSpecificFields !== undefined && selectedArea.type !== 10"
+      color="primary"
+      id="planAreaRuleComplianceEnableToggle"
+      [checked]="selectedAreaRulePlanning.complianceEnabled"
+      [(ngModel)]="selectedAreaRulePlanning.complianceEnabled"
+      [disabled]="selectedAreaRule.typeSpecificFields.complianceModifiable === false">
+      {{ "Compliance enable" | translate }}
+    </mat-slide-toggle>
+    <ng-container *ngIf="selectedAreaRule.typeSpecificFields">
+      <mat-slide-toggle
+        *ngIf="selectedArea.type === 6"
+        color="primary"
+        id="hoursAndEnergyToggle"
+        [checked]="selectedAreaRulePlanning.typeSpecificFields.hoursAndEnergyEnabled"
+        [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.hoursAndEnergyEnabled"
+        [disabled]="!selectedAreaRulePlanning.status">
+        {{ "Hours and energy" | translate }}
+      </mat-slide-toggle>
+      <ng-container *ngIf="selectedArea.type === 5">
+        <div class="d-flex flex-row">
+          <mat-form-field class="mr-1">
+            <mat-label>{{'Day of week' | translate}}</mat-label>
+            <mtx-select
+              [items]="dayOfWeekArr"
+              bindLabel="name"
+              bindValue="id"
+              [ngModel]="selectedAreaRule.typeSpecificFields.dayOfWeek"
+              [disabled]="true"
+              id="planAreaDayOfWeek"
+              appendTo="body"
+            >
+            </mtx-select>
+          </mat-form-field>
+          <mat-form-field class="ml-1">
+            <mat-label>{{'Repeat every' | translate}}</mat-label>
+            <mtx-select
+              [items]="repeatEveryArr"
+              bindLabel="name"
+              bindValue="id"
+              [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
+              id="planRepeatEveryT5"
+              [clearable]="false"
+              [disabled]="true"
+              appendTo="body"
+            >
+            </mtx-select>
+          </mat-form-field>
         </div>
-        <button class="close" data-dismiss="modal" (click)="hide()">
-          <span>×</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="container-fluid">
-          <!-- Show all translations for rule -->
-          <div class="row">
-            <div class="col-md-12">
-              <div class="custom-control custom-switch">
-                <input
-                  type="checkbox"
-                  id="planAreaRuleStatusToggle"
-                  [value]="selectedAreaRulePlanning.status"
-                  [checked]="selectedAreaRulePlanning.status"
-                  [(ngModel)]="selectedAreaRulePlanning.status"
-                  [disabled]="selectedArea.type === 9"
-                  class="custom-control-input"
-                />
-                <label
-                  for="planAreaRuleStatusToggle"
-                  class="custom-control-label"
-                  >{{ selectedAreaRule.translatedName }}</label
-                >
-              </div>
-            </div>
-            <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined && selectedArea.type !== 10">
-              <ng-container>
-                <div class="col-md-12">
-                  <div class="custom-control custom-switch">
-                    <input
-                      type="checkbox"
-                      id="planAreaRuleComplianceEnableToggle"
-                      [value]="selectedAreaRulePlanning.complianceEnabled"
-                      [checked]="selectedAreaRulePlanning.complianceEnabled"
-                      [(ngModel)]="selectedAreaRulePlanning.complianceEnabled"
-                      [disabled]="selectedAreaRule.typeSpecificFields.complianceModifiable === false"
-                      class="custom-control-input"
-                    />
-                    <label
-                      for="planAreaRuleComplianceEnableToggle"
-                      class="custom-control-label"
-                    >{{ "Compliance enable" | translate }}</label>
-                  </div>
-                </div>
-              </ng-container>
-            </ng-container>
-
-          </div>
-          <ng-container *ngIf="selectedAreaRule.typeSpecificFields">
-            <div class="row" *ngIf="selectedArea.type === 6">
-              <div class="col-md-12">
-                <div class="custom-control custom-switch">
-                  <input
-                    type="checkbox"
-                    id="hoursAndEnergyToggle"
-                    class="custom-control-input"
-                    [value]="
-                      selectedAreaRulePlanning.typeSpecificFields
-                        .hoursAndEnergyEnabled
-                    "
-                    [checked]="
-                      selectedAreaRulePlanning.typeSpecificFields
-                        .hoursAndEnergyEnabled
-                    "
-                    [(ngModel)]="
-                      selectedAreaRulePlanning.typeSpecificFields
-                        .hoursAndEnergyEnabled
-                    "
+      </ng-container>
+      <!-- Rule type 1, 2, 3, 5 -->
+      <ng-container *ngIf="selectedArea.type !== 4">
+        <mat-slide-toggle
+          *ngIf="showAreaRuleNotificationsToggle"
+          color="primary"
+          id="planAreaRuleNotificationsToggle"
+          [checked]="selectedAreaRulePlanning.sendNotifications"
+          [(ngModel)]="selectedAreaRulePlanning.sendNotifications"
+          [disabled]="!selectedAreaRulePlanning.status">
+          {{ "Notifications on/off" | translate }}
+        </mat-slide-toggle>
+        <ng-container *ngIf="selectedArea.type !== 5 &&
+                             selectedArea.type !== 2 &&
+                             selectedArea.type !== 10 &&
+                             selectedAreaRule.typeSpecificFields.notificationsModifiable">
+          <ng-container *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid'">
+            <div class="d-flex flex-column">
+              <div class="d-flex flex-row">
+                <mat-form-field class="mr-1">
+                  <mat-label>{{'Repeat Type' | translate}}</mat-label>
+                  <mtx-select
+                    [items]="repeatTypeArr"
+                    bindLabel="name"
+                    bindValue="id"
+                    [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatType"
+                    (ngModelChange)="onChangeRepeatType($event)"
+                    [clearable]="false"
+                    id="planRepeatType"
                     [disabled]="!selectedAreaRulePlanning.status"
-                  />
-                  <label
-                    for="hoursAndEnergyToggle"
-                    class="custom-control-label"
-                    >{{ 'Hours and energy' | translate }}</label
+                    appendTo="body"
                   >
-                </div>
-              </div>
-            </div>
-            <div class="row" *ngIf="selectedArea.type === 5">
-              <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
-                <ng-select
-                  [items]="[
-                    { id: 1, name: 'Monday' | translate },
-                    { id: 2, name: 'Tuesday' | translate },
-                    { id: 3, name: 'Wednesday' | translate },
-                    { id: 4, name: 'Thursday' | translate },
-                    { id: 5, name: 'Friday' | translate },
-                    { id: 6, name: 'Saturday' | translate },
-                    { id: 0, name: 'Sunday' | translate }
-                  ]"
-                  bindLabel="name"
-                  [placeholder]="'Day of week' | translate"
-                  bindValue="id"
-                  [ngModel]="selectedAreaRule.typeSpecificFields.dayOfWeek"
-                  [disabled]="true"
-                  id="planAreaDayOfWeek"
-                >
-                </ng-select>
-              </div>
-              <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
-                <ng-select
-                  [items]="[
-                    { id: 1, name: 'Weekly' | translate },
-                    { id: 2, name: '2nd week' | translate },
-                    { id: 3, name: '3rd week' | translate },
-                    { id: 4, name: '4th week' | translate },
-                    { id: 5, name: '5th week' | translate },
-                    { id: 6, name: '6th week' | translate },
-                    { id: 7, name: '7th week' | translate },
-                    { id: 8, name: '8th week' | translate },
-                    { id: 9, name: '9th week' | translate },
-                    { id: 10, name: '10th week' | translate },
-                    { id: 11, name: '11st week' | translate },
-                    { id: 12, name: '12nd week' | translate },
-                    { id: 13, name: '13rd week' | translate },
-                    { id: 14, name: '14th week' | translate },
-                    { id: 15, name: '15th week' | translate },
-                    { id: 16, name: '16th week' | translate },
-                    { id: 17, name: '17th week' | translate },
-                    { id: 18, name: '18th week' | translate },
-                    { id: 19, name: '19th week' | translate },
-                    { id: 20, name: '20th week' | translate },
-                    { id: 21, name: '21st week' | translate },
-                    { id: 22, name: '22nd week' | translate },
-                    { id: 23, name: '23rd week' | translate },
-                    { id: 24, name: '24th week' | translate },
-                    { id: 25, name: '25th week' | translate },
-                    { id: 26, name: '26th week' | translate },
-                    { id: 27, name: '27th week' | translate },
-                    { id: 28, name: '28th week' | translate },
-                    { id: 29, name: '29th week' | translate },
-                    { id: 30, name: '30th week' | translate },
-                    { id: 31, name: '31st week' | translate },
-                    { id: 32, name: '32nd week' | translate },
-                    { id: 33, name: '33rd week' | translate },
-                    { id: 34, name: '34th week' | translate },
-                    { id: 35, name: '35th week' | translate },
-                    { id: 36, name: '36th week' | translate },
-                    { id: 37, name: '37th week' | translate },
-                    { id: 38, name: '38th week' | translate },
-                    { id: 39, name: '39th week' | translate },
-                    { id: 40, name: '40th week' | translate },
-                    { id: 41, name: '41st week' | translate },
-                    { id: 42, name: '42nd week' | translate },
-                    { id: 43, name: '43rd week' | translate },
-                    { id: 44, name: '44th week' | translate },
-                    { id: 45, name: '45th week' | translate },
-                    { id: 46, name: '46th week' | translate },
-                    { id: 47, name: '47th week' | translate },
-                    { id: 48, name: '48th week' | translate },
-                    { id: 49, name: '49th week' | translate },
-                    { id: 50, name: '50th week' | translate },
-                    { id: 51, name: '51st week' | translate },
-                    { id: 52, name: '52nd week' | translate },
-                  ]"
-                  bindLabel="name"
-                  [placeholder]="'Repeat every' | translate"
-                  bindValue="id"
-                  [ngModel]="
-                    selectedAreaRulePlanning.typeSpecificFields.repeatEvery
-                  "
-                  id="planRepeatEveryT5"
-                  [clearable]="false"
-                  [disabled]="true"
-                >
-                </ng-select>
-              </div>
-            </div>
-            <!-- Rule type 1, 2, 3, 5 -->
-            <ng-container *ngIf="selectedArea.type !== 4">
-              <div class="row">
-                <div class="col-md-12" *ngIf="(selectedAreaRulePlanning.typeSpecificFields &&
-                                               selectedAreaRulePlanning.typeSpecificFields.repeatEvery)
-                                               && selectedArea.type !== 3
-                                               && selectedArea.type !== 10">
-
-                  <ng-container *ngIf="selectedAreaRule.typeSpecificFields !== undefined">
-                    <ng-container *ngIf="selectedAreaRule.typeSpecificFields.notificationsModifiable">
-                      <div class="custom-control custom-switch">
-                        <input
-                          class="custom-control-input"
-                          type="checkbox"
-                          id="planAreaRuleNotificationsToggle"
-                          [value]="selectedAreaRulePlanning.sendNotifications"
-                          [checked]="selectedAreaRulePlanning.sendNotifications"
-                          [(ngModel)]="selectedAreaRulePlanning.sendNotifications"
-                          (change)="
-                            selectedAreaRulePlanning.sendNotifications =
-                              $event.target.checked
-                          "
-                          [disabled]="!selectedAreaRulePlanning.status"
-                        />
-                        <label
-                          for="planAreaRuleNotificationsToggle"
-                          class="custom-control-label"
-                          >{{ 'Notifications on/off' | translate }}</label
-                        >
-                      </div>
-                    </ng-container>
-                  </ng-container>
-                </div>
-              </div>
-              <ng-container
-                *ngIf="selectedArea.type !== 5 && selectedArea.type !== 2 && selectedArea.type !== 10 && selectedAreaRule.typeSpecificFields.notificationsModifiable">
-                <div class="row" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid'">
-                  <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
-                    <ng-select
-                      [items]="[
-                        { id: 1, name: 'Day' | translate },
-                        { id: 2, name: 'Week' | translate },
-                        { id: 3, name: 'Month' | translate }
-                      ]"
-                      bindLabel="name"
-                      [placeholder]="'Repeat Type' | translate"
-                      bindValue="id"
-                      [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatType"
-                      (ngModelChange)="onChangeRepeatType($event)"
-                      [clearable]="false"
-                      id="planRepeatType"
-                      [disabled]="!selectedAreaRulePlanning.status"
-                    >
-                    </ng-select>
-                  </div>
-                  <div class="col-md-6 col-sm-6 col-xs-6 ng-select-wrapper">
-                    <ng-select
-                      bindLabel="name"
-                      bindValue="id"
-                      [items]="repeatTypeMass()"
-                      [placeholder]="'Repeat every' | translate"
-                      [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
-                      (ngModelChange)="onChangeRepeatEvery($event)"
-                      [clearable]="false"
-                      id="planRepeatEvery"
-                      name="createRepeatEvery"
-                    >
-                    </ng-select>
-                  </div>
-                  <ng-template
-                    [ngIf]="
-                      selectedAreaRulePlanning.typeSpecificFields.repeatType ==
-                      2
-                    "
-                  >
-                    <div class="col-md-12 col-sm-6 col-xs-6 ng-select-wrapper">
-                      <ng-select
-                        [items]="[
-                          { id: 1, name: 'Monday' | translate },
-                          { id: 2, name: 'Tuesday' | translate },
-                          { id: 3, name: 'Wednesday' | translate },
-                          { id: 4, name: 'Thursday' | translate },
-                          { id: 5, name: 'Friday' | translate },
-                          { id: 6, name: 'Saturday' | translate },
-                          { id: 0, name: 'Sunday' | translate }
-                        ]"
-                        bindLabel="name"
-                        [placeholder]="'Day of week' | translate"
-                        bindValue="id"
-                        [(ngModel)]="
-                          selectedAreaRulePlanning.typeSpecificFields.dayOfWeek
-                        "
-                        id="createDayOfWeek"
-                      >
-                      </ng-select>
-                    </div>
-                  </ng-template>
-                  <ng-template
-                    [ngIf]="
-                      selectedAreaRulePlanning.typeSpecificFields.repeatType ==
-                      3
-                    "
-                  >
-                    <div class="col-md-12 col-sm-6 col-xs-6 ng-select-wrapper">
-
-                        <ng-select
-                          [items]="days"
-                          [placeholder]="'Day of month' | translate"
-                          [(ngModel)]="
-                            selectedAreaRulePlanning.typeSpecificFields
-                              .dayOfMonth
-                          "
-                          id="createDayOfMonth"
-                          name="createDayOfMonth"
-                        >
-                        </ng-select>
-                    </div>
-                  </ng-template>
-                </div>
-              </ng-container>
-              <ng-container  *ngIf="selectedAreaRule.translatedName === '01. Registrer halebid'"><br></ng-container>
-              <ng-container  *ngIf="selectedArea.type === 10"><br></ng-container>
-              <div class="row">
-                <div class="col-12" *ngIf="selectedAreaRule.translatedName !== '01. Registrer halebid' && selectedArea.type !== 10 && selectedArea.type !== 9">
-                  <div class="md-form" [owlDateTimeTrigger]="dt1">
-                    <input
-                      mdbInput
-                      [owlDateTime]="dt1"
-                      [min]="currentDate"
-                      [ngModel]="selectedAreaRulePlanning.startDate"
-                      (ngModelChange)="updateStartDate($event)"
-                      type="text"
-                      id="planStartFrom"
-                      name="createStartFrom"
-                      class="form-control"
-                      [disabled]="!selectedAreaRulePlanning.status"
-                    />
-                    <owl-date-time
-                      [pickerType]="'calendar'"
-                      [firstDayOfWeek]="1"
-                      #dt1
-                    ></owl-date-time>
-                    <label for="planStartFrom">{{
-                      'Start date' | translate
-                    }}</label>
-                  </div>
-                </div>
-              </div>
-            </ng-container>
-            <ng-container *ngIf="selectedArea.type === 2">
-              <div class="row">
-                <div class="col-12 ng-select-wrapper">
-                  <ng-select
-                    [items]="[
-                      { id: 1, name: 'Open' | translate },
-                      { id: 2, name: 'Closed' | translate }
-                    ]"
+                  </mtx-select>
+                </mat-form-field>
+                <mat-form-field class="ml-1">
+                  <mat-label>{{'Repeat every' | translate}}</mat-label>
+                  <mtx-select
                     bindLabel="name"
-                    [placeholder]="'Type' | translate"
                     bindValue="id"
-                    [ngModel]="selectedAreaRule.typeSpecificFields.type"
-                    [disabled]="true"
-                    id="planRuleType"
+                    [items]="repeatTypeMass()"
+                    [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
+                    (ngModelChange)="onChangeRepeatEvery($event)"
+                    [clearable]="false"
+                    id="planRepeatEvery"
+                    name="createRepeatEvery"
+                    appendTo="body"
                   >
-                  </ng-select>
-                </div>
+                  </mtx-select>
+                </mat-form-field>
               </div>
-              <div class="row">
-                <div class="col-12 ng-select-wrapper">
-                  <ng-select
-                    [items]="[
-                      { id: 1, name: 'Yes' | translate },
-                      { id: 2, name: 'No' | translate }
-                    ]"
-                    bindLabel="name"
-                    [placeholder]="'Alarm' | translate"
-                    bindValue="id"
-                    [ngModel]="selectedAreaRule.typeSpecificFields.alarm"
-                    [disabled]="true"
-                    id="planRuleAlarm"
-                  >
-                  </ng-select>
-                </div>
-              </div>
-            </ng-container>
-            <ng-container *ngIf="selectedArea.type === 4">
-              <div class="row">
-                <div class="col-md-12 col-sm-6 col-xs-6">
-                  <div class="md-form" [owlDateTimeTrigger]="dt2">
-                    <input
-                      mdbInput
-                      [owlDateTime]="dt2"
-                      [min]="currentDate"
-                      [ngModel]="
-                        selectedAreaRulePlanning.startDate
-                      "
-                      (ngModelChange)="updateStartDate($event)"
-                      type="text"
-                      id="planEndDate"
-                      class="form-control"
-                      [disabled]="!selectedAreaRulePlanning.status"
-                    />
-                    <owl-date-time
-                      [pickerType]="'calendar'"
-                      [firstDayOfWeek]="1"
-                      #dt2
-                    ></owl-date-time>
-                    <label for="planEndDate">{{
-                      'Start date' | translate
-                    }}</label>
-                  </div>
-                </div>
-              </div>
-            </ng-container>
-          </ng-container>
-          <div class="table-responsive" *ngIf="selectedArea.type !== 9">
-            <table class="table table-xs table-bordered text-center z-depth-1">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>{{ 'Worker name' | translate }}</th>
-                  <th>{{ 'Check to assign' | translate }}</th>
-                </tr>
-              </thead>
-              <tbody id="pairingModalTableBody">
-                <tr
-                  *ngFor="
-                    let worker of selectedArea.availableWorkers;
-                    let i = index
-                  "
+              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 2">
+                <mat-label>{{'Day of week' | translate}}</mat-label>
+                <mtx-select
+                  [items]="dayOfWeekArr"
+                  bindLabel="name"
+                  bindValue="id"
+                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"
+                  id="createDayOfWeek"
+                  appendTo="body"
                 >
-                  <td class="align-middle">{{ worker.siteId }}</td>
-                  <td class="align-middle">{{ worker.siteName }}</td>
-                  <td class="align-middle">
-                    <div class="mat-checkbox">
-                      <input
-                        id="checkboxCreateAssignment{{ i }}"
-                        (change)="addToArray($event, worker.siteId)"
-                        [checked]="getAssignmentBySiteId(worker.siteId)"
-                        [value]="getAssignmentBySiteId(worker.siteId)"
-                        color="primary"
-                        type="checkbox"
-                        [disabled]="!selectedAreaRulePlanning.status"
-                      />
-                      <label for="checkboxCreateAssignment{{ i }}"></label>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <ng-container *ngIf="selectedSite.siteName === undefined">
-            <ng-select *ngIf="selectedArea.type === 9"
-                       [items]="selectedArea.availableWorkers"
-                       [searchable]="false"
-                       [clearable]="false"
-                       [multiple]="false"
-                       [placeholder]="selectedSite.siteName"
-                       [(ngModel)]="type9assignedSite"
-                       (change)="addToArraySelect($event)"
-                       bindLabel="siteName"
-                       bindValue="siteId"
-                       id="createAssignedWorkers">
-
-            </ng-select>
-          </ng-container>
-          <ng-container *ngIf="selectedSite.siteName !== undefined">
-            <div class="md-form" *ngIf="selectedArea.type === 9">
-              <input
-                mdbInput
-                type="text"
-                value="{{selectedSite.siteName}}" disabled>
-              <label>{{ 'Assigned worker' | translate }}</label>
+                </mtx-select>
+              </mat-form-field>
+              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 3">
+                <mat-label>{{'Day of month' | translate}}</mat-label>
+                <mtx-select
+                  [items]="daysOfMonth"
+                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfMonth"
+                  id="createDayOfMonth"
+                  name="createDayOfMonth"
+                  appendTo="body"
+                >
+                </mtx-select>
+              </mat-form-field>
             </div>
           </ng-container>
 
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button
-          mdbBtn
-          class="btn-success btn-small-height"
-          (click)="onUpdateAreaRulePlan()"
-          id="updateAreaRulePlanningSaveBtn"
-          [disabled]="isDisabledSaveBtn()"
-        >
-          {{ 'Save' | translate }}
-        </button>
-        <button
-          mdbBtn
-          class="btn-accent text-black-50 btn-small-height"
-          (click)="hide()"
-          id="updateAreaRulePlanningSaveCancelBtn"
-        >
-          {{ 'Cancel' | translate }}
-        </button>
-      </div>
-    </div>
+        </ng-container>
+        <mat-form-field
+          *ngIf="
+          selectedAreaRule.translatedName !== '01. Registrer halebid' &&
+          selectedArea.type !== 10 &&
+          selectedArea.type !== 9"
+          [owlDateTimeTrigger]="dt1">
+          <mat-label>{{ 'Start date' | translate }}</mat-label>
+          <input
+            matInput
+            [owlDateTime]="dt1"
+            [min]="currentDate"
+            [ngModel]="selectedAreaRulePlanning.startDate"
+            (ngModelChange)="updateStartDate($event)"
+            type="text"
+            id="planStartFrom"
+            name="createStartFrom"
+            [disabled]="!selectedAreaRulePlanning.status"
+          >
+          <owl-date-time
+            [pickerType]="'calendar'"
+            [firstDayOfWeek]="1"
+            #dt1
+          ></owl-date-time>
+        </mat-form-field>
+      </ng-container>
+      <ng-container *ngIf="selectedArea.type === 2">
+        <mat-form-field>
+          <mat-label>{{'Type' | translate}}</mat-label>
+          <mtx-select
+            [items]="[
+            { id: 1, name: 'Open' | translate },
+            { id: 2, name: 'Closed' | translate }
+            ]"
+            bindLabel="name"
+            bindValue="id"
+            [ngModel]="selectedAreaRule.typeSpecificFields.type"
+            [disabled]="true"
+            id="planRuleType"
+            appendTo="body"
+          >
+          </mtx-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{'Alarm' | translate}}</mat-label>
+          <mtx-select
+            [items]="[
+            { id: 1, name: 'Yes' | translate },
+            { id: 2, name: 'No' | translate }
+            ]"
+            bindLabel="name"
+            bindValue="id"
+            [ngModel]="selectedAreaRule.typeSpecificFields.alarm"
+            [disabled]="true"
+            id="planRuleAlarm"
+            appendTo="body"
+          >
+          </mtx-select>
+        </mat-form-field>
+      </ng-container>
+      <ng-container *ngIf="selectedArea.type === 4">
+        <mat-form-field [owlDateTimeTrigger]="dt2">
+          <mat-label>{{ 'Start date' | translate }}</mat-label>
+          <input
+            matInput
+            [owlDateTime]="dt2"
+            [min]="currentDate"
+            [ngModel]="selectedAreaRulePlanning.startDate"
+            (ngModelChange)="updateStartDate($event)"
+            type="text"
+            id="planEndDate"
+            [disabled]="!selectedAreaRulePlanning.status"
+          >
+          <owl-date-time
+            [pickerType]="'calendar'"
+            [firstDayOfWeek]="1"
+            #dt2
+          ></owl-date-time>
+        </mat-form-field>
+      </ng-container>
+    </ng-container>
+    <mtx-grid
+      [data]="selectedArea.availableWorkers"
+      [columns]="tableHeaders"
+      [pageOnFront]="false"
+      [rowStriped]="true"
+      [rowSelectable]="true"
+      [showPaginator]="false"
+      [rowSelected]="selectedWorkers"
+      (rowSelectionChange)="changeArray($event)"
+      [rowSelectionFormatter]="rowSelectionFormatter"
+      *ngIf="selectedArea.type !== 9"
+    >
+    </mtx-grid>
+    <mat-form-field *ngIf="selectedArea.type === 9 && !selectedSite.siteName">
+      <mat-label>{{ 'Assigned worker' | translate }}</mat-label>
+      <mtx-select
+        [items]="selectedArea.availableWorkers"
+        [searchable]="false"
+        [clearable]="false"
+        [multiple]="false"
+        [(ngModel)]="type9assignedSite"
+        (change)="addToArraySelect($event)"
+        bindLabel="siteName"
+        bindValue="siteId"
+        id="createAssignedWorkers"
+        appendTo="body"
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field *ngIf="selectedArea.type === 9 && !!selectedSite.siteName">
+      <mat-label>{{ 'Assigned worker' | translate }}</mat-label>
+      <input
+        matInput
+        type="text"
+        [ngModel]="selectedSite.siteName"
+        disabled="true"
+      >
+    </mat-form-field>
   </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    (click)="onUpdateAreaRulePlan()"
+    id="updateAreaRulePlanningSaveBtn"
+    [disabled]="isDisabledSaveBtn()"
+  >
+    {{'Save' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    (click)="hide()"
+    id="updateAreaRulePlanningSaveCancelBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
 </div>
