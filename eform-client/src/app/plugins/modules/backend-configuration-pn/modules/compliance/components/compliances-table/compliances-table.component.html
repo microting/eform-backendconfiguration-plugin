@@ -1,78 +1,12 @@
-<div class="row p-1 mt-4 table-responsive no-gutters">
-  <table
-    mdbTable
-    striped="true"
-    hover="true"
-    small="true"
-    class="z-depth-1 text-center"
-  >
-    <thead
-      table-headers
-      [tableHeaders]="tableHeaders"
-      [sort]="compliancesStateService.getSort() | async"
-      (sortChanged)="sortTable($event)"
-    ></thead>
-    <tbody id="complianceTableBody">
-      <tr *ngFor="let compliance of compliances; let i = index">
-        <td id="id">
-          {{ compliance.id }}
-        </td>
-        <td id="deadline">
-          {{ compliance.deadline | date: 'dd.MM.yyyy' }}
-        </td>
-        <td id="controlArea">
-          {{ compliance.controlArea }}
-        </td>
-        <td id="itemName">
-          {{ compliance.itemName }}
-        </td>
-        <td id="responsibles">
-          <ng-container *ngIf="compliance.responsible">
-            <span *ngFor="let responsible of compliance.responsible">
-              {{ responsible.value }}
-              <small style="color: var(--blue-400);">({{ responsible.key }})</small>
-              <br />
-            </span>
-          </ng-container>
-<!--          <span [innerHTML]="compliance.responsible"></span>-->
-        </td>
-<!--        <td id="compliance">-->
-<!--          <span-->
-<!--            class="badge"-->
-<!--            [class]="getColorBadge(compliance.compliance)"-->
-<!--          ></span>-->
-<!--        </td>-->
-        <td>
-          <!--actions-->
-          <ng-container *ngIf="compliance.caseId !== 0">
-<!--            <div class="d-flex flex-row justify-content-center">-->
-<!--              <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit case' | translate}}</a>-->
-<!--              &lt;!&ndash;            <a [routerLink]="[compliance.linkToCaseEdit]" target="_blank">{{'Edit planning' | translate}}</a>&ndash;&gt;-->
-<!--            </div>-->
-            <button
-              mdbBtn
-              class="btn-danger btn-icon mb-2"
-              [routerLink]="[
-              '/plugins/backend-configuration-pn/compliances/case/' +
-                compliance.caseId +
-                '/' +
-                compliance.eformId +
-                '/' +
-                propertyId +
-                '/' +
-                compliance.deadline+
-                '/' +
-                (isComplianceThirtyDays === undefined ? 'false' : 'true')+
-                '/' +
-                compliance.id
-            ]"
-              mdbTooltip="{{ 'Edit Case' | translate }}"
-            >
-              <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-            </button>
-          </ng-container>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+<mtx-grid
+  [data]="compliances"
+  [columns]="tableHeaders"
+  [showPaginator]="false"
+  [pageOnFront]="false"
+  [rowStriped]="true"
+  [showToolbar]="false"
+  [showColumnMenuButton]="false"
+  [sortActive]="compliancesStateService.getActiveSort() | async"
+  [sortDirection]="compliancesStateService.getActiveSortDirection() | async"
+  (sortChange)="sortTable($event)">
+</mtx-grid>
