@@ -1,8 +1,8 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
-import { Subscription } from 'rxjs';
-import { AuthStateService } from 'src/app/common/store';
+import {Component, OnDestroy, OnInit,} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Subscription} from 'rxjs';
+import {AuthStateService} from 'src/app/common/store';
 import {
   AreaRuleCreateModalComponent,
   AreaRuleDeleteModalComponent,
@@ -20,12 +20,15 @@ import {
   BackendConfigurationPnAreasService,
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
-import { TranslateService } from '@ngx-translate/core';
+import {TranslateService} from '@ngx-translate/core';
 import {AreaRuleEntityListModalComponent, AreaRulePlanModalComponent} from '../../../../components';
 import {EntityItemModel, Paged} from 'src/app/common/models';
 import {EntitySelectService} from 'src/app/common/services';
-import {ChemicalModel} from 'src/app/plugins/modules/backend-configuration-pn/modules';
-import {ChemicalsStateService} from 'src/app/plugins/modules/backend-configuration-pn/components/chemicals/store';
+import {ChemicalModel} from '../../../../modules';
+import {ChemicalsStateService} from '../../../../components/chemicals/store';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
 
 @AutoUnsubscribe()
 @Component({
@@ -34,19 +37,9 @@ import {ChemicalsStateService} from 'src/app/plugins/modules/backend-configurati
   styleUrls: ['./area-rules-container.component.scss'],
 })
 export class AreaRulesContainerComponent implements OnInit, OnDestroy {
-  @ViewChild('createAreaRuleModal', { static: false })
-  createAreaRuleModal: AreaRuleCreateModalComponent;
-  @ViewChild('editAreaRuleModal', { static: false })
-  editAreaRuleModal: AreaRuleEditModalComponent;
-  @ViewChild('deleteAreaRuleModal', { static: false })
-  deleteAreaRuleModal: AreaRuleDeleteModalComponent;
-  @ViewChild('planAreaRuleModal', { static: false })
-  planAreaRuleModal: AreaRulePlanModalComponent;
-  @ViewChild('entityListEditModal', { static: false })
-  entityListEditModal: AreaRuleEntityListModalComponent;
-
   areaRules: AreaRuleSimpleModel[] = [];
   selectedArea: AreaModel = new AreaModel();
+  chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
   propertyAreaId: number;
   selectedPropertyId: number;
   selectedProperty: PropertyModel;
@@ -55,8 +48,8 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       name: '',
       href: '/plugins/backend-configuration-pn/properties',
     },
-    { name: '', href: '' },
-    { name: '' },
+    {name: '', href: ''},
+    {name: ''},
   ];
 
   getAreaRulesSub$: Subscription;
@@ -71,8 +64,13 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   deleteAreaRulesSub$: Subscription;
   getTranslateSub$: Subscription;
   routerSub$: Subscription;
-  chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
   getChemicalsSub$: Subscription;
+  updateAreaRulePlanSub$: Subscription;
+  onDeleteAreaRuleSub$: Subscription;
+  onCreateAreaRuleSub$: Subscription;
+  onDeleteAreaRuleFromModalSub$: Subscription;
+  onUpdateAreaRuleSub$: Subscription;
+  propertyUpdateSub$: Subscription;
 
   constructor(
     private areasService: BackendConfigurationPnAreasService,
@@ -82,7 +80,10 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
     private translateService: TranslateService,
     private entitySelectService: EntitySelectService,
     public chemicalsStateService: ChemicalsStateService,
-  ) {}
+    private dialog: MatDialog,
+    private overlay: Overlay,
+  ) {
+  }
 
   ngOnInit() {
     this.routerSub$ = this.route.params.subscribe((params) => {
@@ -96,7 +97,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       this.getArea(this.propertyAreaId);
     });
   }
-
 
   getChemicals() {
     this.getChemicalsSub$ = this.chemicalsStateService
@@ -127,7 +127,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.selectedArea = operation.model;
-          this.breadcrumbs[2] = { name: this.selectedArea.name };
+          this.breadcrumbs[2] = {name: this.selectedArea.name};
           this.getChemicals();
         }
       });
@@ -148,15 +148,33 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       this.getAreaRulePlanningSub$ = this.areasService
         .getAreaRulePlanningByRuleId(rule.id)
         .subscribe((operation) => {
-          // this.planAreaRuleModal.show( todo
-          //   rule,
-          //   this.selectedPropertyId,
-          //   this.selectedArea,
-          //   operation.model
-          // );
+          const modal = this.dialog.open(AreaRulePlanModalComponent,
+            {
+              ...dialogConfigHelper(this.overlay,
+                {
+                  areaRule: rule,
+                  propertyId: this.selectedPropertyId,
+                  area: this.selectedArea,
+                  areaRulePlan: operation.model,
+                }),
+              minWidth: 500,
+            });
+          this.updateAreaRulePlanSub$ = modal.componentInstance.updateAreaRulePlan
+            .subscribe(x => this.onUpdateAreaRulePlan(x, modal));
         });
     } else {
-      // this.planAreaRuleModal.show(rule, this.selectedPropertyId, this.selectedArea); todo
+      const modal = this.dialog.open(AreaRulePlanModalComponent,
+        {
+          ...dialogConfigHelper(this.overlay,
+            {
+              areaRule: rule,
+              propertyId: this.selectedPropertyId,
+              area: this.selectedArea,
+            }),
+          minWidth: 500,
+        });
+      this.updateAreaRulePlanSub$ = modal.componentInstance.updateAreaRulePlan
+        .subscribe(x => this.onUpdateAreaRulePlan(x, modal));
     }
   }
 
@@ -165,59 +183,73 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .getSingleAreaRule(rule.id, this.selectedPropertyId)
       .subscribe((operation) => {
         if (operation && operation.success) {
-          this.editAreaRuleModal.show(operation.model, rule.planningStatus);
+          const modal = this.dialog.open(AreaRuleEditModalComponent,
+            {...dialogConfigHelper(this.overlay,
+                {areaRule: operation.model, selectedArea: this.selectedArea, planningStatus: rule.planningStatus}),
+              minWidth: this.selectedArea.type === 10 ? 800 : 500,
+            }
+          );
+          this.onUpdateAreaRuleSub$ = modal.componentInstance.updateAreaRule.subscribe(x => this.onUpdateAreaRule(x, modal));
         }
       });
   }
 
   showAreaRuleCreateModal() {
-    this.createAreaRuleModal.show();
+    const modal = this.dialog.open(AreaRuleCreateModalComponent,
+      {...dialogConfigHelper(this.overlay,
+          {selectedArea: this.selectedArea, areaRules: this.areaRules}),
+        minWidth: this.selectedArea.type === 10 ? 800 : 500,
+      }
+    );
+    this.onCreateAreaRuleSub$ = modal.componentInstance.createAreaRule.subscribe(x => this.onCreateAreaRule(x, modal));
+    this.onDeleteAreaRuleFromModalSub$ = modal.componentInstance.deleteAreaRule.subscribe(x => this.onDeleteAreaRules(x, modal));
   }
 
   showDeleteAreaRuleModal(rule: AreaRuleSimpleModel) {
-    this.deleteAreaRuleModal.show(rule);
+    const modal = this.dialog.open(AreaRuleDeleteModalComponent, {...dialogConfigHelper(this.overlay, rule)});
+    this.onDeleteAreaRuleSub$ = modal.componentInstance.deleteAreaRule.subscribe(x => this.onDeleteAreaRule(x, modal))
   }
 
-  onCreateAreaRule(model: AreaRulesCreateModel) {
+  onCreateAreaRule(model: AreaRulesCreateModel, modal: MatDialogRef<AreaRuleCreateModalComponent>) {
     this.createAreaRuleSub$ = this.areasService
-      .createAreaRules({ ...model, propertyAreaId: this.propertyAreaId })
+      .createAreaRules({...model, propertyAreaId: this.propertyAreaId})
       .subscribe((data) => {
         if (data && data.success) {
           this.getAreaRules(this.propertyAreaId);
-          this.createAreaRuleModal.hide();
+          modal.close();
         }
       });
   }
 
-  onUpdateAreaRule(model: AreaRuleUpdateModel) {
+  onUpdateAreaRule(model: AreaRuleUpdateModel, modal: MatDialogRef<AreaRuleEditModalComponent>) {
     this.editAreaRuleSub$ = this.areasService
       .updateAreaRule(model)
       .subscribe((data) => {
         if (data && data.success) {
           this.getAreaRules(this.propertyAreaId);
-          this.editAreaRuleModal.hide();
+          modal.close();
         }
       });
   }
 
-  onDeleteAreaRule(areaRuleId: number) {
+  onDeleteAreaRule(areaRuleId: number, modal: MatDialogRef<AreaRuleDeleteModalComponent>) {
     this.deleteAreaRuleSub$ = this.areasService
       .deleteAreaRule(areaRuleId)
       .subscribe((data) => {
         if (data && data.success) {
           this.getAreaRules(this.propertyAreaId);
-          this.deleteAreaRuleModal.hide();
+          modal.close();
         }
       });
   }
 
-  onUpdateAreaRulePlan(rulePlanning: AreaRulePlanningModel) {
+  onUpdateAreaRulePlan(rulePlanning: AreaRulePlanningModel, modal: MatDialogRef<AreaRulePlanModalComponent>) {
     this.planAreaRuleSub$ = this.areasService
       .updateAreaRulePlanning(rulePlanning)
       .subscribe((data) => {
         if (data && data.success) {
           this.getAreaRules(this.propertyAreaId);
-          this.planAreaRuleModal.hide();
+          modal.close();
         }
       });
   }
@@ -236,13 +268,13 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
-  onDeleteAreaRules(areaRuleIds: number[]) {
+  onDeleteAreaRules(areaRuleIds: number[], modal: MatDialogRef<AreaRuleCreateModalComponent>) {
     this.deleteAreaRulesSub$ = this.areasService
       .deleteAreaRules(areaRuleIds)
       .subscribe((data) => {
         if (data && data.success) {
           this.getAreaRules(this.propertyAreaId);
-          this.createAreaRuleModal.hide();
+          modal.close();
         }
       });
   }
@@ -250,30 +282,36 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
   }
 
-  updateEntityList(model: Array<EntityItemModel>) {
-    if(!this.selectedArea.groupId){
+  updateEntityList(model: Array<EntityItemModel>, modal: MatDialogRef<AreaRuleEntityListModalComponent>) {
+    if (!this.selectedArea.groupId) {
       this.backendConfigurationPnPropertiesService.createEntityList(model, this.propertyAreaId)
         .subscribe((x => {
-          if(x.success){
-            this.entityListEditModal.hide();
+          if (x.success) {
+            modal.close();
             this.getArea(this.propertyAreaId);
           }
-        }))
+        }));
     } else {
       this.entitySelectService.getEntitySelectableGroup(this.selectedArea.groupId)
-      .subscribe(data => {
-        if (data.success) {
-          this.entitySelectService.updateEntitySelectableGroup({
-            entityItemModels: model,
-            groupUid: +data.model.microtingUUID,
-            ...data.model
-          }).subscribe(x => {
-            if (x.success) {
-              this.entityListEditModal.hide();
-            }
-          });
-        }
-      });
+        .subscribe(data => {
+          if (data.success) {
+            this.entitySelectService.updateEntitySelectableGroup({
+              entityItemModels: model,
+              groupUid: +data.model.microtingUUID,
+              ...data.model
+            }).subscribe(x => {
+              if (x.success) {
+                modal.close();
+              }
+            });
+          }
+        });
     }
+  }
+
+  showEntityListEditModal($event: number) {
+    const modal = this.dialog
+      .open(AreaRuleEntityListModalComponent, {...dialogConfigHelper(this.overlay, $event)});
+    this.propertyUpdateSub$ = modal.componentInstance.entityListChanged.subscribe(x => this.updateEntityList(x, modal));
   }
 }
