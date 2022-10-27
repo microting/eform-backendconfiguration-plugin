@@ -510,7 +510,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             await _bus.SendLocal(new WorkOrderCreated(
                 propertyWorkerKvpList,
                 eformIdForOngoingTasks,
-                (int)property.FolderIdForOngoingTasks,
+                (int)property.FolderIdForOngoingTasks!,
                 description,
                 CaseStatusesEnum.Ongoing,
                 newWorkorderCase.Id,
@@ -520,7 +520,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 pushMessageTitle,
                 createModel.AreaName,
                 _userService.UserId,
-                picturesOfTasks)).ConfigureAwait(false);
+                picturesOfTasks,
+                site.Name)).ConfigureAwait(false);
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }

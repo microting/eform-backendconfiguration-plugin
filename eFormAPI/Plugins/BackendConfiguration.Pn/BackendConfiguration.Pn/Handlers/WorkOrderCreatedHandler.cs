@@ -45,6 +45,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             message.NewDescription,
             message.DeviceUsersGroupId,
             pdfHash,
+            message.SiteName,
             message.PushMessageBody,
             message.PushMessageTitle,
             message.AreaName,
@@ -61,6 +62,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         string newDescription,
         int? deviceUsersGroupId,
         string pdfHash,
+        string siteName,
         string pushMessageBody,
         string pushMessageTitle,
         string areaName, int createdByUserId)
@@ -83,8 +85,11 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             mainElement.ElementList[0].Label = " ";
             mainElement.ElementList[0].Description.InderValue =
                 description.Replace("\r\n", "<br>").Replace("\n", "<br>") + "<center><strong>******************</strong></center>";
-            mainElement.PushMessageTitle = pushMessageTitle;
-            mainElement.PushMessageBody = pushMessageBody;
+            if (site.Name == siteName)
+            {
+                mainElement.PushMessageTitle = pushMessageTitle;
+                mainElement.PushMessageBody = pushMessageBody;
+            }
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\r\n", "<br>").Replace("\n", "<br>");
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
