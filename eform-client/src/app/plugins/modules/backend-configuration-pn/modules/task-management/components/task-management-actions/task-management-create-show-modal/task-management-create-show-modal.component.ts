@@ -194,12 +194,14 @@ export class TaskManagementCreateShowModalComponent
             );
             data.model = data.model.filter((x) => x.assignments.length > 0);
             this.assignedSitesToProperty = data.model.map((x) => {
-              return {
+              return (sites.find((y) => y.id === x.siteId) !== undefined) ?
+              {
                 id: x.siteId,
                 name: sites.find((y) => y.id === x.siteId).name,
                 description: '',
-              };
+              } : null;
             });
+            this.assignedSitesToProperty = this.assignedSitesToProperty.filter((x) => x !== null);
           }
         });
       }
