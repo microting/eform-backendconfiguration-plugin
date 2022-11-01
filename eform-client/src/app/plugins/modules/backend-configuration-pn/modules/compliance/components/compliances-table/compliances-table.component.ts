@@ -60,4 +60,11 @@ export class CompliancesTableComponent implements OnInit {
     this.compliancesStateService.onSortTable(sort);
     this.updateTable.emit();
   }
+
+  canEdit(date : Date) : boolean {
+    const today = new Date();
+    const deadline = new Date(date);
+    const result = deadline < today;
+    return result;
+  }
 }
