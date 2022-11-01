@@ -22,9 +22,12 @@ export class TaskManagementQuery extends Query<TaskManagementState> {
   //       state.pagination.offset
   //     )
   // );
-  selectSort$ = this.select(
-    (state) => new SortModel(state.pagination.sort, state.pagination.isSortDsc)
-  );
   selectFilters$ = this.select((state) => state.filters);
   selectDisableButtons$ = this.select((state) => !state.filters.propertyId);
+
+  // selectSort$ = this.select(
+  //   (state) => new SortModel(state.pagination.sort, state.pagination.isSortDsc)
+  // );
+  selectActiveSort$ = this.select((state) => state.pagination.sort);
+  selectActiveSortDirection$ = this.select((state) => state.pagination.isSortDsc ? 'desc' : 'asc');
 }

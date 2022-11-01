@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
 import { PropertyWorkersStore, PropertyWorkersQuery } from './';
 import { Observable } from 'rxjs';
-import { OperationDataResult, SiteDto, SortModel } from 'src/app/common/models';
+import { OperationDataResult } from 'src/app/common/models';
 import { updateTableSort, getOffset } from 'src/app/common/helpers';
 import { map } from 'rxjs/operators';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
-import { DeviceUserService } from 'src/app/common/services';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
 
 @Injectable({ providedIn: 'root' })

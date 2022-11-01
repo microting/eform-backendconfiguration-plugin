@@ -1,18 +1,23 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, Inject, OnDestroy, OnInit, Output,} from '@angular/core';
 import { CommonDictionaryModel } from 'src/app/common/models';
 import {
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskManagementService,
 } from '../../../../../services';
 import { SitesService, TemplateFilesService } from 'src/app/common/services';
-import {WorkOrderCaseCreateModel, WorkOrderCaseForReadModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {
+  WorkOrderCaseCreateModel,
+  WorkOrderCaseForReadModel,
+} from '../../../../../models';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription} from 'rxjs';
-import { ModalDirective } from 'angular-bootstrap-md';
-import * as R from 'ramda';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Gallery, GalleryItem, ImageItem } from '@ngx-gallery/core';
 import { Lightbox } from '@ngx-gallery/lightbox';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {AddPictureDialogComponent} from 'src/app/common/modules/eform-cases/components';
+import {Overlay} from '@angular/cdk/overlay';
 
 @AutoUnsubscribe()
 @Component({
@@ -23,10 +28,7 @@ import { Lightbox } from '@ngx-gallery/lightbox';
 export class TaskManagementCreateShowModalComponent
   implements OnInit, OnDestroy
 {
-  @ViewChild('frame', { static: false }) frame;
   @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
-  @ViewChild('addNewImageModal', { static: false })
-  addNewImageModal: ModalDirective;
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];
   assignedSitesToProperty: CommonDictionaryModel[] = [];
@@ -39,6 +41,9 @@ export class TaskManagementCreateShowModalComponent
 
   propertyIdValueChangesSub$: Subscription;
   imageSubs$: Subscription[] = [];
+  addPictureDialogComponentAddedPictureSub$: Subscription;
+  getAllSitesDictionarySub$: Subscription;
+  getPropertiesAssignmentsSub$: Subscription;
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -46,10 +51,12 @@ export class TaskManagementCreateShowModalComponent
     private imageService: TemplateFilesService,
     public gallery: Gallery,
     public lightbox: Lightbox,
-    private taskManagementService: BackendConfigurationPnTaskManagementService
-  ) {}
-
-  ngOnInit(): void {
+    public dialog: MatDialog,
+    private overlay: Overlay,
+    private taskManagementService: BackendConfigurationPnTaskManagementService,
+    public dialogRef: MatDialogRef<TaskManagementCreateShowModalComponent>,
+    @Inject(MAT_DIALOG_DATA) workOrderCase?: WorkOrderCaseForReadModel,
+  ) {
     this.workOrderCaseForm = new FormGroup({
       propertyId: new FormControl({
         value: null,
@@ -68,9 +75,6 @@ export class TaskManagementCreateShowModalComponent
         disabled: false,
       }, Validators.required),
     });
-  }
-
-  show(workOrderCase?: WorkOrderCaseForReadModel) {
     this.getProperties();
     if (workOrderCase) {
       this.getPropertyAreas(workOrderCase.propertyId);
@@ -120,17 +124,14 @@ export class TaskManagementCreateShowModalComponent
           if (propertyId) {
             this.getPropertyAreas(propertyId);
             this.getSites(propertyId);
-            this.workOrderCaseForm.patchValue(
-              {
-                areaName: null,
-                assignedTo: null,
-              }
-            );
+            this.workOrderCaseForm.patchValue({areaName: null, assignedTo: null,});
           }
         });
       this.isCreate = true;
     }
-    this.frame.show();
+  }
+
+  ngOnInit(): void {
   }
 
   hide() {
@@ -140,7 +141,7 @@ export class TaskManagementCreateShowModalComponent
     if (this.propertyIdValueChangesSub$) {
       this.propertyIdValueChangesSub$.unsubscribe();
     }
-    this.frame.hide();
+    this.dialogRef.close();
   }
 
   getPropertyAreas(propertyId: number) {
@@ -172,33 +173,17 @@ export class TaskManagementCreateShowModalComponent
     });
   }
 
-  // getProperties() {
-  //   this.propertyService.getAllPropertiesDictionary().subscribe((data) => {
-  //     if (data && data.success && data.model) {
-  //       this.properties = data.model;
-  //     }
-  //   });
-  // }
-
   getSites(propertyId: number) {
-    this.sitesService.getAllSitesDictionary().subscribe((result) => {
+    this.getAllSitesDictionarySub$ = this.sitesService.getAllSitesDictionary().subscribe(result => {
       if (result && result.success && result.success) {
         const sites = result.model;
-        this.propertyService.getPropertiesAssignments().subscribe((data) => {
+        this.getPropertiesAssignmentsSub$ = this.propertyService.getPropertiesAssignments().subscribe(data => {
           if (data && data.success && data.model) {
-            data.model.forEach(
-              (x) =>
-                (x.assignments = x.assignments.filter(
-                  (x) => x.isChecked && x.propertyId === propertyId
-                ))
-            );
+            data.model.forEach(x => x.assignments = x.assignments.filter(y => y.isChecked && y.propertyId === propertyId));
             data.model = data.model.filter((x) => x.assignments.length > 0);
-            this.assignedSitesToProperty = data.model.map((x) => {
-              return {
-                id: x.siteId,
-                name: sites.find((y) => y.id === x.siteId).name,
-                description: '',
-              };
+            this.assignedSitesToProperty = data.model.map(x => {
+              const site = sites.find((y) => y.id === x.siteId)
+              return {id: x.siteId, name: site ? site.name : '', description: '',};
             });
           }
         });
@@ -206,26 +191,15 @@ export class TaskManagementCreateShowModalComponent
     });
   }
 
-  addPicture() {
-    const src = URL.createObjectURL(this.newImage);
-    this.images.push({
+  addPicture(image: File, modal: MatDialogRef<AddPictureDialogComponent>) {
+    const src = URL.createObjectURL(image);
+    this.images = [...this.images, {
       src: src,
       thumbnail: src,
-      fileName: this.newImage.name,
-      file: this.newImage,
-    });
-    this.addNewImageModal.hide();
-    this.newImage = null;
-    this.frame.show();
-  }
-
-  onFileSelected(event: Event) {
-    // @ts-ignore
-    this.newImage = R.last(event.target.files);
-  }
-
-  ngOnDestroy(): void {
-    this.imageSubs$.forEach((x) => x.unsubscribe());
+      fileName: image.name,
+      file: image,
+    }];
+    modal.close();
   }
 
   openPicture(i: any) {
@@ -282,5 +256,14 @@ export class TaskManagementCreateShowModalComponent
           this.hide();
         }
     })
+  }
+
+  openAddImage() {
+    const modal = this.dialog.open(AddPictureDialogComponent, dialogConfigHelper(this.overlay));
+    this.addPictureDialogComponentAddedPictureSub$ = modal.componentInstance.addedPicture.subscribe(x => this.addPicture(x, modal));
+  }
+
+  ngOnDestroy(): void {
+    this.imageSubs$.forEach((x) => x.unsubscribe());
   }
 }

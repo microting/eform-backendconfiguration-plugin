@@ -26,13 +26,21 @@ export class TaskManagementStateService {
   //   return this.query.selectPageSize$;
   // }
 
-  getSort(): Observable<SortModel> {
-    return this.query.selectSort$;
-  }
+  // getSort(): Observable<SortModel> {
+  //   return this.query.selectSort$;
+  // }
 
   // getNameFilter(): Observable<string> {
   //   return this.query.selectNameFilter$;
   // }
+
+  getActiveSort(): Observable<string> {
+    return this.query.selectActiveSort$;
+  }
+
+  getActiveSortDirection(): Observable<'asc' | 'desc'> {
+    return this.query.selectActiveSortDirection$;
+  }
 
   getAllWorkOrderCases():
     Observable<OperationDataResult<WorkOrderCaseModel[]>> {

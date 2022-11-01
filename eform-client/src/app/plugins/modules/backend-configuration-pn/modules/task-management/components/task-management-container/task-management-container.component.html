@@ -1,86 +1,54 @@
-<eform-subheader
-  [title]="'Task management' | translate"
-  [forceStaticTitle]="true"
->
-  <div class="p-3">
+<eform-new-subheader [title]="'Task management' | translate">
+  <button
+    mat-icon-button
+    id="createNewTaskBtn"
+    color="accent"
+    matTooltip="{{ 'Create new task' | translate }}"
+    (click)="openCreateModal()"
+  >
+    <mat-icon>add</mat-icon>
+  </button>
+</eform-new-subheader>
+
+<div class="d-flex flex-column">
+  <app-task-management-filters></app-task-management-filters>
+  <div class="d-flex flex-row align-items-center">
     <button
-      mdbBtn
-      id="createNewTaskBtn"
-      class="btn-success btn-icon"
-      mdbTooltip="{{ 'Create new task' | translate }}"
-      (click)="openCreateModal()"
-      [placement]="'left'"
+      mat-raised-button
+      id="showReportBtn"
+      color="accent"
+      [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
+      (click)="updateTable()"
     >
-      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
+      {{ 'Show report' | translate }}
+    </button>
+    <button
+      *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
+      mat-icon-button
+      id="wordBtn"
+      color="primary"
+      [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
+      (click)="onDownloadWordReport()"
+      matTooltip="{{ 'Word report' | translate }}"
+    >
+      <mat-icon svgIcon="file-word"></mat-icon>
+    </button>
+    <button
+      *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
+      mat-icon-button
+      id="excelBtn"
+      color="accent"
+      [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
+      (click)="onDownloadExcelReport()"
+      matTooltip="{{ 'Excel report' | translate }}"
+    >
+      <mat-icon svgIcon="file-excel"></mat-icon>
     </button>
   </div>
-</eform-subheader>
-
-<div class="container-fluid">
-  <app-task-management-filters></app-task-management-filters>
-  <div class="col">
-    <div class="row">
-      <button
-        mdbBtn
-        id="showReportBtn"
-        class="btn-success btn-small-height"
-        [disabled]="
-          taskManagementStateService.getDisabledButtonsAsync() | async
-        "
-        (click)="updateTable()"
-      >
-        {{ 'Show report' | translate }}
-      </button>
-      <button *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
-        mdbBtn
-        id="wordBtn"
-        color="info"
-        class="btn-icon"
-        [disabled]="
-          taskManagementStateService.getDisabledButtonsAsync() | async
-        "
-        (click)="onDownloadWordReport()"
-        mdbTooltip="{{ 'Word report' | translate }}"
-      >
-        <fa-icon
-          icon="file-word"
-          [fixedWidth]="true"
-          size="lg"
-        ></fa-icon>
-      </button>
-      <button *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
-        mdbBtn
-        id="excelBtn"
-        color="success"
-        class="btn-icon"
-        [disabled]="
-          taskManagementStateService.getDisabledButtonsAsync() | async
-        "
-        (click)="onDownloadExcelReport()"
-        mdbTooltip="{{ 'Excel report' | translate }}"
-      >
-        <fa-icon
-          icon="file-excel"
-          [fixedWidth]="true"
-          size="lg"
-        ></fa-icon>
-      </button>
-    </div>
-  </div>
   <app-task-management-table
-    [workOrderCases]="workOrderCases"
-    (openViewModal)="openViewModal($event)"
-    (updateTable)="taskManagementStateService.getDisabledButtons ? updateTable() : undefined"
-    (openDeleteModal)="openDeleteModal($event)"
-  > </app-task-management-table>
+  [workOrderCases]="workOrderCases"
+  (openViewModal)="openViewModal($event)"
+  (updateTable)="taskManagementStateService.getDisabledButtons ? updateTable() : undefined"
+  (openDeleteModal)="openDeleteModal($event)">
+  </app-task-management-table>
 </div>
-
-<app-task-management-create-show-modal
-  (taskCreated)="updateTable()"
-  #showCreateModal>
-</app-task-management-create-show-modal>
-
-<app-task-management-delete-modal
-  (workOrderCaseDelete)="deleteWorkOrderCaseModel($event)"
-  #deleteModal>
-</app-task-management-delete-modal>
