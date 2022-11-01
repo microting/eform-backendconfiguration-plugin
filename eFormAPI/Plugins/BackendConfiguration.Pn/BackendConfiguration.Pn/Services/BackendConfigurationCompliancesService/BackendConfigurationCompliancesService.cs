@@ -151,16 +151,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                                 .SingleAsync(x => x.Id == complianceModel.PlanningId).ConfigureAwait(false);
                             dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
                         }
-                        var caseEntity = new Case()
-                        {
-                            CheckListId = dbCompliance.MicrotingSdkeFormId,
-                        };
-
-                        await caseEntity.Create(sdkDbContext).ConfigureAwait(false);
-                        complianceModel.CaseId = caseEntity.Id;
-                        dbCompliance.MicrotingSdkCaseId = caseEntity.Id;
+                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                            .FirstAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                        complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
+                        dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
                         await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
+
+                    if (compliance.PlanningCaseSiteId != 0)
+                    {
+                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                            .FirstAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                        if (dbCompliance.MicrotingSdkCaseId != planningCaseSite.MicrotingSdkCaseId)
+                        {
+                            complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
+                            dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+                            await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        }
+                    }
+
                     result.Entities.Add(complianceModel);
                 }
             }
