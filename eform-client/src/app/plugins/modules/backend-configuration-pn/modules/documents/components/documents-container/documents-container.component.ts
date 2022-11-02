@@ -12,8 +12,8 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
-import {Subscription} from "rxjs";
-import {DocumentsStateService} from "src/app/plugins/modules/backend-configuration-pn/modules/documents/store";
+import {Subscription} from 'rxjs';
+import {DocumentsStateService} from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/store';
 
 @Component({
   selector: 'app-documents-container',
