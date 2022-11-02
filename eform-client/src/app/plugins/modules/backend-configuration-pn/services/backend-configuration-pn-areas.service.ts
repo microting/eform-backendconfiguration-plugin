@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import {AdvEntitySelectableItemModel, CommonPaginationState, OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
+import {CommonPaginationState, OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
 import { ApiBaseService } from 'src/app/common/services';
 import {
   AreaRuleSimpleModel,

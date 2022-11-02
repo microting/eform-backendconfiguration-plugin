@@ -39,9 +39,9 @@ export class TaskWorkerAssignmentsStateService {
   //   return this.query.selectPageSize$;
   // }
 
-  getSort(): Observable<SortModel> {
-    return this.query.selectSort$;
-  }
+  // getSort(): Observable<SortModel> {
+  //   return this.query.selectSort$;
+  // }
 
   // getNameFilter(): Observable<string> {
   //   return this.query.selectNameFilter$;
@@ -59,7 +59,7 @@ export class TaskWorkerAssignmentsStateService {
   //       })
   //     );
   // }
-  //
+
   // updateNameFilter(nameFilter: string) {
   //   this.store.update((state) => ({
   //     filters: {
@@ -82,7 +82,7 @@ export class TaskWorkerAssignmentsStateService {
   //   }));
   //   this.checkOffset();
   // }
-  //
+
   // changePage(offset: number) {
   //   this.store.update((state) => ({
   //     pagination: {
@@ -128,6 +128,14 @@ export class TaskWorkerAssignmentsStateService {
         },
       }));
     }
+  }
+
+  getActiveSort(): Observable<string> {
+    return this.query.selectActiveSort$;
+  }
+
+  getActiveSortDirection(): Observable<'asc' | 'desc'> {
+    return this.query.selectActiveSortDirection$;
   }
 
   // getPagination(): Observable<PaginationModel> {

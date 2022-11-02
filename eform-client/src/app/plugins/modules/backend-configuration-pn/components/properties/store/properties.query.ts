@@ -23,7 +23,9 @@ export class PropertiesQuery extends Query<PropertiesState> {
         state.pagination.offset
       )
   );
-  selectSort$ = this.select(
+  /*selectSort$ = this.select(
     (state) => new SortModel(state.pagination.sort, state.pagination.isSortDsc)
-  );
+  );*/
+  selectActiveSort$ = this.select((state) => state.pagination.sort);
+  selectActiveSortDirection$ = this.select((state) => state.pagination.isSortDsc ? 'desc' : 'asc');
 }

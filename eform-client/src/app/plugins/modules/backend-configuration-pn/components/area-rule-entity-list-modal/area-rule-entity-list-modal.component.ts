@@ -1,35 +1,35 @@
-import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
-import {AdvEntitySearchableItemModel, AdvEntitySelectableItemModel} from 'src/app/common/models';
+import {Component, EventEmitter, Inject, OnDestroy, OnInit,} from '@angular/core';
+import {EntityItemModel} from 'src/app/common/models';
 import { EntityItemEditNameComponent } from 'src/app/common/modules/eform-shared/components';
 import {EntitySelectService} from 'src/app/common/services';
-import {getRandomInt} from 'src/app/common/helpers';
-import * as R from 'ramda';
+import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
+import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Subscription} from 'rxjs';
 
+@AutoUnsubscribe()
 @Component({
   selector: 'app-area-rule-entity-list-modal',
   templateUrl: './area-rule-entity-list-modal.component.html',
   styleUrls: ['./area-rule-entity-list-modal.component.scss'],
 })
-export class AreaRuleEntityListModalComponent implements OnInit {
-  @ViewChild('frame', { static: false }) frame;
-  @ViewChild('modalNameEdit', { static: true }) modalNameEdit: EntityItemEditNameComponent;
-  @Output() entityListChanged: EventEmitter<Array<AdvEntitySelectableItemModel | AdvEntitySearchableItemModel>> =
-    new EventEmitter<Array<AdvEntitySelectableItemModel | AdvEntitySearchableItemModel>>();
-  @Output() modalHided: EventEmitter<void> = new EventEmitter<void>();
-  entityList: Array<AdvEntitySelectableItemModel | AdvEntitySearchableItemModel> = [];
+export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
+  entityListChanged: EventEmitter<Array<EntityItemModel>> = new EventEmitter<Array<EntityItemModel>>();
+  entityList: Array<EntityItemModel> = [];
+
+  entityItemEditNameComponentAfterClosedSub$: Subscription;
+  getEntitySelectableGroupSub$: Subscription;
 
   constructor(
     private entitySelectService: EntitySelectService,
+    public dialog: MatDialog,
+    private overlay: Overlay,
+    public dialogRef: MatDialogRef<AreaRuleEntityListModalComponent>,
+    @Inject(MAT_DIALOG_DATA) groupId?: number
     ) {
-  }
-
-  ngOnInit() {}
-
-  show(groupId?: number) {
-    if (!groupId){
-      this.frame.show();
-    } else {
-      this.entitySelectService.getEntitySelectableGroup(groupId)
+    if (groupId) {
+      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(groupId)
         .subscribe(data => {
           if (data && data.success && data.model) {
             this.entityList = [...data.model.entityGroupItemLst];
@@ -39,16 +39,16 @@ export class AreaRuleEntityListModalComponent implements OnInit {
                 x.tempId = this.getRandId();
               }
             });
-            this.frame.show();
           }
         })
     }
   }
 
+  ngOnInit() {}
+
   hide() {
+    this.dialogRef.close();
     this.entityList = [];
-    this.frame.hide();
-    this.modalHided.emit();
   }
 
   onUpdateEntityList() {
@@ -56,19 +56,21 @@ export class AreaRuleEntityListModalComponent implements OnInit {
   }
 
   addNewAdvEntitySelectableItem() {
-    const item = new AdvEntitySelectableItemModel();
+    const item = new EntityItemModel();
     item.entityItemUId = this.entityList.length.toString();
     item.displayIndex = this.entityList.length;
     item.tempId = this.getRandId();
     this.entityList.push(item);
   }
 
-  onOpenEditNameModal(model: AdvEntitySelectableItemModel | AdvEntitySearchableItemModel) {
-    this.frame.hide();
-    this.modalNameEdit.show(model);
+  onOpenEditNameModal(model: EntityItemModel) {
+    // this.modalNameEdit.show(model);
+    this.entityItemEditNameComponentAfterClosedSub$ = this.dialog.open(EntityItemEditNameComponent,
+      {...dialogConfigHelper(this.overlay, model), minWidth: 500})
+      .afterClosed().subscribe(data => data.result ? this.onItemUpdated(data.data) : undefined);
   }
 
-  onItemUpdated(model: AdvEntitySelectableItemModel | AdvEntitySearchableItemModel) {
+  onItemUpdated(model: EntityItemModel) {
     const index = this.entityList.findIndex(x => x.tempId === model.tempId);
     if (index !== -1) {
       this.entityList[index] = model;
@@ -81,5 +83,8 @@ export class AreaRuleEntityListModalComponent implements OnInit {
       return this.getRandId();
     }
     return randId;
+  }
+
+  ngOnDestroy(): void {
   }
 }

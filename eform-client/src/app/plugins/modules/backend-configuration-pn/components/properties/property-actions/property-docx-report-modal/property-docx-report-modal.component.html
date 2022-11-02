@@ -1,67 +1,54 @@
-<div
-  [config]="{ ignoreBackdropClick: true }"
-  mdbModal
-  class="modal fade"
-  #frame="mdbModal"
->
-  <div class="modal-dialog modal-md">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>{{ 'Select report' | translate }}</h3>
-        <button class="close" data-dismiss="modal" (click)="hide()">
-          <span>×</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="container-fluid">
-          <div class="row">
-            <div class="col-md-6">
-              <ng-select
-                class="custom"
-                dropdownPosition="'bottom'"
-                [bindLabel]="'name'"
-                [(ngModel)]="selectedArea"
-                [placeholder]="'Select area' | translate"
-                [items]="areasList"
-                id="areaSelector"
-                [clearable]="false"
-                [multiple]="false">
-              </ng-select>
-            </div>
-            <div class="col-md-6">
-              <ng-select
-                class="custom"
-                dropdownPosition="'bottom'"
-                [(ngModel)]="selectedYear"
-                [placeholder]="'Year' | translate"
-                [items]="years"
-                id="yearSelector"
-                [clearable]="false"
-                [multiple]="false">
-              </ng-select>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button
-          mdbBtn
-          class="btn-success btn-small-height"
-          (click)="onDownloadReport()"
-          id="DownloadReportBtn"
-          [disabled]="isDisabledDownloadButton"
+<h3 mat-dialog-title>{{ 'Select report' | translate }}</h3>
+<div mat-dialog-content>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column mr-1">
+      <mat-form-field>
+        <mat-label>{{'Select area' | translate}}</mat-label>
+        <mtx-select
+          appendTo="body"
+          dropdownPosition="bottom"
+          [bindLabel]="'name'"
+          [(ngModel)]="selectedArea"
+          [items]="areasList"
+          id="areaSelector"
+          [clearable]="false"
+          [multiple]="false"
         >
-          {{ 'Download' | translate }}
-        </button>
-        <button
-          mdbBtn
-          class="btn-accent text-black-50 btn-small-height"
-          (click)="hide()"
-          id="cancelDownloadReportBtn"
+        </mtx-select>
+      </mat-form-field>
+    </div>
+    <div class="d-flex flex-column ml-1">
+      <mat-form-field>
+        <mat-label>{{'Year' | translate}}</mat-label>
+        <mtx-select
+          appendTo="body"
+          dropdownPosition="bottom"
+          [(ngModel)]="selectedYear"
+          [items]="years"
+          id="yearSelector"
+          [clearable]="false"
+          [multiple]="false"
         >
-          {{ 'Cancel' | translate }}
-        </button>
-      </div>
+        </mtx-select>
+      </mat-form-field>
     </div>
   </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    (click)="onDownloadReport()"
+    id="DownloadReportBtn"
+    [disabled]="isDisabledDownloadButton"
+  >
+    {{'Download' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    (click)="hide()"
+    id="cancelDownloadReportBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
 </div>

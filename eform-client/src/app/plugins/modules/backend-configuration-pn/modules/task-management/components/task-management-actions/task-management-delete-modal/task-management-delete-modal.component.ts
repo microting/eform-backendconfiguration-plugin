@@ -1,8 +1,9 @@
-import {Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, Inject, OnDestroy, OnInit, Output,} from '@angular/core';
 import {
   WorkOrderCaseModel,
 } from '../../../../../models';
-import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @AutoUnsubscribe()
 @Component({
@@ -11,26 +12,25 @@ import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
   styleUrls: ['./task-management-delete-modal.component.scss'],
 })
 export class TaskManagementDeleteModalComponent implements OnInit, OnDestroy {
-  @ViewChild('frame', { static: false }) frame;
   @Output() workOrderCaseDelete: EventEmitter<number> = new EventEmitter<number>();
-  workOrderCase: WorkOrderCaseModel = new WorkOrderCaseModel();
 
-  constructor() {}
+  constructor(
+    public dialogRef: MatDialogRef<TaskManagementDeleteModalComponent>,
+    @Inject(MAT_DIALOG_DATA) public workOrderCase: WorkOrderCaseModel = new WorkOrderCaseModel(),
+  ) {
+  }
 
-  ngOnInit(): void {}
-
-  show(workOrderCase: WorkOrderCaseModel) {
-    this.workOrderCase = workOrderCase;
-    this.frame.show();
+  ngOnInit(): void {
   }
 
   hide() {
-    this.frame.hide();
+    this.dialogRef.close();
   }
 
   delete() {
     this.workOrderCaseDelete.emit(this.workOrderCase.id);
   }
 
-  ngOnDestroy(): void {}
+  ngOnDestroy(): void {
+  }
 }

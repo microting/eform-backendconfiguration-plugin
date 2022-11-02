@@ -1,0 +1,76 @@
+<h3 mat-dialog-title>{{ (edit ? 'Edit employee' : 'New employee') | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column">
+  <mat-form-field>
+    <mat-label>{{'First name' | translate }}</mat-label>
+    <input
+      matInput
+      [disabled]="selectedDeviceUser.isLocked"
+      [(ngModel)]="selectedDeviceUser.userFirstName"
+      required
+      type="text"
+      id="editFirstNameInput"
+      name="userName">
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Last name' | translate }}</mat-label>
+    <input
+      matInput
+      [disabled]="selectedDeviceUser.isLocked"
+      [(ngModel)]="selectedDeviceUser.userLastName"
+      type="text"
+      name="email"
+      id="editLastNameInput"
+      required>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Language' | translate }}</mat-label>
+    <mtx-select
+      appendTo="body"
+      id="profileLanguageSelector"
+      [bindLabel]="'text'"
+      [bindValue]="'locale'"
+      [clearable]="false"
+      [(ngModel)]="selectedDeviceUser.languageCode"
+      [items]="languages">
+    </mtx-select>
+  </mat-form-field>
+  <mat-slide-toggle
+    *ngIf="authStateService.checkClaim('time_registration_enable')"
+    color="primary"
+    class="mb-2"
+    id="timeRegistrationEnabledToggle"
+    [checked]="selectedDeviceUser.timeRegistrationEnabled"
+    [(ngModel)]="selectedDeviceUser.timeRegistrationEnabled">
+    {{ "Timeregistration enabled" | translate }}
+  </mat-slide-toggle>
+
+  <mtx-grid
+    [data]="availableProperties"
+    [columns]="tableHeaders"
+    [pageOnFront]="false"
+    [rowStriped]="true"
+    [rowSelectable]="true"
+    [showPaginator]="false"
+    [rowSelected]="selectedProperties"
+    (rowSelectionChange)="changeArray($event)"
+  >
+  </mtx-grid>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    (click)="edit ? updateSingle() : createDeviceUser()"
+    [disabled]="!selectedDeviceUser.userFirstName || !selectedDeviceUser.userLastName"
+    id="{{edit ? 'saveEditBtn' : 'saveCreateBtn'}}"
+  >
+    {{(edit ? 'Save' : 'Create') | translate}}
+  </button>
+  <button
+    mat-raised-button
+    id="{{edit ? 'cancelEditBtn' : 'cancelCreateBtn'}}"
+    (click)="hide()"
+  >
+    {{'Cancel' | translate}}
+  </button>
+</div>

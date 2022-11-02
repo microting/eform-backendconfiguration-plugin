@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  AdvEntitySelectableItemModel,
+  EntityItemModel,
   CommonDictionaryModel, DeviceUserRequestModel,
   OperationDataResult,
   OperationResult,
-  Paged, SiteDto,
+  Paged,
 } from 'src/app/common/models';
 import {
   PropertyCreateModel,
@@ -174,7 +174,7 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  createEntityList(model: Array<AdvEntitySelectableItemModel>, propertyAreaId: number): Observable<OperationResult> {
+  createEntityList(model: Array<EntityItemModel>, propertyAreaId: number): Observable<OperationResult> {
     return this.apiBaseService.post(
       BackendConfigurationPnPropertiesMethods.CreateEntityList + propertyAreaId,
       model

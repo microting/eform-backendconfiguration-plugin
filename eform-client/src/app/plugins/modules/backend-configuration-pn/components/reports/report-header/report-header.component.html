@@ -1,10 +1,10 @@
 <form [formGroup]="generateForm">
-  <div class="row pl-1">
-    <div class="col-md-4 col-sm-8 ng-select-wrapper">
-      <ng-select
+  <div class="d-flex flex-row need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Select filter' | translate}}</mat-label>
+      <mtx-select
         class="custom"
-        dropdownPosition="'bottom'"
-        [placeholder]="'Select filter' | translate"
+        dropdownPosition="bottom"
         [items]="availableTags"
         formControlName="tagIds"
         [clearable]="false"
@@ -14,51 +14,47 @@
         (remove)="addOrDeleteTagId($event.value)"
         id="tagSelector"
         [multiple]="true"
-      ></ng-select>
-    </div>
-    <div class="col-md-3">
-      <div class="md-form" [owlDateTimeTrigger]="dateRangePicker">
-        <i class="material-icons prefix"> calendar_today </i>
-        <input
-          mdbInput
-          formControlName="dateRange"
-          name="dateRange"
-          required
-          type="text"
-          [owlDateTime]="dateRangePicker"
-          [selectMode]="'range'"
-          class="form-control input-sm"
-          id="dateFormInput"
-        />
-        <label for="dateFormInput">{{
-          'Select date range' | translate
-        }}</label>
-      </div>
-    </div>
-    <div class="col-md-3 text-center pt-3">
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field [owlDateTimeTrigger]="dateRangePicker">
+      <mat-label>{{ 'Select date range' | translate }}</mat-label>
+      <mat-icon matPrefix>calendar_today</mat-icon>
+      <input
+        matInput
+        formControlName="dateRange"
+        name="dateRange"
+        required
+        type="text"
+        [owlDateTime]="dateRangePicker"
+        [selectMode]="'range'"
+        id="dateFormInput"
+      >
+    </mat-form-field>
+    <div class="d-flex flex-row align-items-center ml-4">
       <button
-        mdbBtn
-        class="btn-success btn-small-height"
+        mat-raised-button
+        color="accent"
         [disabled]="generateForm.invalid"
         (click)="onSubmit()"
       >
         {{ 'Generate' | translate }}
       </button>
       <button
-        mdbBtn
-        class="btn-info btn-icon mb-2"
+        mat-icon-button
+        color="primary"
         [disabled]="generateForm.invalid"
         (click)="onSave()"
       >
-        <fa-icon icon="file-word" size="lg" [fixedWidth]="true"></fa-icon>
+        <mat-icon svgIcon="file-word"></mat-icon>
       </button>
       <button
-        mdbBtn
-        class="btn-success btn-icon mb-2"
+        mat-icon-button
+        color="accent"
         [disabled]="generateForm.invalid"
         (click)="onExcelSave()"
       >
-        <fa-icon icon="file-excel" size="lg" [fixedWidth]="true"></fa-icon>
+        <mat-icon svgIcon="file-excel"></mat-icon>
       </button>
     </div>
   </div>

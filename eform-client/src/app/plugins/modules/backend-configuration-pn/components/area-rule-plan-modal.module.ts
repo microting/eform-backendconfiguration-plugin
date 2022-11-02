@@ -1,9 +1,7 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {NgSelectModule} from '@ng-select/ng-select';
 import {TranslateModule} from '@ngx-translate/core';
-import {MDBBootstrapModule} from 'angular-bootstrap-md';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {MY_MOMENT_FORMATS_FOR_AREA_RULES_PLAN} from '../consts';
@@ -12,6 +10,13 @@ import {
   AreaRuleEntityListModalComponent,
 } from './';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
+import {MatDialogModule} from '@angular/material/dialog';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
+import {MatInputModule} from '@angular/material/input';
+import {MatSlideToggleModule} from '@angular/material/slide-toggle';
+import {MtxSelectModule} from '@ng-matero/extensions/select';
+import {MtxGridModule} from '@ng-matero/extensions/grid';
 
 @NgModule({
   imports: [
@@ -19,10 +24,15 @@ import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-share
     CommonModule,
     FormsModule,
     TranslateModule,
-    NgSelectModule,
-    MDBBootstrapModule,
     FontAwesomeModule,
     EformSharedModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatInputModule,
+    MatSlideToggleModule,
+    MtxSelectModule,
+    MtxGridModule,
   ],
   declarations: [
     AreaRulePlanModalComponent,

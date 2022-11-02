@@ -1,12 +1,11 @@
 import {
   Component,
-  EventEmitter,
+  Inject,
   OnInit,
-  Output,
-  ViewChild,
 } from '@angular/core';
-import { BackendConfigurationPnReportService } from '../../../services';
-import { ReportEformItemModel } from '../../../models';
+import {BackendConfigurationPnReportService} from '../../../services';
+import {ReportEformItemModel} from '../../../models';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
   selector: 'app-case-delete',
@@ -14,18 +13,14 @@ import { ReportEformItemModel } from '../../../models';
   styleUrls: ['./case-delete.component.scss'],
 })
 export class CaseDeleteComponent implements OnInit {
-  @ViewChild('frame', { static: false }) frame;
-  @Output() planningCaseDeleted: EventEmitter<void> = new EventEmitter<void>();
-  reportEformItemModel: ReportEformItemModel = new ReportEformItemModel();
   constructor(
-    private backendConfigurationPnReportService: BackendConfigurationPnReportService
-  ) {}
+    private backendConfigurationPnReportService: BackendConfigurationPnReportService,
+    public dialogRef: MatDialogRef<CaseDeleteComponent>,
+    @Inject(MAT_DIALOG_DATA) public reportEformItemModel: ReportEformItemModel
+  ) {
+  }
 
-  ngOnInit() {}
-
-  show(reportEformItemModel: ReportEformItemModel) {
-    this.reportEformItemModel = reportEformItemModel;
-    this.frame.show();
+  ngOnInit() {
   }
 
   deletePlanning() {
@@ -33,9 +28,12 @@ export class CaseDeleteComponent implements OnInit {
       .deleteCase(this.reportEformItemModel.id)
       .subscribe((data) => {
         if (data && data.success) {
-          this.planningCaseDeleted.emit();
-          this.frame.hide();
+          this.hide(true);
         }
       });
+  }
+
+  hide(result = false) {
+    this.dialogRef.close(result);
   }
 }
