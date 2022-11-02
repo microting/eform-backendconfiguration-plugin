@@ -379,8 +379,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         x => new CommonTranslationsModel
                         {
                             LanguageId = x.Id,
-                            Name = property.Name,
-                            Description = ""
+                            Name = updateModel.Name,
+                            Description = updateModel.Address
                         })
                     .ToListAsync().ConfigureAwait(false);
 

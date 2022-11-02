@@ -13,6 +13,7 @@ public class WorkOrderCreated
     public CaseStatusesEnum Status { get; set; }
     public int WorkorderCaseId { get; set; }
     public string NewDescription { get; set; }
+    public string SiteName { get; set; }
     public int? DeviceUsersGroupId { get; set; }
     public string PushMessageBody { get; set; }
     public string PushMessageTitle { get; set; }
@@ -20,7 +21,7 @@ public class WorkOrderCreated
     public int CreatedByUserId {get; set;}
     public List<string> PicturesOfTasks { get; set; }
 
-    public WorkOrderCreated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int folderId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pushMessageBody, string pushMessageTitle, string areaName, int createdByUserId, List<string> picturesOfTasks)
+    public WorkOrderCreated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int folderId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pushMessageBody, string pushMessageTitle, string areaName, int createdByUserId, List<string> picturesOfTasks, string siteName)
     {
         PropertyWorkers = propertyWorkers;
         EformId = eformId;
@@ -35,5 +36,6 @@ public class WorkOrderCreated
         AreaName = areaName;
         CreatedByUserId = createdByUserId;
         PicturesOfTasks = picturesOfTasks;
+        SiteName = siteName;
     }
 }

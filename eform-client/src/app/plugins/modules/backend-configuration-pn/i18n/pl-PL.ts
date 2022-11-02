@@ -212,4 +212,5 @@ export const plPl = {
   To: 'Do',
   'Customer no & OTP': 'Nr klienta i OTP',
   'New OTP': 'Nowy OTP',
+  'Select filter': 'Wybierz filtr',
 };

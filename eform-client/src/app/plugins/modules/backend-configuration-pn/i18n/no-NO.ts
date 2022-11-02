@@ -211,4 +211,5 @@ export const noNO = {
   To: 'Til',
   'Customer no & OTP': 'Kundenummer & OTP',
   'New OTP': 'Ny OTP',
+  'Select filter': 'Velg filter',
 };

@@ -211,4 +211,5 @@ export const esES = {
   To: '',
   'Customer no & OTP': '',
   'New OTP': '',
+  'Select filter': '',
 };

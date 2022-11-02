@@ -216,4 +216,5 @@ export const da = {
   'Expiration': 'Udløb',
   'Customer no & OTP': 'Kundenummer / Engangskode',
   'New OTP': 'Ny engangskode',
+  'Select filter': 'Vælg filter',
 };

@@ -1,6 +1,6 @@
 <eform-new-subheader>
   <button
-    *ngIf="authStateService.isAdmin"
+    *ngIf="authStateService.checkClaim('properties_create')"
     mat-icon-button
     color="accent"
     id="propertyCreateBtn"

@@ -7,7 +7,7 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {CommonDictionaryModel, Paged} from 'src/app/common/models';
 import {Subscription} from 'rxjs';
-import {applicationLanguages2, applicationLanguagesTranslated} from 'src/app/common/const';
+import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {
   BackendConfigurationPnDocumentsService,
   BackendConfigurationPnPropertiesService
@@ -35,14 +35,14 @@ export class DocumentsDocumentEditComponent implements OnInit {
   selectedLanguage: number;
 
   get languages() {
-    return applicationLanguages2;
+    return applicationLanguagesTranslated;
   }
   constructor(
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     localeService: LocaleService) {
-    this.selectedLanguage = applicationLanguages2.find(
+    this.selectedLanguage = applicationLanguagesTranslated.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
   }

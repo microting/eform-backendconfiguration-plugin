@@ -185,6 +185,7 @@ export class TaskManagementCreateShowModalComponent
               const site = sites.find((y) => y.id === x.siteId)
               return {id: x.siteId, name: site ? site.name : '', description: '',};
             });
+            this.assignedSitesToProperty = this.assignedSitesToProperty.filter((x) => x !== null);
           }
         });
       }

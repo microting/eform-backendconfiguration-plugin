@@ -67,7 +67,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                     await documentSite.Create(documentDbContext);
                 }
 
-                var clt = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "Info boks");
+                var clt = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "00. Info boks");
                 var folder = await documentDbContext.FolderProperties.FirstAsync(x => x.FolderId == document.FolderId && x.PropertyId == documentProperty.PropertyId);
                 var sdkFolder = await sdkDbContext.Folders.FirstAsync(x => x.Id == folder.SdkFolderId);
                 var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == propertyWorker.WorkerId);
