@@ -15,7 +15,6 @@ import {
 } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import { CaseEditElementComponent } from 'src/app/common/modules/eform-cases/components';
-import {ItemsPlanningPnCasesService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import * as R from 'ramda';
 import {
@@ -108,8 +107,9 @@ export class BackendConfigurationCasePageComponent implements OnInit {
     this.replyRequest.id = this.replyElement.id;
     this.replyRequest.label = this.replyElement.label;
     this.replyRequest.elementList = this.requestModels;
-    if (this.initialDate != this.replyElement.doneAt) {
-      this.replyRequest.doneAt = new Date(Date.UTC(this.replyElement.doneAt.getFullYear(), this.replyElement.doneAt.getMonth(), this.replyElement.doneAt.getDate(), 0, 0, 0));
+    if (this.initialDate !== this.replyElement.doneAt) {
+      this.replyRequest.doneAt = new Date(Date.UTC(this.replyElement.doneAt.getFullYear(),
+        this.replyElement.doneAt.getMonth(), this.replyElement.doneAt.getDate(), 0, 0, 0));
     } else {
       this.replyRequest.doneAt = this.replyElement.doneAt;
     }
