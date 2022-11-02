@@ -54,7 +54,7 @@
       >
     </mat-form-field>
     <mat-slide-toggle
-      *ngIf="authStateService.isAdmin"
+      *ngIf="authStateService.checkClaim('task_management_enable')"
       color="primary"
       id="propertyCreateWorkorderFlowEnableToggle"
       [checked]="newProperty.workorderEnable"

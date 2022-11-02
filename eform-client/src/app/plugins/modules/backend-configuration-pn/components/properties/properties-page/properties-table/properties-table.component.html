@@ -79,6 +79,7 @@
     id="editPropertyBtn"
     matTooltip="{{ 'Edit property' | translate }}"
     (click)="onShowEditPropertyModal(row)"
+    [disabled]="!authStateService.checkClaim('property_edit') && !authStateService.isAdmin"
   >
     <mat-icon>edit</mat-icon>
   </button>
@@ -88,6 +89,7 @@
     id="deletePropertyBtn"
     matTooltip="{{ 'Delete property' | translate }}"
     (click)="onShowDeletePropertyModal(row)"
+    [disabled]="!authStateService.checkClaim('property_delete') && !authStateService.isAdmin"
   >
     <mat-icon>delete</mat-icon>
   </button>

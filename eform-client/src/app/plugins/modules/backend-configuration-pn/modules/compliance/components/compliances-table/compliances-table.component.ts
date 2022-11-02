@@ -52,7 +52,7 @@ export class CompliancesTableComponent implements OnInit {
           color: 'accent',
           tooltip:  this.translateService.stream('Edit Case'),
           icon: 'edit',
-          iif: (record: CompliancesModel) => record.caseId !== 0,
+          iif: (record: CompliancesModel) => this.canEdit(record.deadline),
           click: (record: CompliancesModel) =>
             this.router.navigate([
               '/plugins/backend-configuration-pn/compliances/case/',
