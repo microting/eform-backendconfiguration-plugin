@@ -60,6 +60,7 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
 
 
   onNameFilterChanged(number: number) {
+    this.newProperty.cvr = number.toString();
     if (number === 0) {
       this.propertyIsFarm = false;
     }
