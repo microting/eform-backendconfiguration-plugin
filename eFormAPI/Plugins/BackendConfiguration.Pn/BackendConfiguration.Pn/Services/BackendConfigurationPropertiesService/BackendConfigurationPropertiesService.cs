@@ -380,7 +380,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         {
                             LanguageId = x.Id,
                             Name = updateModel.Name,
-                            Description = updateModel.Address
+                            Description = updateModel.Address ?? ""
                         })
                     .ToListAsync().ConfigureAwait(false);
 
