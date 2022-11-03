@@ -23,8 +23,13 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/components/documents-folders/documents-folders/documents-folders.component';
 import {MatButtonModule} from '@angular/material/button';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatFormFieldModule} from "@angular/material/form-field";
-import {MtxSelectModule} from "@ng-matero/extensions/select";
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MtxSelectModule} from '@ng-matero/extensions/select';
+import {MatDialogModule} from '@angular/material/dialog';
+import {MatIconModule} from '@angular/material/icon';
+import {MatInputModule} from '@angular/material/input';
+import {MtxGridModule} from '@ng-matero/extensions/grid';
+import {MatCardModule} from '@angular/material/card';
 
 @NgModule({
   declarations: [
@@ -55,8 +60,13 @@ import {MtxSelectModule} from "@ng-matero/extensions/select";
     FormsModule,
     MatButtonModule,
     MatTooltipModule,
+    MatIconModule,
     MatFormFieldModule,
     MtxSelectModule,
+    MatInputModule,
+    MtxGridModule,
+    MatDialogModule,
+    MatCardModule,
   ],
   providers: [
     {

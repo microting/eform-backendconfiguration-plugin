@@ -1,6 +1,6 @@
 import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {
-  DocumentsDocumentCreateComponent, DocumentsDocumentEditComponent,
+  DocumentsDocumentCreateComponent, DocumentsDocumentDeleteComponent, DocumentsDocumentEditComponent,
   DocumentsFoldersComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/components';
 import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
@@ -14,6 +14,9 @@ import {Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
 import {DocumentsStateService} from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/store';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
 
 @Component({
   selector: 'app-documents-container',
@@ -28,8 +31,14 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   folders: Paged<DocumentFolderModel>;
   documents: Paged<DocumentModel>;
   subscription: Subscription;
+  documentDeletedSub$: Subscription;
+  documentUpdatedSub$: Subscription;
+  documentCreatedSub$: Subscription;
+  folderManageModalClosedSub$: Subscription;
 
   constructor(
+    public dialog: MatDialog,
+    private overlay: Overlay,
     public documentsStateService: DocumentsStateService,
     public localeService: LocaleService) {}
 
@@ -41,18 +50,34 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   openCreateModal() {
-    this.createDocumentModal.show();
+    this.dialog.open(DocumentsDocumentCreateComponent, {...dialogConfigHelper(this.overlay)});
+    this.documentCreatedSub$ = this.createDocumentModal.documentCreated.subscribe(() => {
+      this.updateTable();
+    });
+    //this.createDocumentModal.show();
   }
   openManageFoldersModal() {
-    this.manageFoldersModal.show();
+    this.dialog.open(DocumentsFoldersComponent, {...dialogConfigHelper(this.overlay)});
+    this.folderManageModalClosedSub$ = this.manageFoldersModal.foldersChanged.subscribe(() => {
+      this.updateTable();
+    });
+    //this.manageFoldersModal.show();
   }
 
   showEditDocumentModal(documentModel: DocumentModel) {
-    this.editDocumentModal.show(documentModel);
+    this.dialog.open(DocumentsDocumentEditComponent, {...dialogConfigHelper(this.overlay, documentModel)});
+    this.documentUpdatedSub$ = this.editDocumentModal.documentUpdated.subscribe(() => {
+      this.updateTable();
+    });
+    //this.editDocumentModal.show(documentModel);
   }
 
   showDeleteDocumentModal(documentModel: DocumentModel) {
-    this.deleteDocumentModal.show(documentModel);
+    const deleteDocument = this.dialog.open(DocumentsDocumentDeleteComponent, {...dialogConfigHelper(this.overlay, documentModel)});
+    this.documentDeletedSub$ = deleteDocument.componentInstance.documentDeleted.subscribe(() => {
+      this.updateTable();
+    });
+    //this.deleteDocumentModal.show(documentModel);
   }
 
 

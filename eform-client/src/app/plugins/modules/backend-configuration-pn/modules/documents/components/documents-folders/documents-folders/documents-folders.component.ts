@@ -16,6 +16,7 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/components';
 import {DocumentFolderModel, DocumentFolderRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {MatDialogRef} from "@angular/material/dialog";
 // import { SharedTagDeleteComponent } from '../shared-tag-delete/shared-tag-delete.component';
 // import { SharedTagCreateComponent } from '../shared-tag-create/shared-tag-create.component';
 // import { SharedTagEditComponent } from '../shared-tag-edit/shared-tag-edit.component';
@@ -45,7 +46,9 @@ export class DocumentsFoldersComponent implements OnInit {
   //   SharedTagModel
   // >();
 
-  constructor(public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
+  constructor(
+    public dialogRef: MatDialogRef<DocumentsFoldersComponent>,
+    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
 
   show() {
     this.getFolders();
@@ -54,7 +57,8 @@ export class DocumentsFoldersComponent implements OnInit {
   }
 
   hide() {
-    this.frame.hide();
+    //this.frame.hide();
+    this.dialogRef.close();
     this.foldersChanged.emit();
   }
 
