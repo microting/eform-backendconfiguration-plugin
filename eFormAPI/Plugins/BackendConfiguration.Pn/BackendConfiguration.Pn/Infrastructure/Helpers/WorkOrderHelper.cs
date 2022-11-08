@@ -52,23 +52,23 @@ public class WorkOrderHelper
                 continue;
             }
 
-            var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
+            var eformIdForNewTasks = await sdkDbContext.CheckLists
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Text == "01. New task")
-                .Select(x => x.CheckListId)
+                .Where(x => x.OriginalId == "142663new2")
+                .Select(x => x.Id)
                 .FirstAsync().ConfigureAwait(false);
 
-            var workorderCasesCompleted = property.PropertyWorkers
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .SelectMany(x => x.WorkorderCases)
-                .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Completed)
-                .ToList();
-            var workorderCasesOngoing = property.PropertyWorkers
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .SelectMany(x => x.WorkorderCases)
-                .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Ongoing)
-                .Where(x => workorderCasesCompleted.All(y => y.ParentWorkorderCaseId != x.ParentWorkorderCaseId))
-                .ToList();
+            // var workorderCasesCompleted = property.PropertyWorkers
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .SelectMany(x => x.WorkorderCases)
+            //     .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Completed)
+            //     .ToList();
+            // var workorderCasesOngoing = property.PropertyWorkers
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .SelectMany(x => x.WorkorderCases)
+            //     .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Ongoing)
+            //     .Where(x => workorderCasesCompleted.All(y => y.ParentWorkorderCaseId != x.ParentWorkorderCaseId))
+            //     .ToList();
 
             if (property.EntitySelectListAreas == null)
             {
@@ -160,15 +160,15 @@ public class WorkOrderHelper
 
         if (areasGroupUid != null && deviceUsersGroupId != null)
         {
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = (int)areasGroupUid;
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source =
+            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[2]).Source = (int)areasGroupUid;
+            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Source =
                 (int)deviceUsersGroupId;
         }
-        else if (areasGroupUid == null && deviceUsersGroupId != null)
-        {
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
-                (int)deviceUsersGroupId;
-        }
+        // else if (areasGroupUid == null && deviceUsersGroupId != null)
+        // {
+        //     ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
+        //         (int)deviceUsersGroupId;
+        // }
 
         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
         mainElement.StartDate = DateTime.Now.ToUniversalTime();
