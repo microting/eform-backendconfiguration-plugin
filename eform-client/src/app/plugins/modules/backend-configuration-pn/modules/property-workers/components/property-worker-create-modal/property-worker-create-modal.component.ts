@@ -10,7 +10,7 @@ import {
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { CommonDictionaryModel } from 'src/app/common/models';
-import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const/application-languages.const';
+import { applicationLanguages2} from 'src/app/common/const/application-languages.const';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import { PropertyAssignmentWorkerModel } from '../../../../models/properties/property-workers-assignment.model';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
@@ -40,7 +40,7 @@ export class PropertyWorkerCreateModalComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.languages = applicationLanguagesTranslated;
+    this.languages = applicationLanguages2;
     // this.languages = [
     //   { id: 1, locale: 'da', text: 'Danish' },
     //   { id: 2, locale: 'en-US', text: 'English' },

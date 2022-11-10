@@ -12,7 +12,7 @@ import {ToastrService} from 'ngx-toastr';
 import {TranslateService} from '@ngx-translate/core';
 import {LocaleService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
-import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const';
+import {applicationLanguages2 } from 'src/app/common/const';
 
 @AutoUnsubscribe()
 @Component({
@@ -37,7 +37,7 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
   getFolderSub$: Subscription;
 
   get languages() {
-    return applicationLanguagesTranslated;
+    return applicationLanguages2;
   }
 
   constructor(
@@ -45,7 +45,7 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
     private toastrService: ToastrService,
     private translateService: TranslateService,
     localeService: LocaleService) {
-    this.selectedLanguage = applicationLanguages.find(
+    this.selectedLanguage = applicationLanguages2.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
   }
@@ -81,12 +81,12 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
       id: model.id,
       documentFolderTranslations: [],
     };
-    for (let i = 0; i < applicationLanguagesTranslated.length; i++) {
+    for (let i = 0; i < applicationLanguages2.length; i++) {
       const translations = model.documentFolderTranslations.find(
-        (x) => x.languageId === applicationLanguagesTranslated[i].id
+        (x) => x.languageId === applicationLanguages2[i].id
       );
       this.folderUpdateModel.documentFolderTranslations.push({
-        languageId: applicationLanguagesTranslated[i].id,
+        languageId: applicationLanguages2[i].id,
         description: translations ? translations.description : '',
         name: translations ? translations.name : '',
         id: translations.id

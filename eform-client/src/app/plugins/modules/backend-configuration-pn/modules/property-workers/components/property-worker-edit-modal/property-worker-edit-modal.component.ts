@@ -10,7 +10,7 @@ import {
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { CommonDictionaryModel } from 'src/app/common/models';
-import { applicationLanguagesTranslated } from 'src/app/common/const/application-languages.const';
+import { applicationLanguages2 } from 'src/app/common/const/application-languages.const';
 import { PropertyAssignmentWorkerModel } from '../../../../models/properties/property-workers-assignment.model';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
@@ -119,7 +119,7 @@ export class PropertyWorkerEditModalComponent implements OnInit, OnDestroy {
   }
 
   get languages() {
-    return applicationLanguagesTranslated;
+    return applicationLanguages2;
   }
 
   getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
