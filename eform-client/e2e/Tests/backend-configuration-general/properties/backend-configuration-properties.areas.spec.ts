@@ -40,6 +40,7 @@ describe('Backend Configuration Property - Bind Areas', function () {
     for (let i = 0; i < binds.length; i++) {
       expect(await binds[i], `area ${i} is not bind`).eq(true);
     }
+    await createdProperty.closeBindPropertyWithAreasModal(true);
   });
   // it('should unbind some areas from one property', async () => {
   //   const mas = [3, 5, 8, 12];
@@ -70,6 +71,7 @@ describe('Backend Configuration Property - Bind Areas', function () {
   after(async () => {
     await backendConfigurationPropertiesPage.clearTable();
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
+    await browser.pause(500);
     await backendConfigurationPropertyWorkersPage.clearTable();
   });
 });

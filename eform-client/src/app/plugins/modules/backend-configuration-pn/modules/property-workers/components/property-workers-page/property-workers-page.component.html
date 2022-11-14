@@ -32,7 +32,7 @@
 <mtx-grid
   [data]="sitesDto"
   [columns]="tableHeaders"
-  [cellTemplate]="{customerOtp: customerOtpTpl, property: propertyTpl}"
+  [cellTemplate]="{siteId: deviceUserIdTpl, siteName: fullNameTpl, language: languageTpl, customerOtp: customerOtpTpl, property: propertyTpl, actions: actionsTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -43,6 +43,17 @@
   [sortDirection]="propertyWorkersStateService.getActiveSortDirection() | async"
   (sortChange)="sortTable($event)">
 </mtx-grid>
+<ng-template #deviceUserIdTpl let-row let-i="index">
+  <div class="deviceUserId" id="deviceUserId-{{i}}">{{row.siteId}}</div>
+</ng-template>
+
+<ng-template #fullNameTpl let-row let-i="index">
+  <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{row.siteName}}</div>
+</ng-template>
+
+<ng-template #languageTpl let-row let-i="index">
+  <div class="deviceUserLanguage" id="deviceUserLanguage-{{i}}">{{row.language}}</div>
+</ng-template>
 
 <ng-template #customerOtpTpl let-row>
   <ng-container *ngIf="row.customerNo && row.otpCode">
@@ -65,3 +76,35 @@
 <ng-template #propertyTpl let-row>
   <div [innerHTML]="this.getWorkerPropertyNames(row.siteId)"></div>
 </ng-template>
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="">
+    <button
+      mat-icon-button
+      matTooltip="{{ 'Edit assignments' | translate }}"
+      id="editAssignmentsBtn-{{i}}"
+      [routerLink]="['/plugins/backend-configuration-pn/task-worker-assignments/' + row.siteId]"
+    >
+      <mat-icon>visibility</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      *ngIf="userClaims.deviceUsersUpdate"
+      matTooltip="{{ 'Edit Device User' | translate }}"
+      id="editDeviceUserBtn-{{i}}"
+      (click)="openEditModal(row)"
+    >
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      color="warn"
+      *ngIf="userClaims.deviceUsersDelete && !row.isLocked"
+      matTooltip="{{ 'Delete Device User' | translate }}"
+      id="deleteDeviceUserBtn-{{i}}"
+      (click)="openDeleteDeviceUserModal(row)"
+    >
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+</ng-template>
+

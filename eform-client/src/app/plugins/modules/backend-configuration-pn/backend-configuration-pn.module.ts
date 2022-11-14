@@ -48,6 +48,7 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatExpansionModule} from '@angular/material/expansion';
+import {MatCheckboxModule} from "@angular/material/checkbox";
 
 @NgModule({
     imports: [
@@ -77,6 +78,7 @@ import {MatExpansionModule} from '@angular/material/expansion';
         MtxSelectModule,
         MatSlideToggleModule,
         MatExpansionModule,
+        MatCheckboxModule,
     ],
   declarations: [
     BackendConfigurationPnLayoutComponent,

@@ -59,18 +59,18 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
   }
 
 
-  onNameFilterChanged(number: number) {
-    this.newProperty.cvr = number.toString();
-    if (number === 0) {
+  onNameFilterChanged(number: string) {
+    this.newProperty.cvr = number;
+    if (+number === 0) {
       this.propertyIsFarm = false;
     }
-    if (number === 1111111) {
+    if (+number === 1111111) {
       this.propertyIsFarm = true;
       this.newProperty.isFarm = true;
     }
-    if (number > 1111111) {
+    if (+number > 1111111) {
       if (number.toString().length > 7) {
-        this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(number)
+        this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(+number)
           .subscribe((data) => {
             if (data && data.success) {
               if (data.model.industrycode.toString().slice(0, 2) === '01') {

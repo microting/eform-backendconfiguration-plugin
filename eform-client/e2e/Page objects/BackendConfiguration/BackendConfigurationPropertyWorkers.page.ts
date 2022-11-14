@@ -15,9 +15,12 @@ class BackendConfigurationPropertyWorkersPage extends Page {
 
   public async goToPropertyWorkers() {
     const spinnerAnimation = await $('#spinner-animation');
-    await (
-      await backendConfigurationPropertiesPage.backendConfigurationPnButton()
-    ).click();
+    const ele = await $('#backend-configuration-pn-property-workers');
+    if (!await ele.isDisplayed()) {
+      await (
+        await backendConfigurationPropertiesPage.backendConfigurationPnButton()
+      ).click();
+    }
     await (await this.backendConfigurationPnPropertyWorkers()).click();
     await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.newDeviceUserBtn()).waitForClickable({ timeout: 90000 });
@@ -140,7 +143,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    return (await $$('#tableBody > tr')).length;
+    return (await $$('tbody > tr')).length;
   }
 
   async getDeviceUser(num): Promise<PropertyWorkerRowObject> {
@@ -166,6 +169,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   async openCreateModal(propertyWorker?: PropertyWorker) {
     await (await this.newDeviceUserBtn()).waitForClickable({ timeout: 40000 });
     await (await this.newDeviceUserBtn()).click();
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.cancelCreateBtn()
     ).waitForClickable({
@@ -185,14 +189,16 @@ class BackendConfigurationPropertyWorkersPage extends Page {
       if (propertyWorker.language) {
         await (
           await (
-            await backendConfigurationPropertyWorkersPage.profileLanguageSelectorCreate()
+            await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
           ).$('input')
         ).setValue(propertyWorker.language);
-        const value = await (
-          await backendConfigurationPropertyWorkersPage.profileLanguageSelectorCreate()
-        ).$(`.ng-option=${propertyWorker.language}`);
-        value.waitForDisplayed({ timeout: 40000 });
-        await value.click();
+        // const value = await (
+        //   await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
+        // ).$(`.ng-option=${propertyWorker.language}`);
+        // value.waitForDisplayed({ timeout: 40000 });
+        // await value.click();
+        await browser.pause(500);
+        await (await $(`//*[@id="profileLanguageSelector"]//*[text()="${propertyWorker.language}"]`)).click();
       }
       if (propertyWorker.properties) {
         for (let i = 0; i < propertyWorker.properties.length; i++) {
@@ -203,6 +209,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
               )
             ).$('..')
           ).click();
+          await browser.pause(500);
         }
       }
     }
@@ -241,18 +248,16 @@ export class PropertyWorkerRowObject {
   deleteBtn: WebdriverIO.Element;
 
   async getRow(rowNum: number) {
-    if ((await $$('#deviceUserId'))[rowNum - 1]) {
-      this.siteId = +await (await $$('#deviceUserId'))[rowNum - 1].getText();
+    rowNum = rowNum - 1;
+    if ((await $('#deviceUserId-'+rowNum))) {
+      this.siteId = +await (await $('#deviceUserId-'+rowNum)).getText();
       try {
         this.fullName = await
-          (await $$('#deviceUserFullName'))[rowNum - 1]
-        .getText();
+          (await $('#deviceUserFullName-'+rowNum)).getText();
       } catch (e) {}
-      this.language = await (await $$('#deviceUserLanguage'))[
-        rowNum - 1
-      ].getText();
-      this.editBtn = (await $$('#editDeviceUserBtn'))[rowNum - 1];
-      this.deleteBtn = (await $$('#deleteDeviceUserBtn'))[rowNum - 1];
+      this.language = await (await $('#deviceUserLanguage-'+rowNum)).getText();
+      this.editBtn = (await $('#editDeviceUserBtn-'+rowNum));
+      this.deleteBtn = (await $('#deleteDeviceUserBtn-'+rowNum));
     }
     return this;
   }
