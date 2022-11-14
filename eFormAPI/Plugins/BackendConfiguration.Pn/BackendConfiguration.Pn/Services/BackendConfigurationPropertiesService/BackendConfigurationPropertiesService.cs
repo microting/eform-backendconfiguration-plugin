@@ -442,7 +442,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 await propertyWorker.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                                 // todo need change language to site language for correct translates and change back after end translate
-                                await _workOrderHelper.DeployEform(propertyWorker, eformId, property.FolderIdForNewTasks,
+                                await _workOrderHelper.DeployEform(propertyWorker, eformId, property,
                                     $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
                                     int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid)).ConfigureAwait(false);
                             }
@@ -584,7 +584,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             if (property.FolderIdForNewTasks == null)
             {
                 var parentFolderTranslation =
-                    await sdkDbContext.Folders.Include(x => x.FolderTranslations)
+                    await sdkDbContext.Folders
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Include(x => x.FolderTranslations)
                         .Where(x => x.ParentId == null)
                         .FirstOrDefaultAsync(x =>
                             x.FolderTranslations.Any(y => y.Name == "00.00 Opret ny opgave"));
@@ -614,40 +616,42 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             Description = "",
                         },
                     };
-                    parentFolderId =
+                    property.FolderIdForNewTasks =
                         await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
                 }
                 else
                 {
-                    parentFolderId = parentFolderTranslation.Id;
+                    property.FolderIdForNewTasks = parentFolderTranslation.Id;
                 }
 
-                var translateFolderForNewTask = new List<CommonTranslationsModel>
-                {
-                    new()
-                    {
-                        Name = property.Name,
-                        LanguageId = 1, // da
-                        Description = "",
-                    },
-                    new()
-                    {
-                        Name = property.Name,
-                        LanguageId = 2, // en
-                        Description = "",
-                    },
-                    new()
-                    {
-                        Name = property.Name,
-                        LanguageId = 3, // de
-                        Description = "",
-                    },
-                };
-                property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
-                    parentFolderId).ConfigureAwait(false);
+                // var translateFolderForNewTask = new List<CommonTranslationsModel>
+                // {
+                //     new()
+                //     {
+                //         Name = property.Name,
+                //         LanguageId = 1, // da
+                //         Description = "",
+                //     },
+                //     new()
+                //     {
+                //         Name = property.Name,
+                //         LanguageId = 2, // en
+                //         Description = "",
+                //     },
+                //     new()
+                //     {
+                //         Name = property.Name,
+                //         LanguageId = 3, // de
+                //         Description = "",
+                //     },
+                // };
+                // property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
+                //     parentFolderId).ConfigureAwait(false);
 
                 parentFolderTranslation =
-                    await sdkDbContext.Folders.Include(x => x.FolderTranslations)
+                    await sdkDbContext.Folders
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Include(x => x.FolderTranslations)
                         .Where(x => x.ParentId == null)
                         .FirstOrDefaultAsync(x =>
                             x.FolderTranslations.Any(y => y.Name == "00.02 Mine øvrige opgaver"));
@@ -683,7 +687,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     parentFolderId = parentFolderTranslation.Id;
                 }
 
-                translateFolderForNewTask = new List<CommonTranslationsModel>
+                var translateFolderForNewTask = new List<CommonTranslationsModel>
                 {
                     new()
                     {
@@ -708,7 +712,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     parentFolderId).ConfigureAwait(false);
 
                 parentFolderTranslation =
-                    await sdkDbContext.Folders.Include(x => x.FolderTranslations)
+                    await sdkDbContext.Folders
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Include(x => x.FolderTranslations)
                         .Where(x => x.ParentId == null)
                         .FirstOrDefaultAsync(x =>
                             x.FolderTranslations.Any(y => y.Name == "00.03 Andres opgaver"));
@@ -770,7 +776,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
 
                 parentFolderTranslation =
-                    await sdkDbContext.Folders.Include(x => x.FolderTranslations)
+                    await sdkDbContext.Folders
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Include(x => x.FolderTranslations)
                         .Where(x => x.ParentId == null)
                         .FirstOrDefaultAsync(x =>
                             x.FolderTranslations.Any(y => y.Name == "00.01 Mine hasteopgaver"));

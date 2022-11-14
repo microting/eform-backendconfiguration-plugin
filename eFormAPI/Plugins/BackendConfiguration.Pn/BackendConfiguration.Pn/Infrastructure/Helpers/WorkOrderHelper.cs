@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Dto;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -120,12 +121,12 @@ public class WorkOrderHelper
                 entityItemIncrementer++;
             }
 
-            await DeployEform(propertyWorker, eformIdForNewTasks, property.FolderIdForNewTasks,
+            await DeployEform(propertyWorker, eformIdForNewTasks, property,
                 $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid)).ConfigureAwait(false);
         }
     }
 
-    public async Task DeployEform(PropertyWorker propertyWorker, int eformId, int? folderId,
+    public async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
         string description, int? areasGroupUid, int? deviceUsersGroupId)
     {
         var core = await _coreHelper.GetCore().ConfigureAwait(false);
@@ -143,11 +144,14 @@ public class WorkOrderHelper
         var mainElement = await core.ReadeForm(eformId, language).ConfigureAwait(false);
         mainElement.Repeated = 0;
         mainElement.ElementList[0].QuickSyncEnabled = true;
+        mainElement.ElementList[0].Description.InderValue = description;
+        mainElement.ElementList[0].Label = "Ny opgave";
+        mainElement.Label = "Ny opgave";
         mainElement.EnableQuickSync = true;
-        if (folderId != null)
+        if (property.FolderIdForNewTasks != null)
         {
             mainElement.CheckListFolderName = await sdkDbContext.Folders
-                .Where(x => x.Id == folderId)
+                .Where(x => x.Id == property.FolderIdForNewTasks)
                 .Select(x => x.MicrotingUid.ToString())
                 .FirstOrDefaultAsync().ConfigureAwait(false);
         }
@@ -172,7 +176,7 @@ public class WorkOrderHelper
 
         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
         mainElement.StartDate = DateTime.Now.ToUniversalTime();
-        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId).ConfigureAwait(false);
+        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, property.FolderIdForNewTasks).ConfigureAwait(false);
         await new WorkorderCase
         {
             CaseId = (int)caseId,

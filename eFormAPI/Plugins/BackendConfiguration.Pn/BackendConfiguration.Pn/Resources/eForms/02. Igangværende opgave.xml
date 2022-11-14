@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-    <Id>142664new</Id>
+    <Id>142664new2</Id>
     <Repeated>0</Repeated>
-    <Label>02. Igangværende opgave ny|02. Ongoing task|02. Laufende Aufgabe</Label>
+    <Label>02. Igangværende opgave|02. Ongoing task|02. Laufende Aufgabe</Label>
     <StartDate>2022-02-09</StartDate>
     <EndDate>2032-02-09</EndDate>
     <Language>da</Language>
@@ -13,8 +13,8 @@
     <DisplayOrder>0</DisplayOrder>
     <ElementList>
         <Element type="DataElement">
-            <Id>142664new</Id>
-            <Label>02. Igangværende opgave ny|02. Ongoing task|02. Laufende Aufgabe</Label>
+            <Id>142664new2</Id>
+            <Label>02. Igangværende opgave|02. Ongoing task|02. Laufende Aufgabe</Label>
             <Description><![CDATA[]]></Description>
             <DisplayOrder>0</DisplayOrder>
             <ReviewEnabled>false</ReviewEnabled>
@@ -59,11 +59,45 @@
                     <Mandatory>false</Mandatory>
                     <Color>e8eaf6</Color>
                 </DataItem>
+                <DataItem type="SingleSelect">
+                    <Id>376935</Id>
+                    <Label>Prioritet</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>4</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[Haster|Urgent|Dringend]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Høj|High|Hoch]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>3</Key>
+                            <Value><![CDATA[Middel|Medium|Mittel]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>3</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>4</Key>
+                            <Value><![CDATA[Lav|Low|Niedrig]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>4</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e8eaf6</Color>
+                </DataItem>
                 <DataItem type="SingleSelectSearch">
                     <Id>375733</Id>
                     <Label>Tildel del|Assaign to|Zuweisen</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>4</DisplayOrder>
+                    <DisplayOrder>5</DisplayOrder>
                     <Source>5497</Source>
                     <KeyValuePairList/>
                     <Mandatory>false</Mandatory>
@@ -73,7 +107,7 @@
                     <Id>375734</Id>
                     <Label>Status|Status|Status</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>5</DisplayOrder>
+                    <DisplayOrder>6</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <KeyValuePairList>
                         <KeyValuePair>
@@ -107,7 +141,7 @@
                     <Id>375735</Id>
                     <Label>Tryk for at opdatere|Update|Aktualisieren</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>6</DisplayOrder>
+                    <DisplayOrder>7</DisplayOrder>
                     <Value>Opdatér|Update|Aktualisieren</Value>
                     <Color>e8eaf6</Color>
                 </DataItem>
