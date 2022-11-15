@@ -45,10 +45,10 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   selectedProperty: PropertyModel;
   breadcrumbs = [
     {
-      name: '',
+      name: 'hej',
       href: '/plugins/backend-configuration-pn/properties',
     },
-    {name: '', href: ''},
+    {name: 'hej1', href: ''},
     {name: ''},
   ];
 
@@ -211,6 +211,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   }
 
   onCreateAreaRule(model: AreaRulesCreateModel, modal: MatDialogRef<AreaRuleCreateModalComponent>) {
+    debugger;
     this.createAreaRuleSub$ = this.areasService
       .createAreaRules({...model, propertyAreaId: this.propertyAreaId})
       .subscribe((data) => {
@@ -222,6 +223,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   }
 
   onUpdateAreaRule(model: AreaRuleUpdateModel, modal: MatDialogRef<AreaRuleEditModalComponent>) {
+    debugger;
     this.editAreaRuleSub$ = this.areasService
       .updateAreaRule(model)
       .subscribe((data) => {

@@ -36,7 +36,6 @@
           (ngModelChange)="changeEform($event)"
           id="editRuleEformId"
           [clearable]="true"
-          appendTo="body"
         ></mtx-select>
       </mat-form-field>
     </ng-container>
@@ -54,7 +53,6 @@
           [(ngModel)]="selectedAreaRule.typeSpecificFields.type"
           id="editRuleType"
           [clearable]="false"
-          appendTo="body"
         ></mtx-select>
       </mat-form-field>
       <mat-form-field>
@@ -69,7 +67,6 @@
           [(ngModel)]="selectedAreaRule.typeSpecificFields.alarm"
           id="editRuleAlarm"
           [clearable]="false"
-          appendTo="body"
         ></mtx-select>
       </mat-form-field>
     </ng-container>
@@ -84,7 +81,6 @@
           [(ngModel)]="selectedAreaRule.typeSpecificFields.dayOfWeek"
           id="editAreaRuleDayOfWeek"
           [clearable]="false"
-          appendTo="body"
         >
         </mtx-select>
       </mat-form-field>
@@ -97,7 +93,6 @@
           [(ngModel)]="selectedAreaRule.typeSpecificFields.repeatEvery"
           id="editRepeatEvery"
           [clearable]="false"
-          appendTo="body"
         >
         </mtx-select>
       </mat-form-field>

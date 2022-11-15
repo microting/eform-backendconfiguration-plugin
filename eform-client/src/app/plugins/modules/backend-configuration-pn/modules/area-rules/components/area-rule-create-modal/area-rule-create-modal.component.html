@@ -17,7 +17,6 @@
             bindValue="id"
             [(ngModel)]="newAreaRulesDayOfWeek"
             id="createAreasDayOfWeek"
-            appendTo="body"
           >
           </mtx-select>
         </mat-form-field>
@@ -30,7 +29,6 @@
             [(ngModel)]="newAreaRulesRepeatEvery"
             id="createRepeatEvery"
             [clearable]="false"
-            appendTo="body"
           >
           </mtx-select>
         </mat-form-field>
@@ -115,7 +113,6 @@
                 [(ngModel)]="newAreaRule.typeSpecificFields.eformId"
                 id="createRuleEformId{{ i }}"
                 [clearable]="false"
-                appendTo="body"
               ></mtx-select>
             </mat-form-field>
           </ng-container>
@@ -133,7 +130,6 @@
                 [(ngModel)]="newAreaRule.typeSpecificFields.type"
                 id="createRuleType{{ i }}"
                 [clearable]="false"
-                appendTo="body"
               ></mtx-select>
             </mat-form-field>
             <mat-form-field>
@@ -149,7 +145,6 @@
                 [(ngModel)]="newAreaRule.typeSpecificFields.alarm"
                 id="createRuleAlarm{{ i }}"
                 [clearable]="false"
-                appendTo="body"
               ></mtx-select>
             </mat-form-field>
           </ng-container>

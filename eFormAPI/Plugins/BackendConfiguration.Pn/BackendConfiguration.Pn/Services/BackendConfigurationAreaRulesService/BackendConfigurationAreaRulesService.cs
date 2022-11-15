@@ -300,7 +300,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             Alarm = (AreaRuleT2AlarmsEnum)x.Alarm,
                             DayOfWeek = x.DayOfWeek,
                             RepeatEvery = x.RepeatEvery,
-                            Type = (AreaRuleT2TypesEnum)x.RepeatType,
+                            Type = (AreaRuleT2TypesEnum)x.Type,
                             EformId = x.EformId
                         },
                         // {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery, x.RepeatType},
