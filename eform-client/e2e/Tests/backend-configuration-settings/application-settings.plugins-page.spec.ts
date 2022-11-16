@@ -11,7 +11,7 @@ describe('Application settings page - site header section', function () {
   it('should go to plugin settings page', async () => {
     await loginPage.login();
     await myEformsPage.Navbar.goToPluginsPage();
-    await (await $('#plugin-name')).waitForDisplayed({ timeout: 50000 });
+    await (await $('#plugin-name0')).waitForDisplayed({ timeout: 50000 });
 
     let plugin = await pluginPage.getFirstPluginRowObj();
     expect(plugin.version).equal('1.0.0.0');
