@@ -10,6 +10,7 @@
       [disabled]="selectedArea.type === 9">
       {{ selectedAreaRule.translatedName }}
     </mat-slide-toggle>
+    {{selectedAreaRulePlanning.complianceEnabled}}
     <mat-slide-toggle
       *ngIf="selectedAreaRule.typeSpecificFields !== undefined && selectedArea.type !== 10"
       color="primary"
@@ -216,19 +217,55 @@
         </mat-form-field>
       </ng-container>
     </ng-container>
-    <mtx-grid
-      [data]="selectedArea.availableWorkers"
-      [columns]="tableHeaders"
-      [pageOnFront]="false"
-      [rowStriped]="true"
-      [rowSelectable]="true"
-      [showPaginator]="false"
-      [rowSelected]="selectedWorkers"
-      (rowSelectionChange)="changeArray($event)"
-      [rowSelectionFormatter]="rowSelectionFormatter"
-      *ngIf="selectedArea.type !== 9"
-    >
-    </mtx-grid>
+<!--    <mtx-grid-->
+<!--      [data]="selectedArea.availableWorkers"-->
+<!--      [columns]="tableHeaders"-->
+<!--      [pageOnFront]="false"-->
+<!--      [rowStriped]="true"-->
+<!--      [rowSelectable]="true"-->
+<!--      [showPaginator]="false"-->
+<!--      [rowSelected]="selectedWorkers"-->
+<!--      (rowSelectionChange)="changeArray($event)"-->
+<!--      [rowSelectionFormatter]="rowSelectionFormatter"-->
+<!--      *ngIf="selectedArea.type !== 9"-->
+<!--    >-->
+<!--    </mtx-grid>-->
+    <div class="table-responsive" *ngIf="selectedArea.type !== 9">
+      <table class="table table-xs table-bordered text-center z-depth-1">
+        <thead>
+        <tr>
+          <th>ID</th>
+          <th>{{ 'Worker name' | translate }}</th>
+          <th>{{ 'Check to assign' | translate }}</th>
+        </tr>
+        </thead>
+        <tbody id="pairingModalTableBody">
+        <tr
+          *ngFor="
+                    let worker of selectedArea.availableWorkers;
+                    let i = index
+                  "
+        >
+          <td class="align-middle">{{ worker.siteId }}</td>
+          <td class="align-middle">{{ worker.siteName }}</td>
+          <td class="align-middle">
+            <div class="mat-checkbox">
+              <input
+                id="checkboxCreateAssignment{{ i }}"
+                (change)="addToArray($event, worker.siteId)"
+                [checked]="getAssignmentBySiteId(worker.siteId)"
+                [value]="getAssignmentBySiteId(worker.siteId)"
+                color="primary"
+                type="checkbox"
+                [disabled]="!selectedAreaRulePlanning.status"
+              />
+              <label for="checkboxCreateAssignment{{ i }}"></label>
+            </div>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
     <mat-form-field *ngIf="selectedArea.type === 9 && !selectedSite.siteName">
       <mat-label>{{ 'Assigned worker' | translate }}</mat-label>
       <mtx-select

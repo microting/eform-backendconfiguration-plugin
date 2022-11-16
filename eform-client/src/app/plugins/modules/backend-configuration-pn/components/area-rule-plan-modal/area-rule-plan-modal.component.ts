@@ -220,6 +220,9 @@ export class AreaRulePlanModalComponent implements OnInit {
         ...rule
       }, selectedPropertyId);
     }
+
+    //this.selectedAreaRulePlanning.complianceEnabled = planning.complianceEnabled;
+
     if (this.selectedArea.type === 5) {
       if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek !== rule.typeSpecificFields.dayOfWeek) {
         this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek = rule.typeSpecificFields.dayOfWeek;
@@ -483,8 +486,8 @@ export class AreaRulePlanModalComponent implements OnInit {
   onChangeRepeatType(repeatType: number) {
     this.selectedAreaRulePlanning.typeSpecificFields.repeatType = repeatType;
     this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = null;
-    this.selectedAreaRulePlanning.sendNotifications = false;
-    this.selectedAreaRulePlanning.complianceEnabled = false;
+    //this.selectedAreaRulePlanning.sendNotifications = false;
+    //this.selectedAreaRulePlanning.complianceEnabled = false;
   }
 
   getShowCompliance(): boolean {

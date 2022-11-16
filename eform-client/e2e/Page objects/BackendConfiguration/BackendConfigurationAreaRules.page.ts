@@ -662,9 +662,9 @@ export class AreaRuleRowObject {
       if (areaRulePlanningCreateUpdate.enableCompliance !== undefined) {
         if(await (
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-        ).getValue() !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
+        ).getAttribute('ng-reflect-checked') !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
           await (
-            await $('label[for=planAreaRuleComplianceEnableToggle]')
+            await $('label[for=planAreaRuleComplianceEnableToggle-input]')
           ).click();
         }
       }
@@ -721,7 +721,7 @@ export class AreaRuleRowObject {
     plan.status =
       (await (
         await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
-      ).getValue()) === 'true';
+      ).getAttribute('ng-reflect-checked')) === 'true';
     if (
       await (
         await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
@@ -730,7 +730,7 @@ export class AreaRuleRowObject {
       plan.notification =
         (await (
           await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
-        ).getValue()) === 'true';
+        ).getAttribute('ng-reflect-checked')) === 'true';
     }
     if (
       await (
@@ -740,7 +740,7 @@ export class AreaRuleRowObject {
       plan.enableCompliance =
         (await (
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-        ).getValue()) === 'true';
+        ).getAttribute('ng-reflect-checked')) === 'true';
     }
     if (
       await (
