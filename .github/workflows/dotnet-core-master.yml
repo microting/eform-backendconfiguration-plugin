@@ -23,12 +23,6 @@ jobs:
         sudo apt-get update
         sudo apt-get --only-upgrade install google-chrome-stable
         google-chrome --version
-    - name: Install ubuntu dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get -y -q install libxml2 libgdiplus libc6-dev libreoffice libreoffice-writer ure libreoffice-java-common libreoffice-core libreoffice-common fonts-opensymbol hyphen-fr hyphen-de hyphen-en-us hyphen-it hyphen-ru fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-droid-fallback fonts-dustin fonts-f500 fonts-fanwood fonts-freefont-ttf fonts-liberation fonts-lmodern fonts-lyx fonts-sil-gentium fonts-texgyre fonts-tlwg-purisa htop
-        sudo apt-get -y -q remove libreoffice-gnome
-        sudo adduser --home=/opt/libreoffice --disabled-password --gecos "" --shell=/bin/bash libreoffice
     - uses: getong/mariadb-action@v1.1
       with:
         host port: 3306 # Optional, default value is 3306. The port of host
