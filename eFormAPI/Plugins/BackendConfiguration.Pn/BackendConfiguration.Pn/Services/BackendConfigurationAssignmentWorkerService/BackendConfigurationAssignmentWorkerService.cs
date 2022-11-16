@@ -339,23 +339,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(x => x.WorkerId == deviceUserId)
                     .ToListAsync().ConfigureAwait(false);
 
-                var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "01. New task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync().ConfigureAwait(false);
-
-                var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "02. Ongoing task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync().ConfigureAwait(false);
-
-                var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "03. Completed task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync().ConfigureAwait(false);
+                // TODO: Implement cleanup of deployed WorkOrder related eForms.
+                // var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
+                //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //     .Where(x => x.Text == "01. New task")
+                //     .Select(x => x.CheckListId)
+                //     .FirstAsync().ConfigureAwait(false);
+                //
+                // var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
+                //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //     .Where(x => x.Text == "02. Ongoing task")
+                //     .Select(x => x.CheckListId)
+                //     .FirstAsync().ConfigureAwait(false);
+                //
+                // var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
+                //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //     .Where(x => x.Text == "03. Completed task")
+                //     .Select(x => x.CheckListId)
+                //     .FirstAsync().ConfigureAwait(false);
 
 
                 foreach (var propertyAssignment in propertyWorkers)

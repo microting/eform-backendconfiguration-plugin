@@ -6,7 +6,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import {FolderCreateModel, FolderDto, SharedTagCreateModel} from 'src/app/common/models';
-import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const';
+import {applicationLanguages2} from 'src/app/common/const';
 import {FoldersService, LocaleService} from 'src/app/common/services';
 import {ToastrService} from 'ngx-toastr';
 import {TranslateService} from '@ngx-translate/core';
@@ -32,7 +32,7 @@ export class DocumentsFolderCreateComponent implements OnInit {
   selectedLanguage: number;
 
   get languages() {
-    return applicationLanguagesTranslated;
+    return applicationLanguages2;
   }
 
   constructor(
@@ -40,7 +40,7 @@ export class DocumentsFolderCreateComponent implements OnInit {
     private toastrService: ToastrService,
     private translateService: TranslateService,
     localeService: LocaleService) {
-    this.selectedLanguage = applicationLanguagesTranslated.find(
+    this.selectedLanguage = applicationLanguages2.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
   }
@@ -54,7 +54,7 @@ export class DocumentsFolderCreateComponent implements OnInit {
 
   initCreateForm() {
     this.newFolderModel = new FolderCreateModel();
-    for (const language of applicationLanguagesTranslated) {
+    for (const language of applicationLanguages2) {
       this.newFolderModel = {
         ...this.newFolderModel,
         translations: [
