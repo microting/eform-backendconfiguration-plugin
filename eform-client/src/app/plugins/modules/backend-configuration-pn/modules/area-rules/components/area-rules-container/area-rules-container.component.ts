@@ -211,7 +211,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   }
 
   onCreateAreaRule(model: AreaRulesCreateModel, modal: MatDialogRef<AreaRuleCreateModalComponent>) {
-    debugger;
     this.createAreaRuleSub$ = this.areasService
       .createAreaRules({...model, propertyAreaId: this.propertyAreaId})
       .subscribe((data) => {
@@ -223,7 +222,6 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   }
 
   onUpdateAreaRule(model: AreaRuleUpdateModel, modal: MatDialogRef<AreaRuleEditModalComponent>) {
-    debugger;
     this.editAreaRuleSub$ = this.areasService
       .updateAreaRule(model)
       .subscribe((data) => {

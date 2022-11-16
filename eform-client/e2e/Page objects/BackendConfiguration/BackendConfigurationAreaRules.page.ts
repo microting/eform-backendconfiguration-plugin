@@ -7,7 +7,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    return (await $$('tbody > tr')).length;
+    return (await $$('#mainTable tbody > tr')).length;
   }
 
   public async ruleCreateBtn() {
@@ -163,7 +163,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async updateEntityList() {
-    const ele = await $(`#updateEntityList`);
+    const ele = await $(`.updateEntityList`);
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -425,7 +425,7 @@ export class AreaRuleRowObject {
     rowNum = rowNum - 1;
     this.name = await (await $('#ruleName-'+rowNum)).getText();
     this.rulePlanningStatus =
-      (await (await $('#rulePlanningStatus-'+rowNum)).getText()) === 'Til';
+      (await (await $$('.rulePlanningStatus')[rowNum]).getText()) === 'Til';
     this.showAreaRulePlanningBtn = await $(
       '#showAreaRulePlanningBtn-'+rowNum
     );

@@ -63,6 +63,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -96,6 +97,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -120,6 +122,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -139,6 +142,7 @@ export class AreaRulesTableComponent implements OnChanges {
           icon: 'list',
           click: () => this.onShowEditEntityListModal(this.selectedArea.groupId),
           tooltip: this.translateService.stream('Edit list of stables for tailbites'),
+          class: 'updateEntityList',
         },
       ]
     },
@@ -157,6 +161,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -177,6 +182,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'weekDay',
       header: this.translateService.stream('Week Day'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(this.getWeekDayName(rowData)),
+      class: 'ruleWeekDay',
     },
     {
       field: 'eformName',
@@ -186,6 +192,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -206,6 +213,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -230,6 +238,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -250,6 +259,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -270,6 +280,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'status',
       header: this.translateService.stream('Status'),
       formatter: (chemical: ChemicalModel) => this.getStatus(chemical.status),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'propertyName',
@@ -306,6 +317,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',
@@ -326,6 +338,7 @@ export class AreaRulesTableComponent implements OnChanges {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
+      class: 'rulePlanningStatus'
     },
     {
       field: 'actions',

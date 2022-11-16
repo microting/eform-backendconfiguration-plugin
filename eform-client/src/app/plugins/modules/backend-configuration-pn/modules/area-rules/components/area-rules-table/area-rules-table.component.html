@@ -26,14 +26,23 @@
   >
   </mtx-grid>
 </ng-container>
-
-<h3 *ngIf="selectedArea.type === 3">{{'Klargøring af stalde' | translate}}</h3>
-<h3 *ngIf="selectedArea.type === 9">{{'Oprettelse af kemikalier' | translate}}</h3>
-<h3 *ngIf="selectedArea.type === 10">{{'Pools' | translate}}</h3>
+<ng-container *ngIf="selectedArea.type === 3">
+  <br>
+  <h3>{{'Klargøring af stalde' | translate}}</h3>
+</ng-container>
+<ng-container *ngIf="selectedArea.type === 9">
+  <br>
+  <h3>{{'Oprettelse af kemikalier' | translate}}</h3>
+</ng-container>
+<ng-container *ngIf="selectedArea.type === 10">
+  <br>
+  <h3>{{'Pools' | translate}}</h3>
+</ng-container>
 <mtx-grid
+  id="mainTable"
   [data]="areaRules"
   [columns]="getColumns()"
-  [cellTemplate]="{translatedName: ruleNameTpl, eformName: eFormNameTpl, planningStatus: planningStatusTpl, actions: actionsTpl}"
+  [cellTemplate]="{translatedName: ruleNameTpl, eformName: eFormNameTpl, actions: actionsTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
