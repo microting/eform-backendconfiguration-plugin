@@ -9,7 +9,7 @@ export class BackendConfigurationTaskManagementPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    return (await $$('#taskManagementTableBody > tr')).length;
+    return (await $$('tbody > tr')).length;
   }
 
   public async backendConfigurationPnTaskManagement() {
@@ -21,9 +21,11 @@ export class BackendConfigurationTaskManagementPage extends Page {
 
   public async goToTaskManagement() {
     const spinnerAnimation = await $('#spinner-animation');
-    await (
-      await backendConfigurationPropertiesPage.backendConfigurationPnButton()
-    ).click();
+    if (!$('#backend-configuration-pn-task-management').isDisplayed()) {
+      await (
+        await backendConfigurationPropertiesPage.backendConfigurationPnButton()
+      ).click();
+    }
     await (await this.backendConfigurationPnTaskManagement()).click();
     await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.createNewTaskBtn()).waitForClickable({ timeout: 90000 });
@@ -350,22 +352,20 @@ export class TaskRowObject {
   public status: string;
 
   public async getRow(rowNum: number): Promise<TaskRowObject> {
-    this.row = (await $$('#taskManagementTableBody tr'))[rowNum - 1];
-    if (this.row) {
-      this.id = await (await this.row.$('#id')).getText();
-      this.createdDate = await (await this.row.$('#createdDate')).getText();
-      this.propertyName = await (await this.row.$('#propertyName')).getText();
-      this.area = await (await this.row.$('#areaName')).getText();
-      this.createdBy1 = await (await this.row.$('#createdByName')).getText();
-      this.createdBy2 = await (await this.row.$('#createdByText')).getText();
-      this.lastAssignedTo = await (await this.row.$('#lastAssignedTo')).getText();
-      this.showTaskBtn = await this.row.$('#taskManagementViewBtn');
-      this.deleteTaskBtn = await this.row.$('#taskManagementDeleteTaskBtn');
-      this.description = await (await this.row.$('#description')).getText();
-      this.lastUpdatedDate = await (await this.row.$('#lastUpdateDate')).getText();
-      this.lastUpdatedBy = await (await this.row.$('#lastUpdatedBy')).getText();
-      this.status = await (await this.row.$('#status')).getText();
-    }
+    rowNum = rowNum - 1;
+    this.id = await (await $$('td.id')[rowNum]).getText();
+    this.createdDate = await (await $$('td.createdDate')[rowNum]).getText();
+    this.propertyName = await (await $$('td.propertyName')[rowNum]).getText();
+    this.area = await (await $$('td.areaName')[rowNum]).getText();
+    this.createdBy1 = await (await $$('td.createdByName')[rowNum]).getText();
+    this.createdBy2 = await (await $$('td.createdByText')[rowNum]).getText();
+    this.lastAssignedTo = await (await $$('td.lastAssignedTo')[rowNum]).getText();
+    this.showTaskBtn = await $$('td.taskManagementViewBtn')[rowNum];
+    this.deleteTaskBtn = await $$('td.taskManagementDeleteTaskBtn')[rowNum];
+    this.description = await (await $$('td.description')[rowNum]).getText();
+    this.lastUpdatedDate = await (await $$('td.lastUpdateDate')[rowNum]).getText();
+    this.lastUpdatedBy = await (await $$('td.lastUpdatedBy')[rowNum]).getText();
+    this.status = await (await $$('td.status')[rowNum]).getText();
     return this;
   }
 

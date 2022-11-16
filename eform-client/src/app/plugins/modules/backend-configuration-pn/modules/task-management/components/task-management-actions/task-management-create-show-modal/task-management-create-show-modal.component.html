@@ -4,7 +4,6 @@
     <mat-form-field>
       <mat-label>{{'Property' | translate }}</mat-label>
       <mtx-select
-        appendTo="body"
         [items]="properties"
         bindLabel="name"
         bindValue="id"
@@ -16,7 +15,6 @@
     <mat-form-field>
       <mat-label>{{'Area' | translate }}</mat-label>
       <mtx-select
-        appendTo="body"
         [items]="propertyAreas"
         formControlName="areaName"
         id="areaName"
@@ -26,7 +24,6 @@
     <mat-form-field>
       <mat-label>{{'Assigned to' | translate }}</mat-label>
       <mtx-select
-        appendTo="body"
         bindLabel="name"
         bindValue="id"
         formControlName="assignedTo"

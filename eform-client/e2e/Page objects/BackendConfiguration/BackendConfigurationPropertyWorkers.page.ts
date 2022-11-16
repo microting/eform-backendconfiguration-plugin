@@ -72,14 +72,14 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async editFirstNameInput(): Promise<WebdriverIO.Element> {
-    const ele = await $('#editFirstNameInput');
+    const ele = await $('#firstName');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async editLastNameInput(): Promise<WebdriverIO.Element> {
-    const ele = await $('#editLastNameInput');
+    const ele = await $('#lastName');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -128,7 +128,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async checkboxEditAssignment(i: number) {
-    const ele = await $(`#checkboxEditAssignment${i}`);
+    const ele = await $(`#checkboxCreateAssignment${i}`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -275,6 +275,7 @@ export class PropertyWorkerRowObject {
     ).waitForClickable({
       timeout: 40000,
     });
+    await browser.pause(500);
   }
 
   async closeDeleteModal(clickCancel = false) {
@@ -287,6 +288,7 @@ export class PropertyWorkerRowObject {
         await backendConfigurationPropertyWorkersPage.saveDeleteBtn()
       ).click();
     }
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.newDeviceUserBtn()
     ).waitForClickable({ timeout: 40000 });
@@ -300,6 +302,7 @@ export class PropertyWorkerRowObject {
   async openEditModal(propertyWorker?: PropertyWorker) {
     await this.editBtn.waitForClickable({ timeout: 40000 });
     await this.editBtn.click();
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.cancelEditBtn()
     ).waitForClickable({
@@ -310,11 +313,13 @@ export class PropertyWorkerRowObject {
         await (
           await backendConfigurationPropertyWorkersPage.editFirstNameInput()
         ).setValue(propertyWorker.name);
+        await browser.pause(500);
       }
       if (propertyWorker.surname) {
         await (
           await backendConfigurationPropertyWorkersPage.editLastNameInput()
         ).setValue(propertyWorker.surname);
+        await browser.pause(500);
       }
       if (propertyWorker.language) {
         await (
@@ -322,11 +327,13 @@ export class PropertyWorkerRowObject {
             await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
           ).$('input')
         ).setValue(propertyWorker.language);
+        await browser.pause(500);
         const value = await (
           await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
         ).$(`.ng-option=${propertyWorker.language}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
+        await browser.pause(500);
       }
       if (propertyWorker.properties) {
         for (let i = 0; i < propertyWorker.properties.length; i++) {
@@ -337,6 +344,7 @@ export class PropertyWorkerRowObject {
               )
             ).$('..')
           ).click();
+          await browser.pause(500);
         }
       }
     }
@@ -352,6 +360,7 @@ export class PropertyWorkerRowObject {
         await backendConfigurationPropertyWorkersPage.saveEditBtn()
       ).click();
     }
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.newDeviceUserBtn()
     ).waitForDisplayed();
@@ -361,7 +370,7 @@ export class PropertyWorkerRowObject {
     { propertyName: string; checked: boolean }[]
   > {
     await this.openEditModal();
-    const pairingEditModalTableBody = await $('#pairingEditModalTableBody');
+    const pairingEditModalTableBody = await $('#pairingModalTableBody');
     let masForReturn: { propertyName: string; checked: boolean }[] = new Array<{
       propertyName: string;
       checked: boolean;
@@ -370,20 +379,20 @@ export class PropertyWorkerRowObject {
       await pairingEditModalTableBody.$$('#propertyName')
     ).length;
     for (let i = 0; i < propertyLength; i++) {
-      masForReturn = [
-        ...masForReturn,
-        {
-          propertyName: await (
-            await pairingEditModalTableBody.$$('#propertyName')
-          )[i].getText(),
-          checked:
+       masForReturn = [
+         ...masForReturn,
+         {
+           propertyName: await (
+             await $$('#propertyName')
+           )[i].getText(),
+           checked:
             (await (
               await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(
                 i
               )
-            ).getValue()) === 'true',
-        },
-      ];
+            ).getAttribute('ng-reflect-checked')) === 'true',
+         },
+       ];
     }
     await this.closeEditModal(true);
     return masForReturn;

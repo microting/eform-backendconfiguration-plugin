@@ -166,7 +166,7 @@ export class BackendConfigurationPropertiesPage extends Page {
   }
 
   public async propertyCreateWorkorderFlowEnableToggle() {
-    const ele = await $(`[for='propertyCreateWorkorderFlowEnableToggle']`);
+    const ele = await $(`[for='propertyCreateWorkorderFlowEnableToggle-input']`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;

@@ -52,7 +52,7 @@
 </ng-template>
 
 <ng-template #languageTpl let-row let-i="index">
-  <div class="deviceUserLanguage" id="deviceUserLanguage-{{i}}">{{row.language}}</div>
+  <div class="deviceUserLanguage" id="deviceUserLanguage-{{i}}">{{row.language | translate}}</div>
 </ng-template>
 
 <ng-template #customerOtpTpl let-row>
