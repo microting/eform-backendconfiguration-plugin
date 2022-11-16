@@ -129,3 +129,11 @@ jobs:
       run: |
         cat dotnet_log
         cat eform-angular-frontend/eform-client/npm_log
+    - name: Archive screenshot artifacts
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: error Screenshots
+        path: |
+          /home/runner/work/eform-backendconfiguration-plugin/eform-backendconfiguration-plugin/eform-angular-frontend/eform-client/errorShots/chrome*.png
+        retention-days: 2
