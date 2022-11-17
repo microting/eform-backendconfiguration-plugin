@@ -98,7 +98,6 @@
       type="text"
       id="descriptionTask"
       formControlName="descriptionTask"
-      [readonly]="!isCreate"
       rows="5"
       cols="46"
     ></textarea>
@@ -109,7 +108,7 @@
     mat-raised-button
     color="accent"
     id="taskManagementCreateShowSaveBtn"
-    [disabled]="!(workOrderCaseForm.valid && isCreate)"
+    [disabled]="!(workOrderCaseForm.valid)"
     (click)="create()"
   >
     {{(!isCreate ? 'Save' : 'Create') | translate}}

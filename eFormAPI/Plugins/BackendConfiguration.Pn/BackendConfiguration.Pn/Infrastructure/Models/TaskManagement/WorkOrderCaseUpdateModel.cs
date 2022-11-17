@@ -22,24 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;
+namespace BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Infrastructure.Models.TaskManagement;
-using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microsoft.AspNetCore.Http;
 
-public interface IBackendConfigurationTaskManagementService
+public class WorkOrderCaseUpdateModel
 {
-    Task<List<WorkorderCaseModel>> Index(TaskManagementFiltersModel filtersModel);
+    public int Id { get; set; }
 
-    Task<OperationDataResult<WorkOrderCaseReadModel>> GetTaskById(int workOrderCaseId);
+    public int PropertyId { get; set; }
 
-    Task<OperationDataResult<List<string>>> GetItemsEntityListByPropertyId(int propertyId);
+    public string AreaName { get; set; }
 
-    Task<OperationResult> DeleteTaskById(int workOrderCaseId);
+    public int AssignedSiteId { get; set; }
 
-    Task<OperationResult> CreateTask(WorkOrderCaseCreateModel createModel);
+    public IFormFileCollection Files { get; set; }
 
-    Task<OperationResult> UpdateTask(WorkOrderCaseUpdateModel createModel);
+    public string Description { get; set; }
+
+    public int Priority { get; set; }
 }

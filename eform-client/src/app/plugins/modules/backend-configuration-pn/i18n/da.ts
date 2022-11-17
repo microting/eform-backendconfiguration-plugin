@@ -222,4 +222,6 @@ export const da = {
   'High': 'Høj',
   'Medium': 'Middel',
   'Low': 'Lav',
+  'Awaiting': 'Afventer',
+  'Ordered': 'Bestilt',
 };

@@ -97,6 +97,13 @@ public class TaskManagementController : Controller
         return await _backendConfigurationTaskManagementService.CreateTask(createModel).ConfigureAwait(false);
     }
 
+    [HttpPut]
+    public async Task<OperationResult> UpdateTask([FromForm]WorkOrderCaseUpdateModel updateModel)
+    {
+        updateModel.Files = HttpContext.Request.Form.Files;
+        return await _backendConfigurationTaskManagementService.UpdateTask(updateModel).ConfigureAwait(false);
+    }
+
     [HttpGet]
     [Route("word")]
     public async Task GetWordReport(TaskManagementFiltersModel filtersModel)
