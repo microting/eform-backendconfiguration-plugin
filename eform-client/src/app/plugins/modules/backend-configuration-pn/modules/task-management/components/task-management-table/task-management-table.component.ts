@@ -12,6 +12,9 @@ import {
 import {Sort} from '@angular/material/sort';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
+import {
+  TaskManagementPrioritiesEnum
+} from "src/app/plugins/modules/backend-configuration-pn/enums/task-management-priorities.enum";
 
 @Component({
   selector: 'app-task-management-table',
@@ -36,6 +39,36 @@ export class TaskManagementTableComponent implements OnInit {
     {header: this.translateService.stream('Created by 2'), field: 'createdByText', sortProp: {id: 'CreatedByText'}, sortable: true, class: 'createdByText'},
     {header: this.translateService.stream('LastAssignedTo'), field: 'lastAssignedTo', sortProp: {id: 'LastAssignedToName'}, sortable: true, class: 'lastAssignedTo'},
     {
+      header: this.translateService.stream('Description'),
+      field: 'description',
+      formatter: (rowData: WorkOrderCaseModel) => rowData.description,
+      class: 'description',
+    },
+    {
+      header: this.translateService.stream('LastUpdateDate'),
+      field: 'lastUpdateDate',
+      sortProp: {id: 'UpdatedAt'},
+      sortable: true,
+      type: 'date',
+      typeParameter: {format: 'dd.MM.yyyy'},
+      class: 'lastUpdateDate'
+    },
+    {header: this.translateService.stream('LastUpdateBy'), field: 'lastUpdatedBy', sortProp: {id: 'LastUpdatedByName'}, sortable: true, class: 'lastUpdatedBy'},
+    {header: this.translateService.stream('Priority'),
+      field: 'priority',
+      sortProp: {id: 'Priority'},
+      sortable: true,
+      class: 'priority',
+      formatter: (rowData: WorkOrderCaseModel) => this.translateService.instant(TaskManagementPrioritiesEnum[rowData.priority])},
+    {
+      header: this.translateService.stream('Status'),
+      field: 'status',
+      sortProp: {id: 'CaseStatusesEnum'},
+      sortable: true,
+      formatter: (rowData: WorkOrderCaseModel) => `<p>${this.translateService.instant(rowData.status)}</p>`,
+      class: 'status'
+    },
+    {
       header: this.translateService.stream('Actions'),
       field: 'actions',
       type: 'button',
@@ -57,30 +90,6 @@ export class TaskManagementTableComponent implements OnInit {
           class: 'taskManagementDeleteTaskBtn',
         },
       ]
-    },
-    {
-      header: this.translateService.stream('Description'),
-      field: 'description',
-      formatter: (rowData: WorkOrderCaseModel) => rowData.description,
-      class: 'description',
-    },
-    {
-      header: this.translateService.stream('LastUpdateDate'),
-      field: 'lastUpdateDate',
-      sortProp: {id: 'UpdatedAt'},
-      sortable: true,
-      type: 'date',
-      typeParameter: {format: 'dd.MM.yyyy'},
-      class: 'lastUpdateDate'
-    },
-    {header: this.translateService.stream('LastUpdateBy'), field: 'lastUpdatedBy', sortProp: {id: 'LastUpdatedByName'}, sortable: true, class: 'lastUpdatedBy'},
-    {
-      header: this.translateService.stream('Status'),
-      field: 'status',
-      sortProp: {id: 'CaseStatusesEnum'},
-      sortable: true,
-      formatter: (rowData: WorkOrderCaseModel) => `<p>${this.translateService.instant(rowData.status)}</p>`,
-      class: 'status'
     },
   ];
 

@@ -32,6 +32,24 @@
         [clearable]="isCreate">
       </mtx-select>
     </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Priority' | translate}}</mat-label>
+      <mtx-select
+        [items]="[
+          {id: 1, name: ('Urgent' | translate)},
+          {id: 2, name: ('High' | translate)},
+          {id: 3, name: ('Medium' | translate)},
+          {id: 4, name: ('Low' | translate)},
+        ]"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="priority"
+        id="statusFilter"
+        [clearable]="false"
+        [placeholder]="('Select priority' | translate)">
+      >
+      </mtx-select>
+    </mat-form-field>
   </div>
   <div>
     <button

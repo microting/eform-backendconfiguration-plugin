@@ -39,4 +39,6 @@ public class WorkOrderCaseReadModel
     public List<string> PictureNames { get; set; }
 
     public string Description { get; set; }
+
+    public int? Priority { get; set; }
 }

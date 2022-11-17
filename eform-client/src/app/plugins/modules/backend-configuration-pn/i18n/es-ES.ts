@@ -212,4 +212,9 @@ export const esES = {
   'Customer no & OTP': '',
   'New OTP': '',
   'Select filter': '',
+  'Priority': '',
+  'Urgent': '',
+  'High': '',
+  'Medium': '',
+  'Low': '',
 };

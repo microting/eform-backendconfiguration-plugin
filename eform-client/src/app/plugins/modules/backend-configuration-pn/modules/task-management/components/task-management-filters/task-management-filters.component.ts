@@ -78,6 +78,10 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
               value: [filters.dateFrom, filters.dateTo],
               disabled: !filters.propertyId,
             }),
+            priority: new FormControl({
+              value: filters.priority,
+              disabled: !filters.propertyId,
+            }),
           });
           if (filters.propertyId && filters.propertyId !== -1) {
             this.getPropertyAreas(filters.propertyId);
@@ -226,6 +230,15 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         }));
       }
     });
+    this.filtersForm.get('priority').valueChanges.subscribe((value: number) => {
+      this.taskManagementStateService.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          priority: value,
+        },
+      }));
+    }
+    );
   }
 
   getPropertyAreas(propertyId: number) {

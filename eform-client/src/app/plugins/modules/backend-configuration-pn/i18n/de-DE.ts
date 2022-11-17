@@ -211,4 +211,9 @@ export const deDE = {
   'Customer no & OTP': 'Kundennummer & OTP',
   'New OTP': 'Neuer OTP',
   'Select filter': 'Filter auswählen',
+  'Priority': 'Priorität',
+  'Urgent': 'Dringend',
+  'High': 'Hoch',
+  'Medium': 'Mittel',
+  'Low': 'Niedrig',
 };

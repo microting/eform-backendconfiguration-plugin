@@ -114,6 +114,13 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 query = query.Where(x => x.CreatedByName == filtersModel.CreatedBy);
             }
 
+            if (filtersModel.Priority != null)
+            {
+                query = filtersModel.Priority == 3 ?
+                    query.Where(x => x.Priority == null || x.Priority == "3") :
+                    query.Where(x => x.Priority == filtersModel.Priority.ToString());
+            }
+
             if (filtersModel.DateFrom.HasValue && filtersModel.DateTo.HasValue)
             {
                 query = query
@@ -143,7 +150,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     //x.CaseId,
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
-                    ParentWorkorderCaseId = x.ParentWorkorderCaseId
+                    ParentWorkorderCaseId = x.ParentWorkorderCaseId,
+                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority)
                 })
                 .ToListAsync().ConfigureAwait(false);
 
@@ -188,6 +196,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     x.CaseId,
                     x.ParentWorkorderCaseId,
                     x.PropertyWorker.PropertyId,
+                    x.Priority
                 }).FirstOrDefaultAsync().ConfigureAwait(false);
             if (task == null)
             {
@@ -225,6 +234,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 Id = task.Id,
                 PictureNames = fileNames,
                 PropertyId = task.PropertyId,
+                Priority = string.IsNullOrEmpty(task.Priority) ? 3 : int.Parse(task.Priority)
+
             };
             return new OperationDataResult<WorkOrderCaseReadModel>(true, taskForReturn);
         }
@@ -381,7 +392,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             createModel.Description = string.IsNullOrEmpty(createModel.Description)
                 ? ""
                 : createModel.Description.Replace("<div>", "").Replace("</div>", "");
-            var newWorkorderCase = new WorkorderCase
+            var newWorkOrderCase = new WorkorderCase
             {
                 ParentWorkorderCaseId = null,
                 CaseId = 0,
@@ -393,9 +404,10 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 Description = createModel.Description,
                 CaseInitiated = DateTime.UtcNow,
                 LeadingCase = true,
-                LastAssignedToName = site.Name
+                LastAssignedToName = site.Name,
+                Priority = createModel.Priority.ToString()
             };
-            await newWorkorderCase.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            await newWorkOrderCase.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var picturesOfTasks = new List<string>();
             if (createModel.Files.Any())
@@ -467,7 +479,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
                     var workOrderCaseImage = new WorkorderCaseImage
                     {
-                        WorkorderCaseId = newWorkorderCase.Id,
+                        WorkorderCaseId = newWorkOrderCase.Id,
                         UploadedDataId = uploadData.Id
                     };
                     picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}.{uploadData.Extension}");
@@ -513,7 +525,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 (int)property.FolderIdForOngoingTasks!,
                 description,
                 CaseStatusesEnum.Ongoing,
-                newWorkorderCase.Id,
+                newWorkOrderCase.Id,
                 createModel.Description,
                 deviceUsersGroupMicrotingUid,
                 pushMessageBody,

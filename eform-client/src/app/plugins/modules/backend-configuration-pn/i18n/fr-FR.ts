@@ -213,4 +213,9 @@ export const frFR = {
   'Customer no & OTP': 'Numéro de client & OTP',
   'New OTP': 'Nouvel OTP',
   'Select filter': 'Sélectionner un filtre',
+  'Priority': 'Priorité',
+  'Urgent': 'Urgent',
+  'High': 'Haut',
+  'Medium': 'Moyen',
+  'Low': 'Bas',
 };

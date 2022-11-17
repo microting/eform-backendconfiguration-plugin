@@ -12,6 +12,7 @@ export interface TaskManagementFiltrationModel {
   status?: number,
   dateFrom?: Date | string,
   dateTo?: Date | string,
+  priority?: number,
 }
 
 export interface TaskManagementState {

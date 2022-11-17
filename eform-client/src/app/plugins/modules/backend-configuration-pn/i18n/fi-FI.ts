@@ -211,4 +211,9 @@ export const fiFI = {
   To: '',
   'Customer no & OTP': '',
   'New OTP': '',
+  'Priority': '',
+  'Urgent': '',
+  'High': '',
+  'Medium': '',
+  'Low': '',
 };

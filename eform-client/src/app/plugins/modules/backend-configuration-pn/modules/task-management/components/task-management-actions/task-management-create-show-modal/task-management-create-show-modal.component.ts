@@ -74,6 +74,10 @@ export class TaskManagementCreateShowModalComponent
         value: null,
         disabled: false,
       }, Validators.required),
+      priority: new FormControl({
+        value: 3,
+        disabled: false,
+      }, Validators.required),
     });
     this.getProperties();
     if (workOrderCase) {

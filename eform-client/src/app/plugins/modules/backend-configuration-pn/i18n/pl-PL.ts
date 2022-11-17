@@ -213,4 +213,9 @@ export const plPl = {
   'Customer no & OTP': 'Nr klienta i OTP',
   'New OTP': 'Nowy OTP',
   'Select filter': 'Wybierz filtr',
+  'Priority': 'Priorytet',
+  'Urgent': 'Pilne',
+  'High': 'Wysoki',
+  'Medium': 'Średni',
+  'Low': 'Niski',
 };

@@ -211,4 +211,9 @@ export const svSE = {
   To: 'Till',
   'Customer no & OTP': 'Kundnummer & OTP',
   'New OTP': 'Ny OTP',
+  'Priority': 'Prioritet',
+  'Urgent': 'Akut',
+  'High': 'Hög',
+  'Medium': 'Medium',
+  'Low': 'Låg',
 };
