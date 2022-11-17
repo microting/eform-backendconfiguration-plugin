@@ -1146,9 +1146,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         public async Task<OperationDataResult<ChrResult>> GetChrInformation(int chrNumber)
         {
             var chrHelper = new ChrHelper();
-            var chr = await chrHelper.GetCompanyInfo(chrNumber).ConfigureAwait(false);
+            try {
+                var chr = await chrHelper.GetCompanyInfo(chrNumber).ConfigureAwait(false);
 
-            return new OperationDataResult<ChrResult>(true, chr);
+                return new OperationDataResult<ChrResult>(true, chr);
+            } catch (Exception e) {
+                return new OperationDataResult<ChrResult>(false, e.Message);
+            }
+
         }
     }
 }

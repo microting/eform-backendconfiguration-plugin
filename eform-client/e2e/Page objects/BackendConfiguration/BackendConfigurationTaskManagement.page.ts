@@ -186,56 +186,56 @@ export class BackendConfigurationTaskManagementPage extends Page {
   }
 
   public async idTableHeader() {
-    const ele = await $('#idTableHeader');
+    const ele = await $('thead > tr > th.id');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async caseInitiatedTableHeader() {
-    const ele = await $('#caseInitiatedTableHeader');
+    const ele = await $('thead > tr > th.createdDate');
     await ele.waitForDisplayed({ timeout: 90000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async selectedAreaNameTableHeader() {
-    const ele = await $('#selectedAreaNameTableHeader');
+    const ele = await $('thead > tr > th.areaName');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async createdByNameTableHeader() {
-    const ele = await $('#createdByNameTableHeader');
+    const ele = await $('thead > tr > th.createdByName');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async createdByTextTableHeader() {
-    const ele = await $('#createdByTextTableHeader');
+    const ele = await $('thead > tr > th.createdByText');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async lastAssignedToNameTableHeader() {
-    const ele = await $('#lastAssignedToNameTableHeader');
+    const ele = await $('thead > tr > th.lastAssignedTo');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async updatedAtTableHeader() {
-    const ele = await $('#updatedAtTableHeader');
+    const ele = await $('thead > tr > th.lastUpdateDate');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async caseStatusesEnumTableHeader() {
-    const ele = await $('#caseStatusesEnumTableHeader');
+    const ele = await $('thead > tr > th.status');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -360,8 +360,8 @@ export class TaskRowObject {
     this.createdBy1 = await (await $$('td.createdByName')[rowNum]).getText();
     this.createdBy2 = await (await $$('td.createdByText')[rowNum]).getText();
     this.lastAssignedTo = await (await $$('td.lastAssignedTo')[rowNum]).getText();
-    this.showTaskBtn = await $$('td.taskManagementViewBtn')[rowNum];
-    this.deleteTaskBtn = await $$('td.taskManagementDeleteTaskBtn')[rowNum];
+    this.showTaskBtn = await $$('button.taskManagementViewBtn')[rowNum];
+    this.deleteTaskBtn = await $$('button.taskManagementDeleteTaskBtn')[rowNum];
     this.description = await (await $$('td.description')[rowNum]).getText();
     this.lastUpdatedDate = await (await $$('td.lastUpdateDate')[rowNum]).getText();
     this.lastUpdatedBy = await (await $$('td.lastUpdatedBy')[rowNum]).getText();
