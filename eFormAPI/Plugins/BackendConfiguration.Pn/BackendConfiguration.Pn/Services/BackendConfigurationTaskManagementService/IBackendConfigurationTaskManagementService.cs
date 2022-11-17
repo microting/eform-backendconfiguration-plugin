@@ -31,7 +31,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
 public interface IBackendConfigurationTaskManagementService
 {
-    Task<List<WorkorderCaseModel>> GetReport(TaskManagementFiltersModel filtersModel);
+    Task<List<WorkorderCaseModel>> Index(TaskManagementFiltersModel filtersModel);
 
     Task<OperationDataResult<WorkOrderCaseReadModel>> GetTaskById(int workOrderCaseId);
 

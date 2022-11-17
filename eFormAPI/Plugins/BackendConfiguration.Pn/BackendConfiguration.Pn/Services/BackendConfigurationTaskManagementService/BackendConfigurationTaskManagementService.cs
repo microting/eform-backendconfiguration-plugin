@@ -73,7 +73,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         _bus = rebusService.GetBus();
     }
 
-    public async Task<List<WorkorderCaseModel>> GetReport(TaskManagementFiltersModel filtersModel)
+    public async Task<List<WorkorderCaseModel>> Index(TaskManagementFiltersModel filtersModel)
     {
         try
         {
@@ -151,7 +151,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId,
-                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority)
+                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority),
                 })
                 .ToListAsync().ConfigureAwait(false);
 
