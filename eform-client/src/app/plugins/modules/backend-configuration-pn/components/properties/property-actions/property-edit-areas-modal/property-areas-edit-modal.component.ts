@@ -83,7 +83,7 @@ export class PropertyAreasEditModalComponent implements OnInit {
       (x) => x.name === area.name && x.description === area.description
     );
     if (findetArea) {
-      findetArea.activated = $event.target.checked;
+      findetArea.activated = $event.checked;
     }
   }
 

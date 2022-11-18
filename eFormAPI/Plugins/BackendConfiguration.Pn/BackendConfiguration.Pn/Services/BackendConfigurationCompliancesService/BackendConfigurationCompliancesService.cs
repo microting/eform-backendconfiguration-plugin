@@ -152,10 +152,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
                         }
                         var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .FirstAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
-                        complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
-                        dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
-                        await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            .FirstOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                        if (planningCaseSite != null)
+                        {
+                            complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
+                            dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+                            await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        }
                     }
 
                     if (compliance.PlanningCaseSiteId != 0)

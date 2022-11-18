@@ -18,6 +18,7 @@
 <mtx-grid
   [data]="selectedPropertyAreas"
   [columns]="tableHeaders"
+  [cellTemplate]="{ book: actionsTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -25,3 +26,19 @@
   [showColumnMenuButton]="false"
 >
 </mtx-grid>
+
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="">
+    <button
+      id="navigateToPropertyArea"
+      mat-icon-button
+      color='accent'
+      (click)="this.router.navigate(['../../area-rules/', row.id, this.selectedProperty.id], {relativeTo: this.route})"
+      matTooltip="{{'Show cases' | translate}}"
+    >
+      <mat-icon>book</mat-icon>
+    </button>
+  </div>
+</ng-template>
+
+

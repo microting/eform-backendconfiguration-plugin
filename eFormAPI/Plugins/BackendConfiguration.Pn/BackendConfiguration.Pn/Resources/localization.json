@@ -1537,5 +1537,195 @@
       "pt-PT": "Nome do item",
       "fi-FI": "Kohteen nimi"
     }
+  },
+  {
+    "Key": "Awaiting",
+    "LocalizedValue": {
+      "da": "Afventer",
+      "de": "Warten",
+      "en-US": "Awaiting",
+      "uk-UA": "Очікування",
+      "pl-PL": "Oczekiwanie",
+      "no-NO": "Venter",
+      "sv-SE": "Väntar",
+      "es-ES": "Esperando",
+      "fr-FR": "En attente",
+      "it-IT": "In attesa",
+      "nl-NL": "Wachten",
+      "pt-BR": "Aguardando",
+      "pt-PT": "Aguardando",
+      "fi-FI": "Odotetaan"
+    }
+  },
+  {
+    "Key": "Ongoing",
+    "LocalizedValue": {
+      "da": "Igangværende",
+      "de": "Laufend",
+      "en-US": "Ongoing",
+      "uk-UA": "В процесі",
+      "pl-PL": "Trwające",
+      "no-NO": "Pågår",
+      "sv-SE": "Pågår",
+      "es-ES": "En curso",
+      "fr-FR": "En cours",
+      "it-IT": "In corso",
+      "nl-NL": "Lopend",
+      "pt-BR": "Em andamento",
+      "pt-PT": "Em andamento",
+      "fi-FI": "Käynnissä"
+    }
+  },
+  {
+    "Key": "Done",
+    "LocalizedValue": {
+      "da": "Udført",
+      "de": "Erledigt",
+      "en-US": "Done",
+      "uk-UA": "Зроблено",
+      "pl-PL": "Wykonane",
+      "no-NO": "Utført",
+      "sv-SE": "Utförd",
+      "es-ES": "Realizado",
+      "fr-FR": "Effectué",
+      "it-IT": "Eseguito",
+      "nl-NL": "Uitgevoerd",
+      "pt-BR": "Feito",
+      "pt-PT": "Feito",
+      "fi-FI": "Suoritettu"
+    }
+  },
+  {
+    "Key": "Ordered",
+    "LocalizedValue": {
+      "da": "Bestilt",
+      "de": "Bestellt",
+      "en-US": "Ordered",
+      "uk-UA": "Замовлено",
+      "pl-PL": "Zamówione",
+      "no-NO": "Bestilt",
+      "sv-SE": "Beställd",
+      "es-ES": "Ordenado",
+      "fr-FR": "Commandé",
+      "it-IT": "Ordinato",
+      "nl-NL": "Besteld",
+      "pt-BR": "Encomendado",
+      "pt-PT": "Encomendado",
+      "fi-FI": "Tilattu"
+    }
+  },
+  {
+    "Key": "Urgent",
+    "LocalizedValue": {
+      "da":  "Haster",
+      "de": "Dringend",
+      "en-US": "Urgent",
+      "uk-UA": "Терміново",
+      "pl-PL": "Pilne",
+      "no-NO": "Haster",
+      "sv-SE": "Brådskande",
+      "es-ES": "Urgente",
+      "fr-FR": "Urgent",
+      "it-IT": "Urgente",
+      "nl-NL": "Urgent",
+      "pt-BR": "Urgente",
+      "pt-PT": "Urgente",
+      "fi-FI": "Kiireellinen"
+    }
+  },
+  {
+    "Key": "High",
+    "LocalizedValue": {
+      "da": "Høj",
+      "de": "Hoch",
+      "en-US": "High",
+      "uk-UA": "Високий",
+      "pl-PL": "Wysoki",
+      "no-NO": "Høy",
+      "sv-SE": "Hög",
+      "es-ES": "Alto",
+      "fr-FR": "Haut",
+      "it-IT": "Alto",
+      "nl-NL": "Hoog",
+      "pt-BR": "Alto",
+      "pt-PT": "Alto",
+      "fi-FI": "Korkea"
+    }
+  },
+  {
+    "Key": "Medium",
+    "LocalizedValue": {
+      "da": "Mellem",
+      "de": "Mittel",
+      "en-US": "Medium",
+      "uk-UA": "Середній",
+      "pl-PL": "Średni",
+      "no-NO": "Middels",
+      "sv-SE": "Mellan",
+      "es-ES": "Medio",
+      "fr-FR": "Moyen",
+      "it-IT": "Medio",
+      "nl-NL": "Gemiddeld",
+      "pt-BR": "Médio",
+      "pt-PT": "Médio",
+      "fi-FI": "Keski"
+    }
+  },
+  {
+    "Key": "Low",
+    "LocalizedValue": {
+      "da": "Lav",
+      "de": "Niedrig",
+      "en-US": "Low",
+      "uk-UA": "Низький",
+      "pl-PL": "Niski",
+      "no-NO": "Lav",
+      "sv-SE": "Låg",
+      "es-ES": "Bajo",
+      "fr-FR": "Bas",
+      "it-IT": "Basso",
+      "nl-NL": "Laag",
+      "pt-BR": "Baixo",
+      "pt-PT": "Baixo",
+      "fi-FI": "Matala"
+    }
+  },
+  {
+    "Key": "Priority",
+    "LocalizedValue": {
+      "da": "Prioritet",
+      "de": "Priorität",
+      "en-US": "Priority",
+      "uk-UA": "Пріоритет",
+      "pl-PL": "Priorytet",
+      "no-NO": "Prioritet",
+      "sv-SE": "Prioritet",
+      "es-ES": "Prioridad",
+      "fr-FR": "Priorité",
+      "it-IT": "Priorità",
+      "nl-NL": "Prioriteit",
+      "pt-BR": "Prioridade",
+      "pt-PT": "Prioridade",
+      "fi-FI": "Prioriteetti"
+    }
+  },
+  {
+    "Key": "LastUpdatedDate",
+    "LocalizedValue": {
+      "da": "Sidst opdateret",
+      "de": "Zuletzt aktualisiert",
+      "en-US": "Last updated",
+      "uk-UA": "Останнє оновлення",
+      "pl-PL": "Ostatnia aktualizacja",
+      "no-NO": "Sist oppdatert",
+      "sv-SE": "Senast uppdaterad",
+      "es-ES": "Última actualización",
+      "fr-FR": "Dernière mise à jour",
+      "it-IT": "Ultimo aggiornamento",
+      "nl-NL": "Laatst bijgewerkt",
+      "pt-BR": "Última atualização",
+      "pt-PT": "Última atualização",
+      "fi-FI": "Viimeksi päivitetty"
+    }
   }
 ]

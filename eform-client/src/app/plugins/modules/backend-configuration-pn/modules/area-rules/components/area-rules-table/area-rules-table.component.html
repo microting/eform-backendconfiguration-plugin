@@ -26,14 +26,23 @@
   >
   </mtx-grid>
 </ng-container>
-
-<h3 *ngIf="selectedArea.type === 3">{{'Klargøring af stalde' | translate}}</h3>
-<h3 *ngIf="selectedArea.type === 9">{{'Oprettelse af kemikalier' | translate}}</h3>
-<h3 *ngIf="selectedArea.type === 10">{{'Pools' | translate}}</h3>
+<ng-container *ngIf="selectedArea.type === 3">
+  <br>
+  <h3>{{'Klargøring af stalde' | translate}}</h3>
+</ng-container>
+<ng-container *ngIf="selectedArea.type === 9">
+  <br>
+  <h3>{{'Oprettelse af kemikalier' | translate}}</h3>
+</ng-container>
+<ng-container *ngIf="selectedArea.type === 10">
+  <br>
+  <h3>{{'Pools' | translate}}</h3>
+</ng-container>
 <mtx-grid
+  id="mainTable"
   [data]="areaRules"
   [columns]="getColumns()"
-  [cellTemplate]="{actions: actionsTpl}"
+  [cellTemplate]="{translatedName: ruleNameTpl, eformName: eFormNameTpl, actions: actionsTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -41,11 +50,20 @@
   [showColumnMenuButton]="false"
 >
 </mtx-grid>
+<ng-template #ruleNameTpl let-row let-i="index">
+  <div class="ruleName" id="ruleName-{{i}}">{{row.translatedName}}</div>
+</ng-template>
+<ng-template #eFormNameTpl let-row let-i="index">
+  <div class="ruleEformName" id="ruleEformName-{{i}}">{{row.eformName}}</div>
+</ng-template>
+<ng-template #planningStatusTpl let-row let-i="index">
+  <div class="rulePlanningStatus" id="rulePlanningStatus-{{i}}">{{row.planningStatus}}</div>
+</ng-template>
 
-<ng-template #actionsTpl let-row>
+<ng-template #actionsTpl let-row let-i="index">
   <button
     mat-icon-button
-    id="showAreaRulePlanningBtn"
+    id="showAreaRulePlanningBtn-{{i}}"
     color="accent"
     matTooltip="{{ 'Plan and assign' | translate }}"
     (click)="onShowPlanAreaRule(row)">
@@ -55,7 +73,7 @@
     <button
       mat-icon-button
       *ngIf="selectedArea.type !== 9"
-      id="showEditRuleBtn"
+      id="showEditRuleBtn-{{i}}"
       matTooltip="{{ 'Edit rule' | translate }}"
       (click)="onShowEditRuleModal(row)"
       [disabled]="row.planningStatus && selectedArea.type === 9">
@@ -64,7 +82,7 @@
     <button
       mat-icon-button
       *ngIf="selectedArea.type !== 9"
-      id="deleteRuleBtn"
+      id="deleteRuleBtn-{{i}}"
       color="warn"
       matTooltip="{{ 'Delete rule' | translate }}"
       (click)="onShowDeleteRuleModal(row)"
@@ -77,7 +95,7 @@
       color="accent"
       (click)="onShowEditEntityListModal(this.selectedArea.groupId)"
       matTooltip="{{ 'Edit list of areas' | translate }}"
-      id="updateEntityListChemicalAreas"
+      id="updateEntityListChemicalAreas-{{i}}"
     >
       <mat-icon>list</mat-icon>
     </button>
@@ -98,19 +116,19 @@
     class="mb-2"
   >
   </mtx-grid>
-  <ng-template #expiredDateTpl let-row>
+  <ng-template #expiredDateTpl let-row let-i="index">
     <date-formatter
       [date]="row.expiredDate"
       [Format]="'date'"
     ></date-formatter>
   </ng-template>
-  <ng-template #pdfTpl let-row>
+  <ng-template #pdfTpl let-row let-i="index">
     <a
       *ngIf="row.fileName !== ''"
       href="javascript:void(0)"
       (click)="getPdf(row.fileName)"
       mat-icon-button
-      id="planningCreateBtn"
+      id="planningCreateBtn-{{i}}"
       color="accent"
     >
       <mat-icon svgIcon="file-pdf"></mat-icon>

@@ -212,4 +212,9 @@ export const noNO = {
   'Customer no & OTP': 'Kundenummer & OTP',
   'New OTP': 'Ny OTP',
   'Select filter': 'Velg filter',
+  'Priority': 'Prioritet',
+  'Urgent': 'Haster',
+  'High': 'Høy',
+  'Medium': 'Middels',
+  'Low': 'Lav',
 };

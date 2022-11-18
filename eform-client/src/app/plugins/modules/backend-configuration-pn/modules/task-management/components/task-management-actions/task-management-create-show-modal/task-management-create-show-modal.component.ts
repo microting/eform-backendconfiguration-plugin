@@ -7,7 +7,7 @@ import {
 import { SitesService, TemplateFilesService } from 'src/app/common/services';
 import {
   WorkOrderCaseCreateModel,
-  WorkOrderCaseForReadModel,
+  WorkOrderCaseForReadModel, WorkOrderCaseUpdateModel,
 } from '../../../../../models';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription} from 'rxjs';
@@ -44,6 +44,7 @@ export class TaskManagementCreateShowModalComponent
   addPictureDialogComponentAddedPictureSub$: Subscription;
   getAllSitesDictionarySub$: Subscription;
   getPropertiesAssignmentsSub$: Subscription;
+  currentWorkOrderCase: WorkOrderCaseForReadModel;
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -74,9 +75,14 @@ export class TaskManagementCreateShowModalComponent
         value: null,
         disabled: false,
       }, Validators.required),
+      priority: new FormControl({
+        value: 3,
+        disabled: false,
+      }, Validators.required),
     });
     this.getProperties();
     if (workOrderCase) {
+      this.currentWorkOrderCase = workOrderCase;
       this.getPropertyAreas(workOrderCase.propertyId);
       this.getSites(workOrderCase.propertyId);
       this.workOrderCaseForm.patchValue(
@@ -85,10 +91,13 @@ export class TaskManagementCreateShowModalComponent
           areaName: workOrderCase.areaName,
           assignedTo: workOrderCase.assignedSiteId,
           descriptionTask: workOrderCase.description,
+          priority: workOrderCase.priority,
         },
         { emitEvent: false }
       );
-      this.workOrderCaseForm.disable({ emitEvent: false });
+      // this.workOrderCaseForm.disable({ emitEvent: false });
+      this.workOrderCaseForm.controls['propertyId'].disable({ emitEvent: false });
+      this.workOrderCaseForm.controls['areaName'].disable({ emitEvent: false });
       this.description = workOrderCase.description;
       workOrderCase.pictureNames.forEach((fileName) => {
         this.imageSubs$.push(
@@ -243,20 +252,40 @@ export class TaskManagementCreateShowModalComponent
 
   create() {
     const rawValue = this.workOrderCaseForm.getRawValue();
-    const workOrderCase: WorkOrderCaseCreateModel = {
-      assignedSiteId: rawValue.assignedTo,
-      areaName: rawValue.areaName,
-      propertyId: rawValue.propertyId,
-      description: rawValue.descriptionTask,
-      files: this.images.map(x => x.file),
+    if (this.currentWorkOrderCase !== undefined) {
+
+      const workOrderCase: WorkOrderCaseUpdateModel = {
+        assignedSiteId: rawValue.assignedTo,
+        areaName: rawValue.areaName,
+        propertyId: rawValue.propertyId,
+        description: rawValue.descriptionTask,
+        files: this.images.map(x => x.file),
+        id: this.currentWorkOrderCase.id,
+        priority: rawValue.priority,
+      }
+      this.taskManagementService.updateWorkOrderCase(workOrderCase)
+        .subscribe(data => {
+          if (data && data.success) {
+            this.taskCreated.emit();
+            this.hide();
+          }
+        });
+    } else {
+      const workOrderCase: WorkOrderCaseCreateModel = {
+        assignedSiteId: rawValue.assignedTo,
+        areaName: rawValue.areaName,
+        propertyId: rawValue.propertyId,
+        description: rawValue.descriptionTask,
+        files: this.images.map(x => x.file),
+      }
+      this.taskManagementService.createWorkOrderCase(workOrderCase)
+        .subscribe(data => {
+          if (data && data.success) {
+            this.taskCreated.emit();
+            this.hide();
+          }
+        });
     }
-    this.taskManagementService.createWorkOrderCase(workOrderCase)
-      .subscribe(data => {
-        if (data && data.success) {
-          this.taskCreated.emit();
-          this.hide();
-        }
-    })
   }
 
   openAddImage() {

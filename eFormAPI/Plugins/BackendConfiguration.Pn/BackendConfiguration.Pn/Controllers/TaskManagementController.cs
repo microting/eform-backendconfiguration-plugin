@@ -59,7 +59,7 @@ public class TaskManagementController : Controller
     {
         try
         {
-            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel).ConfigureAwait(false);
+            var report = await _backendConfigurationTaskManagementService.Index(filtersModel).ConfigureAwait(false);
             return new OperationDataResult<List<WorkorderCaseModel>>(true, report);
         }
         catch (Exception e)
@@ -97,6 +97,13 @@ public class TaskManagementController : Controller
         return await _backendConfigurationTaskManagementService.CreateTask(createModel).ConfigureAwait(false);
     }
 
+    [HttpPut]
+    public async Task<OperationResult> UpdateTask([FromForm]WorkOrderCaseUpdateModel updateModel)
+    {
+        updateModel.Files = HttpContext.Request.Form.Files;
+        return await _backendConfigurationTaskManagementService.UpdateTask(updateModel).ConfigureAwait(false);
+    }
+
     [HttpGet]
     [Route("word")]
     public async Task GetWordReport(TaskManagementFiltersModel filtersModel)
@@ -105,7 +112,7 @@ public class TaskManagementController : Controller
         {
             filtersModel.Sort = "";
 
-            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel).ConfigureAwait(false);
+            var report = await _backendConfigurationTaskManagementService.Index(filtersModel).ConfigureAwait(false);
 
             var fileReport = await _wordService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
             const int bufferSize = 4086;
@@ -146,7 +153,7 @@ public class TaskManagementController : Controller
         {
             filtersModel.Sort = "";
 
-            var report = await _backendConfigurationTaskManagementService.GetReport(filtersModel).ConfigureAwait(false);
+            var report = await _backendConfigurationTaskManagementService.Index(filtersModel).ConfigureAwait(false);
 
             var fileReport = await _excelService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
             const int bufferSize = 4086;

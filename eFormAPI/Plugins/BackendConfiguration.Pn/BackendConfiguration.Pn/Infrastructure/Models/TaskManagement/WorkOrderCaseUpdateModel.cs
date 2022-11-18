@@ -24,36 +24,21 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 
-using System;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microsoft.AspNetCore.Http;
 
-public class TaskManagementFiltersModel : FilterAndSortModel
+public class WorkOrderCaseUpdateModel
 {
+    public int Id { get; set; }
+
     public int PropertyId { get; set; }
 
     public string AreaName { get; set; }
 
-    public string CreatedBy { get; set; }
+    public int AssignedSiteId { get; set; }
 
-    public string LastAssignedTo { get; set; }
+    public IFormFileCollection Files { get; set; }
 
-    public int? Status { get; set; }
+    public string Description { get; set; }
 
-    public DateTime? DateFrom { get; set; }
-
-    public DateTime? DateTo { get; set; }
-
-    public int? Priority { get; set; }
-
-    public string GetStringStatus()
-    {
-        return Status switch
-        {
-            -1 => "All",
-            1 => "Ongoing",
-            2 => "Completed",
-            null => "",
-            _ => ""
-        };
-    }
+    public int Priority { get; set; }
 }

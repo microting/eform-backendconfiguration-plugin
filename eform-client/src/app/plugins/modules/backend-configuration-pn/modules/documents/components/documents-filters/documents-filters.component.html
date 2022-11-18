@@ -1,8 +1,8 @@
-<div class="col" [formGroup]="filtersForm">
-  <div class="row">
-    <div class="col-3 ng-select-wrapper">
-      <ng-select
-        [placeholder]="'Property' | translate"
+<div class="d-flex flex-column" [formGroup]="filtersForm">
+  <div class="d-flex flex-row need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Property' | translate}}</mat-label>
+      <mtx-select
         [items]="properties"
         bindLabel="name"
         bindValue="id"
@@ -10,47 +10,48 @@
         id="propertyIdFilter"
         [clearable]="false"
       >
-      </ng-select>
-    </div>
-    <div class="col-3 ng-select-wrapper">
-      <ng-select
-        [placeholder]="'Folders' | translate"
-        [items]="folders"
-        bindLabel="name"
-        bindValue="id"
-        formControlName="folderId"
-        id="foldersFilter"
-      >
-      </ng-select>
-    </div>
-    <div class="col-3 ng-select-wrapper">
-      <ng-select
-        [placeholder]="'Document name' | translate"
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Folders' | translate}}</mat-label>
+        <mtx-select
+          [placeholder]="'Folders' | translate"
+          [items]="folders"
+          bindLabel="name"
+          bindValue="id"
+          formControlName="folderId"
+          id="foldersFilter"
+        >
+        </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Document name' | translate}}</mat-label>
+      <mtx-select
         [items]="documents"
         bindLabel="name"
         bindValue="id"
         formControlName="documentId"
         id="documentNameFilter"
       >
-      </ng-select>
-    </div>
-    <div class="col-3 ng-select-wrapper">
-      <ng-select
-        [placeholder]="'Expiration' | translate"
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Expiration' | translate}}</mat-label>
+      <mtx-select
         [items]="[
-          {id: 0, name: ('Expires today or has expired' | translate), description: '' },
-          {id: 1, name: ('Expires in 1 month at the latest' | translate), description: ''},
-          {id: 2, name: ('Expires in 3 months at the latest' | translate), description: ''},
-          {id: 3, name: ('Expires in 6 months at the latest' | translate), description: ''},
-          {id: 4, name: ('Expires in 12 months at the latest.' | translate), description: ''},
-          {id: 5, name: ('Expires in more than 12 months.' | translate), description: ''},
-        ]"
+        {id: 0, name: ('Expires today or has expired' | translate), description: '' },
+        {id: 1, name: ('Expires in 1 month at the latest' | translate), description: ''},
+        {id: 2, name: ('Expires in 3 months at the latest' | translate), description: ''},
+        {id: 3, name: ('Expires in 6 months at the latest' | translate), description: ''},
+        {id: 4, name: ('Expires in 12 months at the latest.' | translate), description: ''},
+        {id: 5, name: ('Expires in more than 12 months.' | translate), description: ''},
+      ]"
         bindLabel="name"
         bindValue="id"
         formControlName="expiration"
         id="expirationFilter"
       >
-      </ng-select>
-    </div>
+      </mtx-select>
+    </mat-form-field>
   </div>
 </div>

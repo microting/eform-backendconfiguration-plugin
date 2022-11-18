@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-    <Id>142664</Id>
+    <Id>142664new2</Id>
     <Repeated>0</Repeated>
-    <Label>02. Igangværende opgave|02. Ongoing task</Label>
+    <Label>02. Igangværende opgave|02. Ongoing task|02. Laufende Aufgabe</Label>
     <StartDate>2022-02-09</StartDate>
     <EndDate>2032-02-09</EndDate>
     <Language>da</Language>
@@ -13,8 +13,8 @@
     <DisplayOrder>0</DisplayOrder>
     <ElementList>
         <Element type="DataElement">
-            <Id>142664</Id>
-            <Label>02. Igangværende opgave|02. Ongoing task</Label>
+            <Id>142664new2</Id>
+            <Label>02. Igangværende opgave|02. Ongoing task|02. Laufende Aufgabe</Label>
             <Description><![CDATA[]]></Description>
             <DisplayOrder>0</DisplayOrder>
             <ReviewEnabled>false</ReviewEnabled>
@@ -26,13 +26,13 @@
                 <DataItem type="None">
                     <Id>375729</Id>
                     <Label>Info</Label>
-                    <Description><![CDATA[Lokation: Ejendom 1<br>Tildelt til: UnitName (sort 1)<br>Område: Område A (vises kun &gt; 0)<br>Beskriv opgave: Lorem&nbsp;<br><br><br>Oprettet af: UnitName<br>Oprettet af:&nbsp;Navn X (vises kun &gt; 0)<br>Oprettet dato: 01.01.2022 (sort 2)<br><br><br>Status: Igangværende|Location: Property 1<br>Assigned to: DeviceUser (sort 1)<br>Area: Area A (shown only&gt; 0)<br>Description: Lorem<br><br><br>Created by: DeviceUser<br>Created by: Name X (show only&gt; 0)<br>Created date: 01.01.2022 (sort 2)<br><br><br>Status: Ongoing]]></Description>
+                    <Description><![CDATA[Lokation: Ejendom 1<br>Tildelt til: UnitName (sort 1)<br>Område: Område A (vises kun &gt; 0)<br>Beskriv opgave: Lorem&nbsp;<br><br><br>Oprettet af: UnitName<br>Oprettet af:&nbsp;Navn X (vises kun &gt; 0)<br>Oprettet dato: 01.01.2022 (sort 2)<br><br><br>Status: Igangværende|Location: Property 1<br>Assigned to: DeviceUser (sort 1)<br>Area: Area A (shown only&gt; 0)<br>Description: Lorem<br><br><br>Created by: DeviceUser<br>Created by: Name X (show only&gt; 0)<br>Created date: 01.01.2022 (sort 2)<br><br><br>Status: Ongoing|bla]]></Description>
                     <DisplayOrder>0</DisplayOrder>
                     <Color>fff6df</Color>
                 </DataItem>
                 <DataItem type="ShowPDF">
                     <Id>375730</Id>
-                    <Label>Tryk på PDF for at se billeder af opgaven|Click on PDF to see pictures of task</Label>
+                    <Label>Tryk på PDF for at se billeder af opgaven|Click on PDF to see pictures of task|Klicken Sie auf PDF, um Bilder der Aufgabe zu sehen</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>1</DisplayOrder>
                     <Value>12345678901234567890123456789012</Value>
@@ -40,7 +40,7 @@
                 </DataItem>
                 <DataItem type="Picture">
                     <Id>375731</Id>
-                    <Label>Billede|Picture</Label>
+                    <Label>Billede|Picture|Bild</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>2</DisplayOrder>
                     <Mandatory>false</Mandatory>
@@ -48,7 +48,7 @@
                 </DataItem>
                 <DataItem type="Comment">
                     <Id>375732</Id>
-                    <Label>Kommentar|Comment</Label>
+                    <Label>Kommentar|Comment|Kommentar</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>3</DisplayOrder>
                     <Multi>1</Multi>
@@ -59,11 +59,45 @@
                     <Mandatory>false</Mandatory>
                     <Color>e8eaf6</Color>
                 </DataItem>
-                <DataItem type="SingleSelectSearch">
-                    <Id>375733</Id>
-                    <Label>Tildel del|Assaign to</Label>
+                <DataItem type="SingleSelect">
+                    <Id>376935</Id>
+                    <Label>Prioritet</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>4</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[Haster|Urgent|Dringend]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Høj|High|Hoch]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>3</Key>
+                            <Value><![CDATA[Middel|Medium|Mittel]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>3</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>4</Key>
+                            <Value><![CDATA[Lav|Low|Niedrig]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>4</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SingleSelectSearch">
+                    <Id>375733</Id>
+                    <Label>Tildel del|Assaign to|Zuweisen</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>5</DisplayOrder>
                     <Source>5497</Source>
                     <KeyValuePairList/>
                     <Mandatory>false</Mandatory>
@@ -71,32 +105,44 @@
                 </DataItem>
                 <DataItem type="SingleSelect">
                     <Id>375734</Id>
-                    <Label>Status|Status</Label>
+                    <Label>Status|Status|Status</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>5</DisplayOrder>
+                    <DisplayOrder>6</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <KeyValuePairList>
                         <KeyValuePair>
                             <Key>1</Key>
-                            <Value><![CDATA[Igangværende|Ongoing]]></Value>
+                            <Value><![CDATA[Igangværende|Ongoing|Aktuell]]></Value>
                             <Selected>false</Selected>
                             <DisplayOrder>1</DisplayOrder>
                         </KeyValuePair>
                         <KeyValuePair>
                             <Key>2</Key>
-                            <Value><![CDATA[Afsluttet|Done]]></Value>
+                            <Value><![CDATA[Afsluttet|Done|Fertig]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>4</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>3</Key>
+                            <Value><![CDATA[Bestilt|Ordered|Bestellt]]></Value>
                             <Selected>false</Selected>
                             <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>4</Key>
+                            <Value><![CDATA[Afventer|Awaiting|Warten]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>3</DisplayOrder>
                         </KeyValuePair>
                     </KeyValuePairList>
                     <Color>e8eaf6</Color>
                 </DataItem>
                 <DataItem type="SaveButton">
                     <Id>375735</Id>
-                    <Label>Tryk for at opdatere|Update</Label>
+                    <Label>Tryk for at opdatere|Update|Aktualisieren</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>6</DisplayOrder>
-                    <Value>Opdatér|Update</Value>
+                    <DisplayOrder>7</DisplayOrder>
+                    <Value>Opdatér|Update|Aktualisieren</Value>
                     <Color>e8eaf6</Color>
                 </DataItem>
             </DataItemList>

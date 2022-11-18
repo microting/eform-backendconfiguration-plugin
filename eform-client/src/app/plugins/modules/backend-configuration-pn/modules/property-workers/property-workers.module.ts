@@ -21,25 +21,27 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatMenuModule} from "@angular/material/menu";
 
 @NgModule({
-  imports: [
-    CommonModule,
-    PropertyWorkersRouting,
-    EformSharedModule,
-    TranslateModule,
-    FormsModule,
-    FontAwesomeModule,
-    MatIconModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MtxGridModule,
-    MatInputModule,
-    MatDialogModule,
-    MtxSelectModule,
-    MatSlideToggleModule,
-    MatCheckboxModule,
-  ],
+    imports: [
+        CommonModule,
+        PropertyWorkersRouting,
+        EformSharedModule,
+        TranslateModule,
+        FormsModule,
+        FontAwesomeModule,
+        MatIconModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MtxGridModule,
+        MatInputModule,
+        MatDialogModule,
+        MtxSelectModule,
+        MatSlideToggleModule,
+        MatCheckboxModule,
+        MatMenuModule,
+    ],
   declarations: [
     PropertyWorkersPageComponent,
     PropertyWorkerOtpModalComponent,

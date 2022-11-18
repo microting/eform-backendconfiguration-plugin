@@ -67,6 +67,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     for (let i = 0; i < workers.length; i++) {
       await backendConfigurationPropertyWorkersPage.create(workers[i]);
+      await browser.pause(500);
     }
     await myEformsPage.Navbar.goToEntitySelect();
     let selectableListRowObject = await new SelectableListRowObject().getRow(2);
@@ -129,14 +130,15 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     expect(taskRowObject.propertyName).eq(properties[2].name);
     expect(areas3.findIndex(x => x === taskRowObject.area)).not.eq(-1);
 
-    await testSorting(await backendConfigurationTaskManagementPage.idTableHeader(), '#taskManagementTableBody #id', 'ID');
-    await testSorting(await backendConfigurationTaskManagementPage.caseInitiatedTableHeader(), '#taskManagementTableBody #createdDate', 'Created date');
-    await testSorting(await backendConfigurationTaskManagementPage.selectedAreaNameTableHeader(), '#taskManagementTableBody #areaName', 'Area name');
-    await testSorting(await backendConfigurationTaskManagementPage.createdByNameTableHeader(), '#taskManagementTableBody #createdByName', 'Created by name');
-    await testSorting(await backendConfigurationTaskManagementPage.createdByTextTableHeader(), '#taskManagementTableBody #createdByText', 'Created by text');
-    await testSorting(await backendConfigurationTaskManagementPage.lastAssignedToNameTableHeader(), '#taskManagementTableBody #lastAssignedTo', 'Last assigned to');
-    await testSorting(await backendConfigurationTaskManagementPage.updatedAtTableHeader(), '#taskManagementTableBody #lastUpdateDate', 'Last update date');
-    await testSorting(await backendConfigurationTaskManagementPage.caseStatusesEnumTableHeader(), '#taskManagementTableBody #status', 'Status');
+    await browser.pause(10000);
+    await testSorting(await backendConfigurationTaskManagementPage.idTableHeader(), 'tbody > tr > td.id', 'ID');
+    await testSorting(await backendConfigurationTaskManagementPage.caseInitiatedTableHeader(), 'tbody > tr > td.createdDate', 'Created date');
+    await testSorting(await backendConfigurationTaskManagementPage.selectedAreaNameTableHeader(), 'tbody > tr > td.areaName', 'Area name');
+    await testSorting(await backendConfigurationTaskManagementPage.createdByNameTableHeader(), 'tbody > tr > td.createdByName', 'Created by name');
+    await testSorting(await backendConfigurationTaskManagementPage.createdByTextTableHeader(), 'tbody > tr > td.createdByText', 'Created by text');
+    await testSorting(await backendConfigurationTaskManagementPage.lastAssignedToNameTableHeader(), 'tbody > tr > td.lastAssignedTo', 'Last assigned to');
+    await testSorting(await backendConfigurationTaskManagementPage.updatedAtTableHeader(), 'tbody > tr > td.lastUpdateDate', 'Last update date');
+    await testSorting(await backendConfigurationTaskManagementPage.caseStatusesEnumTableHeader(), 'tbody > tr > td.status', 'Status');
   });
   after(async () => {
     await backendConfigurationPropertiesPage.goToProperties();

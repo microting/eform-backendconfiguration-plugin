@@ -4,7 +4,6 @@
     <mat-form-field>
       <mat-label>{{'Property' | translate }}</mat-label>
       <mtx-select
-        appendTo="body"
         [items]="properties"
         bindLabel="name"
         bindValue="id"
@@ -16,7 +15,6 @@
     <mat-form-field>
       <mat-label>{{'Area' | translate }}</mat-label>
       <mtx-select
-        appendTo="body"
         [items]="propertyAreas"
         formControlName="areaName"
         id="areaName"
@@ -26,13 +24,30 @@
     <mat-form-field>
       <mat-label>{{'Assigned to' | translate }}</mat-label>
       <mtx-select
-        appendTo="body"
         bindLabel="name"
         bindValue="id"
         formControlName="assignedTo"
         id="assignedTo"
         [items]="assignedSitesToProperty"
         [clearable]="isCreate">
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Priority' | translate}}</mat-label>
+      <mtx-select
+        [items]="[
+          {id: 1, name: ('Urgent' | translate)},
+          {id: 2, name: ('High' | translate)},
+          {id: 3, name: ('Medium' | translate)},
+          {id: 4, name: ('Low' | translate)},
+        ]"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="priority"
+        id="statusFilter"
+        [clearable]="false"
+        [placeholder]="('Select priority' | translate)">
+      >
       </mtx-select>
     </mat-form-field>
   </div>
@@ -83,7 +98,6 @@
       type="text"
       id="descriptionTask"
       formControlName="descriptionTask"
-      [readonly]="!isCreate"
       rows="5"
       cols="46"
     ></textarea>
@@ -94,7 +108,7 @@
     mat-raised-button
     color="accent"
     id="taskManagementCreateShowSaveBtn"
-    [disabled]="!(workOrderCaseForm.valid && isCreate)"
+    [disabled]="!(workOrderCaseForm.valid)"
     (click)="create()"
   >
     {{(!isCreate ? 'Save' : 'Create') | translate}}

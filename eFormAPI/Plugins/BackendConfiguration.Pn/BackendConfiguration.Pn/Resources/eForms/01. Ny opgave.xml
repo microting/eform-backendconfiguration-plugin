@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-    <Id>142663</Id>
+    <Id>142663new2</Id>
     <Repeated>0</Repeated>
-    <Label>01. Ny opgave|01. New task</Label>
+    <Label>Ny opgave|New task|Neue Zuordnung</Label>
     <StartDate>2022-02-09</StartDate>
     <EndDate>2032-02-09</EndDate>
     <Language>da</Language>
@@ -13,8 +13,8 @@
     <DisplayOrder>0</DisplayOrder>
     <ElementList>
         <Element type="DataElement">
-            <Id>142663</Id>
-            <Label>01. Ny opgave|01. New task</Label>
+            <Id>142663new2</Id>
+            <Label>Ny opgave|New task|Neue Zuordnung</Label>
             <Description><![CDATA[]]></Description>
             <DisplayOrder>0</DisplayOrder>
             <ReviewEnabled>false</ReviewEnabled>
@@ -30,11 +30,45 @@
                     <DisplayOrder>0</DisplayOrder>
                     <Color>fff6df</Color>
                 </DataItem>
-                <DataItem type="SingleSelectSearch">
-                    <Id>375723</Id>
-                    <Label>Område|Area</Label>
+                <DataItem type="SingleSelect">
+                    <Id>376935</Id>
+                    <Label>Prioritet</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>1</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[Haster|Urgent|Dringend]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Høj|High|Hoch]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>3</Key>
+                            <Value><![CDATA[Middel|Medium|Mittel]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>3</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>4</Key>
+                            <Value><![CDATA[Lav|Low|Niedrig]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>4</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SingleSelectSearch">
+                    <Id>375723</Id>
+                    <Label>Område|Area|Gebiet</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>2</DisplayOrder>
                     <Source>5497</Source>
                     <KeyValuePairList/>
                     <Mandatory>false</Mandatory>
@@ -42,17 +76,17 @@
                 </DataItem>
                 <DataItem type="Picture">
                     <Id>375724</Id>
-                    <Label>Billede|Picture</Label>
+                    <Label>Billede|Picture|Bild</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>2</DisplayOrder>
+                    <DisplayOrder>3</DisplayOrder>
                     <Mandatory>false</Mandatory>
                     <Color>e8eaf6</Color>
                 </DataItem>
                 <DataItem type="Comment">
                     <Id>375725</Id>
-                    <Label>Beskrivelse|Description</Label>
+                    <Label>Beskrivelse|Description|Beschreibung</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>3</DisplayOrder>
+                    <DisplayOrder>4</DisplayOrder>
                     <Multi>1</Multi>
                     <GeolocationEnabled>false</GeolocationEnabled>
                     <Split>false</Split>
@@ -63,9 +97,9 @@
                 </DataItem>
                 <DataItem type="Text">
                     <Id>375726</Id>
-                    <Label>Oprettet af|Created by</Label>
-                    <Description><![CDATA[Skriv dit navn, hvis denne mobiltelefon bruges af dine øvrige kollegaer|Write your name if this mobile phone is used by your other colleagues]]></Description>
-                    <DisplayOrder>4</DisplayOrder>
+                    <Label>Oprettet af|Created by|Erstellt von</Label>
+                    <Description><![CDATA[Skriv dit navn, hvis denne mobiltelefon bruges af dine øvrige kollegaer|Write your name if this mobile phone is used by your other colleagues|Geben Sie Ihren Namen an, wenn dieses Mobiltelefon von Ihren anderen Kollegen verwendet wird]]></Description>
+                    <DisplayOrder>5</DisplayOrder>
                     <Multi>0</Multi>
                     <GeolocationEnabled>false</GeolocationEnabled>
                     <Split>false</Split>
@@ -76,9 +110,9 @@
                 </DataItem>
                 <DataItem type="SingleSelectSearch">
                     <Id>375727</Id>
-                    <Label>Tildel til|Assign to</Label>
+                    <Label>Tildel til|Assign to|Ordnen Sie zwei zu</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>5</DisplayOrder>
+                    <DisplayOrder>6</DisplayOrder>
                     <Source>5497</Source>
                     <KeyValuePairList/>
                     <Mandatory>false</Mandatory>
@@ -86,9 +120,9 @@
                 </DataItem>
                 <DataItem type="SaveButton">
                     <Id>375728</Id>
-                    <Label>Tryk for at oprette opgave|Create task</Label>
+                    <Label>Tryk for at oprette opgave|Create task|Aufgabe erstellen</Label>
                     <Description><![CDATA[]]></Description>
-                    <DisplayOrder>6</DisplayOrder>
+                    <DisplayOrder>7</DisplayOrder>
                     <Value>Opret|Create</Value>
                     <Color>e8eaf6</Color>
                 </DataItem>

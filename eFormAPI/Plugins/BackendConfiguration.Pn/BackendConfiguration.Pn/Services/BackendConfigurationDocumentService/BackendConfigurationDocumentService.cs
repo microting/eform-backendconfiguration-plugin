@@ -416,7 +416,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         {
             // StartAt = model.StartDate,
             EndAt = model.EndDate,
-            FolderId = model.FolderId
+            FolderId = model.FolderId,
+            Status = model.Status
         };
 
         await document.Create(_caseTemplatePnDbContext).ConfigureAwait(false);

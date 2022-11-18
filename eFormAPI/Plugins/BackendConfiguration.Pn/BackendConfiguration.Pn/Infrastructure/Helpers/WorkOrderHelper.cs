@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Dto;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -51,124 +52,24 @@ public class WorkOrderHelper
             {
                 continue;
             }
-            if (property.FolderIdForTasks == null)
-            {
-                var translatesFolderForTasks = new List<CommonTranslationsModel>
-                {
-                    new()
-                    {
-                        Name = "00. Opgavestyring",
-                        LanguageId = 1, // da
-                        Description = "",
-                    },
-                    new()
-                    {
-                        Name = "00. Tasks",
-                        LanguageId = 2, // en
-                        Description = "",
-                    },
-                    //new ()
-                    //{
-                    //    Name = "00. Tasks",
-                    //    LanguageId = 3, // de
-                    //    Description = "",
-                    //},
-                };
-                property.FolderIdForTasks =
-                    await core.FolderCreate(translatesFolderForTasks, property.FolderId).ConfigureAwait(false);
 
-                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-
-                var translateFolderForNewTask = new List<CommonTranslationsModel>
-                {
-                    new()
-                    {
-                        Name = "01. Ny opgave",
-                        LanguageId = 1, // da
-                        Description = "",
-                    },
-                    new()
-                    {
-                        Name = "01. New tasks",
-                        LanguageId = 2, // en
-                        Description = "",
-                    },
-                    //new ()
-                    //{
-                    //    Name = "01. New task",
-                    //    LanguageId = 3, // de
-                    //    Description = "",
-                    //},
-                };
-                property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
-                    property.FolderIdForTasks).ConfigureAwait(false);
-
-                var translateFolderForOngoingTask = new List<CommonTranslationsModel>
-                {
-                    new()
-                    {
-                        Name = "02. Igangværende opgaver",
-                        LanguageId = 1, // da
-                        Description = "",
-                    },
-                    new()
-                    {
-                        Name = "02. Ongoing tasks",
-                        LanguageId = 2, // en
-                        Description = "",
-                    },
-                    //new ()
-                    //{
-                    //    Name = "02. Ongoing tasks",
-                    //    LanguageId = 3, // de
-                    //    Description = "",
-                    //},
-                };
-                property.FolderIdForOngoingTasks =
-                    await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks).ConfigureAwait(false);
-
-                var translateFolderForCompletedTask = new List<CommonTranslationsModel>
-                {
-                    new()
-                    {
-                        Name = "03. Afsluttede opgaver",
-                        LanguageId = 1, // da
-                        Description = "",
-                    },
-                    new()
-                    {
-                        Name = "03. Completed tasks",
-                        LanguageId = 2, // en
-                        Description = "",
-                    },
-                    //new ()
-                    //{
-                    //    Name = "03. Completed tasks",
-                    //    LanguageId = 3, // de
-                    //    Description = "",
-                    //},
-                };
-                property.FolderIdForCompletedTasks =
-                    await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks).ConfigureAwait(false);
-            }
-
-            var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
+            var eformIdForNewTasks = await sdkDbContext.CheckLists
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Text == "01. New task")
-                .Select(x => x.CheckListId)
+                .Where(x => x.OriginalId == "142663new2")
+                .Select(x => x.Id)
                 .FirstAsync().ConfigureAwait(false);
 
-            var workorderCasesCompleted = property.PropertyWorkers
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .SelectMany(x => x.WorkorderCases)
-                .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Completed)
-                .ToList();
-            var workorderCasesOngoing = property.PropertyWorkers
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .SelectMany(x => x.WorkorderCases)
-                .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Ongoing)
-                .Where(x => workorderCasesCompleted.All(y => y.ParentWorkorderCaseId != x.ParentWorkorderCaseId))
-                .ToList();
+            // var workorderCasesCompleted = property.PropertyWorkers
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .SelectMany(x => x.WorkorderCases)
+            //     .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Completed)
+            //     .ToList();
+            // var workorderCasesOngoing = property.PropertyWorkers
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .SelectMany(x => x.WorkorderCases)
+            //     .Where(y => y.CaseStatusesEnum == CaseStatusesEnum.Ongoing)
+            //     .Where(x => workorderCasesCompleted.All(y => y.ParentWorkorderCaseId != x.ParentWorkorderCaseId))
+            //     .ToList();
 
             if (property.EntitySelectListAreas == null)
             {
@@ -220,12 +121,12 @@ public class WorkOrderHelper
                 entityItemIncrementer++;
             }
 
-            await DeployEform(propertyWorker, eformIdForNewTasks, property.FolderIdForNewTasks,
+            await DeployEform(propertyWorker, eformIdForNewTasks, property,
                 $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid)).ConfigureAwait(false);
         }
     }
 
-    public async Task DeployEform(PropertyWorker propertyWorker, int eformId, int? folderId,
+    public async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
         string description, int? areasGroupUid, int? deviceUsersGroupId)
     {
         var core = await _coreHelper.GetCore().ConfigureAwait(false);
@@ -243,11 +144,14 @@ public class WorkOrderHelper
         var mainElement = await core.ReadeForm(eformId, language).ConfigureAwait(false);
         mainElement.Repeated = 0;
         mainElement.ElementList[0].QuickSyncEnabled = true;
+        mainElement.ElementList[0].Description.InderValue = description;
+        mainElement.ElementList[0].Label = "Ny opgave";
+        mainElement.Label = "Ny opgave";
         mainElement.EnableQuickSync = true;
-        if (folderId != null)
+        if (property.FolderIdForNewTasks != null)
         {
             mainElement.CheckListFolderName = await sdkDbContext.Folders
-                .Where(x => x.Id == folderId)
+                .Where(x => x.Id == property.FolderIdForNewTasks)
                 .Select(x => x.MicrotingUid.ToString())
                 .FirstOrDefaultAsync().ConfigureAwait(false);
         }
@@ -260,19 +164,19 @@ public class WorkOrderHelper
 
         if (areasGroupUid != null && deviceUsersGroupId != null)
         {
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Source = (int)areasGroupUid;
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source =
+            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[2]).Source = (int)areasGroupUid;
+            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Source =
                 (int)deviceUsersGroupId;
         }
-        else if (areasGroupUid == null && deviceUsersGroupId != null)
-        {
-            ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
-                (int)deviceUsersGroupId;
-        }
+        // else if (areasGroupUid == null && deviceUsersGroupId != null)
+        // {
+        //     ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
+        //         (int)deviceUsersGroupId;
+        // }
 
         mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
         mainElement.StartDate = DateTime.Now.ToUniversalTime();
-        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId).ConfigureAwait(false);
+        var caseId = await core.CaseCreate(mainElement, "", (int)site.MicrotingUid, property.FolderIdForNewTasks).ConfigureAwait(false);
         await new WorkorderCase
         {
             CaseId = (int)caseId,

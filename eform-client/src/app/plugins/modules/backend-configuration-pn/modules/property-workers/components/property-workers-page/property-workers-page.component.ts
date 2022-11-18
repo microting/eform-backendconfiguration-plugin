@@ -65,32 +65,32 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       header: this.translateService.stream('Actions'),
       field: 'actions',
       disabled: this.authStateService.currentUserClaims.deviceUsersDelete || this.authStateService.currentUserClaims.deviceUsersDelete,
-      type: 'button',
-      buttons: [
-        {
-          type: 'icon',
-          click: (rowData: DeviceUserModel) => this.router
-            .navigate(['/plugins/backend-configuration-pn/task-worker-assignments/', rowData.siteId], {relativeTo: this.route}),
-          icon: 'visibility',
-          tooltip: this.translateService.stream('Edit assignments')
-        },
-        {
-          type: 'icon',
-          color: 'accent',
-          icon: 'edit',
-          click: (rowData: DeviceUserModel) => this.openEditModal(rowData),
-          tooltip: this.translateService.stream('Edit Device User'),
-          iif: () => this.userClaims.deviceUsersUpdate,
-        },
-        {
-          type: 'icon',
-          color: 'warn',
-          icon: 'delete',
-          click: (rowData: DeviceUserModel) => this.openDeleteDeviceUserModal(rowData),
-          tooltip: this.translateService.stream('Delete Device User'),
-          iif: (rowData: DeviceUserModel) => this.userClaims.deviceUsersDelete && !rowData.isLocked,
-        },
-      ],
+      // type: 'button',
+      // buttons: [
+      //   {
+      //     type: 'icon',
+      //     click: (rowData: DeviceUserModel) => this.router
+      //       .navigate(['/plugins/backend-configuration-pn/task-worker-assignments/', rowData.siteId], {relativeTo: this.route}),
+      //     icon: 'visibility',
+      //     tooltip: this.translateService.stream('Edit assignments'),
+      //   },
+      //   {
+      //     type: 'icon',
+      //     color: 'accent',
+      //     icon: 'edit',
+      //     click: (rowData: DeviceUserModel) => this.openEditModal(rowData),
+      //     tooltip: this.translateService.stream('Edit Device User'),
+      //     iif: () => this.userClaims.deviceUsersUpdate,
+      //   },
+      //   {
+      //     type: 'icon',
+      //     color: 'warn',
+      //     icon: 'delete',
+      //     click: (rowData: DeviceUserModel) => this.openDeleteDeviceUserModal(rowData),
+      //     tooltip: this.translateService.stream('Delete Device User'),
+      //     iif: (rowData: DeviceUserModel) => this.userClaims.deviceUsersDelete && !rowData.isLocked,
+      //   },
+      // ],
     },
   ];
 

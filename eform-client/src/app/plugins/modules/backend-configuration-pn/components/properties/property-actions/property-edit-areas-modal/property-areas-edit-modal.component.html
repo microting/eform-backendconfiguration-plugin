@@ -1,19 +1,66 @@
 <h3 mat-dialog-title>{{'Add controlareas to' | translate}} : {{ selectedProperty.name }}</h3>
 <div mat-dialog-content>
-  <mtx-grid
-    [data]="selectedPropertyAreas"
-    [columns]="tableHeaders"
-    [showPaginator]="false"
-    [pageOnFront]="false"
-    [rowStriped]="true"
-    [showToolbar]="false"
-    [showColumnMenuButton]="false"
-    [rowSelected]="getSelectedPropertyAreas"
-    [rowSelectable]="true"
-    [multiSelectable]="true"
-    (rowSelectionChange)="updateAreas($event)"
-  >
-  </mtx-grid>
+<!--  <mtx-grid-->
+<!--    [data]="selectedPropertyAreas"-->
+<!--    [columns]="tableHeaders"-->
+<!--    [showPaginator]="false"-->
+<!--    [pageOnFront]="false"-->
+<!--    [rowStriped]="true"-->
+<!--    [showToolbar]="false"-->
+<!--    [showColumnMenuButton]="false"-->
+<!--    [rowSelected]="getSelectedPropertyAreas"-->
+<!--    [rowSelectable]="true"-->
+<!--    [multiSelectable]="true"-->
+<!--    (rowSelectionChange)="updateAreas($event)"-->
+<!--  >-->
+<!--  </mtx-grid>-->
+  <div class="table-responsive">
+    <table class="table table-xs table-bordered text-center z-depth-1">
+      <thead>
+      <tr>
+        <!--                <th>ID</th>-->
+        <th>{{ 'Area' | translate }}</th>
+        <th>{{ 'Description' | translate }}</th>
+        <!--                <th>{{ 'Status' | translate }}</th>-->
+        <th>{{ 'Select' | translate }}</th>
+      </tr>
+      </thead>
+      <tbody id="editPropertyAreasModalTableBody">
+      <ng-container *ngFor="let area of selectedPropertyAreas; let i = index">
+        <ng-container *ngIf="(area.name != '13. APV Landbrug' || authStateService.isAdmin)
+                && (area.name != '05. Stalde: Halebid og klargøring' || authStateService.isAdmin)
+                && (area.name != '21. DANISH Standard' || authStateService.isAdmin)
+                && (area.name != '100. Diverse' || authStateService.isAdmin)">
+          <tr>
+            <!--                  <td class="align-middle">{{ area.id }}</td>-->
+            <td class="align-middle">{{ area.name }}</td>
+            <td class="align-middle">
+              <a [href]="area.description" target="_blank">{{
+                (area.description ? 'Read more' : '') | translate
+                }}</a>
+            </td>
+            <!--                  <td class="align-middle">-->
+            <!--                    {{ getAreaPlanningStatus(area) | translate }}-->
+            <!--                  </td>-->
+            <td class="align-middle">
+              <div class="mat-checkbox">
+                <mat-checkbox class="mat-checkbox"
+                  id="checkboxAssignmentEdit{{ i }}"
+                  [checked]="area.activated"
+                  (change)="updateArea($event, area)"
+                  color="primary"
+                  type="checkbox"
+                  [disabled]="area.activated"
+                ></mat-checkbox>
+                <label for="checkboxAssignmentEdit{{ i }}"></label>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </ng-container>
+      </tbody>
+    </table>
+  </div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button

@@ -52,10 +52,28 @@
           {id: -1, name: ('All' | translate)},
           {id: 1, name: ('Ongoing' | translate)},
           {id: 2, name: ('Completed' | translate)},
+          {id: 3, name: ('Ordered' | translate)},
+          {id: 4, name: ('Awaiting' | translate)},
         ]"
         bindLabel="name"
         bindValue="id"
         formControlName="status"
+        id="statusFilter"
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Priority' | translate}}</mat-label>
+      <mtx-select
+        [items]="[
+          {id: 1, name: ('Urgent' | translate)},
+          {id: 2, name: ('High' | translate)},
+          {id: 3, name: ('Medium' | translate)},
+          {id: 4, name: ('Low' | translate)},
+        ]"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="priority"
         id="statusFilter"
       >
       </mtx-select>

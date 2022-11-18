@@ -67,13 +67,11 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   }
 
   ngOnInit() {
-    debugger;
     this.loadTemplateInfo();
     this.maxDate = new Date();
   }
 
   loadCase() {
-    debugger;
     if (!this.id || this.id === 0) {
       return;
     }
@@ -118,7 +116,6 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();
-          debugger;
           this.router
             .navigate([
               '/plugins/backend-configuration-pn/reports/' +

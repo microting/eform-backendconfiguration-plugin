@@ -5,7 +5,7 @@ import { ApiBaseService } from 'src/app/common/services';
 import {
   WorkOrderCaseCreateModel,
   WorkOrderCaseForReadModel,
-  WorkOrderCaseModel,
+  WorkOrderCaseModel, WorkOrderCaseUpdateModel,
 } from '../models';
 import {TaskManagementFiltrationModel} from '../modules/task-management/components/store';
 import {
@@ -51,6 +51,13 @@ export let BackendConfigurationPnTaskManagementMethods = {
 
   createWorkOrderCase(workOrderCase: WorkOrderCaseCreateModel): Observable<OperationResult> {
     return this.apiBaseService.postFormData(
+      BackendConfigurationPnTaskManagementMethods.WorkOrderCases,
+      workOrderCase
+    );
+  }
+
+  updateWorkOrderCase(workOrderCase: WorkOrderCaseUpdateModel): Observable<OperationResult> {
+    return this.apiBaseService.putFormData(
       BackendConfigurationPnTaskManagementMethods.WorkOrderCases,
       workOrderCase
     );

@@ -217,4 +217,11 @@ export const da = {
   'Customer no & OTP': 'Kundenummer / Engangskode',
   'New OTP': 'Ny engangskode',
   'Select filter': 'Vælg filter',
+  'Priority': 'Prioritet',
+  'Urgent': 'Haster',
+  'High': 'Høj',
+  'Medium': 'Middel',
+  'Low': 'Lav',
+  'Awaiting': 'Afventer',
+  'Ordered': 'Bestilt',
 };

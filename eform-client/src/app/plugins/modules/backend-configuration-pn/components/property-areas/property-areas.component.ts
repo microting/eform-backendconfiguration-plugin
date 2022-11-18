@@ -58,17 +58,16 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
     {
       header: '',
       field: 'book',
-      type: 'button',
-      buttons: [
-        {
-          type: 'icon',
-          color: 'accent',
-          icon: 'menu_book',
-          click: (rowData: PropertyAreaModel) => this.router
-            .navigate(['../../area-rules/', rowData.id, this.selectedProperty.id], {relativeTo: this.route}),
-          tooltip: this.translateService.stream('Open area planning'),
-        }
-      ]
+      // buttons: [
+      //   {
+      //     type: 'icon',
+      //     color: 'accent',
+      //     icon: 'menu_book',
+      //     click: (rowData: PropertyAreaModel) => this.router
+      //       .navigate(['../../area-rules/', rowData.id, this.selectedProperty.id], {relativeTo: this.route}),
+      //     tooltip: this.translateService.stream('Open area planning'),
+      //   }
+      // ]
     },
   ];
 
@@ -129,6 +128,7 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
   }
 
   onUpdatePropertyAreas(model: PropertyAreasUpdateModel, modal: MatDialogRef<PropertyAreasEditModalComponent>) {
+    debugger;
     this.updatePropertyAreasSub$ = this.propertiesService
       .updatePropertyAreas(model)
       .subscribe((data) => {

@@ -1,8 +1,9 @@
 import {
   Component,
+  EventEmitter,
   Inject,
   OnDestroy,
-  OnInit,
+  OnInit, Output,
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
@@ -27,6 +28,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   selectedDeviceUser: DeviceUserModel = new DeviceUserModel();
   selectedDeviceUserCopy: DeviceUserModel = new DeviceUserModel();
   assignments: PropertyAssignmentWorkerModel[] = [];
+  @Output() userUpdated: EventEmitter<void> = new EventEmitter<void>();
   tableHeaders: MtxGridColumn[] = [
     {
       header: this.translateService.stream('ID'),
@@ -84,33 +86,86 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.dialogRef.close(result);
   }
 
-  changeArray(properties: CommonDictionaryModel[]) {
-    this.assignments = [];
-    properties.forEach(property => this.assignments = [...this.assignments, {propertyId: property.id, isChecked: true}]);
+  // changeArray(properties: CommonDictionaryModel[]) {
+  //   this.assignments = [];
+  //   properties.forEach(property => this.assignments = [...this.assignments, {propertyId: property.id, isChecked: true}]);
+  // }
+
+  addToArray(e: any, propertyId: number) {
+    const assignmentObject = new PropertyAssignmentWorkerModel();
+    if (e.checked) {
+      assignmentObject.isChecked = true;
+      assignmentObject.propertyId = propertyId;
+      this.assignments = [...this.assignments, assignmentObject];
+    } else {
+      this.assignments = this.assignments.filter(
+        (x) => x.propertyId !== propertyId
+      );
+    }
   }
+
+  getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
+    const assignment = this.assignments.find(
+      (x) => x.propertyId === propertyId
+    );
+    return assignment ? assignment.isChecked : false;
+  }
+
+  // updateSingle() {
+  //   if (
+  //     this.selectedDeviceUserCopy.userFirstName !== this.selectedDeviceUser.userFirstName ||
+  //     this.selectedDeviceUserCopy.userLastName !== this.selectedDeviceUser.userLastName ||
+  //     this.selectedDeviceUserCopy.language !== this.selectedDeviceUser.language ||
+  //     this.selectedDeviceUserCopy.languageCode !== this.selectedDeviceUser.languageCode ||
+  //     this.selectedDeviceUserCopy.timeRegistrationEnabled !== this.selectedDeviceUser.timeRegistrationEnabled
+  //   ) {
+  //     // if fields device user edited
+  //     this.deviceUserUpdate$ = this.propertiesService
+  //       .updateSingleDeviceUser(this.selectedDeviceUser)
+  //       .subscribe((operation) => {
+  //         if (operation && operation.success) {
+  //           if (this.assignments) {
+  //             this.assignWorkerToProperties();
+  //           } else {
+  //             this.hide(true);
+  //           }
+  //         }
+  //       });
+  //   } else {
+  //     this.assignWorkerToProperties();
+  //   }
+  // }
 
   updateSingle() {
     if (
-      this.selectedDeviceUserCopy.userFirstName !== this.selectedDeviceUser.userFirstName ||
-      this.selectedDeviceUserCopy.userLastName !== this.selectedDeviceUser.userLastName ||
-      this.selectedDeviceUserCopy.language !== this.selectedDeviceUser.language ||
-      this.selectedDeviceUserCopy.languageCode !== this.selectedDeviceUser.languageCode ||
-      this.selectedDeviceUserCopy.timeRegistrationEnabled !== this.selectedDeviceUser.timeRegistrationEnabled
+      this.selectedDeviceUserCopy.userFirstName !==
+      this.selectedDeviceUser.userFirstName ||
+      this.selectedDeviceUserCopy.userLastName !==
+      this.selectedDeviceUser.userLastName ||
+      this.selectedDeviceUserCopy.language !==
+      this.selectedDeviceUser.language ||
+      this.selectedDeviceUserCopy.languageCode !==
+      this.selectedDeviceUser.languageCode ||
+      this.selectedDeviceUserCopy.timeRegistrationEnabled !==
+      this.selectedDeviceUser.timeRegistrationEnabled
     ) {
       // if fields device user edited
-      this.deviceUserUpdate$ = this.propertiesService
+      this.deviceUserCreate$ = this.propertiesService
         .updateSingleDeviceUser(this.selectedDeviceUser)
         .subscribe((operation) => {
           if (operation && operation.success) {
             if (this.assignments) {
-              this.assignWorkerToProperties();
+              this.assignWorkerToPropertiesUpdate();
+              this.hide(true);
             } else {
+              //this.userUpdated.emit();
               this.hide(true);
             }
           }
         });
     } else {
-      this.assignWorkerToProperties();
+      this.assignWorkerToPropertiesUpdate();
+      this.hide(true);
     }
   }
 
@@ -121,6 +176,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {
             this.assignWorkerToProperties(operation.model);
+            this.hide(true);
           } else {
             this.hide(true);
           }
@@ -128,19 +184,44 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       });
   }
 
-  assignWorkerToProperties(siteId?: number) {
+  assignWorkerToProperties(siteId: number) {
     this.deviceUserAssign$ = this.propertiesService
-      .updateAssignPropertiesToWorker({
-        siteId: siteId ?? this.selectedDeviceUser.normalId,
-        assignments: this.assignments,
-        timeRegistrationEnabled: false,
-      })
+      .assignPropertiesToWorker({ siteId, assignments: this.assignments, timeRegistrationEnabled: false })
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.hide(true);
         }
       });
   }
+
+  assignWorkerToPropertiesUpdate() {
+    this.deviceUserAssign$ = this.propertiesService
+      .updateAssignPropertiesToWorker({
+        siteId: this.selectedDeviceUser.normalId,
+        assignments: this.assignments,
+        timeRegistrationEnabled: false,
+      })
+      .subscribe((operation) => {
+        if (operation && operation.success) {
+          //this.userUpdated.emit();
+          this.hide(true);
+        }
+      });
+  }
+
+  // assignWorkerToProperties(siteId?: number) {
+  //   this.deviceUserAssign$ = this.propertiesService
+  //     .updateAssignPropertiesToWorker({
+  //       siteId: siteId ?? this.selectedDeviceUser.normalId,
+  //       assignments: this.assignments,
+  //       timeRegistrationEnabled: false,
+  //     })
+  //     .subscribe((operation) => {
+  //       if (operation && operation.success) {
+  //         this.hide(true);
+  //       }
+  //     });
+  // }
 
   getAssignmentByPropertyId(propertyId: number): PropertyAssignmentWorkerModel {
     return (

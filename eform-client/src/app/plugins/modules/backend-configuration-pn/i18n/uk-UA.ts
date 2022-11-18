@@ -213,4 +213,9 @@ export const ukUA = {
   'Customer no & OTP': 'Номер клієнта та OTP',
   'New OTP': 'Новий OTP',
   'Select filter': 'Вибрати фільтр',
+  'Priority': 'Пріоритет',
+  'Urgent': 'Терміново',
+  'High': 'Високий',
+  'Medium': 'Середній',
+  'Low': 'Низький',
 };
