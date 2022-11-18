@@ -1,21 +1,22 @@
-import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
-import {applicationLanguages2} from 'src/app/common/const';
-import {CommonDictionaryModel, FolderCreateModel, Paged} from 'src/app/common/models';
+import {Component, EventEmitter, OnInit,} from '@angular/core';
+import {applicationLanguages2, PdfIcon} from 'src/app/common/const';
+import {CommonDictionaryModel, } from 'src/app/common/models';
 import {
-  DocumentFolderModel,
-  DocumentFolderRequestModel,
-  DocumentModel, DocumentSimpleFolderModel,
-  PropertyAssignmentWorkerModel
-} from 'src/app/plugins/modules/backend-configuration-pn/models';
+  DocumentModel,
+  DocumentSimpleFolderModel,
+  DocumentPropertyModel,
+} from '../../../../../models';
 import {
   BackendConfigurationPnDocumentsService,
   BackendConfigurationPnPropertiesService
-} from 'src/app/plugins/modules/backend-configuration-pn/services';
+} from '../../../../../services';
 import {Subscription} from 'rxjs';
 import {format, set} from 'date-fns';
-import {DocumentPropertyModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-property.model';
 import * as R from 'ramda';
 import {LocaleService, TemplateFilesService} from 'src/app/common/services';
+import {MatDialogRef} from '@angular/material/dialog';
+import { DomSanitizer } from '@angular/platform-browser';
+import { MatIconRegistry } from '@angular/material/icon';
 
 @Component({
   selector: 'app-documents-document-create',
@@ -23,15 +24,15 @@ import {LocaleService, TemplateFilesService} from 'src/app/common/services';
   styleUrls: ['./documents-document-create.component.scss']
 })
 export class DocumentsDocumentCreateComponent implements OnInit {
-  @ViewChild('frame') frame;
   newDocumentModel: DocumentModel = new DocumentModel();
   pdfSub$: Subscription;
   selectedFolder: number;
-  @Output() documentCreated: EventEmitter<void> = new EventEmitter<void>();
+  documentCreated: EventEmitter<void> = new EventEmitter<void>();
   folders: DocumentSimpleFolderModel[];
   getPropertiesDictionary$: Subscription;
   availableProperties: CommonDictionaryModel[];
   selectedLanguage: number;
+  getSimpleFoldersSub$: Subscription;
   // assignments: DocumentPropertyModel[] = [];
 
   get languages() {
@@ -41,18 +42,20 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
-    localeService: LocaleService) {
+    localeService: LocaleService,
+    public dialogRef: MatDialogRef<DocumentsDocumentCreateComponent>,
+    iconRegistry: MatIconRegistry,
+    sanitizer: DomSanitizer,
+    ) {
     this.selectedLanguage = applicationLanguages2.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
+    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
   }
 
-  ngOnInit(): void {}
-
-  show() {
+  ngOnInit(): void {
     this.getFolders();
     this.initCreateForm();
-    this.frame.show();
     this.getPropertiesDictionary();
   }
 
@@ -88,11 +91,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   hide() {
-    this.frame.hide();
-  }
-
-  cancelCreate() {
-    this.frame.hide();
+    this.dialogRef.close();
   }
 
   createDocument() {
@@ -107,27 +106,27 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   getFolders() {
-
-    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
-      if (data && data.success) {
-        this.folders = data.model;
-      }
-    });
+    this.getSimpleFoldersSub$ = this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage)
+      .subscribe((data) => {
+        if (data && data.success && data.model) {
+          this.folders = data.model;
+        }
+      });
   }
 
   getPropertiesDictionary() {
     this.getPropertiesDictionary$ = this.propertiesService
       .getAllPropertiesDictionary()
       .subscribe((operation) => {
-        if (operation && operation.success) {
+        if (operation && operation.success && operation.model) {
           this.availableProperties = operation.model;
         }
       });
   }
 
-  addToArray(e: any, propertyId: number) {
+  addToArray(checked: boolean, propertyId: number) {
     const assignmentObject = new DocumentPropertyModel();
-    if (e.target.checked) {
+    if (checked) {
       assignmentObject.propertyId = propertyId;
       this.newDocumentModel.documentProperties = [...this.newDocumentModel.documentProperties, assignmentObject];
     } else {
@@ -137,12 +136,11 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     }
   }
 
-
   getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
     const assignment = this.newDocumentModel.documentProperties.find(
       (x) => x.propertyId === propertyId
     );
-    return assignment === undefined ? false : true;
+    return assignment !== undefined;
   }
 
   getAssignmentByPropertyId(propertyId: number): DocumentPropertyModel {
@@ -161,33 +159,40 @@ export class DocumentsDocumentCreateComponent implements OnInit {
       (x) => x.languageId === selectedLanguage || x.id === selectedLanguage
     );
     if (filesIndexByLanguage !== -1) {
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = R.last(files);
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = R.last(files).name;
+      const file: File = R.last(files);
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = file;
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = file.name;
     }
   }
 
   getFileNameByLanguage(languageId: number): string {
-    if (this.newDocumentModel.documentUploadedDatas.length>0) {
-      if (this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).id) {
-        return this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).name;
+    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+    if (index !== -1) {
+      const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
+      if (documentUploadedData.id) {
+        return documentUploadedData.name;
       } else {
-        // return '';
-        const file = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).file;
+        const file = documentUploadedData.file;
         if (file) {
           return file.name;
-        } else {
-          return '';
         }
       }
     }
+    return '';
   }
 
   getPdf(languageId: number) {
-    // TODO: CHECK
-    const fileName = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).fileName;
-    this.pdfSub$ = this.templateFilesService.getImage(fileName).subscribe((blob) => {
-      const fileURL = URL.createObjectURL(blob);
-      window.open(fileURL, '_blank');
-    });
+    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+    if (index !== -1) {
+      const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
+      if (documentUploadedData.id) {
+        this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName).subscribe((blob) => {
+          const fileURL = URL.createObjectURL(blob);
+          window.open(fileURL, '_blank');
+        });
+      } else {
+        window.open(URL.createObjectURL(documentUploadedData.file), '_blank');
+      }
+    }
   }
 }

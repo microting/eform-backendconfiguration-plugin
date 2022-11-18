@@ -6,3 +6,5 @@ export * from './document.model';
 export * from './document-simple.model';
 export * from './documents-request.model';
 export * from './document-simple-folder.model';
+export * from './document-uploaded-data.model';
+export * from './document-property.model';

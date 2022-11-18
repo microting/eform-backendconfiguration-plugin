@@ -1,12 +1,8 @@
 import {ApiBaseService} from 'src/app/common/services';
 import {Injectable} from '@angular/core';
-import {OperationDataResult, Paged} from 'src/app/common/models';
+import {OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
 import {Observable} from 'rxjs';
-import {DocumentModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document.model';
-import {DocumentsRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/documents-request.model';
-import {DocumentFolderRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-folder-request.model';
-import {DocumentFolderModel} from 'src/app/plugins/modules/backend-configuration-pn/models/documents/document-folder.model';
-import {DocumentSimpleFolderModel, DocumentSimpleModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {DocumentModel, DocumentFolderModel, DocumentSimpleFolderModel, DocumentSimpleModel} from '../models';
 
 export let BackendConfigurationPnDocumentsMethods = {
   Documents: 'api/backend-configuration-pn/documents',
@@ -39,15 +35,15 @@ export class BackendConfigurationPnDocumentsService {
     return this.apiBaseService.get(BackendConfigurationPnDocumentsMethods.Documents + '?languageId=' + languageId + '&propertyId=' + propertyId, {});
   }
 
-  updateDocument(model: DocumentModel): Observable<OperationDataResult<DocumentModel>> {
+  updateDocument(model: DocumentModel): Observable<OperationResult> {
     return this.apiBaseService.putFormData(BackendConfigurationPnDocumentsMethods.DocumentUpdate + '/' + model.id, model);
   }
 
-  createDocument(model: DocumentModel): Observable<OperationDataResult<DocumentModel>> {
+  createDocument(model: DocumentModel): Observable<OperationResult> {
     return this.apiBaseService.postFormData(BackendConfigurationPnDocumentsMethods.DocumentCreate, model);
   }
 
-  deleteDocument(documentId: number): Observable<OperationDataResult<boolean>> {
+  deleteDocument(documentId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(BackendConfigurationPnDocumentsMethods.DocumentDelete + '/' + documentId);
   }
 
@@ -64,15 +60,15 @@ export class BackendConfigurationPnDocumentsService {
     return this.apiBaseService.get(BackendConfigurationPnDocumentsMethods.Folders + '/' + folderId);
   }
 
-  updateFolder(model: DocumentFolderModel): Observable<OperationDataResult<DocumentFolderModel>> {
+  updateFolder(model: DocumentFolderModel): Observable<OperationResult> {
     return this.apiBaseService.put(BackendConfigurationPnDocumentsMethods.FolderUpdate + '/' + model.id, model);
   }
 
-  createFolder(model: DocumentFolderModel): Observable<OperationDataResult<DocumentFolderModel>> {
+  createFolder(model: DocumentFolderModel): Observable<OperationResult> {
     return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.FolderCreate, model);
   }
 
-  deleteFolder(folderId: number): Observable<OperationDataResult<boolean>> {
+  deleteFolder(folderId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(BackendConfigurationPnDocumentsMethods.FolderDelete + '/' + folderId);
   }
 
