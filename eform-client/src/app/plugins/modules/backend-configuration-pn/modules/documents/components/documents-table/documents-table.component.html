@@ -13,7 +13,7 @@
     ></thead>
     <tbody id="taskManagementTableBody">
     <ng-container *ngIf="documents !== undefined">
-      <ng-container *ngFor="let document of documents.entities; let i = index">
+      <ng-container *ngFor="let document of documents; let i = index">
         <ng-container *ngIf="document.folderId == folderId">
           <tr>
             <td id="id">

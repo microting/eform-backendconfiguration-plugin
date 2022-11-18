@@ -28,7 +28,7 @@ export class DocumentsTableComponent implements OnInit {
     { name: 'Status', visibleName: 'Status', sortable: false },
     { name: 'Actions', elementId: '', sortable: false },
   ];
-  @Input() documents: Paged<DocumentModel>;
+  @Input() documents: DocumentModel[] = [];
   @Input() folderId: number;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();

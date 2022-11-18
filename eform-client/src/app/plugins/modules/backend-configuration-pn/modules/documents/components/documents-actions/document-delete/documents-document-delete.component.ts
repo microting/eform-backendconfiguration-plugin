@@ -1,9 +1,12 @@
-import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
-import {DocumentModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
-import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {Component, EventEmitter, Inject, OnInit, } from '@angular/core';
+import {DocumentModel} from '../../../../../models';
+import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {Subscription} from 'rxjs';
 import {TemplateFilesService} from 'src/app/common/services';
-import {applicationLanguagesTranslated} from 'src/app/common/const';
+import {applicationLanguagesTranslated, PdfIcon} from 'src/app/common/const';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MatIconRegistry} from '@angular/material/icon';
+import {DomSanitizer} from '@angular/platform-browser';
 
 @Component({
   selector: 'app-documents-document-delete',
@@ -11,11 +14,10 @@ import {applicationLanguagesTranslated} from 'src/app/common/const';
   styleUrls: ['./documents-document-delete.component.scss']
 })
 export class DocumentsDocumentDeleteComponent implements OnInit {
-  @ViewChild('frame') frame;
+  documentDeleted: EventEmitter<void> = new EventEmitter<void>();
   newDocumentModel: DocumentModel = new DocumentModel();
   pdfSub$: Subscription;
   documentSub$: Subscription;
-  @Output() documentDeleted: EventEmitter<void> = new EventEmitter<void>();
 
   get languages() {
     return applicationLanguagesTranslated;
@@ -23,58 +25,67 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
 
   constructor(
     private templateFilesService: TemplateFilesService,
-    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
+    private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
+    public dialogRef: MatDialogRef<DocumentsDocumentDeleteComponent>,
+    @Inject(MAT_DIALOG_DATA) documentModel: DocumentModel,
+    iconRegistry: MatIconRegistry,
+    sanitizer: DomSanitizer,
+  ) {
+    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
+    this.getDocument(documentModel.id);
+  }
 
   ngOnInit(): void {}
 
-  show(documentModel: DocumentModel) {
-    this.getDocument(documentModel.id);
+  hide() {
+    this.dialogRef.close();
   }
 
   submitCaseDelete() {
     this.backendConfigurationPnDocumentsService.deleteDocument(this.newDocumentModel.id).subscribe((data) => {
-      this.frame.hide();
-      this.documentDeleted.emit();
+      if(data && data.success) {
+        this.documentDeleted.emit();
+        this.hide();
+      }
     });
-    // this.casesService.deleteCase(this.selectedCaseModel.id, this.selectedTemplateId).subscribe((data => {
-    //   if (data && data.success) {
-    //     this.onCaseDeleted.emit();
-    //     this.frame.hide();
-    //   }
-    // }));
   }
-
 
   getDocument(documentId: number) {
     this.documentSub$ = this.backendConfigurationPnDocumentsService.getSingleDocument(documentId).subscribe((data) => {
       if (data && data.success) {
         this.newDocumentModel = data.model;
-        this.frame.show();
       }
     });
   }
 
-
   getFileNameByLanguage(languageId: number): string {
-    if (this.newDocumentModel.documentUploadedDatas.length>0) {
-      if (this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).id) {
-        return this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).name;
+    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+    if (index !== -1) {
+      const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
+      if (documentUploadedData.id) {
+        return documentUploadedData.name;
       } else {
-        // return '';
-        const file = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).file;
+        const file = documentUploadedData.file;
         if (file) {
           return file.name;
         }
       }
     }
+    return '';
   }
 
   getPdf(languageId: number) {
-    // TODO: CHECK
-    const fileName = this.newDocumentModel.documentUploadedDatas.find((x) => x.languageId == languageId).fileName;
-    this.pdfSub$ = this.templateFilesService.getImage(fileName).subscribe((blob) => {
-      const fileURL = URL.createObjectURL(blob);
-      window.open(fileURL, '_blank');
-    });
+    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+    if (index !== -1) {
+      const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
+      if (documentUploadedData.id) {
+        this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName).subscribe((blob) => {
+          const fileURL = URL.createObjectURL(blob);
+          window.open(fileURL, '_blank');
+        });
+      } else {
+        window.open(URL.createObjectURL(documentUploadedData.file), '_blank');
+      }
+    }
   }
 }

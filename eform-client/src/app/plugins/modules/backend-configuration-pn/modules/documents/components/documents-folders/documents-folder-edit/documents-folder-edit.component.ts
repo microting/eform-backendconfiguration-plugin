@@ -1,18 +1,20 @@
 import {
-  Component, EventEmitter,
+  Component,
+  EventEmitter,
+  Inject,
   OnDestroy,
-  OnInit, Output,
-  ViewChild,
+  OnInit,
 } from '@angular/core';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
-import {FolderDto, FolderModel, FolderUpdateModel, SharedTagModel} from 'src/app/common/models';
-import {DocumentFolderModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
-import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {FolderDto,} from 'src/app/common/models';
+import {DocumentFolderModel} from '../../../../../models';
+import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {ToastrService} from 'ngx-toastr';
 import {TranslateService} from '@ngx-translate/core';
 import {LocaleService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
 import {applicationLanguages2 } from 'src/app/common/const';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @AutoUnsubscribe()
 @Component({
@@ -21,17 +23,10 @@ import {applicationLanguages2 } from 'src/app/common/const';
   styleUrls: ['./documents-folder-edit.component.scss'],
 })
 export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
-  @ViewChild('frame') frame;
   name = '';
   selectedParentFolder: FolderDto;
-  // newFolderModel: FolderCreateModel = new FolderCreateModel();
-  // folderTranslations: FormArray = new FormArray([]);
   selectedLanguage: number;
-  @Output() folderUpdate: EventEmitter<DocumentFolderModel> = new EventEmitter<
-    DocumentFolderModel
-  >();
-  @Output() folderUpdateCancelled: EventEmitter<void> = new EventEmitter<void>();
-  // tagModel: SharedTagModel = new SharedTagModel();
+  folderUpdate: EventEmitter<void> = new EventEmitter<void>();
   folderUpdateModel: DocumentFolderModel = new DocumentFolderModel();
   updateFolderSub$: Subscription;
   getFolderSub$: Subscription;
@@ -44,35 +39,24 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     private toastrService: ToastrService,
     private translateService: TranslateService,
-    localeService: LocaleService) {
+    localeService: LocaleService,
+    public dialogRef: MatDialogRef<DocumentsFolderEditComponent>,
+    @Inject(MAT_DIALOG_DATA) selectedFolder: DocumentFolderModel,
+  ) {
+    this.getFolder(selectedFolder.id);
     this.selectedLanguage = applicationLanguages2.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
   }
 
-  ngOnInit() {}
-
-  show(selectedFolder: DocumentFolderModel) {
-    this.getFolder(selectedFolder.id);
-    // this.folderUpdateModel = model;
-    this.frame.show();
+  ngOnInit() {
   }
 
   hide() {
-    this.frame.hide();
-  }
-
-  updateItem() {
-    // this.tagUpdate.emit(this.tagModel);
+    this.dialogRef.close();
   }
 
   ngOnDestroy(): void {}
-
-  cancelEdit() {
-    this.frame.hide();
-    this.folderUpdateCancelled.emit();
-  }
-
 
   initEditForm(model: DocumentFolderModel) {
     this.folderUpdateModel = new DocumentFolderModel();
@@ -97,18 +81,12 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
 
   updateFolder() {
     // Validate if at least one translation is filled correctly
-    const translationExists = this.folderUpdateModel.documentFolderTranslations.find(
-      (x) => x.name
-    );
-
-    if (translationExists) {
+    if (this.folderUpdateModel.documentFolderTranslations.some(x => x.name)) {
       this.updateFolderSub$ = this.backendConfigurationPnDocumentsService
         .updateFolder(this.folderUpdateModel)
         .subscribe((operation) => {
           if (operation && operation.success) {
-            // this.folderEdited.emit();
-            this.frame.hide();
-            this.folderUpdate.emit(this.folderUpdateModel);
+            this.folderUpdate.emit();
           }
         });
     } else {
