@@ -211,4 +211,11 @@ export const itIT = {
   To: '',
   'Customer no & OTP': '',
   'New OTP': '',
+  'Select filter': '',
+  'Priority': '',
+  'Urgent': '',
+  'High': '',
+  'Medium': '',
+  'Low': '',
+  'Edit task': '',
 };

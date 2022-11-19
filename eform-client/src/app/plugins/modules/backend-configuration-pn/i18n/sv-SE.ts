@@ -216,4 +216,5 @@ export const svSE = {
   'High': 'Hög',
   'Medium': 'Medium',
   'Low': 'Låg',
+  'Edit task': 'Redigera uppgift',
 };

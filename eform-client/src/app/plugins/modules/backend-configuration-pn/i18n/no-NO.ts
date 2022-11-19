@@ -217,4 +217,5 @@ export const noNO = {
   'High': 'Høy',
   'Medium': 'Middels',
   'Low': 'Lav',
+  'Edit task': 'Rediger oppgave',
 };

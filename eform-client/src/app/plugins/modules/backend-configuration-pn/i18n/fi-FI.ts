@@ -216,4 +216,5 @@ export const fiFI = {
   'High': '',
   'Medium': '',
   'Low': '',
+  'Edit task': '',
 };

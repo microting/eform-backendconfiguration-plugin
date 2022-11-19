@@ -218,4 +218,5 @@ export const plPl = {
   'High': 'Wysoki',
   'Medium': 'Średni',
   'Low': 'Niski',
+  'Edit task': 'Edytuj zadanie',
 };
