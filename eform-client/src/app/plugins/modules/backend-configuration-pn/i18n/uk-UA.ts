@@ -219,4 +219,8 @@ export const ukUA = {
   'Medium': 'Середній',
   'Low': 'Низький',
   'Edit task': 'Редагувати завдання',
+  'Edit document': 'Редагувати документ',
+  'Delete document': 'Видалити документ',
+  'Edit folder': 'Редагувати папку',
+  'Selected language': 'Вибрана мова',
 };

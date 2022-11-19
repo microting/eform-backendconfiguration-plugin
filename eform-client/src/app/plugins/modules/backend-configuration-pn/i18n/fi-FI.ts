@@ -217,4 +217,8 @@ export const fiFI = {
   'Medium': '',
   'Low': '',
   'Edit task': '',
+  'Edit document': '',
+  'Delete document': '',
+  'Edit folder': '',
+  'Selected language': '',
 };

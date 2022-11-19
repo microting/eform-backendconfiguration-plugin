@@ -218,4 +218,8 @@ export const noNO = {
   'Medium': 'Middels',
   'Low': 'Lav',
   'Edit task': 'Rediger oppgave',
+  'Edit document': 'Rediger dokument',
+  'Delete document': 'Slett dokument',
+  'Edit folder': 'Rediger mappe',
+  'Selected language': 'Valgt språk',
 };

@@ -225,4 +225,8 @@ export const da = {
   'Awaiting': 'Afventer',
   'Ordered': 'Bestilt',
   'Edit task': 'Redigér opgave',
+  'Edit document': 'Redigér dokument',
+  'Delete document': 'Slet dokument',
+  'Edit folder': 'Redigér mappe',
+  'Selected language': 'Valgt sprog',
 };
