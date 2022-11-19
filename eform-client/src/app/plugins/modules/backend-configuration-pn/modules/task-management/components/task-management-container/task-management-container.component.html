@@ -20,13 +20,12 @@
       [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
       (click)="updateTable()"
     >
-      {{ 'Show report' | translate }}
+      {{ 'Show' | translate }}
     </button>
     <button
       *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
       mat-icon-button
       id="wordBtn"
-      color="primary"
       [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
       (click)="onDownloadWordReport()"
       matTooltip="{{ 'Word report' | translate }}"
@@ -37,7 +36,6 @@
       *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
       mat-icon-button
       id="excelBtn"
-      color="accent"
       [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
       (click)="onDownloadExcelReport()"
       matTooltip="{{ 'Excel report' | translate }}"

@@ -217,4 +217,5 @@ export const esES = {
   'High': '',
   'Medium': '',
   'Low': '',
+  'Edit Task': '',
 };
