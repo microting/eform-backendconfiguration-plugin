@@ -224,4 +224,5 @@ export const da = {
   'Low': 'Lav',
   'Awaiting': 'Afventer',
   'Ordered': 'Bestilt',
+  'Edit task': 'Redigér opgave',
 };

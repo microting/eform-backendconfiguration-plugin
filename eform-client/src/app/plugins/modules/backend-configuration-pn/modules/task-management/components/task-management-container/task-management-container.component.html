@@ -20,7 +20,7 @@
       [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
       (click)="updateTable()"
     >
-      {{ 'Show report' | translate }}
+      {{ 'Show' | translate }}
     </button>
     <button
       *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"

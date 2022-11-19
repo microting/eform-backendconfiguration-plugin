@@ -218,4 +218,5 @@ export const frFR = {
   'High': 'Haut',
   'Medium': 'Moyen',
   'Low': 'Bas',
+  'Edit task': 'Modifier la tâche',
 };

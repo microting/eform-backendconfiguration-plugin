@@ -216,4 +216,5 @@ export const deDE = {
   'High': 'Hoch',
   'Medium': 'Mittel',
   'Low': 'Niedrig',
+  'Edit task': 'Aufgabe bearbeiten',
 };
