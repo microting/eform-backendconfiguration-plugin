@@ -252,7 +252,7 @@ export class TaskManagementCreateShowModalComponent
 
   create() {
     const rawValue = this.workOrderCaseForm.getRawValue();
-    if (this.currentWorkOrderCase.id) {
+    if (this.currentWorkOrderCase !== undefined) {
 
       const workOrderCase: WorkOrderCaseUpdateModel = {
         assignedSiteId: rawValue.assignedTo,
