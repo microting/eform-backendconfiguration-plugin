@@ -28,7 +28,7 @@ function createInitialState(): DocumentsState {
       //offset: 0,
     },
     filters: {
-      propertyId: null,
+      propertyId: -1,
       folderId: null,
       documentId: null,
       expiration: null,

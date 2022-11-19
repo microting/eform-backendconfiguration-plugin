@@ -1,61 +1,9 @@
-<div class="row p-1 mt-4 mb-2 table-responsive no-gutters">
-  <table
-    mdbTable
-    striped="true"
-    hover="true"
-    small="true"
-    class="z-depth-1 text-center"
-  >
-    <thead
-      table-headers
-      [tableHeaders]="tableHeaders"
-      (sortChanged)="sortTable($event)"
-    ></thead>
-    <tbody id="taskManagementTableBody">
-    <ng-container *ngIf="documents !== undefined">
-      <ng-container *ngFor="let document of documents.entities; let i = index">
-        <ng-container *ngIf="document.folderId == folderId">
-          <tr>
-            <td id="id">
-              {{ document.id }}
-            </td>
-            <td id="properties">
-              <div [innerHTML]="document.propertyNames"></div>
-            </td>
-            <td>{{document.documentTranslations[0].name}}</td>
-            <td>
-              <div [innerHTML]="document.documentTranslations[0].description"></div>
-            </td>
-            <td>
-              <date-formatter
-                [date]="document.endDate"
-                [Format]="'date'"
-              ></date-formatter></td>
-            <td>{{(document.status ? ('ON' | translate) : 'OFF' | translate )}}</td>
-            <td>
-              <div class="d-flex flex-row justify-content-center">
-                <button
-                  id="editDocumentBtn"
-                  class="btn btn-accent text-black-50 btn-icon mb-2"
-                  mdbTooltip="{{ 'Edit document' | translate }}"
-                  (click)="onShowEditDocumentModal(document)"
-                >
-                  <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-                </button>
-                <button
-                  id="deleteDocumentBtn"
-                  class="btn btn-danger btn-icon mb-2"
-                  mdbTooltip="{{ 'Delete document' | translate }}"
-                  (click)="onOpenDeleteModal(document)"
-                >
-                  <fa-icon icon="trash" [fixedWidth]="true" size="lg"></fa-icon>
-                </button>
-              </div>
-            </td>
-          </tr>
-        </ng-container>
-      </ng-container>
-    </ng-container>
-    </tbody>
-  </table>
-</div>
+<mtx-grid
+  [data]="documents"
+  [columns]="tableHeaders"
+  [showPaginator]="false"
+  [pageOnFront]="false"
+  [rowStriped]="true"
+  [showToolbar]="false"
+  [showColumnMenuButton]="false">
+</mtx-grid>

@@ -2,76 +2,38 @@
   [title]="'Documents' | translate"
   [forceStaticTitle]="true"
 >
-  <div class="p-3">
-    <ng-container *ngIf="folders !== undefined">
-      <button *ngIf="folders.entities.length > 0"
-        mat-icon-button
-        id="createNewDocumentBtn"
-        matTooltip="{{ 'Create new document' | translate }}"
-        (click)="openCreateModal()"
-      >
-        <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
-      </button>
-    </ng-container>
-    <button
+  <ng-container *ngIf="folders !== undefined">
+    <button *ngIf="folders.entities.length > 0"
       mat-icon-button
-      id="manageFoldersBtn"
-      matTooltip="{{ 'Manage folders' | translate }}"
-      (click)="openManageFoldersModal()"
+      id="createNewDocumentBtn"
+      matTooltip="{{ 'Create new document' | translate }}"
+      (click)="openCreateModal()"
+      color="accent"
     >
-      <fa-icon icon="folder" size="lg" [fixedWidth]="true"></fa-icon>
+      <mat-icon>add</mat-icon>
     </button>
-  </div>
+  </ng-container>
+  <button
+    mat-icon-button
+    id="manageFoldersBtn"
+    matTooltip="{{ 'Manage folders' | translate }}"
+    (click)="openManageFoldersModal()"
+    color="accent"
+  >
+    <mat-icon>folder</mat-icon>
+  </button>
 </eform-new-subheader>
 
-<div class="container-fluid">
-  <app-documents-filters></app-documents-filters>
-  <div class="col">
-    <div class="row">
-      <button
-        mat-raised-button
-        id="showReportBtn"
-        color="accent"
-        (click)="updateTable()"
-      >
-        {{ 'Show' | translate }}
-      </button>
-    </div>
-  </div>
-  <br>
-  <ng-container *ngIf="folders !== undefined">
-    <ng-container *ngFor="let folder of folders.entities">
-      <h3 class="mt-3">{{ folder.documentFolderTranslations[0].name}}</h3>
-      <ng-container *ngIf="documents !== undefined">
-        <app-documents-table
-        [folderId]="folder.id"
-        [documents]="documents"
-        (openEditModal)="showEditDocumentModal($event)"
-        (openDeleteModal)="showDeleteDocumentModal($event)"
-        >
-        </app-documents-table>
-      </ng-container>
+<app-documents-filters (updateTable)="updateTable()"></app-documents-filters>
 
-    </ng-container>
+<ng-container *ngFor="let folder of folders.entities">
+  <ng-container *ngIf="getDocumentsByFolderId(folder.id).length > 0">
+    <h3 class="mt-3">{{ getFolderTranslation(folder) }}</h3>
+    <app-documents-table
+      [documents]="getDocumentsByFolderId(folder.id)"
+      (openEditModal)="showEditDocumentModal($event)"
+      (openDeleteModal)="showDeleteDocumentModal($event)"
+    >
+    </app-documents-table>
   </ng-container>
-</div>
-
-<ng-container>
-<!--  <app-documents-folders-->
-<!--    #manageFoldersModal-->
-<!--    (foldersChanged)="updateTable()"-->
-<!--  ></app-documents-folders>-->
-  <app-documents-document-create
-    #createDocumentModal
-    (documentCreated)="updateTable()">
-  </app-documents-document-create>
-  <app-documents-document-edit
-    #editDocumentModal
-    (documentUpdated)="updateTable()">
-  </app-documents-document-edit>
-  <app-documents-document-delete
-    #deleteDocumentModal
-    (documentDeleted)="updateTable()">
-  #deleteDocumentModal>
-  </app-documents-document-delete>
 </ng-container>
