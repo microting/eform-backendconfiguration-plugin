@@ -217,4 +217,8 @@ export const svSE = {
   'Medium': 'Medium',
   'Low': 'Låg',
   'Edit task': 'Redigera uppgift',
+  'Edit document': 'Redigera dokument',
+  'Delete document': 'Ta bort dokument',
+  'Edit folder': 'Redigera mapp',
+  'Selected language': 'Valt språk',
 };

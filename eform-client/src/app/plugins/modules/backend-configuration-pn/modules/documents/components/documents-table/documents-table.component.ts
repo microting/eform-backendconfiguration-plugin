@@ -33,7 +33,6 @@ export class DocumentsTableComponent implements OnInit {
       right: '0px',
       buttons: [
         {
-          color: 'accent',
           type: 'icon',
           icon: 'edit',
           tooltip: this.translateService.stream('Edit document'),
