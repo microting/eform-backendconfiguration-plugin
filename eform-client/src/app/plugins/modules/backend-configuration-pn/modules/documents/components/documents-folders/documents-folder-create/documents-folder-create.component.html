@@ -1,162 +1,62 @@
-<!--<div-->
-<!--  [config]="{ ignoreBackdropClick: true }"-->
-<!--  mdbModal-->
-<!--  class="modal fade"-->
-<!--  #frame="mdbModal"-->
-<!--&gt;-->
-<!--  <div class="modal-dialog modal-md">-->
-<!--    <div class="modal-content">-->
-<!--      <div class="modal-header">-->
-<!--        <h3>{{ 'New tag' | translate }}</h3>-->
-<!--        <button class="close" data-dismiss="modal" (click)="cancelCreate()">-->
-<!--          <span>×</span>-->
-<!--        </button>-->
-<!--      </div>-->
-<!--      <div class="modal-body">-->
-<!--        <div class="container-fluid">-->
-<!--          <div class="md-form">-->
-<!--            <input-->
-<!--              mdbInput-->
-<!--              [(ngModel)]="name"-->
-<!--              [required]="true"-->
-<!--              type="text"-->
-<!--              class="form-control"-->
-<!--              id="newTagName"-->
-<!--            />-->
-<!--            <label for="newTagName">{{ 'Name' | translate }}</label>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--      <div class="modal-footer">-->
-<!--        <button-->
-<!--          mdbBtn-->
-<!--          id="newTagSaveBtn"-->
-<!--          class="btn-success btn-small-height"-->
-<!--          [disabled]="!name"-->
-<!--          (click)="createItem()"-->
-<!--        >-->
-<!--          {{ 'Save' | translate }}-->
-<!--        </button>-->
-<!--        <button-->
-<!--          mdbBtn-->
-<!--          id="newTagSaveCancelBtn"-->
-<!--          class="btn-accent text-black-50 btn-small-height"-->
-<!--          (click)="cancelCreate()"-->
-<!--        >-->
-<!--          {{ 'Close' | translate }}-->
-<!--        </button>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  </div>-->
-<!--</div>-->
 <h3 mat-dialog-title>{{'Create folder' | translate}}</h3>
 <div mat-dialog-content class="d-flex flex-column">
-  <div class="d-flex flex-row need-wrapper">
+  <mat-card class="mb-2">
+    <mat-card-content>
+      <mat-form-field>
+        <mat-label>{{'Selected language' | translate}}</mat-label>
+        <mtx-select
+          class="custom"
+          dropdownPosition="bottom"
+          [clearable]="false"
+          [bindLabel]="'text'"
+          [bindValue]="'id'"
+          [(ngModel)]="selectedLanguage"
+          id="createLanguageSelector"
+          [items]="languages">
+        </mtx-select>
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
 
-  </div>
+  <ng-container *ngFor=" let translation of newFolderModel.translations; let translationIndex = index">
+    <mat-card *ngIf="selectedLanguage === translation.languageId" class="mb-2">
+      <mat-card-content>
+        <div class="d-flex flex-column">
+          <mat-form-field class="mb-3">
+            <mat-label>{{ 'Name' | translate }}</mat-label>
+            <input
+              matInput
+              type="text"
+              id="createFolderNameTranslation_{{ translationIndex }}"
+              name="createFolderNameTranslation_{{ translationIndex }}"
+              [(ngModel)]="translation.name"
+            />
+          </mat-form-field>
+          <formatting-text-editor
+            [(value)]="translation.description"
+            [placeholder]="'Description' | translate"
+            id="createFolderDescriptionTranslation_{{ translationIndex }}"
+          >
+          </formatting-text-editor>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
 </div>
-<div
-  [config]="{ ignoreBackdropClick: true }"
-  mdbModal
-  class="modal fade"
-  #frame="mdbModal"
->
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-<!--        <h3 *ngIf="selectedParentFolder">-->
-<!--          {{ 'Create Nested Folder' | translate }}-->
-<!--        </h3>-->
-        <h3>{{ 'Create folder' | translate }}</h3>
-        <button class="close" data-dismiss="modal" (click)="hide()">
-          <span>×</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <mdb-card class="mb-3">
-          <mdb-card-body>
-            <div class="row">
-              <div class="ng-select-wrapper col-md-12">
-                <ng-select
-                  class="custom"
-                  dropdownPosition="'bottom'"
-                  [placeholder]="'Selected language' | translate"
-                  [clearable]="false"
-                  [bindLabel]="'text'"
-                  [bindValue]="'id'"
-                  [(ngModel)]="selectedLanguage"
-                  id="createLanguageSelector"
-                  [items]="languages"
-                ></ng-select>
-              </div>
-            </div>
-          </mdb-card-body>
-        </mdb-card>
-        <mdb-card>
-          <mdb-card-body>
-            <ng-container
-              *ngFor="
-                let translation of newFolderModel.translations;
-                let translationIndex = index
-              "
-            >
-              <ng-container *ngIf="selectedLanguage === translation.languageId">
-                <div class="row">
-                  <div class="col-12">
-                    <div class="md-form">
-                      <input
-                        mdbInput
-                        type="text"
-                        id="createFolderNameTranslation_{{ translationIndex }}"
-                        name="createFolderNameTranslation_{{
-                          translationIndex
-                        }}"
-                        [(ngModel)]="translation.name"
-                        class="form-control"
-                      />
-                      <label
-                        for="createFolderNameTranslation_{{ translationIndex }}"
-                      >
-                        {{ 'Name' | translate }}
-                      </label>
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-12">
-                    <formatting-text-editor
-                      [(value)]="translation.description"
-                      [placeholder]="'Description' | translate"
-                      id="createFolderDescriptionTranslation_{{
-                        translationIndex
-                      }}"
-                    >
-                    </formatting-text-editor>
-                  </div>
-                </div>
-              </ng-container>
-            </ng-container>
-          </mdb-card-body>
-        </mdb-card>
-      </div>
-      <div class="modal-footer">
-        <button
-          mdbBtn
-          class="btn-success btn-small-height"
-          id="folderSaveBtn"
-          (click)="createFolder()"
-        >
-          {{ 'Create' | translate }}
-        </button>
-        <button
-          mdbBtn
-          class="btn-accent text-black-50 btn-small-height"
-          id="cancelCreateBtn"
-          (click)="cancelCreate()"
-        >
-          {{ 'Cancel' | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="folderSaveBtn"
+    (click)="createFolder()"
+  >
+    {{ 'Create' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelCreateBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
 </div>

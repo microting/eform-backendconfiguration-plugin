@@ -1,44 +1,43 @@
-<div class="d-flex flex-column" [formGroup]="filtersForm">
-  <div class="d-flex flex-row need-wrapper">
-    <mat-form-field>
-      <mat-label>{{'Property' | translate}}</mat-label>
-      <mtx-select
-        [items]="properties"
-        bindLabel="name"
-        bindValue="id"
-        formControlName="propertyId"
-        id="propertyIdFilter"
-        [clearable]="false"
-      >
-      </mtx-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{'Folders' | translate}}</mat-label>
-        <mtx-select
-          [placeholder]="'Folders' | translate"
-          [items]="folders"
-          bindLabel="name"
-          bindValue="id"
-          formControlName="folderId"
-          id="foldersFilter"
-        >
-        </mtx-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{'Document name' | translate}}</mat-label>
-      <mtx-select
-        [items]="documents"
-        bindLabel="name"
-        bindValue="id"
-        formControlName="documentId"
-        id="documentNameFilter"
-      >
-      </mtx-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{'Expiration' | translate}}</mat-label>
-      <mtx-select
-        [items]="[
+<div class="align-items-center d-flex flex-row need-wrapper" [formGroup]="filtersForm">
+  <mat-form-field>
+    <mat-label>{{'Property' | translate}}</mat-label>
+    <mtx-select
+      [items]="properties"
+      bindLabel="name"
+      bindValue="id"
+      formControlName="propertyId"
+      id="propertyIdFilter"
+      [clearable]="false"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Folders' | translate}}</mat-label>
+    <mtx-select
+      [placeholder]="'Folders' | translate"
+      [items]="folders"
+      bindLabel="name"
+      bindValue="id"
+      formControlName="folderId"
+      id="foldersFilter"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Document name' | translate}}</mat-label>
+    <mtx-select
+      [items]="documents"
+      bindLabel="name"
+      bindValue="id"
+      formControlName="documentId"
+      id="documentNameFilter"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Expiration' | translate}}</mat-label>
+    <mtx-select
+      [items]="[
         {id: 0, name: ('Expires today or has expired' | translate), description: '' },
         {id: 1, name: ('Expires in 1 month at the latest' | translate), description: ''},
         {id: 2, name: ('Expires in 3 months at the latest' | translate), description: ''},
@@ -46,12 +45,20 @@
         {id: 4, name: ('Expires in 12 months at the latest.' | translate), description: ''},
         {id: 5, name: ('Expires in more than 12 months.' | translate), description: ''},
       ]"
-        bindLabel="name"
-        bindValue="id"
-        formControlName="expiration"
-        id="expirationFilter"
-      >
-      </mtx-select>
-    </mat-form-field>
-  </div>
+      bindLabel="name"
+      bindValue="id"
+      formControlName="expiration"
+      id="expirationFilter"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <button
+    mat-raised-button
+    id="showReportBtn"
+    color="accent"
+    (click)="updateTable.emit()"
+    class="mx-2"
+  >
+    {{ 'Show' | translate }}
+  </button>
 </div>

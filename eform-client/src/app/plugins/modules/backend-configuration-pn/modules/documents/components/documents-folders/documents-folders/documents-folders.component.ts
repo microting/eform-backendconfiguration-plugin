@@ -1,102 +1,97 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   EventEmitter,
-  Input,
+  OnDestroy,
   OnInit,
   Output,
-  ViewChild,
 } from '@angular/core';
 import {
-  CommonDictionaryModel, FolderDto, Paged,
+  Paged,
 } from 'src/app/common/models';
 import {
   DocumentsFolderCreateComponent,
   DocumentsFolderEditComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/components';
-import {DocumentFolderModel, DocumentFolderRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
-import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
-import {MatDialogRef} from "@angular/material/dialog";
-// import { SharedTagDeleteComponent } from '../shared-tag-delete/shared-tag-delete.component';
-// import { SharedTagCreateComponent } from '../shared-tag-create/shared-tag-create.component';
-// import { SharedTagEditComponent } from '../shared-tag-edit/shared-tag-edit.component';
+} from '../../';
+import {DocumentFolderModel, DocumentFolderRequestModel} from '../../../../../models';
+import {BackendConfigurationPnDocumentsService} from '../../../../../services';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 
+@AutoUnsubscribe()
 @Component({
   selector: 'app-documents-folders',
   templateUrl: './documents-folders.component.html',
   styleUrls: ['./documents-folders.component.scss']
 })
-export class DocumentsFoldersComponent implements OnInit {
-  @ViewChild('frame') frame;
-  @ViewChild('createFolderModal') createFolderModal: DocumentsFolderCreateComponent;
-  @ViewChild('editFolderModal') editFolderModal: DocumentsFolderEditComponent;
-  // @ViewChild('tagEditModal') tagEditModal: SharedTagEditComponent;
-  // @ViewChild('tagDeleteModal') tagDeleteModal: SharedTagDeleteComponent;
-  folders: Paged<DocumentFolderModel>;
+export class DocumentsFoldersComponent implements OnInit, OnDestroy {
+  folders: Paged<DocumentFolderModel> = new Paged<DocumentFolderModel>();
   @Output() foldersChanged: EventEmitter<void> = new EventEmitter<void>();
-  // selectedFolders: Paged<DocumentFolderModel>;
-  // folders: Paged<DocumentFolderModel>;
-  @Output() createFolder: EventEmitter<DocumentFolderModel> = new EventEmitter<
-    DocumentFolderModel
-  >();
-  @Output() updateFolder: EventEmitter<DocumentFolderModel> = new EventEmitter<
-    DocumentFolderModel
-  >();
-  // @Output() deleteTag: EventEmitter<SharedTagModel> = new EventEmitter<
-  //   SharedTagModel
-  // >();
+  folderCreateSub$: any;
 
   constructor(
     public dialogRef: MatDialogRef<DocumentsFoldersComponent>,
-    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService) {}
+    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
+    public dialog: MatDialog,
+    private overlay: Overlay,) {}
 
-  show() {
-    this.getFolders();
-    // this.selectedFolders = this.folders;
-    this.frame.show();
+  ngOnDestroy(): void {
   }
 
   hide() {
-    //this.frame.hide();
     this.dialogRef.close();
     this.foldersChanged.emit();
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.getFolders();
+  }
 
   showCreateTagModal() {
-    this.frame.hide();
-    this.createFolderModal.show();
+    const createFolderModal = this.dialog.open(DocumentsFolderCreateComponent, {...dialogConfigHelper(this.overlay), minWidth: 500});
+    this.folderCreateSub$ = createFolderModal.componentInstance.folderCreate.subscribe(_ => {
+      createFolderModal.close();
+      this.onFolderCreate();
+    });
   }
 
-  showEditTagModal(model: DocumentFolderModel) {
-    this.frame.hide();
-    this.editFolderModal.show(model);
+  showEditFolderModal(model: DocumentFolderModel) {
+    const editFolderModal = this.dialog.open(DocumentsFolderEditComponent, {...dialogConfigHelper(this.overlay, model), minWidth: 500});
+    this.folderCreateSub$ = editFolderModal.componentInstance.folderUpdate.subscribe(_ => {
+      editFolderModal.close();
+      this.onFolderUpdate();
+    });
   }
 
-  onChildrenModalHide() {
-    this.frame.show();
-  }
-
-  onFolderUpdate(model: DocumentFolderModel) {
-    this.updateFolder.emit(model);
+  onFolderUpdate() {
+    this.foldersChanged.emit();
     this.getFolders();
-    this.frame.show();
+    // this.frame.show();
   }
 
-  onFolderCreate(model: DocumentFolderModel) {
-    this.createFolder.emit(model);
+  onFolderCreate() {
+    this.foldersChanged.emit();
     this.getFolders();
-    this.frame.show();
+    // this.frame.show();
   }
 
   getFolders() {
     const requestModel = new DocumentFolderRequestModel();
 
     this.backendConfigurationPnDocumentsService.getAllFolders(requestModel).subscribe((data) => {
-      if (data && data.success) {
+      if (data && data.success && data.model) {
         this.folders = data.model;
       }
     });
+  }
+
+  getFolderTranslation(folder: DocumentFolderModel) {
+    if(folder.documentFolderTranslations[0].name) {
+      return folder.documentFolderTranslations[0].name;
+    } else if(folder.documentFolderTranslations.some(x => x.name)) {
+      return folder.documentFolderTranslations.filter(x => x.name)[0].name
+    }
+    return '';
   }
 }

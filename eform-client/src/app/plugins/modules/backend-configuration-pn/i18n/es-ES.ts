@@ -218,4 +218,8 @@ export const esES = {
   'Medium': '',
   'Low': '',
   'Edit Task': '',
+  'Edit document': '',
+  'Delete Document': '',
+  'Edit folder': '',
+  'Selected language': '',
 };
