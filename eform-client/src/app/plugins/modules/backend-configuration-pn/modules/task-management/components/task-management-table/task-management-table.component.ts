@@ -76,7 +76,6 @@ export class TaskManagementTableComponent implements OnInit {
         {
           type: 'icon',
           icon: 'edit',
-          color: 'accent',
           click: (rowData: WorkOrderCaseModel) => this.onOpenViewModal(rowData.id),
           tooltip: this.translateService.stream('Edit task'),
           class: 'taskManagementViewBtn',
