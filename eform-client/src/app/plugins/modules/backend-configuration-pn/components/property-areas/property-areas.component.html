@@ -32,7 +32,6 @@
     <button
       id="navigateToPropertyArea"
       mat-icon-button
-      color='accent'
       (click)="this.router.navigate(['../../area-rules/', row.id, this.selectedProperty.id], {relativeTo: this.route})"
       matTooltip="{{'Show cases' | translate}}"
     >
