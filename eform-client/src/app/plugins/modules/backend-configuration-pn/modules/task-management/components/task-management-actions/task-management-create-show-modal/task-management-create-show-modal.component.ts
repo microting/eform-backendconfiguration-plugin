@@ -79,6 +79,10 @@ export class TaskManagementCreateShowModalComponent
         value: 3,
         disabled: false,
       }, Validators.required),
+      caseStatusEnum: new FormControl({
+        value: 1,
+        disabled: false,
+      }, Validators.required),
     });
     this.getProperties();
     if (workOrderCase) {
@@ -92,6 +96,7 @@ export class TaskManagementCreateShowModalComponent
           assignedTo: workOrderCase.assignedSiteId,
           descriptionTask: workOrderCase.description,
           priority: workOrderCase.priority,
+          caseStatusEnum: workOrderCase.caseStatusEnum,
         },
         { emitEvent: false }
       );
@@ -262,6 +267,7 @@ export class TaskManagementCreateShowModalComponent
         files: this.images.map(x => x.file),
         id: this.currentWorkOrderCase.id,
         priority: rawValue.priority,
+        caseStatusEnum: rawValue.caseStatusEnum,
       }
       this.taskManagementService.updateWorkOrderCase(workOrderCase)
         .subscribe(data => {
@@ -277,6 +283,7 @@ export class TaskManagementCreateShowModalComponent
         propertyId: rawValue.propertyId,
         description: rawValue.descriptionTask,
         files: this.images.map(x => x.file),
+        caseStatusEnum: rawValue.caseStatusEnum,
       }
       this.taskManagementService.createWorkOrderCase(workOrderCase)
         .subscribe(data => {
