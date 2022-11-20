@@ -33,6 +33,24 @@
       </mtx-select>
     </mat-form-field>
     <mat-form-field>
+      <mat-label>{{'Status' | translate}}</mat-label>
+      <mtx-select
+        [items]="[
+          {id: 1, name: ('Ongoing' | translate)},
+          {id: 2, name: ('Completed' | translate)},
+          {id: 3, name: ('Ordered' | translate)},
+          {id: 4, name: ('Awaiting' | translate)},
+        ]"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="caseStatusEnum"
+        id="statusFilter"
+        [clearable]="false"
+        [placeholder]="('Select status' | translate)">
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
       <mat-label>{{'Priority' | translate}}</mat-label>
       <mtx-select
         [items]="[
@@ -98,7 +116,7 @@
       type="text"
       id="descriptionTask"
       formControlName="descriptionTask"
-      rows="5"
+      rows="7"
       cols="46"
     ></textarea>
   </mat-form-field>
