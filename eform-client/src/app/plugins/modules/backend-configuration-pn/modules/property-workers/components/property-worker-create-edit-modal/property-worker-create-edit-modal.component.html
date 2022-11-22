@@ -42,6 +42,15 @@
     [(ngModel)]="selectedDeviceUser.timeRegistrationEnabled">
     {{ "Timeregistration enabled" | translate }}
   </mat-slide-toggle>
+  <mat-slide-toggle
+    *ngIf="authStateService.checkClaim('task_management_enable')"
+    color="primary"
+    class="mb-2"
+    id="taskManagementEnabledToggle"
+    [checked]="selectedDeviceUser.taskManagementEnabled"
+    [(ngModel)]="selectedDeviceUser.taskManagementEnabled">
+    {{ "Task management enabled" | translate }}
+  </mat-slide-toggle>
 
 <!--  <mtx-grid-->
 <!--    [data]="availableProperties"-->
