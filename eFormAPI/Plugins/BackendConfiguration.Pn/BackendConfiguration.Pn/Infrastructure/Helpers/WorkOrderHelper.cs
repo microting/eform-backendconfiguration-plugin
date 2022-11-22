@@ -121,8 +121,12 @@ public class WorkOrderHelper
                 entityItemIncrementer++;
             }
 
-            await DeployEform(propertyWorker, eformIdForNewTasks, property,
-                $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}", int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid)).ConfigureAwait(false);
+            if (propertyWorker.TaskManagementEnabled == true || propertyWorker.TaskManagementEnabled == null)
+            {
+                await DeployEform(propertyWorker, eformIdForNewTasks, property,
+                    $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
+                    int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid)).ConfigureAwait(false);
+            }
         }
     }
 
