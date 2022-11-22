@@ -131,6 +131,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     selectedSimpleSite.normalId = simpleSiteDto.siteId;
     selectedSimpleSite.isLocked = simpleSiteDto.isLocked;
     selectedSimpleSite.timeRegistrationEnabled = simpleSiteDto.timeRegistrationEnabled;
+    selectedSimpleSite.taskManagementEnabled = simpleSiteDto.taskManagementEnabled;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

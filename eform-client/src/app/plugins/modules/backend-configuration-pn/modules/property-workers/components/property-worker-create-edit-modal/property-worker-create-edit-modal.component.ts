@@ -186,7 +186,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
 
   assignWorkerToProperties(siteId: number) {
     this.deviceUserAssign$ = this.propertiesService
-      .assignPropertiesToWorker({ siteId, assignments: this.assignments, timeRegistrationEnabled: false })
+      .assignPropertiesToWorker({
+        siteId,
+        assignments: this.assignments,
+        timeRegistrationEnabled: this.selectedDeviceUser.taskManagementEnabled,
+        taskManagementEnabled: this.selectedDeviceUser.taskManagementEnabled})
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.hide(true);
@@ -199,7 +203,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .updateAssignPropertiesToWorker({
         siteId: this.selectedDeviceUser.normalId,
         assignments: this.assignments,
-        timeRegistrationEnabled: false,
+        timeRegistrationEnabled: this.selectedDeviceUser.timeRegistrationEnabled,
+        taskManagementEnabled: this.selectedDeviceUser.taskManagementEnabled,
       })
       .subscribe((operation) => {
         if (operation && operation.success) {
