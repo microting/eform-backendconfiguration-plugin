@@ -282,7 +282,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
                   (x) => x.isChecked && x.propertyId === propertyId
                 ))
             );
-            data.model = data.model.filter((x) => x.assignments.length > 0);
+            data.model = data.model.filter((x) => x.assignments.length > 0 && x.taskManagementEnabled);
             this.assignedSitesToProperty = data.model.map((x) => {
               const site = sites.find((y) => y.id === x.siteId);
               return {

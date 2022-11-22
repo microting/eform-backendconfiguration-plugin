@@ -96,17 +96,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                 if (query.Any())
                 {
-                    var listWorkerId = await query.Select(x => x.WorkerId).Distinct().ToListAsync().ConfigureAwait(false);
+                    var listWorkerId = await query.Select(x => new PropertyWorker()
+                    {
+                        WorkerId = x.WorkerId,
+                        TaskManagementEnabled = x.TaskManagementEnabled
+                    }).Distinct().ToListAsync().ConfigureAwait(false);
 
                     foreach (var workerId in listWorkerId)
                     {
                         var assignments = await query
-                            .Where(x => x.WorkerId == workerId)
+                            .Where(x => x.WorkerId == workerId.WorkerId)
                             .Select(x => new PropertyAssignmentWorkerModel
                                 { PropertyId = x.PropertyId, IsChecked = true })
                             .ToListAsync().ConfigureAwait(false);
+
                         assignWorkersModels.Add(new PropertyAssignWorkersModel
-                            { SiteId = workerId, Assignments = assignments });
+                            { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
                     }
 
                     var properties = await _backendConfigurationPnDbContext.Properties
@@ -320,6 +325,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     }
 
                     await _bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
+                }
+
+                if (!(bool)updateModel.TaskManagementEnabled!)
+                {
+                    foreach (var propertyWorker in assignments)
+                    {
+                        if (propertyWorker.EntityItemId != null)
+                        {
+                            await core.EntityItemDelete((int)propertyWorker.EntityItemId).ConfigureAwait(false);
+
+                            await _workOrderHelper.RetractEform(new List<PropertyWorker>()
+                            {
+                                propertyWorker
+                            }, true).ConfigureAwait(false);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var propertyWorker in assignments)
+                    {
+                        if (!propertyWorkers.Any(x =>
+                                x.WorkerId == propertyWorker.WorkerId && x.PropertyId == propertyWorker.PropertyId))
+                        {
+                            propertyWorkers.Add(propertyWorker);
+                        }
+                    }
                 }
 
                 await _workOrderHelper.WorkorderFlowDeployEform(propertyWorkers).ConfigureAwait(false);
