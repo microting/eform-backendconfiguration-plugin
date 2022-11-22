@@ -200,15 +200,16 @@ public class WorkOrderHelper
         {
             if (newWorkOrder)
             {
-                var workorderCase = await _backendConfigurationPnDbContext.WorkorderCases
+                var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyWorkerId == propertyWorker.Id)
+                    .Where(x => x.CaseStatusesEnum == CaseStatusesEnum.NewTask)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
-                if (workorderCase != null)
+                if (workOrderCase != null)
                 {
                     try
                     {
-                        await core.CaseDelete(workorderCase.CaseId).ConfigureAwait(false);
+                        await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
@@ -216,8 +217,8 @@ public class WorkOrderHelper
                         // throw;
                     }
                     // await core.CaseDelete(workorderCase.CaseId);
-                    workorderCase.UpdatedByUserId = _userService.UserId;
-                    await workorderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    workOrderCase.UpdatedByUserId = _userService.UserId;
+                    await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
             }
@@ -230,22 +231,22 @@ public class WorkOrderHelper
 
                 foreach (var pWorker in pWorkers)
                 {
-                    var workorderCases = await _backendConfigurationPnDbContext.WorkorderCases.Where(x =>
+                    var workOrderCases = await _backendConfigurationPnDbContext.WorkorderCases.Where(x =>
                             x.PropertyWorkerId == pWorker.Id
                             && x.WorkflowState != Constants.WorkflowStates.Removed)
                         .ToListAsync().ConfigureAwait(false);
-                    foreach (var workorderCase in workorderCases)
+                    foreach (var workOrderCase in workOrderCases)
                     {
                         try
                         {
-                            await core.CaseDelete(workorderCase.CaseId).ConfigureAwait(false);
+                            await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
                             Console.WriteLine(e);
                         }
-                        workorderCase.UpdatedByUserId = _userService.UserId;
-                        await workorderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        workOrderCase.UpdatedByUserId = _userService.UserId;
+                        await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 }
             }

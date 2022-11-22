@@ -518,6 +518,19 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            var propertyWorkers = await context.PropertyWorkers
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            foreach (var propertyWorker in propertyWorkers)
+            {
+                if (propertyWorker.TaskManagementEnabled == null)
+                {
+                    propertyWorker.TaskManagementEnabled = true;
+                    await propertyWorker.Update(context);
+                }
+            }
+
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
