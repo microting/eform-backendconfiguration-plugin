@@ -386,6 +386,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             var propertyWorkers = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.TaskManagementEnabled == true || x.TaskManagementEnabled == null)
                 .ToList();
 
             var site = await sdkDbContext.Sites
@@ -603,6 +604,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         var propertyWorkers = await _backendConfigurationPnDbContext.PropertyWorkers
             .Where(x => x.PropertyId == property.Id)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.TaskManagementEnabled == true || x.TaskManagementEnabled == null)
             .ToListAsync();
 
         var eformIdForOngoingTasks = await sdkDbContext.CheckLists

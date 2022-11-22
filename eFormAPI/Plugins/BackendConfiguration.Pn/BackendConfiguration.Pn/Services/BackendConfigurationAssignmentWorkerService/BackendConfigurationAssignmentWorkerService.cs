@@ -416,7 +416,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
         }
 
-
         public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel)
         {
             try
