@@ -6,4 +6,5 @@ export class WorkOrderCaseUpdateModel {
   description: string;
   id: number;
   priority: number;
+  caseStatusEnum: number;
 }
