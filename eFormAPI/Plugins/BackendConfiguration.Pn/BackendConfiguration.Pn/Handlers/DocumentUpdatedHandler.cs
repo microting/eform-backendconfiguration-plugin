@@ -104,6 +104,8 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, sdkFolder.Id);
 
                 documentSite.SdkCaseId = (int) caseId!;
+                document.IsLocked = false;
+                await document.Update(documentDbContext);
                 await documentSite.Update(documentDbContext);
             }
         }

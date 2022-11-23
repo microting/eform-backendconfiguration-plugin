@@ -53,7 +53,7 @@
 <ng-template #complianceTpl let-row let-i=index>
   <button
     mat-icon-button
-    [color]="getColorBadge(row.complianceStatus)"
+    [style]="getColorBadge(row.complianceStatus)"
     id="showCompliancesBtn-{{i}}"
     matTooltip="{{ 'View compliance' | translate }}"
     [routerLink]="['../compliances/', row.id]"
