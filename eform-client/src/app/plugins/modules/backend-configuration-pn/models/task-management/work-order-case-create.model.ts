@@ -4,5 +4,4 @@ export class WorkOrderCaseCreateModel {
   assignedSiteId: number;
   files: File[];
   description: string;
-  caseStatusEnum: number;
 }

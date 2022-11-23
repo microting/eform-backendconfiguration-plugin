@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
-
 namespace BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 
 using System.Collections.Generic;
@@ -43,8 +41,4 @@ public class WorkOrderCaseReadModel
     public string Description { get; set; }
 
     public int? Priority { get; set; }
-
-    public string Status { get; set; }
-
-    public CaseStatusesEnum CaseStatusEnum { get; set; }
 }
