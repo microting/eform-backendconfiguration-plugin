@@ -96,11 +96,9 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.folders = data.model;
-          debugger;
           this.documentsStateService.getDocuments().subscribe((data) => {
             if (data && data.success && data.model) {
               this.documents = data.model;
-              debugger;
             }
           });
           //       this.workOrderCases = data.model;
