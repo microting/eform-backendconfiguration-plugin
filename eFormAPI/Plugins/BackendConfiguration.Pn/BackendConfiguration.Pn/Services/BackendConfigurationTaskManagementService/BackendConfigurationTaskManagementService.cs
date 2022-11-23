@@ -529,7 +529,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 eformIdForOngoingTasks,
                 (int)property.FolderIdForOngoingTasks!,
                 description,
-                CaseStatusesEnum.Ongoing,
+                createModel.CaseStatusEnum,
                 newWorkOrderCase.Id,
                 createModel.Description,
                 deviceUsersGroupMicrotingUid,
@@ -568,44 +568,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         workOrderCase.Priority = updateModel.Priority.ToString();
 
         var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == updateModel.AssignedSiteId).ConfigureAwait(false);
-        // switch (statusFieldValue.Value)
-        // {
-        //     case "1":
-        //         textStatus = Translations.Ongoing;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Ongoing;
-        //         break;
-        //     case "2":
-        //         textStatus = Translations.Completed;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Completed;
-        //         break;
-        //     case "3":
-        //         textStatus = Translations.Ordered;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Ordered;
-        //         break;
-        //     case "4":
-        //         textStatus = Translations.Awaiting;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Awaiting;
-        //         break;
-        // }
-        // var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == dbCase.SiteId);
         var updatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false);
 
         var picturesOfTasks = new List<string>();
-        // foreach (var pictureFieldValue in pictureFieldValues)
-        // {
-        //     if (pictureFieldValue.UploadedDataId != null)
-        //     {
-        //         var uploadedData = await sdkDbContext.UploadedDatas.FirstAsync(x => x.Id == pictureFieldValue.UploadedDataId);
-        //         var workOrderCaseImage = new WorkorderCaseImage
-        //         {
-        //             WorkorderCaseId = workOrderCase.Id,
-        //             UploadedDataId = (int) pictureFieldValue.UploadedDataId!
-        //         };
-        //
-        //         picturesOfTasks.Add($"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}");
-        //         await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
-        //     }
-        // }
         var parentCaseImages = await _backendConfigurationPnDbContext.WorkorderCaseImages.Where(x => x.WorkorderCaseId == workOrderCase.ParentWorkorderCaseId).ToListAsync();
 
         foreach (var workorderCaseImage in parentCaseImages)

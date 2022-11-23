@@ -6,4 +6,5 @@ export class WorkOrderCaseForReadModel {
   pictureNames: string[];
   description: string;
   priority: string;
+  caseStatusEnum: number;
 }

@@ -294,10 +294,14 @@ export class BackendConfigurationTaskManagementPage extends Page {
     } else {
       await (await this.taskManagementCreateShowSaveBtn()).click();
     }
+    const spinnerAnimation = await $('#spinner-animation');
+    await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.createNewTaskBtn()).waitForClickable({ timeout: 90000 });
+    await browser.pause(500);
   }
 
   public async changeFilters(filerts: TaskManagementFilters) {
+    const spinnerAnimation = await $('#spinner-animation');
     if(filerts) {
       if(filerts.propertyName){
         await selectValueInNgSelector(await this.propertyIdFilter(), filerts.propertyName);
@@ -325,7 +329,9 @@ export class BackendConfigurationTaskManagementPage extends Page {
           filerts.date.dayTo);
       }
       await (await this.showReportBtn()).click();
+      await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
       await (await this.createNewTaskBtn()).waitForClickable({ timeout: 40000});
+      await browser.pause(500);
     }
   }
 }
