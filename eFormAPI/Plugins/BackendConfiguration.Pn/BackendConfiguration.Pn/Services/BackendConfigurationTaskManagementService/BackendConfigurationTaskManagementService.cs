@@ -197,7 +197,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     x.CaseId,
                     x.ParentWorkorderCaseId,
                     x.PropertyWorker.PropertyId,
-                    x.Priority
+                    x.Priority,
+                    x.CaseStatusesEnum
                 }).FirstOrDefaultAsync().ConfigureAwait(false);
             if (task == null)
             {
@@ -235,7 +236,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 Id = task.Id,
                 PictureNames = fileNames,
                 PropertyId = task.PropertyId,
-                Priority = string.IsNullOrEmpty(task.Priority) ? 3 : int.Parse(task.Priority)
+                Priority = string.IsNullOrEmpty(task.Priority) ? 3 : int.Parse(task.Priority),
+                Status = task.CaseStatusesEnum.ToString(),
+                CaseStatusEnum = task.CaseStatusesEnum
 
             };
             return new OperationDataResult<WorkOrderCaseReadModel>(true, taskForReturn);
@@ -402,7 +405,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 SelectedAreaName = createModel.AreaName,
                 CreatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false),
                 CreatedByText = "",
-                CaseStatusesEnum = CaseStatusesEnum.Ongoing,
+                CaseStatusesEnum = createModel.CaseStatusEnum,
                 Description = createModel.Description,
                 CaseInitiated = DateTime.UtcNow,
                 LeadingCase = true,
