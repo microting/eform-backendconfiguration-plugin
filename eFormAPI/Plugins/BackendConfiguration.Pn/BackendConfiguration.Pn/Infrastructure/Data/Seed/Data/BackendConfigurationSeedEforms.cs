@@ -541,24 +541,26 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("24.01.03.03 Forsuring - Dokumenter", headers);
 			theList.Add(item);
-			headers = new List<string>
-			{
-				"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.01Logbog v. driftstop"
-			};
-			item = new KeyValuePair<string, List<string>>("24.01.04.01 Ugentlig udslusning af gylle - Logbog", headers);
-			theList.Add(item);
+			// Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+			// headers = new List<string>
+			// {
+			// 	"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.01Logbog v. driftstop"
+			// };
+			// item = new KeyValuePair<string, List<string>>("24.01.04.01 Ugentlig udslusning af gylle - Logbog", headers);
+			// theList.Add(item);
 			headers = new List<string>
 			{
 				"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.02Udslusning (datalogger, biogas afhentningsrapport)"
 			};
-			item = new KeyValuePair<string, List<string>>("24.01.04.02 Ugentlig udslusning af gylle - Drift", headers);
+			item = new KeyValuePair<string, List<string>>("24.01.04.02 Ugentlig udslusning af gylle - Drift v2", headers);
 			theList.Add(item);
-			headers = new List<string>
-			{
-				"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.03Dokumenter (reparationer, faktura, service m.m.)"
-			};
-			item = new KeyValuePair<string, List<string>>("24.01.04.03 Ugentlig udslusning af gylle - Dokumenter", headers);
-			theList.Add(item);
+			// Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+			// headers = new List<string>
+			// {
+			// 	"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.03Dokumenter (reparationer, faktura, service m.m.)"
+			// };
+			// item = new KeyValuePair<string, List<string>>("24.01.04.03 Ugentlig udslusning af gylle - Dokumenter", headers);
+			// theList.Add(item);
 			headers = new List<string>
 			{
 				"24.01Logbøger miljøteknologier","24.01.05Punktudsugning i slagtesvinestalde","24.01.05.01Logbog v. driftsstop"
