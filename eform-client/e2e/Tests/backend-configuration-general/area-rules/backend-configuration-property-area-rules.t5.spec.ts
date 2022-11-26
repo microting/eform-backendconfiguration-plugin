@@ -56,7 +56,7 @@ describe('Backend Configuration Area Rules Type5', function () {
     const oldAreRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '01. Elforbrug',
+      eform: '1.2 Aflæsning EL',
       dayOfWeek: 'Søndag',
     };
     await oldAreRule.edit(areaRuleForUpdate, true);
@@ -72,7 +72,7 @@ describe('Backend Configuration Area Rules Type5', function () {
     let areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '01. Elforbrug',
+      eform: '1.2 Aflæsning EL',
       dayOfWeek: 'Søndag',
     };
     await areRule.edit(areaRuleForUpdate);
