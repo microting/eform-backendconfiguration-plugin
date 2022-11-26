@@ -11,11 +11,10 @@ exports.config = {
     // directory is where your package.json resides, so `wdio` will be called from there.
     //
     specs: [
-      'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.create.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.edit.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.delete.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.areas.spec.ts',
+      'e2e/Tests/items-planning-settings/application-settings.plugins-page.spec.ts',
+      'e2e/Tests/items-planning-general/items-planning.add.spec.ts',
+      'e2e/Tests/items-planning-general/items-planning.edit.spec.ts',
+      'e2e/Tests/items-planning-general/items-planning.delete.spec.ts',
     ],
     suites: {
         settings: [

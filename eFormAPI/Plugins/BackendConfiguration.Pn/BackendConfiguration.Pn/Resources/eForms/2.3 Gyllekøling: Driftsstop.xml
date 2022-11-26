@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142786m</Id>
+  <Repeated>0</Repeated>
+  <Label>2.3 Gyllekøling: Driftsstop|2.3 Slurry cooling: Operation stop|2.3 Schlammkühlung: Betriebsstopp</Label>
+  <StartDate>2022-11-15</StartDate>
+  <EndDate>2032-11-15</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142786m</Id>
+      <Label>2.3 Gyllekøling: Driftsstop|2.3 Slurry cooling: Operation stop|2.3 Schlammkühlung: Betriebsstopp</Label>
+      <Description><![CDATA[<i>Logbog til driftsstop</i>|<i>Logbook for downtime</i>|<i>Logbuch für Ausfallzeiten</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="Date">
+          <Id>377097</Id>
+          <Label>Startdato driftsstop|Start date shutdown|Startdatum Abschaltung</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <MinValue>2022-11-15</MinValue>
+          <MaxValue>2032-11-15</MaxValue>
+          <Value/>
+          <Mandatory>false</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Date">
+          <Id>377098</Id>
+          <Label>Slutdato driftsstop|End date shutdown|Enddatum Abschaltung</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2022-11-15</MinValue>
+          <MaxValue>2032-11-15</MaxValue>
+          <Value/>
+          <Mandatory>false</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Number">
+          <Id>377099</Id>
+          <Label>Driftsstop timer|Downtime hours|Ausfallzeiten</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <MinValue/>
+          <MaxValue/>
+          <Value/>
+          <DecimalCount>2</DecimalCount>
+          <UnitName/>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377100</Id>
+          <Label>Årsag til driftsstop|Reason for downtime|Grund für Ausfallzeiten</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377094</Id>
+          <Label>Billeder|Pcitures|Bilder</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377095</Id>
+          <Label>Kommentar|Comment|Kommentar</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>377096</Id>
+          <Label>Indsend registrering|Submit registration|Anmeldung absenden</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>6</DisplayOrder>
+          <Value>INDSEND</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

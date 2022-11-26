@@ -316,6 +316,25 @@ namespace BackendConfiguration.Pn
                 await areaTranslation.Update(context).ConfigureAwait(false);
             }
 
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Fokusområder Miljøledelse");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Logbøger Miljøledelse";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Focus areas Environmental management");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Log books Environmental management";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Schwerpunkte Umweltverwaltung");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Logbücher Umweltmanagement";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+
             var cltranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
             var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == cltranslation.CheckListId);
 
