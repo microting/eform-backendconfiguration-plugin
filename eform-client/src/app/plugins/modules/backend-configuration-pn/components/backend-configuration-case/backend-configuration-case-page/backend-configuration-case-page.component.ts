@@ -35,7 +35,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   eFormId: number;
   dateFrom: string;
   dateTo: string;
-  currenteForm: TemplateDto = new TemplateDto();
+  currentTemplate: TemplateDto = new TemplateDto();
   replyElement: ReplyElementDto = new ReplyElementDto();
   reverseRoute: string;
   requestModels: Array<CaseEditRequest> = [];
@@ -76,7 +76,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       return;
     }
     this.casesService
-      .getById(this.id, this.currenteForm.id)
+      .getById(this.id, this.currentTemplate.id)
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = operation.model;
@@ -89,7 +89,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
     if (this.eFormId) {
       this.eFormService.getSingle(this.eFormId).subscribe((operation) => {
         if (operation && operation.success) {
-          this.currenteForm = operation.model;
+          this.currentTemplate = operation.model;
           this.loadCase();
         }
       });
@@ -112,7 +112,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       this.replyRequest.doneAt = this.replyElement.doneAt;
     }
     this.backendConfigurationPnCasesService
-      .updateCase(this.replyRequest, this.currenteForm.id)
+      .updateCase(this.replyRequest, this.currentTemplate.id)
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();
@@ -140,7 +140,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       return;
     }
     this.casesService
-      .getById(this.id, this.currenteForm.id)
+      .getById(this.id, this.currentTemplate.id)
       .subscribe((operation) => {
         if (operation && operation.success) {
           const fn = (pathForLens: Array<number | string>) => {
