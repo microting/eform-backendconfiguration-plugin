@@ -169,7 +169,6 @@
       <None Remove="Resources\eForms\24.01.04.01 Ugentlig udslusning af gylle - Logbog.xml" />
       <EmbeddedResource Include="Resources\eForms\24.01.04.01 Ugentlig udslusning af gylle - Logbog.xml" />
       <None Remove="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift.xml" />
       <None Remove="Resources\eForms\24.01.04.03 Ugentlig udslusning af gylle - Dokumenter.xml" />
       <EmbeddedResource Include="Resources\eForms\24.01.04.03 Ugentlig udslusning af gylle - Dokumenter.xml" />
       <None Remove="Resources\eForms\24.01.05.01 Punktudsugning i slagtesvinestalde - Logbog.xml" />
@@ -295,6 +294,10 @@
       </EmbeddedResource>
       <None Remove="Resources\eForms\2.6 Foderindlægssedler.xml" />
       <EmbeddedResource Include="Resources\eForms\2.6 Foderindlægssedler.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift v2.xml" />
+      <EmbeddedResource Include="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift v2.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
     </ItemGroup>

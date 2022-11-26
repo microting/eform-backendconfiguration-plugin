@@ -1958,29 +1958,30 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 1,
                 }
             },
+            // Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+            // new AreaRule
+            // {
+            //     EformName = "24.01.04.01 Ugentlig udslusning af gylle - Logbog",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "24.01.04.01 Ugentlig udslusning af gylle - Logbog" },
+            //         new() { LanguageId = 2, Name = "24.01.04.01 Weekly slurry removal of manure - Logbook" },
+            //         new() { LanguageId = 3, Name = "24.01.04.01 Wöchentliche Entmistung der Gülle - Logbuch" }
+            //     },
+            //     AreaId = 27,
+            //     IsDefault = true,
+            //     FolderName = "24.01.04 Ugentlig udslusning af gylle",
+            //     AreaRuleInitialField = new AreaRuleInitialField
+            //     {
+            //         ComplianceEnabled = false,
+            //         Notifications = false,
+            //         RepeatEvery = 1,
+            //         RepeatType = 1,
+            //     }
+            // },
             new AreaRule
             {
-                EformName = "24.01.04.01 Ugentlig udslusning af gylle - Logbog",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "24.01.04.01 Ugentlig udslusning af gylle - Logbog" },
-                    new() { LanguageId = 2, Name = "24.01.04.01 Weekly slurry removal of manure - Logbook" },
-                    new() { LanguageId = 3, Name = "24.01.04.01 Wöchentliche Entmistung der Gülle - Logbuch" }
-                },
-                AreaId = 27,
-                IsDefault = true,
-                FolderName = "24.01.04 Ugentlig udslusning af gylle",
-                AreaRuleInitialField = new AreaRuleInitialField
-                {
-                    ComplianceEnabled = false,
-                    Notifications = false,
-                    RepeatEvery = 1,
-                    RepeatType = 1,
-                }
-            },
-            new AreaRule
-            {
-                EformName = "24.01.04.02 Ugentlig udslusning af gylle - Drift",
+                EformName = "24.01.04.02 Ugentlig udslusning af gylle - Drift v2",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new() { LanguageId = 1, Name = "24.01.04.02 Ugentlig udslusning af gylle - Drift" },
@@ -1996,26 +1997,27 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                 }
             },
-            new AreaRule
-            {
-                EformName = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter" },
-                    new() { LanguageId = 2, Name = "24.01.04.03 Weekly slurry disposal - Documents" },
-                    new() { LanguageId = 3, Name = "24.01.04.03 Wöchentliche Gülleentsorgung - Dokumente" }
-                },
-                AreaId = 27,
-                IsDefault = true,
-                FolderName = "24.01.04 Ugentlig udslusning af gylle",
-                AreaRuleInitialField = new AreaRuleInitialField
-                {
-                    ComplianceEnabled = false,
-                    Notifications = false,
-                    RepeatEvery = 1,
-                    RepeatType = 1,
-                }
-            },
+            // Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+            // new AreaRule
+            // {
+            //     EformName = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter" },
+            //         new() { LanguageId = 2, Name = "24.01.04.03 Weekly slurry disposal - Documents" },
+            //         new() { LanguageId = 3, Name = "24.01.04.03 Wöchentliche Gülleentsorgung - Dokumente" }
+            //     },
+            //     AreaId = 27,
+            //     IsDefault = true,
+            //     FolderName = "24.01.04 Ugentlig udslusning af gylle",
+            //     AreaRuleInitialField = new AreaRuleInitialField
+            //     {
+            //         ComplianceEnabled = false,
+            //         Notifications = false,
+            //         RepeatEvery = 1,
+            //         RepeatType = 1,
+            //     }
+            // },
             new AreaRule
             {
                 EformName = "24.01.05.01 Punktudsugning i slagtesvinestalde - Logbog",
