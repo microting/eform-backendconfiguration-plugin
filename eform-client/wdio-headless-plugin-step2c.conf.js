@@ -12,12 +12,10 @@ exports.config = {
     // directory is where your package.json resides, so `wdio` will be called from there.
     //
     specs: [
-      'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t2.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t3.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t4.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t5.spec.ts',
+      'e2e/Tests/items-planning-settings/application-settings.plugins-page.spec.ts',
+      'e2e/Tests/items-planning-general/items-planning.pairing.spec.ts',
+      'e2e/Tests/items-planning-general/items-planning.tags.spec.ts',
+      // 'e2e/Tests/items-planning-general/items-planning.import.spec.ts' // Disabled until async is implemented completely.
     ],
     suites: {
         settings: [
