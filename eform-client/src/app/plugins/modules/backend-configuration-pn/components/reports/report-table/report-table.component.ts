@@ -56,7 +56,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           tooltip: this.translateService.stream('View images'),
           type: 'icon',
           click: (record: ReportEformItemModel) => this.onClickViewPicture(record.microtingSdkCaseId),
-          color: 'accent',
           icon: 'image',
           iif: (record: ReportEformItemModel) => record.imagesCount !== 0,
         },
@@ -64,7 +63,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           tooltip: this.translateService.stream('Edit'),
           type: 'icon',
           click: (record: ReportEformItemModel) => this.onClickEditCase(record.microtingSdkCaseId, record.eFormId, record.id),
-          color: 'accent',
           icon: 'edit',
         },
         {

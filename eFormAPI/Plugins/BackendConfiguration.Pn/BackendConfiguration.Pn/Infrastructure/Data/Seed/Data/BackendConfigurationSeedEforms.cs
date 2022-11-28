@@ -31,29 +31,29 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 		public static List<KeyValuePair<string, List<string>>> GetForms()
 		{
 			var theList = new List<KeyValuePair<string, List<string>>>();
+			// var headers = new List<string>
+			// {
+			// 	"01.Aflæsning Miljøledelse","01.01Elforbrug"
+			// };
+			// var item = new KeyValuePair<string, List<string>>("01. Elforbrug", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"", ""
+			// };
+			// item = new KeyValuePair<string, List<string>>("01. Miljøledelse_skabelon", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"01.Aflæsning Miljøledelse","01.02Vandforbrug"
+			// };
+			// item = new KeyValuePair<string, List<string>>("01. Vandforbrug", headers);
+			// theList.Add(item);
 			var headers = new List<string>
-			{
-				"01.Aflæsning Miljøledelse","01.01Elforbrug"
-			};
-			var item = new KeyValuePair<string, List<string>>("01. Elforbrug", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"", ""
-			};
-			item = new KeyValuePair<string, List<string>>("01. Miljøledelse_skabelon", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"01.Aflæsning Miljøledelse","01.02Vandforbrug"
-			};
-			item = new KeyValuePair<string, List<string>>("01. Vandforbrug", headers);
-			theList.Add(item);
-			headers = new List<string>
 			{
 				"02.Beredskab","02.01Brandudstyr"
 			};
-			item = new KeyValuePair<string, List<string>>("02. Brandudstyr", headers);
+			var item = new KeyValuePair<string, List<string>>("02. Brandudstyr", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
@@ -277,198 +277,198 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("22. Sigtetest", headers);
 			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.00Aflæsninger",""
-			};
-			item = new KeyValuePair<string, List<string>>("23.00.01 Aflæsning vand", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.00Aflæsninger",""
-			};
-			item = new KeyValuePair<string, List<string>>("23.00.02 Aflæsning el", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.02Gyllekøling"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.02 Gyllekøling", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.03Forsuring"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.03 Forsuring", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.04Ugentlig udslusning af gylle"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.04 Ugentlig udslusning af gylle", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.05Punktudsugning i slagtesvinestalde"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.05 Punktudsugning i slagtesvinestalde", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.06Varmevekslere til traditionelle slagtekyllingestalde"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.06 Varmevekslere til traditionelle slagtekyllingestalde", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.07Gødningsbånd til æglæggende høns"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.07 Gødningsbånd til æglæggende høns", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.08Biologisk luftrensning"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.08 Biologisk luftrensning", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.09Kemisk luftrensning"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.09 Kemisk luftrensning", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.01Årlig visuel kontrol af gyllebeholdere"
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.01 Årlig visuel kontrol af gyllebeholdere", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.02Gyllepumper mm."
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.02 Gyllepumper mm", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.03Forsyningssystemer til vand og foder"
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.03 Forsyningssystemer til vand og foder", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.04Varme-, køle- og ventilationssystemer"
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.04 Varme-, køle- og ventilationssystemer", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.05Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)"
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.06Luftrensningssystemer"
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.06 Luftrensningssystemer", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.07Udstyr til drikkevand"
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.07 Udstyr til drikkevand", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.08Maskiner til udbringning af husdyrgødning samt doseringsmekanisme"
-			};
-			item = new KeyValuePair<string, List<string>>("23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.03Dokumentation miljøledelse","23.03.01Miljøledelse"
-			};
-			item = new KeyValuePair<string, List<string>>("23.03.01 Miljøledelse", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.01Fasefodring"
-			};
-			item = new KeyValuePair<string, List<string>>("23.04.01 Fasefodring", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.02Reduceret indhold af råprotein"
-			};
-			item = new KeyValuePair<string, List<string>>("23.04.02 Reduceret indhold af råprotein", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.03Tilsætningsstoffer i foder (Fytase eller andet)"
-			};
-			item = new KeyValuePair<string, List<string>>("23.04.03 Tilsætningsstoffer i foder - fytase eller andet", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.01Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.01 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.02Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.02 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.03Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.03 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.04Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.04 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.05Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.05 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.06Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.06 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.07Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.07 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.08Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.08 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.09Manglende bilag"
-			};
-			item = new KeyValuePair<string, List<string>>("23.05.09 Manglende bilag", headers);
-			theList.Add(item);
-			headers = new List<string>
-			{
-				"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.01Fast overdækning gyllebeholder"
-			};
-			item = new KeyValuePair<string, List<string>>("23.01.01 Fast overdækning gyllebeholder", headers);
-			theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.00Aflæsninger",""
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.00.01 Aflæsning vand", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.00Aflæsninger",""
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.00.02 Aflæsning el", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.02Gyllekøling"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.02 Gyllekøling", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.03Forsuring"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.03 Forsuring", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.04Ugentlig udslusning af gylle"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.04 Ugentlig udslusning af gylle", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.05Punktudsugning i slagtesvinestalde"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.05 Punktudsugning i slagtesvinestalde", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.06Varmevekslere til traditionelle slagtekyllingestalde"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.06 Varmevekslere til traditionelle slagtekyllingestalde", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.07Gødningsbånd til æglæggende høns"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.07 Gødningsbånd til æglæggende høns", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.08Biologisk luftrensning"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.08 Biologisk luftrensning", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.09Kemisk luftrensning"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.09 Kemisk luftrensning", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.01Årlig visuel kontrol af gyllebeholdere"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.01 Årlig visuel kontrol af gyllebeholdere", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.02Gyllepumper mm."
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.02 Gyllepumper mm", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.03Forsyningssystemer til vand og foder"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.03 Forsyningssystemer til vand og foder", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.04Varme-, køle- og ventilationssystemer"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.04 Varme-, køle- og ventilationssystemer", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.05Siloer og materiel i transportudstyr i forbindelse med foderanlæg (Rør, snegle mv.)"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.06Luftrensningssystemer"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.06 Luftrensningssystemer", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.07Udstyr til drikkevand"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.07 Udstyr til drikkevand", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.02Dokumentation for gennemførte kontroller","23.02.08Maskiner til udbringning af husdyrgødning samt doseringsmekanisme"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.03Dokumentation miljøledelse","23.03.01Miljøledelse"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.03.01 Miljøledelse", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.01Fasefodring"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.04.01 Fasefodring", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.02Reduceret indhold af råprotein"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.04.02 Reduceret indhold af råprotein", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.04Overholdelse fodringskrav","23.04.03Tilsætningsstoffer i foder (Fytase eller andet)"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.04.03 Tilsætningsstoffer i foder - fytase eller andet", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.01Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.01 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.02Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.02 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.03Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.03 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.04Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.04 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.05Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.05 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.06Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.06 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.07Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.07 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.08Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.08 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.05Manglende bilag","23.05.09Manglende bilag"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.05.09 Manglende bilag", headers);
+			// theList.Add(item);
+			// headers = new List<string>
+			// {
+			// 	"23.Indberetning IE Husdyrbrug","23.01Logbøger for eventuel miljøteknologier","23.01.01Fast overdækning gyllebeholder"
+			// };
+			// item = new KeyValuePair<string, List<string>>("23.01.01 Fast overdækning gyllebeholder", headers);
+			// theList.Add(item);
 			headers = new List<string>
 			{
 				"","",""
@@ -541,24 +541,26 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("24.01.03.03 Forsuring - Dokumenter", headers);
 			theList.Add(item);
-			headers = new List<string>
-			{
-				"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.01Logbog v. driftstop"
-			};
-			item = new KeyValuePair<string, List<string>>("24.01.04.01 Ugentlig udslusning af gylle - Logbog", headers);
-			theList.Add(item);
+			// Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+			// headers = new List<string>
+			// {
+			// 	"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.01Logbog v. driftstop"
+			// };
+			// item = new KeyValuePair<string, List<string>>("24.01.04.01 Ugentlig udslusning af gylle - Logbog", headers);
+			// theList.Add(item);
 			headers = new List<string>
 			{
 				"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.02Udslusning (datalogger, biogas afhentningsrapport)"
 			};
-			item = new KeyValuePair<string, List<string>>("24.01.04.02 Ugentlig udslusning af gylle - Drift", headers);
+			item = new KeyValuePair<string, List<string>>("24.01.04.02 Ugentlig udslusning af gylle - Drift v2", headers);
 			theList.Add(item);
-			headers = new List<string>
-			{
-				"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.03Dokumenter (reparationer, faktura, service m.m.)"
-			};
-			item = new KeyValuePair<string, List<string>>("24.01.04.03 Ugentlig udslusning af gylle - Dokumenter", headers);
-			theList.Add(item);
+			// Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+			// headers = new List<string>
+			// {
+			// 	"24.01Logbøger miljøteknologier","24.01.04Ugentlig udslusning af gylle","24.01.04.03Dokumenter (reparationer, faktura, service m.m.)"
+			// };
+			// item = new KeyValuePair<string, List<string>>("24.01.04.03 Ugentlig udslusning af gylle - Dokumenter", headers);
+			// theList.Add(item);
 			headers = new List<string>
 			{
 				"24.01Logbøger miljøteknologier","24.01.05Punktudsugning i slagtesvinestalde","24.01.05.01Logbog v. driftsstop"
@@ -816,6 +818,54 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 				"00.Morgenrundtur","",""
 			};
 			item = new KeyValuePair<string, List<string>>("00. Morgenrundtur", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","1.1Aflæsning vand",""
+			};
+			item = new KeyValuePair<string, List<string>>("1.1 Aflæsning vand", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","1.2Aflæsning el",""
+			};
+			item = new KeyValuePair<string, List<string>>("1.2 Aflæsning el", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","2.1Udslusning af gylle",""
+			};
+			item = new KeyValuePair<string, List<string>>("2.1 Udslusning af gylle", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","2.2Gyllekøling: Timer og MWh",""
+			};
+			item = new KeyValuePair<string, List<string>>("2.2 Gyllekøling: Timer og MWh", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","2.3Gyllekøling: Driftsstop",""
+			};
+			item = new KeyValuePair<string, List<string>>("2.3 Gyllekøling: Driftsstop", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","2.4Forsuring: pH-værdi",""
+			};
+			item = new KeyValuePair<string, List<string>>("2.4 Forsuring: pH-værdi", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","2.5Forsuring: Driftsstop",""
+			};
+			item = new KeyValuePair<string, List<string>>("2.5 Forsuring: Driftsstop", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","2.6Foderindlægssedler",""
+			};
+			item = new KeyValuePair<string, List<string>>("2.6 Foderindlægssedler", headers);
 			theList.Add(item);
 
 			return theList;

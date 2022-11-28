@@ -218,4 +218,9 @@ export const frFR = {
   'High': 'Haut',
   'Medium': 'Moyen',
   'Low': 'Bas',
+  'Edit task': 'Modifier la tâche',
+  'Edit document': 'Modifier le document',
+  'Delete document': 'Supprimer le document',
+  'Edit folder': 'Modifier le dossier',
+  'Selected language': 'Langue sélectionnée',
 };

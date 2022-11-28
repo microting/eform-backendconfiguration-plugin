@@ -69,12 +69,12 @@ export class PropertiesTableComponent implements OnInit {
   }
 
 
-  getColorBadge(compliance: PropertyCompliancesColorBadgesEnum): ThemePalette {
+  getColorBadge(compliance: PropertyCompliancesColorBadgesEnum): string {
     switch (compliance) {
       case PropertyCompliancesColorBadgesEnum.Success:
-        return 'primary';
+        return 'color: green';
       case PropertyCompliancesColorBadgesEnum.Danger:
-        return 'accent';
+        return 'color: red;';
       case PropertyCompliancesColorBadgesEnum.Warning:
         return 'warn';
       default:

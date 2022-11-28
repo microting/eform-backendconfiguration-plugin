@@ -53,7 +53,7 @@
 <ng-template #complianceTpl let-row let-i=index>
   <button
     mat-icon-button
-    [color]="getColorBadge(row.complianceStatus)"
+    [style]="getColorBadge(row.complianceStatus)"
     id="showCompliancesBtn-{{i}}"
     matTooltip="{{ 'View compliance' | translate }}"
     [routerLink]="['../compliances/', row.id]"
@@ -66,7 +66,6 @@
 <ng-template #actionsTpl let-row let-i=index>
   <button
     mat-icon-button
-    color="accent"
     id="showPropertyAreasBtn-{{i}}"
     matTooltip="{{ 'View areas' | translate }}"
     [routerLink]="'../property-areas/' + row.id"
@@ -74,20 +73,18 @@
   >
     <mat-icon>home_repair_service</mat-icon>
   </button>
-  <button
-    color="accent"
-    *ngIf="authStateService.isAdmin"
-    mat-icon-button
-    id="docxReportBtn-{{i}}"
-    matTooltip="{{ 'Select report' | translate }}"
-    (click)="onShowDocxReportModal(row.id)"
-  >
-    <mat-icon [svgIcon]="'file-word'"></mat-icon>
-  </button>
+<!--  <button-->
+<!--    *ngIf="authStateService.isAdmin"-->
+<!--    mat-icon-button-->
+<!--    id="docxReportBtn-{{i}}"-->
+<!--    matTooltip="{{ 'Select report' | translate }}"-->
+<!--    (click)="onShowDocxReportModal(row.id)"-->
+<!--  >-->
+<!--    <mat-icon [svgIcon]="'file-word'"></mat-icon>-->
+<!--  </button>-->
   <button
     *ngIf="row.workorderEnable"
     mat-icon-button
-    color="accent"
     id="updateEntityList-{{i}}"
     (click)="onShowEditEntityListModal(row)"
     matTooltip="{{ 'Edit list of areas for workorder' | translate }}"

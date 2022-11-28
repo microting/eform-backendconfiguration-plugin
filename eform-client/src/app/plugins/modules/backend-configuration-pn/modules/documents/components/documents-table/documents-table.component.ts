@@ -33,10 +33,10 @@ export class DocumentsTableComponent implements OnInit {
       right: '0px',
       buttons: [
         {
-          color: 'accent',
           type: 'icon',
           icon: 'edit',
           tooltip: this.translateService.stream('Edit document'),
+          iif: (document: DocumentModel) => document.isLocked === false,
           click: (document: DocumentModel) => this.onShowEditDocumentModal(document),
           class: 'editDocumentBtn',
         },
@@ -45,6 +45,7 @@ export class DocumentsTableComponent implements OnInit {
           type: 'icon',
           icon: 'delete',
           tooltip: this.translateService.stream('Delete document'),
+          iif: (document: DocumentModel) => document.isLocked === false,
           click: (document: DocumentModel) => this.onOpenDeleteModal(document),
           class: 'deleteDocumentBtn',
         },

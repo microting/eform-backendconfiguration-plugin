@@ -42,6 +42,15 @@
     [(ngModel)]="selectedDeviceUser.timeRegistrationEnabled">
     {{ "Timeregistration enabled" | translate }}
   </mat-slide-toggle>
+  <mat-slide-toggle
+    *ngIf="authStateService.checkClaim('task_management_enable')"
+    color="primary"
+    class="mb-2"
+    id="taskManagementEnabledToggle"
+    [checked]="selectedDeviceUser.taskManagementEnabled"
+    [(ngModel)]="selectedDeviceUser.taskManagementEnabled">
+    {{ "Task management enabled" | translate }}
+  </mat-slide-toggle>
 
 <!--  <mtx-grid-->
 <!--    [data]="availableProperties"-->
@@ -54,37 +63,45 @@
 <!--    (rowSelectionChange)="changeArray($event)"-->
 <!--  >-->
 <!--  </mtx-grid>-->
-  <div class="table-responsive">
-    <table class="table table-xs table-bordered text-center z-depth-1">
-      <thead>
-      <tr>
-        <th>ID</th>
-        <th>{{ 'Property name' | translate }}</th>
-        <th>{{ 'Select' | translate }}</th>
-      </tr>
-      </thead>
-      <tbody id="pairingModalTableBody">
-      <tr *ngFor="let property of availableProperties; let i = index">
-        <td class="align-middle">{{ property.id }}</td>
-        <td class="align-middle" id="propertyName">{{ property.name }}</td>
-        <td class="align-middle">
-          <div class="mat-checkbox">
-            <mat-checkbox class="mat-checkbox"
-              id="checkboxCreateAssignment{{ i }}"
-              (change)="
-                          addToArray(
-                            $event,
-                            getAssignmentByPropertyId(property.id).propertyId
-                          )
-                        "
-              [checked]="getAssignmentIsCheckedByPropertyId(property.id)"
-            ></mat-checkbox>
-            <label for="checkboxCreateAssignment{{ i }}"></label>
-          </div>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+  <div class="mtx-grid ng-star-inserted">
+    <div class="mtx-grid-main mtx-grid-layout">
+      <div class="mtx-grid-content mtx-grid-layout">
+        <div class="mat-table-container mat-table-with-data">
+          <table class="mat-table cdk-table mat-sort mat-table-striped ng-star-inserted" style="width: 100%">
+            <thead>
+            <tr role="rowgroup" class="mat-header-row cdk-header-row ng-star-inserted" mat-header-row>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id ng-star-inserted mat-table-sticky mat-table-sticky-border-elem-top">ID</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id ng-star-inserted mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Property name' | translate }}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id ng-star-inserted mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Select' | translate }}</th>
+            </tr>
+            </thead>
+            <tbody id="pairingModalTableBody" role="rowgroup">
+              <ng-container *ngFor="let property of availableProperties; let i = index">
+                <tr  class="mat-row cdk-row ng-star-inserted {{i%2 ? 'mat-row-odd' : ''}}">
+                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id ng-star-inserted" >{{ property.id }}</td>
+                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id ng-star-inserted" id="propertyName">{{ property.name }}</td>
+                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id ng-star-inserted" >
+                    <div class="mat-checkbox">
+                      <mat-checkbox class="mat-checkbox"
+                        id="checkboxCreateAssignment{{ i }}"
+                        (change)="
+                                    addToArray(
+                                      $event,
+                                      getAssignmentByPropertyId(property.id).propertyId
+                                    )
+                                  "
+                        [checked]="getAssignmentIsCheckedByPropertyId(property.id)"
+                      ></mat-checkbox>
+                      <label for="checkboxCreateAssignment{{ i }}"></label>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">

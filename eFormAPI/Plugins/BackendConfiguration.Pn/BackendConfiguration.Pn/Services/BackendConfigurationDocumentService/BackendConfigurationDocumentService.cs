@@ -104,6 +104,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     EndDate = x.EndAt,
                     FolderId = x.FolderId,
                     Status = x.Status,
+                    IsLocked = x.IsLocked,
                     DocumentUploadedDatas = x.DocumentUploadedDatas
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => new BackendConfigurationDocumentUploadedData
@@ -177,6 +178,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             EndDate = document.EndAt,
             FolderId = document.FolderId,
             Status = document.Status,
+            IsLocked = document.IsLocked,
             DocumentUploadedDatas = document.DocumentUploadedDatas
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => new BackendConfigurationDocumentUploadedData
@@ -257,6 +259,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         document.EndAt = model.EndDate;
         document.FolderId = model.FolderId;
         document.Status = model.Status;
+        document.IsLocked = document.Status;
         await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 
         foreach (var translation in model.DocumentTranslations)
@@ -391,7 +394,17 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await documentSite.Delete(_caseTemplatePnDbContext);
         }
 
-        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        if (model.DocumentProperties != null)
+        {
+            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        }
+        else
+        {
+            document.IsLocked = false;
+            document.Status = false;
+            await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+        }
+
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentUpdatedSuccessfully"));
@@ -417,7 +430,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             // StartAt = model.StartDate,
             EndAt = model.EndDate,
             FolderId = model.FolderId,
-            Status = model.Status
+            Status = model.Status,
+            IsLocked = model.Status
         };
 
         await document.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -481,9 +495,16 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
                 await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
+
+            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        }
+        else
+        {
+            document.IsLocked = false;
+            document.Status = false;
+            await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentCreatedSuccessfully"));

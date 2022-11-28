@@ -248,6 +248,38 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     }
                 }
 
+                if (areaProperty.AreaId == 1)
+                {
+                    var folderId = _backendConfigurationPnDbContext.AreaRules.First(x => x.Id == areaRules.First().Id).FolderId;
+                    foreach (var areaRule in BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == 1))
+                    {
+                        var eformId = await sdkDbContext.CheckListTranslations
+                            .Where(x => x.Text == areaRule.EformName)
+                            .Select(x => x.CheckListId)
+                            .FirstAsync().ConfigureAwait(false);
+                        var dbAreaRule = await _backendConfigurationPnDbContext.AreaRules
+                            .Where(x => x.PropertyId == areaProperty.PropertyId)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.AreaId == areaRule.AreaId)
+                            .FirstOrDefaultAsync(x => x.EformId == eformId);
+
+                        if (dbAreaRule == null)
+                        {
+                            areaRule.PropertyId = areaProperty.PropertyId;
+                            areaRule.FolderId = folderId;
+                            areaRule.CreatedByUserId = _userService.UserId;
+                            areaRule.UpdatedByUserId = _userService.UserId;
+                            areaRule.ComplianceModifiable = true;
+                            areaRule.NotificationsModifiable = true;
+                            areaRule.EformId = eformId;
+                            await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        }
+                    }
+                }
+
+
+
+
                 return new OperationDataResult<List<AreaRuleSimpleModel>>(true, areaRules);
             }
             catch (Exception ex)

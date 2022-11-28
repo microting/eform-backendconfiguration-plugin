@@ -197,7 +197,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     x.CaseId,
                     x.ParentWorkorderCaseId,
                     x.PropertyWorker.PropertyId,
-                    x.Priority
+                    x.Priority,
+                    x.CaseStatusesEnum
                 }).FirstOrDefaultAsync().ConfigureAwait(false);
             if (task == null)
             {
@@ -235,7 +236,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 Id = task.Id,
                 PictureNames = fileNames,
                 PropertyId = task.PropertyId,
-                Priority = string.IsNullOrEmpty(task.Priority) ? 3 : int.Parse(task.Priority)
+                Priority = string.IsNullOrEmpty(task.Priority) ? 3 : int.Parse(task.Priority),
+                Status = task.CaseStatusesEnum.ToString(),
+                CaseStatusEnum = task.CaseStatusesEnum
 
             };
             return new OperationDataResult<WorkOrderCaseReadModel>(true, taskForReturn);
@@ -384,6 +387,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             var propertyWorkers = property.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.TaskManagementEnabled == true || x.TaskManagementEnabled == null)
                 .ToList();
 
             var site = await sdkDbContext.Sites
@@ -401,7 +405,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 SelectedAreaName = createModel.AreaName,
                 CreatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false),
                 CreatedByText = "",
-                CaseStatusesEnum = CaseStatusesEnum.Ongoing,
+                CaseStatusesEnum = createModel.CaseStatusEnum,
                 Description = createModel.Description,
                 CaseInitiated = DateTime.UtcNow,
                 LeadingCase = true,
@@ -525,7 +529,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 eformIdForOngoingTasks,
                 (int)property.FolderIdForOngoingTasks!,
                 description,
-                CaseStatusesEnum.Ongoing,
+                createModel.CaseStatusEnum,
                 newWorkOrderCase.Id,
                 createModel.Description,
                 deviceUsersGroupMicrotingUid,
@@ -564,44 +568,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         workOrderCase.Priority = updateModel.Priority.ToString();
 
         var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == updateModel.AssignedSiteId).ConfigureAwait(false);
-        // switch (statusFieldValue.Value)
-        // {
-        //     case "1":
-        //         textStatus = Translations.Ongoing;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Ongoing;
-        //         break;
-        //     case "2":
-        //         textStatus = Translations.Completed;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Completed;
-        //         break;
-        //     case "3":
-        //         textStatus = Translations.Ordered;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Ordered;
-        //         break;
-        //     case "4":
-        //         textStatus = Translations.Awaiting;
-        //         workOrderCase.CaseStatusesEnum = CaseStatusesEnum.Awaiting;
-        //         break;
-        // }
-        // var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == dbCase.SiteId);
         var updatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false);
 
         var picturesOfTasks = new List<string>();
-        // foreach (var pictureFieldValue in pictureFieldValues)
-        // {
-        //     if (pictureFieldValue.UploadedDataId != null)
-        //     {
-        //         var uploadedData = await sdkDbContext.UploadedDatas.FirstAsync(x => x.Id == pictureFieldValue.UploadedDataId);
-        //         var workOrderCaseImage = new WorkorderCaseImage
-        //         {
-        //             WorkorderCaseId = workOrderCase.Id,
-        //             UploadedDataId = (int) pictureFieldValue.UploadedDataId!
-        //         };
-        //
-        //         picturesOfTasks.Add($"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}");
-        //         await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
-        //     }
-        // }
         var parentCaseImages = await _backendConfigurationPnDbContext.WorkorderCaseImages.Where(x => x.WorkorderCaseId == workOrderCase.ParentWorkorderCaseId).ToListAsync();
 
         foreach (var workorderCaseImage in parentCaseImages)
@@ -632,6 +601,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         var propertyWorkers = await _backendConfigurationPnDbContext.PropertyWorkers
             .Where(x => x.PropertyId == property.Id)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.TaskManagementEnabled == true || x.TaskManagementEnabled == null)
             .ToListAsync();
 
         var eformIdForOngoingTasks = await sdkDbContext.CheckLists

@@ -216,4 +216,9 @@ export const deDE = {
   'High': 'Hoch',
   'Medium': 'Mittel',
   'Low': 'Niedrig',
+  'Edit task': 'Aufgabe bearbeiten',
+  'Edit document': 'Dokument bearbeiten',
+  'Delete document': 'Dokument löschen',
+  'Edit folder': 'Ordner bearbeiten',
+  'Selected language': 'Ausgewählte Sprache',
 };

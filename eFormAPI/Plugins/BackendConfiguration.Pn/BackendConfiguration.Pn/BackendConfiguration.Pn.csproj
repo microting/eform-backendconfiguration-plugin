@@ -19,11 +19,11 @@
 
     <ItemGroup>
       <None Remove="Resources\eForms\01. Elforbrug.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Elforbrug.xml" />
       <None Remove="Resources\eForms\01. Miljøledelse_skabelon.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Miljøledelse_skabelon.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Miljøledelse_skabelon.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\eForms\01. Vandforbrug.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Vandforbrug.xml" />
       <None Remove="Resources\eForms\02. Brandudstyr.xml" />
       <EmbeddedResource Include="Resources\eForms\02. Brandudstyr.xml" />
       <None Remove="Resources\eForms\02. Førstehjælp.xml" />
@@ -99,68 +99,37 @@
       <None Remove="Resources\eForms\25. Markvandingsforbrug.xml" />
       <EmbeddedResource Include="Resources\eForms\25. Markvandingsforbrug.xml" />
       <None Remove="Resources\eForms\23.01.02 Gyllekøling.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.02 Gyllekøling.xml" />
       <None Remove="Resources\eForms\23.01.03 Forsuring.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.03 Forsuring.xml" />
       <None Remove="Resources\eForms\23.01.04 Ugentlig udslusning af gylle.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.04 Ugentlig udslusning af gylle.xml" />
       <None Remove="Resources\eForms\23.01.05 Punktudsugning i slagtesvinestalde.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.05 Punktudsugning i slagtesvinestalde.xml" />
       <None Remove="Resources\eForms\23.01.06 Varmevekslere til traditionelle slagtekyllingestalde.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.06 Varmevekslere til traditionelle slagtekyllingestalde.xml" />
       <None Remove="Resources\eForms\23.01.07 Gødningsbånd til æglæggende høns.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.07 Gødningsbånd til æglæggende høns.xml" />
       <None Remove="Resources\eForms\23.01.08 Biologisk luftrensning.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.08 Biologisk luftrensning.xml" />
       <None Remove="Resources\eForms\23.01.09 Kemisk luftrensning.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.09 Kemisk luftrensning.xml" />
       <None Remove="Resources\eForms\23.02.01 Årlig visuel kontrol af gyllebeholdere.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.01 Årlig visuel kontrol af gyllebeholdere.xml" />
       <None Remove="Resources\eForms\23.02.02 Gyllepumper mm.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.02 Gyllepumper mm.xml" />
       <None Remove="Resources\eForms\23.02.03 Forsyningssystemer til vand og foder.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.03 Forsyningssystemer til vand og foder.xml" />
       <None Remove="Resources\eForms\23.02.04 Varme-, køle- og ventilationssystemer.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.04 Varme-, køle- og ventilationssystemer.xml" />
       <None Remove="Resources\eForms\23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.xml" />
       <None Remove="Resources\eForms\23.02.06 Luftrensningssystemer.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.06 Luftrensningssystemer.xml" />
       <None Remove="Resources\eForms\23.02.07 Udstyr til drikkevand.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.07 Udstyr til drikkevand.xml" />
       <None Remove="Resources\eForms\23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml" />
       <None Remove="Resources\eForms\23.03.01 Miljøledelse.xml" />
       <None Remove="Resources\eForms\23.04.01 Fasefodring.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.04.01 Fasefodring.xml" />
       <None Remove="Resources\eForms\23.04.02 Reduceret indhold af råprotein.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.04.02 Reduceret indhold af råprotein.xml" />
       <None Remove="Resources\eForms\23.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
       <None Remove="Resources\eForms\23.05.01 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.01 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.02 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.02 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.03 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.03 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.04 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.04 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.05 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.05 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.06 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.06 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.07 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.07 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.08 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.08 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.05.09 Manglende bilag.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.05.09 Manglende bilag.xml" />
       <None Remove="Resources\eForms\23.01.01 Fast overdækning gyllebeholder.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.01.01 Fast overdækning gyllebeholder.xml" />
       <None Remove="Resources\eForms\23.00.01 Aflæsning vand.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.00.01 Aflæsning vand.xml" />
       <None Remove="Resources\eForms\23.00.02 Aflæsning el.xml" />
-      <EmbeddedResource Include="Resources\eForms\23.00.02 Aflæsning el.xml" />
       <None Remove="Resources\Templates\WordExport\file.docx" />
       <EmbeddedResource Include="Resources\Templates\WordExport\file.docx">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -170,7 +139,9 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <None Remove="Resources\eForms\00. Opret opgave.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Ny opgave.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Ny opgave.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\eForms\02. Igangværende opgave.xml" />
       <EmbeddedResource Include="Resources\eForms\02. Igangværende opgave.xml" />
       <None Remove="Resources\eForms\03. Afslutted opgave.xml" />
@@ -198,7 +169,6 @@
       <None Remove="Resources\eForms\24.01.04.01 Ugentlig udslusning af gylle - Logbog.xml" />
       <EmbeddedResource Include="Resources\eForms\24.01.04.01 Ugentlig udslusning af gylle - Logbog.xml" />
       <None Remove="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift.xml" />
       <None Remove="Resources\eForms\24.01.04.03 Ugentlig udslusning af gylle - Dokumenter.xml" />
       <EmbeddedResource Include="Resources\eForms\24.01.04.03 Ugentlig udslusning af gylle - Dokumenter.xml" />
       <None Remove="Resources\eForms\24.01.05.01 Punktudsugning i slagtesvinestalde - Logbog.xml" />
@@ -281,13 +251,53 @@
       <None Remove="Resources\eForms\25.02 Vis kemisk produkt.xml" />
       <EmbeddedResource Include="Resources\eForms\25.02 Vis kemisk produkt.xml" />
       <None Remove="Resources\eForms\01. Aflæsninger.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Aflæsninger.xml" />
+      <EmbeddedResource Include="Resources\eForms\01. Aflæsninger.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\eForms\02. Fækale uheld.xml" />
       <EmbeddedResource Include="Resources\eForms\02. Fækale uheld.xml" />
       <None Remove="Resources\eForms\00. Info boks.xml" />
-      <EmbeddedResource Include="Resources\eForms\00. Info boks.xml" />
+      <EmbeddedResource Include="Resources\eForms\00. Info boks.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
       <None Remove="Resources\eForms\26. Kornlager.xml" />
       <EmbeddedResource Include="Resources\eForms\26. Kornlager.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\1.1 Aflæsning vand.xml" />
+      <EmbeddedResource Include="Resources\eForms\1.1 Aflæsning vand.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\1.2 Aflæsning el.xml" />
+      <EmbeddedResource Include="Resources\eForms\1.2 Aflæsning el.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.1 Udslusning af gylle.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.1 Udslusning af gylle.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.2 Gyllekøling: Timer og MWh.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.2 Gyllekøling: Timer og MWh.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.3 Gyllekøling: Driftsstop.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.3 Gyllekøling: Driftsstop.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.4 Forsuring: pH-værdi.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.4 Forsuring: pH-værdi.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.5 Forsuring: Driftsstop.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.5 Forsuring: Driftsstop.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.6 Foderindlægssedler.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.6 Foderindlægssedler.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift v2.xml" />
+      <EmbeddedResource Include="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift v2.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
     </ItemGroup>
@@ -299,8 +309,8 @@
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="1.2.42" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="3.1.100" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.88" />
-      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="5.0.30" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="1.1.89" />
+      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="5.0.31" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="3.0.160" />
       <PackageReference Include="ClosedXML" Version="0.97.0" />
@@ -309,10 +319,6 @@
 
     <ItemGroup>
       <EmbeddedResource Include="Resources\localization.json" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Include="Resources\eForms\23.03.01 Miljøledelse.xml" />
     </ItemGroup>
 
 </Project>

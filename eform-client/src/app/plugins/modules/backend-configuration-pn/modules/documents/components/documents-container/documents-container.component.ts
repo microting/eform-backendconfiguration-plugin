@@ -40,7 +40,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.getFolders();
+    //this.getFolders();
   }
 
   ngOnDestroy(): void {
@@ -80,16 +80,30 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.folders = data.model;
+          this.updateTable();
         }
       });
   }
 
   updateTable() {
-    this.getDocumentsSub$ = this.documentsStateService.getDocuments().subscribe((data) => {
-      if (data && data.success && data.model) {
-        this.documents = data.model;
-      }
-    });
+    // this.getDocumentsSub$ = this.documentsStateService.getDocuments().subscribe((data) => {
+    //   if (data && data.success && data.model) {
+    //     this.documents = data.model;
+    //   }
+    // });
+    this.getDocumentsSub$ = this.documentsStateService
+      .getFolders()
+      .subscribe((data) => {
+        if (data && data.success && data.model) {
+          this.folders = data.model;
+          this.documentsStateService.getDocuments().subscribe((data) => {
+            if (data && data.success && data.model) {
+              this.documents = data.model;
+            }
+          });
+          //       this.workOrderCases = data.model;
+        }
+      });
   }
 
   getDocumentsByFolderId(folderId: number) {

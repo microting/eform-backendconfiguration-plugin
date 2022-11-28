@@ -218,4 +218,9 @@ export const plPl = {
   'High': 'Wysoki',
   'Medium': 'Średni',
   'Low': 'Niski',
+  'Edit task': 'Edytuj zadanie',
+  'Edit document': 'Edytuj dokument',
+  'Delete document': 'Usuń dokument',
+  'Edit folder': 'Edytuj folder',
+  'Selected language': 'Wybrany język',
 };
