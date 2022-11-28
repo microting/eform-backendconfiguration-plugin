@@ -851,7 +851,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"01.Logbøger Miljøledelse","2.4 Forsuring: pH-værdi",""
+				"01.Logbøger Miljøledelse","2.4Forsuring: pH-værdi",""
 			};
 			item = new KeyValuePair<string, List<string>>("2.4 Forsuring: pH-værdi", headers);
 			theList.Add(item);

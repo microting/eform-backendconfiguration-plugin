@@ -394,7 +394,17 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await documentSite.Delete(_caseTemplatePnDbContext);
         }
 
-        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        if (model.DocumentProperties != null)
+        {
+            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        }
+        else
+        {
+            document.IsLocked = false;
+            document.Status = false;
+            await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+        }
+
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentUpdatedSuccessfully"));
@@ -485,9 +495,16 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
                 await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
+
+            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        }
+        else
+        {
+            document.IsLocked = false;
+            document.Status = false;
+            await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentCreatedSuccessfully"));

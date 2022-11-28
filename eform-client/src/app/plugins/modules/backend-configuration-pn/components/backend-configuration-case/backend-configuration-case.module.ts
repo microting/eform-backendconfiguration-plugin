@@ -22,6 +22,10 @@ import {
 import {
   BackendConfigurationCaseHeaderComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/components/backend-configuration-case/backend-configuration-case-header/backend-configuration-case-header.component';
+import {MatCardModule} from "@angular/material/card";
+import {MatIconModule} from "@angular/material/icon";
+import {MatInputModule} from "@angular/material/input";
+import {MatButtonModule} from "@angular/material/button";
 
 @NgModule({
   declarations: [
@@ -44,6 +48,10 @@ import {
     CasesModule,
     EformCasesModule,
     OwlDateTimeModule,
+    MatCardModule,
+    MatIconModule,
+    MatInputModule,
+    MatButtonModule,
   ]
 })
 export class BackendConfigurationCaseModule {

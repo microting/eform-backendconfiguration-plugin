@@ -229,6 +229,6 @@ export const da = {
   'Delete document': 'Slet dokument',
   'Edit folder': 'Redigér mappe',
   'Selected language': 'Valgt sprog',
-  'Generate Report': 'Generer rapport',
+  'Generate Report': 'Rapporter',
   'View images': 'Vis billeder',
 };
