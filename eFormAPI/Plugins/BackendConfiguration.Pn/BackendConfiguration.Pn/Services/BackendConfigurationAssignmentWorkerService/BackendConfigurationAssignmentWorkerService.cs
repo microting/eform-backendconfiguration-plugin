@@ -581,13 +581,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         //var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
                         if (deviceUserModel.TimeRegistrationEnabled == false && _timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
-                            var assignmentForDelete = await _timePlanningDbContext.AssignedSites.SingleAsync(x =>
-                                x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                            var assignmentForDeletes = await _timePlanningDbContext.AssignedSites.Where(x =>
+                                x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
-                            await assignmentForDelete.Delete(_timePlanningDbContext).ConfigureAwait(false);
-                            if (assignmentForDelete.CaseMicrotingUid != null)
+                            foreach (var assignmentForDelete in assignmentForDeletes)
                             {
-                                await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                                await assignmentForDelete.Delete(_timePlanningDbContext).ConfigureAwait(false);
+                                if (assignmentForDelete.CaseMicrotingUid != null)
+                                {
+                                    await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                                }
                             }
                         }
                         else
