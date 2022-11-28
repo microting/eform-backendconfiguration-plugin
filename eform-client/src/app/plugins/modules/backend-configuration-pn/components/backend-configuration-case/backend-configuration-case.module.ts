@@ -1,8 +1,6 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {TranslateModule} from '@ngx-translate/core';
-import {MDBBootstrapModule} from 'angular-bootstrap-md';
-import {NgSelectModule} from '@ng-select/ng-select';
 import {GallerizeModule} from '@ngx-gallery/gallerize';
 import {LightboxModule} from '@ngx-gallery/lightbox';
 import {GalleryModule} from '@ngx-gallery/core';
@@ -15,30 +13,29 @@ import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.m
 import {OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {
   BackendConfigurationCaseRoutingModule
-} from 'src/app/plugins/modules/backend-configuration-pn/components/backend-configuration-case/backend-configuration-case-routing.module';
+} from './backend-configuration-case-routing.module';
 import {
   BackendConfigurationCasePageComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/components/backend-configuration-case/backend-configuration-case-page/backend-configuration-case-page.component';
-import {
-  BackendConfigurationCaseHeaderComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/components/backend-configuration-case/backend-configuration-case-header/backend-configuration-case-header.component';
-import {MatCardModule} from "@angular/material/card";
-import {MatIconModule} from "@angular/material/icon";
-import {MatInputModule} from "@angular/material/input";
-import {MatButtonModule} from "@angular/material/button";
+} from './backend-configuration-case-page/backend-configuration-case-page.component';
+// import {
+//   BackendConfigurationCaseHeaderComponent
+// } from './backend-configuration-case-header/backend-configuration-case-header.component';
+import {MatCardModule} from '@angular/material/card';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatIconModule} from '@angular/material/icon';
+import {MatInputModule} from '@angular/material/input';
+import {MatButtonModule} from '@angular/material/button';
 
 @NgModule({
   declarations: [
-    BackendConfigurationCaseHeaderComponent,
+    // BackendConfigurationCaseHeaderComponent,
     BackendConfigurationCasePageComponent
   ],
   imports: [
     TranslateModule,
-    MDBBootstrapModule,
     EformSharedModule,
     BackendConfigurationCaseRoutingModule,
     CommonModule,
-    NgSelectModule,
     EformImportedModule,
     GallerizeModule,
     LightboxModule,
@@ -49,6 +46,7 @@ import {MatButtonModule} from "@angular/material/button";
     EformCasesModule,
     OwlDateTimeModule,
     MatCardModule,
+    MatFormFieldModule,
     MatIconModule,
     MatInputModule,
     MatButtonModule,
