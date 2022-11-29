@@ -363,13 +363,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                     .First(x => x.Id == areaRulePlanning.PropertyId).Name;
                             }
 
+                            var dbCase = await sdkDbContext.Cases.FirstAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+
                             if (planningNameTranslation != null)
                             {
                                 var item = new ReportEformItemModel
                                 {
                                     Id = planningCase.Id,
+                                    ItemId = planningCase.PlanningId,
                                     MicrotingSdkCaseId = planningCase.MicrotingSdkCaseId,
                                     MicrotingSdkCaseDoneAt = TimeZoneInfo.ConvertTimeFromUtc((DateTime)planningCase.MicrotingSdkCaseDoneAt, timeZoneInfo),
+                                    ServerTime = TimeZoneInfo.ConvertTimeFromUtc((DateTime)dbCase.CreatedAt, timeZoneInfo),
                                     eFormId = planningCase.MicrotingSdkeFormId,
                                     DoneBy = planningCase.DoneByUserName,
                                     ItemName = planningNameTranslation.Name,

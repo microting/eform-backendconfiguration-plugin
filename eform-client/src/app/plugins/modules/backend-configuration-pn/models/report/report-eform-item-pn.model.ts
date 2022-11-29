@@ -1,6 +1,7 @@
 export class ReportEformItemModel {
   id: number;
   microtingSdkCaseDoneAt: string;
+  serverTime: string;
   microtingSdkCaseId: number;
   eFormId: number;
   doneBy: string;
