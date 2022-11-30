@@ -49,7 +49,6 @@ export class CompliancesTableComponent implements OnInit {
       buttons: [
         {
           type: 'icon',
-          color: 'accent',
           tooltip:  this.translateService.stream('Edit Case'),
           icon: 'edit',
           iif: (record: CompliancesModel) => this.canEdit(record.deadline),

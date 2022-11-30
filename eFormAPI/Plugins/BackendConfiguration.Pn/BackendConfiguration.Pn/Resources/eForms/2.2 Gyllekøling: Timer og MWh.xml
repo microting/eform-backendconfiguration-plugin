@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142661</Id>
+  <Id>142782m</Id>
   <Repeated>0</Repeated>
-  <Label>23.00.02 Aflæsning el</Label>
-  <StartDate>2022-01-11</StartDate>
-  <EndDate>2032-01-11</EndDate>
+  <Label>2.2 Gyllekøling: Timer og MWh|2.2 Slurry cooling: Hours and MWh|2.2 Schlammkühlung: Stunden und MWh</Label>
+  <StartDate>2022-11-15</StartDate>
+  <EndDate>2032-11-15</EndDate>
   <Language>da</Language>
   <MultiApproval>false</MultiApproval>
   <FastNavigation>false</FastNavigation>
@@ -13,9 +13,9 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142661</Id>
-      <Label>23.00.02 Aflæsning el</Label>
-      <Description><![CDATA[]]></Description>
+      <Id>142782m</Id>
+      <Label>2.2 Gyllekøling: Timer og MWh|2.2 Slurry cooling: Hours and MWh|2.2 Schlammkühlung: Stunden und MWh</Label>
+      <Description><![CDATA[<i>Timetæller, MWh</i>|<i>Hour counter, MWh</i>|<i>Stundenzähler, MWh</i>]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
       <ManualSync>false</ManualSync>
@@ -23,16 +23,22 @@
       <DoneButtonDisabled>true</DoneButtonDisabled>
       <ApprovalEnabled>false</ApprovalEnabled>
       <DataItemList>
-        <DataItem type="None">
-          <Id>375706</Id>
-          <Label>23.00.02 Aflæsning el</Label>
-          <Description><![CDATA[Aflæs elmåler.]]></Description>
+        <DataItem type="Number">
+          <Id>377077</Id>
+          <Label>Timetæller|Hour counter|Stundenzähler</Label>
+          <Description><![CDATA[]]></Description>
           <DisplayOrder>0</DisplayOrder>
-          <Color>fff6df</Color>
+          <Mandatory>false</Mandatory>
+          <MinValue/>
+          <MaxValue/>
+          <Value/>
+          <DecimalCount>2</DecimalCount>
+          <UnitName/>
+          <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="Number">
-          <Id>375710</Id>
-          <Label>El (kWh)</Label>
+          <Id>377093</Id>
+          <Label>Energimåling (MWh)|Energy measurement (MWh)|Energiemessung (MWh)</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>1</DisplayOrder>
           <Mandatory>false</Mandatory>
@@ -44,16 +50,16 @@
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="Picture">
-          <Id>375707</Id>
-          <Label>Billeder</Label>
+          <Id>377074</Id>
+          <Label>Billeder|Pcitures|Bilder</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>2</DisplayOrder>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="Comment">
-          <Id>375708</Id>
-          <Label>Tekst</Label>
+          <Id>377075</Id>
+          <Label>Kommentar|Comment|Kommentar</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>3</DisplayOrder>
           <Multi>1</Multi>
@@ -65,11 +71,11 @@
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="SaveButton">
-          <Id>375709</Id>
-          <Label>Gem</Label>
+          <Id>377076</Id>
+          <Label>Indsend registrering|Submit registration|Anmeldung absenden</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>4</DisplayOrder>
-          <Value>GEM</Value>
+          <Value>INDSEND</Value>
           <Color>f0f8db</Color>
         </DataItem>
       </DataItemList>

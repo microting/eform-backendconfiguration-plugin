@@ -218,4 +218,8 @@ export const itIT = {
   'Medium': '',
   'Low': '',
   'Edit task': '',
+  'Edit document': '',
+  'Delete document': '',
+  'Edit folder': '',
+  'Selected language': '',
 };

@@ -96,17 +96,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                 if (query.Any())
                 {
-                    var listWorkerId = await query.Select(x => x.WorkerId).Distinct().ToListAsync().ConfigureAwait(false);
+                    var listWorkerId = await query.Select(x => new PropertyWorker()
+                    {
+                        WorkerId = x.WorkerId,
+                        TaskManagementEnabled = x.TaskManagementEnabled
+                    }).Distinct().ToListAsync().ConfigureAwait(false);
 
                     foreach (var workerId in listWorkerId)
                     {
                         var assignments = await query
-                            .Where(x => x.WorkerId == workerId)
+                            .Where(x => x.WorkerId == workerId.WorkerId)
                             .Select(x => new PropertyAssignmentWorkerModel
                                 { PropertyId = x.PropertyId, IsChecked = true })
                             .ToListAsync().ConfigureAwait(false);
+
                         assignWorkersModels.Add(new PropertyAssignWorkersModel
-                            { SiteId = workerId, Assignments = assignments });
+                            { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
                     }
 
                     var properties = await _backendConfigurationPnDbContext.Properties
@@ -212,6 +217,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync().ConfigureAwait(false);
 
+                foreach (var propertyWorker in assignments)
+                {
+                    propertyWorker.TaskManagementEnabled = updateModel.TaskManagementEnabled;
+                    await propertyWorker.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+
                 var assignmentsForCreate = updateModel.Assignments
                     .Select(x => x.PropertyId)
                     .Where(x => !assignments.Select(y => y.PropertyId).Contains(x))
@@ -225,7 +236,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                  WorkerId = updateModel.SiteId,
                                  PropertyId = propertyAssignmentWorkerModel,
                                  CreatedByUserId = _userService.UserId,
-                                 UpdatedByUserId = _userService.UserId
+                                 UpdatedByUserId = _userService.UserId,
+                                 TaskManagementEnabled = updateModel.TaskManagementEnabled
                              }))
                 {
                     await propertyAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
@@ -313,6 +325,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     }
 
                     await _bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
+                }
+
+                if (!(bool)updateModel.TaskManagementEnabled!)
+                {
+                    foreach (var propertyWorker in assignments)
+                    {
+                        if (propertyWorker.EntityItemId != null)
+                        {
+                            await core.EntityItemDelete((int)propertyWorker.EntityItemId).ConfigureAwait(false);
+
+                            await _workOrderHelper.RetractEform(new List<PropertyWorker>()
+                            {
+                                propertyWorker
+                            }, true).ConfigureAwait(false);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var propertyWorker in assignments)
+                    {
+                        if (!propertyWorkers.Any(x =>
+                                x.WorkerId == propertyWorker.WorkerId && x.PropertyId == propertyWorker.PropertyId))
+                        {
+                            propertyWorkers.Add(propertyWorker);
+                        }
+                    }
                 }
 
                 await _workOrderHelper.WorkorderFlowDeployEform(propertyWorkers).ConfigureAwait(false);
@@ -409,7 +448,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
         }
 
-
         public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel)
         {
             try
@@ -465,6 +503,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 {
                     deviceUserModel.TimeRegistrationEnabled = _timePlanningDbContext.AssignedSites.Any(x =>
                         x.SiteId == deviceUserModel.SiteUid && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                    deviceUserModel.TaskManagementEnabled = _backendConfigurationPnDbContext.PropertyWorkers.Any(x =>
+                        x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.WorkerId == deviceUserModel.SiteId
+                        && x.TaskManagementEnabled == true);
                 }
 
                 return new OperationDataResult<List<DeviceUserModel>>(true, deviceUsers);
@@ -511,6 +554,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                         et.DisplayIndex).ConfigureAwait(false);
                                 }
                                 propertyId = propertyWorker.PropertyId;
+                                propertyWorker.TaskManagementEnabled = deviceUserModel.TaskManagementEnabled;
+                                await propertyWorker.Update(_backendConfigurationPnDbContext);
                             }
 
                             if (propertyId != null)
@@ -536,13 +581,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         //var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
                         if (deviceUserModel.TimeRegistrationEnabled == false && _timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
-                            var assignmentForDelete = await _timePlanningDbContext.AssignedSites.SingleAsync(x =>
-                                x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                            var assignmentForDeletes = await _timePlanningDbContext.AssignedSites.Where(x =>
+                                x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
-                            await assignmentForDelete.Delete(_timePlanningDbContext).ConfigureAwait(false);
-                            if (assignmentForDelete.CaseMicrotingUid != null)
+                            foreach (var assignmentForDelete in assignmentForDeletes)
                             {
-                                await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                                await assignmentForDelete.Delete(_timePlanningDbContext).ConfigureAwait(false);
+                                if (assignmentForDelete.CaseMicrotingUid != null)
+                                {
+                                    await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                                }
                             }
                         }
                         else

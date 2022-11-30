@@ -316,6 +316,62 @@ namespace BackendConfiguration.Pn
                 await areaTranslation.Update(context).ConfigureAwait(false);
             }
 
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Fokusområder Miljøledelse");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Logbøger Miljøledelse";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Focus areas Environmental management");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Log books Environmental management";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Schwerpunkte Umweltverwaltung");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Logbücher Umweltmanagement";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+
+            var envFolderTranslationList = await sdkDbContext.FolderTranslations
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .Where(x => x.Name == "01. Fokusområder Miljøledelse").ToListAsync();
+
+            foreach (var envFolderTranslation in envFolderTranslationList)
+            {
+                if (envFolderTranslation != null)
+                {
+                    var envFolderTranslations = new List<CommonTranslationsModel>
+                    {
+                        new()
+                        {
+                            Name = "01. Logbøger Miljøledelse",
+                            LanguageId = 1, // da
+                            Description = "",
+                        },
+                        new()
+                        {
+                            Name = "01. Log books Environmental management",
+                            LanguageId = 2, // en
+                            Description = "",
+                        },
+                        new()
+                        {
+                            Name = "01. Logbücher Umweltmanagement",
+                            LanguageId = 3, // de
+                            Description = "",
+                        },
+                    };
+                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == envFolderTranslation.FolderId);
+                    await core.FolderUpdate(folder.Id, envFolderTranslations, folder.ParentId);
+                }
+
+            }
+
+
             var cltranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
             var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == cltranslation.CheckListId);
 
@@ -515,6 +571,19 @@ namespace BackendConfiguration.Pn
                             },
                         }, folder.ParentId);
                     }
+                }
+            }
+
+            var propertyWorkers = await context.PropertyWorkers
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            foreach (var propertyWorker in propertyWorkers)
+            {
+                if (propertyWorker.TaskManagementEnabled == null)
+                {
+                    propertyWorker.TaskManagementEnabled = true;
+                    await propertyWorker.Update(context);
                 }
             }
 

@@ -22,6 +22,7 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import moment = require('moment');
 
 @AutoUnsubscribe()
 @Component({
@@ -56,7 +57,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           tooltip: this.translateService.stream('View images'),
           type: 'icon',
           click: (record: ReportEformItemModel) => this.onClickViewPicture(record.microtingSdkCaseId),
-          color: 'accent',
           icon: 'image',
           iif: (record: ReportEformItemModel) => record.imagesCount !== 0,
         },
@@ -64,7 +64,43 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           tooltip: this.translateService.stream('Edit'),
           type: 'icon',
           click: (record: ReportEformItemModel) => this.onClickEditCase(record.microtingSdkCaseId, record.eFormId, record.id),
-          color: 'accent',
+          icon: 'edit',
+        },
+        {
+          tooltip: this.translateService.stream('Delete'),
+          type: 'icon',
+          click: (record: ReportEformItemModel) => this.onShowDeletePlanningCaseModal(record),
+          color: 'warn',
+          icon: 'delete',
+        }
+      ]
+    },
+  ];
+  adminTableHeaders: MtxGridColumn[] = [
+    {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
+    {header: this.translateService.stream('Planning Id'), field: 'itemId'},
+    {header: this.translateService.stream('eForm Id'), field: 'eFormId'},
+    {header: this.translateService.stream('Property name'), field: 'propertyName'},
+    {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
+    {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
+    {header: this.translateService.stream('Done by'), field: 'doneBy',},
+    {header: this.translateService.stream('Item name'), field: 'itemName',},
+    {
+      header: this.translateService.stream('Actions'),
+      field: 'actions',
+      type: 'button',
+      buttons: [
+        {
+          tooltip: this.translateService.stream('View images'),
+          type: 'icon',
+          click: (record: ReportEformItemModel) => this.onClickViewPicture(record.microtingSdkCaseId),
+          icon: 'image',
+          iif: (record: ReportEformItemModel) => record.imagesCount !== 0,
+        },
+        {
+          tooltip: this.translateService.stream('Edit'),
+          type: 'icon',
+          click: (record: ReportEformItemModel) => this.onClickEditCase(record.microtingSdkCaseId, record.eFormId, record.id),
           icon: 'edit',
         },
         {
@@ -108,6 +144,11 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
                 return record.caseFields[i].value.replace('.', ',');
               }
               // @ts-ignore
+              if(record.caseFields[i].key === 'date') {
+                return moment(record.caseFields[i].value).format('DD.MM.YYYY');
+                //return record.caseFields[i].value;
+              }
+              // @ts-ignore
               if(record.caseFields[i].key !== 'number') {
                 return record.caseFields[i].value;
               }
@@ -115,7 +156,11 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           },
         }
       });
-      this.mergedTableHeaders = [...this.tableHeaders, ...itemHeaders];
+      if (this.authStateService.isAdmin) {
+        this.mergedTableHeaders = [...this.adminTableHeaders, ...itemHeaders];
+      } else {
+        this.mergedTableHeaders = [...this.tableHeaders, ...itemHeaders];
+      }
     }
   }
 

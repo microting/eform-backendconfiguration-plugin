@@ -30,7 +30,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Report
     public class ReportEformItemModel
     {
         public int Id { get; set; }
+        public int ItemId { get; set; }
         public DateTime? MicrotingSdkCaseDoneAt { get; set; }
+        public DateTime ServerTime { get; set; }
         public int MicrotingSdkCaseId { get; set; }
         public int eFormId { get; set; }
         public string ItemName { get; set; }

@@ -35,6 +35,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
         public string Language { get; set; }
         public string LanguageCode { get; set; }
         public bool? TimeRegistrationEnabled { get; set; }
+        public bool? TaskManagementEnabled { get; set; }
         public int? CustomerNo { get; set; }
         public int? OtpCode { get; set; }
         public int? UnitId { get; set; }
@@ -56,7 +57,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
 
         public static implicit operator Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel(DeviceUserModel model)
         {
-            
+
             return new Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel()
             {
                 Id = model.Id,

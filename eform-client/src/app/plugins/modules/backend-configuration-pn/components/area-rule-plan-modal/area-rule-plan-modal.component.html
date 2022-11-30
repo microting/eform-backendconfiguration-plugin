@@ -10,7 +10,6 @@
       [disabled]="selectedArea.type === 9">
       {{ selectedAreaRule.translatedName }}
     </mat-slide-toggle>
-    {{selectedAreaRulePlanning.complianceEnabled}}
     <mat-slide-toggle
       *ngIf="selectedAreaRule.typeSpecificFields !== undefined && selectedArea.type !== 10"
       color="primary"

@@ -218,4 +218,8 @@ export const nlNL = {
   'Medium': '',
   'Low': '',
   'Edit task': '',
+  'Edit document': '',
+  'Delete document': '',
+  'Edit folder': '',
+  'Selected language': '',
 };

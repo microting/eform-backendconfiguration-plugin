@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142630</Id>
+  <Id>142787m</Id>
   <Repeated>0</Repeated>
-  <Label>23.02.01 Årlig visuel kontrol af gyllebeholdere</Label>
-  <StartDate>2021-11-01</StartDate>
-  <EndDate>2031-11-01</EndDate>
+  <Label>2.1 Udslusning af gylle|2.1 Discharge of slurry|2.1 Gülleaustrag</Label>
+  <StartDate>2022-11-15</StartDate>
+  <EndDate>2032-11-15</EndDate>
   <Language>da</Language>
   <MultiApproval>false</MultiApproval>
   <FastNavigation>false</FastNavigation>
@@ -13,9 +13,9 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142630</Id>
-      <Label>23.02.01 Årlig visuel kontrol af gyllebeholdere</Label>
-      <Description><![CDATA[]]></Description>
+      <Id>142787m</Id>
+      <Label>2.1 Udslusning af gylle|2.1 Discharge of slurry|2.1 Gülleaustrag</Label>
+      <Description><![CDATA[<i>Kvittér for udslusning</i>|<i>Receive for discharge</i>|<i>Zur Entlassung erhalten</i>]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
       <ManualSync>false</ManualSync>
@@ -23,33 +23,38 @@
       <DoneButtonDisabled>true</DoneButtonDisabled>
       <ApprovalEnabled>false</ApprovalEnabled>
       <DataItemList>
-        <DataItem type="None">
-          <Id>375433</Id>
-          <Label>23.02.01 Årlig visuel kontrol af gyllebeholdere</Label>
-          <Description><![CDATA[Hvis der har været service og reparationer på din gyllebeholder, skal du skrive dette med dato og beskrivelse af hvad der er blevet foretaget. Hvis du har fakturaer eller lignende kan du tage billeder af dem, så bliver de automatisk vedhæftet din indrapportering.]]></Description>
-          <DisplayOrder>0</DisplayOrder>
-          <Color>fff6df</Color>
-        </DataItem>
         <DataItem type="CheckBox">
-          <Id>375535</Id>
-          <Label>Årlig visuel kontrol af gyllebeholder udført</Label>
+          <Id>377104</Id>
+          <Label>Gylle udsluset|Slurry discharged|Schlamm ausgetragen</Label>
           <Description><![CDATA[]]></Description>
-          <DisplayOrder>1</DisplayOrder>
+          <DisplayOrder>0</DisplayOrder>
           <Selected>false</Selected>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
+        <DataItem type="Date">
+          <Id>377105</Id>
+          <Label>Dato for udslusning|Date of discharge|Datum der Entlassung</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2022-11-15</MinValue>
+          <MaxValue>2032-11-15</MaxValue>
+          <Value/>
+          <Mandatory>false</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
         <DataItem type="Picture">
-          <Id>375434</Id>
-          <Label>Billeder</Label>
+          <Id>377101</Id>
+          <Label>Billeder|Pcitures|Bilder</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>2</DisplayOrder>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="Comment">
-          <Id>375435</Id>
-          <Label>Tekst</Label>
+          <Id>377102</Id>
+          <Label>Kommentar|Comment|Kommentar</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>3</DisplayOrder>
           <Multi>1</Multi>
@@ -61,11 +66,11 @@
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="SaveButton">
-          <Id>375436</Id>
-          <Label>Gem</Label>
+          <Id>377103</Id>
+          <Label>Indsend registrering|Submit registration|Anmeldung absenden</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>4</DisplayOrder>
-          <Value>GEM</Value>
+          <Value>INDSEND</Value>
           <Color>f0f8db</Color>
         </DataItem>
       </DataItemList>
