@@ -194,7 +194,7 @@ export class TaskManagementCreateShowModalComponent
         this.getPropertiesAssignmentsSub$ = this.propertyService.getPropertiesAssignments().subscribe(data => {
           if (data && data.success && data.model) {
             data.model.forEach(x => x.assignments = x.assignments.filter(y => y.isChecked && y.propertyId === propertyId));
-            data.model = data.model.filter((x) => x.assignments.length > 0);
+            data.model = data.model.filter((x) => x.assignments.length > 0 && x.taskManagementEnabled);
             this.assignedSitesToProperty = data.model.map(x => {
               const site = sites.find((y) => y.id === x.siteId)
               return {id: x.siteId, name: site ? site.name : '', description: '',};
