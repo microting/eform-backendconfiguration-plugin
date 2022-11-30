@@ -73,15 +73,15 @@
   >
     <mat-icon>home_repair_service</mat-icon>
   </button>
-  <button
-    *ngIf="authStateService.isAdmin"
-    mat-icon-button
-    id="docxReportBtn-{{i}}"
-    matTooltip="{{ 'Select report' | translate }}"
-    (click)="onShowDocxReportModal(row.id)"
-  >
-    <mat-icon [svgIcon]="'file-word'"></mat-icon>
-  </button>
+<!--  <button-->
+<!--    *ngIf="authStateService.isAdmin"-->
+<!--    mat-icon-button-->
+<!--    id="docxReportBtn-{{i}}"-->
+<!--    matTooltip="{{ 'Select report' | translate }}"-->
+<!--    (click)="onShowDocxReportModal(row.id)"-->
+<!--  >-->
+<!--    <mat-icon [svgIcon]="'file-word'"></mat-icon>-->
+<!--  </button>-->
   <button
     *ngIf="row.workorderEnable"
     mat-icon-button

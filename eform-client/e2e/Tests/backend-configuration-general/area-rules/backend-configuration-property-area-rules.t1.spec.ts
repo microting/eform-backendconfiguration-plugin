@@ -41,12 +41,12 @@ describe('Backend Configuration Area Rules Type1', function () {
   });
   it('should create new area rule type 1', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(2);
+    expect(rowNum, 'have some non-default area rules').eq(8);
     await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
     expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areRule.name).eq(areaRuleForCreate.name);
-    expect(areRule.eform).eq('01. Vandforbrug');
+    expect(areRule.eform).eq('');
     expect(areRule.rulePlanningStatus).eq(false);
   });
   it('should not edit created area rule type 1', async () => {
@@ -54,13 +54,13 @@ describe('Backend Configuration Area Rules Type1', function () {
     const oldAreRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '01. Elforbrug',
+      eform: '1.2 Aflæsning EL',
     };
     await oldAreRule.edit(areaRuleForUpdate, true);
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areRule.name).eq(areaRuleForCreate.name);
-    expect(areRule.eform).eq('01. Vandforbrug');
+    expect(areRule.eform).eq('');
     expect(areRule.rulePlanningStatus).eq(false);
   });
   it('should edit created area rule type 1', async () => {
@@ -68,7 +68,7 @@ describe('Backend Configuration Area Rules Type1', function () {
     let areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '01. Elforbrug',
+      eform: '1.2 Aflæsning EL',
     };
     await areRule.edit(areaRuleForUpdate);
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
