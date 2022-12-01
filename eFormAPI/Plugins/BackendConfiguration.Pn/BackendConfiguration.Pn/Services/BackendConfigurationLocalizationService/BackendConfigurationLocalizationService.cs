@@ -57,11 +57,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationLocalizationServi
 
             return string.Format(message.Value, args);
         }
-        
+
         public string GetStringWithFormat(string format,
             params object[] args)
         {
-            if (format.IsNullOrEmpty())
+            if (string.IsNullOrEmpty(format))
             {
                 return format;
             }
