@@ -304,7 +304,7 @@
 
     <ItemGroup>
       <PackageReference Include="ChemicalsBase" Version="1.0.10" />
-      <PackageReference Include="Magick.NET-Q16-x64" Version="12.2.0" />
+      <PackageReference Include="Magick.NET-Q16-x64" Version="12.2.1" />
       <PackageReference Include="Microting.eForm" Version="7.0.1" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="1.2.42" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.1" />
