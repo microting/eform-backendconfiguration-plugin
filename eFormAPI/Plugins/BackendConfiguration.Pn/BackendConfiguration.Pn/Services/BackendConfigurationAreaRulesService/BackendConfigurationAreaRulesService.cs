@@ -117,8 +117,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         TypeSpecificFields = new TypeSpecificField
                             {
                                 EformId = x.EformId,
-                                Type = x.Type,
-                                Alarm = x.Alarm,
+                                Type = x.Type ?? AreaRuleT2TypesEnum.Open,
+                                Alarm = x.Alarm ?? AreaRuleT2AlarmsEnum.No,
                                 DayOfWeek = x.DayOfWeek,
                                 RepeatEvery = x.RepeatEvery,
                                 RepeatType = x.RepeatType,
@@ -329,10 +329,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                         IsDefault = x.IsDefault,
                         TypeSpecificFields = new TypeSpecificFields()
                         {
-                            Alarm = (AreaRuleT2AlarmsEnum)x.Alarm,
+                            Alarm = x.Alarm ?? AreaRuleT2AlarmsEnum.No,
                             DayOfWeek = x.DayOfWeek,
                             RepeatEvery = x.RepeatEvery,
-                            Type = (AreaRuleT2TypesEnum)x.Type,
+                            Type = x.Type ?? AreaRuleT2TypesEnum.Open,
                             EformId = x.EformId
                         },
                         // {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery, x.RepeatType},
