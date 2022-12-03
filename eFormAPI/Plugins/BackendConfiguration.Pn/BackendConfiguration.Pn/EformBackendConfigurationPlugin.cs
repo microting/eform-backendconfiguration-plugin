@@ -365,8 +365,14 @@ namespace BackendConfiguration.Pn
                             Description = "",
                         },
                     };
-                    var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == envFolderTranslation.FolderId);
-                    await core.FolderUpdate(folder.Id, envFolderTranslations, folder.ParentId);
+                    var folder = await sdkDbContext.Folders
+                        .Where(x => x.Id == envFolderTranslation.FolderId)
+                        .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync();
+                    if (folder != null)
+                    {
+                        await core.FolderUpdate(folder.Id, envFolderTranslations, folder.ParentId);
+                    }
                 }
 
             }
