@@ -492,11 +492,10 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 }
             }
 
-            var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Text == "02. Ongoing task")
-                .Select(x => x.CheckListId)
-                .FirstOrDefaultAsync().ConfigureAwait(false);
+            var eformIdForOngoingTasks = await sdkDbContext.CheckLists
+                .Where(x => x.OriginalId == "142664new2")
+                .Select(x => x.Id)
+                .FirstOrDefaultAsync();
 
             var deviceUsersGroupMicrotingUid = await sdkDbContext.EntityGroups
                 .Where(x => x.Id == property.EntitySelectListDeviceUsers)

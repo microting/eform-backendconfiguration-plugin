@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
@@ -17,6 +19,7 @@ using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Rebus.Handlers;
+using KeyValuePair = Microting.eForm.Dto.KeyValuePair;
 
 namespace BackendConfiguration.Pn.Handlers;
 
@@ -92,6 +95,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         {
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.Value).ConfigureAwait(false);
             var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(siteLanguage.LanguageCode);
             var priorityText = "";
 
             switch (workorderCase.Priority)
@@ -174,13 +178,24 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
             ((ShowPdf)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
+            List<Microting.eForm.Dto.KeyValuePair> kvpList = ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList;
+            var newKvpList = new List<KeyValuePair>();
+            foreach (var keyValuePair in kvpList)
+            {
+                if (keyValuePair.Key == workorderCase.Priority)
+                {
+                    keyValuePair.Selected = true;
+                }
+                newKvpList.Add(keyValuePair);
+            }
+            ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList = newKvpList;
+
             if (deviceUsersGroupId != null)
             {
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
-                    (int)deviceUsersGroupId;
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Mandatory = true;
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source = (int)deviceUsersGroupId;
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
                 ((Comment)((DataElement)mainElement.ElementList[0]).DataItemList[3]).Value = newDescription;
-                ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
+                ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Mandatory = true;
                 mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                 mainElement.Repeated = 1;
             }
@@ -198,14 +213,17 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                 CaseId = (int)caseId,
                 PropertyWorkerId = propertyWorker.Key,
                 CaseStatusesEnum = status,
+                ParentWorkorderCaseId = workorderCaseId,
                 SelectedAreaName = areaName,
                 CreatedByName = site.Name,
+                CreatedByText = workorderCase.CreatedByText,
                 Description = newDescription,
                 CaseInitiated = DateTime.UtcNow,
-                CreatedByUserId = createdByUserId,
                 LastAssignedToName = site.Name,
+                LastUpdatedByName = "",
                 LeadingCase = false,
-                ParentWorkorderCaseId = workorderCaseId
+                Priority = workorderCase.Priority,
+                CreatedByUserId = createdByUserId,
             };
             await workOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }
