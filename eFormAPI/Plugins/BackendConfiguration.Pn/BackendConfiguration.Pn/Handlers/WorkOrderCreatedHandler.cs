@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.WordService;
 using eFormCore;
 using ImageMagick;
@@ -24,12 +25,14 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
     private readonly Core _sdkCore;
     private readonly BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
     private readonly ChemicalDbContextHelper _chemicalDbContextHelper;
+    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
 
-    public WorkOrderCreatedHandler(BackendConfigurationDbContextHelper backendConfigurationDbContextHelper, ChemicalDbContextHelper chemicalDbContextHelper, Core sdkCore)
+    public WorkOrderCreatedHandler(BackendConfigurationDbContextHelper backendConfigurationDbContextHelper, ChemicalDbContextHelper chemicalDbContextHelper, Core sdkCore, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
     {
         _backendConfigurationDbContextHelper = backendConfigurationDbContextHelper;
         _chemicalDbContextHelper = chemicalDbContextHelper;
         _sdkCore = sdkCore;
+        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
     }
 
     public async Task Handle(WorkOrderCreated message)
@@ -49,7 +52,11 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             message.PushMessageBody,
             message.PushMessageTitle,
             message.AreaName,
-            message.CreatedByUserId).ConfigureAwait(false);
+            message.CreatedByUserId,
+            message.PropertyName,
+            message.FolderIdForOngoingTasks,
+            message.FolderIdForTasks,
+            message.FolderIdForCompletedTasks).ConfigureAwait(false);
     }
 
     private async Task DeployEform(
@@ -65,30 +72,103 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         string siteName,
         string pushMessageBody,
         string pushMessageTitle,
-        string areaName, int createdByUserId)
+        string areaNameb,
+        int createdByUserId,
+        string propertyName,
+        int FolderIdForOngoingTasks,
+        int FolderIdForTasks,
+        int FolderIdForCompletedTasks
+        )
     {
         var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
         var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
         await using var _ = sdkDbContext.ConfigureAwait(false);
+
+        var workorderCase = await backendConfigurationPnDbContext.WorkorderCases.FirstAsync(x => x.Id == workorderCaseId);
+        DateTime startDate = new DateTime(2020, 1, 1);
+        var displayOrder = (int)(DateTime.UtcNow - startDate).TotalSeconds;
+
         foreach (var propertyWorker in propertyWorkers)
         {
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.Value).ConfigureAwait(false);
             var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+            var priorityText = "";
+
+            switch (workorderCase.Priority)
+            {
+                case "1":
+                    displayOrder = 100_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Urgent")}<br>";
+                    break;
+                case "2":
+                    displayOrder = 200_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("High")}<br>";
+                    break;
+                case "3":
+                    displayOrder = 300_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Medium")}<br>";
+                    break;
+                case "4":
+                    displayOrder = 400_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Low")}<br>";
+                    break;
+            }
+
+            var textStatus = "";
+
+            switch (workorderCase.CaseStatusesEnum)
+            {
+                case CaseStatusesEnum.Ongoing:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Ongoing");
+                    break;
+                case CaseStatusesEnum.Completed:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Completed");
+                    break;
+                case CaseStatusesEnum.Awaiting:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Awaiting");
+                    break;
+                case CaseStatusesEnum.Ordered:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Ordered");
+                    break;
+            }
+
+            var assignedTo = site.Name == siteName ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {siteName}<br>";
+
+            var areaName = !string.IsNullOrEmpty(workorderCase.SelectedAreaName)
+                ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workorderCase.SelectedAreaName}<br>"
+                : "";
+
+            var outerDescription = $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {propertyName}<br>" +
+                                   areaName +
+                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {newDescription}<br>" +
+                                   priorityText +
+                                   assignedTo +
+                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
+
             var mainElement = await _sdkCore.ReadeForm(eformId, siteLanguage).ConfigureAwait(false);
-            mainElement.CheckListFolderName = await sdkDbContext.Folders
-                .Where(x => x.Id == folderId)
-                .Select(x => x.MicrotingUid.ToString())
-                .FirstOrDefaultAsync().ConfigureAwait(false);
+            // mainElement.CheckListFolderName = await sdkDbContext.Folders
+            //     .Where(x => x.Id == folderId)
+            //     .Select(x => x.MicrotingUid.ToString())
+            //     .FirstOrDefaultAsync().ConfigureAwait(false);
             mainElement.Label = " ";
             mainElement.ElementList[0].QuickSyncEnabled = true;
             mainElement.EnableQuickSync = true;
             mainElement.ElementList[0].Label = " ";
-            mainElement.ElementList[0].Description.InderValue =
-                description.Replace("\r\n", "<br>").Replace("\n", "<br>") + "<center><strong>******************</strong></center>";
+            mainElement.ElementList[0].Description.InderValue = outerDescription.Replace("\n", "<br>");
+            mainElement.DisplayOrder = displayOrder; // Lowest value is the top of the list
             if (site.Name == siteName)
             {
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workorderCase.Priority != "1" ? FolderIdForOngoingTasks : FolderIdForTasks))
+                    .MicrotingUid.ToString();
+                folderId = FolderIdForOngoingTasks;
                 mainElement.PushMessageTitle = pushMessageTitle;
                 mainElement.PushMessageBody = pushMessageBody;
+            }
+            else
+            {
+                folderId = FolderIdForCompletedTasks;
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == FolderIdForCompletedTasks)
+                    .MicrotingUid.ToString();
             }
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\r\n", "<br>").Replace("\n", "<br>");
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";

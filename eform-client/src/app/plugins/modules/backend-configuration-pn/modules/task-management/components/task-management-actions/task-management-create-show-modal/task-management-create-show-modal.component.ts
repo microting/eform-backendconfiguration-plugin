@@ -282,6 +282,7 @@ export class TaskManagementCreateShowModalComponent
         areaName: rawValue.areaName,
         propertyId: rawValue.propertyId,
         description: rawValue.descriptionTask,
+        priority: rawValue.priority,
         files: this.images.map(x => x.file),
         caseStatusEnum: rawValue.caseStatusEnum,
       }

@@ -392,7 +392,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             var site = await sdkDbContext.Sites
                 .Where(x => x.Id == createModel.AssignedSiteId)
-                .FirstOrDefaultAsync().ConfigureAwait(false);
+                .FirstAsync().ConfigureAwait(false);
 
             createModel.Description = string.IsNullOrEmpty(createModel.Description)
                 ? ""
@@ -503,13 +503,61 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 .Select(x => int.Parse(x.MicrotingUid))
                 .FirstAsync().ConfigureAwait(false);
 
-            var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
-                              $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
-                              $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
-                              $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
-                              $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
-                              $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
-                              $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
+            // var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>" +
+            //                   $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
+            //                   $"<strong>{_localizationService.GetString("Area")}:</strong> {createModel.AreaName}<br>" +
+            //                   $"<strong>{_localizationService.GetString("Description")}:</strong> {createModel.Description}<br><br>" +
+            //                   $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {await _userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
+            //                   $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
+            //                   $"<strong>{_localizationService.GetString("Status")}:</strong> {_localizationService.GetString("Ongoing")}<br><br>";
+            var priorityText = "";
+            var textStatus = "";
+            switch (newWorkOrderCase.CaseStatusesEnum)
+            {
+                case CaseStatusesEnum.Ongoing:
+                    textStatus = _localizationService.GetString("Ongoing");
+                    break;
+                case CaseStatusesEnum.Completed:
+                    textStatus = _localizationService.GetString("Completed");
+                    break;
+                case CaseStatusesEnum.Ordered:
+                    textStatus = _localizationService.GetString("Ordered");
+                    break;
+                case CaseStatusesEnum.Awaiting:
+                    textStatus = _localizationService.GetString("Awaiting");
+                    break;
+            }
+
+            switch (createModel.Priority)
+            {
+                case 1:
+                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Urgent")}<br>";
+                    break;
+                case 2:
+                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("High")}<br>";
+                    break;
+                case 3:
+                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Medium")}<br>";
+                    break;
+                case 4:
+                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Low")}<br>";
+                    break;
+            }
+            var description = $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>";
+            description += $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
+                           (!string.IsNullOrEmpty(newWorkOrderCase.SelectedAreaName)
+                               ? $"<strong>{_localizationService.GetString("Area")}:</strong> {newWorkOrderCase.SelectedAreaName}<br>"
+                               : "") +
+                           $"<strong>{_localizationService.GetString("Description")}:</strong> {newWorkOrderCase.Description}<br>" +
+                           priorityText +
+                           $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {newWorkOrderCase.CreatedByName}<br>" +
+                           (!string.IsNullOrEmpty(newWorkOrderCase.CreatedByText)
+                               ? $"<strong>{_localizationService.GetString("CreatedBy")}:</strong> {newWorkOrderCase.CreatedByText}<br>"
+                               : "") +
+                           $"<strong>{_localizationService.GetString("CreatedDate")}:</strong> {newWorkOrderCase.CaseInitiated: dd.MM.yyyy}<br><br>" +
+                           $"<strong>{_localizationService.GetString("LastUpdatedBy")}:</strong> {await _userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
+                           $"<strong>{_localizationService.GetString("LastUpdatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
+                           $"<strong>{_localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
 
             var pushMessageTitle = !string.IsNullOrEmpty(createModel.AreaName)
                 ? $"{property.Name}; {createModel.AreaName}"
@@ -538,7 +586,11 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 createModel.AreaName,
                 _userService.UserId,
                 picturesOfTasks,
-                site.Name)).ConfigureAwait(false);
+                site.Name,
+                property.Name,
+                (int)property.FolderIdForOngoingTasks!,
+                (int) property.FolderIdForTasks!,
+                (int) property.FolderIdForCompletedTasks!)).ConfigureAwait(false);
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
@@ -669,22 +721,22 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         var core = await _coreHelper.GetCore().ConfigureAwait(false);
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
 
+        var workOrdersToRetract = await _backendConfigurationPnDbContext.WorkorderCases
+            .Where(x => x.ParentWorkorderCaseId == workOrderCase.Id).ToListAsync();
+
+        foreach (var theCase in workOrdersToRetract)
+        {
+            try {
+                await core.CaseDelete(theCase.CaseId);
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                Console.WriteLine($"faild to delete case {theCase.CaseId}");
+            }
+            await theCase.Delete(_backendConfigurationPnDbContext);
+        }
+
         if (workOrderCase.ParentWorkorderCaseId != null)
         {
-            var workOrdersToRetract = await _backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.ParentWorkorderCaseId == workOrderCase.ParentWorkorderCaseId).ToListAsync();
-
-            foreach (var theCase in workOrdersToRetract)
-            {
-                try {
-                    await core.CaseDelete(theCase.CaseId);
-                } catch (Exception e) {
-                    Console.WriteLine(e);
-                    Console.WriteLine($"faild to delete case {theCase.CaseId}");
-                }
-                await theCase.Delete(_backendConfigurationPnDbContext);
-            }
-
             var parentCase = await _backendConfigurationPnDbContext.WorkorderCases
                 .FirstAsync(x => x.Id == workOrderCase.ParentWorkorderCaseId);
 
@@ -700,19 +752,21 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             }
             await parentCase.Delete(_backendConfigurationPnDbContext);
 
-            if (workOrderCase.CaseId != 0)
-            {
-                try
-                {
-                    await core.CaseDelete(workOrderCase.CaseId);
-                } catch (Exception e) {
-                    Console.WriteLine(e);
-                    Console.WriteLine($"faild to delete case {workOrderCase.CaseId}");
-                }
-            }
 
-            await workOrderCase.Delete(_backendConfigurationPnDbContext);
         }
+
+        if (workOrderCase.CaseId != 0)
+        {
+            try
+            {
+                await core.CaseDelete(workOrderCase.CaseId);
+            } catch (Exception e) {
+                Console.WriteLine(e);
+                Console.WriteLine($"faild to delete case {workOrderCase.CaseId}");
+            }
+        }
+
+        await workOrderCase.Delete(_backendConfigurationPnDbContext);
     }
 
     private async Task DeployWorkOrderEform(
@@ -735,6 +789,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         int? folderId = null;
         await using var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
         var i = 0;
+        DateTime startDate = new DateTime(2020, 1, 1);
+        var displayOrder = (int)(DateTime.UtcNow - startDate).TotalSeconds;
         foreach (var propertyWorker in propertyWorkers)
         {
             var priorityText = "";
@@ -743,15 +799,19 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             switch (workorderCase.Priority)
             {
                 case "1":
+                    displayOrder = 100_000_000 + displayOrder;
                     priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Urgent")}<br>";
                     break;
                 case "2":
+                    displayOrder = 200_000_000 + displayOrder;
                     priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("High")}<br>";
                     break;
                 case "3":
+                    displayOrder = 300_000_000 + displayOrder;
                     priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Medium")}<br>";
                     break;
                 case "4":
+                    displayOrder = 400_000_000 + displayOrder;
                     priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Low")}<br>";
                     break;
             }
@@ -793,11 +853,12 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             mainElement.EnableQuickSync = true;
             mainElement.ElementList[0].Label = " ";
             mainElement.ElementList[0].Description.InderValue = outerDescription.Replace("\n", "<br>");
-            if (status == CaseStatusesEnum.Completed || site.Name == siteName)
-            {
-                DateTime startDate = new DateTime(2020, 1, 1);
-                mainElement.DisplayOrder = (int)(startDate - DateTime.UtcNow).TotalSeconds;
-            }
+            mainElement.DisplayOrder = displayOrder; // Lowest value is the top of the list
+            // if (status == CaseStatusesEnum.Completed || site.Name == siteName)
+            // {
+            //     DateTime startDate = new DateTime(2020, 1, 1);
+            //     mainElement.DisplayOrder = (int)(startDate - DateTime.UtcNow).TotalSeconds;
+            // }
             if (site.Name == siteName)
             {
                 mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workorderCase.Priority != "1" ? property.FolderIdForOngoingTasks : property.FolderIdForTasks))

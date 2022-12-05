@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 
 namespace BackendConfiguration.Pn.Services.RebusService
 {
@@ -45,10 +46,12 @@ namespace BackendConfiguration.Pn.Services.RebusService
         private BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
         private ChemicalDbContextHelper _chemicalDbContextHelper;
         private DocumentDbContextHelper _documentDbContextHelper;
+        private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
 
-        public RebusService(IEFormCoreService coreHelper)
+        public RebusService(IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
         {
             _coreHelper = coreHelper;
+            _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _container = new WindsorContainer();
         }
 
@@ -69,6 +72,7 @@ namespace BackendConfiguration.Pn.Services.RebusService
             _container.Register(Component.For<BackendConfigurationDbContextHelper>().Instance(_backendConfigurationDbContextHelper));
             _container.Register(Component.For<ChemicalDbContextHelper>().Instance(_chemicalDbContextHelper));
             _container.Register(Component.For<DocumentDbContextHelper>().Instance(_documentDbContextHelper));
+            _container.Register(Component.For<IBackendConfigurationLocalizationService>().Instance(_backendConfigurationLocalizationService));
             _container.Install(
                 new RebusHandlerInstaller()
                 , new RebusInstaller(connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitMqHost)
