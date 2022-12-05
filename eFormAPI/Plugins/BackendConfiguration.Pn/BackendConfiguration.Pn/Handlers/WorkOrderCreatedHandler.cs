@@ -87,7 +87,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
         await using var _ = sdkDbContext.ConfigureAwait(false);
 
-        var workorderCase = await backendConfigurationPnDbContext.WorkorderCases.FirstAsync(x => x.Id == workorderCaseId);
+        var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases.FirstAsync(x => x.Id == workorderCaseId);
         DateTime startDate = new DateTime(2020, 1, 1);
         var displayOrder = (int)(DateTime.UtcNow - startDate).TotalSeconds;
 
@@ -98,7 +98,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(siteLanguage.LanguageCode);
             var priorityText = "";
 
-            switch (workorderCase.Priority)
+            switch (workOrderCase.Priority)
             {
                 case "1":
                     displayOrder = 100_000_000 + displayOrder;
@@ -120,7 +120,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
 
             var textStatus = "";
 
-            switch (workorderCase.CaseStatusesEnum)
+            switch (workOrderCase.CaseStatusesEnum)
             {
                 case CaseStatusesEnum.Ongoing:
                     textStatus = _backendConfigurationLocalizationService.GetString("Ongoing");
@@ -138,8 +138,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
 
             var assignedTo = site.Name == siteName ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {siteName}<br>";
 
-            var areaName = !string.IsNullOrEmpty(workorderCase.SelectedAreaName)
-                ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workorderCase.SelectedAreaName}<br>"
+            var areaName = !string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
+                ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
                 : "";
 
             var outerDescription = $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {propertyName}<br>" +
@@ -162,7 +162,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             mainElement.DisplayOrder = displayOrder; // Lowest value is the top of the list
             if (site.Name == siteName)
             {
-                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workorderCase.Priority != "1" ? FolderIdForOngoingTasks : FolderIdForTasks))
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workOrderCase.Priority != "1" ? FolderIdForOngoingTasks : FolderIdForTasks))
                     .MicrotingUid.ToString();
                 folderId = FolderIdForOngoingTasks;
                 mainElement.PushMessageTitle = pushMessageTitle;
@@ -182,7 +182,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             var newKvpList = new List<KeyValuePair>();
             foreach (var keyValuePair in kvpList)
             {
-                if (keyValuePair.Key == workorderCase.Priority)
+                if (keyValuePair.Key == workOrderCase.Priority)
                 {
                     keyValuePair.Selected = true;
                 }
@@ -208,24 +208,24 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
             var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId).ConfigureAwait(false);
-            var workOrderCase = new WorkorderCase
+            var newWorkOrderCase = new WorkorderCase
             {
                 CaseId = (int)caseId,
                 PropertyWorkerId = propertyWorker.Key,
                 CaseStatusesEnum = status,
                 ParentWorkorderCaseId = workorderCaseId,
-                SelectedAreaName = areaName,
+                SelectedAreaName = workOrderCase.SelectedAreaName,
                 CreatedByName = site.Name,
-                CreatedByText = workorderCase.CreatedByText,
+                CreatedByText = workOrderCase.CreatedByText,
                 Description = newDescription,
                 CaseInitiated = DateTime.UtcNow,
                 LastAssignedToName = site.Name,
                 LastUpdatedByName = "",
                 LeadingCase = false,
-                Priority = workorderCase.Priority,
+                Priority = workOrderCase.Priority,
                 CreatedByUserId = createdByUserId,
             };
-            await workOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+            await newWorkOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }
     }
 
