@@ -927,7 +927,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 Description = newDescription,
                 CaseInitiated = workorderCase.CaseInitiated,
                 LastAssignedToName = siteName,
-                LastUpdatedByName = updatedByName,
+                LastUpdatedByName = $"{updatedByName} - web",
                 LeadingCase = i == 0,
                 Priority = workorderCase.Priority
             }.Create(_backendConfigurationPnDbContext);

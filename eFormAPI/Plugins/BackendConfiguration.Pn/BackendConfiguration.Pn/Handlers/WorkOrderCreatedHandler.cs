@@ -216,7 +216,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                 ParentWorkorderCaseId = workorderCaseId,
                 SelectedAreaName = workOrderCase.SelectedAreaName,
                 CreatedByName = site.Name,
-                CreatedByText = workOrderCase.CreatedByText,
+                CreatedByText = $"{workOrderCase.CreatedByText} - web",
                 Description = newDescription,
                 CaseInitiated = DateTime.UtcNow,
                 LastAssignedToName = site.Name,
