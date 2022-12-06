@@ -76,7 +76,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.edit = true;
     }
     if (!this.edit) {
-      this.selectedDeviceUser.languageCode = this.languages[1].locale;
+      this.selectedDeviceUser.languageCode = this.languages[1].locale; // set to 1 due to current tests.
+      if (this.authStateService.checkClaim('task_management_enable')) {
+        this.selectedDeviceUser.taskManagementEnabled = true;
+      }
     }
   }
 
