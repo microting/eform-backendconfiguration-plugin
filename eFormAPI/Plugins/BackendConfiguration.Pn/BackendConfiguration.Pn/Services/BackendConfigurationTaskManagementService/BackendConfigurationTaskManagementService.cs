@@ -571,25 +571,28 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 propertyWorkerKvpList.Add(kvp);
             }
 
-            await _bus.SendLocal(new WorkOrderCreated(
-                propertyWorkerKvpList,
-                eformIdForOngoingTasks,
-                (int)property.FolderIdForOngoingTasks!,
-                description,
-                createModel.CaseStatusEnum,
-                newWorkOrderCase.Id,
-                createModel.Description,
-                deviceUsersGroupMicrotingUid,
-                pushMessageBody,
-                pushMessageTitle,
-                createModel.AreaName,
-                _userService.UserId,
-                picturesOfTasks,
-                site.Name,
-                property.Name,
-                (int)property.FolderIdForOngoingTasks!,
-                (int) property.FolderIdForTasks!,
-                (int) property.FolderIdForCompletedTasks!)).ConfigureAwait(false);
+            if (newWorkOrderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            {
+                await _bus.SendLocal(new WorkOrderCreated(
+                    propertyWorkerKvpList,
+                    eformIdForOngoingTasks,
+                    (int)property.FolderIdForOngoingTasks!,
+                    description,
+                    createModel.CaseStatusEnum,
+                    newWorkOrderCase.Id,
+                    createModel.Description,
+                    deviceUsersGroupMicrotingUid,
+                    pushMessageBody,
+                    pushMessageTitle,
+                    createModel.AreaName,
+                    _userService.UserId,
+                    picturesOfTasks,
+                    site.Name,
+                    property.Name,
+                    (int)property.FolderIdForOngoingTasks!,
+                    (int) property.FolderIdForTasks!,
+                    (int) property.FolderIdForCompletedTasks!)).ConfigureAwait(false);
+            }
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
