@@ -571,25 +571,28 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 propertyWorkerKvpList.Add(kvp);
             }
 
-            await _bus.SendLocal(new WorkOrderCreated(
-                propertyWorkerKvpList,
-                eformIdForOngoingTasks,
-                (int)property.FolderIdForOngoingTasks!,
-                description,
-                createModel.CaseStatusEnum,
-                newWorkOrderCase.Id,
-                createModel.Description,
-                deviceUsersGroupMicrotingUid,
-                pushMessageBody,
-                pushMessageTitle,
-                createModel.AreaName,
-                _userService.UserId,
-                picturesOfTasks,
-                site.Name,
-                property.Name,
-                (int)property.FolderIdForOngoingTasks!,
-                (int) property.FolderIdForTasks!,
-                (int) property.FolderIdForCompletedTasks!)).ConfigureAwait(false);
+            if (newWorkOrderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            {
+                await _bus.SendLocal(new WorkOrderCreated(
+                    propertyWorkerKvpList,
+                    eformIdForOngoingTasks,
+                    (int)property.FolderIdForOngoingTasks!,
+                    description,
+                    createModel.CaseStatusEnum,
+                    newWorkOrderCase.Id,
+                    createModel.Description,
+                    deviceUsersGroupMicrotingUid,
+                    pushMessageBody,
+                    pushMessageTitle,
+                    createModel.AreaName,
+                    _userService.UserId,
+                    picturesOfTasks,
+                    site.Name,
+                    property.Name,
+                    (int)property.FolderIdForOngoingTasks!,
+                    (int) property.FolderIdForTasks!,
+                    (int) property.FolderIdForCompletedTasks!)).ConfigureAwait(false);
+            }
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
@@ -788,8 +791,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         int? folderId = null;
         await using var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
         var i = 0;
-        DateTime startDate = new DateTime(2020, 1, 1);
-        var displayOrder = (int)(DateTime.UtcNow - startDate).TotalSeconds;
+        DateTime startDate = new DateTime(2022, 12, 5);
+        var displayOrder = (int)(DateTime.UtcNow - startDate).TotalMinutes;
         foreach (var propertyWorker in propertyWorkers)
         {
             var priorityText = "";
@@ -907,10 +910,14 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             }
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
-            var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+            int caseId = 0;
+            if (workorderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            {
+                caseId = (int)await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
+            }
             await new WorkorderCase
             {
-                CaseId = (int)caseId,
+                CaseId = caseId,
                 PropertyWorkerId = propertyWorker.Id,
                 CaseStatusesEnum = status,
                 ParentWorkorderCaseId = workorderCase.Id,

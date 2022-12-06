@@ -88,7 +88,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         await using var _ = sdkDbContext.ConfigureAwait(false);
 
         var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases.FirstAsync(x => x.Id == workorderCaseId);
-        DateTime startDate = new DateTime(2020, 1, 1);
+        DateTime startDate = new DateTime(2022, 12, 5);
         var displayOrder = (int)(DateTime.UtcNow - startDate).TotalSeconds;
 
         foreach (var propertyWorker in propertyWorkers)
