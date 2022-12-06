@@ -413,6 +413,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 .FirstAsync().ConfigureAwait(false);
 
                             var propertyWorkers = property.PropertyWorkers
+                                .Where(x => x.TaskManagementEnabled == true)
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToList();
 

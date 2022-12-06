@@ -38,7 +38,7 @@ public class WorkOrderHelper
     {
         var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        foreach (var propertyWorker in propertyWorkers)
+        foreach (var propertyWorker in propertyWorkers.Where(x => x.TaskManagementEnabled == true))
         {
             var property = await _backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkorderEnable)

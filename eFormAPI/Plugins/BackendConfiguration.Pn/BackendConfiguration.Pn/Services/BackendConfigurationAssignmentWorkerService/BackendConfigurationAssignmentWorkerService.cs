@@ -160,6 +160,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                  UpdatedByUserId = _userService.UserId
                              }))
                 {
+                    propertyAssignment.TaskManagementEnabled = createModel.TaskManagementEnabled;
                     await propertyAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     var documents = await _caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
                     foreach (var document in documents)
