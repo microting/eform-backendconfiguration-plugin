@@ -337,7 +337,11 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     parentTask.UpdatedByUserId = _userService.UserId;
                     await parentTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
+                    if (parentTask.CaseId != 0)
+                    {
+                        await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
+                    }
+                    // await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
 
                     allChildTasks = await _backendConfigurationPnDbContext.WorkorderCases
                         .Where(x => x.ParentWorkorderCaseId == parentTask.Id)
@@ -403,7 +407,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 CaseId = 0,
                 PropertyWorkerId = propertyWorkers.First().Id,
                 SelectedAreaName = createModel.AreaName,
-                CreatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false),
+                CreatedByName = $"{await _userService.GetCurrentUserFullName().ConfigureAwait(false)} - web",
                 CreatedByText = "",
                 CaseStatusesEnum = createModel.CaseStatusEnum,
                 Description = createModel.Description,
@@ -739,22 +743,23 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
         if (workOrderCase.ParentWorkorderCaseId != null)
         {
-            var parentCase = await _backendConfigurationPnDbContext.WorkorderCases
-                .FirstAsync(x => x.Id == workOrderCase.ParentWorkorderCaseId);
+            var siblings = await _backendConfigurationPnDbContext.WorkorderCases
+                .Where(x => x.ParentWorkorderCaseId == workOrderCase.ParentWorkorderCaseId).ToListAsync();
 
-            if (parentCase.CaseId != 0 && parentCase.ParentWorkorderCaseId != null)
+            foreach (var sibling in siblings)
             {
-                try
+                if (sibling.CaseId != 0)
                 {
-                    await core.CaseDelete(parentCase.CaseId);
-                } catch (Exception e) {
-                    Console.WriteLine(e);
-                    Console.WriteLine($"faild to delete case {parentCase.CaseId}");
+                    try
+                    {
+                        await core.CaseDelete(sibling.CaseId);
+                    } catch (Exception e) {
+                        Console.WriteLine(e);
+                        Console.WriteLine($"faild to delete case {sibling.CaseId}");
+                    }
                 }
+                await sibling.Delete(_backendConfigurationPnDbContext);
             }
-            await parentCase.Delete(_backendConfigurationPnDbContext);
-
-
         }
 
         if (workOrderCase.CaseId != 0)
