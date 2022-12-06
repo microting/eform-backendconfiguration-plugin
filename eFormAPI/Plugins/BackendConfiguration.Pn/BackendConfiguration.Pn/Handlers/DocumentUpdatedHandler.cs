@@ -68,8 +68,82 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 }
 
                 var clt = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "00. Info boks");
-                var folder = await documentDbContext.FolderProperties.FirstAsync(x => x.FolderId == document.FolderId && x.PropertyId == documentProperty.PropertyId);
-                var sdkFolder = await sdkDbContext.Folders.FirstAsync(x => x.Id == folder.SdkFolderId);
+                var folderProperty = await documentDbContext.FolderProperties.FirstOrDefaultAsync(x => x.FolderId == document.FolderId && x.PropertyId == documentProperty.PropertyId);
+
+                int folderId;
+                if (folderProperty == null)
+                {
+                    var propertyFolderId = await backendConfigurationDbContext.Properties.AsNoTracking()
+                        .Where(x => x.Id == documentProperty.PropertyId).Select(x => x.FolderId).FirstAsync();
+                    // var folder = await documentDbContext.Folders.FirstAsync(x => x.Id == document.FolderId);
+                    var folderTranslations = await documentDbContext.FolderTranslations
+                        .Where(x => x.FolderId == document.FolderId).ToListAsync();
+                    var folderTranslationList = new List<CommonTranslationsModel>();
+                    foreach (var translation in folderTranslations)
+                    {
+                        folderTranslationList.Add(new CommonTranslationsModel()
+                        {
+                            Description = translation.Description,
+                            LanguageId = translation.LanguageId,
+                            Name = translation.Name
+                        });
+                    }
+
+                    var folders = await sdkDbContext.FolderTranslations.AsNoTracking().Join(sdkDbContext.Folders,
+                            folderTranslation => folderTranslation.FolderId,
+                            folder1 => folder1.Id,
+                            (folderTranslation, folder1) => new {folderTranslation, folder1})
+                        .Where(x => x.folder1.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.folderTranslation.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.folder1.ParentId == propertyFolderId)
+                        .Where(x => x.folderTranslation.Name == "26. Dokumenter")
+                        .Select(x => x.folder1)
+                        .FirstOrDefaultAsync().ConfigureAwait(false);
+
+
+                    if (folders != null)
+                    {
+                        folderId = folders.Id;
+                    }
+                    else
+                    {
+                        var documentFolderTranslations = new List<CommonTranslationsModel>
+                        {
+                            new()
+                            {
+                                Description = "",
+                                LanguageId = 1,
+                                Name = "26. Dokumenter"
+                            },
+                            new()
+                            {
+                                Description = "",
+                                LanguageId = 2,
+                                Name = "26. Documents"
+                            },
+                            new()
+                            {
+                                Description = "",
+                                LanguageId = 3,
+                                Name = "26. Dokumenten"
+                            }
+                        };
+
+                        folderId = await _sdkCore.FolderCreate(documentFolderTranslations, propertyFolderId)
+                            .ConfigureAwait(false);
+                    }
+
+                    folderId = await _sdkCore.FolderCreate(folderTranslationList, folderId).ConfigureAwait(false);
+                    folderProperty = new FolderProperty
+                    {
+                        FolderId = document.FolderId,
+                        SdkFolderId = folderId,
+                        PropertyId = documentProperty.PropertyId
+                    };
+                    await folderProperty.Create(documentDbContext);
+                }
+
+                var sdkFolder = await sdkDbContext.Folders.FirstAsync(x => x.Id == folderProperty.SdkFolderId);
                 var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == propertyWorker.WorkerId);
                 var language = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
                 var mainElement = await _sdkCore.ReadeForm(clt.CheckListId, language);
@@ -78,7 +152,6 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
 
                 mainElement.Label = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name;
                 mainElement.ElementList[0].Label = mainElement.Label;
-                // mainElement.ElementList[0].Description.InderValue = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
                 mainElement.ElementList[0].DoneButtonEnabled = false;
                 mainElement.ElementList[0].Description.InderValue = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
                 mainElement.Repeated = 0;
