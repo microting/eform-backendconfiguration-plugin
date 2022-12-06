@@ -258,8 +258,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 var foundCase = await sdkDbContext.Cases
-                    .Where(x => x.Id == model.Id
-                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == model.Id)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if(foundCase != null) {
@@ -274,6 +273,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Single(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}").Id;
                     foundCase.Status = 100;
+                    foundCase.WorkflowState = Constants.WorkflowStates.Created;
                     await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
                     if (CaseUpdateDelegates.CaseUpdateDelegate != null)
