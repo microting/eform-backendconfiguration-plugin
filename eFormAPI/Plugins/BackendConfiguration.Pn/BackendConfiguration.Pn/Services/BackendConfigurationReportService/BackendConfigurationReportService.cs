@@ -302,6 +302,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
                                 {
                                     list.Add(isDocx
+                                        //? $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}"
                                         ? $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}"
                                         : imageField.UploadedData.FileName);
                                     list.Add(geoTag);
