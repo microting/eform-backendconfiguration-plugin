@@ -78,6 +78,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     {
         try
         {
+            var timeZoneInfo = await _userService.GetCurrentUserTimeZoneInfo();
             var query = _backendConfigurationPnDbContext.WorkorderCases
                 .Include(x => x.PropertyWorker)
                 .ThenInclude(x => x.Property)
@@ -136,18 +137,18 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             };
             query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel, new List<string>(), excludeSort);
 
-            var workorderCasesFromDb = await query
+            var workOrderCaseFromDb = await query
                 .Select(x => new WorkorderCaseModel
                 {
                     AreaName = x.SelectedAreaName,
                     CreatedByName = x.CreatedByName,
                     CreatedByText = x.CreatedByText,
-                    CaseInitiated = x.CaseInitiated,
+                    CaseInitiated = TimeZoneInfo.ConvertTimeFromUtc(x.CaseInitiated, timeZoneInfo),
                     Id = x.Id,
                     Status = x.CaseStatusesEnum.ToString(),
                     Description = x.Description.Replace("\n", "<br />"),
                     PropertyName = x.PropertyWorker.Property.Name,
-                    LastUpdateDate = x.UpdatedAt,
+                    LastUpdateDate = x.UpdatedAt != null ? TimeZoneInfo.ConvertTimeFromUtc((DateTime)x.UpdatedAt, timeZoneInfo) : null,
                     //x.CaseId,
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
@@ -158,18 +159,18 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
             {
-                workorderCasesFromDb = workorderCasesFromDb.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo)
+                workOrderCaseFromDb = workOrderCaseFromDb.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo)
                     .ToList();
             }
 
             if (excludeSort.Contains(filtersModel.Sort))
             {
-                workorderCasesFromDb = QueryHelper
-                    .AddFilterAndSortToQuery(workorderCasesFromDb.AsQueryable(), filtersModel, new List<string>())
+                workOrderCaseFromDb = QueryHelper
+                    .AddFilterAndSortToQuery(workOrderCaseFromDb.AsQueryable(), filtersModel, new List<string>())
                     .ToList();
             }
 
-            return workorderCasesFromDb;
+            return workOrderCaseFromDb;
         }
         catch (Exception e)
         {
@@ -197,6 +198,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     x.CaseId,
                     x.ParentWorkorderCaseId,
                     x.PropertyWorker.PropertyId,
+                    x.LastAssignedToName,
                     x.Priority,
                     x.CaseStatusesEnum
                 }).FirstOrDefaultAsync().ConfigureAwait(false);
@@ -222,10 +224,9 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 fileNames.Add(fileName);
             }
 
-            var assignedSiteId = await sdkDbContext.Cases
-                .Where(x => x.MicrotingUid == task.CaseId || x.Id == task.CaseId)
-                .Include(x => x.Site)
-                .Select(x => x.Site.Id)
+            var assignedSiteId = await sdkDbContext.Sites
+                .Where(x => x.Name == task.LastAssignedToName)
+                .Select(x => x.Id)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
 
             var taskForReturn = new WorkOrderCaseReadModel

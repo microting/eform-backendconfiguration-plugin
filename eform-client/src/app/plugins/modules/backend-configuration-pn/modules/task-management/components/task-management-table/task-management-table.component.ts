@@ -30,7 +30,7 @@ export class TaskManagementTableComponent implements OnInit {
       sortProp: {id: 'CaseInitiated'},
       sortable: true,
       type: 'date',
-      typeParameter: {format: 'dd.MM.yyyy'},
+      typeParameter: {format: 'dd.MM.yyyy HH:mm'},
       class: 'createdDate'
     },
     {header: this.translateService.stream('Property'), field: 'propertyName', sortProp: {id: 'PropertyName'}, sortable: true, class: 'propertyName'},
@@ -50,7 +50,7 @@ export class TaskManagementTableComponent implements OnInit {
       sortProp: {id: 'UpdatedAt'},
       sortable: true,
       type: 'date',
-      typeParameter: {format: 'dd.MM.yyyy'},
+      typeParameter: {format: 'dd.MM.yyyy HH:mm'},
       class: 'lastUpdateDate'
     },
     {header: this.translateService.stream('LastUpdateBy'), field: 'lastUpdatedBy', sortProp: {id: 'LastUpdatedByName'}, sortable: true, class: 'lastUpdatedBy'},

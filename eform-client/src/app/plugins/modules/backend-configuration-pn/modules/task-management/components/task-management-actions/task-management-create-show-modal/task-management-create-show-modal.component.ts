@@ -93,7 +93,7 @@ export class TaskManagementCreateShowModalComponent
         {
           propertyId: workOrderCase.propertyId,
           areaName: workOrderCase.areaName,
-          assignedTo: workOrderCase.assignedSiteId,
+          // assignedTo: workOrderCase.assignedSiteId,
           descriptionTask: workOrderCase.description,
           priority: workOrderCase.priority,
           caseStatusEnum: workOrderCase.caseStatusEnum,
@@ -138,7 +138,7 @@ export class TaskManagementCreateShowModalComponent
           if (propertyId) {
             this.getPropertyAreas(propertyId);
             this.getSites(propertyId);
-            this.workOrderCaseForm.patchValue({areaName: null, assignedTo: null,});
+            // this.workOrderCaseForm.patchValue({areaName: null, assignedTo: null,});
           }
         });
       this.isCreate = true;
@@ -200,6 +200,18 @@ export class TaskManagementCreateShowModalComponent
               return {id: x.siteId, name: site ? site.name : '', description: '',};
             });
             this.assignedSitesToProperty = this.assignedSitesToProperty.filter((x) => x !== null);
+            if (this.currentWorkOrderCase) {
+              debugger;
+              this.workOrderCaseForm.patchValue(
+                {
+                  assignedTo: this.currentWorkOrderCase.assignedSiteId,
+                },
+                { emitEvent: false }
+              );
+            } else {
+              debugger;
+              this.workOrderCaseForm.patchValue({areaName: null, assignedTo: null,});
+            }
           }
         });
       }
