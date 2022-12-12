@@ -269,9 +269,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     foundCase.DoneAtUserModifiable = newDoneAt;
                     foundCase.DoneAt = newDoneAt;
 
-                    foundCase.SiteId = sdkDbContext.Sites
+                    var site = await sdkDbContext.Sites
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Single(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}").Id;
+                        .FirstOrDefaultAsync(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}");
+                    if (site != null)
+                    {
+                        foundCase.SiteId = site.Id;
+                    }
+                    else
+                    {
+                        await core.SiteCreate($"{currentUser.FirstName} {currentUser.LastName}", currentUser.FirstName, currentUser.LastName,
+                            null, "da");
+                        site = await sdkDbContext.Sites
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}");
+                        foundCase.SiteId = site.Id;
+                    }
                     foundCase.Status = 100;
                     foundCase.WorkflowState = Constants.WorkflowStates.Created;
                     await foundCase.Update(sdkDbContext).ConfigureAwait(false);
