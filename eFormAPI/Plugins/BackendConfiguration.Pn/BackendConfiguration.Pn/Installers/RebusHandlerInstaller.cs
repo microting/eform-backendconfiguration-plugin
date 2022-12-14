@@ -38,6 +38,7 @@ namespace BackendConfiguration.Pn.Installers
         {
             container.Register(Component.For<IHandleMessages<ChemicalAreaCreated>>().ImplementedBy<ChemicalAreaCreatedHandler>().LifestyleTransient());
             container.Register(Component.For<IHandleMessages<WorkOrderCreated>>().ImplementedBy<WorkOrderCreatedHandler>().LifestyleTransient());
+            container.Register(Component.For<IHandleMessages<WorkOrderUpdated>>().ImplementedBy<WorkOrderUpdatedHandler>().LifestyleTransient());
             container.Register(Component.For<IHandleMessages<DocumentUpdated>>().ImplementedBy<DocumentUpdatedHandler>().LifestyleTransient());
         }
     }

@@ -718,7 +718,21 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         await RetractEform(workOrderCase);
         // deploy eform to ongoing status
 
-        await DeployWorkOrderEform(propertyWorkers, eformIdForOngoingTasks, property, label,  workOrderCase.CaseStatusesEnum, workOrderCase, updateModel.Description, int.Parse(deviceUsersGroupUid), hash, site.Name, pushMessageBody, pushMessageTitle, updatedByName);
+        //_bus.Send(new WorkOrderUpdated(propertyWorkers, eformIdForOngoingTasks, property))
+
+        //await DeployWorkOrderEform(propertyWorkers, eformIdForOngoingTasks, property, label,  workOrderCase.CaseStatusesEnum, workOrderCase, updateModel.Description, int.Parse(deviceUsersGroupUid), hash, site.Name, pushMessageBody, pushMessageTitle, updatedByName);
+
+        var propertyWorkerKvpList = new List<KeyValuePair<int, int>>();
+
+        foreach (var propertyWorker in propertyWorkers)
+        {
+            var kvp = new KeyValuePair<int, int>(propertyWorker.Id, propertyWorker.WorkerId);
+            propertyWorkerKvpList.Add(kvp);
+        }
+
+        await _bus.SendLocal(new WorkOrderUpdated(propertyWorkerKvpList, eformIdForOngoingTasks, property.Id, label,
+            workOrderCase.CaseStatusesEnum, workOrderCase.Id, updateModel.Description, int.Parse(deviceUsersGroupUid),
+            hash, site.Name, pushMessageBody, pushMessageTitle, updatedByName)).ConfigureAwait(false);
 
         return new OperationResult(true, _localizationService.GetString("TaskUpdatedSuccessful"));
     }
@@ -775,170 +789,6 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
         }
 
         await workOrderCase.Delete(_backendConfigurationPnDbContext);
-    }
-
-    private async Task DeployWorkOrderEform(
-        List<PropertyWorker> propertyWorkers,
-        int eformId,
-        Property property,
-        string description,
-        CaseStatusesEnum status,
-        WorkorderCase workorderCase,
-        string newDescription,
-        int? deviceUsersGroupId,
-        string pdfHash,
-        string siteName,
-        string pushMessageBody,
-        string pushMessageTitle,
-        string updatedByName)
-    {
-
-        var _sdkCore = await _coreHelper.GetCore().ConfigureAwait(false);
-        int? folderId = null;
-        await using var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
-        var i = 0;
-        DateTime startDate = new DateTime(2022, 12, 5);
-        var displayOrder = (int)(DateTime.UtcNow - startDate).TotalMinutes;
-        foreach (var propertyWorker in propertyWorkers)
-        {
-            var priorityText = "";
-
-            var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == propertyWorker.WorkerId);
-            switch (workorderCase.Priority)
-            {
-                case "1":
-                    displayOrder = 100_000_000 + displayOrder;
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Urgent")}<br>";
-                    break;
-                case "2":
-                    displayOrder = 200_000_000 + displayOrder;
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("High")}<br>";
-                    break;
-                case "3":
-                    displayOrder = 300_000_000 + displayOrder;
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Medium")}<br>";
-                    break;
-                case "4":
-                    displayOrder = 400_000_000 + displayOrder;
-                    priorityText = $"<strong>{_localizationService.GetString("Priority")}:</strong> {_localizationService.GetString("Low")}<br>";
-                    break;
-            }
-
-            var textStatus = "";
-
-            switch (workorderCase.CaseStatusesEnum)
-            {
-                case CaseStatusesEnum.Ongoing:
-                    textStatus = _localizationService.GetString("Ongoing");
-                    break;
-                case CaseStatusesEnum.Completed:
-                    textStatus = _localizationService.GetString("Completed");
-                    break;
-                case CaseStatusesEnum.Awaiting:
-                    textStatus = _localizationService.GetString("Awaiting");
-                    break;
-                case CaseStatusesEnum.Ordered:
-                    textStatus = _localizationService.GetString("Ordered");
-                    break;
-            }
-
-            var assignedTo = site.Name == siteName ? "" : $"<strong>{_localizationService.GetString("AssignedTo")}:</strong> {siteName}<br>";
-
-            var areaName = !string.IsNullOrEmpty(workorderCase.SelectedAreaName)
-                ? $"<strong>{_localizationService.GetString("Area")}:</strong> {workorderCase.SelectedAreaName}<br>"
-                : "";
-
-            var outerDescription = $"<strong>{_localizationService.GetString("Location")}:</strong> {property.Name}<br>" +
-                                   areaName +
-                                   $"<strong>{_localizationService.GetString("Description")}:</strong> {newDescription}<br>" +
-                                   priorityText +
-                                   assignedTo +
-                                   $"<strong>{_localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
-            var siteLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Id == site.LanguageId);
-            var mainElement = await _sdkCore.ReadeForm(eformId, siteLanguage);
-            mainElement.Label = " ";
-            mainElement.ElementList[0].QuickSyncEnabled = true;
-            mainElement.EnableQuickSync = true;
-            mainElement.ElementList[0].Label = " ";
-            mainElement.ElementList[0].Description.InderValue = outerDescription.Replace("\n", "<br>");
-            mainElement.DisplayOrder = displayOrder; // Lowest value is the top of the list
-            // if (status == CaseStatusesEnum.Completed || site.Name == siteName)
-            // {
-            //     DateTime startDate = new DateTime(2020, 1, 1);
-            //     mainElement.DisplayOrder = (int)(startDate - DateTime.UtcNow).TotalSeconds;
-            // }
-            if (site.Name == siteName)
-            {
-                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workorderCase.Priority != "1" ? property.FolderIdForOngoingTasks : property.FolderIdForTasks))
-                    .MicrotingUid.ToString();
-                folderId = property.FolderIdForOngoingTasks;
-                mainElement.PushMessageTitle = pushMessageTitle;
-                mainElement.PushMessageBody = pushMessageBody;
-            }
-            else
-            {
-                folderId = property.FolderIdForCompletedTasks;
-                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == property.FolderIdForCompletedTasks)
-                    .MicrotingUid.ToString();
-            }
-            // TODO uncomment when new app has been released.
-            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\n", "<br>");
-            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
-            ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
-            ((ShowPdf) ((DataElement) mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
-
-            List<KeyValuePair> kvpList = ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList;
-            var newKvpList = new List<KeyValuePair>();
-            foreach (var keyValuePair in kvpList)
-            {
-                if (keyValuePair.Key == workorderCase.Priority)
-                {
-                    keyValuePair.Selected = true;
-                }
-                newKvpList.Add(keyValuePair);
-            }
-            ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList = newKvpList;
-
-            if (deviceUsersGroupId != null)
-            {
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source = (int)deviceUsersGroupId;
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
-                ((Comment)((DataElement)mainElement.ElementList[0]).DataItemList[3]).Value = newDescription;
-                ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Mandatory = true;
-                mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-                mainElement.Repeated = 1;
-            }
-            else
-            {
-                mainElement.EndDate = DateTime.Now.AddDays(30).ToUniversalTime();
-                mainElement.ElementList[0].DoneButtonEnabled = false;
-                mainElement.Repeated = 1;
-            }
-
-            mainElement.StartDate = DateTime.Now.ToUniversalTime();
-            int caseId = 0;
-            if (workorderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
-            {
-                caseId = (int)await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
-            }
-            await new WorkorderCase
-            {
-                CaseId = caseId,
-                PropertyWorkerId = propertyWorker.Id,
-                CaseStatusesEnum = status,
-                ParentWorkorderCaseId = workorderCase.Id,
-                SelectedAreaName = workorderCase.SelectedAreaName,
-                CreatedByName = workorderCase.CreatedByName,
-                CreatedByText = workorderCase.CreatedByText,
-                Description = newDescription,
-                CaseInitiated = workorderCase.CaseInitiated,
-                LastAssignedToName = siteName,
-                LastUpdatedByName = $"{updatedByName} - web",
-                LeadingCase = i == 0,
-                Priority = workorderCase.Priority
-            }.Create(_backendConfigurationPnDbContext);
-            i++;
-        }
     }
 
     private async Task<string> GeneratePdf(List<string> picturesOfTasks, int sitId)

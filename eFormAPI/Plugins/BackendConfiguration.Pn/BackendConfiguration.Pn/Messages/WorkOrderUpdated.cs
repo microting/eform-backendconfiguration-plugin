@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn.Messages;
@@ -6,35 +7,33 @@ namespace BackendConfiguration.Pn.Messages;
 public class WorkOrderUpdated
 {
     public List<KeyValuePair<int, int>> PropertyWorkers { get; set; }
-    public int EformId { get; set; }
-    public int FolderId { get; set; }
-    public string Description { get; set; }
-    public CaseStatusesEnum Status { get; set; }
-    public int WorkorderCaseId { get; set; }
-    public string NewDescription { get; set; }
-    public string SiteName { get; set; }
-    public int? DeviceUsersGroupId { get; set; }
-    public string PushMessageBody { get; set; }
-    public string PushMessageTitle { get; set; }
-    public string AreaName { get; set; }
-    public int CreatedByUserId {get; set;}
-    public List<string> PicturesOfTasks { get; set; }
+    public int EformId;
+    public int PropertyId;
+    public string Description;
+    public CaseStatusesEnum Status;
+    public int WorkorderCaseId;
+    public string NewDescription;
+    public int? DeviceUsersGroupId;
+    public string PdfHash;
+    public string SiteName;
+    public string PushMessageBody;
+    public string PushMessageTitle;
+    public string UpdatedByName;
 
-    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int folderId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pushMessageBody, string pushMessageTitle, string areaName, int createdByUserId, List<string> picturesOfTasks, string siteName)
+    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int propertyId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pdfHash, string siteName, string pushMessageBody, string pushMessageTitle, string updatedByName)
     {
         PropertyWorkers = propertyWorkers;
         EformId = eformId;
-        FolderId = folderId;
+        PropertyId = propertyId;
         Description = description;
         Status = status;
         WorkorderCaseId = workorderCaseId;
         NewDescription = newDescription;
         DeviceUsersGroupId = deviceUsersGroupId;
+        PdfHash = pdfHash;
+        SiteName = siteName;
         PushMessageBody = pushMessageBody;
         PushMessageTitle = pushMessageTitle;
-        AreaName = areaName;
-        CreatedByUserId = createdByUserId;
-        PicturesOfTasks = picturesOfTasks;
-        SiteName = siteName;
+        UpdatedByName = updatedByName;
     }
 }
