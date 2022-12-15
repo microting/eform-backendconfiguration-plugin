@@ -57,6 +57,10 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(areaRulePlanningCreated.workers[0].name).eq(
       `${workerForCreate.name} ${workerForCreate.surname}`
     );
+    // expect(
+    //   await (await $(`#mat-checkbox-0`)).getValue(),
+    //   `User ${areaRulePlanningCreated.workers[0]} not paired`
+    // ).eq('true');
     expect(areaRulePlanningCreated.workers[0].checked).eq(true);
     expect(areaRulePlanningCreated.enableCompliance).eq(areaRulePlanning.enableCompliance);
     await itemsPlanningPlanningPage.goToPlanningsPage();

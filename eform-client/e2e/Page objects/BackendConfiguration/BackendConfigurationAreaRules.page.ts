@@ -159,7 +159,8 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async checkboxCreateAssignment(i: number) {
-    return $(`#checkboxCreateAssignment${i}`);
+    //return $(`#mat-checkbox-${i}`);
+    return $(`#checkboxCreateAssignment${i}-input`);
   }
 
   public async updateEntityList() {

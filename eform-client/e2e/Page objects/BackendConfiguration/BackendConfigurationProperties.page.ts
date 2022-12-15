@@ -494,6 +494,7 @@ export class PropertyRowObject {
     ).click();
 
     await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
+    await browser.pause(500);
   }
 
   public async closeAreasViewModal() {
