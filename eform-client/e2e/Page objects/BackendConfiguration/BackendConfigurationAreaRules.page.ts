@@ -778,13 +778,14 @@ export class AreaRuleRowObject {
     const masWorkers = await $$('#pairingModalTableBody > tr');
     for (let i = 0; i < masWorkers.length; i++) {
       const workerName = await (await masWorkers[i].$$('td')[1]).getText();
+      const status = await $('#pairingModalTableBody status-bar-compact div div').getAttribute('title');
       const workerChecked =
         (await (
           await backendConfigurationAreaRulesPage.checkboxCreateAssignment(i)
         ).getValue()) === 'true';
       plan.workers = [
         ...plan.workers,
-        { name: workerName, checked: workerChecked },
+        { name: workerName, checked: workerChecked, status: status },
       ];
     }
     await this.closePlanningModal(true, waitCreateBtn);
@@ -807,5 +808,5 @@ export class AreaRulePlanningCreateUpdate {
   repeatEvery?: string;
   repeatType?: string;
   startDate?: string;
-  workers?: { workerNumber?: number; name?: string; checked?: boolean }[];
+  workers?: { workerNumber?: number; name?: string; checked?: boolean, status?: string }[];
 }
