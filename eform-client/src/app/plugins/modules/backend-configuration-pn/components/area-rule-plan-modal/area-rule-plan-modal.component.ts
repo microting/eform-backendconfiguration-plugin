@@ -23,6 +23,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {SiteDto} from 'src/app/common/models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn, MtxGridRowSelectionFormatter} from '@ng-matero/extensions/grid';
+import {PairingModel} from "src/app/plugins/modules/items-planning-pn/models";
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -287,6 +288,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     const assignmentObject = new AreaRuleAssignedSitesModel();
     assignmentObject.checked = true;
     assignmentObject.siteId = e.siteId;
+    assignmentObject.status = 0;
     if (this.selectedArea.type !== 9) {
       this.selectedAreaRulePlanning.assignedSites = [
         ...this.selectedAreaRulePlanning.assignedSites,
@@ -298,11 +300,26 @@ export class AreaRulePlanModalComponent implements OnInit {
     }
   }
 
-  getAssignmentBySiteId(siteId: number) {
+  getAssignmentBySiteId(siteId: number) :string {
     const assignedSite = this.selectedAreaRulePlanning.assignedSites.find(
       (x) => x.siteId === siteId
     );
-    return assignedSite ? assignedSite.checked : 'false';
+    return !assignedSite ? 'false' : (assignedSite.checked ? 'true' : 'false');
+  }
+
+  getLatestCaseStatus(siteId: number) {
+    const assignedSite = this.selectedAreaRulePlanning.assignedSites.find(
+      (x) => x.siteId === siteId
+    );
+    if (assignedSite) {
+      if (assignedSite.status !== undefined) {
+        return assignedSite.status;
+      } else {
+        return 0;
+      }
+    } else {
+      return 0;
+    }
   }
 
   generateInitialPlanningObject(
@@ -490,26 +507,26 @@ export class AreaRulePlanModalComponent implements OnInit {
     //this.selectedAreaRulePlanning.complianceEnabled = false;
   }
 
-  getShowCompliance(): boolean {
-    if (this.selectedArea.type === 3) {
-      return false;
-    }
-    if (this.selectedArea.type === 4 ||
-      this.selectedAreaRulePlanning.typeSpecificFields &&
-      this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery) {
-      return true;
-    }
-    if (this.selectedArea.type === 8) {
-      return this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable;
-    }
-  }
+  // getShowCompliance(): boolean {
+  //   if (this.selectedArea.type === 3) {
+  //     return false;
+  //   }
+  //   if (this.selectedArea.type === 4 ||
+  //     this.selectedAreaRulePlanning.typeSpecificFields &&
+  //     this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery) {
+  //     return true;
+  //   }
+  //   if (this.selectedArea.type === 8) {
+  //     return this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable;
+  //   }
+  // }
 
-  changeArray(sites: SiteDto[]) {
-    this.selectedAreaRulePlanning.assignedSites = [];
-    sites.forEach(site => this.selectedAreaRulePlanning.assignedSites =
-      [
-        ...this.selectedAreaRulePlanning.assignedSites,
-        {siteId: site.siteId, checked: true},
-      ]);
-  }
+  // changeArray(sites: SiteDto[]) {
+  //   this.selectedAreaRulePlanning.assignedSites = [];
+  //   sites.forEach(site => this.selectedAreaRulePlanning.assignedSites =
+  //     [
+  //       ...this.selectedAreaRulePlanning.assignedSites,
+  //       {siteId: site.siteId, checked: true},
+  //     ]);
+  // }
 }

@@ -244,10 +244,11 @@
                   <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">Microting ID</th>
                   <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Device user' | translate }}</th>
                   <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Select' | translate }}</th>
+                  <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Status' | translate }}</th>
                 </tr>
                 </thead>
                 <tbody id="pairingModalTableBody" role="rowgroup">
-                <ng-container *ngFor="let worker of selectedArea.availableWorkers;; let i = index">
+                <ng-container *ngFor="let worker of selectedArea.availableWorkers; let i = index">
                   <tr class="mat-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
                     <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id" id="microtingId">{{worker.siteId}}</td>
                     <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id" id="deviceUserFullName">{{worker.siteName}}</td>
@@ -258,13 +259,16 @@
                           (change)="addToArray($event, worker.siteId)"
                           [checked]="getAssignmentBySiteId(worker.siteId)"
                           [value]="getAssignmentBySiteId(worker.siteId)"
-                          color="primary"
-                          type="checkbox"
                           [disabled]="!selectedAreaRulePlanning.status"
                         >
                         </mat-checkbox>
                         <label for="checkboxCreateAssignment{{ i }}"></label>
                       </div>
+                    </td>
+                    <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id">
+                      <status-bar-compact *ngIf="getAssignmentBySiteId(worker.siteId) === 'true'"
+                        [status]="getLatestCaseStatus(worker.siteId)"
+                      ></status-bar-compact>
                     </td>
                   </tr>
                 </ng-container>

@@ -1514,7 +1514,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         SendNotifications = x.SendNotifications,
                         AssignedSites = x.PlanningSites
                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Select(y => new AreaRuleAssignedSitesModel { SiteId = y.SiteId, Checked = true })
+                            .Select(y => new AreaRuleAssignedSitesModel { SiteId = y.SiteId, Checked = true, Status = y.Status })
                             .ToList(),
                         ComplianceEnabled = x.ComplianceEnabled,
                         PropertyId = x.PropertyId,
@@ -1753,7 +1753,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     CreatedByUserId = _userService.UserId,
                     UpdatedByUserId = _userService.UserId,
                     AreaId = areaRule.AreaId,
-                    AreaRuleId = areaRule.Id
+                    AreaRuleId = areaRule.Id,
+                    Status = 0,
                 }).ToList(),
                 ComplianceEnabled = areaRulePlanningModel.ComplianceEnabled,
             };

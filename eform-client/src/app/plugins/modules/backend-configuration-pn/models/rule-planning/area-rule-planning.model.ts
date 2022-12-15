@@ -16,6 +16,7 @@ export class AreaRulePlanningModel {
 export class AreaRuleAssignedSitesModel {
   siteId: number;
   checked: boolean;
+  status: number;
 }
 
 export class TypeSpecificFieldsAreaRulePlanning {
