@@ -17,6 +17,8 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
+import {MatCheckboxModule} from "@angular/material/checkbox";
+import {MatCardModule} from "@angular/material/card";
 
 @NgModule({
   imports: [
@@ -33,6 +35,8 @@ import {MtxGridModule} from '@ng-matero/extensions/grid';
     MatSlideToggleModule,
     MtxSelectModule,
     MtxGridModule,
+    MatCheckboxModule,
+    MatCardModule,
   ],
   declarations: [
     AreaRulePlanModalComponent,

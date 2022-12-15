@@ -45,10 +45,10 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
   selectedProperty: PropertyModel;
   breadcrumbs = [
     {
-      name: 'hej',
+      name: '',
       href: '/plugins/backend-configuration-pn/properties',
     },
-    {name: 'hej1', href: ''},
+    {name: '', href: ''},
     {name: ''},
   ];
 

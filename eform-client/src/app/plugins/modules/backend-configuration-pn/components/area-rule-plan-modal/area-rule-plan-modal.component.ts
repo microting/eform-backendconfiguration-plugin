@@ -269,7 +269,7 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   addToArray(e: any, siteId: number) {
     const assignmentObject = new AreaRuleAssignedSitesModel();
-    if (e.target.checked) {
+    if (e.checked) {
       assignmentObject.checked = true;
       assignmentObject.siteId = siteId;
       this.selectedAreaRulePlanning.assignedSites = [
@@ -302,7 +302,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     const assignedSite = this.selectedAreaRulePlanning.assignedSites.find(
       (x) => x.siteId === siteId
     );
-    return assignedSite ? assignedSite.checked : false;
+    return assignedSite ? assignedSite.checked : 'false';
   }
 
   generateInitialPlanningObject(
