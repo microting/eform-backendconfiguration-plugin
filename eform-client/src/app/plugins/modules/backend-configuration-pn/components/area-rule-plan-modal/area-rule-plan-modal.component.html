@@ -102,6 +102,7 @@
                     [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
                     (ngModelChange)="onChangeRepeatEvery($event)"
                     [clearable]="false"
+                    [disabled]="!selectedAreaRulePlanning.status"
                     id="planRepeatEvery"
                     name="createRepeatEvery"
                     appendTo="body"
@@ -116,6 +117,7 @@
                   bindLabel="name"
                   bindValue="id"
                   [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"
+                  [disabled]="!selectedAreaRulePlanning.status"
                   id="createDayOfWeek"
                   appendTo="body"
                 >
@@ -126,6 +128,7 @@
                 <mtx-select
                   [items]="daysOfMonth"
                   [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfMonth"
+                  [disabled]="!selectedAreaRulePlanning.status"
                   id="createDayOfMonth"
                   name="createDayOfMonth"
                   appendTo="body"

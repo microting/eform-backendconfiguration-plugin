@@ -593,6 +593,28 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            var planningSites = await context.PlanningSites
+                .Where(x => x.Status == 0)
+                .Where(x =>
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            foreach (var planningSite in planningSites)
+            {
+                var areaRulePlanning =
+                    await context.AreaRulePlannings
+                        .FirstAsync(x => x.Id == planningSite.AreaRulePlanningsId)
+                        .ConfigureAwait(false);
+                var itemPlanningCaseSite = await itemsPlanningContext.PlanningCaseSites
+                    .Where(x => x.MicrotingSdkSiteId == planningSite.SiteId)
+                    .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
+                    .OrderBy(x => x.Id)
+                    .LastOrDefaultAsync().ConfigureAwait(false);
+                if (itemPlanningCaseSite == null) continue;
+                planningSite.Status = itemPlanningCaseSite.Status;
+                await planningSite.Update(context);
+            }
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
