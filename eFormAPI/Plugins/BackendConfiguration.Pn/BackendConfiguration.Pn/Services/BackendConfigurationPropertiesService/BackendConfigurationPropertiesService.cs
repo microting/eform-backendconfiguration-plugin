@@ -400,6 +400,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 await core.FolderUpdate((int)property.FolderId, translatesForFolder, null).ConfigureAwait(false);
 
+                property = await CreateTaskManagementFolders(property, sdkDbContext, core);
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
                 if (property.WorkorderEnable != updateModel.WorkorderEnable)
                 {
                     switch (updateModel.WorkorderEnable)
@@ -530,12 +533,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 property.UpdatedByUserId = _userService.UserId;
                 property.MainMailAddress = updateModel.MainMailAddress;
                 property.WorkorderEnable = updateModel.WorkorderEnable;
-                property = await CreateTaskManagementFolders(property, sdkDbContext, core);
-                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 property.SelectedLanguages = property.SelectedLanguages
                     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToList();
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 var selectedLanguagesForDelete = property.SelectedLanguages
                     .Where(x => !updateModel.LanguagesIds.Contains(x.LanguageId))
