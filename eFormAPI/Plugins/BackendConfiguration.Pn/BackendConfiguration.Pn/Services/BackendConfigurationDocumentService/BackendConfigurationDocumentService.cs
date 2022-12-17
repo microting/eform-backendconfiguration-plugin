@@ -242,6 +242,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
     public async Task<OperationResult> UpdateDocumentAsync(BackendConfigurationDocumentModel model)
     {
+        var core = await _coreHelper.GetCore();
         var document = await _caseTemplatePnDbContext.Documents
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentProperties)
@@ -279,6 +280,30 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
+        var assignmentsForDelete = document.DocumentProperties
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => !model.DocumentProperties.Select(y => y.PropertyId).Contains(x.PropertyId))
+            .ToList();
+
+        foreach (var documentProperty in assignmentsForDelete)
+        {
+            await documentProperty.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
+        }
+
+        // var documentSites = document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
+        var documentSites = document.DocumentSites.ToList();
+
+        foreach (var documentSite in documentSites)
+        {
+            if (documentSite.SdkCaseId != 0)
+            {
+                await core.CaseDelete(documentSite.SdkCaseId);
+            }
+
+            await documentSite.Delete(_caseTemplatePnDbContext);
+        }
+
+
         if (model.DocumentProperties != null)
         {
             foreach (var property in model.DocumentProperties)
@@ -298,7 +323,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             }
         }
 
-        var core = await _coreHelper.GetCore();
         foreach (var documentUploadedData in model.DocumentUploadedDatas)
         {
             var documentUploadedDataDb = document.DocumentUploadedDatas
@@ -367,31 +391,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     }
                 }
             }
-        }
-
-        var assignmentsForDelete = document.DocumentProperties
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .Where(x => !model.DocumentProperties.Select(y => y.PropertyId).Contains(x.PropertyId))
-            .ToList();
-
-        foreach (var documentProperty in assignmentsForDelete)
-        {
-            // var property = model.DocumentProperties
-            //     .FirstOrDefault(x => x.PropertyId == documentProperty.PropertyId);
-            // if (property == null)
-            // {
-                await documentProperty.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
-            // }
-        }
-
-        foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
-        {
-            if (documentSite.SdkCaseId != 0)
-            {
-                await core.CaseDelete(documentSite.SdkCaseId);
-            }
-
-            await documentSite.Delete(_caseTemplatePnDbContext);
         }
 
         if (model.DocumentProperties != null)

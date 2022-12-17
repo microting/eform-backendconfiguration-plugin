@@ -43,7 +43,9 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
             return;
         }
 
-        foreach (var documentProperty in document.DocumentProperties)
+        var documentProperties = document.DocumentProperties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
+
+        foreach (var documentProperty in documentProperties)
         {
             var propertySites = await backendConfigurationDbContext.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -145,7 +147,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
 
                 var sdkFolder = await sdkDbContext.Folders.FirstAsync(x => x.Id == folderProperty.SdkFolderId);
                 var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == propertyWorker.WorkerId);
-                var language = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+                var language = await sdkDbContext.Languages.FirstAsync(x => x.Id == site.LanguageId);
                 var mainElement = await _sdkCore.ReadeForm(clt.CheckListId, language);
                 mainElement.CheckListFolderName = sdkFolder.MicrotingUid.ToString();
                 mainElement.EndDate = DateTime.Now.AddDays(30).ToUniversalTime();

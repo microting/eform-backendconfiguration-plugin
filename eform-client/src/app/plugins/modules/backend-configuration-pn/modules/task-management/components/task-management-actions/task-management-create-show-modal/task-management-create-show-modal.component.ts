@@ -201,7 +201,6 @@ export class TaskManagementCreateShowModalComponent
             });
             this.assignedSitesToProperty = this.assignedSitesToProperty.filter((x) => x !== null);
             if (this.currentWorkOrderCase) {
-              debugger;
               this.workOrderCaseForm.patchValue(
                 {
                   assignedTo: this.currentWorkOrderCase.assignedSiteId,
@@ -209,7 +208,6 @@ export class TaskManagementCreateShowModalComponent
                 { emitEvent: false }
               );
             } else {
-              debugger;
               this.workOrderCaseForm.patchValue({areaName: null, assignedTo: null,});
             }
           }
