@@ -192,13 +192,13 @@ class BackendConfigurationPropertyWorkersPage extends Page {
             await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
           ).$('input')
         ).setValue(propertyWorker.language);
-        // const value = await (
-        //   await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
-        // ).$(`.ng-option=${propertyWorker.language}`);
-        // value.waitForDisplayed({ timeout: 40000 });
-        // await value.click();
         await browser.pause(500);
-        await (await $(`//*[@id="profileLanguageSelector"]//*[text()="${propertyWorker.language}"]`)).click();
+        const value = await (
+          await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
+        ).$(`.ng-option=${propertyWorker.language}`);
+        await value.waitForDisplayed({ timeout: 40000 });
+        await value.click();
+        await browser.pause(500);
       }
       if (propertyWorker.properties) {
         for (let i = 0; i < propertyWorker.properties.length; i++) {
