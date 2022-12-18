@@ -223,4 +223,12 @@ export const ukUA = {
   'Delete document': 'Видалити документ',
   'Edit folder': 'Редагувати папку',
   'Selected language': 'Вибрана мова',
+  'Timeregistration enabled': 'Реєстрація часу включена',
+  'Task management enabled': 'Керування завданнями включено',
+  'Select worker': 'Вибрати працівника',
+  'Saved locally': 'Збережено локально',
+  'Ready for server': 'Готово для сервера',
+  'Received by server': 'Отримано сервером',
+  'Retrieved by device': 'Отримано пристроєм',
+  'System error: Contact Microting': 'Системна помилка: зв\'яжіться з Microting',
 };

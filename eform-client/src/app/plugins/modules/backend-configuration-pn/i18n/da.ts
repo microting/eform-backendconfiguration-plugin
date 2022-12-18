@@ -231,4 +231,12 @@ export const da = {
   'Selected language': 'Valgt sprog',
   'Generate Report': 'Rapporter',
   'View images': 'Vis billeder',
+  'Timeregistration enabled': 'Aktivér tidsregistrering',
+  'Task management enabled': 'Aktivér opgavestyring',
+  'Select worker': 'Vælg medarbejder',
+  'Saved locally': 'Oprettet lokalt',
+  'Ready for server': 'Klar til server',
+  'Received by server': 'Modtaget af server',
+  'Retrieved by device': 'Modtaget af enhed',
+  'System error: Contact Microting': 'Systemfejl: Kontakt Microting',
 };

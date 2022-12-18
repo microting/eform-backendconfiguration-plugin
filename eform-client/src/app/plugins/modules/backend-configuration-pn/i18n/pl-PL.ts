@@ -223,4 +223,12 @@ export const plPl = {
   'Delete document': 'Usuń dokument',
   'Edit folder': 'Edytuj folder',
   'Selected language': 'Wybrany język',
+  'Timeregistration enabled': 'Rejestracja czasu włączona',
+  'Task management enabled': 'Zarządzanie zadaniami włączone',
+  'Select worker': 'Wybierz pracownika',
+  'Saved locally': 'Zapisane lokalnie',
+  'Ready for server': 'Gotowe do serwera',
+  'Received by server': 'Otrzymane przez serwer',
+  'Retrieved by device': 'Odebrane przez urządzenie',
+  'System error: Contact Microting': 'Błąd systemu: Skontaktuj się z Microting',
 };

@@ -222,4 +222,12 @@ export const noNO = {
   'Delete document': 'Slett dokument',
   'Edit folder': 'Rediger mappe',
   'Selected language': 'Valgt språk',
+  'Timeregistration enabled': 'Tidsregistrering aktivert',
+  'Task management enabled': 'Oppgavehåndtering aktivert',
+  'Select worker': 'Velg arbeider',
+  'Saved locally': 'Lagret lokalt',
+  'Ready for server': 'Klar for server',
+  'Received by server': 'Mottatt av server',
+  'Retrieved by device': 'Hentet av enhet',
+  'System error: Contact Microting': 'Systemfeil: Kontakt Microting',
 };

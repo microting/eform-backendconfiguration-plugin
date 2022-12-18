@@ -222,4 +222,12 @@ export const ptBR = {
   'Delete document': '',
   'Edit folder': '',
   'Selected language': '',
+  'Timeregistration enabled': '',
+  'Task management enabled': '',
+  'Select worker': '',
+  'Saved locally': '',
+  'Ready for server': '',
+  'Received by server': '',
+  'Retrieved by device': '',
+  'System error: Contact Microting': '',
 };

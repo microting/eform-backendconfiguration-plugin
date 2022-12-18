@@ -221,4 +221,12 @@ export const deDE = {
   'Delete document': 'Dokument löschen',
   'Edit folder': 'Ordner bearbeiten',
   'Selected language': 'Ausgewählte Sprache',
+  'Timeregistration enabled': 'Zeiterfassung aktiviert',
+  'Task management enabled': 'Aufgabenverwaltung aktiviert',
+  'Select worker': 'Mitarbeiter auswählen',
+  'Saved locally': 'Lokal gespeichert',
+  'Ready for server': 'Bereit für Server',
+  'Received by server': 'Vom Server empfangen',
+  'Retrieved by device': 'Vom Gerät abgerufen',
+  'System error: Contact Microting': 'Systemfehler: Kontaktieren Sie Microting',
 };

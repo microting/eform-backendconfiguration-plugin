@@ -223,4 +223,12 @@ export const frFR = {
   'Delete document': 'Supprimer le document',
   'Edit folder': 'Modifier le dossier',
   'Selected language': 'Langue sélectionnée',
+  'Timeregistration enabled': 'Enregistrement du temps activé',
+  'Task management enabled': 'Gestion des tâches activée',
+  'Select worker': 'Sélectionner un employé',
+  'Saved locally': 'Enregistré localement',
+  'Ready for server': 'Prêt pour le serveur',
+  'Received by server': 'Reçu par le serveur',
+  'Retrieved by device': 'Récupéré par l\'appareil',
+  'System error: Contact Microting': 'Erreur système: Contactez Microting',
 };

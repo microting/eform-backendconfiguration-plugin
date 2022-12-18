@@ -221,4 +221,12 @@ export const svSE = {
   'Delete document': 'Ta bort dokument',
   'Edit folder': 'Redigera mapp',
   'Selected language': 'Valt språk',
+  'Timeregistration enabled': 'Tidregistrering aktiverad',
+  'Task management enabled': 'Uppgiftshantering aktiverad',
+  'Select worker': 'Välj arbetare',
+  'Saved locally': 'Sparad lokalt',
+  'Ready for server': 'Klar för server',
+  'Received by server': 'Mottagen av server',
+  'Retrieved by device': 'Hämtad av enhet',
+  'System error: Contact Microting': 'Systemfel: Kontakta Microting',
 };
