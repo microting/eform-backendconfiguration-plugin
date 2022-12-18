@@ -8,7 +8,7 @@ import {
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {applicationLanguagesTranslated} from 'src/app/common/const';
+import {applicationLanguages2} from 'src/app/common/const';
 import {PropertyAssignmentWorkerModel, DeviceUserModel} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {AuthStateService} from 'src/app/common/store';
@@ -63,7 +63,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   get languages() {
-    return applicationLanguagesTranslated;
+    return applicationLanguages2;
   }
 
   get selectedProperties() {
@@ -76,7 +76,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.edit = true;
     }
     if (!this.edit) {
-      this.selectedDeviceUser.languageCode = this.languages[1].locale; // set to 1 due to current tests.
+      this.selectedDeviceUser.languageCode = this.languages[0].locale;
       if (this.authStateService.checkClaim('task_management_enable')) {
         this.selectedDeviceUser.taskManagementEnabled = true;
       }
