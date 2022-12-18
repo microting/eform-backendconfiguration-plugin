@@ -243,12 +243,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 {
                     await propertyAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    var documents = await _caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
+                    var documents = await _caseTemplatePnDbContext.DocumentProperties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.PropertyId == propertyAssignment.PropertyId)
+                        .ToListAsync();
                     foreach (var document in documents)
                     {
                         if (!documentIds.Contains(document.DocumentId))
                         {
-                            documentIds.Add(document.Id);
+                            documentIds.Add(document.DocumentId);
                         }
                     }
                     propertyWorkers.Add(propertyAssignment);
@@ -313,9 +316,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 foreach (var documentId in documentIds)
                 {
                     var document = await _caseTemplatePnDbContext.Documents
-                        .Include(x => x.DocumentSites)
+                        .Include(x =>
+                            x.DocumentSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
                         .FirstAsync(x => x.Id == documentId).ConfigureAwait(false);
-                    foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                    foreach (var documentSite in document.DocumentSites)
                     {
                         if (documentSite.SdkCaseId != 0)
                         {
@@ -713,6 +717,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
         private async Task DeleteAllEntriesForPropertyAssignment(PropertyWorker propertyAssignment, Core core, Property property, MicrotingDbContext sdkDbContext)
         {
+            var documentSites = await _caseTemplatePnDbContext.DocumentSites.Where(x => x.SdkSiteId == propertyAssignment.WorkerId).ToListAsync();
+
+            // Delete all entries from DocumentSites
+            foreach (var documentSite in documentSites)
+            {
+                if (documentSite.SdkCaseId != 0)
+                {
+                    await core.CaseDelete(documentSite.SdkCaseId);
+                }
+                await documentSite.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
+            }
+
             var planningSites = await _backendConfigurationPnDbContext.PlanningSites
                 .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
                     ps => ps.AreaRulePlanningsId,

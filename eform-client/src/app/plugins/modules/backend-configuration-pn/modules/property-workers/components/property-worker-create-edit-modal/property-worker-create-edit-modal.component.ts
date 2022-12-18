@@ -89,11 +89,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     this.dialogRef.close(result);
   }
 
-  // changeArray(properties: CommonDictionaryModel[]) {
-  //   this.assignments = [];
-  //   properties.forEach(property => this.assignments = [...this.assignments, {propertyId: property.id, isChecked: true}]);
-  // }
-
   addToArray(e: any, propertyId: number) {
     const assignmentObject = new PropertyAssignmentWorkerModel();
     if (e.checked) {
@@ -113,31 +108,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     );
     return assignment ? assignment.isChecked : false;
   }
-
-  // updateSingle() {
-  //   if (
-  //     this.selectedDeviceUserCopy.userFirstName !== this.selectedDeviceUser.userFirstName ||
-  //     this.selectedDeviceUserCopy.userLastName !== this.selectedDeviceUser.userLastName ||
-  //     this.selectedDeviceUserCopy.language !== this.selectedDeviceUser.language ||
-  //     this.selectedDeviceUserCopy.languageCode !== this.selectedDeviceUser.languageCode ||
-  //     this.selectedDeviceUserCopy.timeRegistrationEnabled !== this.selectedDeviceUser.timeRegistrationEnabled
-  //   ) {
-  //     // if fields device user edited
-  //     this.deviceUserUpdate$ = this.propertiesService
-  //       .updateSingleDeviceUser(this.selectedDeviceUser)
-  //       .subscribe((operation) => {
-  //         if (operation && operation.success) {
-  //           if (this.assignments) {
-  //             this.assignWorkerToProperties();
-  //           } else {
-  //             this.hide(true);
-  //           }
-  //         }
-  //       });
-  //   } else {
-  //     this.assignWorkerToProperties();
-  //   }
-  // }
 
   updateSingle() {
     if (
@@ -159,16 +129,12 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
           if (operation && operation.success) {
             if (this.assignments) {
               this.assignWorkerToPropertiesUpdate();
-              this.hide(true);
             } else {
-              //this.userUpdated.emit();
-              this.hide(true);
             }
           }
         });
     } else {
       this.assignWorkerToPropertiesUpdate();
-      this.hide(true);
     }
   }
 
@@ -216,20 +182,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         }
       });
   }
-
-  // assignWorkerToProperties(siteId?: number) {
-  //   this.deviceUserAssign$ = this.propertiesService
-  //     .updateAssignPropertiesToWorker({
-  //       siteId: siteId ?? this.selectedDeviceUser.normalId,
-  //       assignments: this.assignments,
-  //       timeRegistrationEnabled: false,
-  //     })
-  //     .subscribe((operation) => {
-  //       if (operation && operation.success) {
-  //         this.hide(true);
-  //       }
-  //     });
-  // }
 
   getAssignmentByPropertyId(propertyId: number): PropertyAssignmentWorkerModel {
     return (
