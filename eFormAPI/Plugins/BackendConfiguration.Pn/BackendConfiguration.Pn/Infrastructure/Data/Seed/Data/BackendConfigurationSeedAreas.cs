@@ -1978,9 +1978,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 EformName = "13. Miljøledelse",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "13. Miljøledelse" }, // Danish
-                    new() { LanguageId = 2, Name = "13. Environmental management" }, // English
-                    new() { LanguageId = 3, Name = "13. Umweltmanagement" }, // German
+                    new() { LanguageId = 1, Name = "13. Miljøledelse gennemgået og revideret" }, // Danish
+                    new() { LanguageId = 2, Name = "13. Environmental management reviewed and revised" }, // English
+                    new() { LanguageId = 3, Name = "13. Umweltmanagement überprüft und überarbeitet" }, // German
                 },
                 AreaId = 31,
                 IsDefault = true,
@@ -1990,9 +1990,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 EformName = "14. Beredskabsplan",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "14. Beredskabsplan" }, // Danish
-                    new() { LanguageId = 2, Name = "14. Contingency plan" }, // English
-                    new() { LanguageId = 3, Name = "14. Notfallplan" }, // German
+                    new() { LanguageId = 1, Name = "14. Beredskabsplan gennemgået og revideret" }, // Danish
+                    new() { LanguageId = 2, Name = "14. Contingency plan reviewed and revised" }, // English
+                    new() { LanguageId = 3, Name = "14. Notfallplan überprüft und überarbeitet" }, // German
                 },
                 AreaId = 31,
                 IsDefault = true,

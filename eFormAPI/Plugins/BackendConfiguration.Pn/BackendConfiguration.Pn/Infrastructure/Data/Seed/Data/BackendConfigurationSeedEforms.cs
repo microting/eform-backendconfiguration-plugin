@@ -941,13 +941,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"00.Logbøger","13.Miljøledelse",""
+				"00.Logbøger","13.Miljøledelse gennemgået og revideret",""
 			};
 			item = new KeyValuePair<string, List<string>>("13. Miljøledelse", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
-				"00.Logbøger","14.Beredskabsplan",""
+				"00.Logbøger","14.Beredskabsplan gennemgået og revideret",""
 			};
 			item = new KeyValuePair<string, List<string>>("14. Beredskabsplan", headers);
 			theList.Add(item);
