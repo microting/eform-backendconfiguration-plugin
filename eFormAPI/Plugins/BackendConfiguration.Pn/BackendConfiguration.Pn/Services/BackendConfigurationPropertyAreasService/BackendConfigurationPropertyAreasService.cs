@@ -152,8 +152,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
                 propertyAreas.AddRange(areasForAdd);
 
-                propertyAreas = propertyAreas.OrderBy(x => x.AreaId).ToList();
-                //propertyAreas = propertyAreas.OrderBy(x => x.Name).ToList();
+                propertyAreas = propertyAreas.OrderBy(x => x.Name).ToList();
 
                 return new OperationDataResult<List<PropertyAreaModel>>(true, propertyAreas);
             }
