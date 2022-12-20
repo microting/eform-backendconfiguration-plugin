@@ -22,7 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
+using System.Text.Json.Serialization;
 
 namespace BackendConfiguration.Pn.Controllers
 {
@@ -57,6 +61,14 @@ namespace BackendConfiguration.Pn.Controllers
         public Task<OperationDataResult<int>> Compliance(int propertyId)
         {
             return _backendConfigurationCompliancesService.ComplianceStatus(propertyId);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("compliance-calender")]
+        public Task<HttpResponseMessage> GetEventCalendar(int propertyId)
+        {
+            return _backendConfigurationCompliancesService.GetEventCalendar(propertyId);
         }
 
         [HttpGet]

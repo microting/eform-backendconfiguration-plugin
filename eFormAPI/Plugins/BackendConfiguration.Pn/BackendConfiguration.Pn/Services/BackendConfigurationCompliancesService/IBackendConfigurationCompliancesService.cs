@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Net.Http;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 
@@ -38,5 +39,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
         Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
         Task<OperationDataResult<ReplyElement>> Read(int id);
         Task<OperationResult> Update(ReplyRequest model);
+        Task<HttpResponseMessage> GetEventCalendar(int propertyId);
     }
 }

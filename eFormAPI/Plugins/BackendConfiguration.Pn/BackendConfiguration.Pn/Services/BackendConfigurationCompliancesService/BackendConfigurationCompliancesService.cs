@@ -23,6 +23,14 @@ SOFTWARE.
 */
 
 
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using Ical.Net;
+using Ical.Net.CalendarComponents;
+using Ical.Net.DataTypes;
+using Ical.Net.Serialization;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService
 {
     using BackendConfigurationLocalizationService;
@@ -408,6 +416,59 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 Log.LogException(ex.StackTrace);
                 return new OperationResult(false, _localizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
             }
+        }
+
+        public async Task<HttpResponseMessage> GetEventCalendar(int propertyId)
+        {
+            CompliancesRequestModel compliancesRequestModel = new CompliancesRequestModel
+            {
+                PropertyId = propertyId,
+                PageIndex = 0,
+                PageSize = 1000
+            };
+            //var complianceList = await Index(compliancesRequestModel).ConfigureAwait(false);
+
+            var iCal = new Calendar();
+
+            // foreach (var compliance in complianceList.Model.Entities)
+            // {
+            //     var iCalEvent = new CalendarEvent()
+            //     {
+            //         Start = new CalDateTime((DateTime)compliance.Deadline),
+            //         End = new CalDateTime((DateTime)compliance.Deadline),
+            //         Summary = compliance.ItemName,
+            //         Description = "",
+            //         Location = ""
+            //     };
+            //     iCal.Events.Add(iCalEvent);
+            // }
+
+            // Serialize the iCalendar object to a string
+            var serializer = new CalendarSerializer(new SerializationContext());
+            var content = serializer.SerializeToString(iCal);
+
+            // Create an HttpResponseMessage with the iCalendar file content
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(content, Encoding.UTF8, "text/calendar")
+            };
+
+            return response;
+            // {
+            //     var calendarEvent = new CalendarEvent
+            //     {
+            //         Id = compliance.Id,
+            //         Title = compliance.Title,
+            //         Start = compliance.Deadline,
+            //         End = compliance.Deadline,
+            //         AllDay = true,
+            //         Color = compliance.Status == 100 ? "#00a65a" : "#f39c12",
+            //         Url = compliance.Status == 100 ? "" : $"/plugins/items-planning-pn/compliances/edit/{compliance.Id}"
+            //     };
+            //     events.Add(calendarEvent);
+            // }
+
+            //throw new NotImplementedException();
         }
 
         private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, int caseId, Language language)

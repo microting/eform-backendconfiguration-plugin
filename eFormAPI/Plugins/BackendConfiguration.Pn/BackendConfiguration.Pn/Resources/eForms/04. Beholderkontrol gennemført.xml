@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142801</Id>
+  <Repeated>0</Repeated>
+  <Label>04. Beholderkontrol gennemført|04. Tank inspection completed</Label>
+  <StartDate>2022-12-16</StartDate>
+  <EndDate>2032-12-16</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142801</Id>
+      <Label>04. Beholderkontrol gennemført|04. Tank inspection completed</Label>
+      <Description><![CDATA[<i>Udført kontrol af autoriseret personel|Inspection carried out by authorised personnel</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>377308</Id>
+          <Label>Info|Info</Label>
+          <Description><![CDATA[Udført kontrol af autoriseret personel|Inspection carried out by authorised personnel]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Date">
+          <Id>377242</Id>
+          <Label>Dato beholderkontrol gennemført|Date tank inspection completed</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2022-12-16</MinValue>
+          <MaxValue>2032-12-16</MaxValue>
+          <Value/>
+          <Mandatory>false</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377243</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377244</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>377245</Id>
+          <Label>Gem|Save</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

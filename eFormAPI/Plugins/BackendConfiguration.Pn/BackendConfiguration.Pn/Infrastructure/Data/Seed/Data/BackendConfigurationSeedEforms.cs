@@ -867,6 +867,90 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("2.6 Foderindlægssedler", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","01.Gyllekøling",""
+			};
+			item = new KeyValuePair<string, List<string>>("01. Gyllekøling", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","02.Forsuring",""
+			};
+			item = new KeyValuePair<string, List<string>>("02. Forsuring", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","03.Luftrensning",""
+			};
+			item = new KeyValuePair<string, List<string>>("03. Luftrensning", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","04.Beholderkontrol gennemført",""
+			};
+			item = new KeyValuePair<string, List<string>>("04. Beholderkontrol gennemført", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","05.Gyllebeholdere",""
+			};
+			item = new KeyValuePair<string, List<string>>("05. Gyllebeholdere", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","06.Gyllepumper, - miksere, - seperatorer og spredere",""
+			};
+			item = new KeyValuePair<string, List<string>>("06. Gyllepumper, - miksere, - seperatorer og spredere", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","07.Forsyningssystemer til vand og foder",""
+			};
+			item = new KeyValuePair<string, List<string>>("07. Forsyningssystemer til vand og foder", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","08.Varme-, køle- og ventilationssystemer samt temperaturfølere",""
+			};
+			item = new KeyValuePair<string, List<string>>("08. Varme-, køle- og ventilationssystemer samt temperaturfølere", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","09.Siloer og transportudstyr",""
+			};
+			item = new KeyValuePair<string, List<string>>("09. Siloer og transportudstyr", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","10.Luftrensningssystemer",""
+			};
+			item = new KeyValuePair<string, List<string>>("10. Luftrensningssystemer", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","11.Udstyr til drikkevand",""
+			};
+			item = new KeyValuePair<string, List<string>>("11. Udstyr til drikkevand", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","12.Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse",""
+			};
+			item = new KeyValuePair<string, List<string>>("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","13.Miljøledelse",""
+			};
+			item = new KeyValuePair<string, List<string>>("13. Miljøledelse", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"00.Logbøger","14.Beredskabsplan",""
+			};
+			item = new KeyValuePair<string, List<string>>("14. Beredskabsplan", headers);
+			theList.Add(item);
 
 			return theList;
 		}

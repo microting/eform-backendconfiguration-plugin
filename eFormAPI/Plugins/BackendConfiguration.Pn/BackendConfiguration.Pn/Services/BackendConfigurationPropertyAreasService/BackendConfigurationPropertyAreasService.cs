@@ -153,6 +153,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 propertyAreas.AddRange(areasForAdd);
 
                 propertyAreas = propertyAreas.OrderBy(x => x.AreaId).ToList();
+                //propertyAreas = propertyAreas.OrderBy(x => x.Name).ToList();
 
                 return new OperationDataResult<List<PropertyAreaModel>>(true, propertyAreas);
             }
@@ -1914,6 +1915,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
             }
         }
+
         private async Task SeedPoolEform(string propertyName, Core core, MicrotingDbContext sdkDbContext, string entityGroupId)
         {
             string text = $"01. Aflæsninger - {propertyName}";
@@ -1983,7 +1985,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
 
             }
         }
-
 
         public async Task<OperationResult> CreateEntityList(List<EntityItem> entityItemsListForCreate, int propertyAreaId)
         {
