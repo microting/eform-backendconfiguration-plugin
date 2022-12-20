@@ -150,7 +150,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 var language = await sdkDbContext.Languages.FirstAsync(x => x.Id == site.LanguageId);
                 var mainElement = await _sdkCore.ReadeForm(clt.CheckListId, language);
                 mainElement.CheckListFolderName = sdkFolder.MicrotingUid.ToString();
-                mainElement.EndDate = DateTime.Now.AddDays(30).ToUniversalTime();
+                mainElement.EndDate = DateTime.Now.AddYears(20).ToUniversalTime();
 
                 mainElement.Label = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name;
                 mainElement.ElementList[0].Label = mainElement.Label;
