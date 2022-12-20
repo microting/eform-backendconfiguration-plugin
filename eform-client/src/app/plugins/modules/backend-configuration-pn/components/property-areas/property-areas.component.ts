@@ -44,19 +44,19 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
       header: this.translateService.stream('Control area'),
       field: 'name',
     },
-    {
-      header: this.translateService.stream('Description'),
-      field: 'description',
-      formatter: (rowData: PropertyAreaModel) =>
-        rowData.description ? `<a href="${rowData.description}" target="_blank">${this.translateService.instant('Read more')}</a>` : ``,
-    },
+    // {
+    //   header: this.translateService.stream('Description'),
+    //   field: 'description',
+    //   formatter: (rowData: PropertyAreaModel) =>
+    //     rowData.description ? `<a href="${rowData.description}" target="_blank">${this.translateService.instant('Read more')}</a>` : ``,
+    // },
     {
       header: this.translateService.stream('Status'),
       field: 'status',
       formatter: (rowData: PropertyAreaModel) => this.translateService.instant(this.getAreaPlanningStatus(rowData)),
     },
     {
-      header: '',
+      header: this.translateService.stream('Actions'),
       field: 'book',
       // buttons: [
       //   {

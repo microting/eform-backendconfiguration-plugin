@@ -14,52 +14,58 @@
 <!--    (rowSelectionChange)="updateAreas($event)"-->
 <!--  >-->
 <!--  </mtx-grid>-->
-  <div class="table-responsive">
-    <table class="table table-xs table-bordered text-center z-depth-1">
-      <thead>
-      <tr>
-        <!--                <th>ID</th>-->
-        <th>{{ 'Area' | translate }}</th>
-        <th>{{ 'Description' | translate }}</th>
-        <!--                <th>{{ 'Status' | translate }}</th>-->
-        <th>{{ 'Select' | translate }}</th>
-      </tr>
-      </thead>
-      <tbody id="editPropertyAreasModalTableBody">
-      <ng-container *ngFor="let area of selectedPropertyAreas; let i = index">
-        <ng-container *ngIf="(area.name != '13. APV Landbrug' || authStateService.isAdmin)
-                && (area.name != '05. Stalde: Halebid og klargøring' || authStateService.isAdmin)
-                && (area.name != '21. DANISH Standard' || authStateService.isAdmin)
-                && (area.name != '100. Diverse' || authStateService.isAdmin)">
-          <tr>
-            <!--                  <td class="align-middle">{{ area.id }}</td>-->
-            <td class="align-middle">{{ area.name }}</td>
-            <td class="align-middle">
-              <a [href]="area.description" target="_blank">{{
-                (area.description ? 'Read more' : '') | translate
-                }}</a>
-            </td>
-            <!--                  <td class="align-middle">-->
-            <!--                    {{ getAreaPlanningStatus(area) | translate }}-->
-            <!--                  </td>-->
-            <td class="align-middle">
-              <div class="mat-checkbox">
-                <mat-checkbox class="mat-checkbox"
-                  id="checkboxAssignmentEdit{{ i }}"
-                  [checked]="area.activated"
-                  (change)="updateArea($event, area)"
-                  color="primary"
-                  type="checkbox"
-                  [disabled]="area.activated"
-                ></mat-checkbox>
-                <label for="checkboxAssignmentEdit{{ i }}"></label>
-              </div>
-            </td>
-          </tr>
-        </ng-container>
-      </ng-container>
-      </tbody>
-    </table>
+  <div class="mtx-grid">
+    <div class="mtx-grid-main mtx-grid-layout">
+      <div class="mtx-grid-content mtx-grid-layout">
+        <div class="mat-table-container mat-table-with-data">
+          <table class="mat-table cdk-table mat-table-striped" style="width: 100%">
+            <thead>
+            <tr role="rowgroup" class="mat-header-row cdk-header-row" mat-header-row>
+              <!--                <th>ID</th>-->
+              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Area' | translate }}</th>
+              <!--<th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Description' | translate }}</th>-->
+              <!--                <th>{{ 'Status' | translate }}</th>-->
+              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Select' | translate }}</th>
+            </tr>
+            </thead>
+            <tbody id="editPropertyAreasModalTableBody" role="rowgroup">
+            <ng-container *ngFor="let area of selectedPropertyAreas; let i = index">
+              <ng-container *ngIf="(area.name != '13. APV Landbrug' || authStateService.isAdmin)
+                      && (area.name != '05. Stalde: Halebid og klargøring' || authStateService.isAdmin)
+                      && (area.name != '21. DANISH Standard' || authStateService.isAdmin)
+                      && (area.name != '100. Diverse' || authStateService.isAdmin)">
+                <tr class="mat-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
+                  <!--                  <td class="align-middle">{{ area.id }}</td>-->
+                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id">{{ area.name }}</td>
+<!--                  <td class="align-middle">-->
+<!--                    <a [href]="area.description" target="_blank">{{-->
+<!--                      (area.description ? 'Read more' : '') | translate-->
+<!--                      }}</a>-->
+<!--                  </td>-->
+                  <!--                  <td class="align-middle">-->
+                  <!--                    {{ getAreaPlanningStatus(area) | translate }}-->
+                  <!--                  </td>-->
+                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id">
+                    <div class="mat-checkbox">
+                      <mat-checkbox class="mat-checkbox"
+                        id="checkboxAssignmentEdit{{ i }}"
+                        [checked]="area.activated"
+                        (change)="updateArea($event, area)"
+                        color="primary"
+                        type="checkbox"
+                        [disabled]="area.activated"
+                      ></mat-checkbox>
+                      <label for="checkboxAssignmentEdit{{ i }}"></label>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </ng-container>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
