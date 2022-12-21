@@ -35,6 +35,7 @@ using ChemicalsBase.Infrastructure.Data.Factories;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn
 {
@@ -86,6 +87,7 @@ namespace BackendConfiguration.Pn
         public string PluginId => "eform-backend-configuration-plugin";
         public string PluginPath => PluginAssembly().Location;
         public string PluginBaseUrl => "backend-configuration-pn";
+        private static IBus _bus;
 
         private string _connectionString;
 
@@ -619,6 +621,7 @@ namespace BackendConfiguration.Pn
             }
 
             var documents = await caseTemplateContext.Documents
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
                 .Where(x => x.UpdatedAt < new DateTime(2022, 12, 22, 14, 0, 0))
                 .ToListAsync();
 
@@ -638,9 +641,7 @@ namespace BackendConfiguration.Pn
                     await documentSite.Delete(caseTemplateContext);
                 }
 
-                IRebusService rebusService = serviceProvider.GetService<IRebusService>();
-
-                await rebusService.GetBus().SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+                await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
             }
         }
 
@@ -734,7 +735,8 @@ namespace BackendConfiguration.Pn
 
             WindsorContainer container = rebusService.GetContainer();
             container.Register(Component.For<EformBackendConfigurationPlugin>().Instance(this));
-            rebusService.Start(_connectionString, "admin", "password", rabbitMqHost);
+            rebusService.Start(_connectionString, "admin", "password", rabbitMqHost).GetAwaiter().GetResult();
+            _bus = rebusService.GetBus();
         }
 
         public List<PluginMenuItemModel> GetNavigationMenu(IServiceProvider serviceProvider)
