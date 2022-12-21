@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 
+using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationCaseService;
 using BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
 using BackendConfiguration.Pn.Services.BackendConfigurationReportService;
@@ -148,6 +149,7 @@ namespace BackendConfiguration.Pn
 
             var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
             var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
+            var caseTemplateContext = serviceProvider.GetRequiredService<CaseTemplatePnDbContext>();
             // seed eforms
             var assembly = Assembly.GetExecutingAssembly();
             foreach (var (eformName, eform) in eforms)
@@ -614,6 +616,31 @@ namespace BackendConfiguration.Pn
                 if (itemPlanningCaseSite == null) continue;
                 planningSite.Status = itemPlanningCaseSite.Status;
                 await planningSite.Update(context);
+            }
+
+            var documents = await caseTemplateContext.Documents
+                .Where(x => x.UpdatedAt < new DateTime(2022, 12, 22, 14, 0, 0))
+                .ToListAsync();
+
+            foreach (var document in documents)
+            {
+                var documentSites = await caseTemplateContext.DocumentSites
+                    .Where(x => x.DocumentId == document.Id)
+                    .ToListAsync();
+
+                foreach (var documentSite in documentSites)
+                {
+                    if (documentSite.SdkCaseId != 0)
+                    {
+                        await core.CaseDelete(documentSite.SdkCaseId);
+                    }
+
+                    await documentSite.Delete(caseTemplateContext);
+                }
+
+                IRebusService rebusService = serviceProvider.GetService<IRebusService>();
+
+                await rebusService.GetBus().SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
             }
         }
 
