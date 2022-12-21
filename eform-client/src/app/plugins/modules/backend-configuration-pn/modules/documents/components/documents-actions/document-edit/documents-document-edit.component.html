@@ -43,54 +43,56 @@
     </mat-card-content>
   </mat-card>
   <mat-card class="mb-3" *ngFor="let translation of newDocumentModel.documentTranslations; let translationIndex = index">
-    <mat-card-title>{{ languages[translationIndex].text }}</mat-card-title>
-    <mat-card-content class="d-flex flex-column need-wrapper">
-      <mat-form-field>
-        <mat-label>{{'Name' | translate}}</mat-label>
-        <input
-          matInput
-          type="text"
-          id="createFolderNameTranslation_{{ translationIndex }}"
-          name="createFolderNameTranslation_{{translationIndex}}"
-          [(ngModel)]="translation.name"
-        />
-      </mat-form-field>
-      <formatting-text-editor
-        [(value)]="translation.description"
-        [placeholder]="'Description' | translate"
-        id="createFolderDescriptionTranslation_{{translationIndex}}"
-      >
-      </formatting-text-editor>
-      <div class="mt-3">
-        <input
-          type="file"
-          hidden
-          [accept]="'application/pdf'"
-          (change)="onFileSelected($event, languages[translationIndex].id)"
-          id="pdfInput{{ translationIndex }}"
-          #fileUpload
-        />
-        <div>{{getFileNameByLanguage(languages[translationIndex].id) || 'No file uploaded yet.' | translate}}
-          <button
-            mat-raised-button
-            color="accent"
-            (click)="fileUpload.click()"
-          >
-            {{ 'Upload' | translate }}
-          </button>
-          <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id)">
+    <ng-container *ngIf="languages[translationIndex] !== undefined">
+      <mat-card-title>{{ languages[translationIndex].text }}</mat-card-title>
+      <mat-card-content class="d-flex flex-column need-wrapper">
+        <mat-form-field>
+          <mat-label>{{'Name' | translate}}</mat-label>
+          <input
+            matInput
+            type="text"
+            id="createFolderNameTranslation_{{ translationIndex }}"
+            name="createFolderNameTranslation_{{translationIndex}}"
+            [(ngModel)]="translation.name"
+          />
+        </mat-form-field>
+        <formatting-text-editor
+          [(value)]="translation.description"
+          [placeholder]="'Description' | translate"
+          id="createFolderDescriptionTranslation_{{translationIndex}}"
+        >
+        </formatting-text-editor>
+        <div class="mt-3">
+          <input
+            type="file"
+            hidden
+            [accept]="'application/pdf'"
+            (change)="onFileSelected($event, languages[translationIndex].id)"
+            id="pdfInput{{ translationIndex }}"
+            #fileUpload
+          />
+          <div>{{getFileNameByLanguage(languages[translationIndex].id) || 'No file uploaded yet.' | translate}}
             <button
-              mat-icon-button
+              mat-raised-button
               color="accent"
-              (click)="getPdf(languages[translationIndex].id)"
-              matTooltip="{{ 'Show PDF' | translate }}"
+              (click)="fileUpload.click()"
             >
-              <mat-icon svgIcon="file-pdf"></mat-icon>
+              {{ 'Upload' | translate }}
             </button>
-          </ng-container>
+            <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id)">
+              <button
+                mat-icon-button
+                color="accent"
+                (click)="getPdf(languages[translationIndex].id)"
+                matTooltip="{{ 'Show PDF' | translate }}"
+              >
+                <mat-icon svgIcon="file-pdf"></mat-icon>
+              </button>
+            </ng-container>
+          </div>
         </div>
-      </div>
-    </mat-card-content>
+      </mat-card-content>
+    </ng-container>
   </mat-card>
   <mat-card class="mb-3">
     <mat-card-content>
