@@ -22,8 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System;
+using System.Text.RegularExpressions;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using Microting.eForm.Dto;
 
 namespace BackendConfiguration.Pn.Services.RebusService
 {
@@ -57,8 +60,25 @@ namespace BackendConfiguration.Pn.Services.RebusService
 
         public async Task Start(string connectionString, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
         {
-            _connectionString = connectionString;
+            Console.WriteLine($"rabbitMqUser: {rabbitMqUser}");
+            Console.WriteLine($"rabbitMqPassword: {rabbitMqPassword}");
+            Console.WriteLine($"rabbitMqHost: {rabbitMqHost}");
             Core core = await _coreHelper.GetCore();
+            _connectionString = connectionString;
+
+            if (connectionString.Contains("frontend"))
+            {
+                var dbPrefix = Regex.Match(_connectionString, @"atabase=(\d*)_").Groups[1].Value;
+                rabbitMqHost = $"frontend-{dbPrefix}-rabbitmq";
+            }
+
+            var rabbitmqHost = core.GetSdkSetting(Settings.rabbitMqHost).GetAwaiter().GetResult();
+            Console.WriteLine($"rabbitmqHost: {rabbitmqHost}");
+
+            if (!string.IsNullOrEmpty(rabbitmqHost))
+            {
+                rabbitMqHost = rabbitmqHost;
+            }
             _backendConfigurationDbContextHelper = new BackendConfigurationDbContextHelper(connectionString);
             var chemicalBaseConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",

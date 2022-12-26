@@ -32,6 +32,8 @@ using Castle.MicroKernel.Registration;
 using Castle.Windsor;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Factories;
+using eFormCore;
+using Microting.eForm.Dto;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
@@ -723,19 +725,8 @@ namespace BackendConfiguration.Pn
         {
             var serviceProvider = appBuilder.ApplicationServices;
 
-            var rabbitMqHost = "localhost";
-
-            if (_connectionString.Contains("frontend"))
-            {
-                var dbPrefix = Regex.Match(_connectionString, @"atabase=(\d*)_").Groups[1].Value;
-                rabbitMqHost = $"frontend-{dbPrefix}-rabbitmq";
-            }
-
             IRebusService rebusService = serviceProvider.GetService<IRebusService>();
-
-            WindsorContainer container = rebusService.GetContainer();
-            container.Register(Component.For<EformBackendConfigurationPlugin>().Instance(this));
-            rebusService.Start(_connectionString, "admin", "password", rabbitMqHost).GetAwaiter().GetResult();
+            rebusService!.Start(_connectionString, "admin", "password", "localhost").GetAwaiter().GetResult();
             _bus = rebusService.GetBus();
         }
 
