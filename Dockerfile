@@ -36,7 +36,6 @@ COPY --from=build-env /app/ItemsPlanning.Pn/out ./Plugins/ItemsPlanning.Pn
 COPY --from=build-env /app/BackendConfiguration.Pn/out ./Plugins/BackendConfiguration.Pn
 COPY --from=build-env /app/TimePlanning.Pn/out ./Plugins/TimePlanning.Pn
 COPY --from=node-env /app/dist wwwroot
-RUN rm connection.json; exit 0
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV Logging__Console__FormatterName=

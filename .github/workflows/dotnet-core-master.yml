@@ -11,33 +11,35 @@ jobs:
   backend-pn-build:
     runs-on: ubuntu-latest
     steps:
+    - name: 'Preparing backend configuration checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-backendconfiguration-plugin
+        path: eform-backendconfiguration-plugin
+    - name: Extract branch name
+      id: extract_branch
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
     - name: 'Preparing Frontend checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-frontend
-        ref: stable
+        ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-frontend
     - name: 'Preparing items planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-items-planning-plugin
-        ref: stable
+        ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-items-planning-plugin
-    - name: 'Preparing backend configuration checkout'
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        repository: microting/eform-backendconfiguration-plugin
-        ref: stable
-        path: eform-backendconfiguration-plugin
     - name: 'Preparing time planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-timeplanning-plugin
-        ref: stable
+        ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-timeplanning-plugin
     - name: Copy dependencies
       run: |
@@ -70,7 +72,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        path: main
+        path: eform-backendconfiguration-plugin
+    - name: Extract branch name
+      id: extract_branch
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
     - uses: actions/download-artifact@v3
       with:
         name: work-items-planning-container
@@ -88,6 +93,8 @@ jobs:
     - name: Start the newly build Docker container
       id: docker-run
       run: docker run --name my-container -p 4200:5000 --network data microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" > docker_run_log 2>&1 &
+    - name: Sleep 15
+      run: sleep 15        
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
@@ -96,15 +103,8 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: microting/eform-angular-frontend
-        ref: stable
+        ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-frontend
-    - name: 'Preparing bacend checkout'
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        repository: microting/eform-backendconfiguration-plugin
-        ref: stable
-        path: eform-backendconfiguration-plugin
     - name: Cache node_modules
       id: cache
       uses: actions/cache@v3
@@ -147,6 +147,9 @@ jobs:
       run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
       run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
+    - name: Get standard output
+      run: |
+        cat docker_run_log
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
     - name: Change rabbitmq hostname

@@ -13,52 +13,31 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        path: main
-    - uses: actions/checkout@v3
-      with:
-        path: main
+        path: eform-backendconfiguration-plugin
+    - name: Extract branch name
+      id: extract_branch
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
     - name: 'Preparing Frontend checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-frontend
-        ref: stable
+        ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-frontend
     - name: 'Preparing items planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-items-planning-plugin
-        ref: stable
+        ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-items-planning-plugin
-    - name: 'Preparing workflow checkout'
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        repository: microting/eform-angular-workflow-plugin
-        ref: stable
-        path: eform-angular-workflow-plugin
-    - name: 'Preparing backend configuration checkout'
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        repository: microting/eform-backendconfiguration-plugin
-        ref: stable
-        path: eform-backendconfiguration-plugin
     - name: 'Preparing time planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-timeplanning-plugin
-        ref: stable
+        ref: ${{ steps.extract_branch.outputs.branch }}
         path: eform-angular-timeplanning-plugin
-    - name: 'Preparing greate belt checkout'
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        repository: microting/eform-angular-greate-belt-plugin
-        ref: stable
-        path: eform-angular-greate-belt-plugin
     - name: Copy dependencies
       run: |
         cp -av eform-angular-items-planning-plugin/eform-client/src/app/plugins/modules/items-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/items-planning-pn
@@ -68,31 +47,10 @@ jobs:
         cd eform-angular-frontend/eform-client && ../../eform-angular-items-planning-plugin/testinginstallpn.sh
         ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
         ../../eform-backendconfiguration-plugin/testinginstallpn.sh
-    - name: Get the version release
-      id: get_release_version
-      run: echo ::set-output name=VERSION::$(cd main && git describe --abbrev=0 --tags | cut -d "v" -f 2)
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=VERSION::$(cd eform-angular-items-planning-plugin && git describe --abbrev=0 --tags | cut -d "v" -f 2)
-    - name: Get the work flow version
-      id: get_plugin3_version
-      run: echo ::set-output name=PLUGIN3VERSION::$(cd eform-angular-workflow-plugin && git describe --abbrev=0 --tags | cut -d "v" -f 2)
-    - name: Get the backend configuration version
-      id: get_plugin4_version
-      run: echo ::set-output name=PLUGIN4VERSION::$(cd eform-backendconfiguration-plugin && git describe --abbrev=0 --tags | cut -d "v" -f 2)
-    - name: Get the time planning version
-      id: get_plugin5_version
-      run: echo ::set-output name=PLUGIN5VERSION::$(cd eform-angular-timeplanning-plugin && git describe --abbrev=0 --tags | cut -d "v" -f 2)
-    - name: Get the greate belt version
-      id: get_plugin6_version
-      run: echo ::set-output name=PLUGIN6VERSION::$(cd eform-angular-greate-belt-plugin && git describe --abbrev=0 --tags | cut -d "v" -f 2)
-    - name: Get the frontend version
-      id: get_frontend_version
-      run: echo ::set-output name=FRONTENDVERSION::$(cd eform-angular-frontend && git describe --abbrev=0 --tags | cut -d "v" -f 2)
     - name: Copy frontendfiles
       run: cp main/Dockerfile .
     - name: Build the tagged Docker image
-      run: docker build . -t microtingas/work-items-planning-container:latest -t microtingas/work-items-planning-container:${{ steps.get_release_version.outputs.VERSION }} --build-arg GITVERSION=${{ steps.get_frontend_version.outputs.FRONTENDVERSION }} --build-arg PLUGINVERSION=${{ steps.get_version.outputs.VERSION }} --build-arg PLUGIN2VERSION=${{ steps.get_plugin_version.outputs.PLUGIN2VERSION }} --build-arg PLUGIN3VERSION=${{ steps.get_plugin3_version.outputs.PLUGIN3VERSION }} --build-arg PLUGIN4VERSION=${{ steps.get_plugin4_version.outputs.PLUGIN4VERSION }} --build-arg PLUGIN5VERSION=${{ steps.get_plugin5_version.outputs.PLUGIN5VERSION }} --build-arg PLUGIN6VERSION=${{ steps.get_plugin6_version.outputs.PLUGIN6VERSION }}
+      run: docker build . -t microtingas/work-items-planning-container:latest -t microtingas/work-items-planning-container:1.0.0 --build-arg GITVERSION=1.0.0 --build-arg PLUGINVERSION=1.0.0 --build-arg PLUGIN2VERSION=1.0.0 --build-arg PLUGIN3VERSION=1.0.0 --build-arg PLUGIN4VERSION=1.0.0 --build-arg PLUGIN5VERSION=1.0.0 --build-arg PLUGIN6VERSION=1.0.0
     - name: Tag builds
       run: |-
         docker tag microtingas/work-items-planning-container:latest microtingas/work-items-planning-container:latest

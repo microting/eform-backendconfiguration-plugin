@@ -128,14 +128,14 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async checkboxEditAssignment(i: number) {
-    const ele = await $(`#checkboxCreateAssignment${i}`);
+    const ele = await $(`#checkboxCreateAssignment${i}-input`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async checkboxCreateAssignment(i: number) {
-    const ele = await $(`#checkboxCreateAssignment${i}`);
+    const ele = await $(`#checkboxCreateAssignment${i}-input`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -390,7 +390,7 @@ export class PropertyWorkerRowObject {
               await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(
                 i
               )
-            ).getAttribute('ng-reflect-checked')) === 'true',
+            ).getAttribute('aria-checked')) === 'true',
          },
        ];
     }

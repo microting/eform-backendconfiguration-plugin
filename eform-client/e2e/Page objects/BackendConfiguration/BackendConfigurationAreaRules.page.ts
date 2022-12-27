@@ -135,15 +135,15 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async planAreaRuleStatusToggle() {
-    return $(`#planAreaRuleStatusToggle`);
+    return $(`#planAreaRuleStatusToggle-input`);
   }
 
   public async planAreaRuleNotificationsToggle() {
-    return $(`#planAreaRuleNotificationsToggle`);
+    return $(`#planAreaRuleNotificationsToggle-input`);
   }
 
   public async planAreaRuleComplianceEnableToggle() {
-    return $(`#planAreaRuleComplianceEnableToggle`);
+    return $(`#planAreaRuleComplianceEnableToggle-input`);
   }
 
   public async planRepeatEvery() {
@@ -663,7 +663,7 @@ export class AreaRuleRowObject {
       if (areaRulePlanningCreateUpdate.enableCompliance !== undefined) {
         if(await (
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-        ).getAttribute('ng-reflect-checked') !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
+        ).getAttribute('aria-checked') !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
           await (
             await $('label[for=planAreaRuleComplianceEnableToggle-input]')
           ).click();
@@ -722,7 +722,7 @@ export class AreaRuleRowObject {
     plan.status =
       (await (
         await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
-      ).getAttribute('ng-reflect-checked')) === 'true';
+      ).getAttribute('aria-checked')) === 'true';
     if (
       await (
         await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
@@ -731,7 +731,7 @@ export class AreaRuleRowObject {
       plan.notification =
         (await (
           await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
-        ).getAttribute('ng-reflect-checked')) === 'true';
+        ).getAttribute('aria-checked')) === 'true';
     }
     if (
       await (
@@ -741,7 +741,7 @@ export class AreaRuleRowObject {
       plan.enableCompliance =
         (await (
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-        ).getAttribute('ng-reflect-checked')) === 'true';
+        ).getAttribute('aria-checked')) === 'true';
     }
     if (
       await (

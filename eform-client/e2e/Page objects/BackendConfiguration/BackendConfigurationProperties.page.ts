@@ -473,10 +473,10 @@ export class PropertyRowObject {
   public async getBindAreas() {
     await this.openBindPropertyWithAreasModal();
     await browser.pause(500);
-    const checkboxes = await $$(`mat-checkbox`);
+    const checkboxes = await $$(`mat-checkbox-input`);
     let mas = [];
     for (let i = 0; i < checkboxes.length; i++) {
-      mas = [...mas, !!(await (await checkboxes[i]).getAttribute('ng-reflect-checked'))];
+      mas = [...mas, !!(await (await checkboxes[i]).getAttribute('aria-checked'))];
     }
     return mas;
   }
