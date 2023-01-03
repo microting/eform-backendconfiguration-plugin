@@ -427,6 +427,34 @@ namespace BackendConfiguration.Pn
                 await field.Create(sdkDbContext);
             }
 
+            cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Elforbrug")
+                .ConfigureAwait(false);
+            if (cltranslation != null)
+            {
+                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+                    .ConfigureAwait(false);
+                if (clCheckList != null)
+                {
+                    clCheckList.ReportH1 = "24.00Aflæsninger";
+                    clCheckList.ReportH2 = "24.00.02Aflæsning el";
+                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+                }
+            }
+
+            cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Vandforbrug")
+                .ConfigureAwait(false);
+            if (cltranslation != null)
+            {
+                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+                    .ConfigureAwait(false);
+
+                if (clCheckList != null)
+                {
+                    clCheckList.ReportH1 = "24.00Aflæsninger";
+                    clCheckList.ReportH2 = "24.00.01Aflæsning vand";
+                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+                }
+            }
             var folderTranslations =
                 await sdkDbContext.FolderTranslations.Where(x =>
                     x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
