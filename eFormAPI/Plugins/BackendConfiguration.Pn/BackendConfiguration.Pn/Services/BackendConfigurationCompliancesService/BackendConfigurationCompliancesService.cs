@@ -130,14 +130,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
                 var responsible = sitesList.Select(site => new KeyValuePair<int, string>(site.Id, site.Name)).ToList();
 
-                var today = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
-                var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
-                if (result.Entities.Any(x => x.PlanningId == compliance.PlanningId && x.Deadline == compliance.Deadline.AddDays(-1)))
-                {
-                    await dbCompliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                }
-                else
-                {
+                // var today = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
+                // var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
+                // if (result.Entities.Any(x => x.PlanningId == compliance.PlanningId && x.Deadline == compliance.Deadline.AddDays(-1)))
+                // {
+                //     await dbCompliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                // }
+                // else
+                // {
                     var complianceModel = new CompliancesModel
                     {
                         CaseId = compliance.MicrotingSdkCaseId,
@@ -151,38 +151,38 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         Responsible = responsible,
                     };
 
-                    if (complianceModel.CaseId == 0 && complianceModel.Deadline < today)
-                    {
-                        if (dbCompliance.MicrotingSdkeFormId == 0)
-                        {
-                            var planning = await _itemsPlanningPnDbContext.Plannings
-                                .SingleAsync(x => x.Id == complianceModel.PlanningId).ConfigureAwait(false);
-                            dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
-                        }
-                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .FirstOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
-                        if (planningCaseSite != null)
-                        {
-                            complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
-                            dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
-                            await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                        }
-                    }
-
-                    if (compliance.PlanningCaseSiteId != 0)
-                    {
-                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .FirstAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
-                        if (dbCompliance.MicrotingSdkCaseId != planningCaseSite.MicrotingSdkCaseId)
-                        {
-                            complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
-                            dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
-                            await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                        }
-                    }
+                    // if (complianceModel.CaseId == 0 && complianceModel.Deadline < today)
+                    // {
+                    //     if (dbCompliance.MicrotingSdkeFormId == 0)
+                    //     {
+                    //         var planning = await _itemsPlanningPnDbContext.Plannings
+                    //             .SingleAsync(x => x.Id == complianceModel.PlanningId).ConfigureAwait(false);
+                    //         dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
+                    //     }
+                    //     var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    //         .FirstOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                    //     if (planningCaseSite != null)
+                    //     {
+                    //         complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    //     }
+                    // }
+                    //
+                    // if (compliance.PlanningCaseSiteId != 0)
+                    // {
+                    //     var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    //         .FirstAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                    //     if (dbCompliance.MicrotingSdkCaseId != planningCaseSite.MicrotingSdkCaseId)
+                    //     {
+                    //         complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    //     }
+                    // }
 
                     result.Entities.Add(complianceModel);
-                }
+                // }
             }
 
             return new OperationDataResult<Paged<CompliancesModel>>(true, result);
