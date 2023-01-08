@@ -1,7 +1,7 @@
 import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
-import {CasePostNewComponent} from 'src/app/common/modules/eform-cases/components';
+// import {CasePostNewComponent} from 'src/app/common/modules/eform-cases/components';
 import {
   ReportEformPnModel,
   ReportPnGenerateModel,
@@ -31,7 +31,7 @@ import {BackendConfigurationPnReportService} from 'src/app/plugins/modules/backe
   styleUrls: ['./report-container.component.scss'],
 })
 export class ReportContainerComponent implements OnInit, OnDestroy {
-  @ViewChild('newPostModal') newPostModal: CasePostNewComponent;
+  // @ViewChild('newPostModal') newPostModal: CasePostNewComponent;
   reportsModel: ReportEformPnModel[] = [];
   range: Date[] = [];
   casePostsListModel: CasePostsListModel = new CasePostsListModel();

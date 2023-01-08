@@ -446,20 +446,6 @@ export class AreaRulePlanModalComponent implements OnInit {
     );
   }
 
-  /*updateEndDate(e: any) {
-    let date = new Date(e._d);
-    date = set(date, {
-      hours: 0,
-      minutes: 0,
-      seconds: 0,
-      milliseconds: 0,
-    });
-    this.selectedAreaRulePlanning.typeSpecificFields.endDate = format(
-      date,
-      this.standartDateTimeFormat
-    );
-  }*/
-
   isDisabledSaveBtn() {
     if (this.selectedArea.type !== 9) {
       return !this.selectedAreaRulePlanning.assignedSites.some((x) => x.checked);
@@ -484,6 +470,12 @@ export class AreaRulePlanModalComponent implements OnInit {
   }
 
   onChangeRepeatEvery(repeatEvery: number) {
+    if (this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 1 && repeatEvery === 0) {
+      this.selectedAreaRulePlanning.sendNotifications = false;
+      this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable = false;
+      this.selectedAreaRulePlanning.typeSpecificFields.notificationsModifiable = false;
+      this.selectedAreaRulePlanning.complianceEnabled = false;
+    }
     if (this.selectedAreaRulePlanning.typeSpecificFields.repeatType === 1 && repeatEvery === 1) {
       this.selectedAreaRulePlanning.sendNotifications = false;
       this.selectedAreaRulePlanning.complianceEnabled = false;
@@ -501,31 +493,6 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   onChangeRepeatType(repeatType: number) {
     this.selectedAreaRulePlanning.typeSpecificFields.repeatType = repeatType;
-    this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = null;
-    // this.selectedAreaRulePlanning.sendNotifications = false;
-    // this.selectedAreaRulePlanning.complianceEnabled = false;
+    this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = 1;
   }
-
-  // getShowCompliance(): boolean {
-  //   if (this.selectedArea.type === 3) {
-  //     return false;
-  //   }
-  //   if (this.selectedArea.type === 4 ||
-  //     this.selectedAreaRulePlanning.typeSpecificFields &&
-  //     this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery) {
-  //     return true;
-  //   }
-  //   if (this.selectedArea.type === 8) {
-  //     return this.selectedAreaRulePlanning.typeSpecificFields.complianceModifiable;
-  //   }
-  // }
-
-  // changeArray(sites: SiteDto[]) {
-  //   this.selectedAreaRulePlanning.assignedSites = [];
-  //   sites.forEach(site => this.selectedAreaRulePlanning.assignedSites =
-  //     [
-  //       ...this.selectedAreaRulePlanning.assignedSites,
-  //       {siteId: site.siteId, checked: true},
-  //     ]);
-  // }
 }

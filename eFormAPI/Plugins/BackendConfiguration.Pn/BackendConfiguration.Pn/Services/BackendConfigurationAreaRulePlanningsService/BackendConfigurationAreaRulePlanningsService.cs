@@ -477,6 +477,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                 rulePlanning.Status = areaRulePlanningModel.Status;
                                 rulePlanning.ComplianceEnabled = areaRulePlanningModel.ComplianceEnabled;
                                 rulePlanning.SendNotifications = areaRulePlanningModel.SendNotifications;
+                                if (rulePlanning.RepeatType == 1 && rulePlanning.RepeatEvery == 0)
+                                {
+                                    rulePlanning.ComplianceEnabled = false;
+                                    rulePlanning.SendNotifications = false;
+                                }
+
                                 rulePlanning.AreaRuleId = areaRulePlanningModel.RuleId;
                                 if (areaRulePlanningModel.TypeSpecificFields != null)
                                 {
@@ -1199,6 +1205,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                             rulePlanning.ItemPlanningId = 0;
                                             rulePlanning.Status = false;
                                             await rulePlanning.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
+                                            var planningSites = await _backendConfigurationPnDbContext.PlanningSites
+                                                .Where(x => x.AreaRulePlanningsId == rulePlanning.Id)
+                                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                                .ToListAsync().ConfigureAwait(false);
+
+                                            foreach (var planningSite in planningSites) // delete all planning sites
+                                            {
+                                                planningSite.Status = 0;
+                                                await planningSite.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                // await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                            }
                                         }
 
                                         break;
@@ -1406,7 +1424,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         {
                             DayOfWeek = x.DayOfWeek,
                             EndDate = x.EndDate,
-                            RepeatEvery = x.RepeatEvery,
+                            RepeatEvery = x.RepeatType == 1 && x.RepeatEvery == 0 ? 1 : x.RepeatEvery,
                             RepeatType = x.RepeatType,
                             Alarm = x.Alarm,
                             Type = x.Type,
@@ -1688,7 +1706,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                     UpdatedByUserId = _userService.UserId,
                     AreaId = areaRule.AreaId,
                     AreaRuleId = areaRule.Id,
-                    Status = 0,
+                    Status = 33,
                 };
                 await planningSite.Create(dbContext).ConfigureAwait(false);
             }
