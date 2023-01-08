@@ -260,7 +260,7 @@
                         <mat-checkbox class="mat-checkbox"
                           id="checkboxCreateAssignment{{ i }}"
                           (change)="addToArray($event, worker.siteId)"
-                          [checked]="getAssignmentBySiteId(worker.siteId)"
+                          [checked]="getAssignmentBySiteId(worker.siteId) === 'true'"
                           [value]="getAssignmentBySiteId(worker.siteId)"
                           [disabled]="!selectedAreaRulePlanning.status"
                         >

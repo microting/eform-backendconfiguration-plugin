@@ -609,6 +609,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                         .Contains(x))
                                     .Select(siteId => new PlanningSite
                                     {
+                                        AreaRuleId = rulePlanning.AreaRuleId,
+                                        AreaId = rulePlanning.AreaId,
                                         AreaRulePlanningsId = rulePlanning.Id,
                                         SiteId = siteId,
                                         CreatedByUserId = _userService.UserId,
@@ -1489,6 +1491,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 }
 
                 var areaRuleId = areaRule.AreaRulesPlannings
+                    .OrderByDescending(x => x.ItemPlanningId)
                     .First(y => y.WorkflowState != Constants.WorkflowStates.Removed).Id;
                 var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1514,7 +1517,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         SendNotifications = x.SendNotifications,
                         AssignedSites = x.PlanningSites
                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Select(y => new AreaRuleAssignedSitesModel { SiteId = y.SiteId, Checked = true, Status = y.Status })
+                            // .Where(y => y.Status > 0)
+                            .Select(y => new AreaRuleAssignedSitesModel { SiteId = y.SiteId, Checked = true, Status = y.Status, PlanningSiteId = y.Id})
                             .ToList(),
                         ComplianceEnabled = x.ComplianceEnabled,
                         PropertyId = x.PropertyId,
@@ -1732,8 +1736,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
             };
         }
 
-        private AreaRulePlanning CreateAreaRulePlanningObject(AreaRulePlanningModel areaRulePlanningModel,
-            AreaRule areaRule, int planningId, int folderId)
+        private async Task<AreaRulePlanning> CreateAreaRulePlanningObject(AreaRulePlanningModel areaRulePlanningModel,
+            AreaRule areaRule, int planningId, int folderId, BackendConfigurationPnDbContext dbContext)
         {
             var areaRulePlanning = new AreaRulePlanning
             {
@@ -1747,15 +1751,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 ItemPlanningId = planningId,
                 FolderId = folderId,
                 PropertyId = areaRulePlanningModel.PropertyId,
-                PlanningSites = areaRulePlanningModel.AssignedSites.Select(x => new PlanningSite
-                {
-                    SiteId = x.SiteId,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId,
-                    AreaId = areaRule.AreaId,
-                    AreaRuleId = areaRule.Id,
-                    Status = 0,
-                }).ToList(),
                 ComplianceEnabled = areaRulePlanningModel.ComplianceEnabled,
             };
             if (areaRulePlanningModel.TypeSpecificFields != null)
@@ -1780,6 +1775,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
             if (areaRule.Alarm != null)
             {
                 areaRulePlanning.Alarm = (AreaRuleT2AlarmsEnum)areaRule.Alarm;
+            }
+
+            await areaRulePlanning.Create(dbContext).ConfigureAwait(false);
+
+            foreach (var site in areaRulePlanningModel.AssignedSites)
+            {
+                var planningSite = new PlanningSite
+                {
+                    AreaRulePlanningsId = areaRulePlanning.Id,
+                    SiteId = site.SiteId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId,
+                    AreaId = areaRule.AreaId,
+                    AreaRuleId = areaRule.Id,
+                    Status = 0,
+                };
+                await planningSite.Create(dbContext).ConfigureAwait(false);
             }
 
             return areaRulePlanning;
@@ -2023,10 +2035,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 }
             }
 
-            var areaRulePlanningForType2TypeTankOpen = CreateAreaRulePlanningObject(areaRulePlanningModel,
+            var areaRulePlanningForType2TypeTankOpen = await CreateAreaRulePlanningObject(areaRulePlanningModel,
                 areaRule, planningForType2TypeTankOpenId,
-                folderId);
-            await areaRulePlanningForType2TypeTankOpen.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                folderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanningForType2TypeTankOpen.Create().ConfigureAwait(false);
 
             var planningForType2AlarmYesId = 0;
             if (areaRule.Type is AreaRuleT2TypesEnum.Open or AreaRuleT2TypesEnum.Closed
@@ -2100,10 +2112,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 }
             }
 
-            var areaRulePlanningForType2AlarmYes = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+            var areaRulePlanningForType2AlarmYes = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
                 planningForType2AlarmYesId,
-                folderId);
-            await areaRulePlanningForType2AlarmYes.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                folderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanningForType2AlarmYes.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var planningForType2Id = 0;
             if (areaRulePlanningModel.Status)
@@ -2167,10 +2179,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 planningForType2Id = planningForType2.Id;
             }
 
-            var areaRulePlanningForType2 = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+            var areaRulePlanningForType2 = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
                 planningForType2Id,
-                folderId);
-            await areaRulePlanningForType2.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                folderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanningForType2.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
         }
 
         private async Task CreatePlanningType3(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, eFormCore.Core core)
@@ -2270,9 +2282,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 planningId = planning.Id;
 
             }
-            var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningId,
-                folderId);
-            await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            var areaRulePlanning = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningId,
+                folderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
         }
 
         private async Task CreatePlanningType6(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, eFormCore.Core core)
@@ -2453,19 +2465,19 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 planningForType6IdTwo = planningForType6Two.Id;
             }
 
-            var areaRulePlanningForType6HoursAndEnergyEnabled = CreateAreaRulePlanningObject(
+            var areaRulePlanningForType6HoursAndEnergyEnabled = await CreateAreaRulePlanningObject(
                 areaRulePlanningModel, areaRule, planningForType6HoursAndEnergyEnabledId,
-                folderId);
-            var areaRulePlanningForType6One = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+                folderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+            var areaRulePlanningForType6One = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
                 planningForType6IdOne,
-                folderId);
-            var areaRulePlanningForType6Two = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+                folderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+            var areaRulePlanningForType6Two = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
                 planningForType6IdTwo,
-                folderId);
-            await areaRulePlanningForType6HoursAndEnergyEnabled.Create(
-                _backendConfigurationPnDbContext).ConfigureAwait(false);
-            await areaRulePlanningForType6One.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
-            await areaRulePlanningForType6Two.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                folderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanningForType6HoursAndEnergyEnabled.Create(
+                // _backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanningForType6One.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanningForType6Two.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
         }
 
         private async Task CreatePlanningType9(AreaRule areaRule, MicrotingDbContext sdkDbContext, AreaRulePlanningModel areaRulePlanningModel, Core core)
@@ -2613,11 +2625,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                 await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
-                var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
-                    areaRule.FolderId);
+                var areaRulePlanning = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
+                    areaRule.FolderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
 
 
-                await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                // await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 // }
             }
         }
@@ -2675,9 +2687,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         areaRule.FolderId).ConfigureAwait(false);
 
                     var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
-                        areaRule.FolderId);
+                        areaRule.FolderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    // await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                     return;
                 }
@@ -2772,14 +2784,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         await _pairItemWichSiteHelper.Pair(
                             areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), clId, planningStatic.Id,
                             poolDayFolder.Id).ConfigureAwait(false);
-                        var areaRulePlanningStatic = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningStatic.Id,
-                            areaRule.FolderId);
+                        var areaRulePlanningStatic = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningStatic.Id,
+                            areaRule.FolderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
                         areaRulePlanningStatic.ComplianceEnabled = false;
                         areaRulePlanningStatic.RepeatEvery = 0;
                         areaRulePlanningStatic.RepeatType = (int)RepeatType.Day;
                         areaRulePlanningStatic.FolderId = poolDayFolder.Id;
 
-                        await areaRulePlanningStatic.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await areaRulePlanningStatic.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
 
                     currentWeekDay = (DayOfWeek)poolHour.DayOfWeek;
@@ -2820,16 +2832,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         poolHour.ItemsPlanningId = planning.Id;
                         await poolHour.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                        var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+                        var areaRulePlanning = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
                             planning.Id,
-                            poolDayFolder.Id);
+                            poolDayFolder.Id, _backendConfigurationPnDbContext).ConfigureAwait(false);
                         areaRulePlanning.ComplianceEnabled = false;
                         areaRulePlanning.RepeatEvery = 0;
                         areaRulePlanning.RepeatType = (int)RepeatType.Day;
                         areaRulePlanning.DayOfWeek = (int)(DayOfWeek)poolHour.DayOfWeek;
                         areaRulePlanning.FolderId = poolDayFolder.Id;
 
-                        await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await areaRulePlanning.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 }
             }
@@ -2912,10 +2924,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                 planningId = planning.Id;
             }
 
-            var areaRulePlanning = CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningId,
-                areaRule.FolderId);
+            var areaRulePlanning = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planningId,
+                areaRule.FolderId, _backendConfigurationPnDbContext).ConfigureAwait(false);
 
-            await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            // await areaRulePlanning.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
         }
     }
 }

@@ -31,5 +31,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
         public bool Checked { get; set; }
 
         public int Status { get; set; }
+
+        public int PlanningSiteId { get; set; }
     }
 }

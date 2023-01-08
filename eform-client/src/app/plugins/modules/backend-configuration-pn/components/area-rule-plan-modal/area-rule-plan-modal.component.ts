@@ -300,7 +300,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     }
   }
 
-  getAssignmentBySiteId(siteId: number) :string {
+  getAssignmentBySiteId(siteId: number): string {
     const assignedSite = this.selectedAreaRulePlanning.assignedSites.find(
       (x) => x.siteId === siteId
     );
