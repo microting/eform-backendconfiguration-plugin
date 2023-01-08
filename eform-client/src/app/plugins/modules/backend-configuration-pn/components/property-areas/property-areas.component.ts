@@ -128,7 +128,6 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
   }
 
   onUpdatePropertyAreas(model: PropertyAreasUpdateModel, modal: MatDialogRef<PropertyAreasEditModalComponent>) {
-    debugger;
     this.updatePropertyAreasSub$ = this.propertiesService
       .updatePropertyAreas(model)
       .subscribe((data) => {

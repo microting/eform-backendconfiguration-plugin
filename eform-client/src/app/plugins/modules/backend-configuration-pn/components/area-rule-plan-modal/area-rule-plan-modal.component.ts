@@ -23,7 +23,6 @@ import {TranslateService} from '@ngx-translate/core';
 import {SiteDto} from 'src/app/common/models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn, MtxGridRowSelectionFormatter} from '@ng-matero/extensions/grid';
-import {PairingModel} from "src/app/plugins/modules/items-planning-pn/models";
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -123,13 +122,13 @@ export class AreaRulePlanModalComponent implements OnInit {
   ngOnInit() {
     this.repeatTypeDay = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
-    }, R.range(1, 31));// 1, 2, ..., 29, 30.
+    }, R.range(1, 31)); // 1, 2, ..., 29, 30.
     this.repeatTypeWeek = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
-    }, R.range(1, 51));// 1, 2, ..., 49, 50.
+    }, R.range(1, 51)); // 1, 2, ..., 49, 50.
     this.repeatTypeMonth = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
-    }, R.range(1, 25));// 1, 2, ..., 23, 24.
+    }, R.range(1, 25)); // 1, 2, ..., 23, 24.
     this.dayOfWeekArr = [
       {id: 1, name: this.translate.instant('Monday')},
       {id: 2, name: this.translate.instant('Tuesday')},
@@ -222,7 +221,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       }, selectedPropertyId);
     }
 
-    //this.selectedAreaRulePlanning.complianceEnabled = planning.complianceEnabled;
+    // this.selectedAreaRulePlanning.complianceEnabled = planning.complianceEnabled;
 
     if (this.selectedArea.type === 5) {
       if (this.selectedAreaRulePlanning.typeSpecificFields.dayOfWeek !== rule.typeSpecificFields.dayOfWeek) {
@@ -503,8 +502,8 @@ export class AreaRulePlanModalComponent implements OnInit {
   onChangeRepeatType(repeatType: number) {
     this.selectedAreaRulePlanning.typeSpecificFields.repeatType = repeatType;
     this.selectedAreaRulePlanning.typeSpecificFields.repeatEvery = null;
-    //this.selectedAreaRulePlanning.sendNotifications = false;
-    //this.selectedAreaRulePlanning.complianceEnabled = false;
+    // this.selectedAreaRulePlanning.sendNotifications = false;
+    // this.selectedAreaRulePlanning.complianceEnabled = false;
   }
 
   // getShowCompliance(): boolean {
