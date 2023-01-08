@@ -62,7 +62,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     //   `User ${areaRulePlanningCreated.workers[0]} not paired`
     // ).eq('true');
     expect(areaRulePlanningCreated.workers[0].checked).eq(true);
-    expect(areaRulePlanningCreated.workers[0].status).eq('Oprettet lokalt');
+    expect(areaRulePlanningCreated.workers[0].status).eq('Klar til server');
     expect(areaRulePlanningCreated.enableCompliance).eq(areaRulePlanning.enableCompliance);
     await itemsPlanningPlanningPage.goToPlanningsPage();
     expect(

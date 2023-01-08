@@ -306,44 +306,44 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             func.DynamicInvoke(model.Id);
                         }
                     }
-                    if (compliance.PlanningCaseSiteId != 0)
-                    {
+                    // if (compliance.PlanningCaseSiteId != 0)
+                    // {
+                    //     var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    //         .SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                    //     if (planningCaseSite != null)
+                    //     {
+                    //         planningCaseSite.Status = 100;
+                    //         planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
+                    //
+                    //         planningCaseSite.MicrotingSdkCaseDoneAt = newDoneAt;
+                    //         planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
+                    //         planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
+                    //         planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
+                    //         await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    //
+                    //         var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                    //             .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
+                    //         if (planningCase.Status != 100)
+                    //         {
+                    //             planningCase.Status = 100;
+                    //             planningCase.MicrotingSdkCaseDoneAt = newDoneAt;
+                    //             planningCase.MicrotingSdkCaseId = foundCase.Id;
+                    //             planningCase.DoneByUserId = (int)foundCase.SiteId;
+                    //             planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
+                    //             planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+                    //
+                    //             planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
+                    //             await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    //         }
+                    //
+                    //         planningCaseSite.PlanningCaseId = planningCase.Id;
+                    //         await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    //     }
+                    // }
+                    // else
+                    // {
                         var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
-                        if (planningCaseSite != null)
-                        {
-                            planningCaseSite.Status = 100;
-                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
-
-                            planningCaseSite.MicrotingSdkCaseDoneAt = newDoneAt;
-                            planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
-                            planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
-                            planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-
-                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases
-                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
-                            if (planningCase.Status != 100)
-                            {
-                                planningCase.Status = 100;
-                                planningCase.MicrotingSdkCaseDoneAt = newDoneAt;
-                                planningCase.MicrotingSdkCaseId = foundCase.Id;
-                                planningCase.DoneByUserId = (int)foundCase.SiteId;
-                                planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
-                                planningCase.WorkflowState = Constants.WorkflowStates.Processed;
-
-                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
-                                await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                            }
-
-                            planningCaseSite.PlanningCaseId = planningCase.Id;
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                        }
-                    }
-                    else
-                    {
-                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .SingleOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
+                            .FirstOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
                         if (planningCaseSite != null)
                         {
                             planningCaseSite.Status = 100;
@@ -372,7 +372,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             planningCaseSite.PlanningCaseId = planningCase.Id;
                             await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
-                    }
+                    // }
                 }
                 else
                 {
