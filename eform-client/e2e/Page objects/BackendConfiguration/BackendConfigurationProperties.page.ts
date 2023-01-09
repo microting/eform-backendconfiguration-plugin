@@ -487,6 +487,7 @@ export class PropertyRowObject {
     await (
       await backendConfigurationPropertiesPage.configurePropertyAreasBtn()
     )
+    await browser.pause(500);
     await (
       await backendConfigurationPropertiesPage.navigateToPropertyArea(
         indexAreaForClick
