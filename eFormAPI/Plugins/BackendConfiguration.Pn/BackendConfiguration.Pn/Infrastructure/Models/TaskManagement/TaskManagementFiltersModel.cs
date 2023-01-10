@@ -56,4 +56,6 @@ public class TaskManagementFiltersModel : FilterAndSortModel
             _ => ""
         };
     }
+
+    public bool Delayed { get; set; }
 }

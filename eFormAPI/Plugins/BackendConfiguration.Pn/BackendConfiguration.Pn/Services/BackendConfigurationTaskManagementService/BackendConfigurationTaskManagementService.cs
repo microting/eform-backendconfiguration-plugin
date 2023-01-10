@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using System.Reflection;
+using System.Threading;
 using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.RebusService;
 using BackendConfiguration.Pn.Services.WordService;
@@ -76,6 +77,10 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
     public async Task<List<WorkorderCaseModel>> Index(TaskManagementFiltersModel filtersModel)
     {
+        if (filtersModel.Delayed)
+        {
+            Thread.Sleep(3000);
+        }
         try
         {
             var timeZoneInfo = await _userService.GetCurrentUserTimeZoneInfo();

@@ -42,12 +42,13 @@ export class TaskManagementStateService {
     return this.query.selectActiveSortDirection$;
   }
 
-  getAllWorkOrderCases():
+  getAllWorkOrderCases(delayed: boolean):
     Observable<OperationDataResult<WorkOrderCaseModel[]>> {
     return this.service
       .getWorkOrderCases({
         ...this.query.pageSetting.pagination,
         ...this.query.pageSetting.filters,
+        delayed: delayed,
       });
   }
 

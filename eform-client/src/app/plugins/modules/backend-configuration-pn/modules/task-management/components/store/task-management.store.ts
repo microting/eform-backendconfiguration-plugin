@@ -5,14 +5,15 @@ import {
 } from 'src/app/common/models';
 
 export interface TaskManagementFiltrationModel {
-  propertyId: number,
-  areaName?: string,
-  createdBy?: string,
-  lastAssignedTo?: string,
-  status?: number,
-  dateFrom?: Date | string,
-  dateTo?: Date | string,
-  priority?: number,
+  propertyId: number;
+  areaName?: string;
+  createdBy?: string;
+  lastAssignedTo?: string;
+  status?: number;
+  dateFrom?: Date | string;
+  dateTo?: Date | string;
+  priority?: number;
+  delayed: boolean;
 }
 
 export interface TaskManagementState {

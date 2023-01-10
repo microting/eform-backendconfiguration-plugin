@@ -26,8 +26,7 @@ import {Overlay} from '@angular/cdk/overlay';
   styleUrls: ['./task-management-create-show-modal.component.scss'],
 })
 export class TaskManagementCreateShowModalComponent
-  implements OnInit, OnDestroy
-{
+  implements OnInit, OnDestroy {
   @Output() taskCreated: EventEmitter<void> = new EventEmitter<void>();
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -278,7 +277,7 @@ export class TaskManagementCreateShowModalComponent
         id: this.currentWorkOrderCase.id,
         priority: rawValue.priority,
         caseStatusEnum: rawValue.caseStatusEnum,
-      }
+      };
       this.taskManagementService.updateWorkOrderCase(workOrderCase)
         .subscribe(data => {
           if (data && data.success) {
@@ -295,7 +294,7 @@ export class TaskManagementCreateShowModalComponent
         priority: rawValue.priority,
         files: this.images.map(x => x.file),
         caseStatusEnum: rawValue.caseStatusEnum,
-      }
+      };
       this.taskManagementService.createWorkOrderCase(workOrderCase)
         .subscribe(data => {
           if (data && data.success) {

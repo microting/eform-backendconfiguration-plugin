@@ -9,7 +9,7 @@ import {
 } from '../../../../services';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
-import { Subscription } from 'rxjs';
+import {Subscription} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
@@ -17,6 +17,7 @@ import {ExcelIcon, WordIcon} from 'src/app/common/const';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {LoaderService} from 'src/app/common/services';
 
 @AutoUnsubscribe()
 @Component({
@@ -38,8 +39,10 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   deleteWorkOrderCaseSub$: Subscription;
   workOrderCaseDeleteSub$: Subscription;
   taskCreatedSub$: Subscription;
+  taskUpdatedSub$: Subscription;
 
   constructor(
+    private loaderService: LoaderService,
     public taskManagementStateService: TaskManagementStateService,
     public taskManagementService: BackendConfigurationPnTaskManagementService,
     private toasterService: ToastrService,
@@ -54,14 +57,15 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.loaderService.setLoading(false);
     this.getProperties();
   }
 
   ngOnDestroy(): void {}
 
-  updateTable() {
+  updateTable(delayed: boolean = false) {
     this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
-      .getAllWorkOrderCases()
+      .getAllWorkOrderCases(delayed)
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.workOrderCases = data.model;
@@ -74,15 +78,15 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .getWorkOrderCase(workOrderCaseId)
       .subscribe((data) => {
         if (data && data.success && data.model) {
-          const createModal = this.dialog.open(TaskManagementCreateShowModalComponent, {...dialogConfigHelper(this.overlay, data.model)});
-          this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable());
+          const updateModal = this.dialog.open(TaskManagementCreateShowModalComponent, {...dialogConfigHelper(this.overlay, data.model)});
+          this.taskUpdatedSub$ = updateModal.componentInstance.taskCreated.subscribe(() => this.updateTable(true));
         }
       });
   }
 
   openCreateModal() {
     const createModal = this.dialog.open(TaskManagementCreateShowModalComponent, dialogConfigHelper(this.overlay));
-    this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable());
+    this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable(false));
   }
 
   openDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
