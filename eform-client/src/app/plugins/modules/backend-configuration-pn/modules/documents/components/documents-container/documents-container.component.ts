@@ -7,7 +7,7 @@ import {
 } from '../';
 import {
   DocumentFolderModel,
-  DocumentModel,
+  DocumentModel, DocumentSimpleFolderModel,
 } from '../../../../models';
 import {Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
@@ -16,6 +16,8 @@ import {DocumentsStateService} from '../../../documents/store';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {applicationLanguagesTranslated} from "src/app/common/const";
+import {BackendConfigurationPnDocumentsService} from "src/app/plugins/modules/backend-configuration-pn/services";
 
 @Component({
   selector: 'app-documents-container',
@@ -23,7 +25,7 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
   styleUrls: ['./documents-container.component.scss'],
 })
 export class DocumentsContainerComponent implements OnInit, OnDestroy {
-  folders: Paged<DocumentFolderModel> = new Paged<DocumentFolderModel>();
+  folders: DocumentSimpleFolderModel[];
   documents: Paged<DocumentModel> = new Paged<DocumentModel>();
   getFoldersSub$: Subscription;
   documentDeletedSub$: Subscription;
@@ -31,12 +33,17 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   documentCreatedSub$: Subscription;
   folderManageModalClosedSub$: Subscription;
   getDocumentsSub$: Subscription;
+  selectedLanguage: number;
 
   constructor(
+    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     public dialog: MatDialog,
     private overlay: Overlay,
     public documentsStateService: DocumentsStateService,
     public localeService: LocaleService) {
+    this.selectedLanguage = applicationLanguagesTranslated.find(
+      (x) => x.locale === localeService.getCurrentUserLocale()
+    ).id;
   }
 
   ngOnInit(): void {
@@ -74,36 +81,47 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     });
   }
 
+  // getFolders() {
+  //   this.getFoldersSub$ = this.documentsStateService
+  //     .getFolders()
+  //     .subscribe((data) => {
+  //       if (data && data.success && data.model) {
+  //         this.folders = data.model;
+  //         this.updateTable();
+  //       }
+  //     });
+  // }
+
   getFolders() {
-    this.getFoldersSub$ = this.documentsStateService
-      .getFolders()
-      .subscribe((data) => {
-        if (data && data.success && data.model) {
-          this.folders = data.model;
-          this.updateTable();
-        }
-      });
+    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
+      if (data && data.success) {
+        this.folders = data.model;
+        this.documentsStateService.getDocuments().subscribe((data) => {
+          if (data && data.success && data.model) {
+            this.documents = data.model;
+          }
+        });
+      }
+    });
   }
 
+
   updateTable() {
+    this.getFolders();
     // this.getDocumentsSub$ = this.documentsStateService.getDocuments().subscribe((data) => {
     //   if (data && data.success && data.model) {
     //     this.documents = data.model;
     //   }
     // });
-    this.getDocumentsSub$ = this.documentsStateService
-      .getFolders()
-      .subscribe((data) => {
-        if (data && data.success && data.model) {
-          this.folders = data.model;
-          this.documentsStateService.getDocuments().subscribe((data) => {
-            if (data && data.success && data.model) {
-              this.documents = data.model;
-            }
-          });
-          //       this.workOrderCases = data.model;
-        }
-      });
+    // this.getDocumentsSub$ = this.documentsStateService
+    //   .getFolders()
+    //   .subscribe((data) => {
+    //     if (data && data.success && data.model) {
+    //       this.folders = data.model;
+    //
+    //       //       this.workOrderCases = data.model;
+    //     }
+    //   });
   }
 
   getDocumentsByFolderId(folderId: number) {
