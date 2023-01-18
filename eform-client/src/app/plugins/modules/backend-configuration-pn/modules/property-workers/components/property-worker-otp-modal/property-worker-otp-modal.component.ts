@@ -1,6 +1,7 @@
-import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
-import {UnitsService} from 'src/app/common/services/advanced';
-import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
+import {Component, Inject, OnInit} from '@angular/core';
+import {UnitsService} from 'src/app/common/services';
+import {DeviceUserModel} from '../../../../models';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
   selector: 'app-property-worker-otp-modal',
@@ -8,24 +9,23 @@ import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/
   styleUrls: ['./property-worker-otp-modal.component.scss']
 })
 export class PropertyWorkerOtpModalComponent implements OnInit {
-  @Input() selectedSimpleSite: DeviceUserModel = new DeviceUserModel();
-  @Output() onNewOtpRequested: EventEmitter<void> = new EventEmitter<void>();
-  @ViewChild('frame', { static: true }) frame;
-
-  constructor(private unitsService: UnitsService) { }
+  constructor(
+    private unitsService: UnitsService,
+    public dialogRef: MatDialogRef<PropertyWorkerOtpModalComponent>,
+    @Inject(MAT_DIALOG_DATA) public selectedSimpleSite: DeviceUserModel = new DeviceUserModel(),
+  ) {}
 
   ngOnInit() {
   }
 
-  show() {
-    this.frame.show();
+  hide(result = false) {
+    this.dialogRef.close(result);
   }
 
   requestOtp() {
     this.unitsService.requestOtp(this.selectedSimpleSite.unitId).subscribe(operation => {
       if (operation && operation.success) {
-        this.frame.hide();
-        this.onNewOtpRequested.emit();
+        this.hide(true);
       }
     });
   }

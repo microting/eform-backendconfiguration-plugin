@@ -11,4 +11,5 @@ export class DocumentModel {
   propertyNames: string;
   documentProperties: DocumentPropertyModel[] = [];
   documentUploadedDatas: DocumentUploadedDataModel[] = [];
+  isLocked: boolean;
 }

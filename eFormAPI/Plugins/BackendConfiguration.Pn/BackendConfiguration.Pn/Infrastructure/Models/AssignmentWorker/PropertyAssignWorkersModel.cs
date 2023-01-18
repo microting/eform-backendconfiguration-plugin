@@ -32,5 +32,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
 
         public List<PropertyAssignmentWorkerModel> Assignments { get; set; }
             = new List<PropertyAssignmentWorkerModel>();
+
+        public bool? TimeRegistrationEnabled { get; set; }
+
+        public bool? TaskManagementEnabled { get; set; }
     }
 }

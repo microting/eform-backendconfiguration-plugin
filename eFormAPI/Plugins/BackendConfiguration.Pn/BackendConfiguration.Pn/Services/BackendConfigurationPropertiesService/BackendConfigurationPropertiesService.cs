@@ -24,6 +24,8 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
+using eFormCore;
+using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
 
@@ -219,6 +221,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         })
                     .ToListAsync().ConfigureAwait(false);
                 newProperty.FolderId = await core.FolderCreate(translatesForFolder, null).ConfigureAwait(false);
+
+                newProperty = await CreateTaskManagementFolders(newProperty, sdkDbContext, core);
+
+                // create area select list filled manually
+                var areasGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
+                    $"{newProperty.Name} - Areas", "", true, true).ConfigureAwait(false);
+                newProperty.EntitySelectListAreas = areasGroup.Id;
+                // create device users select list filled automatically by workers bound to property
+                var deviceUsersGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
+                    $"{newProperty.Name} - Device Users", "", true, false).ConfigureAwait(false);
+                newProperty.EntitySelectListDeviceUsers = deviceUsersGroup.Id;
+
                 await newProperty.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 return new OperationResult(true,
@@ -379,12 +393,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         x => new CommonTranslationsModel
                         {
                             LanguageId = x.Id,
-                            Name = property.Name,
-                            Description = ""
+                            Name = updateModel.Name,
+                            Description = updateModel.Address ?? ""
                         })
                     .ToListAsync().ConfigureAwait(false);
 
                 await core.FolderUpdate((int)property.FolderId, translatesForFolder, null).ConfigureAwait(false);
+
+                property = await CreateTaskManagementFolders(property, sdkDbContext, core);
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 if (property.WorkorderEnable != updateModel.WorkorderEnable)
                 {
@@ -392,111 +409,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     {
                         case true:
                         {
-                            // int? folderIdForNewTasks;
-                            if (property.FolderIdForTasks == null)
-                            {
-                                var translatesFolderForTasks = new List<CommonTranslationsModel>
-                                {
-                                    new()
-                                    {
-                                        Name = "00. Opgavestyring",
-                                        LanguageId = 1, // da
-                                        Description = "",
-                                    },
-                                    new()
-                                    {
-                                        Name = "00. Tasks",
-                                        LanguageId = 2, // en
-                                        Description = "",
-                                    },
-                                    //new ()
-                                    //{
-                                    //    Name = "00. Tasks",
-                                    //    LanguageId = 3, // de
-                                    //    Description = "",
-                                    //},
-                                };
-                                property.FolderIdForTasks =
-                                    await core.FolderCreate(translatesFolderForTasks, property.FolderId).ConfigureAwait(false);
-
-                                var translateFolderForNewTask = new List<CommonTranslationsModel>
-                                {
-                                    new()
-                                    {
-                                        Name = "01. Ny opgave",
-                                        LanguageId = 1, // da
-                                        Description = "",
-                                    },
-                                    new()
-                                    {
-                                        Name = "01. New tasks",
-                                        LanguageId = 2, // en
-                                        Description = "",
-                                    },
-                                    //new ()
-                                    //{
-                                    //    Name = "01. New task",
-                                    //    LanguageId = 3, // de
-                                    //    Description = "",
-                                    //},
-                                };
-                                property.FolderIdForNewTasks = await core.FolderCreate(translateFolderForNewTask,
-                                    property.FolderIdForTasks).ConfigureAwait(false);
-
-                                var translateFolderForOngoingTask = new List<CommonTranslationsModel>
-                                {
-                                    new()
-                                    {
-                                        Name = "02. Igangværende opgaver",
-                                        LanguageId = 1, // da
-                                        Description = "",
-                                    },
-                                    new()
-                                    {
-                                        Name = "02. Ongoing tasks",
-                                        LanguageId = 2, // en
-                                        Description = "",
-                                    },
-                                    //new ()
-                                    //{
-                                    //    Name = "02. Ongoing tasks",
-                                    //    LanguageId = 3, // de
-                                    //    Description = "",
-                                    //},
-                                };
-                                property.FolderIdForOngoingTasks = await core.FolderCreate(translateFolderForOngoingTask, property.FolderIdForTasks).ConfigureAwait(false);
-
-                                var translateFolderForCompletedTask = new List<CommonTranslationsModel>
-                                {
-                                    new()
-                                    {
-                                        Name = "03. Afsluttede opgaver",
-                                        LanguageId = 1, // da
-                                        Description = "",
-                                    },
-                                    new()
-                                    {
-                                        Name = "03. Completed tasks",
-                                        LanguageId = 2, // en
-                                        Description = "",
-                                    },
-                                    //new ()
-                                    //{
-                                    //    Name = "03. Completed tasks",
-                                    //    LanguageId = 3, // de
-                                    //    Description = "",
-                                    //},
-                                };
-                                property.FolderIdForCompletedTasks = await core.FolderCreate(translateFolderForCompletedTask, property.FolderIdForTasks).ConfigureAwait(false);
-                            }
-
-                            var eformId = await sdkDbContext.CheckListTranslations
+                            var eformId = await sdkDbContext.CheckLists
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Where(x => x.Text == "01. New task")
-                                .Select(x => x.CheckListId)
+                                .Where(x => x.OriginalId == "142663new2")
+                                .Select(x => x.Id)
                                 .FirstAsync().ConfigureAwait(false);
 
                             var propertyWorkers = property.PropertyWorkers
+                                .Where(x => x.TaskManagementEnabled == true)
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToList();
 
@@ -523,7 +443,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                 await propertyWorker.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                                 // todo need change language to site language for correct translates and change back after end translate
-                                await _workOrderHelper.DeployEform(propertyWorker, eformId, property.FolderIdForNewTasks,
+                                await _workOrderHelper.DeployEform(propertyWorker, eformId, property,
                                     $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
                                     int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid)).ConfigureAwait(false);
                             }
@@ -546,6 +466,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         }
                         case false:
                         {
+                            await core.FolderDelete((int) property.FolderIdForCompletedTasks).ConfigureAwait(false);
+                            await core.FolderDelete((int) property.FolderIdForOngoingTasks).ConfigureAwait(false);
+                            await core.FolderDelete((int) property.FolderIdForNewTasks).ConfigureAwait(false);
+                            property.FolderIdForCompletedTasks = null;
+                            property.FolderIdForOngoingTasks = null;
+                            property.FolderIdForNewTasks = null;
+                            property.FolderIdForTasks = null;
                             /*var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.Text == "01. New task")
@@ -606,11 +533,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 property.UpdatedByUserId = _userService.UserId;
                 property.MainMailAddress = updateModel.MainMailAddress;
                 property.WorkorderEnable = updateModel.WorkorderEnable;
-                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 property.SelectedLanguages = property.SelectedLanguages
                     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToList();
+                await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 var selectedLanguagesForDelete = property.SelectedLanguages
                     .Where(x => !updateModel.LanguagesIds.Contains(x.LanguageId))
@@ -651,6 +578,275 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 return new OperationResult(false,
                     $"{_backendConfigurationLocalizationService.GetString("ErrorWhileUpdateProperties")}: {e.Message}");
             }
+        }
+
+        private static async Task<Property> CreateTaskManagementFolders(Property property,
+            MicrotingDbContext sdkDbContext, Core core)
+        {
+            var parentFolderTranslation =
+                await sdkDbContext.Folders
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Include(x => x.FolderTranslations)
+                    .Where(x => x.ParentId == null)
+                    .FirstOrDefaultAsync(x =>
+                        x.FolderTranslations.Any(y => y.Name == "00.00 Opret ny opgave"));
+
+            int? parentFolderId = null;
+
+            if (parentFolderTranslation == null)
+            {
+                var translatesFolderForTasks = new List<CommonTranslationsModel>
+                {
+                    new()
+                    {
+                        Name = "00.00 Opret ny opgave",
+                        LanguageId = 1, // da
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.00 Create a new task",
+                        LanguageId = 2, // en
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.00 Erstellen Sie eine neue Aufgabe",
+                        LanguageId = 3, // de
+                        Description = "",
+                    },
+                };
+                property.FolderIdForNewTasks =
+                    await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
+            }
+            else
+            {
+                property.FolderIdForNewTasks = parentFolderTranslation.Id;
+            }
+
+            parentFolderTranslation =
+                await sdkDbContext.Folders
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Include(x => x.FolderTranslations)
+                    .Where(x => x.ParentId == null)
+                    .FirstOrDefaultAsync(x =>
+                        x.FolderTranslations.Any(y => y.Name == "00.02 Mine øvrige opgaver"));
+
+            if (parentFolderTranslation == null)
+            {
+                var translatesFolderForTasks = new List<CommonTranslationsModel>
+                {
+                    new()
+                    {
+                        Name = "00.02 Mine øvrige opgaver",
+                        LanguageId = 1, // da
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.02 My other tasks",
+                        LanguageId = 2, // en
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.02 Meine anderen Aufgaben",
+                        LanguageId = 3, // de
+                        Description = "",
+                    },
+                };
+                parentFolderId =
+                    await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
+            }
+            else
+            {
+                parentFolderId = parentFolderTranslation.Id;
+            }
+
+            var translateFolderForNewTask = new List<CommonTranslationsModel>
+            {
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 1, // da
+                    Description = "",
+                },
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 2, // en
+                    Description = "",
+                },
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 3, // de
+                    Description = "",
+                },
+            };
+
+            if (!sdkDbContext.Folders
+                    .Where(x => x.ParentId == parentFolderId)
+                    .Any(x => x.Id == property.FolderIdForOngoingTasks))
+            {
+                property.FolderIdForOngoingTasks = await core.FolderCreate(translateFolderForNewTask,
+                    parentFolderId).ConfigureAwait(false);
+            }
+            else
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForOngoingTasks);
+                await core.FolderUpdate(folder.Id, translateFolderForNewTask, folder.ParentId);
+            }
+
+            parentFolderTranslation =
+                await sdkDbContext.Folders
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Include(x => x.FolderTranslations)
+                    .Where(x => x.ParentId == null)
+                    .FirstOrDefaultAsync(x =>
+                        x.FolderTranslations.Any(y => y.Name == "00.03 Andres opgaver"));
+
+            if (parentFolderTranslation == null)
+            {
+                var translatesFolderForTasks = new List<CommonTranslationsModel>
+                {
+                    new()
+                    {
+                        Name = "00.03 Andres opgaver",
+                        LanguageId = 1, // da
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.03 Others' tasks",
+                        LanguageId = 2, // en
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.03 Aufgaben anderer",
+                        LanguageId = 3, // de
+                        Description = "",
+                    },
+                };
+                parentFolderId =
+                    await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
+            }
+            else
+            {
+                parentFolderId = parentFolderTranslation.Id;
+            }
+
+            translateFolderForNewTask = new List<CommonTranslationsModel>
+            {
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 1, // da
+                    Description = "",
+                },
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 2, // en
+                    Description = "",
+                },
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 3, // de
+                    Description = "",
+                },
+            };
+
+            if (!sdkDbContext.Folders
+                    .Where(x => x.ParentId == parentFolderId)
+                    .Any(x => x.Id == property.FolderIdForCompletedTasks))
+            {
+                property.FolderIdForCompletedTasks = await core.FolderCreate(translateFolderForNewTask,
+                    parentFolderId).ConfigureAwait(false);
+            }
+            else
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForCompletedTasks);
+                await core.FolderUpdate(folder.Id, translateFolderForNewTask, folder.ParentId);
+            }
+
+            parentFolderTranslation =
+                await sdkDbContext.Folders
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Include(x => x.FolderTranslations)
+                    .Where(x => x.ParentId == null)
+                    .FirstOrDefaultAsync(x =>
+                        x.FolderTranslations.Any(y => y.Name == "00.01 Mine hasteopgaver"));
+
+            if (parentFolderTranslation == null)
+            {
+                var translatesFolderForTasks = new List<CommonTranslationsModel>
+                {
+                    new()
+                    {
+                        Name = "00.01 Mine hasteopgaver",
+                        LanguageId = 1, // da
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.01 My urgent tasks",
+                        LanguageId = 2, // en
+                        Description = "",
+                    },
+                    new()
+                    {
+                        Name = "00.01 Meine dringenden Aufgaben",
+                        LanguageId = 3, // de
+                        Description = "",
+                    },
+                };
+                parentFolderId =
+                    await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
+            }
+            else
+            {
+                parentFolderId = parentFolderTranslation.Id;
+            }
+
+            translateFolderForNewTask = new List<CommonTranslationsModel>
+            {
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 1, // da
+                    Description = "",
+                },
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 2, // en
+                    Description = "",
+                },
+                new()
+                {
+                    Name = property.Name,
+                    LanguageId = 3, // de
+                    Description = "",
+                },
+            };
+
+            if (!sdkDbContext.Folders
+                    .Where(x => x.ParentId == parentFolderId)
+                    .Any(x => x.Id == property.FolderIdForTasks))
+            {
+                property.FolderIdForTasks = await core.FolderCreate(translateFolderForNewTask,
+                    parentFolderId).ConfigureAwait(false);
+            }
+            else
+            {
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == property.FolderIdForTasks);
+                await core.FolderUpdate(folder.Id, translateFolderForNewTask, folder.ParentId);
+            }
+
+            return property;
         }
 
         public async Task<OperationResult> Delete(int id)
@@ -957,9 +1153,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         public async Task<OperationDataResult<ChrResult>> GetChrInformation(int chrNumber)
         {
             var chrHelper = new ChrHelper();
-            var chr = await chrHelper.GetCompanyInfo(chrNumber).ConfigureAwait(false);
+            try {
+                var chr = await chrHelper.GetCompanyInfo(chrNumber).ConfigureAwait(false);
 
-            return new OperationDataResult<ChrResult>(true, chr);
+                return new OperationDataResult<ChrResult>(true, chr);
+            } catch (Exception e) {
+                return new OperationDataResult<ChrResult>(false, e.Message);
+            }
+
         }
     }
 }

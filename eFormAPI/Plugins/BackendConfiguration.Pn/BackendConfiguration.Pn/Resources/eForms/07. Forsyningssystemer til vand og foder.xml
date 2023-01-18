@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142804</Id>
+  <Repeated>0</Repeated>
+  <Label>07. Forsyningssystemer til vand og foder|07. Water and feed supply systems</Label>
+  <StartDate>2022-12-16</StartDate>
+  <EndDate>2032-12-16</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142804</Id>
+      <Label>07. Forsyningssystemer til vand og foder|07. Water and feed supply systems</Label>
+      <Description><![CDATA[<i>Fodersystem kontrolleres og vedligeholdes</i><br><i>Vandsystem kontrolleres og vedligeholdes</i><br><i>Nødvendige reparationer gennemført|<br></i><i>Feed system checked and maintained<br></i><i>Water system checked and maintained<br></i><i>Necessary repairs carried out</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="None">
+          <Id>377276</Id>
+          <Label>Info|Info</Label>
+          <Description><![CDATA[Fodersystem kontrolleres og vedligeholdes<br>Vandsystem kontrolleres og vedligeholdes<br>Nødvendige reparationer gennemført|<br>Feed system checked and maintained<br>Water system checked and maintained<br>Necessary repairs carried out]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Date">
+          <Id>377254</Id>
+          <Label>Dato kontrol gennemført|Date inspection completed</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2022-12-16</MinValue>
+          <MaxValue>2032-12-16</MaxValue>
+          <Value/>
+          <Mandatory>false</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377255</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377256</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>377257</Id>
+          <Label>Gem|Save</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Value>GEM|SAVE</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

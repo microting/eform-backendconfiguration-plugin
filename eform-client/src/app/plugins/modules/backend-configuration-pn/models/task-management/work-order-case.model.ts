@@ -10,4 +10,5 @@ export class WorkOrderCaseModel {
   lastUpdateDate: Date;
   lastUpdatedBy: string;
   status: string;
+  priority: number;
 }

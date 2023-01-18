@@ -1,27 +1,32 @@
 import {
   Component,
   EventEmitter,
+  Inject,
+  OnDestroy,
   OnInit,
-  Output,
-  ViewChild,
 } from '@angular/core';
-import { applicationLanguages } from 'src/app/common/const';
-import { PropertyModel, PropertyUpdateModel } from '../../../../models';
+import {applicationLanguages} from 'src/app/common/const';
+import {PropertyModel, PropertyUpdateModel} from '../../../../models';
 import {AuthStateService} from 'src/app/common/store';
-import {BackendConfigurationPnPropertiesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {BackendConfigurationPnPropertiesService} from '../../../../services';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {Subscription} from 'rxjs';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 
+@AutoUnsubscribe()
 @Component({
   selector: 'app-property-edit-modal',
   templateUrl: './property-edit-modal.component.html',
   styleUrls: ['./property-edit-modal.component.scss'],
 })
-export class PropertyEditModalComponent implements OnInit {
-  @ViewChild('frame', {static: false}) frame;
-  @Output()
+export class PropertyEditModalComponent implements OnInit, OnDestroy {
   propertyUpdate: EventEmitter<PropertyUpdateModel> = new EventEmitter<PropertyUpdateModel>();
   selectedProperty: PropertyUpdateModel = new PropertyUpdateModel();
   selectedLanguages: { id: number; checked: boolean }[] = [];
   propertyIsFarm: boolean = false;
+
+  getChrInformationSub$: Subscription;
+  getCompanyTypeSub$: Subscription;
 
   get applicationLanguages() {
     return applicationLanguages;
@@ -29,13 +34,10 @@ export class PropertyEditModalComponent implements OnInit {
 
   constructor(
     public authStateService: AuthStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService) {
-  }
-
-  ngOnInit() {
-  }
-
-  show(model: PropertyModel) {
+    private propertiesService: BackendConfigurationPnPropertiesService,
+    public dialogRef: MatDialogRef<PropertyEditModalComponent>,
+    @Inject(MAT_DIALOG_DATA) model: PropertyModel = new PropertyModel()
+  ) {
     this.selectedLanguages = model.languages.map((x) => {
       return {id: x.id, checked: true};
     });
@@ -43,11 +45,13 @@ export class PropertyEditModalComponent implements OnInit {
       ...model,
       languagesIds: [],
     };
-    this.frame.show();
+  }
+
+  ngOnInit() {
   }
 
   hide() {
-    this.frame.hide();
+    this.dialogRef.close();
     this.selectedProperty = new PropertyUpdateModel();
     this.selectedLanguages = [];
   }
@@ -60,19 +64,19 @@ export class PropertyEditModalComponent implements OnInit {
   }
 
   onNameFilterChanged(number: number) {
-    if (number == 0) {
+    if (number === 0) {
       this.propertyIsFarm = false;
     }
-    if (number == 1111111) {
+    if (number === 1111111) {
       this.propertyIsFarm = true;
       this.selectedProperty.isFarm = true;
     }
     if (number > 1111111) {
-      if (number.toString().length > 7)
-        this.propertiesService.getCompanyType(number)
+      if (number.toString().length > 7) {
+        this.getCompanyTypeSub$ = this.propertiesService.getCompanyType(number)
           .subscribe((data) => {
             if (data && data.success) {
-              if (data.model.industrycode.toString().slice(0, 2) == '01') {
+              if (data.model.industrycode.toString().slice(0, 2) === '01') {
                 this.propertyIsFarm = true;
                 this.selectedProperty.isFarm = true;
                 if (data.model.error !== 'NOT_FOUND') {
@@ -81,7 +85,7 @@ export class PropertyEditModalComponent implements OnInit {
                   this.selectedProperty.industryCode = data.model.industrycode;
                 }
               } else {
-                if (data.model.error == 'REQUIRES_PAID_SUBSCRIPTION') {
+                if (data.model.error === 'REQUIRES_PAID_SUBSCRIPTION') {
                   this.propertyIsFarm = true;
                   this.selectedProperty.isFarm = true;
                 } else {
@@ -96,6 +100,7 @@ export class PropertyEditModalComponent implements OnInit {
               }
             }
           });
+      }
     } else {
       // this.selectedProperty.name = '';
       // this.selectedProperty.address = '';
@@ -132,11 +137,10 @@ export class PropertyEditModalComponent implements OnInit {
 
   onChrNumberChanged(number: number) {
     if (number > 11111) {
-      if (number.toString().length > 5)
-        this.propertiesService.getChrInformation(number)
+      if (number.toString().length > 5) {
+        this.getChrInformationSub$ = this.propertiesService.getChrInformation(number)
           .subscribe((data) => {
             if (data && data.success) {
-              //debugger;
               if (data.model.ejendom.byNavn === '' || data.model.ejendom.byNavn === null) {
                 this.selectedProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.postDistrikt;
               } else {
@@ -144,6 +148,10 @@ export class PropertyEditModalComponent implements OnInit {
               }
             }
           });
+      }
     }
+  }
+
+  ngOnDestroy(): void {
   }
 }

@@ -23,6 +23,14 @@ SOFTWARE.
 */
 
 
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using Ical.Net;
+using Ical.Net.CalendarComponents;
+using Ical.Net.DataTypes;
+using Ical.Net.Serialization;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService
 {
     using BackendConfigurationLocalizationService;
@@ -122,14 +130,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
                 var responsible = sitesList.Select(site => new KeyValuePair<int, string>(site.Id, site.Name)).ToList();
 
-                var today = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
-                var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
-                if (result.Entities.Any(x => x.PlanningId == compliance.PlanningId && x.Deadline == compliance.Deadline.AddDays(-1)))
-                {
-                    await dbCompliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                }
-                else
-                {
+                // var today = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
+                // var dbCompliance = _backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
+                // if (result.Entities.Any(x => x.PlanningId == compliance.PlanningId && x.Deadline == compliance.Deadline.AddDays(-1)))
+                // {
+                //     await dbCompliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                // }
+                // else
+                // {
                     var complianceModel = new CompliancesModel
                     {
                         CaseId = compliance.MicrotingSdkCaseId,
@@ -143,26 +151,38 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                         Responsible = responsible,
                     };
 
-                    if (complianceModel.CaseId == 0 && complianceModel.Deadline < today)
-                    {
-                        if (dbCompliance.MicrotingSdkeFormId == 0)
-                        {
-                            var planning = await _itemsPlanningPnDbContext.Plannings
-                                .SingleAsync(x => x.Id == complianceModel.PlanningId).ConfigureAwait(false);
-                            dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
-                        }
-                        var caseEntity = new Case()
-                        {
-                            CheckListId = dbCompliance.MicrotingSdkeFormId,
-                        };
+                    // if (complianceModel.CaseId == 0 && complianceModel.Deadline < today)
+                    // {
+                    //     if (dbCompliance.MicrotingSdkeFormId == 0)
+                    //     {
+                    //         var planning = await _itemsPlanningPnDbContext.Plannings
+                    //             .SingleAsync(x => x.Id == complianceModel.PlanningId).ConfigureAwait(false);
+                    //         dbCompliance.MicrotingSdkeFormId = planning.RelatedEFormId;
+                    //     }
+                    //     var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    //         .FirstOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                    //     if (planningCaseSite != null)
+                    //     {
+                    //         complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    //     }
+                    // }
+                    //
+                    // if (compliance.PlanningCaseSiteId != 0)
+                    // {
+                    //     var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    //         .FirstAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                    //     if (dbCompliance.MicrotingSdkCaseId != planningCaseSite.MicrotingSdkCaseId)
+                    //     {
+                    //         complianceModel.CaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+                    //         await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    //     }
+                    // }
 
-                        await caseEntity.Create(sdkDbContext).ConfigureAwait(false);
-                        complianceModel.CaseId = caseEntity.Id;
-                        dbCompliance.MicrotingSdkCaseId = caseEntity.Id;
-                        await dbCompliance.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                    }
                     result.Entities.Add(complianceModel);
-                }
+                // }
             }
 
             return new OperationDataResult<Paged<CompliancesModel>>(true, result);
@@ -246,8 +266,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
 
                 var foundCase = await sdkDbContext.Cases
-                    .Where(x => x.Id == model.Id
-                                && x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.Id == model.Id)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if(foundCase != null) {
@@ -258,10 +277,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     foundCase.DoneAtUserModifiable = newDoneAt;
                     foundCase.DoneAt = newDoneAt;
 
-                    foundCase.SiteId = sdkDbContext.Sites
+                    var site = await sdkDbContext.Sites
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Single(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}").Id;
+                        .FirstOrDefaultAsync(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}");
+                    if (site != null)
+                    {
+                        foundCase.SiteId = site.Id;
+                    }
+                    else
+                    {
+                        await core.SiteCreate($"{currentUser.FirstName} {currentUser.LastName}", currentUser.FirstName, currentUser.LastName,
+                            null, "da");
+                        site = await sdkDbContext.Sites
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .FirstOrDefaultAsync(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}");
+                        foundCase.SiteId = site.Id;
+                    }
                     foundCase.Status = 100;
+                    foundCase.WorkflowState = Constants.WorkflowStates.Created;
                     await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
                     if (CaseUpdateDelegates.CaseUpdateDelegate != null)
@@ -273,44 +306,44 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             func.DynamicInvoke(model.Id);
                         }
                     }
-                    if (compliance.PlanningCaseSiteId != 0)
-                    {
+                    // if (compliance.PlanningCaseSiteId != 0)
+                    // {
+                    //     var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    //         .SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+                    //     if (planningCaseSite != null)
+                    //     {
+                    //         planningCaseSite.Status = 100;
+                    //         planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
+                    //
+                    //         planningCaseSite.MicrotingSdkCaseDoneAt = newDoneAt;
+                    //         planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
+                    //         planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
+                    //         planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
+                    //         await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    //
+                    //         var planningCase = await _itemsPlanningPnDbContext.PlanningCases
+                    //             .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
+                    //         if (planningCase.Status != 100)
+                    //         {
+                    //             planningCase.Status = 100;
+                    //             planningCase.MicrotingSdkCaseDoneAt = newDoneAt;
+                    //             planningCase.MicrotingSdkCaseId = foundCase.Id;
+                    //             planningCase.DoneByUserId = (int)foundCase.SiteId;
+                    //             planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
+                    //             planningCase.WorkflowState = Constants.WorkflowStates.Processed;
+                    //
+                    //             planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
+                    //             await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    //         }
+                    //
+                    //         planningCaseSite.PlanningCaseId = planningCase.Id;
+                    //         await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    //     }
+                    // }
+                    // else
+                    // {
                         var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .SingleOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
-                        if (planningCaseSite != null)
-                        {
-                            planningCaseSite.Status = 100;
-                            planningCaseSite = await SetFieldValue(planningCaseSite, foundCase.Id, language).ConfigureAwait(false);
-
-                            planningCaseSite.MicrotingSdkCaseDoneAt = newDoneAt;
-                            planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
-                            planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
-                            planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-
-                            var planningCase = await _itemsPlanningPnDbContext.PlanningCases
-                                .SingleAsync(x => x.Id == planningCaseSite.PlanningCaseId).ConfigureAwait(false);
-                            if (planningCase.Status != 100)
-                            {
-                                planningCase.Status = 100;
-                                planningCase.MicrotingSdkCaseDoneAt = newDoneAt;
-                                planningCase.MicrotingSdkCaseId = foundCase.Id;
-                                planningCase.DoneByUserId = (int)foundCase.SiteId;
-                                planningCase.DoneByUserName = planningCaseSite.DoneByUserName;
-                                planningCase.WorkflowState = Constants.WorkflowStates.Processed;
-
-                                planningCase = await SetFieldValue(planningCase, foundCase.Id, language).ConfigureAwait(false);
-                                await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                            }
-
-                            planningCaseSite.PlanningCaseId = planningCase.Id;
-                            await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                        }
-                    }
-                    else
-                    {
-                        var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites
-                            .SingleOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
+                            .FirstOrDefaultAsync(x => x.CreatedAt.Date == compliance.StartDate.Date && x.PlanningId == compliance.PlanningId).ConfigureAwait(false);
                         if (planningCaseSite != null)
                         {
                             planningCaseSite.Status = 100;
@@ -339,7 +372,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                             planningCaseSite.PlanningCaseId = planningCase.Id;
                             await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
-                    }
+                    // }
                 }
                 else
                 {
@@ -383,6 +416,71 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 Log.LogException(ex.StackTrace);
                 return new OperationResult(false, _localizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
             }
+        }
+
+        public async Task<OperationResult> Delete(int id)
+        {
+            var compliance = await _backendConfigurationPnDbContext.Compliances.FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
+            if (compliance == null)
+            {
+                return new OperationResult(false, _localizationService.GetString("ComplianceNotFound"));
+            }
+            await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
+            return new OperationResult(true, _localizationService.GetString("ComplianceHasBeenDeleted"));
+        }
+
+        public async Task<HttpResponseMessage> GetEventCalendar(int propertyId)
+        {
+            CompliancesRequestModel compliancesRequestModel = new CompliancesRequestModel
+            {
+                PropertyId = propertyId,
+                PageIndex = 0,
+                PageSize = 1000
+            };
+            //var complianceList = await Index(compliancesRequestModel).ConfigureAwait(false);
+
+            var iCal = new Calendar();
+
+            // foreach (var compliance in complianceList.Model.Entities)
+            // {
+            //     var iCalEvent = new CalendarEvent()
+            //     {
+            //         Start = new CalDateTime((DateTime)compliance.Deadline),
+            //         End = new CalDateTime((DateTime)compliance.Deadline),
+            //         Summary = compliance.ItemName,
+            //         Description = "",
+            //         Location = ""
+            //     };
+            //     iCal.Events.Add(iCalEvent);
+            // }
+
+            // Serialize the iCalendar object to a string
+            var serializer = new CalendarSerializer(new SerializationContext());
+            var content = serializer.SerializeToString(iCal);
+
+            // Create an HttpResponseMessage with the iCalendar file content
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(content, Encoding.UTF8, "text/calendar")
+            };
+
+            return response;
+            // {
+            //     var calendarEvent = new CalendarEvent
+            //     {
+            //         Id = compliance.Id,
+            //         Title = compliance.Title,
+            //         Start = compliance.Deadline,
+            //         End = compliance.Deadline,
+            //         AllDay = true,
+            //         Color = compliance.Status == 100 ? "#00a65a" : "#f39c12",
+            //         Url = compliance.Status == 100 ? "" : $"/plugins/items-planning-pn/compliances/edit/{compliance.Id}"
+            //     };
+            //     events.Add(calendarEvent);
+            // }
+
+            //throw new NotImplementedException();
         }
 
         private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, int caseId, Language language)

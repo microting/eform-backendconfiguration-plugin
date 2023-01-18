@@ -51,4 +51,6 @@ public class WorkorderCaseModel
     public string Status { get; set; }
 
     public int? ParentWorkorderCaseId { get; set; }
+
+    public int? Priority { get; set; }
 }

@@ -718,7 +718,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                     {
                         itemsHtml.Append($@"<p style='font-size: 7pt; page-break-before:always'>{_localizationService.GetString("Id")}: {imagesName.Key[1]}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
 
-                        itemsHtml = await InsertImage(imagesName.Value[0], itemsHtml, 700, 650, core, basePicturePath);
+                        itemsHtml = await InsertImage(imagesName.Value[0], itemsHtml, 600, 650, core, basePicturePath);
 
                         if (!string.IsNullOrEmpty(imagesName.Value[1]))
                         {
@@ -776,12 +776,9 @@ namespace BackendConfiguration.Pn.Services.WordService
         {
             var filePath = Path.Combine(basePicturePath, imageName);
             Stream stream;
-            if (_swiftEnabled)
+            if (_s3Enabled)
             {
-                var storageResult = await core.GetFileFromSwiftStorage(imageName);
-                stream = storageResult.ObjectStreamContent;
-            } else if (_s3Enabled)
-            {
+                Console.WriteLine("Getting file from S3 " +imageName);
                 var storageResult = await core.GetFileFromS3Storage(imageName);
                 stream = storageResult.ResponseStream;
             } else if (!File.Exists(filePath))
@@ -798,14 +795,19 @@ namespace BackendConfiguration.Pn.Services.WordService
 
             using (var image = new MagickImage(stream))
             {
+                Console.WriteLine("Opening file from stream " +imageName);
                 decimal currentRation = image.Height / (decimal)image.Width;
                 int newWidth = imageSize;
                 int newHeight = (int)Math.Round((currentRation * newWidth));
 
+                Console.WriteLine("Resizing file from stream " +imageName);
                 image.Resize(newWidth, newHeight);
+                Console.WriteLine("Cropping file from stream " +imageName);
                 image.Crop(newWidth, newHeight);
 
+                Console.WriteLine("converting to base64 " +imageName);
                 var base64String = image.ToBase64();
+                Console.WriteLine("Appending to itemsHtml file from stream " +imageName);
                 itemsHtml.Append($@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>");
             }
 

@@ -1,20 +1,17 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output, ViewChild,} from '@angular/core';
-import {AdvEntitySelectableItemModel, Paged, TableHeaderElementModel} from 'src/app/common/models';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,} from '@angular/core';
+import {Paged, TableHeaderElementModel} from 'src/app/common/models';
 import {PropertyModel} from '../../../../models/properties';
-import {applicationLanguages} from 'src/app/common/const';
-import * as R from 'ramda';
 import {PropertiesStateService} from '../../store';
 import {PropertyCompliancesColorBadgesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 import {AuthStateService} from 'src/app/common/store';
-import {CompliancesStateService} from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components/store';
-import {
-  BackendConfigurationPnCompliancesMethods,
-  BackendConfigurationPnCompliancesService,
-  BackendConfigurationPnPropertiesService
-} from 'src/app/plugins/modules/backend-configuration-pn/services';
-import {Observable, Subscription} from 'rxjs';
-import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 import {EntitySelectService} from 'src/app/common/services';
+import {Sort} from '@angular/material/sort';
+import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {Subject} from 'rxjs';
+import {MatIconRegistry} from '@angular/material/icon';
+import {DomSanitizer} from '@angular/platform-browser';
+import {WordIcon} from 'src/app/common/const';
+import { ThemePalette } from '@angular/material/core';
 
 @Component({
   selector: 'app-properties-table',
@@ -23,9 +20,10 @@ import {EntitySelectService} from 'src/app/common/services';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PropertiesTableComponent implements OnInit {
+  @Input() nameSearchSubject = new Subject();
   @Input() propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
-  @Input() tableHeaders: TableHeaderElementModel[];
-  @Input() isFarms: boolean = false;
+
+  @Input() tableHeaders: MtxGridColumn[];
   @Output()
   showEditPropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   @Output()
@@ -45,9 +43,15 @@ export class PropertiesTableComponent implements OnInit {
     return PropertyCompliancesColorBadgesEnum;
   }
 
-  constructor(public propertiesStateService: PropertiesStateService,
-              private entitySelectService: EntitySelectService,
-              public authStateService: AuthStateService,) {}
+  constructor(
+    public propertiesStateService: PropertiesStateService,
+    private entitySelectService: EntitySelectService,
+    public authStateService: AuthStateService,
+    iconRegistry: MatIconRegistry,
+    sanitizer: DomSanitizer,
+    ) {
+    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
+  }
 
   ngOnInit(): void { }
 
@@ -59,8 +63,8 @@ export class PropertiesTableComponent implements OnInit {
     this.showEditPropertyModal.emit(propertyModel);
   }
 
-  sortTable(sort: string) {
-    this.propertiesStateService.onSortTable(sort);
+  sortTable(sort: Sort) {
+    this.propertiesStateService.onSortTable(sort.active);
     this.sortUpdated.emit();
   }
 
@@ -68,13 +72,13 @@ export class PropertiesTableComponent implements OnInit {
   getColorBadge(compliance: PropertyCompliancesColorBadgesEnum): string {
     switch (compliance) {
       case PropertyCompliancesColorBadgesEnum.Success:
-        return 'btn-success';
+        return 'color: green';
       case PropertyCompliancesColorBadgesEnum.Danger:
-        return 'btn-danger';
+        return 'color: red;';
       case PropertyCompliancesColorBadgesEnum.Warning:
-        return 'btn-warning';
+        return 'warn';
       default:
-        return 'btn-success';
+        return 'primary';
     }
   }
 
@@ -84,5 +88,9 @@ export class PropertiesTableComponent implements OnInit {
 
   onShowEditEntityListModal(propertyModel: PropertyModel) {
     this.showEditEntityListModal.emit(propertyModel);
+  }
+
+  onNameFilterChanged(name: string) {
+    this.nameSearchSubject.next(name);
   }
 }

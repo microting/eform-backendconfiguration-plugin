@@ -42,6 +42,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.CasePosts;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 
@@ -55,7 +56,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
         private readonly IExcelService _excelService;
         private readonly IEFormCoreService _coreHelper;
         private readonly ICasePostBaseService _casePostBaseService;
-        private readonly ItemsPlanningPnDbContext _dbContext;
+        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 
@@ -67,7 +68,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             IWordService wordService,
             IExcelService excelService,
             ICasePostBaseService casePostBaseService,
-            ItemsPlanningPnDbContext dbContext,
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext,
             IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext)
         {
             _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
@@ -76,7 +77,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             _wordService = wordService;
             _excelService = excelService;
             _casePostBaseService = casePostBaseService;
-            _dbContext = dbContext;
+            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _userService = userService;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         }
@@ -93,7 +94,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 var toDate = new DateTime(model.DateTo!.Value.Year, model.DateTo.Value.Month,
                     model.DateTo.Value.Day, 23, 59, 59);
 
-                var planningCasesQuery = _dbContext.PlanningCases
+                var planningCasesQuery = _itemsPlanningPnDbContext.PlanningCases
                     .Include(x => x.Planning)
                     .ThenInclude(x => x.PlanningsTags)
                     .Where(x => x.Status == 100)
@@ -284,7 +285,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         {
                             var planningCase = groupedCase.cases.First(x => x.MicrotingSdkCaseId == imageField.CaseId && x.PlanningId != 0);
                             var planningNameTranslation =
-                                await _dbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
+                                await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                     x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
 
                             if (planningNameTranslation != null)
@@ -302,6 +303,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
                                 {
                                     list.Add(isDocx
+                                        //? $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}"
                                         ? $"{imageField.UploadedData.Id}_700_{imageField.UploadedData.Checksum}{imageField.UploadedData.Extension}"
                                         : imageField.UploadedData.FileName);
                                     list.Add(geoTag);
@@ -311,45 +313,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             }
                         }
 
-                        // posts
-                        // var casePostRequest = new CasePostsRequestCommonModel
-                        // {
-                        //     Offset = 0,
-                        //     PageSize = int.MaxValue,
-                        //     TemplateId = checkList.Id,
-                        // };
-
-                        // var casePostListResult = await _casePostBaseService.GetCommonPosts(casePostRequest);
-                        //
-                        // if (!casePostListResult.Success)
-                        // {
-                        //     return new OperationDataResult<List<ReportEformModel>>(
-                        //         false,
-                        //         casePostListResult.Message);
-                        // }
-
-                        // foreach (var casePostCommonModel in casePostListResult.Model.Entities)
-                        // {
-                        //     reportModel.Posts.Add(new ReportEformPostModel
-                        //     {
-                        //         CaseId = casePostCommonModel.CaseId,
-                        //         PostId = casePostCommonModel.PostId,
-                        //         Comment = casePostCommonModel.Text,
-                        //         SentTo = casePostCommonModel.ToRecipients,
-                        //         SentToTags = casePostCommonModel.ToRecipientsTags,
-                        //         PostDate = casePostCommonModel.PostDate
-                        //     });
-                        // }
-
-                        // add cases
-                        //var caseIds = groupedCase.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).Select(x => x.MicrotingSdkCaseId).ToList();
-
-
-
                         foreach (var planningCase in groupedCase.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).ToList())
                         {
                             var planningNameTranslation =
-                                await _dbContext.PlanningNameTranslation.SingleOrDefaultAsync(x =>
+                                await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x =>
                                     x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
                             string propertyName = "";
 
@@ -362,14 +329,43 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 propertyName = _backendConfigurationPnDbContext.Properties
                                     .First(x => x.Id == areaRulePlanning.PropertyId).Name;
                             }
+                            else
+                            {
+                                if (model.TagIds.Count == 1)
+                                {
+                                    var planningTag = await _itemsPlanningPnDbContext.PlanningTags
+                                        .FirstOrDefaultAsync(x => x.Id == model.TagIds.First());
+                                    propertyName = planningTag.Name.Replace("00. ", "");
+                                    foreach (var property in await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync())
+                                    {
+                                        if (propertyName.Contains(property.Name))
+                                        {
+                                            propertyName = property.Name;
+                                            var areaRulePlanningNew = new AreaRulePlanning
+                                            {
+                                                PropertyId = property.Id,
+                                                ItemPlanningId = planningCase.PlanningId,
+                                                AreaRuleId = 1
+                                            };
+                                            await areaRulePlanningNew.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                            await areaRulePlanningNew.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            var dbCase = await sdkDbContext.Cases.FirstAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
 
                             if (planningNameTranslation != null)
                             {
                                 var item = new ReportEformItemModel
                                 {
                                     Id = planningCase.Id,
+                                    ItemId = planningCase.PlanningId,
                                     MicrotingSdkCaseId = planningCase.MicrotingSdkCaseId,
                                     MicrotingSdkCaseDoneAt = TimeZoneInfo.ConvertTimeFromUtc((DateTime)planningCase.MicrotingSdkCaseDoneAt, timeZoneInfo),
+                                    ServerTime = TimeZoneInfo.ConvertTimeFromUtc((DateTime)dbCase.CreatedAt, timeZoneInfo),
                                     eFormId = planningCase.MicrotingSdkeFormId,
                                     DoneBy = planningCase.DoneByUserName,
                                     ItemName = planningNameTranslation.Name,
@@ -495,7 +491,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 }
 
                 var reportEformModel = new ReportEformModel();
-                reportEformModel.NameTagsInEndPage.AddRange(_dbContext.PlanningTags
+                reportEformModel.NameTagsInEndPage.AddRange(_itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => model.TagIds.Any(y => y == x.Id))
                     .Select(x => x.Name));
@@ -603,8 +599,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                     foundCase.Status = 100;
                     await foundCase.Update(sdkDbContext);
-                    var planningCase = await _dbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
-                    var planningCaseSite = await _dbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id);
+                    var planningCase = await _itemsPlanningPnDbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
+                    var planningCaseSite = await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id);
 
                     if (planningCaseSite == null)
                     {
@@ -617,16 +613,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             Status = 100,
                             MicrotingSdkSiteId = (int)foundCase.SiteId!
                         };
-                        await planningCaseSite.Create(_dbContext);
+                        await planningCaseSite.Create(_itemsPlanningPnDbContext);
                     }
 
                     planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAtUserModifiable;
                     planningCaseSite = await SetFieldValue(planningCaseSite, language);
-                    await planningCaseSite.Update(_dbContext);
+                    await planningCaseSite.Update(_itemsPlanningPnDbContext);
 
                     planningCase.MicrotingSdkCaseDoneAt = foundCase.DoneAtUserModifiable;
                     planningCase = await SetFieldValue(planningCase, language);
-                    await planningCase.Update(_dbContext);
+                    await planningCase.Update(_itemsPlanningPnDbContext);
                 }
                 else
                 {
@@ -645,7 +641,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
         private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, Language language)
         {
-            var planning = _dbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
+            var planning = _itemsPlanningPnDbContext.Plannings.SingleOrDefault(x => x.Id == planningCaseSite.PlanningId);
             var caseIds = new List<int>
             {
                 planningCaseSite.MicrotingSdkCaseId
@@ -676,7 +672,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
         private async Task<PlanningCase> SetFieldValue(PlanningCase planningCase, Language language)
         {
             var core = await _coreHelper.GetCore();
-            var planning = await _dbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
+            var planning = await _itemsPlanningPnDbContext.Plannings.SingleOrDefaultAsync(x => x.Id == planningCase.PlanningId).ConfigureAwait(false);
             var caseIds = new List<int> { planningCase.MicrotingSdkCaseId };
             var fieldValues = await core.Advanced_FieldValueReadList(caseIds, language).ConfigureAwait(false);
 

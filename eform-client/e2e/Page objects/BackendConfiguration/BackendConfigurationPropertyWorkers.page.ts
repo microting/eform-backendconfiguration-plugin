@@ -15,9 +15,12 @@ class BackendConfigurationPropertyWorkersPage extends Page {
 
   public async goToPropertyWorkers() {
     const spinnerAnimation = await $('#spinner-animation');
-    await (
-      await backendConfigurationPropertiesPage.backendConfigurationPnButton()
-    ).click();
+    const ele = await $('#backend-configuration-pn-property-workers');
+    if (!await ele.isDisplayed()) {
+      await (
+        await backendConfigurationPropertiesPage.backendConfigurationPnButton()
+      ).click();
+    }
     await (await this.backendConfigurationPnPropertyWorkers()).click();
     await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.newDeviceUserBtn()).waitForClickable({ timeout: 90000 });
@@ -69,14 +72,14 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async editFirstNameInput(): Promise<WebdriverIO.Element> {
-    const ele = await $('#editFirstNameInput');
+    const ele = await $('#firstName');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async editLastNameInput(): Promise<WebdriverIO.Element> {
-    const ele = await $('#editLastNameInput');
+    const ele = await $('#lastName');
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -125,14 +128,14 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async checkboxEditAssignment(i: number) {
-    const ele = await $(`#checkboxEditAssignment${i}`);
+    const ele = await $(`#checkboxCreateAssignment${i}-input`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async checkboxCreateAssignment(i: number) {
-    const ele = await $(`#checkboxCreateAssignment${i}`);
+    const ele = await $(`#checkboxCreateAssignment${i}-input`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -140,7 +143,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    return (await $$('#tableBody > tr')).length;
+    return (await $$('tbody > tr')).length;
   }
 
   async getDeviceUser(num): Promise<PropertyWorkerRowObject> {
@@ -166,6 +169,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   async openCreateModal(propertyWorker?: PropertyWorker) {
     await (await this.newDeviceUserBtn()).waitForClickable({ timeout: 40000 });
     await (await this.newDeviceUserBtn()).click();
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.cancelCreateBtn()
     ).waitForClickable({
@@ -185,14 +189,16 @@ class BackendConfigurationPropertyWorkersPage extends Page {
       if (propertyWorker.language) {
         await (
           await (
-            await backendConfigurationPropertyWorkersPage.profileLanguageSelectorCreate()
+            await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
           ).$('input')
         ).setValue(propertyWorker.language);
+        await browser.pause(500);
         const value = await (
-          await backendConfigurationPropertyWorkersPage.profileLanguageSelectorCreate()
+          await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
         ).$(`.ng-option=${propertyWorker.language}`);
-        value.waitForDisplayed({ timeout: 40000 });
+        await value.waitForDisplayed({ timeout: 40000 });
         await value.click();
+        await browser.pause(500);
       }
       if (propertyWorker.properties) {
         for (let i = 0; i < propertyWorker.properties.length; i++) {
@@ -203,6 +209,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
               )
             ).$('..')
           ).click();
+          await browser.pause(500);
         }
       }
     }
@@ -241,18 +248,16 @@ export class PropertyWorkerRowObject {
   deleteBtn: WebdriverIO.Element;
 
   async getRow(rowNum: number) {
-    if ((await $$('#deviceUserId'))[rowNum - 1]) {
-      this.siteId = +await (await $$('#deviceUserId'))[rowNum - 1].getText();
+    rowNum = rowNum - 1;
+    if ((await $('#deviceUserId-'+rowNum))) {
+      this.siteId = +await (await $('#deviceUserId-'+rowNum)).getText();
       try {
         this.fullName = await
-          (await $$('#deviceUserFullName'))[rowNum - 1]
-        .getText();
+          (await $('#deviceUserFullName-'+rowNum)).getText();
       } catch (e) {}
-      this.language = await (await $$('#deviceUserLanguage'))[
-        rowNum - 1
-      ].getText();
-      this.editBtn = (await $$('#editDeviceUserBtn'))[rowNum - 1];
-      this.deleteBtn = (await $$('#deleteDeviceUserBtn'))[rowNum - 1];
+      this.language = await (await $('#deviceUserLanguage-'+rowNum)).getText();
+      this.editBtn = (await $('#editDeviceUserBtn-'+rowNum));
+      this.deleteBtn = (await $('#deleteDeviceUserBtn-'+rowNum));
     }
     return this;
   }
@@ -270,6 +275,7 @@ export class PropertyWorkerRowObject {
     ).waitForClickable({
       timeout: 40000,
     });
+    await browser.pause(500);
   }
 
   async closeDeleteModal(clickCancel = false) {
@@ -282,6 +288,7 @@ export class PropertyWorkerRowObject {
         await backendConfigurationPropertyWorkersPage.saveDeleteBtn()
       ).click();
     }
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.newDeviceUserBtn()
     ).waitForClickable({ timeout: 40000 });
@@ -295,6 +302,7 @@ export class PropertyWorkerRowObject {
   async openEditModal(propertyWorker?: PropertyWorker) {
     await this.editBtn.waitForClickable({ timeout: 40000 });
     await this.editBtn.click();
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.cancelEditBtn()
     ).waitForClickable({
@@ -305,11 +313,13 @@ export class PropertyWorkerRowObject {
         await (
           await backendConfigurationPropertyWorkersPage.editFirstNameInput()
         ).setValue(propertyWorker.name);
+        await browser.pause(500);
       }
       if (propertyWorker.surname) {
         await (
           await backendConfigurationPropertyWorkersPage.editLastNameInput()
         ).setValue(propertyWorker.surname);
+        await browser.pause(500);
       }
       if (propertyWorker.language) {
         await (
@@ -317,11 +327,13 @@ export class PropertyWorkerRowObject {
             await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
           ).$('input')
         ).setValue(propertyWorker.language);
+        await browser.pause(500);
         const value = await (
           await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
         ).$(`.ng-option=${propertyWorker.language}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
+        await browser.pause(500);
       }
       if (propertyWorker.properties) {
         for (let i = 0; i < propertyWorker.properties.length; i++) {
@@ -332,6 +344,7 @@ export class PropertyWorkerRowObject {
               )
             ).$('..')
           ).click();
+          await browser.pause(500);
         }
       }
     }
@@ -347,6 +360,7 @@ export class PropertyWorkerRowObject {
         await backendConfigurationPropertyWorkersPage.saveEditBtn()
       ).click();
     }
+    await browser.pause(500);
     await (
       await backendConfigurationPropertyWorkersPage.newDeviceUserBtn()
     ).waitForDisplayed();
@@ -356,7 +370,7 @@ export class PropertyWorkerRowObject {
     { propertyName: string; checked: boolean }[]
   > {
     await this.openEditModal();
-    const pairingEditModalTableBody = await $('#pairingEditModalTableBody');
+    const pairingEditModalTableBody = await $('#pairingModalTableBody');
     let masForReturn: { propertyName: string; checked: boolean }[] = new Array<{
       propertyName: string;
       checked: boolean;
@@ -365,20 +379,20 @@ export class PropertyWorkerRowObject {
       await pairingEditModalTableBody.$$('#propertyName')
     ).length;
     for (let i = 0; i < propertyLength; i++) {
-      masForReturn = [
-        ...masForReturn,
-        {
-          propertyName: await (
-            await pairingEditModalTableBody.$$('#propertyName')
-          )[i].getText(),
-          checked:
+       masForReturn = [
+         ...masForReturn,
+         {
+           propertyName: await (
+             await $$('#propertyName')
+           )[i].getText(),
+           checked:
             (await (
               await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(
                 i
               )
-            ).getValue()) === 'true',
-        },
-      ];
+            ).getAttribute('aria-checked')) === 'true',
+         },
+       ];
     }
     await this.closeEditModal(true);
     return masForReturn;

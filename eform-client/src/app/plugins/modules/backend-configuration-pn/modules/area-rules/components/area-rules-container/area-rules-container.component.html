@@ -1,60 +1,26 @@
-<eform-subheader
+<eform-new-subheader
   [title]="selectedArea.name"
   [forceStaticTitle]="true"
   [breadcrumbs]="breadcrumbs"
 >
+  <button
+    *ngIf="selectedArea.type !== 4 && selectedArea.type !== 9"
+    mat-icon-button
+    id="ruleCreateBtn"
+    color="accent"
+    matTooltip="{{ selectedArea.newItemName }}"
+    (click)="showAreaRuleCreateModal()"
+  >
+    <mat-icon>add</mat-icon>
+  </button>
+</eform-new-subheader>
 
-  <div class="p-3" *ngIf="selectedArea.type !== 4 && selectedArea.type !== 9">
-    <button
-      mdbBtn
-      id="ruleCreateBtn"
-      class="btn-success btn-icon"
-      mdbTooltip="{{ selectedArea.newItemName }}"
-      (click)="showAreaRuleCreateModal()"
-      [placement]="'left'"
-    >
-      <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
-    </button>
-  </div>
-</eform-subheader>
-
-<div class="container-fluid">
-  <app-area-rules-table
-    [areaRules]="areaRules"
-    [selectedArea]="selectedArea"
-    (showDeleteRuleModal)="showDeleteAreaRuleModal($event)"
-    (showEditRuleModal)="showEditAreaRuleModal($event)"
-    (showPlanAreaRuleModal)="showPlanAreaRuleModal($event)"
-    (showEditEntityListModal)="entityListEditModal.show($event)"
-    [chemicalsModel]="chemicalsModel"
-  ></app-area-rules-table>
-</div>
-
-<app-area-rule-delete-modal
-  #deleteAreaRuleModal
-  (deleteAreaRule)="onDeleteAreaRule($event)"
-></app-area-rule-delete-modal>
-
-<app-area-rule-create-modal
-  #createAreaRuleModal
-  [selectedArea]="selectedArea"
+<app-area-rules-table
   [areaRules]="areaRules"
-  (createAreaRule)="onCreateAreaRule($event)"
-  (deleteAreaRule)="onDeleteAreaRules($event)"
-></app-area-rule-create-modal>
-
-<app-area-rule-edit-modal
-  #editAreaRuleModal
   [selectedArea]="selectedArea"
-  (updateAreaRule)="onUpdateAreaRule($event)"
-></app-area-rule-edit-modal>
-
-<app-area-rule-plan-modal
-  #planAreaRuleModal
-  (updateAreaRulePlan)="onUpdateAreaRulePlan($event)"
-></app-area-rule-plan-modal>
-
-<app-area-rule-entity-list-modal
-  (entityListChanged)="updateEntityList($event)"
-  #entityListEditModal
-></app-area-rule-entity-list-modal>
+  (showDeleteRuleModal)="showDeleteAreaRuleModal($event)"
+  (showEditRuleModal)="showEditAreaRuleModal($event)"
+  (showPlanAreaRuleModal)="showPlanAreaRuleModal($event)"
+  [chemicalsModel]="chemicalsModel"
+  (showEditEntityListModal)="showEntityListEditModal($event)"
+></app-area-rules-table>

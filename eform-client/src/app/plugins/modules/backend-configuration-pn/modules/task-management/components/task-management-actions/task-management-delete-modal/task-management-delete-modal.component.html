@@ -1,59 +1,34 @@
-<div
-  [config]="{ ignoreBackdropClick: true }"
-  mdbModal
-  class="modal fade"
-  #frame="mdbModal"
-  style="overflow-y: scroll"
->
-  <div class="modal-dialog modal-md">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div>
-          <h3>{{'Are you sure you want to delete' | translate}}?</h3>
-        </div>
-        <button class="close" data-dismiss="modal" (click)="hide()">
-          <span>×</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="container-fluid">
-          <div class="row">
-            <div class="col-md-6">
-              <h6>ID</h6>
-            </div>
-            <div class="col-md-6" id="selectedPropertyId">
-              <strong>{{workOrderCase.id}}</strong>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6">
-              <h6>{{'Created by 1' | translate}}</h6>
-            </div>
-            <div class="col-md-6" id="selectedWorkOrderCaseCreatedByName">
-              <strong>{{workOrderCase.createdByName}}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button
-          mdbBtn
-          class="btn-danger btn-small-height"
-          id="taskManagementDeleteBtn"
-          (click)="delete()"
-        >
-          {{ 'Delete' | translate }}
-        </button>
-        <button
-          mdbBtn
-          class="btn-accent text-black-50 btn-small-height"
-          (click)="hide()"
-          id="taskManagementDeleteCancelBtn"
-        >
-          {{ 'Cancel' | translate }}
-        </button>
-      </div>
+<h3 mat-dialog-title>{{'Are you sure you want to delete' | translate}}?</h3>
+<div mat-dialog-content>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>ID</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{workOrderCase.id}}</strong>
     </div>
   </div>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>{{'Created by 1' | translate}}</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{workOrderCase.createdByName}}</strong>
+    </div>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="warn"
+    id="taskManagementDeleteBtn"
+    (click)="delete()">
+    {{'Delete' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    id="taskManagementDeleteCancelBtn"
+    (click)="hide()">
+    {{'Cancel' | translate}}
+  </button>
 </div>

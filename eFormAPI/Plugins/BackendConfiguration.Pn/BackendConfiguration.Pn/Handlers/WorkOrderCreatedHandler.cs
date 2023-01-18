@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using BackendConfiguration.Pn.Services.WordService;
 using eFormCore;
 using ImageMagick;
@@ -16,6 +19,7 @@ using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Rebus.Handlers;
+using KeyValuePair = Microting.eForm.Dto.KeyValuePair;
 
 namespace BackendConfiguration.Pn.Handlers;
 
@@ -24,12 +28,14 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
     private readonly Core _sdkCore;
     private readonly BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
     private readonly ChemicalDbContextHelper _chemicalDbContextHelper;
+    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
 
-    public WorkOrderCreatedHandler(BackendConfigurationDbContextHelper backendConfigurationDbContextHelper, ChemicalDbContextHelper chemicalDbContextHelper, Core sdkCore)
+    public WorkOrderCreatedHandler(BackendConfigurationDbContextHelper backendConfigurationDbContextHelper, ChemicalDbContextHelper chemicalDbContextHelper, Core sdkCore, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
     {
         _backendConfigurationDbContextHelper = backendConfigurationDbContextHelper;
         _chemicalDbContextHelper = chemicalDbContextHelper;
         _sdkCore = sdkCore;
+        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
     }
 
     public async Task Handle(WorkOrderCreated message)
@@ -45,10 +51,15 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             message.NewDescription,
             message.DeviceUsersGroupId,
             pdfHash,
+            message.SiteName,
             message.PushMessageBody,
             message.PushMessageTitle,
             message.AreaName,
-            message.CreatedByUserId).ConfigureAwait(false);
+            message.CreatedByUserId,
+            message.PropertyName,
+            message.FolderIdForOngoingTasks,
+            message.FolderIdForTasks,
+            message.FolderIdForCompletedTasks).ConfigureAwait(false);
     }
 
     private async Task DeployEform(
@@ -61,41 +72,130 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         string newDescription,
         int? deviceUsersGroupId,
         string pdfHash,
+        string siteName,
         string pushMessageBody,
         string pushMessageTitle,
-        string areaName, int createdByUserId)
+        string areaNameb,
+        int createdByUserId,
+        string propertyName,
+        int FolderIdForOngoingTasks,
+        int FolderIdForTasks,
+        int FolderIdForCompletedTasks
+        )
     {
         var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
         var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
         await using var _ = sdkDbContext.ConfigureAwait(false);
+
+        var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases.FirstAsync(x => x.Id == workorderCaseId);
+        DateTime startDate = new DateTime(2022, 12, 5);
+        var displayOrder = (int)(DateTime.UtcNow - startDate).TotalSeconds;
+
         foreach (var propertyWorker in propertyWorkers)
         {
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.Value).ConfigureAwait(false);
             var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(siteLanguage.LanguageCode);
+            var priorityText = "";
+
+            switch (workOrderCase.Priority)
+            {
+                case "1":
+                    displayOrder = 100_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Urgent")}<br>";
+                    break;
+                case "2":
+                    displayOrder = 200_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("High")}<br>";
+                    break;
+                case "3":
+                    displayOrder = 300_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Medium")}<br>";
+                    break;
+                case "4":
+                    displayOrder = 400_000_000 + displayOrder;
+                    priorityText = $"<strong>{_backendConfigurationLocalizationService.GetString("Priority")}:</strong> {_backendConfigurationLocalizationService.GetString("Low")}<br>";
+                    break;
+            }
+
+            var textStatus = "";
+
+            switch (workOrderCase.CaseStatusesEnum)
+            {
+                case CaseStatusesEnum.Ongoing:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Ongoing");
+                    break;
+                case CaseStatusesEnum.Completed:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Completed");
+                    break;
+                case CaseStatusesEnum.Awaiting:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Awaiting");
+                    break;
+                case CaseStatusesEnum.Ordered:
+                    textStatus = _backendConfigurationLocalizationService.GetString("Ordered");
+                    break;
+            }
+
+            var assignedTo = site.Name == siteName ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {siteName}<br>";
+
+            var areaName = !string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
+                ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
+                : "";
+
+            var outerDescription = $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {propertyName}<br>" +
+                                   areaName +
+                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {newDescription}<br>" +
+                                   priorityText +
+                                   assignedTo +
+                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
+
             var mainElement = await _sdkCore.ReadeForm(eformId, siteLanguage).ConfigureAwait(false);
-            mainElement.CheckListFolderName = await sdkDbContext.Folders
-                .Where(x => x.Id == folderId)
-                .Select(x => x.MicrotingUid.ToString())
-                .FirstOrDefaultAsync().ConfigureAwait(false);
+            // mainElement.CheckListFolderName = await sdkDbContext.Folders
+            //     .Where(x => x.Id == folderId)
+            //     .Select(x => x.MicrotingUid.ToString())
+            //     .FirstOrDefaultAsync().ConfigureAwait(false);
             mainElement.Label = " ";
             mainElement.ElementList[0].QuickSyncEnabled = true;
             mainElement.EnableQuickSync = true;
             mainElement.ElementList[0].Label = " ";
-            mainElement.ElementList[0].Description.InderValue =
-                description.Replace("\r\n", "<br>").Replace("\n", "<br>") + "<center><strong>******************</strong></center>";
-            mainElement.PushMessageTitle = pushMessageTitle;
-            mainElement.PushMessageBody = pushMessageBody;
+            mainElement.ElementList[0].Description.InderValue = outerDescription.Replace("\n", "<br>");
+            mainElement.DisplayOrder = displayOrder; // Lowest value is the top of the list
+            if (site.Name == siteName)
+            {
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workOrderCase.Priority != "1" ? FolderIdForOngoingTasks : FolderIdForTasks))
+                    .MicrotingUid.ToString();
+                folderId = FolderIdForOngoingTasks;
+                mainElement.PushMessageTitle = pushMessageTitle;
+                mainElement.PushMessageBody = pushMessageBody;
+            }
+            else
+            {
+                folderId = FolderIdForCompletedTasks;
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == FolderIdForCompletedTasks)
+                    .MicrotingUid.ToString();
+            }
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\r\n", "<br>").Replace("\n", "<br>");
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = " ";
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Color = Constants.FieldColors.Yellow;
             ((ShowPdf)((DataElement)mainElement.ElementList[0]).DataItemList[1]).Value = pdfHash;
+            List<Microting.eForm.Dto.KeyValuePair> kvpList = ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList;
+            var newKvpList = new List<KeyValuePair>();
+            foreach (var keyValuePair in kvpList)
+            {
+                if (keyValuePair.Key == workOrderCase.Priority)
+                {
+                    keyValuePair.Selected = true;
+                }
+                newKvpList.Add(keyValuePair);
+            }
+            ((SingleSelect) ((DataElement) mainElement.ElementList[0]).DataItemList[4]).KeyValuePairList = newKvpList;
+
             if (deviceUsersGroupId != null)
             {
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Source =
-                    (int)deviceUsersGroupId;
-                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[4]).Mandatory = true;
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Source = (int)deviceUsersGroupId;
+                ((EntitySelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
                 ((Comment)((DataElement)mainElement.ElementList[0]).DataItemList[3]).Value = newDescription;
-                ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[5]).Mandatory = true;
+                ((SingleSelect)((DataElement)mainElement.ElementList[0]).DataItemList[6]).Mandatory = true;
                 mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
                 mainElement.Repeated = 1;
             }
@@ -108,21 +208,24 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
             var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId).ConfigureAwait(false);
-            var workOrderCase = new WorkorderCase
+            var newWorkOrderCase = new WorkorderCase
             {
                 CaseId = (int)caseId,
                 PropertyWorkerId = propertyWorker.Key,
                 CaseStatusesEnum = status,
-                SelectedAreaName = areaName,
+                ParentWorkorderCaseId = workorderCaseId,
+                SelectedAreaName = workOrderCase.SelectedAreaName,
                 CreatedByName = site.Name,
+                CreatedByText = $"{workOrderCase.CreatedByText} - web",
                 Description = newDescription,
                 CaseInitiated = DateTime.UtcNow,
-                CreatedByUserId = createdByUserId,
                 LastAssignedToName = site.Name,
+                LastUpdatedByName = "",
                 LeadingCase = false,
-                ParentWorkorderCaseId = workorderCaseId
+                Priority = workOrderCase.Priority,
+                CreatedByUserId = createdByUserId,
             };
-            await workOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
+            await newWorkOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }
     }
 

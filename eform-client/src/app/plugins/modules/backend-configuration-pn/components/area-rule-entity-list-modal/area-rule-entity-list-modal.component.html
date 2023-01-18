@@ -1,71 +1,37 @@
-<div
-  [config]="{ ignoreBackdropClick: true }"
-  mdbModal
-  class="modal fade"
-  #frame="mdbModal"
->
-  <div class="modal-dialog modal-md modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>{{ 'Edit selectable entity list' | translate }}</h3>
-        <button class="close" data-dismiss="modal" (click)="frame.hide()">
-          <span>×</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="container-fluid">
-          <div class="row d-flex">
-            <div class="mr-auto"></div>
-            <div class="d-inline-flex">
-<!--              <button-->
-<!--                id="importEntitySelectBtn"-->
-<!--                class="btn btn-success btn-icon"-->
-<!--                (click)="modalSelectImportList.show()"-->
-<!--              >-->
-<!--                <fa-icon icon="list-ul" size="lg" [fixedWidth]="true"></fa-icon>-->
-<!--              </button>-->
-              <button
-                mdbBtn
-                class="btn-success btn-icon"
-                (click)="addNewAdvEntitySelectableItem()"
-                id="addSingleEntitySelectableItem"
-              >
-                <fa-icon icon="plus" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
-            </div>
-          </div>
-          <app-entity-list-elements
-            (entityItemModelsChanged)="entityList = $event"
-            (openEditNameModal)="onOpenEditNameModal($event)"
-            [entityItemModels]="entityList"
-          >
-          </app-entity-list-elements>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button
-          mdbBtn
-          class="btn-success btn-small-height"
-          (click)="onUpdateEntityList()"
-          id="entityListSaveBtn"
-        >
-          {{ 'Save' | translate }}
-        </button>
-        <button
-          mdbBtn
-          class="btn-accent text-black-50 btn-small-height"
-          (click)="hide()"
-          id="entityListSaveCancelBtn"
-        >
-          {{ 'Cancel' | translate }}
-        </button>
-      </div>
-    </div>
+<h3 mat-dialog-title>{{ 'Edit selectable list' | translate }}</h3>
+<div mat-dialog-content>
+  <div class="d-flex flex-column justify-content-between">
+    <button
+      mat-icon-button
+      color="accent"
+      class="align-self-end"
+      (click)="addNewAdvEntitySelectableItem()"
+      id="addSingleEntitySelectableItem"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
+    <app-entity-list-elements
+      (entityItemModelsChanged)="entityList = $event"
+      (openEditNameModal)="onOpenEditNameModal($event)"
+      [entityItemModels]="entityList"
+    >
+    </app-entity-list-elements>
   </div>
 </div>
-
-<app-entity-item-edit-name
-  (itemUpdated)="onItemUpdated($event)"
-  (modalHided)="frame.show()"
-  #modalNameEdit>
-</app-entity-item-edit-name>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    (click)="onUpdateEntityList()"
+    id="entityListSaveBtn"
+  >
+    {{ 'Save' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    (click)="hide()"
+    id="entityListSaveCancelBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+</div>

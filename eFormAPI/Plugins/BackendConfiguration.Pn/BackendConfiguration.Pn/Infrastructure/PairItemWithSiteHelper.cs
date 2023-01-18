@@ -249,8 +249,11 @@ namespace BackendConfiguration.Pn.Infrastructure
                             var planningNameTranslation =
                                 planning.NameTranslations.FirstOrDefault(x => x.LanguageId == sdkSite.LanguageId);
 
-                            mainElement.PushMessageBody = body;
-                            mainElement.PushMessageTitle = planningNameTranslation?.Name;
+                            if (planning.RepeatType != RepeatType.Day && planning.RepeatEvery != 0)
+                            {
+                                mainElement.PushMessageBody = body;
+                                mainElement.PushMessageTitle = planningNameTranslation?.Name;
+                            }
                         }
 
                         if (planning.RepeatEvery == 0 && planning.RepeatType == RepeatType.Day)

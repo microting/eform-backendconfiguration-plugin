@@ -1,5 +1,6 @@
-import {Component, EventEmitter, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, Inject, OnInit} from '@angular/core';
 import {AreaRuleSimpleModel} from '../../../../models';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
   selector: 'app-area-rule-delete-modal',
@@ -7,21 +8,19 @@ import {AreaRuleSimpleModel} from '../../../../models';
   styleUrls: ['./area-rule-delete-modal.component.scss']
 })
 export class AreaRuleDeleteModalComponent implements OnInit {
-  @ViewChild('frame', { static: false }) frame;
-  @Output() deleteAreaRule: EventEmitter<number> = new EventEmitter<number>();
-  areaRule: AreaRuleSimpleModel = new AreaRuleSimpleModel();
+  deleteAreaRule: EventEmitter<number> = new EventEmitter<number>();
 
-  constructor() {}
+  constructor(
+    public dialogRef: MatDialogRef<AreaRuleDeleteModalComponent>,
+    @Inject(MAT_DIALOG_DATA) public areaRule: AreaRuleSimpleModel = new AreaRuleSimpleModel(),
+  ) {
+  }
 
-  ngOnInit() {}
-
-  show(rule: AreaRuleSimpleModel) {
-    this.areaRule = rule;
-    this.frame.show();
+  ngOnInit() {
   }
 
   hide() {
-    this.frame.hide();
+    this.dialogRef.close();
   }
 
   onDeleteAreaRule() {

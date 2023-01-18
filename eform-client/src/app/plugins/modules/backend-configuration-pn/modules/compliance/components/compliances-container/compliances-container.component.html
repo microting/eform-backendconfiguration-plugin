@@ -1,21 +1,24 @@
-<eform-subheader *ngIf="!isComplianceThirtyDays"
+<eform-new-subheader
+  *ngIf="!isComplianceThirtyDays"
   [title]="'Compliance' | translate"
   [forceStaticTitle]="true"
   [breadcrumbs]="breadcrumbs"
 >
-</eform-subheader>
-<eform-subheader *ngIf="isComplianceThirtyDays"
+</eform-new-subheader>
+<eform-new-subheader
+  *ngIf="isComplianceThirtyDays"
   [title]="'Compliance 30 days' | translate"
   [forceStaticTitle]="true"
   [breadcrumbs]="breadcrumbs"
 >
-</eform-subheader>
+</eform-new-subheader>
 
-<div class="container-fluid" *ngIf="selectedProperty">
+<ng-container *ngIf="selectedProperty">
   <app-compliances-table
-    [compliances]="complianceList"
+    [complianceList]="complianceList"
     [propertyId]="selectedProperty.id"
     [isComplianceThirtyDays]="isComplianceThirtyDays"
+    (complianceDeleted)="getCompliances(selectedProperty.id)"
     (updateTable)="getCompliances(selectedProperty.id)"
   ></app-compliances-table>
-</div>
+</ng-container>

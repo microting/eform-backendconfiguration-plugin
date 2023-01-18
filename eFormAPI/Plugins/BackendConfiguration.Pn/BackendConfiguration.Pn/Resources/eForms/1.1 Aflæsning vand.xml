@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142778m</Id>
+  <Repeated>0</Repeated>
+  <Label>1.1 Aflæsning vand|1.1 Meter reading water|1.1 Zählerstand Wasser</Label>
+  <StartDate>2022-11-15</StartDate>
+  <EndDate>2032-11-15</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142778m</Id>
+      <Label>1.1 Aflæsning vand|1.1 Meter reading water|1.1 Zählerstand Wasser</Label>
+      <Description><![CDATA[<i>Aflæs vandmåler</i>|<i>Read water meter</i>|<i>Wasserzähler ablesen</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="Number">
+          <Id>377061</Id>
+          <Label>Vand (m3)|Water (m3)|Wasser (m3)</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <MinValue/>
+          <MaxValue/>
+          <Value/>
+          <DecimalCount>2</DecimalCount>
+          <UnitName/>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377058</Id>
+          <Label>Billeder|Pictures|Bilder</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377059</Id>
+          <Label>Kommentar|Comment|Kommentar</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>377060</Id>
+          <Label>Indsend registrering|Submit registration|Anmeldung absenden</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Value>INDSEND</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

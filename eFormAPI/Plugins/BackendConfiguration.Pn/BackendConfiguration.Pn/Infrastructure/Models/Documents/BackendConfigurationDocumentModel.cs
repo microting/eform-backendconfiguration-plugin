@@ -20,4 +20,5 @@ public class BackendConfigurationDocumentModel
     public List<BackendConfigurationDocumentUploadedData> DocumentUploadedDatas { get; set; }
         = new();
     public bool Status { get; set; }
+    public bool IsLocked { get; set; }
 }

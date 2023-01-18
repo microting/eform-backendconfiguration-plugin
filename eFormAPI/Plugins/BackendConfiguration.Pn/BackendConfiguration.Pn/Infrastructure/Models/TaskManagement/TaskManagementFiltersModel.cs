@@ -43,6 +43,8 @@ public class TaskManagementFiltersModel : FilterAndSortModel
 
     public DateTime? DateTo { get; set; }
 
+    public int? Priority { get; set; }
+
     public string GetStringStatus()
     {
         return Status switch
@@ -54,4 +56,6 @@ public class TaskManagementFiltersModel : FilterAndSortModel
             _ => ""
         };
     }
+
+    public bool Delayed { get; set; }
 }

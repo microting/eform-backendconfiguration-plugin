@@ -9,3 +9,7 @@ textarea {
   //max-width: 500px;
   width: 100%;
 }
+
+.special-width mat-form-field {
+  min-width: 20em;
+}

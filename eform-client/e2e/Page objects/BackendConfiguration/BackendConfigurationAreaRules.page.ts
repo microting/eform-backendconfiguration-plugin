@@ -7,7 +7,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    return (await $$('#areaRulesTableBody > tr')).length;
+    return (await $$('#mainTable tbody > tr')).length;
   }
 
   public async ruleCreateBtn() {
@@ -135,15 +135,15 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async planAreaRuleStatusToggle() {
-    return $(`#planAreaRuleStatusToggle`);
+    return $(`#planAreaRuleStatusToggle-input`);
   }
 
   public async planAreaRuleNotificationsToggle() {
-    return $(`#planAreaRuleNotificationsToggle`);
+    return $(`#planAreaRuleNotificationsToggle-input`);
   }
 
   public async planAreaRuleComplianceEnableToggle() {
-    return $(`#planAreaRuleComplianceEnableToggle`);
+    return $(`#planAreaRuleComplianceEnableToggle-input`);
   }
 
   public async planRepeatEvery() {
@@ -159,11 +159,12 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async checkboxCreateAssignment(i: number) {
-    return $(`#checkboxCreateAssignment${i}`);
+    //return $(`#mat-checkbox-${i}`);
+    return $(`#checkboxCreateAssignment${i}-input`);
   }
 
   public async updateEntityList() {
-    const ele = await $(`#updateEntityList`);
+    const ele = await $(`.updateEntityList`);
     await ele.waitForDisplayed({ timeout: 40000 });
     await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -332,33 +333,41 @@ export class BackendConfigurationAreaRulesPage extends Page {
           await (await (await this.createAreasDayOfWeek()).$('input')).setValue(
             areaRule.dayOfWeek
           );
+          await browser.pause(500);
           const value = await (await this.createAreasDayOfWeek()).$(
             `.ng-option=${areaRule.dayOfWeek}`
           );
-          value.waitForDisplayed({ timeout: 40000 });
+          await value.waitForDisplayed({ timeout: 40000 });
           await value.click();
+          await browser.pause(500);
         }
         await (await this.createAreaRulesString()).setValue(areaRule.name);
+        await browser.pause(500);
         await (await this.areaRulesGenerateBtn()).click();
+        await browser.pause(500);
         if (areaRule.type) {
           await (await (await this.createRuleType(0)).$('input')).setValue(
             areaRule.type
           );
+          await browser.pause(500);
           const value = await (await this.createRuleType(0)).$(
             `.ng-option=${areaRule.type}`
           );
-          value.waitForDisplayed({ timeout: 40000 });
+          await value.waitForDisplayed({ timeout: 40000 });
           await value.click();
+          await browser.pause(500);
         }
         if (areaRule.alarm) {
           await (await (await this.createRuleAlarm(0)).$('input')).setValue(
             areaRule.alarm
           );
+          await browser.pause(500);
           const value = await (await this.createRuleAlarm(0)).$(
             `.ng-option=${areaRule.alarm}`
           );
-          value.waitForDisplayed({ timeout: 40000 });
+          await value.waitForDisplayed({ timeout: 40000 });
           await value.click();
+          await browser.pause(500);
         }
         // if (areaRule.dayOfWeek) {
         //   await (await (await this.createAreaDayOfWeek(0)).$('input')).setValue(
@@ -374,11 +383,13 @@ export class BackendConfigurationAreaRulesPage extends Page {
           await (await (await this.createRuleEformId(0)).$('input')).setValue(
             areaRule.eform
           );
+          await browser.pause(500);
           const value = await (await this.createRuleEformId(0)).$(
             `.ng-option=${areaRule.eform}`
           );
-          value.waitForDisplayed({ timeout: 40000 });
+          await value.waitForDisplayed({ timeout: 40000 });
           await value.click();
+          await browser.pause(500);
         }
       }
     }
@@ -400,7 +411,7 @@ export default backendConfigurationAreaRulesPage;
 export class AreaRuleRowObject {
   constructor() {}
 
-  public row: WebdriverIO.Element;
+  //public row: WebdriverIO.Element;
   public name: string;
   public eform?: string;
   public rulePlanningStatus: boolean;
@@ -412,51 +423,51 @@ export class AreaRuleRowObject {
   public deleteRuleBtn?: WebdriverIO.Element;
 
   public async getRow(rowNum: number): Promise<AreaRuleRowObject> {
-    this.row = (await $$('#areaRulesTableBody tr'))[rowNum - 1];
-    if (this.row) {
-      this.name = await (await this.row.$('#ruleName')).getText();
-      this.rulePlanningStatus =
-        (await (await this.row.$('#rulePlanningStatus')).getText()) === 'Til';
-      this.showAreaRulePlanningBtn = await this.row.$(
-        '#showAreaRulePlanningBtn'
-      );
-      try {
-        const ele1 = await this.row.$('#ruleEformNameT1');
-        const ele2 = await this.row.$('#ruleEformNameT3');
-        const ele3 = await this.row.$('#ruleEformNameT5');
-        if (ele1 && (await ele1.isDisplayed())) {
-          this.eform = await ele1.getText();
-        } else if (ele2 && (await ele2.isDisplayed())) {
-          this.eform = await ele2.getText();
-        } else if (ele3 && (await ele3.isDisplayed())) {
-          this.eform = await ele3.getText();
-        }
-      } catch (e) {}
-      try {
-        const ele = await this.row.$('#ruleType');
-        if (ele && (await ele.isDisplayed())) {
-          this.ruleType = await ele.getText();
-        }
-      } catch (e) {}
-      try {
-        const ele = await this.row.$('#ruleAlarm');
-        if (ele && (await ele.isDisplayed())) {
-          this.ruleAlarm = await ele.getText();
-        }
-      } catch (e) {}
-      try {
-        const ele = await this.row.$('#ruleWeekDay');
-        if (ele && (await ele.isDisplayed())) {
-          this.ruleWeekDay = await ele.getText();
-        }
-      } catch (e) {}
-      try {
-        this.editRuleBtn = await this.row.$('#showEditRuleBtn');
-      } catch (e) {}
-      try {
-        this.deleteRuleBtn = await this.row.$('#deleteRuleBtn');
-      } catch (e) {}
+    rowNum = rowNum - 1;
+    this.name = await (await $('#ruleName-'+rowNum)).getText();
+    this.rulePlanningStatus =
+      (await (await $$('.rulePlanningStatus')[rowNum]).getText()) === 'Til';
+    this.showAreaRulePlanningBtn = await $(
+      '#showAreaRulePlanningBtn-'+rowNum
+    );
+    try {
+      const ele1 = await $('#ruleEformName-'+rowNum);
+      const ele2 = await $('#ruleEformName-'+rowNum);
+      const ele3 = await $('#ruleEformName-'+rowNum);
+      if (ele1 && (await ele1.isDisplayed())) {
+        this.eform = await ele1.getText();
+      } else if (ele2 && (await ele2.isDisplayed())) {
+        this.eform = await ele2.getText();
+      } else if (ele3 && (await ele3.isDisplayed())) {
+        this.eform = await ele3.getText();
+      }
+    } catch (e) {}
+    try {
+      const ele = await (await $$('td.ruleType')[rowNum]).$('mtx-grid-cell > span');
+      //console.log('ele', JSON.stringify(ele));
+      //if (ele && (await ele.isDisplayed())) {
+        this.ruleType = await ele.getText();
+      //}
+    } catch (e) {
     }
+    try {
+      const ele = await (await $$('td.alarm')[rowNum]).$('mtx-grid-cell > span');
+      //if (ele && (await ele.isDisplayed())) {
+        this.ruleAlarm = await ele.getText();
+      //}
+    } catch (e) {}
+    try {
+      const ele = await (await $$('td.ruleWeekDay')[rowNum]).$('mtx-grid-cell > span');
+      //if (ele && (await ele.isDisplayed())) {
+        this.ruleWeekDay = await ele.getText();
+      //}
+    } catch (e) {}
+    try {
+      this.editRuleBtn = await $('#showEditRuleBtn-'+rowNum);
+    } catch (e) {}
+    try {
+      this.deleteRuleBtn = await $('#deleteRuleBtn-'+rowNum);
+    } catch (e) {}
     return this;
   }
 
@@ -515,6 +526,7 @@ export class AreaRuleRowObject {
         await (
           await backendConfigurationAreaRulesPage.editRuleName(0)
         ).setValue(areaRule.name);
+        await browser.pause(500);
       }
       if (areaRule.type) {
         await (
@@ -522,11 +534,13 @@ export class AreaRuleRowObject {
             'input'
           )
         ).setValue(areaRule.type);
+        await browser.pause(500);
         const value = await (
           await backendConfigurationAreaRulesPage.editRuleType()
         ).$(`.ng-option=${areaRule.type}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
+        await browser.pause(500);
       }
       if (areaRule.alarm) {
         await (
@@ -534,11 +548,13 @@ export class AreaRuleRowObject {
             'input'
           )
         ).setValue(areaRule.alarm);
+        await browser.pause(500);
         const value = await (
           await backendConfigurationAreaRulesPage.editRuleAlarm()
         ).$(`.ng-option=${areaRule.alarm}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
+        await browser.pause(500);
       }
       if (areaRule.dayOfWeek) {
         await (
@@ -546,11 +562,13 @@ export class AreaRuleRowObject {
             await backendConfigurationAreaRulesPage.editAreaRuleDayOfWeek()
           ).$('input')
         ).setValue(areaRule.dayOfWeek);
+        await browser.pause(500);
         const value = await (
           await backendConfigurationAreaRulesPage.editAreaRuleDayOfWeek()
         ).$(`.ng-option=${areaRule.dayOfWeek}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
+        await browser.pause(500);
       }
       if (areaRule.eform) {
         await (
@@ -645,9 +663,9 @@ export class AreaRuleRowObject {
       if (areaRulePlanningCreateUpdate.enableCompliance !== undefined) {
         if(await (
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-        ).getValue() !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
+        ).getAttribute('aria-checked') !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
           await (
-            await $('label[for=planAreaRuleComplianceEnableToggle]')
+            await $('label[for=planAreaRuleComplianceEnableToggle-input]')
           ).click();
         }
       }
@@ -704,7 +722,7 @@ export class AreaRuleRowObject {
     plan.status =
       (await (
         await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
-      ).getValue()) === 'true';
+      ).getAttribute('aria-checked')) === 'true';
     if (
       await (
         await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
@@ -713,7 +731,7 @@ export class AreaRuleRowObject {
       plan.notification =
         (await (
           await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()
-        ).getValue()) === 'true';
+        ).getAttribute('aria-checked')) === 'true';
     }
     if (
       await (
@@ -723,7 +741,7 @@ export class AreaRuleRowObject {
       plan.enableCompliance =
         (await (
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
-        ).getValue()) === 'true';
+        ).getAttribute('aria-checked')) === 'true';
     }
     if (
       await (
@@ -760,13 +778,14 @@ export class AreaRuleRowObject {
     const masWorkers = await $$('#pairingModalTableBody > tr');
     for (let i = 0; i < masWorkers.length; i++) {
       const workerName = await (await masWorkers[i].$$('td')[1]).getText();
+      const status = await $('#pairingModalTableBody status-bar-compact div div').getAttribute('title');
       const workerChecked =
         (await (
           await backendConfigurationAreaRulesPage.checkboxCreateAssignment(i)
         ).getValue()) === 'true';
       plan.workers = [
         ...plan.workers,
-        { name: workerName, checked: workerChecked },
+        { name: workerName, checked: workerChecked, status: status },
       ];
     }
     await this.closePlanningModal(true, waitCreateBtn);
@@ -789,5 +808,5 @@ export class AreaRulePlanningCreateUpdate {
   repeatEvery?: string;
   repeatType?: string;
   startDate?: string;
-  workers?: { workerNumber?: number; name?: string; checked?: boolean }[];
+  workers?: { workerNumber?: number; name?: string; checked?: boolean, status?: string }[];
 }

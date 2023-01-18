@@ -6,11 +6,18 @@ import {TaskManagementCreateShowModalComponent, TaskManagementDeleteModalCompone
 import {
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskManagementService
-} from 'src/app/plugins/modules/backend-configuration-pn/services';
+} from '../../../../services';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
-import { Subscription } from 'rxjs';
+import {Subscription} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
+import {MatIconRegistry} from '@angular/material/icon';
+import {DomSanitizer} from '@angular/platform-browser';
+import {ExcelIcon, WordIcon} from 'src/app/common/const';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {LoaderService} from 'src/app/common/services';
 
 @AutoUnsubscribe()
 @Component({
@@ -21,8 +28,6 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   @ViewChild('showCreateModal', { static: true })
   showCreateModal: TaskManagementCreateShowModalComponent;
-  @ViewChild('deleteModal', { static: true })
-  deleteModal: TaskManagementDeleteModalComponent;
 
   workOrderCases: WorkOrderCaseModel[] = [];
   properties: CommonDictionaryModel[] = [];
@@ -32,23 +37,35 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   getAllWorkOrderCasesSub$: Subscription;
   getWorkOrderCaseSub$: Subscription;
   deleteWorkOrderCaseSub$: Subscription;
+  workOrderCaseDeleteSub$: Subscription;
+  taskCreatedSub$: Subscription;
+  taskUpdatedSub$: Subscription;
 
   constructor(
+    private loaderService: LoaderService,
     public taskManagementStateService: TaskManagementStateService,
     public taskManagementService: BackendConfigurationPnTaskManagementService,
     private toasterService: ToastrService,
-    private propertyService: BackendConfigurationPnPropertiesService
-  ) {}
+    private propertyService: BackendConfigurationPnPropertiesService,
+    iconRegistry: MatIconRegistry,
+    sanitizer: DomSanitizer,
+    public dialog: MatDialog,
+    private overlay: Overlay,
+  ) {
+    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
+    iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
+  }
 
   ngOnInit() {
+    this.loaderService.setLoading(false);
     this.getProperties();
   }
 
   ngOnDestroy(): void {}
 
-  updateTable() {
+  updateTable(delayed: boolean = false) {
     this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
-      .getAllWorkOrderCases()
+      .getAllWorkOrderCases(delayed)
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.workOrderCases = data.model;
@@ -61,25 +78,29 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .getWorkOrderCase(workOrderCaseId)
       .subscribe((data) => {
         if (data && data.success && data.model) {
-          this.showCreateModal.show(data.model);
+          const updateModal = this.dialog.open(TaskManagementCreateShowModalComponent, {...dialogConfigHelper(this.overlay, data.model)});
+          this.taskUpdatedSub$ = updateModal.componentInstance.taskCreated.subscribe(() => this.updateTable(true));
         }
       });
   }
 
   openCreateModal() {
-    this.showCreateModal.show();
+    const createModal = this.dialog.open(TaskManagementCreateShowModalComponent, dialogConfigHelper(this.overlay));
+    this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable(false));
   }
 
   openDeleteModal(workOrderCaseModel: WorkOrderCaseModel) {
-    this.deleteModal.show(workOrderCaseModel);
+    const deleteModal = this.dialog.open(TaskManagementDeleteModalComponent, dialogConfigHelper(this.overlay, workOrderCaseModel));
+    this.workOrderCaseDeleteSub$ = deleteModal.componentInstance.workOrderCaseDelete
+      .subscribe(x => this.deleteWorkOrderCaseModel(x, deleteModal));
   }
 
-  deleteWorkOrderCaseModel(workOrderCaseId: number) {
+  deleteWorkOrderCaseModel(workOrderCaseId: number, deleteModal: MatDialogRef<TaskManagementDeleteModalComponent>) {
     this.deleteWorkOrderCaseSub$ = this.taskManagementService
       .deleteWorkOrderCase(workOrderCaseId)
       .subscribe((data) => {
         if (data && data.success) {
-          this.deleteModal.hide();
+          deleteModal.close();
           this.updateTable();
         }
       });

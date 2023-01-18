@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+  <Id>142787m</Id>
+  <Repeated>0</Repeated>
+  <Label>2.1 Udslusning af gylle|2.1 Discharge of slurry|2.1 Gülleaustrag</Label>
+  <StartDate>2022-11-15</StartDate>
+  <EndDate>2032-11-15</EndDate>
+  <Language>da</Language>
+  <MultiApproval>false</MultiApproval>
+  <FastNavigation>false</FastNavigation>
+  <Review>false</Review>
+  <Summary>false</Summary>
+  <DisplayOrder>0</DisplayOrder>
+  <ElementList>
+    <Element type="DataElement">
+      <Id>142787m</Id>
+      <Label>2.1 Udslusning af gylle|2.1 Discharge of slurry|2.1 Gülleaustrag</Label>
+      <Description><![CDATA[<i>Kvittér for udslusning</i>|<i>Receive for discharge</i>|<i>Zur Entlassung erhalten</i>]]></Description>
+      <DisplayOrder>0</DisplayOrder>
+      <ReviewEnabled>false</ReviewEnabled>
+      <ManualSync>false</ManualSync>
+      <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+      <DoneButtonDisabled>true</DoneButtonDisabled>
+      <ApprovalEnabled>false</ApprovalEnabled>
+      <DataItemList>
+        <DataItem type="CheckBox">
+          <Id>377104</Id>
+          <Label>Gylle udsluset|Slurry discharged|Schlamm ausgetragen</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Date">
+          <Id>377105</Id>
+          <Label>Dato for udslusning|Date of discharge|Datum der Entlassung</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2022-11-15</MinValue>
+          <MaxValue>2032-11-15</MaxValue>
+          <Value/>
+          <Mandatory>false</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>377101</Id>
+          <Label>Billeder|Pcitures|Bilder</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>377102</Id>
+          <Label>Kommentar|Comment|Kommentar</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="SaveButton">
+          <Id>377103</Id>
+          <Label>Indsend registrering|Submit registration|Anmeldung absenden</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Value>INDSEND</Value>
+          <Color>f0f8db</Color>
+        </DataItem>
+      </DataItemList>
+    </Element>
+  </ElementList>
+</Main>

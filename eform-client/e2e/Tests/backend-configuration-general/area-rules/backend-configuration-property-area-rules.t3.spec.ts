@@ -37,7 +37,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
     await backendConfigurationPropertiesPage.goToProperties();
     const lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
-    await lastProperty.editBindWithAreas([4]); // bind all specific types
+    await lastProperty.editBindWithAreas([5]); // bind all specific types
     await lastProperty.openAreasViewModal(0); // go to area rule page
   });
   it('should create new area rule type 3', async () => {

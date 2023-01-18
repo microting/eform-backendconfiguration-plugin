@@ -15,4 +15,5 @@ export class DeviceUserModel {
   normalId: number;
   isLocked: boolean;
   timeRegistrationEnabled: boolean;
+  taskManagementEnabled: boolean;
 }

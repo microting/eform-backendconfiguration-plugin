@@ -22,7 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System;
+using System.Text.RegularExpressions;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using Microting.eForm.Dto;
 
 namespace BackendConfiguration.Pn.Services.RebusService
 {
@@ -45,17 +49,27 @@ namespace BackendConfiguration.Pn.Services.RebusService
         private BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
         private ChemicalDbContextHelper _chemicalDbContextHelper;
         private DocumentDbContextHelper _documentDbContextHelper;
+        private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
 
-        public RebusService(IEFormCoreService coreHelper)
+        public RebusService(IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
         {
             _coreHelper = coreHelper;
+            _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
             _container = new WindsorContainer();
         }
 
-        public async Task Start(string connectionString, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
+        public async Task Start(string connectionString)
         {
-            _connectionString = connectionString;
             Core core = await _coreHelper.GetCore();
+            _connectionString = connectionString;
+            var dbPrefix = Regex.Match(_connectionString, @"Database=(\d*)_").Groups[1].Value;
+            var rabbitmqHost = core.GetSdkSetting(Settings.rabbitMqHost).GetAwaiter().GetResult();
+            Console.WriteLine($"rabbitmqHost: {rabbitmqHost}");
+            var rabbitMqUser = core.GetSdkSetting(Settings.rabbitMqUser).GetAwaiter().GetResult();
+            Console.WriteLine($"rabbitMqUser: {rabbitMqUser}");
+            var rabbitMqPassword = core.GetSdkSetting(Settings.rabbitMqPassword).GetAwaiter().GetResult();
+            Console.WriteLine($"rabbitMqPassword: {rabbitMqPassword}");
+
             _backendConfigurationDbContextHelper = new BackendConfigurationDbContextHelper(connectionString);
             var chemicalBaseConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
@@ -69,9 +83,10 @@ namespace BackendConfiguration.Pn.Services.RebusService
             _container.Register(Component.For<BackendConfigurationDbContextHelper>().Instance(_backendConfigurationDbContextHelper));
             _container.Register(Component.For<ChemicalDbContextHelper>().Instance(_chemicalDbContextHelper));
             _container.Register(Component.For<DocumentDbContextHelper>().Instance(_documentDbContextHelper));
+            _container.Register(Component.For<IBackendConfigurationLocalizationService>().Instance(_backendConfigurationLocalizationService));
             _container.Install(
                 new RebusHandlerInstaller()
-                , new RebusInstaller(connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitMqHost)
+                , new RebusInstaller(dbPrefix, connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitmqHost)
             );
 
             _bus = _container.Resolve<IBus>();

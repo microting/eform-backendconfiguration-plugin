@@ -1,127 +1,113 @@
-<div class="row p-1 mt-1 table-responsive no-gutters">
-  <table
-    mdbTable
-    striped="true"
-    hover="true"
-    small="true"
-    class="z-depth-1 text-center"
+<ng-template #toolbarTpl>
+  <div class="d-flex flex-row justify-content-start flex-nowrap">
+    <div class="d-flex flex-column mr-2 ml-2">
+      <mat-form-field>
+        <mat-label>{{ 'Search' | translate }}</mat-label>
+        <input
+          matInput
+          type="text"
+          (ngModelChange)="onNameFilterChanged($event)"
+          [ngModel]="propertiesStateService.getNameFilter() | async"
+          id="nameInput"
+        />
+      </mat-form-field>
+    </div>
+  </div>
+</ng-template>
+
+<mtx-grid
+  [data]="propertiesModel.entities"
+  [columns]="tableHeaders"
+  [cellTemplate]="{id: idTpl, name: propertyNameTpl, cvr: cvrTpl, chr: chrTpl, address: addressTpl, actions: actionsTpl, compliance: complianceTpl}"
+  [showPaginator]="false"
+  [pageOnFront]="false"
+  [rowStriped]="true"
+  [showToolbar]="true"
+  [showColumnMenuButton]="false"
+  [toolbarTemplate]="toolbarTpl"
+  [sortActive]="propertiesStateService.getActiveSort() | async"
+  [sortDirection]="propertiesStateService.getActiveSortDirection() | async"
+  (sortChange)="sortTable($event)">
+</mtx-grid>
+<ng-template #idTpl let-row let-i="index">
+  <div class="propertyId" id="propertyId-{{i}}">{{row.id}}</div>
+</ng-template>
+
+<ng-template #propertyNameTpl let-row let-i="index">
+  <div class="propertyName" id="propertyName-{{i}}">{{row.name}}</div>
+</ng-template>
+
+<ng-template #cvrTpl let-row let-i="index">
+  <div class="propertyCVR" id="propertyCVR-{{i}}">{{row.cvr}}</div>
+</ng-template>
+
+<ng-template #chrTpl let-row let-i="index">
+  <div class="propertyCHR" id="propertyCHR-{{i}}">{{row.chr}}</div>
+</ng-template>
+
+<ng-template #addressTpl let-row let-i="index">
+  <div class="propertyAddress" id="propertyAddress-{{i}}">{{row.address}}</div>
+</ng-template>
+
+
+<ng-template #complianceTpl let-row let-i=index>
+  <button
+    mat-icon-button
+    [style]="getColorBadge(row.complianceStatus)"
+    id="showCompliancesBtn-{{i}}"
+    matTooltip="{{ 'View compliance' | translate }}"
+    [routerLink]="['../compliances/', row.id]"
+    [disabled]="!row.isWorkersAssigned"
   >
-    <thead
-      table-headers
-      [tableHeaders]="tableHeaders"
-      [sort]="propertiesStateService.getSort() | async"
-      (sortChanged)="sortTable($event)"
-    ></thead>
-    <tbody id="properiesTableBody">
-      <ng-container
-        *ngFor="
-          let property of propertiesModel.entities;
-          let i = index;
-          first as isFirst;
-          last as isLast
-        "
-      >
-        <tr *ngIf="(i + 1) % 5 === 0 && !isFirst && !isLast">
-          <td *ngFor="let tableHeader of tableHeaders">
-            {{ tableHeader.visibleName || tableHeader.name | translate }}
-          </td>
-        </tr>
-        <tr>
-          <td id="propertyId">
-            {{ property.id }}
-          </td>
-          <td id="propertyName">
-            {{ property.name }}
-          </td>
-          <td id="propertyCVR">
-            {{ property.cvr }}
-          </td>
-          <td id="propertyCHR" *ngIf="isFarms">
-            {{ property.chr }}
-          </td>
-          <td id="propertyAddress">
-            {{ property.address }}
-          </td>
-<!--          <td id="propertyLanguages">-->
-<!--            {{ getLanguages(property) | translate}}-->
-<!--          </td>-->
-          <td id="propertyCompliance">
-            <button id="showCompliancesBtn"
-                    class="btn {{getColorBadge(property.complianceStatus)}} btn-icon mr-2"
-                    mdbTooltip="{{ 'View compliance' | translate }}"
-                    [routerLink]="['../compliances/', property.id]"
-                    [disabled]="!property.isWorkersAssigned"
-            >
-              <fa-icon icon="list-alt" size="lg" [fixedWidth]="true"></fa-icon>
-            </button>
-<!--            <button id="showComplianceThirtyBtn"-->
-<!--                    class="btn {{getColorBadge(property.complianceStatusThirty)}} btn-icon mr-2"-->
-<!--                    mdbTooltip="{{ 'View compliance 30 days' | translate }}"-->
-<!--                    [routerLink]="['../compliances', property.id, property.complianceStatusThirty]"-->
-<!--                    [disabled]="!property.isWorkersAssigned"-->
-<!--            >-->
-<!--              <fa-icon icon="list-alt" [fixedWidth]="true"></fa-icon>-->
-<!--            </button>-->
-          </td>
-          <td>
-            <div class="d-flex flex-row justify-content-center">
-              <button
-                id="showPropertyAreasBtn"
-                class="btn btn-success btn-icon mr-2"
-                mdbTooltip="{{ 'View areas' | translate }}"
-                [routerLink]="'../property-areas/' + property.id"
-                [disabled]="!property.isWorkersAssigned"
-              >
-                <fa-icon icon="toolbox" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
-              <button *ngIf="authStateService.isAdmin"
-                id="docxReportBtn"
-                class="btn btn-success btn-icon"
-                mdbTooltip="{{ 'Select report' | translate }}"
-                (click)="onShowDocxReportModal(property.id)"
-              >
-                <fa-icon
-                  icon="file-word"
-                  size="lg"
-                  [fixedWidth]="true"
-                ></fa-icon>
-              </button>
-              <ng-container *ngIf="property.workorderEnable">
-                <button
-                  mdbBtn
-                  class="btn btn-success btn-icon mr-2"
-                  (click)="onShowEditEntityListModal(property)"
-                  mdbTooltip="{{ 'Edit list of areas for workorder' | translate }}"
-                  id="updateEntityList"
-                  [placement]="'left'"
-                >
-                  <fa-icon icon="list" size="lg" [fixedWidth]="true"></fa-icon>
-                </button>
-              </ng-container>
-              <button
-                id="editPropertyBtn"
-                class="btn btn-accent text-black-50 btn-icon mr-2"
-                mdbTooltip="{{ 'Edit property' | translate }}"
-                (click)="onShowEditPropertyModal(property)"
-              >
-                <fa-icon icon="pen" size="lg" [fixedWidth]="true"></fa-icon>
-              </button>
-              <button
-                id="deletePropertyBtn"
-                class="btn btn-danger btn-icon mr-2"
-                mdbTooltip="{{ 'Delete property' | translate }}"
-                (click)="onShowDeletePropertyModal(property)"
-              >
-                <fa-icon
-                  icon="trash-alt"
-                  size="lg"
-                  [fixedWidth]="true"
-                ></fa-icon>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </ng-container>
-    </tbody>
-  </table>
-</div>
+    <mat-icon>list_alt</mat-icon>
+  </button>
+</ng-template>
+
+<ng-template #actionsTpl let-row let-i=index>
+  <button
+    mat-icon-button
+    id="showPropertyAreasBtn-{{i}}"
+    matTooltip="{{ 'View areas' | translate }}"
+    [routerLink]="'../property-areas/' + row.id"
+    [disabled]="!row.isWorkersAssigned"
+  >
+    <mat-icon>home_repair_service</mat-icon>
+  </button>
+<!--  <button-->
+<!--    *ngIf="authStateService.isAdmin"-->
+<!--    mat-icon-button-->
+<!--    id="docxReportBtn-{{i}}"-->
+<!--    matTooltip="{{ 'Select report' | translate }}"-->
+<!--    (click)="onShowDocxReportModal(row.id)"-->
+<!--  >-->
+<!--    <mat-icon [svgIcon]="'file-word'"></mat-icon>-->
+<!--  </button>-->
+  <button
+    *ngIf="row.workorderEnable"
+    mat-icon-button
+    id="updateEntityList-{{i}}"
+    (click)="onShowEditEntityListModal(row)"
+    matTooltip="{{ 'Edit list of areas for workorder' | translate }}"
+  >
+    <mat-icon>list</mat-icon>
+  </button>
+  <button
+    mat-icon-button
+    id="editPropertyBtn-{{i}}"
+    matTooltip="{{ 'Edit property' | translate }}"
+    (click)="onShowEditPropertyModal(row)"
+    [disabled]="!authStateService.checkClaim('property_edit') && !authStateService.isAdmin"
+  >
+    <mat-icon>edit</mat-icon>
+  </button>
+  <button
+    mat-icon-button
+    color="warn"
+    id="deletePropertyBtn-{{i}}"
+    matTooltip="{{ 'Delete property' | translate }}"
+    (click)="onShowDeletePropertyModal(row)"
+    [disabled]="!authStateService.checkClaim('property_delete') && !authStateService.isAdmin"
+  >
+    <mat-icon>delete</mat-icon>
+  </button>
+</ng-template>

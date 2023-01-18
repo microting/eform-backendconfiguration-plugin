@@ -1,447 +1,226 @@
-<div
-  [config]="{ ignoreBackdropClick: true }"
-  mdbModal
-  class="modal fade overflow-auto"
-  #frame="mdbModal"
->
-  <div class="modal-dialog {{selectedArea.type === 10 ? 'modal-fluid' : 'modal-md' }}">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>{{ selectedArea.newItemName }}
-          <ng-template #popTemplate>
-            <p>{{ selectedArea.infoBox }}</p>
-          </ng-template>
-          <fa-icon
-            [mdbPopover]="popTemplate"
-            container="body"
-            placement="right"
-            [triggers]="'hover'"
-            icon="info-circle"
-            size="lg"
-            style="font-size: 1rem"
+<h3 mat-dialog-title>
+  {{selectedArea.newItemName}}
+  <mat-icon matTooltip="{{selectedArea.infoBox}}">info</mat-icon>
+</h3>
+<div mat-dialog-content>
+  <ng-container *ngIf="newAreaRules.areaRules.length === 0 || selectedArea.type === 7">
+    <ng-container *ngIf="selectedArea.type !== 7 && selectedArea.type !== 8">
+      <div
+        *ngIf="selectedArea.type === 5"
+        class="d-flex flex-row"
+      >
+        <mat-form-field class="mr-1">
+          <mat-label>{{'Day of week' | translate}}</mat-label>
+          <mtx-select
+            [items]="daysOfWeek"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="newAreaRulesDayOfWeek"
+            id="createAreasDayOfWeek"
           >
-          </fa-icon>
-        </h3>
-        <button class="close" data-dismiss="modal" (click)="hide()">
-          <span>×</span>
-        </button>
+          </mtx-select>
+        </mat-form-field>
+        <mat-form-field class="ml-1">
+          <mat-label>{{'Repeat every' | translate}}</mat-label>
+          <mtx-select
+            [items]="repeatEveryArr"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="newAreaRulesRepeatEvery"
+            id="createRepeatEvery"
+            [clearable]="false"
+          >
+          </mtx-select>
+        </mat-form-field>
       </div>
-      <div class="modal-body">
-        <div class="container-fluid">
-          <ng-container *ngIf="newAreaRules.areaRules.length === 0 || selectedArea.type === 7">
-            <ng-container *ngIf="selectedArea.type !== 7 && selectedArea.type !== 8">
-              <div class="row" *ngIf="selectedArea.type === 5">
-                <div class="col-12 ng-select-wrapper">
-                  <ng-select
-                    [items]="[
-                      { id: 1, name: 'Monday' | translate },
-                      { id: 2, name: 'Tuesday' | translate },
-                      { id: 3, name: 'Wednesday' | translate },
-                      { id: 4, name: 'Thursday' | translate },
-                      { id: 5, name: 'Friday' | translate },
-                      { id: 6, name: 'Saturday' | translate },
-                      { id: 0, name: 'Sunday' | translate }
-                    ]"
-                    bindLabel="name"
-                    [placeholder]="'Day of week' | translate"
-                    bindValue="id"
-                    [(ngModel)]="newAreaRulesDayOfWeek"
-                    id="createAreasDayOfWeek"
-                  >
-                  </ng-select>
-                </div>
-                <div class="col-12 ng-select-wrapper">
-                  <ng-select
-                    [items]="[
-                      { id: 1, name: 'Weekly' | translate },
-                      { id: 2, name: '2nd week' | translate },
-                      { id: 3, name: '3rd week' | translate },
-                      { id: 4, name: '4th week' | translate },
-                      { id: 5, name: '5th week' | translate },
-                      { id: 6, name: '6th week' | translate },
-                      { id: 7, name: '7th week' | translate },
-                      { id: 8, name: '8th week' | translate },
-                      { id: 9, name: '9th week' | translate },
-                      { id: 10, name: '10th week' | translate },
-                      { id: 11, name: '11st week' | translate },
-                      { id: 12, name: '12nd week' | translate },
-                      { id: 13, name: '13rd week' | translate },
-                      { id: 14, name: '14th week' | translate },
-                      { id: 15, name: '15th week' | translate },
-                      { id: 16, name: '16th week' | translate },
-                      { id: 17, name: '17th week' | translate },
-                      { id: 18, name: '18th week' | translate },
-                      { id: 19, name: '19th week' | translate },
-                      { id: 20, name: '20th week' | translate },
-                      { id: 21, name: '21st week' | translate },
-                      { id: 22, name: '22nd week' | translate },
-                      { id: 23, name: '23rd week' | translate },
-                      { id: 24, name: '24th week' | translate },
-                      { id: 25, name: '25th week' | translate },
-                      { id: 26, name: '26th week' | translate },
-                      { id: 27, name: '27th week' | translate },
-                      { id: 28, name: '28th week' | translate },
-                      { id: 29, name: '29th week' | translate },
-                      { id: 30, name: '30th week' | translate },
-                      { id: 31, name: '31st week' | translate },
-                      { id: 32, name: '32nd week' | translate },
-                      { id: 33, name: '33rd week' | translate },
-                      { id: 34, name: '34th week' | translate },
-                      { id: 35, name: '35th week' | translate },
-                      { id: 36, name: '36th week' | translate },
-                      { id: 37, name: '37th week' | translate },
-                      { id: 38, name: '38th week' | translate },
-                      { id: 39, name: '39th week' | translate },
-                      { id: 40, name: '40th week' | translate },
-                      { id: 41, name: '41st week' | translate },
-                      { id: 42, name: '42nd week' | translate },
-                      { id: 43, name: '43rd week' | translate },
-                      { id: 44, name: '44th week' | translate },
-                      { id: 45, name: '45th week' | translate },
-                      { id: 46, name: '46th week' | translate },
-                      { id: 47, name: '47th week' | translate },
-                      { id: 48, name: '48th week' | translate },
-                      { id: 49, name: '49th week' | translate },
-                      { id: 50, name: '50th week' | translate },
-                      { id: 51, name: '51st week' | translate },
-                      { id: 52, name: '52nd week' | translate },
-                    ]"
-                    bindLabel="name"
-                    [placeholder]="'Repeat every' | translate"
-                    bindValue="id"
-                    [(ngModel)]="newAreaRulesRepeatEvery"
-                    id="createRepeatEvery"
-                    [clearable]="false"
-                  >
-                  </ng-select>
-                </div>
-              </div>
-              <div class="row">
-                <div class="form-group col-xs-12 col-md-12">
-                  <textarea
-                    [placeholder]="this.selectedArea.placeholder"
-                    [(ngModel)]="newAreaRulesString"
-                    class="form-control"
-                    id="createAreaRulesString"
-                    rows="20"
-                  ></textarea>
-                </div>
-              </div>
-              <button
-                mdbBtn
-                class="btn-success btn-small-height"
-                (click)="generateRules()"
-                id="areaRulesGenerateBtn"
-              >
-                {{ 'Create' | translate }}
-              </button>
-            </ng-container>
-            <ng-container *ngIf="selectedArea.type === 7">
-                <div *ngFor="let folder of areaRulesForType7; let i = index" class="d-flex flex-column">
-                  <b>{{folder.folderName}}</b>
-                    <div *ngFor="let areaRuleName of folder.areaRuleNames; let j = index" class="mat-checkbox">
-                      <input
-                        id="areaRule{{i}}_{{j}}"
-                        [value]="getChecked(areaRuleName)"
-                        [checked]="getChecked(areaRuleName)"
-                        [ngModel]="getChecked(areaRuleName)"
-                        (change)="addOrRemoveAreaRuleName(areaRuleName, $event)"
-                        type="checkbox">
-                      <label for="areaRule{{i}}_{{j}}">{{ areaRuleName }}</label>
-                    </div>
-              </div>
-            </ng-container>
-            <ng-container *ngIf="selectedArea.type === 8">
-                <div *ngFor="let folder of areaRulesForType8; let i = index" class="d-flex flex-column">
-                  <b>{{folder.folderName}}</b>
-                    <div *ngFor="let areaRuleName of folder.areaRuleNames; let j = index" class="mat-checkbox">
-                      <input
-                        id="areaRule{{i}}_{{j}}"
-                        [value]="getChecked(areaRuleName)"
-                        [checked]="getChecked(areaRuleName)"
-                        [ngModel]="getChecked(areaRuleName)"
-                        (change)="addOrRemoveAreaRuleName(areaRuleName, $event)"
-                        type="checkbox">
-                      <label for="areaRule{{i}}_{{j}}">{{ areaRuleName }}</label>
-                    </div>
-              </div>
-            </ng-container>
-          </ng-container>
-          <ng-container *ngIf="newAreaRules.areaRules.length > 0 && selectedArea.type !== 7 && selectedArea.type !== 8">
-            <!-- Show all area rules generated from previous block -->
-            <ng-container
-              *ngFor="let newAreaRule of newAreaRules.areaRules; let i = index"
+      <mat-form-field>
+        <mat-label>{{selectedArea.placeholder}}</mat-label>
+        <textarea
+          matInput
+          [(ngModel)]="newAreaRulesString"
+          id="createAreaRulesString"
+          rows="20"
+        ></textarea>
+      </mat-form-field>
+      <button
+        mat-raised-button
+        color="accent"
+        (click)="generateRules()"
+        id="areaRulesGenerateBtn"
+      >
+        {{ 'Create' | translate }}
+      </button>
+    </ng-container>
+    <ng-container *ngIf="selectedArea.type === 7">
+      <div *ngFor="let folder of areaRulesForType7; let i = index" class="d-flex flex-column">
+        <b>{{folder.folderName}}</b>
+        <mat-checkbox
+          *ngFor="let areaRuleName of folder.areaRuleNames; let j = index"
+          [ngModel]="getChecked(areaRuleName)"
+          (ngModelChange)="addOrRemoveAreaRuleName(areaRuleName, $event)"
+          id="areaRule{{i}}_{{j}}"
+        >
+          {{ areaRuleName }}
+        </mat-checkbox>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="selectedArea.type === 8">
+      <div *ngFor="let folder of areaRulesForType8; let i = index" class="d-flex flex-column">
+        <b>{{folder.folderName}}</b>
+        <mat-checkbox
+          *ngFor="let areaRuleName of folder.areaRuleNames; let j = index"
+          [ngModel]="getChecked(areaRuleName)"
+          (ngModelChange)="addOrRemoveAreaRuleName(areaRuleName, $event)"
+          id="areaRule{{i}}_{{j}}"
+        >
+          {{ areaRuleName }}
+        </mat-checkbox>
+      </div>
+    </ng-container>
+  </ng-container>
+  <ng-container *ngIf="newAreaRules.areaRules.length > 0 && selectedArea.type !== 7 && selectedArea.type !== 8">
+    <!-- Show all area rules generated from previous block -->
+    <mat-card *ngFor="let newAreaRule of newAreaRules.areaRules; let i = index">
+      <mat-card-title>{{ 'Rule' | translate }} {{ i + 1 }}</mat-card-title>
+      <mat-card-content>
+        <ng-container *ngIf="newAreaRule.typeSpecificFields">
+          <!-- Show all translations for rule -->
+          <mat-form-field *ngFor="let translation of newAreaRule.translatedNames; let k = index">
+            <mat-label>{{translation.description | translate}}</mat-label>
+            <input
+              matInput
+              type="text"
+              [(ngModel)]="translation.name"
+              id="createRuleName{{ i }}_{{ k }}"
             >
-              <div class="card mb-2">
-                <div class="card-header card-header-simple">
-                  <div
-                    class="d-flex justify-content-between align-items-center"
-                  >
-                    {{ 'Rule' | translate }} {{ i + 1 }}
-                  </div>
-                </div>
-                <div class="card-body">
-                  <ng-container *ngIf="newAreaRule.typeSpecificFields">
-                    <!-- Show all translations for rule -->
-                    <ng-container
-                      *ngFor="
-                        let translation of newAreaRule.translatedNames;
-                        let k = index
-                      "
-                    >
-                      <div class="row">
-                        <div class="col-md-12">
-                          <div class="md-form">
-                            <input
-                              mdbInput
-                              type="text"
-                              [(ngModel)]="translation.name"
-                              class="form-control"
-                              id="createRuleName{{ i }}_{{ k }}"
-                            />
-                            <label for="createRuleName{{ i }}_{{ k }}">{{
-                              translation.description | translate
-                            }}</label>
-                          </div>
-                        </div>
-                      </div>
-                    </ng-container>
-                    <!-- Rule type 1, 5, 3 -->
-                    <ng-container
-                      *ngIf="
-                        selectedArea.type === 1 ||
-                        selectedArea.type === 5 ||
-                        selectedArea.type === 3
-                      "
-                    >
-                      <div class="row">
-                        <div class="col-12 ng-select-wrapper">
-                          <ng-select
-                            [items]="
-                              templatesModel.templates &&
-                              templatesModel.templates.length
-                                ? templatesModel.templates
-                                : [
-                                    {
-                                      id: selectedArea.initialFields.eformId,
-                                      label:
-                                        selectedArea.initialFields.eformName
-                                    }
-                                  ]
-                            "
-                            bindLabel="label"
-                            [placeholder]="'Selected template' | translate"
-                            bindValue="id"
-                            [typeahead]="typeahead"
-                            [(ngModel)]="newAreaRule.typeSpecificFields.eformId"
-                            id="createRuleEformId{{ i }}"
-                            [clearable]="false"
-                          >
-                          </ng-select>
-                        </div>
-                      </div>
-                    </ng-container>
-                    <!-- Rule type 2 -->
-                    <ng-container *ngIf="selectedArea.type === 2">
-                      <div class="row">
-                        <div class="col-12 ng-select-wrapper">
-                          <ng-select
-                            [items]="[
-                              { id: 1, name: 'Open' | translate },
-                              { id: 2, name: 'Closed' | translate }
-                            ]"
-                            bindLabel="name"
-                            [placeholder]="'Type' | translate"
-                            bindValue="id"
-                            [(ngModel)]="newAreaRule.typeSpecificFields.type"
-                            id="createRuleType{{ i }}"
-                            [clearable]="false"
-                          >
-                          </ng-select>
-                        </div>
-                      </div>
-                      <div class="row">
-                        <div class="col-12 ng-select-wrapper">
-                          <ng-select
-                            [items]="[
-                              { id: 1, name: 'Yes' | translate },
-                              { id: 2, name: 'No' | translate }
-                            ]"
-                            bindLabel="name"
-                            [placeholder]="'Alarm' | translate"
-                            bindValue="id"
-                            [(ngModel)]="newAreaRule.typeSpecificFields.alarm"
-                            id="createRuleAlarm{{ i }}"
-                            [clearable]="false"
-                          >
-                          </ng-select>
-                        </div>
-                      </div>
-                    </ng-container>
-                    <!-- Rule type 5 -->
-                    <ng-container *ngIf="selectedArea.type === 5">
-                      <div class="row">
-                        <div class="col-12 ng-select-wrapper">
-                          <ng-select
-                            [items]="[
-                              { id: 1, name: 'Monday' | translate },
-                              { id: 2, name: 'Tuesday' | translate },
-                              { id: 3, name: 'Wednesday' | translate },
-                              { id: 4, name: 'Thursday' | translate },
-                              { id: 5, name: 'Friday' | translate },
-                              { id: 6, name: 'Saturday' | translate },
-                              { id: 0, name: 'Sunday' | translate }
-                            ]"
-                            bindLabel="name"
-                            [placeholder]="'Day of week' | translate"
-                            bindValue="id"
-                            [(ngModel)]="
-                              newAreaRule.typeSpecificFields.dayOfWeek
-                            "
-                            id="createAreaDayOfWeek{{ i }}"
-                            [clearable]="false"
-                          >
-                          </ng-select>
-                        </div>
-                        <div class="col-12 ng-select-wrapper">
-                          <ng-select
-                            [items]="[
-                              { id: 1, name: 'Weekly' | translate },
-                              { id: 2, name: '2nd week' | translate },
-                              { id: 3, name: '3rd week' | translate },
-                              { id: 4, name: '4th week' | translate },
-                              { id: 5, name: '5th week' | translate },
-                              { id: 6, name: '6th week' | translate },
-                              { id: 7, name: '7th week' | translate },
-                              { id: 8, name: '8th week' | translate },
-                              { id: 9, name: '9th week' | translate },
-                              { id: 10, name: '10th week' | translate },
-                              { id: 11, name: '11st week' | translate },
-                              { id: 12, name: '12nd week' | translate },
-                              { id: 13, name: '13rd week' | translate },
-                              { id: 14, name: '14th week' | translate },
-                              { id: 15, name: '15th week' | translate },
-                              { id: 16, name: '16th week' | translate },
-                              { id: 17, name: '17th week' | translate },
-                              { id: 18, name: '18th week' | translate },
-                              { id: 19, name: '19th week' | translate },
-                              { id: 20, name: '20th week' | translate },
-                              { id: 21, name: '21st week' | translate },
-                              { id: 22, name: '22nd week' | translate },
-                              { id: 23, name: '23rd week' | translate },
-                              { id: 24, name: '24th week' | translate },
-                              { id: 25, name: '25th week' | translate },
-                              { id: 26, name: '26th week' | translate },
-                              { id: 27, name: '27th week' | translate },
-                              { id: 28, name: '28th week' | translate },
-                              { id: 29, name: '29th week' | translate },
-                              { id: 30, name: '30th week' | translate },
-                              { id: 31, name: '31st week' | translate },
-                              { id: 32, name: '32nd week' | translate },
-                              { id: 33, name: '33rd week' | translate },
-                              { id: 34, name: '34th week' | translate },
-                              { id: 35, name: '35th week' | translate },
-                              { id: 36, name: '36th week' | translate },
-                              { id: 37, name: '37th week' | translate },
-                              { id: 38, name: '38th week' | translate },
-                              { id: 39, name: '39th week' | translate },
-                              { id: 40, name: '40th week' | translate },
-                              { id: 41, name: '41st week' | translate },
-                              { id: 42, name: '42nd week' | translate },
-                              { id: 43, name: '43rd week' | translate },
-                              { id: 44, name: '44th week' | translate },
-                              { id: 45, name: '45th week' | translate },
-                              { id: 46, name: '46th week' | translate },
-                              { id: 47, name: '47th week' | translate },
-                              { id: 48, name: '48th week' | translate },
-                              { id: 49, name: '49th week' | translate },
-                              { id: 50, name: '50th week' | translate },
-                              { id: 51, name: '51st week' | translate },
-                              { id: 52, name: '52nd week' | translate },
-                            ]"
-                            bindLabel="name"
-                            [placeholder]="'Repeat every' | translate"
-                            bindValue="id"
-                            [(ngModel)]="
-                              newAreaRule.typeSpecificFields.repeatEvery
-                            "
-                            id="createRepeatEvery{{ i }}"
-                            [clearable]="false"
-                          >
-                          </ng-select>
-                        </div>
-                      </div>
-                    </ng-container>
-                  </ng-container>
-
-                  <ng-container *ngIf="selectedArea.type === 10">
-                    <table
-                      mdbTable
-                      striped="true"
-                      hover="true"
-                      small="true"
-                      class="z-depth-1 text-center">
-                      <thead>
-                        <tr>
-                          <th>
-                            <span>
-                              {{ 'Weekdays' | translate }}
-                            </span>
-                          </th>
-                          <ng-container *ngFor="let hour of hours let j = index">
-                            <th>
-                            <span>
-                              kl {{ hour }}:00
-                            </span>
-                            </th>
-                          </ng-container>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let day of days; let i = index">
-                          <td>
-                            <span>
-                              {{ day | translate }}
-                            </span>
-                          </td>
-                          <ng-container *ngFor="let hour of hours let j = index">
-                            <td>
-                              <input
-                                type="checkbox"
-                                (click)="checked($event, i, j, newAreaRule)"
-                                [checked]="" />
-                            </td>
-                          </ng-container>
-                      </tbody>
-                    </table>
-                  </ng-container>
-                </div>
-              </div>
-
-
-            </ng-container>
+          </mat-form-field>
+          <!-- Rule type 1, 5, 3 -->
+          <ng-container *ngIf="selectedArea.type === 1 ||
+                                 selectedArea.type === 5 ||
+                                 selectedArea.type === 3"
+          >
+            <mat-form-field>
+              <mat-label>{{'Selected template' | translate}}</mat-label>
+              <mtx-select
+                [items]="
+                    templatesModel.templates &&
+                    templatesModel.templates.length ?
+                    templatesModel.templates :
+                    [{id: selectedArea.initialFields.eformId, label: selectedArea.initialFields.eformName}]"
+                bindLabel="label"
+                bindValue="id"
+                [typeahead]="typeahead"
+                [(ngModel)]="newAreaRule.typeSpecificFields.eformId"
+                id="createRuleEformId{{ i }}"
+                [clearable]="false"
+              ></mtx-select>
+            </mat-form-field>
           </ng-container>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button
-          mdbBtn
-          class="btn-success btn-small-height"
-          (click)="onCreateAreaRule()"
-          id="areaRuleCreateSaveBtn"
-          [disabled]="getIsSaveButtonDisabled()"
-        >
-          {{ 'Save' | translate }}
-        </button>
-        <button
-          mdbBtn
-          class="btn-accent text-black-50 btn-small-height"
-          (click)="hide()"
-          id="areaRuleCreateSaveCancelBtn"
-        >
-          {{ 'Cancel' | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
+          <!-- Rule type 2 -->
+          <ng-container *ngIf="selectedArea.type === 2">
+            <mat-form-field>
+              <mat-label>{{'Type' | translate}}</mat-label>
+              <mtx-select
+                [items]="[
+                    { id: 1, name: 'Open' | translate },
+                    { id: 2, name: 'Closed' | translate }
+                  ]"
+                bindLabel="name"
+                bindValue="id"
+                [(ngModel)]="newAreaRule.typeSpecificFields.type"
+                id="createRuleType{{ i }}"
+                [clearable]="false"
+              ></mtx-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>{{'Alarm' | translate}}</mat-label>
+              <mtx-select
+                [items]="[
+                    { id: 1, name: 'Yes' | translate },
+                    { id: 2, name: 'No' | translate }
+                  ]"
+                bindLabel="name"
+                [placeholder]="'Alarm' | translate"
+                bindValue="id"
+                [(ngModel)]="newAreaRule.typeSpecificFields.alarm"
+                id="createRuleAlarm{{ i }}"
+                [clearable]="false"
+              ></mtx-select>
+            </mat-form-field>
+          </ng-container>
+          <!-- Rule type 5 -->
+          <ng-container *ngIf="selectedArea.type === 5">
+            <div class="d-flex flex-row">
+              <mat-form-field class="mr-1">
+                <mat-label>{{'Day of week' | translate}}</mat-label>
+                <mtx-select
+                  [items]="daysOfWeek"
+                  bindLabel="name"
+                  bindValue="id"
+                  [(ngModel)]="newAreaRule.typeSpecificFields.dayOfWeek"
+                  id="createAreaDayOfWeek{{ i }}"
+                  [clearable]="false"
+                  appendTo="body"
+                ></mtx-select>
+              </mat-form-field>
+              <mat-form-field class="ml-1">
+                <mat-label>{{'Repeat every' | translate}}</mat-label>
+                <mtx-select
+                  [items]="repeatEveryArr"
+                  bindLabel="name"
+                  bindValue="id"
+                  [(ngModel)]="newAreaRule.typeSpecificFields.repeatEvery"
+                  id="createRepeatEvery{{ i }}"
+                  [clearable]="false"
+                  appendTo="body"
+                ></mtx-select>
+              </mat-form-field>
+            </div>
+          </ng-container>
+        </ng-container>
+
+        <ng-container *ngIf="selectedArea.type === 10">
+          <mtx-grid
+            [data]="dataForTable[i]"
+            [columns]="tableHeaders"
+            [cellTemplate]="templates"
+            [showPaginator]="false"
+            [pageOnFront]="false"
+            [rowStriped]="true"
+            [showToolbar]="false"
+            [showColumnMenuButton]="false"
+          >
+          </mtx-grid>
+        </ng-container>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
 </div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="areaRuleCreateSaveBtn"
+    (click)="onCreateAreaRule()"
+    [disabled]="getIsSaveButtonDisabled()"
+  >
+    {{'Save' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    id="areaRuleCreateSaveCancelBtn"
+    (click)="hide()"
+  >
+    {{'Cancel' | translate}}
+  </button>
+</div>
+
+<ng-template #weekdaysTpl let-row let-index="index" let-col="colDef">
+  <span>{{getDayByIndex(index) | translate}}</span>
+</ng-template>
+
+<ng-template #checkboxTpl let-row let-index="index" let-col="colDef">
+  <mat-checkbox
+    [(ngModel)]="row[col.index].isActive"
+  ></mat-checkbox>
+</ng-template>

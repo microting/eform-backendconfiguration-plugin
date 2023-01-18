@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
 import { PropertyWorkersStore, PropertyWorkersQuery } from './';
 import { Observable } from 'rxjs';
-import { OperationDataResult, SiteDto, SortModel } from 'src/app/common/models';
+import { OperationDataResult } from 'src/app/common/models';
 import { updateTableSort, getOffset } from 'src/app/common/helpers';
 import { map } from 'rxjs/operators';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
-import { DeviceUserService } from 'src/app/common/services';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
 
 @Injectable({ providedIn: 'root' })
@@ -21,8 +20,16 @@ export class PropertyWorkersStateService {
   //   return this.query.selectPageSize$;
   // }
 
-  getSort(): Observable<SortModel> {
-    return this.query.selectSort$;
+  // getSort(): Observable<SortModel> {
+  //   return this.query.selectSort$;
+  // }
+
+  getActiveSort(): Observable<string> {
+    return this.query.selectActiveSort$;
+  }
+
+  getActiveSortDirection(): Observable<'asc' | 'desc'> {
+    return this.query.selectActiveSortDirection$;
   }
 
   getNameFilter(): Observable<string> {

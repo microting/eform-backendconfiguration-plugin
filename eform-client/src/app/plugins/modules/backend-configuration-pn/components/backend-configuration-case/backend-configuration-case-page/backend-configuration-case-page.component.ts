@@ -15,7 +15,6 @@ import {
 } from 'src/app/common/models';
 import { AuthStateService } from 'src/app/common/store';
 import { CaseEditElementComponent } from 'src/app/common/modules/eform-cases/components';
-import {ItemsPlanningPnCasesService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import * as R from 'ramda';
 import {
@@ -36,7 +35,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   eFormId: number;
   dateFrom: string;
   dateTo: string;
-  currenteForm: TemplateDto = new TemplateDto();
+  currentTemplate: TemplateDto = new TemplateDto();
   replyElement: ReplyElementDto = new ReplyElementDto();
   reverseRoute: string;
   requestModels: Array<CaseEditRequest> = [];
@@ -68,18 +67,16 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   }
 
   ngOnInit() {
-    debugger;
     this.loadTemplateInfo();
     this.maxDate = new Date();
   }
 
   loadCase() {
-    debugger;
     if (!this.id || this.id === 0) {
       return;
     }
     this.casesService
-      .getById(this.id, this.currenteForm.id)
+      .getById(this.id, this.currentTemplate.id)
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = operation.model;
@@ -92,7 +89,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
     if (this.eFormId) {
       this.eFormService.getSingle(this.eFormId).subscribe((operation) => {
         if (operation && operation.success) {
-          this.currenteForm = operation.model;
+          this.currentTemplate = operation.model;
           this.loadCase();
         }
       });
@@ -108,17 +105,17 @@ export class BackendConfigurationCasePageComponent implements OnInit {
     this.replyRequest.id = this.replyElement.id;
     this.replyRequest.label = this.replyElement.label;
     this.replyRequest.elementList = this.requestModels;
-    if (this.initialDate != this.replyElement.doneAt) {
-      this.replyRequest.doneAt = new Date(Date.UTC(this.replyElement.doneAt.getFullYear(), this.replyElement.doneAt.getMonth(), this.replyElement.doneAt.getDate(), 0, 0, 0));
+    if (this.initialDate !== this.replyElement.doneAt) {
+      this.replyRequest.doneAt = new Date(Date.UTC(this.replyElement.doneAt.getFullYear(),
+        this.replyElement.doneAt.getMonth(), this.replyElement.doneAt.getDate(), 0, 0, 0));
     } else {
       this.replyRequest.doneAt = this.replyElement.doneAt;
     }
     this.backendConfigurationPnCasesService
-      .updateCase(this.replyRequest, this.currenteForm.id)
+      .updateCase(this.replyRequest, this.currentTemplate.id)
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();
-          debugger;
           this.router
             .navigate([
               '/plugins/backend-configuration-pn/reports/' +
@@ -143,7 +140,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       return;
     }
     this.casesService
-      .getById(this.id, this.currenteForm.id)
+      .getById(this.id, this.currentTemplate.id)
       .subscribe((operation) => {
         if (operation && operation.success) {
           const fn = (pathForLens: Array<number | string>) => {

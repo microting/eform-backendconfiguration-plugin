@@ -74,13 +74,13 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1));
                     break;
                 case 2:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(1) && x.EndAt <= DateTime.UtcNow.AddMonths(3));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(3));
                     break;
                 case 3:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(3) && x.EndAt <= DateTime.UtcNow.AddMonths(6));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(6));
                     break;
                 case 4:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(6) && x.EndAt <= DateTime.UtcNow.AddYears(1));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddYears(1));
                     break;
                 case 5:
                     query = query.Where(x => x.EndAt > DateTime.UtcNow.AddYears(1));
@@ -104,6 +104,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     EndDate = x.EndAt,
                     FolderId = x.FolderId,
                     Status = x.Status,
+                    IsLocked = x.IsLocked,
                     DocumentUploadedDatas = x.DocumentUploadedDatas
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => new BackendConfigurationDocumentUploadedData
@@ -177,6 +178,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             EndDate = document.EndAt,
             FolderId = document.FolderId,
             Status = document.Status,
+            IsLocked = document.IsLocked,
             DocumentUploadedDatas = document.DocumentUploadedDatas
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => new BackendConfigurationDocumentUploadedData
@@ -232,7 +234,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 {
                     Id = x.Id,
                     Name = x.DocumentTranslations.FirstOrDefault(y => y.LanguageId == languageId)!.Name
-                }).ToListAsync().ConfigureAwait(false);
+                })
+                .OrderBy(x => x.Name)
+                .ToListAsync().ConfigureAwait(false);
         }
         return new OperationDataResult<List<BackendConfigurationDocumentSimpleModel>>(true,
             results);
@@ -240,6 +244,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
     public async Task<OperationResult> UpdateDocumentAsync(BackendConfigurationDocumentModel model)
     {
+        var core = await _coreHelper.GetCore();
         var document = await _caseTemplatePnDbContext.Documents
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentProperties)
@@ -257,6 +262,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         document.EndAt = model.EndDate;
         document.FolderId = model.FolderId;
         document.Status = model.Status;
+        document.IsLocked = document.Status;
         await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 
         foreach (var translation in model.DocumentTranslations)
@@ -275,6 +281,30 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
             await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
+
+        var assignmentsForDelete = document.DocumentProperties
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => !model.DocumentProperties.Select(y => y.PropertyId).Contains(x.PropertyId))
+            .ToList();
+
+        foreach (var documentProperty in assignmentsForDelete)
+        {
+            await documentProperty.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
+        }
+
+        // var documentSites = document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
+        var documentSites = document.DocumentSites.ToList();
+
+        foreach (var documentSite in documentSites)
+        {
+            if (documentSite.SdkCaseId != 0)
+            {
+                await core.CaseDelete(documentSite.SdkCaseId);
+            }
+
+            await documentSite.Delete(_caseTemplatePnDbContext);
+        }
+
 
         if (model.DocumentProperties != null)
         {
@@ -295,7 +325,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             }
         }
 
-        var core = await _coreHelper.GetCore();
         foreach (var documentUploadedData in model.DocumentUploadedDatas)
         {
             var documentUploadedDataDb = document.DocumentUploadedDatas
@@ -366,32 +395,17 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             }
         }
 
-        var assignmentsForDelete = document.DocumentProperties
-            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            .Where(x => !model.DocumentProperties.Select(y => y.PropertyId).Contains(x.PropertyId))
-            .ToList();
-
-        foreach (var documentProperty in assignmentsForDelete)
+        if (model.DocumentProperties != null)
         {
-            // var property = model.DocumentProperties
-            //     .FirstOrDefault(x => x.PropertyId == documentProperty.PropertyId);
-            // if (property == null)
-            // {
-                await documentProperty.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
-            // }
+            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        }
+        else
+        {
+            document.IsLocked = false;
+            document.Status = false;
+            await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-        foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
-        {
-            if (documentSite.SdkCaseId != 0)
-            {
-                await core.CaseDelete(documentSite.SdkCaseId);
-            }
-
-            await documentSite.Delete(_caseTemplatePnDbContext);
-        }
-
-        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentUpdatedSuccessfully"));
@@ -417,7 +431,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             // StartAt = model.StartDate,
             EndAt = model.EndDate,
             FolderId = model.FolderId,
-            Status = model.Status
+            Status = model.Status,
+            IsLocked = model.Status
         };
 
         await document.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -481,9 +496,16 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
                 await documentProperty.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
+
+            await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+        }
+        else
+        {
+            document.IsLocked = false;
+            document.Status = false;
+            await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-        await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentCreatedSuccessfully"));
@@ -539,7 +561,11 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             query = query.Where(x => x.Id == pnRequestModel.FolderId);
         }
 
-        var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+        var total = 0;
+        if (query.Any())
+        {
+            total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+        }
 
         var results = new List<BackendConfigurationDocumentFolderModel>();
 
@@ -565,8 +591,12 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                             Id = y.Id,
                             SdkFolderId = y.SdkFolderId,
                         }).ToList()
-                }).ToListAsync().ConfigureAwait(false);
+                })
+                .ToListAsync().ConfigureAwait(false);
         }
+
+        results = results.OrderBy(x =>
+            x.DocumentFolderTranslations.OrderBy(y => y.Name)).ToList();
         return new OperationDataResult<Paged<BackendConfigurationDocumentFolderModel>>(true,
             new Paged<BackendConfigurationDocumentFolderModel> { Entities = results, Total = total });
     }
@@ -626,6 +656,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 Name = folder.FolderTranslations.Any(x => x.LanguageId == languageId) ? folder.FolderTranslations.First(x => x.LanguageId == languageId).Name : folder.FolderTranslations.First().Name
             });
         }
+
+        result = result.OrderBy(x => x.Name).ToList();
 
         return new OperationDataResult<List<BackendConfigurationDocumentSimpleFolderModel>>(true, result);
     }

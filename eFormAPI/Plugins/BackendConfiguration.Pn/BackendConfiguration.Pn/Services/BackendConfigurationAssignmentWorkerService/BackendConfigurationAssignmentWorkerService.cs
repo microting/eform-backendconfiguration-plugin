@@ -37,6 +37,7 @@ using Microting.TimePlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Microting.TimePlanningBase.Infrastructure.Data.Models;
 using Rebus.Bus;
+using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
 {
@@ -62,11 +63,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly WorkOrderHelper _workOrderHelper;
-        // private readonly IDeviceUsersService _deviceUsersService;
         private readonly TimePlanningPnDbContext _timePlanningDbContext;
         private readonly CaseTemplatePnDbContext _caseTemplatePnDbContext;
-        // private readonly ILogger<BackendConfigurationAssignmentWorkerService> _logger;
-        // private readonly IPluginDbOptions<TimePlanningBaseSettings> _options;
         private readonly IBus _bus;
 
         public BackendConfigurationAssignmentWorkerService(
@@ -98,17 +96,22 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                 if (query.Any())
                 {
-                    var listWorkerId = await query.Select(x => x.WorkerId).Distinct().ToListAsync().ConfigureAwait(false);
+                    var listWorkerId = await query.Select(x => new PropertyWorker()
+                    {
+                        WorkerId = x.WorkerId,
+                        TaskManagementEnabled = x.TaskManagementEnabled
+                    }).Distinct().ToListAsync().ConfigureAwait(false);
 
                     foreach (var workerId in listWorkerId)
                     {
                         var assignments = await query
-                            .Where(x => x.WorkerId == workerId)
+                            .Where(x => x.WorkerId == workerId.WorkerId)
                             .Select(x => new PropertyAssignmentWorkerModel
                                 { PropertyId = x.PropertyId, IsChecked = true })
                             .ToListAsync().ConfigureAwait(false);
+
                         assignWorkersModels.Add(new PropertyAssignWorkersModel
-                            { SiteId = workerId, Assignments = assignments });
+                            { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
                     }
 
                     var properties = await _backendConfigurationPnDbContext.Properties
@@ -157,6 +160,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                  UpdatedByUserId = _userService.UserId
                              }))
                 {
+                    propertyAssignment.TaskManagementEnabled = createModel.TaskManagementEnabled;
                     await propertyAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     var documents = await _caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
                     foreach (var document in documents)
@@ -214,6 +218,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .ToListAsync().ConfigureAwait(false);
 
+                foreach (var propertyWorker in assignments)
+                {
+                    propertyWorker.TaskManagementEnabled = updateModel.TaskManagementEnabled;
+                    await propertyWorker.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+
                 var assignmentsForCreate = updateModel.Assignments
                     .Select(x => x.PropertyId)
                     .Where(x => !assignments.Select(y => y.PropertyId).Contains(x))
@@ -227,17 +237,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                  WorkerId = updateModel.SiteId,
                                  PropertyId = propertyAssignmentWorkerModel,
                                  CreatedByUserId = _userService.UserId,
-                                 UpdatedByUserId = _userService.UserId
+                                 UpdatedByUserId = _userService.UserId,
+                                 TaskManagementEnabled = updateModel.TaskManagementEnabled
                              }))
                 {
                     await propertyAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    var documents = await _caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
+                    var documents = await _caseTemplatePnDbContext.DocumentProperties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.PropertyId == propertyAssignment.PropertyId)
+                        .ToListAsync();
                     foreach (var document in documents)
                     {
                         if (!documentIds.Contains(document.DocumentId))
                         {
-                            documentIds.Add(document.Id);
+                            documentIds.Add(document.DocumentId);
                         }
                     }
                     propertyWorkers.Add(propertyAssignment);
@@ -302,9 +316,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 foreach (var documentId in documentIds)
                 {
                     var document = await _caseTemplatePnDbContext.Documents
-                        .Include(x => x.DocumentSites)
+                        .Include(x =>
+                            x.DocumentSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
                         .FirstAsync(x => x.Id == documentId).ConfigureAwait(false);
-                    foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                    foreach (var documentSite in document.DocumentSites)
                     {
                         if (documentSite.SdkCaseId != 0)
                         {
@@ -315,6 +330,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     }
 
                     await _bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
+                }
+
+                if (!(bool)updateModel.TaskManagementEnabled!)
+                {
+                    foreach (var propertyWorker in assignments)
+                    {
+                        if (propertyWorker.EntityItemId != null)
+                        {
+                            await core.EntityItemDelete((int)propertyWorker.EntityItemId).ConfigureAwait(false);
+
+                            await _workOrderHelper.RetractEform(new List<PropertyWorker>()
+                            {
+                                propertyWorker
+                            }, true).ConfigureAwait(false);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var propertyWorker in assignments)
+                    {
+                        if (!propertyWorkers.Any(x =>
+                                x.WorkerId == propertyWorker.WorkerId && x.PropertyId == propertyWorker.PropertyId))
+                        {
+                            propertyWorkers.Add(propertyWorker);
+                        }
+                    }
                 }
 
                 await _workOrderHelper.WorkorderFlowDeployEform(propertyWorkers).ConfigureAwait(false);
@@ -341,23 +383,24 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     .Where(x => x.WorkerId == deviceUserId)
                     .ToListAsync().ConfigureAwait(false);
 
-                var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "01. New task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync().ConfigureAwait(false);
-
-                var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "02. Ongoing task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync().ConfigureAwait(false);
-
-                var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.Text == "03. Completed task")
-                    .Select(x => x.CheckListId)
-                    .FirstAsync().ConfigureAwait(false);
+                // TODO: Implement cleanup of deployed WorkOrder related eForms.
+                // var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
+                //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //     .Where(x => x.Text == "01. New task")
+                //     .Select(x => x.CheckListId)
+                //     .FirstAsync().ConfigureAwait(false);
+                //
+                // var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
+                //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //     .Where(x => x.Text == "02. Ongoing task")
+                //     .Select(x => x.CheckListId)
+                //     .FirstAsync().ConfigureAwait(false);
+                //
+                // var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
+                //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //     .Where(x => x.Text == "03. Completed task")
+                //     .Select(x => x.CheckListId)
+                //     .FirstAsync().ConfigureAwait(false);
 
 
                 foreach (var propertyAssignment in propertyWorkers)
@@ -409,7 +452,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     $"{_backendConfigurationLocalizationService.GetString("ErrorWhilDeleteAssignmentsProperties")}: {e.Message}");
             }
         }
-
 
         public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel)
         {
@@ -466,6 +508,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 {
                     deviceUserModel.TimeRegistrationEnabled = _timePlanningDbContext.AssignedSites.Any(x =>
                         x.SiteId == deviceUserModel.SiteUid && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                    deviceUserModel.TaskManagementEnabled = _backendConfigurationPnDbContext.PropertyWorkers.Any(x =>
+                        x.WorkflowState != Constants.WorkflowStates.Removed
+                        && x.WorkerId == deviceUserModel.SiteId
+                        && x.TaskManagementEnabled == true);
                 }
 
                 return new OperationDataResult<List<DeviceUserModel>>(true, deviceUsers);
@@ -505,10 +552,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                             int? propertyId = null;
                             foreach (var propertyWorker in propertyWorkers)
                             {
-                                var et = sdkDbContext.EntityItems.Single(x => x.Id == propertyWorker.EntityItemId);
-                                await core.EntityItemUpdate((int)propertyWorker.EntityItemId, fullName, "", et.EntityItemUid,
-                                    et.DisplayIndex).ConfigureAwait(false);
+                                if (propertyWorker.EntityItemId != null)
+                                {
+                                    var et = sdkDbContext.EntityItems.Single(x => x.Id == propertyWorker.EntityItemId);
+                                    await core.EntityItemUpdate((int)propertyWorker.EntityItemId, fullName, "", et.EntityItemUid,
+                                        et.DisplayIndex).ConfigureAwait(false);
+                                }
                                 propertyId = propertyWorker.PropertyId;
+                                propertyWorker.TaskManagementEnabled = deviceUserModel.TaskManagementEnabled;
+                                await propertyWorker.Update(_backendConfigurationPnDbContext);
                             }
 
                             if (propertyId != null)
@@ -534,12 +586,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         //var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync();
                         if (deviceUserModel.TimeRegistrationEnabled == false && _timePlanningDbContext.AssignedSites.Any(x => x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
-                            var assignmentForDelete = await _timePlanningDbContext.AssignedSites.SingleAsync(x =>
-                                x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                            var assignmentForDeletes = await _timePlanningDbContext.AssignedSites.Where(x =>
+                                x.SiteId == siteDto.SiteId && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
 
-                            if (assignmentForDelete.CaseMicrotingUid != null)
+                            foreach (var assignmentForDelete in assignmentForDeletes)
                             {
-                                await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                                await assignmentForDelete.Delete(_timePlanningDbContext).ConfigureAwait(false);
+                                if (assignmentForDelete.CaseMicrotingUid != null)
+                                {
+                                    await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                                }
                             }
                         }
                         else
@@ -555,9 +611,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                         UpdatedByUserId = _userService.UserId,
                                     };
                                     await assignmentSite.Create(_timePlanningDbContext).ConfigureAwait(false);
-                                    // var option =
+
                                     var newTaskId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId").ConfigureAwait(false);
-                                    var folderId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId").ConfigureAwait(false);
+                                    var folderId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId").ConfigureAwait(false);;
                                     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value)).ConfigureAwait(false);
                                     var mainElement = await core.ReadeForm(int.Parse(newTaskId.Value), language).ConfigureAwait(false);
                                     mainElement.CheckListFolderName = folder.MicrotingUid.ToString();
@@ -598,6 +654,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 return new OperationResult(false, _backendConfigurationLocalizationService.GetString("DeviceUserCouldNotBeUpdated") + $" {ex.Message}");
             }
         }
@@ -615,7 +672,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             var theCore = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = theCore.DbContextHelper.GetDbContext();
             await using var __ = sdkDbContext.ConfigureAwait(false);
-            var siteId = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).Select(x => x.Id).FirstAsync().ConfigureAwait(false);
+            var site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
 
             if (deviceUserModel.TimeRegistrationEnabled == true)
             {
@@ -623,7 +680,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 {
                     var assignmentSite = new AssignedSite
                     {
-                        SiteId = siteId,
+                        SiteId = (int)site.MicrotingUid!,
                         CreatedByUserId = _userService.UserId,
                         UpdatedByUserId = _userService.UserId,
                     };
@@ -631,8 +688,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     // var option =
                     var newTaskId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:EformId").ConfigureAwait(false);
                     var folderId = await _timePlanningDbContext.PluginConfigurationValues.SingleAsync(x => x.Name == "TimePlanningBaseSettings:FolderId").ConfigureAwait(false);;
+
                     var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == int.Parse(folderId.Value)).ConfigureAwait(false);
-                    var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Id == siteId).ConfigureAwait(false);
                     var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
                     var mainElement = await theCore.ReadeForm(int.Parse(newTaskId.Value), language).ConfigureAwait(false);
                     mainElement.CheckListFolderName = folder.MicrotingUid.ToString();
@@ -645,7 +702,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     assignmentSite.CaseMicrotingUid = caseId;
                     await assignmentSite.Update(_timePlanningDbContext).ConfigureAwait(false);
 
-                    return new OperationDataResult<int>(true, siteId);
+                    return new OperationDataResult<int>(true, site.Id);
                 }
                 catch (Exception e)
                 {
@@ -655,11 +712,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 }
             }
 
-            return new OperationDataResult<int>(true, siteId);
+            return new OperationDataResult<int>(true, site.Id);
         }
 
         private async Task DeleteAllEntriesForPropertyAssignment(PropertyWorker propertyAssignment, Core core, Property property, MicrotingDbContext sdkDbContext)
         {
+            var documentSites = await _caseTemplatePnDbContext.DocumentSites.Where(x => x.SdkSiteId == propertyAssignment.WorkerId).ToListAsync();
+
+            // Delete all entries from DocumentSites
+            foreach (var documentSite in documentSites)
+            {
+                if (documentSite.SdkCaseId != 0)
+                {
+                    await core.CaseDelete(documentSite.SdkCaseId);
+                }
+                await documentSite.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
+            }
+
             var planningSites = await _backendConfigurationPnDbContext.PlanningSites
                 .Join(_backendConfigurationPnDbContext.AreaRulePlannings,
                     ps => ps.AreaRulePlanningsId,

@@ -1,3 +1,4 @@
+const path = require("path");
 exports.config = {
     runner: 'local',
     path: '/',
@@ -226,7 +227,7 @@ exports.config = {
      * Function to be executed after a test (in Mocha/Jasmine) or a step (in Cucumber) ends.
      * @param {Object} test test details
      */
-    afterTest(test, context, { error, result, duration, passed, retries }) {
+    afterTest: function (test, context, { error, result, duration, passed, retries }) {
       const path = require('path');
 
       // if test passed, ignore, else take and save screenshot.
@@ -250,14 +251,14 @@ exports.config = {
 
       // get current test title and clean it, to use it as file name
       const filename = encodeURIComponent(
-        `${
-          test.fullTitle.replace(/\s+/g, '-')
-        }-chrome-${timestamp}`.replace(/[/]/g, '__')
+        `chrome-${timestamp}`.replace(/[/]/g, '__')
       ).replace(/%../, '.');
 
       const filePath = path.resolve(this.screenshotPath, `${filename}.png`);
 
+      console.log('Saving screenshot to:', filePath);
       browser.saveScreenshot(filePath);
+      console.log('Saved screenshot to:', filePath);
     },
     /**
      * Hook that gets executed after the suite has ended

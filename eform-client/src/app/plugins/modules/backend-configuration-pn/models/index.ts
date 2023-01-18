@@ -7,3 +7,7 @@ export * from './compliances';
 export * from './task-management';
 export * from './documents';
 export * from './report';
+export * from './device-users';
+export * from './cases';
+export * from './chemicals';
+export * from './pools';

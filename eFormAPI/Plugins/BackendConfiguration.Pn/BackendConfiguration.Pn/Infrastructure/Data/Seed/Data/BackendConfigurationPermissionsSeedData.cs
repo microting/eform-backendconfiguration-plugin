@@ -37,6 +37,41 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 PermissionName = "Access BackendConfiguration Plugin",
                 ClaimName = BackendConfigurationClaims.AccessBackendConfigurationPlugin
             },
+            new PluginPermission
+            {
+                PermissionName = "Create property",
+                ClaimName = BackendConfigurationClaims.CreateProperties
+            },
+            new PluginPermission
+            {
+                PermissionName = "Get properties",
+                ClaimName = BackendConfigurationClaims.GetProperties
+            },
+            new PluginPermission
+            {
+                PermissionName = "Edit property",
+                ClaimName = BackendConfigurationClaims.EditProperties
+            },
+            new PluginPermission
+            {
+                PermissionName = "Enable chemical management",
+                ClaimName = BackendConfigurationClaims.EnableChemicalManagement
+            },
+            new PluginPermission
+            {
+                PermissionName = "Enable document management",
+                ClaimName = BackendConfigurationClaims.EnableDocumentManagement
+            },
+            new PluginPermission
+            {
+                PermissionName = "Enable task management",
+                ClaimName = BackendConfigurationClaims.EnableTaskManagement
+            },
+            new PluginPermission
+            {
+                PermissionName = "Enable time registration",
+                ClaimName = BackendConfigurationClaims.EnableTimeRegistration
+            },
         };
     }
 }

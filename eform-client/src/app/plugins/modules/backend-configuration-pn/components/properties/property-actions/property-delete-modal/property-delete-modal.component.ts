@@ -1,11 +1,11 @@
 import {
   Component,
   EventEmitter,
+  Inject,
   OnInit,
-  Output,
-  ViewChild,
 } from '@angular/core';
 import { PropertyModel } from '../../../../models';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({
   selector: 'app-property-delete-modal',
@@ -13,21 +13,17 @@ import { PropertyModel } from '../../../../models';
   styleUrls: ['./property-delete-modal.component.scss'],
 })
 export class PropertyDeleteModalComponent implements OnInit {
-  @ViewChild('frame', { static: false }) frame;
-  @Output() propertyDelete: EventEmitter<number> = new EventEmitter<number>();
-  propertyModel: PropertyModel = new PropertyModel();
+  propertyDelete: EventEmitter<number> = new EventEmitter<number>();
 
-  constructor() {}
+  constructor(
+    public dialogRef: MatDialogRef<PropertyDeleteModalComponent>,
+    @Inject(MAT_DIALOG_DATA) public propertyModel: PropertyModel = new PropertyModel()
+  ) {}
 
   ngOnInit() {}
 
-  show(propertyModel: PropertyModel) {
-    this.propertyModel = propertyModel;
-    this.frame.show();
-  }
-
   hide() {
-    this.frame.hide();
+    this.dialogRef.close();
   }
 
   deleteProperty() {

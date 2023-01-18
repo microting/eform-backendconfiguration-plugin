@@ -8,7 +8,7 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    return (await $$('#properiesTableBody > tr')).length;
+    return (await $$('tbody > tr')).length;
   }
 
   public async backendConfigurationPnButton() {
@@ -166,7 +166,7 @@ export class BackendConfigurationPropertiesPage extends Page {
   }
 
   public async propertyCreateWorkorderFlowEnableToggle() {
-    const ele = await $(`[for='propertyCreateWorkorderFlowEnableToggle']`);
+    const ele = await $(`[for='propertyCreateWorkorderFlowEnableToggle-input']`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -202,7 +202,10 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async goToProperties() {
     const spinnerAnimation = await $('#spinner-animation');
-    await (await this.backendConfigurationPnButton()).click();
+    const ele = await $('#backend-configuration-pn-properties');
+    if (!await ele.isDisplayed()) {
+      await (await this.backendConfigurationPnButton()).click();
+    }
     await (await this.backendConfigurationPnPropertiesButton()).click();
     await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.propertyCreateBtn()).waitForClickable({ timeout: 90000 });
@@ -218,6 +221,7 @@ export class BackendConfigurationPropertiesPage extends Page {
 
   public async openCreatePropertyModal(property: PropertyCreateUpdate) {
     await (await this.propertyCreateBtn()).click();
+    await browser.pause(500);
     await (await this.propertyCreateSaveCancelBtn()).waitForClickable({
       timeout: 40000,
     });
@@ -252,6 +256,7 @@ export class BackendConfigurationPropertiesPage extends Page {
       }*/
       if(property.workOrderFlow === true){
         await (await this.propertyCreateWorkorderFlowEnableToggle()).click();
+        await browser.pause(500);
       }
     }
   }
@@ -262,6 +267,7 @@ export class BackendConfigurationPropertiesPage extends Page {
     } else {
       await (await this.propertyCreateSaveBtn()).click();
     }
+    await browser.pause(500);
     await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.propertyCreateBtn()).waitForClickable({ timeout: 90000 });
   }
@@ -307,33 +313,15 @@ export class PropertyRowObject {
   public deletePropertyBtn: WebdriverIO.Element;
 
   public async getRow(rowNum: number): Promise<PropertyRowObject> {
-    this.row = (await $$('#properiesTableBody tr'))[rowNum - 1];
-    if (this.row) {
-      this.id = +await (await this.row.$('#propertyId')).getText();
-      this.name = await (await this.row.$('#propertyName')).getText();
-      this.chrNumber = await (await this.row.$('#propertyCHR')).getText();
-      this.cvrNumber = await (await this.row.$('#propertyCVR')).getText();
-      this.address = await (await this.row.$('#propertyAddress')).getText();
-      // const languages = (
-      //   await (await this.row.$('#propertyLanguages')).getText()
-      // ).split(' | ');
-      //
-      // this.languages = [];
-      // if (languages.length > 0 && languages[0] !== '') {
-      //   for (let i = 0; i < languages.length; i++) {
-      //     const language = applicationLanguagesTranslated.find(
-      //       (x) => x.text === languages[i]
-      //     );
-      //     this.languages = [
-      //       ...this.languages,
-      //       { languageName: language.text, languageId: language.id },
-      //     ];
-      //   }
-      // }
-      this.editPropertyAreasBtn = await this.row.$('#showPropertyAreasBtn');
-      this.editPropertyBtn = await this.row.$('#editPropertyBtn');
-      this.deletePropertyBtn = await this.row.$('#deletePropertyBtn');
-    }
+    rowNum = rowNum - 1;
+    this.id = +await (await $('#propertyId-'+rowNum)).getText();
+    this.name = await (await $('#propertyName-'+rowNum)).getText();
+    this.chrNumber = await (await $('#propertyCHR-'+rowNum)).getText();
+    this.cvrNumber = await (await $('#propertyCVR-'+rowNum)).getText();
+    this.address = await (await $('#propertyAddress-'+rowNum)).getText();
+    this.editPropertyAreasBtn = await $('#showPropertyAreasBtn-'+rowNum);
+    this.editPropertyBtn = await $('#editPropertyBtn-'+rowNum);
+    this.deletePropertyBtn = await $('#deletePropertyBtn-'+rowNum);
     return this;
   }
 
@@ -449,6 +437,7 @@ export class PropertyRowObject {
 
   public async openBindPropertyWithAreasModal(bindAreas?: number[]) {
     await this.editPropertyAreasBtn.click();
+    await browser.pause(500);
     await (await backendConfigurationPropertiesPage.configurePropertyAreasBtn()).click();
     await (
       await backendConfigurationPropertiesPage.editPropertyAreasViewCloseBtn()
@@ -459,6 +448,7 @@ export class PropertyRowObject {
         await (
           await $(`#checkboxAssignmentEdit${bindAreas[i]}`).$('..')
         ).click();
+        await browser.pause(100);
       }
     }
   }
@@ -482,12 +472,12 @@ export class PropertyRowObject {
 
   public async getBindAreas() {
     await this.openBindPropertyWithAreasModal();
-    const checkboxes = await $$(`[id^="checkboxAssignmentEdit"]`);
+    await browser.pause(500);
+    const checkboxes = await $$(`mat-checkbox-input`);
     let mas = [];
     for (let i = 0; i < checkboxes.length; i++) {
-      mas = [...mas, !!(await (await checkboxes[i]).getValue())];
+      mas = [...mas, !!(await (await checkboxes[i]).getAttribute('aria-checked'))];
     }
-    await this.closeBindPropertyWithAreasModal(true);
     return mas;
   }
 
@@ -497,6 +487,7 @@ export class PropertyRowObject {
     await (
       await backendConfigurationPropertiesPage.configurePropertyAreasBtn()
     )
+    await browser.pause(500);
     await (
       await backendConfigurationPropertiesPage.navigateToPropertyArea(
         indexAreaForClick
@@ -504,6 +495,7 @@ export class PropertyRowObject {
     ).click();
 
     await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
+    await browser.pause(500);
   }
 
   public async closeAreasViewModal() {

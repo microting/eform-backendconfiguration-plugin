@@ -1,7 +1,6 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { CompliancesContainerComponent } from './components';
-import {AreaRulesContainerComponent} from 'src/app/plugins/modules/backend-configuration-pn/modules/area-rules/components';
+import {NgModule} from '@angular/core';
+import {RouterModule, Routes} from '@angular/router';
+import {CompliancesContainerComponent} from './components';
 
 export const routes: Routes = [
   {
@@ -25,4 +24,5 @@ export const routes: Routes = [
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
-export class CompliancesRouting {}
+export class CompliancesRouting {
+}

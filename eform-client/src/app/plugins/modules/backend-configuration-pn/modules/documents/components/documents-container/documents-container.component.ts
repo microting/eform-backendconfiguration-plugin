@@ -1,19 +1,23 @@
-import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {
-  DocumentsDocumentCreateComponent, DocumentsDocumentEditComponent,
+  DocumentsDocumentCreateComponent,
+  DocumentsDocumentDeleteComponent,
+  DocumentsDocumentEditComponent,
   DocumentsFoldersComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/components';
-import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+} from '../';
 import {
   DocumentFolderModel,
-  DocumentFolderRequestModel,
-  DocumentModel,
-  DocumentsRequestModel, PropertyModel
-} from 'src/app/plugins/modules/backend-configuration-pn/models';
+  DocumentModel, DocumentSimpleFolderModel,
+} from '../../../../models';
 import {Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
-import {Subscription} from "rxjs";
-import {DocumentsStateService} from "src/app/plugins/modules/backend-configuration-pn/modules/documents/store";
+import {Subscription} from 'rxjs';
+import {DocumentsStateService} from '../../../documents/store';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {applicationLanguagesTranslated} from "src/app/common/const";
+import {BackendConfigurationPnDocumentsService} from "src/app/plugins/modules/backend-configuration-pn/services";
 
 @Component({
   selector: 'app-documents-container',
@@ -21,17 +25,26 @@ import {DocumentsStateService} from "src/app/plugins/modules/backend-configurati
   styleUrls: ['./documents-container.component.scss'],
 })
 export class DocumentsContainerComponent implements OnInit, OnDestroy {
-  @ViewChild('manageFoldersModal') manageFoldersModal: DocumentsFoldersComponent;
-  @ViewChild('createDocumentModal') createDocumentModal: DocumentsDocumentCreateComponent;
-  @ViewChild('editDocumentModal') editDocumentModal: DocumentsDocumentEditComponent;
-  @ViewChild('deleteDocumentModal') deleteDocumentModal: DocumentsDocumentEditComponent;
-  folders: Paged<DocumentFolderModel>;
-  documents: Paged<DocumentModel>;
-  subscription: Subscription;
+  folders: DocumentSimpleFolderModel[];
+  documents: Paged<DocumentModel> = new Paged<DocumentModel>();
+  getFoldersSub$: Subscription;
+  documentDeletedSub$: Subscription;
+  documentUpdatedSub$: Subscription;
+  documentCreatedSub$: Subscription;
+  folderManageModalClosedSub$: Subscription;
+  getDocumentsSub$: Subscription;
+  selectedLanguage: number;
 
   constructor(
+    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
+    public dialog: MatDialog,
+    private overlay: Overlay,
     public documentsStateService: DocumentsStateService,
-    public localeService: LocaleService) {}
+    public localeService: LocaleService) {
+    this.selectedLanguage = applicationLanguagesTranslated.find(
+      (x) => x.locale === localeService.getCurrentUserLocale()
+    ).id;
+  }
 
   ngOnInit(): void {
     //this.getFolders();
@@ -41,34 +54,86 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   openCreateModal() {
-    this.createDocumentModal.show();
+    const createDocumentModal = this.dialog.open(DocumentsDocumentCreateComponent, {...dialogConfigHelper(this.overlay), minWidth: 500});
+    this.documentCreatedSub$ = createDocumentModal.componentInstance.documentCreated.subscribe(() => {
+      this.updateTable();
+    });
   }
+
   openManageFoldersModal() {
-    this.manageFoldersModal.show();
+    const manageFoldersModal = this.dialog.open(DocumentsFoldersComponent, {...dialogConfigHelper(this.overlay)});
+    this.folderManageModalClosedSub$ = manageFoldersModal.componentInstance.foldersChanged.subscribe(() => {
+      this.getFolders();
+    });
   }
 
   showEditDocumentModal(documentModel: DocumentModel) {
-    this.editDocumentModal.show(documentModel);
+    const editDocumentModal = this.dialog.open(DocumentsDocumentEditComponent, {...dialogConfigHelper(this.overlay, documentModel)});
+    this.documentUpdatedSub$ = editDocumentModal.componentInstance.documentUpdated.subscribe(() => {
+      this.updateTable();
+    });
   }
 
   showDeleteDocumentModal(documentModel: DocumentModel) {
-    this.deleteDocumentModal.show(documentModel);
+    const deleteDocument = this.dialog.open(DocumentsDocumentDeleteComponent, {...dialogConfigHelper(this.overlay, documentModel)});
+    this.documentDeletedSub$ = deleteDocument.componentInstance.documentDeleted.subscribe(() => {
+      this.updateTable();
+    });
+  }
+
+  // getFolders() {
+  //   this.getFoldersSub$ = this.documentsStateService
+  //     .getFolders()
+  //     .subscribe((data) => {
+  //       if (data && data.success && data.model) {
+  //         this.folders = data.model;
+  //         this.updateTable();
+  //       }
+  //     });
+  // }
+
+  getFolders() {
+    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
+      if (data && data.success) {
+        this.folders = data.model;
+        this.documentsStateService.getDocuments().subscribe((data) => {
+          if (data && data.success && data.model) {
+            this.documents = data.model;
+          }
+        });
+      }
+    });
   }
 
 
   updateTable() {
-     this.subscription = this.documentsStateService
-       .getFolders()
-       .subscribe((data) => {
-         if (data && data.success && data.model) {
-           this.folders = data.model;
-           this.documentsStateService.getDocuments().subscribe((data) => {
-              if (data && data.success && data.model) {
-                this.documents = data.model;
-              }
-           });
-    //       this.workOrderCases = data.model;
-         }
-       });
+    this.getFolders();
+    // this.getDocumentsSub$ = this.documentsStateService.getDocuments().subscribe((data) => {
+    //   if (data && data.success && data.model) {
+    //     this.documents = data.model;
+    //   }
+    // });
+    // this.getDocumentsSub$ = this.documentsStateService
+    //   .getFolders()
+    //   .subscribe((data) => {
+    //     if (data && data.success && data.model) {
+    //       this.folders = data.model;
+    //
+    //       //       this.workOrderCases = data.model;
+    //     }
+    //   });
+  }
+
+  getDocumentsByFolderId(folderId: number) {
+    return this.documents.entities.filter(x => x.folderId === folderId);
+  }
+
+  getFolderTranslation(folder: DocumentFolderModel) {
+    if(folder.documentFolderTranslations[0].name) {
+      return folder.documentFolderTranslations[0].name;
+    } else if(folder.documentFolderTranslations.some(x => x.name)) {
+      return folder.documentFolderTranslations.filter(x => x.name)[0].name
+    }
+    return '';
   }
 }

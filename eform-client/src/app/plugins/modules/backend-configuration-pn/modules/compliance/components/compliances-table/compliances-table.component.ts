@@ -1,17 +1,20 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-} from '@angular/core';
-import { TableHeaderElementModel } from 'src/app/common/models';
-import { CompliancesModel } from '../../../../models';
-import { PropertyCompliancesColorBadgesEnum } from '../../../../enums';
-import * as R from 'ramda';
-import { CompliancesStateService } from '../store';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output,} from '@angular/core';
+import {ComplianceModel, ReportEformItemModel} from '../../../../models';
+import {PropertyCompliancesColorBadgesEnum} from '../../../../enums';
+import {CompliancesStateService} from '../store';
 import {AuthStateService} from 'src/app/common/store';
+import {Sort} from '@angular/material/sort';
+import {TranslateService} from '@ngx-translate/core';
+import {MtxGridColumn} from '@ng-matero/extensions/grid';
+import {ActivatedRoute, Router} from '@angular/router';
+import {CaseDeleteComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {
+  ComplianceDeleteComponent
+} from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components/compliance-delete/compliance-delete.component';
+import {Subscription} from 'rxjs';
 
 @Component({
   selector: 'app-compliances-table',
@@ -20,27 +23,140 @@ import {AuthStateService} from 'src/app/common/store';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CompliancesTableComponent implements OnInit {
-  tableHeaders: TableHeaderElementModel[] = [
-    { name: 'Id', sortable: false },
-    { name: 'Deadline', sortable: false },
-    { name: 'ControlArea', visibleName: 'areas', sortable: false },
-    { name: 'Task', sortable: false },
-    { name: 'Responsible', visibleName: 'Assigned to', sortable: false },
-    // { name: 'Compliance', sortable: true },
-    { name: 'Actions', elementId: '', sortable: false },
+  mergedTableHeaders: MtxGridColumn[] = [];
+  @Output() complianceDeleted: EventEmitter<void> = new EventEmitter<void>();
+
+  complianceDeleteComponentAfterClosedSub$: Subscription;
+  tableHeaders: MtxGridColumn[] = [
+    {header: this.translateService.stream('Id'), field: 'id'},
+    {
+      header: this.translateService.stream('Deadline'),
+      field: 'deadline',
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y'},
+    },
+    {header: this.translateService.stream('areas'), field: 'controlArea'},
+    {header: this.translateService.stream('Task'), field: 'itemName'},
+    {
+      header: this.translateService.stream('Responsible'),
+      field: 'responsible',
+      formatter: (record: ComplianceModel) => record.responsible
+        .map(responsible => `<span>${responsible.value}<small class="text-accent"> (${responsible.key})</small></span><br/>`)
+        .toString()
+        // @ts-ignore
+        .replaceAll(',', ''),
+    },
+    {
+      header: this.translateService.stream('Actions'),
+      field: 'actions',
+      type: 'button',
+      buttons: [
+        {
+          type: 'icon',
+          tooltip:  this.translateService.stream('Edit Case'),
+          icon: 'edit',
+          iif: (record: ComplianceModel) => this.canEdit(record.deadline),
+          click: (record: ComplianceModel) =>
+            this.router.navigate([
+              '/plugins/backend-configuration-pn/compliances/case/',
+              record.caseId,
+              record.eformId,
+              this.propertyId,
+              record.deadline,
+              (this.isComplianceThirtyDays === undefined ? 'false' : 'true'),
+              record.id
+            ], {relativeTo: this.route}),
+        }
+      ]
+    },
   ];
-  @Input() compliances: CompliancesModel[];
+  adminTableHeaders: MtxGridColumn[] = [
+    {header: this.translateService.stream('Id'), field: 'id'},
+    {
+      header: this.translateService.stream('Deadline'),
+      field: 'deadline',
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y'},
+    },
+    {header: this.translateService.stream('areas'), field: 'controlArea'},
+    {header: this.translateService.stream('Task'), field: 'itemName'},
+    {
+      header: this.translateService.stream('Responsible'),
+      field: 'responsible',
+      formatter: (record: ComplianceModel) => record.responsible
+        .map(responsible => `<span>${responsible.value}<small class="text-accent"> (${responsible.key})</small></span><br/>`)
+        .toString()
+        // @ts-ignore
+        .replaceAll(',', ''),
+    },
+    {
+      header: this.translateService.stream('Actions'),
+      field: 'actions',
+      type: 'button',
+      buttons: [
+        {
+          type: 'icon',
+          tooltip:  this.translateService.stream('Edit Case'),
+          icon: 'edit',
+          iif: (record: ComplianceModel) => this.canEdit(record.deadline),
+          click: (record: ComplianceModel) =>
+            this.router.navigate([
+              '/plugins/backend-configuration-pn/compliances/case/',
+              record.caseId,
+              record.eformId,
+              this.propertyId,
+              record.deadline,
+              (this.isComplianceThirtyDays === undefined ? 'false' : 'true'),
+              record.id
+            ], {relativeTo: this.route}),
+        },
+        {
+          type: 'icon',
+          tooltip:  this.translateService.stream('Delete Case'),
+          icon: 'delete',
+          color: 'warn',
+          iif: (record: ComplianceModel) => this.canEdit(record.deadline),
+          click: (record: ReportEformItemModel) => this.onShowDeleteComplianceModal(record),
+        }
+      ]
+    },
+  ];
+  @Input() complianceList: ComplianceModel[];
   @Input() propertyId: number;
   @Input() isComplianceThirtyDays: boolean;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
 
-  constructor(public compliancesStateService: CompliancesStateService,
-  public authStateService: AuthStateService) {}
+  constructor(
+    public compliancesStateService: CompliancesStateService,
+    public authStateService: AuthStateService,
+    private translateService: TranslateService,
+    private router: Router,
+    private dialog: MatDialog,
+    private overlay: Overlay,
+    private route: ActivatedRoute,
+  ) {
+  }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    if (this.authStateService.isAdmin) {
+      this.mergedTableHeaders = this.adminTableHeaders;
+    } else {
+      this.mergedTableHeaders = this.tableHeaders;
+    }
+  }
 
   getColorBadge(compliance: PropertyCompliancesColorBadgesEnum): string {
     switch (compliance) {
+      case PropertyCompliancesColorBadgesEnum.Success:
+        return 'primary';
+      case PropertyCompliancesColorBadgesEnum.Danger:
+        return 'accent';
+      case PropertyCompliancesColorBadgesEnum.Warning:
+        return 'warn';
+      default:
+        return 'primary';
+    }
+    /*switch (compliance) {
       case PropertyCompliancesColorBadgesEnum.Success:
         return 'bg-success';
       case PropertyCompliancesColorBadgesEnum.Danger:
@@ -49,15 +165,32 @@ export class CompliancesTableComponent implements OnInit {
         return 'bg-warning';
       default:
         return 'bg-success';
-    }
+    }*/
   }
 
-  getResponsibles(responsibles: string[]) {
-    return responsibles;
+  getResponsibles(responsible: string[]) {
+    return responsible;
   }
 
-  sortTable(sort: string) {
-    this.compliancesStateService.onSortTable(sort);
+  sortTable(sort: Sort) {
+    this.compliancesStateService.onSortTable(sort.active);
     this.updateTable.emit();
   }
+
+  canEdit(date: Date): boolean {
+    const today = new Date();
+    const deadline = new Date(date);
+    return deadline < today;
+  }
+
+  onShowDeleteComplianceModal(item: ReportEformItemModel) {
+    this.complianceDeleteComponentAfterClosedSub$ = this.dialog.open(ComplianceDeleteComponent,
+      {...dialogConfigHelper(this.overlay, item)})
+      .afterClosed().subscribe(data => data ? this.onComplianceDeleted() : undefined);
+  }
+
+  onComplianceDeleted() {
+    this.complianceDeleted.emit();
+  }
+
 }

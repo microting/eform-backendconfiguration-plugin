@@ -1,5 +1,5 @@
 import {AreaRuleT2AlarmsEnum, AreaRuleT2TypesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
-import {AdvEntitySearchableItemModel, AdvEntitySelectableItemModel} from 'src/app/common/models';
+import {EntityItemModel} from 'src/app/common/models';
 
 export class AreaRulePlanningModel {
   ruleId: number;
@@ -10,12 +10,13 @@ export class AreaRulePlanningModel {
   propertyId: number;
   typeSpecificFields: TypeSpecificFieldsAreaRulePlanning;
   complianceEnabled: boolean;
-  entityItemsListForCreate: Array<AdvEntitySelectableItemModel | AdvEntitySearchableItemModel> = [];
+  entityItemsListForCreate: Array<EntityItemModel> = [];
 }
 
 export class AreaRuleAssignedSitesModel {
   siteId: number;
   checked: boolean;
+  status: number;
 }
 
 export class TypeSpecificFieldsAreaRulePlanning {

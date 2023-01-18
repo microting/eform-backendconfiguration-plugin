@@ -110,5 +110,13 @@ export const enUS = {
   '49th week': '49th week',
   '50th week': '50th week',
   '51st week': '51st week',
-  '52nd week': '52nd week'
+  '52nd week': '52nd week',
+  'Timeregistration enabled': 'Timeregistration enabled',
+  'Task management enabled': 'Task management enabled',
+  'Select worker': 'Select worker',
+  'Saved locally': 'Saved locally',
+  'Ready for server': 'Ready for server',
+  'Received by server': 'Received by server',
+  'Retrieved by device': 'Retrieved by device',
+  'System error: Contact Microting': 'System error: Contact Microting',
 };

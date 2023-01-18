@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {CommonDictionaryModel, OperationDataResult, OperationResult, SharedTagModel,} from 'src/app/common/models';
 import { ApiBaseService } from 'src/app/common/services';
-import {ItemsPlanningPnPlanningsMethods, ItemsPlanningTagsMethods} from 'src/app/plugins/modules/items-planning-pn/services';
 import {ReportEformPnModel, ReportPnGenerateModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 
 

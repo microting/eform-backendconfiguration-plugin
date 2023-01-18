@@ -2,16 +2,15 @@ import {
   Component,
   EventEmitter,
   OnInit,
-  Output,
-  ViewChild,
 } from '@angular/core';
-import {FolderCreateModel, FolderDto, SharedTagCreateModel} from 'src/app/common/models';
-import {applicationLanguages, applicationLanguagesTranslated} from 'src/app/common/const';
-import {FoldersService, LocaleService} from 'src/app/common/services';
+import {FolderCreateModel, FolderDto,} from 'src/app/common/models';
+import {applicationLanguages2} from 'src/app/common/const';
+import {LocaleService} from 'src/app/common/services';
 import {ToastrService} from 'ngx-toastr';
 import {TranslateService} from '@ngx-translate/core';
-import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
-import {DocumentFolderModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {BackendConfigurationPnDocumentsService} from '../../../../../services';
+import {DocumentFolderModel} from '../../../../../models';
+import {MatDialogRef} from '@angular/material/dialog';
 
 @Component({
   selector: 'app-documents-folder-create',
@@ -19,12 +18,7 @@ import {DocumentFolderModel} from 'src/app/plugins/modules/backend-configuration
   styleUrls: ['./documents-folder-create.component.scss']
 })
 export class DocumentsFolderCreateComponent implements OnInit {
-  @ViewChild('frame') frame;
-  @Output() folderCreate: EventEmitter<DocumentFolderModel> = new EventEmitter<
-    DocumentFolderModel
-  >();
-  @Output() folderCreated: EventEmitter<void> = new EventEmitter<void>();
-  @Output() folderCreateCancelled: EventEmitter<void> = new EventEmitter<void>();
+  folderCreate: EventEmitter<void> = new EventEmitter<void>();
   name = '';
   selectedParentFolder: FolderDto;
   newFolderModel: FolderCreateModel = new FolderCreateModel();
@@ -32,29 +26,28 @@ export class DocumentsFolderCreateComponent implements OnInit {
   selectedLanguage: number;
 
   get languages() {
-    return applicationLanguagesTranslated;
+    return applicationLanguages2;
   }
 
   constructor(
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     private toastrService: ToastrService,
     private translateService: TranslateService,
-    localeService: LocaleService) {
-    this.selectedLanguage = applicationLanguagesTranslated.find(
+    localeService: LocaleService,
+    public dialogRef: MatDialogRef<DocumentsFolderCreateComponent>,
+  ) {
+    this.selectedLanguage = applicationLanguages2.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
   }
 
-  ngOnInit() {}
-
-  show() {
+  ngOnInit() {
     this.initCreateForm();
-    this.frame.show();
   }
 
   initCreateForm() {
     this.newFolderModel = new FolderCreateModel();
-    for (const language of applicationLanguagesTranslated) {
+    for (const language of applicationLanguages2) {
       this.newFolderModel = {
         ...this.newFolderModel,
         translations: [
@@ -66,27 +59,13 @@ export class DocumentsFolderCreateComponent implements OnInit {
   }
 
   hide() {
-    this.frame.hide();
-    this.name = '';
-  }
-
-  createItem() {
-    // this.tagCreate.emit({ name: this.name } as SharedTagCreateModel);
-    this.name = '';
-  }
-
-  cancelCreate() {
-    this.frame.hide();
-    this.folderCreateCancelled.emit();
+    this.dialogRef.close();
     this.name = '';
   }
 
   createFolder() {
     // Validate if at least one translation is filled correctly
-    const translationExists = this.newFolderModel.translations.find(
-      (x) => x.name
-    );
-    if (translationExists) {
+    if (this.newFolderModel.translations.some(x => x.name)) {
       this.backendConfigurationPnDocumentsService
         .createFolder({
           documentFolderTranslations: this.newFolderModel.translations
@@ -95,9 +74,7 @@ export class DocumentsFolderCreateComponent implements OnInit {
           if (data && data.success) {
             this.selectedParentFolder = null;
             this.initCreateForm();
-            this.folderCreated.emit();
-            this.frame.hide();
-            this.folderCreate.emit(data.model);
+            this.folderCreate.emit();
           }
         });
     } else {

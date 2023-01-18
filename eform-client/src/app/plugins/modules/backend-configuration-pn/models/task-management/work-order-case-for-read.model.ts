@@ -5,4 +5,6 @@ export class WorkOrderCaseForReadModel {
   assignedSiteId: number;
   pictureNames: string[];
   description: string;
+  priority: string;
+  caseStatusEnum: number;
 }

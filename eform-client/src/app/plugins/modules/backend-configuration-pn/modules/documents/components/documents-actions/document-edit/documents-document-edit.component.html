@@ -1,228 +1,131 @@
-<div
-  [config]="{ ignoreBackdropClick: true }"
-  mdbModal
-  class="modal fade"
-  #frame="mdbModal"
->
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <!--        <h3 *ngIf="selectedParentFolder">-->
-        <!--          {{ 'Create Nested Folder' | translate }}-->
-        <!--        </h3>-->
-        <h3>{{ 'Edit document' | translate }}</h3>
-        <button class="close" data-dismiss="modal" (click)="hide()">
-          <span>×</span>
-        </button>
+<h3 mat-dialog-title>{{'Edit document' | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column">
+  <mat-card class="mb-3">
+    <mat-card-content *ngIf="folders !== undefined">
+      <div class="d-flex flex-column">
+        <mat-slide-toggle
+          id="planAreaRuleStatusToggle"
+          [(ngModel)]="newDocumentModel.status"
+        >
+          {{ 'Enabled' | translate }}
+        </mat-slide-toggle>
+        <mat-form-field>
+          <mat-label>{{'Selected folder' | translate}}</mat-label>
+          <mtx-select
+            class="custom"
+            dropdownPosition="bottom"
+            [clearable]="false"
+            [bindLabel]="'name'"
+            [bindValue]="'id'"
+            [(ngModel)]="selectedFolder"
+            id="createLanguageSelector"
+            [items]="folders"
+          >
+          </mtx-select>
+        </mat-form-field>
       </div>
-      <div class="modal-body">
-        <mdb-card class="mb-3">
-          <mdb-card-body *ngIf="folders !== undefined">
-            <div class="row">
-              <div class="col-md-12">
-                <div class="custom-control custom-switch">
-                  <input
-                    type="checkbox"
-                    id="planAreaRuleStatusToggle"
-                    [value]="newDocumentModel.status"
-                    [checked]="newDocumentModel.status"
-                    [(ngModel)]="newDocumentModel.status"
-                    class="custom-control-input"
-                  />
-                  <label
-                    for="planAreaRuleStatusToggle"
-                    class="custom-control-label"
-                  >{{ 'Enabled' | translate }}</label
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="ng-select-wrapper col-md-12">
-                <ng-select
-                  class="custom"
-                  dropdownPosition="'bottom'"
-                  [placeholder]="'Selected folder' | translate"
-                  [clearable]="false"
-                  [bindLabel]="'name'"
-                  [bindValue]="'id'"
-                  [(ngModel)]="selectedFolder"
-                  id="createLanguageSelector"
-                  [items]="folders"
-                ></ng-select>
-              </div>
-            </div>
-          </mdb-card-body>
-        </mdb-card>
-        <mdb-card class="mb-3">
-          <mdb-card-body *ngIf="availableProperties !== undefined && newDocumentModel !== undefined">
-            <div class="row">
-              <div class="col-12">
-                <p>
-                  {{ 'Assign to property' | translate }}
-                </p>
-              </div>
-            </div>
-            <div class="row">
-              <ng-container *ngFor="let property of availableProperties; let propertyIndex = index">
-                <div class="col-md-6">
-                  <div class="mat-checkbox">
-                    <input
-                      id="property{{ propertyIndex }}{{newDocumentModel.id}}"
-                      (change)="
-                          addToArray(
-                            $event,
-                            getAssignmentByPropertyId(property.id).propertyId
-                          )
-                        "
-                      [checked]="
-                          getAssignmentIsCheckedByPropertyId(property.id)
-                        "
-                      [value]="
-                          getAssignmentIsCheckedByPropertyId(property.id)
-                        "
-                      type="checkbox"
-                      color="primary"
-                    />
-                    <label for="property{{ propertyIndex }}{{newDocumentModel.id}}">
-                      {{ property.name }}
-                    </label>
-                  </div>
-                </div>
-              </ng-container>
-            </div>
-          </mdb-card-body>
-        </mdb-card>
-        <mdb-card>
-          <mdb-card-body>
-            <ng-container
-              *ngFor="
-                let translation of newDocumentModel.documentTranslations;
-                let translationIndex = index
-              "
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="mb-3">
+    <mat-card-title>{{ 'Assign to property' | translate }}</mat-card-title>
+    <mat-card-content *ngIf="availableProperties !== undefined">
+      <div class="d-grid grid-2-columns">
+        <ng-container *ngFor="let property of availableProperties; let propertyIndex = index; last as isLast">
+          <mat-checkbox
+            (ngModelChange)="addToArray($event, getAssignmentByPropertyId(property.id).propertyId)"
+            [ngModel]="getAssignmentIsCheckedByPropertyId(property.id)"
+            [class.mb-2]="availableProperties.length > 2 && !isLast && propertyIndex != availableProperties.length - 2"
+          >
+            {{ property.name }}
+          </mat-checkbox>
+        </ng-container>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="mb-3" *ngFor="let translation of newDocumentModel.documentTranslations; let translationIndex = index">
+    <ng-container *ngIf="languages[translationIndex] !== undefined">
+      <mat-card-title>{{ languages[translationIndex].text }}</mat-card-title>
+      <mat-card-content class="d-flex flex-column need-wrapper">
+        <mat-form-field>
+          <mat-label>{{'Name' | translate}}</mat-label>
+          <input
+            matInput
+            type="text"
+            id="createFolderNameTranslation_{{ translationIndex }}"
+            name="createFolderNameTranslation_{{translationIndex}}"
+            [(ngModel)]="translation.name"
+          />
+        </mat-form-field>
+        <formatting-text-editor
+          [(value)]="translation.description"
+          [placeholder]="'Description' | translate"
+          id="createFolderDescriptionTranslation_{{translationIndex}}"
+        >
+        </formatting-text-editor>
+        <div class="mt-3">
+          <input
+            type="file"
+            hidden
+            [accept]="'application/pdf'"
+            (change)="onFileSelected($event, languages[translationIndex].id)"
+            id="pdfInput{{ translationIndex }}"
+            #fileUpload
+          />
+          <div>{{getFileNameByLanguage(languages[translationIndex].id) || 'No file uploaded yet.' | translate}}
+            <button
+              mat-raised-button
+              color="accent"
+              (click)="fileUpload.click()"
             >
-              <!--              <ng-container *ngIf="selectedLanguage === translation.languageId">-->
-              <div class="row">
-                <div class="col-12">
-                  <p>
-                    {{ languages[translationIndex].text }}
-                  </p>
-                  <div class="md-form">
-                    <input
-                      mdbInput
-                      type="text"
-                      id="createFolderNameTranslation_{{ translationIndex }}"
-                      name="createFolderNameTranslation_{{
-                          translationIndex
-                        }}"
-                      [(ngModel)]="translation.name"
-                      class="form-control"
-                    />
-                    <label
-                      for="createFolderNameTranslation_{{ translationIndex }}"
-                    >
-                      {{ 'Name' | translate }}
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-12">
-                  <formatting-text-editor
-                    [(value)]="translation.description"
-                    [placeholder]="'Description' | translate"
-                    id="createFolderDescriptionTranslation_{{
-                        translationIndex
-                      }}"
-                  >
-                  </formatting-text-editor>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-12">
-                  <div class="md-form">
-                    <input
-                      type="file"
-                      hidden
-                      [accept]="'application/pdf'"
-                      (change)="onFileSelected($event, languages[translationIndex].id)"
-                      id="pdfInput{{ translationIndex }}"
-                      #fileUpload
-                    />
-                    <div>
-                      {{
-                      getFileNameByLanguage(languages[translationIndex].id) ||
-                      'No file uploaded yet.' | translate
-                      }}
-                      <button
-                        mdbBtn
-                        class="btn-primary btn-small-height"
-                        (click)="fileUpload.click()"
-                      >
-                        {{ 'Upload' | translate }}
-                      </button>
-                      <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id) !== null">
-                        <button
-                          mdbBtn
-                          class="btn-success btn-icon mb-2"
-                          (click)="getPdf(languages[translationIndex].id)"
-                          mdbTooltip="{{ 'Show PDF' | translate }}"
-                        >
-                          <fa-icon icon="file-pdf" size="lg" [fixedWidth]="true"></fa-icon>
-                        </button>
-                      </ng-container>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!--              </ng-container>-->
+              {{ 'Upload' | translate }}
+            </button>
+            <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id)">
+              <button
+                mat-icon-button
+                color="accent"
+                (click)="getPdf(languages[translationIndex].id)"
+                matTooltip="{{ 'Show PDF' | translate }}"
+              >
+                <mat-icon svgIcon="file-pdf"></mat-icon>
+              </button>
             </ng-container>
-          </mdb-card-body>
-        </mdb-card>
-        <br>
-        <mdb-card class="mb-3">
-          <mdb-card-body>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="md-form" [owlDateTimeTrigger]="dt2">
-                  <input
-                    mdbInput
-                    [owlDateTime]="dt2"
-                    [ngModel]="newDocumentModel.endDate"
-                    (ngModelChange)="updateStartDate($event)"
-                    type="text"
-                    id="createStartFrom"
-                    name="createStartFrom"
-                    class="form-control"
-                  />
-                  <owl-date-time [pickerType]="'calendar'" #dt2></owl-date-time>
-                  <label for="createStartFrom">{{
-                    'End date' | translate
-                    }}</label>
-                </div>
-              </div>
-            </div>
-          </mdb-card-body>
-        </mdb-card>
-      </div>
-      <div class="modal-footer">
-        <button
-          mdbBtn
-          class="btn-success btn-small-height"
-          id="folderSaveBtn"
-          (click)="updateDocument()"
-        >
-          {{ 'Update' | translate }}
-        </button>
-        <button
-          mdbBtn
-          class="btn-accent text-black-50 btn-small-height"
-          id="cancelCreateBtn"
-          (click)="cancelCreate()"
-        >
-          {{ 'Cancel' | translate }}
-        </button>
-      </div>
-    </div>
-  </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </ng-container>
+  </mat-card>
+  <mat-card class="mb-3">
+    <mat-card-content>
+      <mat-form-field  [owlDateTimeTrigger]="dt1">
+        <mat-label>{{'End date' | translate}}</mat-label>
+        <input
+          matInput
+          [owlDateTime]="dt1"
+          [ngModel]="newDocumentModel.endDate"
+          (ngModelChange)="updateStartDate($event)"
+          type="text"
+          id="createStartFrom"
+          name="createStartFrom"
+        />
+        <owl-date-time [pickerType]="'calendar'" #dt1></owl-date-time>
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="folderSaveBtn"
+    (click)="updateDocument()"
+  >
+    {{ 'Update' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelCreateBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
 </div>

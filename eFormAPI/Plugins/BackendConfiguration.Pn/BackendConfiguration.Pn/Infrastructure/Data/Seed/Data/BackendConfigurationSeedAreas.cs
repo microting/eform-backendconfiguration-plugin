@@ -43,7 +43,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         // Name = "01. Registreringer til Miljøledelse",
-                        Name = "01. Fokusområder Miljøledelse",
+                        Name = "01. Logbøger Miljøledelse",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 1,
                         InfoBox = "Et fokusområde pr. linje",
@@ -52,7 +52,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "01. Focus areas Environmental management",
+                        Name = "01. Log books Environmental management",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 2,
                         InfoBox = "An area of focus per line",
@@ -61,7 +61,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     },
                     new()
                     {
-                        Name = "01. Schwerpunkte Umweltverwaltung",
+                        Name = "01. Logbücher Umweltmanagement",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.3xleju932igg",
                         LanguageId = 3,
                         InfoBox = "Ein Fokusområde pro Zeile",
@@ -69,14 +69,14 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         NewItemName = "Neues Fokusområde"
                     }
                 },
-                AreaInitialField = new AreaInitialField
-                {
-                    EformName = "01. Vandforbrug",
-                    RepeatEvery = 1, // one
-                    RepeatType = 3, // month
-                    Notifications = true,
-                    ComplianceEnabled = true,
-                }
+                // AreaInitialField = new AreaInitialField
+                // {
+                //     EformName = "01. Vandforbrug",
+                //     RepeatEvery = 1, // one
+                //     RepeatType = 3, // month
+                //     Notifications = true,
+                //     ComplianceEnabled = true,
+                // }
             },
             new Area
             {
@@ -1020,47 +1020,47 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = true,
                 },
             },
-            new Area
-            {
-                Id = 23,
-                Type = AreaTypesEnum.Type7,
-                AreaTranslations = new List<AreaTranslation>
-                {
-                    new()
-                    {
-                        Name = "23. IE-indberetning (Gammel)", // todo need beter translate
-                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-                        LanguageId = 1,// da
-                        InfoBox = "Se krav i Miljøgodkendelse",
-                        Placeholder = "",
-                        NewItemName = "Vælg indberetningsområder"
-                    },
-                    new()
-                    {
-                        Name = "23. IE Reporting (Old)",
-                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-                        LanguageId = 2,// en
-                        InfoBox = "See requirements in Environment Approval",
-                        Placeholder = "",
-                        NewItemName = "Choose reporting areas"
-                    },
-                    new()
-                    {
-                        Name = "23. IE-Berichterstattung (Alt)", // todo need beter translate
-                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-                        LanguageId = 3,// ge
-                        InfoBox = "Siehe Anforderungen in Umweltzulassung",
-                        Placeholder = "",
-                        NewItemName = "Berichtsgebiete auswählen"
-                    }
-                },
-                AreaInitialField = new AreaInitialField
-                {
-                    Notifications = true,
-                    RepeatType = 1, // days
-                    ComplianceEnabled = true,
-                },
-            },
+            // new Area
+            // {
+            //     Id = 23,
+            //     Type = AreaTypesEnum.Type7,
+            //     AreaTranslations = new List<AreaTranslation>
+            //     {
+            //         new()
+            //         {
+            //             Name = "23. IE-indberetning (Gammel)", // todo need beter translate
+            //             Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+            //             LanguageId = 1,// da
+            //             InfoBox = "Se krav i Miljøgodkendelse",
+            //             Placeholder = "",
+            //             NewItemName = "Vælg indberetningsområder"
+            //         },
+            //         new()
+            //         {
+            //             Name = "23. IE Reporting (Old)",
+            //             Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+            //             LanguageId = 2,// en
+            //             InfoBox = "See requirements in Environment Approval",
+            //             Placeholder = "",
+            //             NewItemName = "Choose reporting areas"
+            //         },
+            //         new()
+            //         {
+            //             Name = "23. IE-Berichterstattung (Alt)", // todo need beter translate
+            //             Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+            //             LanguageId = 3,// ge
+            //             InfoBox = "Siehe Anforderungen in Umweltzulassung",
+            //             Placeholder = "",
+            //             NewItemName = "Berichtsgebiete auswählen"
+            //         }
+            //     },
+            //     AreaInitialField = new AreaInitialField
+            //     {
+            //         Notifications = true,
+            //         RepeatType = 1, // days
+            //         ComplianceEnabled = true,
+            //     },
+            // },
             new Area
             {
                 Id = 27,
@@ -1070,8 +1070,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "24. IE-indberetning", // todo need beter translate
-                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-                        LanguageId = 1,// da
+                        Description =
+                            "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 1, // da
                         InfoBox = "Se krav i Miljøgodkendelse",
                         Placeholder = "",
                         NewItemName = "Vælg indberetningsområder"
@@ -1079,8 +1080,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "24. IE Reporting",
-                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-                        LanguageId = 2,// en
+                        Description =
+                            "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 2, // en
                         InfoBox = "See requirements in Environment Approval",
                         Placeholder = "",
                         NewItemName = "Choose reporting areas"
@@ -1088,8 +1090,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         Name = "24. IE-Berichterstattung", // todo need beter translate
-                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-                        LanguageId = 3,// ge
+                        Description =
+                            "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 3, // ge
                         InfoBox = "Siehe Anforderungen in Umweltzulassung",
                         Placeholder = "",
                         NewItemName = "Berichtsgebiete auswählen"
@@ -1112,7 +1115,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     {
                         Name = "25. KemiKontrol", // todo need beter translate
                         Description = "", // todo add link
-                        LanguageId = 1,// da
+                        LanguageId = 1, // da
                         InfoBox = "",
                         Placeholder = "",
                         NewItemName = ""
@@ -1121,7 +1124,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     {
                         Name = "25. Chemistry Control",
                         Description = "", // todo add link
-                        LanguageId = 2,// en
+                        LanguageId = 2, // en
                         InfoBox = "",
                         Placeholder = "",
                         NewItemName = ""
@@ -1130,7 +1133,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     {
                         Name = "25. Chemiekontrolle", // todo need beter translate
                         Description = "", // todo add link
-                        LanguageId = 3,// ge
+                        LanguageId = 3, // ge
                         InfoBox = "",
                         Placeholder = "",
                         NewItemName = ""
@@ -1153,7 +1156,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     {
                         Name = "00. Aflæsninger, målinger, forbrug og fækale uheld", // todo need beter translate
                         Description = "", // todo add link
-                        LanguageId = 1,// da
+                        LanguageId = 1, // da
                         InfoBox = "Et bassin pr linie",
                         Placeholder = "",
                         NewItemName = ""
@@ -1162,7 +1165,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     {
                         Name = "00. Readings, measurements, consumption and fecal accidents",
                         Description = "", // todo add link
-                        LanguageId = 2,// en
+                        LanguageId = 2, // en
                         InfoBox = "",
                         Placeholder = "",
                         NewItemName = ""
@@ -1171,7 +1174,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     {
                         Name = "00. Messwerte, Messungen, Verbrauch und Fäkalunfälle", // todo need beter translate
                         Description = "", // todo add link
-                        LanguageId = 3,// ge
+                        LanguageId = 3, // ge
                         InfoBox = "",
                         Placeholder = "",
                         NewItemName = ""
@@ -1187,60 +1190,104 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new Area
             {
-            Id = 30,
-            Type = AreaTypesEnum.Type1,
-            AreaTranslations = new List<AreaTranslation>
-            {
-                new()
+                Id = 30,
+                Type = AreaTypesEnum.Type1,
+                AreaTranslations = new List<AreaTranslation>
                 {
-                    Name = "26. Kornlager",
-                    Description = "",
-                    LanguageId = 1,
-                    InfoBox = "Et lager pr. linje",
-                    Placeholder = "Kornlager",
-                    NewItemName = "Nyt kornlager"
+                    new()
+                    {
+                        Name = "26. Kornlager",
+                        Description = "",
+                        LanguageId = 1,
+                        InfoBox = "Et lager pr. linje",
+                        Placeholder = "Kornlager",
+                        NewItemName = "Nyt kornlager"
+                    },
+                    new()
+                    {
+                        Name = "26. Grain store",
+                        Description = "",
+                        LanguageId = 2,
+                        InfoBox = "One warehouse per line",
+                        Placeholder = "Grain store",
+                        NewItemName = "New grain store"
+                    },
+                    new()
+                    {
+                        Name = "26. Getreidelagerung",
+                        Description = "",
+                        LanguageId = 3,
+                        InfoBox = "Nur ein Lager pro Linie",
+                        Placeholder = "Getreidelagerung",
+                        NewItemName = "Neues Getreidelagerung"
+                    }
                 },
-                new()
+                AreaInitialField = new AreaInitialField
                 {
-                    Name = "26. Grain store",
-                    Description = "",
-                    LanguageId = 2,
-                    InfoBox = "One warehouse per line",
-                    Placeholder = "Grain store",
-                    NewItemName = "New grain store"
+                    Notifications = true,
+                    EformName = "26. Kornlager",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                    DayOfWeek = 1, // monday
+                    ComplianceEnabled = true,
                 },
-                new()
-                {
-                    Name = "26. Getreidelagerung",
-                    Description = "",
-                    LanguageId = 3,
-                    InfoBox = "Nur ein Lager pro Linie",
-                    Placeholder = "Getreidelagerung",
-                    NewItemName = "Neues Getreidelagerung"
-                }
             },
-            AreaInitialField = new AreaInitialField
+            new Area
             {
-                Notifications = true,
-                EformName = "26. Kornlager",
-                RepeatEvery = 12, // 12
-                RepeatType = 3, // month
-                DayOfWeek = 1, // monday
-                ComplianceEnabled = true,
+                Id = 31,
+                Type = AreaTypesEnum.Type1,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "00. Logbøger",
+                        Description = "",
+                        LanguageId = 1,
+                        InfoBox = "Et fokusområde pr. linje",
+                        Placeholder = "Fokusområde",
+                        NewItemName = "Nyt fokusområde"
+                    },
+                    new()
+                    {
+                        Name = "01. Log books",
+                        Description = "",
+                        LanguageId = 2,
+                        InfoBox = "An area of focus per line",
+                        Placeholder = "Area of focus",
+                        NewItemName = "New area of focus"
+                    },
+                    new()
+                    {
+                        Name = "01. Logbücher",
+                        Description = "",
+                        LanguageId = 3,
+                        InfoBox = "Ein Fokusområde pro Zeile",
+                        Placeholder = "Fokusbereich",
+                        NewItemName = "Neues Fokusområde"
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    EformName = "",
+                    RepeatEvery = 12, // 12
+                    RepeatType = 3, // month
+                    DayOfWeek = 1, // monday
+                    ComplianceEnabled = true,
+                },
             },
-        },
         };
 
         public static List<AreaRule> AreaRules => new()
         {
             new()
             {
-                EformName = "01. Vandforbrug",
+                EformName = "1.1 Aflæsning vand",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "01. Vandforbrug" }, // da
-                    new() { LanguageId = 2, Name = "01. Water consumption" }, // en
-                    new() { LanguageId = 3, Name = "01. Wasserverbrauch" } // ge
+                    new() { LanguageId = 1, Name = "1.1 Aflæsning vand" }, // da
+                    new() { LanguageId = 2, Name = "1.1 Meter reading water" }, // en
+                    new() { LanguageId = 3, Name = "1.1 Zählerstand Wasser" } // ge
                 },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
@@ -1254,12 +1301,126 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new()
             {
-                EformName = "01. Elforbrug",
+                EformName = "1.2 Aflæsning el",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
-                    new() { LanguageId = 1, Name = "01. Elforbrug" },
-                    new() { LanguageId = 2, Name = "01. Electricity consumption" },
-                    new() { LanguageId = 3, Name = "01. Stromverbrauch" }
+                    new() { LanguageId = 1, Name = "1.2 Aflæsning el" },
+                    new() { LanguageId = 2, Name = "1.2 Reading EL" },
+                    new() { LanguageId = 3, Name = "1.2 Lesen EL" }
+                },
+                AreaRuleInitialField = new AreaRuleInitialField
+                {
+                    RepeatEvery = 1, // one
+                    RepeatType = 3, // month
+                    Notifications = true,
+                    ComplianceEnabled = true,
+                },
+                AreaId = 1,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "2.1 Udslusning af gylle",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "2.1 Udslusning af gylle" },
+                    new() { LanguageId = 2, Name = "2.1 Discharge of slurry" },
+                    new() { LanguageId = 3, Name = "2.1 Gülleaustrag" }
+                },
+                AreaRuleInitialField = new AreaRuleInitialField
+                {
+                    RepeatEvery = 1, // one
+                    RepeatType = 3, // month
+                    Notifications = true,
+                    ComplianceEnabled = true,
+                },
+                AreaId = 1,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "2.2 Gyllekøling: Timer og MWh",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "2.2 Gyllekøling: Timer og MWh" },
+                    new() { LanguageId = 2, Name = "2.2 Slurry cooling: Hours and MWh" },
+                    new() { LanguageId = 3, Name = "2.2 Schlammkühlung: Stunden und MWh" }
+                },
+                AreaRuleInitialField = new AreaRuleInitialField
+                {
+                    RepeatEvery = 1, // one
+                    RepeatType = 3, // month
+                    Notifications = true,
+                    ComplianceEnabled = true,
+                },
+                AreaId = 1,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "2.3 Gyllekøling: Driftsstop",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "2.3 Gyllekøling: Driftsstop" },
+                    new() { LanguageId = 2, Name = "2.3 Slurry cooling: Operation stop" },
+                    new() { LanguageId = 3, Name = "2.3 Schlammkühlung: Betriebsstopp" }
+                },
+                AreaRuleInitialField = new AreaRuleInitialField
+                {
+                    RepeatEvery = 1, // one
+                    RepeatType = 3, // month
+                    Notifications = true,
+                    ComplianceEnabled = true,
+                },
+                AreaId = 1,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "2.4 Forsuring: pH-værdi",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "2.4 Forsuring: pH-værdi" },
+                    new() { LanguageId = 2, Name = "2.4 Acidification: pH value" },
+                    new() { LanguageId = 3, Name = "2.4 Ansäuerung: pH-Wert" }
+                },
+                AreaRuleInitialField = new AreaRuleInitialField
+                {
+                    RepeatEvery = 1, // one
+                    RepeatType = 3, // month
+                    Notifications = true,
+                    ComplianceEnabled = true,
+                },
+                AreaId = 1,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "2.5 Forsuring: Driftsstop",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "2.5 Forsuring: Driftsstop" },
+                    new() { LanguageId = 2, Name = "2.5 Acidification: Shutdown" },
+                    new() { LanguageId = 3, Name = "2.5 Versauerung: Stilllegung" }
+                },
+                AreaRuleInitialField = new AreaRuleInitialField
+                {
+                    RepeatEvery = 1, // one
+                    RepeatType = 3, // month
+                    Notifications = true,
+                    ComplianceEnabled = true,
+                },
+                AreaId = 1,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "2.6 Foderindlægssedler",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "2.6 Foderindlægssedler" },
+                    new() { LanguageId = 2, Name = "2.6 Feed inserts" },
+                    new() { LanguageId = 3, Name = "2.6 Futtereinsätze" }
                 },
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
@@ -1668,6 +1829,174 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaId = 5,
                 IsDefault = true,
             },
+            new()
+            {
+                EformName = "01. Gyllekøling",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "01. Gyllekøling" }, // Danish
+                    new() { LanguageId = 2, Name = "01. Slurry cooling" }, // English
+                    new() { LanguageId = 3, Name = "01. Schlammkühlung" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "02. Forsuring",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "02. Forsuring" }, // Danish
+                    new() { LanguageId = 2, Name = "02. Acidification" }, // English
+                    new() { LanguageId = 3, Name = "02. Ansäuerung" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "03. Luftrensning",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "03. Luftrensning" }, // Danish
+                    new() { LanguageId = 2, Name = "03. Air purification" }, // English
+                    new() { LanguageId = 3, Name = "03. Luftreinigung" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "04. Beholderkontrol gennemført",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "04. Beholderkontrol gennemført" }, // Danish
+                    new() { LanguageId = 2, Name = "04. Container control completed" }, // English
+                    new() { LanguageId = 3, Name = "04. Behälterkontrolle abgeschlossen" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "05. Gyllebeholdere",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "05. Gyllebeholdere" }, // Danish
+                    new() { LanguageId = 2, Name = "05. Slurry containers" }, // English
+                    new() { LanguageId = 3, Name = "05. Güllebehälter" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "06. Gyllepumper, - miksere, - seperatorer og spredere",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "06. Gyllepumper, - miksere, - seperatorer og spredere" }, // Danish
+                    new() { LanguageId = 2, Name = "06. Slurry pumps, - mixers, - separators and spreaders" }, // English
+                    new() { LanguageId = 3, Name = "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "07. Forsyningssystemer til vand og foder",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "07. Forsyningssystemer til vand og foder" }, // Danish
+                    new() { LanguageId = 2, Name = "07. Supply systems for water and feed" }, // English
+                    new() { LanguageId = 3, Name = "07. Versorgungssysteme für Wasser und Futter" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "08. Varme-, køle- og ventilationssystemer samt temperaturfølere",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "08. Varme-, køle- og ventilationssystemer samt temperaturfølere" }, // Danish
+                    new() { LanguageId = 2, Name = "08. Heating, cooling and ventilation systems and temperature sensors" }, // English
+                    new() { LanguageId = 3, Name = "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "09. Siloer og transportudstyr",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "09. Siloer og transportudstyr" }, // Danish
+                    new() { LanguageId = 2, Name = "09. Silos and transport equipment" }, // English
+                    new() { LanguageId = 3, Name = "09. Silos und Transportgeräte" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "10. Luftrensningssystemer",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "10. Luftrensningssystemer" }, // Danish
+                    new() { LanguageId = 2, Name = "10. Air purification systems" }, // English
+                    new() { LanguageId = 3, Name = "10. Luftreinigungssysteme" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "11. Udstyr til drikkevand",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "11. Udstyr til drikkevand" }, // Danish
+                    new() { LanguageId = 2, Name = "11. Equipment for drinking water" }, // English
+                    new() { LanguageId = 3, Name = "11. Ausrüstung für Trinkwasser" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse" }, // Danish
+                    new() { LanguageId = 2, Name = "12. Machines for spreading livestock manure and dosing mechanisms or nozzles" }, // English
+                    new() { LanguageId = 3, Name = "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "13. Miljøledelse",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "13. Miljøledelse gennemgået og revideret" }, // Danish
+                    new() { LanguageId = 2, Name = "13. Environmental management reviewed and revised" }, // English
+                    new() { LanguageId = 3, Name = "13. Umweltmanagement überprüft und überarbeitet" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
+            new()
+            {
+                EformName = "14. Beredskabsplan",
+                AreaRuleTranslations = new List<AreaRuleTranslation>
+                {
+                    new() { LanguageId = 1, Name = "14. Beredskabsplan gennemgået og revideret" }, // Danish
+                    new() { LanguageId = 2, Name = "14. Contingency plan reviewed and revised" }, // English
+                    new() { LanguageId = 3, Name = "14. Notfallplan überprüft und überarbeitet" }, // German
+                },
+                AreaId = 31,
+                IsDefault = true,
+            },
         };
 
         public static List<AreaRule> AreaRulesForType8 => new()
@@ -1844,29 +2173,30 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatType = 1,
                 }
             },
+            // Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+            // new AreaRule
+            // {
+            //     EformName = "24.01.04.01 Ugentlig udslusning af gylle - Logbog",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "24.01.04.01 Ugentlig udslusning af gylle - Logbog" },
+            //         new() { LanguageId = 2, Name = "24.01.04.01 Weekly slurry removal of manure - Logbook" },
+            //         new() { LanguageId = 3, Name = "24.01.04.01 Wöchentliche Entmistung der Gülle - Logbuch" }
+            //     },
+            //     AreaId = 27,
+            //     IsDefault = true,
+            //     FolderName = "24.01.04 Ugentlig udslusning af gylle",
+            //     AreaRuleInitialField = new AreaRuleInitialField
+            //     {
+            //         ComplianceEnabled = false,
+            //         Notifications = false,
+            //         RepeatEvery = 1,
+            //         RepeatType = 1,
+            //     }
+            // },
             new AreaRule
             {
-                EformName = "24.01.04.01 Ugentlig udslusning af gylle - Logbog",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "24.01.04.01 Ugentlig udslusning af gylle - Logbog" },
-                    new() { LanguageId = 2, Name = "24.01.04.01 Weekly slurry removal of manure - Logbook" },
-                    new() { LanguageId = 3, Name = "24.01.04.01 Wöchentliche Entmistung der Gülle - Logbuch" }
-                },
-                AreaId = 27,
-                IsDefault = true,
-                FolderName = "24.01.04 Ugentlig udslusning af gylle",
-                AreaRuleInitialField = new AreaRuleInitialField
-                {
-                    ComplianceEnabled = false,
-                    Notifications = false,
-                    RepeatEvery = 1,
-                    RepeatType = 1,
-                }
-            },
-            new AreaRule
-            {
-                EformName = "24.01.04.02 Ugentlig udslusning af gylle - Drift",
+                EformName = "24.01.04.02 Ugentlig udslusning af gylle - Drift v2",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new() { LanguageId = 1, Name = "24.01.04.02 Ugentlig udslusning af gylle - Drift" },
@@ -1882,26 +2212,27 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                 }
             },
-            new AreaRule
-            {
-                EformName = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter" },
-                    new() { LanguageId = 2, Name = "24.01.04.03 Weekly slurry disposal - Documents" },
-                    new() { LanguageId = 3, Name = "24.01.04.03 Wöchentliche Gülleentsorgung - Dokumente" }
-                },
-                AreaId = 27,
-                IsDefault = true,
-                FolderName = "24.01.04 Ugentlig udslusning af gylle",
-                AreaRuleInitialField = new AreaRuleInitialField
-                {
-                    ComplianceEnabled = false,
-                    Notifications = false,
-                    RepeatEvery = 1,
-                    RepeatType = 1,
-                }
-            },
+            // Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
+            // new AreaRule
+            // {
+            //     EformName = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "24.01.04.03 Ugentlig udslusning af gylle - Dokumenter" },
+            //         new() { LanguageId = 2, Name = "24.01.04.03 Weekly slurry disposal - Documents" },
+            //         new() { LanguageId = 3, Name = "24.01.04.03 Wöchentliche Gülleentsorgung - Dokumente" }
+            //     },
+            //     AreaId = 27,
+            //     IsDefault = true,
+            //     FolderName = "24.01.04 Ugentlig udslusning af gylle",
+            //     AreaRuleInitialField = new AreaRuleInitialField
+            //     {
+            //         ComplianceEnabled = false,
+            //         Notifications = false,
+            //         RepeatEvery = 1,
+            //         RepeatType = 1,
+            //     }
+            // },
             new AreaRule
             {
                 EformName = "24.01.05.01 Punktudsugning i slagtesvinestalde - Logbog",

@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 
+using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationCaseService;
 using BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
 using BackendConfiguration.Pn.Services.BackendConfigurationReportService;
@@ -31,9 +32,12 @@ using Castle.MicroKernel.Registration;
 using Castle.Windsor;
 using ChemicalsBase.Infrastructure;
 using ChemicalsBase.Infrastructure.Data.Factories;
+using eFormCore;
+using Microting.eForm.Dto;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
 using Microting.TimePlanningBase.Infrastructure.Data;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn
 {
@@ -85,6 +89,7 @@ namespace BackendConfiguration.Pn
         public string PluginId => "eform-backend-configuration-plugin";
         public string PluginPath => PluginAssembly().Location;
         public string PluginBaseUrl => "backend-configuration-pn";
+        private static IBus _bus;
 
         private string _connectionString;
 
@@ -148,6 +153,7 @@ namespace BackendConfiguration.Pn
 
             var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
             var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
+            var caseTemplateContext = serviceProvider.GetRequiredService<CaseTemplatePnDbContext>();
             // seed eforms
             var assembly = Assembly.GetExecutingAssembly();
             foreach (var (eformName, eform) in eforms)
@@ -316,6 +322,68 @@ namespace BackendConfiguration.Pn
                 await areaTranslation.Update(context).ConfigureAwait(false);
             }
 
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Fokusområder Miljøledelse");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Logbøger Miljøledelse";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Focus areas Environmental management");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Log books Environmental management";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Schwerpunkte Umweltverwaltung");
+            if (areaTranslation != null)
+            {
+                areaTranslation.Name = "01. Logbücher Umweltmanagement";
+                await areaTranslation.Update(context).ConfigureAwait(false);
+            }
+
+            var envFolderTranslationList = await sdkDbContext.FolderTranslations
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .Where(x => x.Name == "01. Fokusområder Miljøledelse").ToListAsync();
+
+            foreach (var envFolderTranslation in envFolderTranslationList)
+            {
+                if (envFolderTranslation != null)
+                {
+                    var envFolderTranslations = new List<CommonTranslationsModel>
+                    {
+                        new()
+                        {
+                            Name = "01. Logbøger Miljøledelse",
+                            LanguageId = 1, // da
+                            Description = "",
+                        },
+                        new()
+                        {
+                            Name = "01. Log books Environmental management",
+                            LanguageId = 2, // en
+                            Description = "",
+                        },
+                        new()
+                        {
+                            Name = "01. Logbücher Umweltmanagement",
+                            LanguageId = 3, // de
+                            Description = "",
+                        },
+                    };
+                    var folder = await sdkDbContext.Folders
+                        .Where(x => x.Id == envFolderTranslation.FolderId)
+                        .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                        .FirstOrDefaultAsync();
+                    if (folder != null)
+                    {
+                        await core.FolderUpdate(folder.Id, envFolderTranslations, folder.ParentId);
+                    }
+                }
+
+            }
+
+
             var cltranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
             var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == cltranslation.CheckListId);
 
@@ -359,6 +427,34 @@ namespace BackendConfiguration.Pn
                 await field.Create(sdkDbContext);
             }
 
+            // cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Elforbrug")
+            //     .ConfigureAwait(false);
+            // if (cltranslation != null)
+            // {
+            //     clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+            //         .ConfigureAwait(false);
+            //     if (clCheckList != null)
+            //     {
+            //         clCheckList.ReportH1 = "24.00Aflæsninger";
+            //         clCheckList.ReportH2 = "24.00.02Aflæsning el";
+            //         await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+            //     }
+            // }
+            //
+            // cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Vandforbrug")
+            //     .ConfigureAwait(false);
+            // if (cltranslation != null)
+            // {
+            //     clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+            //         .ConfigureAwait(false);
+            //
+            //     if (clCheckList != null)
+            //     {
+            //         clCheckList.ReportH1 = "24.00Aflæsninger";
+            //         clCheckList.ReportH2 = "24.00.01Aflæsning vand";
+            //         await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+            //     }
+            // }
             var folderTranslations =
                 await sdkDbContext.FolderTranslations.Where(x =>
                     x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
@@ -518,6 +614,65 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            var propertyWorkers = await context.PropertyWorkers
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            foreach (var propertyWorker in propertyWorkers)
+            {
+                if (propertyWorker.TaskManagementEnabled == null)
+                {
+                    propertyWorker.TaskManagementEnabled = true;
+                    await propertyWorker.Update(context);
+                }
+            }
+
+            var planningSites = await context.PlanningSites
+                .Where(x => x.Status == 0)
+                .Where(x =>
+                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .ToListAsync();
+
+            foreach (var planningSite in planningSites)
+            {
+                var areaRulePlanning =
+                    await context.AreaRulePlannings
+                        .FirstAsync(x => x.Id == planningSite.AreaRulePlanningsId)
+                        .ConfigureAwait(false);
+                var itemPlanningCaseSite = await itemsPlanningContext.PlanningCaseSites
+                    .Where(x => x.MicrotingSdkSiteId == planningSite.SiteId)
+                    .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
+                    .OrderBy(x => x.Id)
+                    .LastOrDefaultAsync().ConfigureAwait(false);
+                if (itemPlanningCaseSite == null) continue;
+                planningSite.Status = itemPlanningCaseSite.Status;
+                await planningSite.Update(context);
+            }
+
+            var documents = await caseTemplateContext.Documents
+                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .Where(x => x.UpdatedAt < new DateTime(2022, 12, 22, 14, 0, 0))
+                .ToListAsync();
+
+            foreach (var document in documents)
+            {
+                var documentSites = await caseTemplateContext.DocumentSites
+                    .Where(x => x.DocumentId == document.Id)
+                    .ToListAsync();
+
+                foreach (var documentSite in documentSites)
+                {
+                    if (documentSite.SdkCaseId != 0)
+                    {
+                        await core.CaseDelete(documentSite.SdkCaseId);
+                    }
+
+                    await documentSite.Delete(caseTemplateContext);
+                }
+
+                await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+            }
         }
 
         public void ConfigureDbContext(IServiceCollection services, string connectionString)
@@ -598,19 +753,9 @@ namespace BackendConfiguration.Pn
         {
             var serviceProvider = appBuilder.ApplicationServices;
 
-            var rabbitMqHost = "localhost";
-
-            if (_connectionString.Contains("frontend"))
-            {
-                var dbPrefix = Regex.Match(_connectionString, @"atabase=(\d*)_").Groups[1].Value;
-                rabbitMqHost = $"frontend-{dbPrefix}-rabbitmq";
-            }
-
             IRebusService rebusService = serviceProvider.GetService<IRebusService>();
-
-            WindsorContainer container = rebusService.GetContainer();
-            container.Register(Component.For<EformBackendConfigurationPlugin>().Instance(this));
-            rebusService.Start(_connectionString, "admin", "password", rabbitMqHost);
+            rebusService!.Start(_connectionString).GetAwaiter().GetResult();
+            _bus = rebusService.GetBus();
         }
 
         public List<PluginMenuItemModel> GetNavigationMenu(IServiceProvider serviceProvider)

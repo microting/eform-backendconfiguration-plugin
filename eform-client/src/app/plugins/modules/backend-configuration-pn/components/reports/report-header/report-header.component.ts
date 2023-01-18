@@ -15,6 +15,9 @@ import { AuthStateService } from 'src/app/common/store';
 import { ReportQuery, ReportStateService } from '../store';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
+import {MatIconRegistry} from '@angular/material/icon';
+import {DomSanitizer} from '@angular/platform-browser';
+import {ExcelIcon, WordIcon} from 'src/app/common/const';
 
 @AutoUnsubscribe()
 @Component({
@@ -39,8 +42,12 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private reportStateService: ReportStateService,
     private reportQuery: ReportQuery,
-    authStateService: AuthStateService
+    authStateService: AuthStateService,
+    iconRegistry: MatIconRegistry,
+    sanitizer: DomSanitizer,
   ) {
+    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
+    iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     dateTimeAdapter.setLocale(authStateService.currentUserLocale);
   }
 

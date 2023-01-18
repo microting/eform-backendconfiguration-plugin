@@ -2,125 +2,186 @@ name: .NET Pull requests
 
 on:
   pull_request:
-    branches: [ master, stable ]
+    branches: [ master, stable, angular13 ]
     paths-ignore:
     - '**.md'
     - '.github/**'
 
 jobs:
-  build:
+  backend-pn-build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        path: eform-backendconfiguration-plugin
+    - name: Extract branch name
+      id: extract_branch
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+    - name: 'Preparing Frontend checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-frontend
+        ref: ${{ steps.extract_branch.outputs.branch }}
+        path: eform-angular-frontend
+    - name: 'Preparing items planning checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-items-planning-plugin
+        ref: ${{ steps.extract_branch.outputs.branch }}
+        path: eform-angular-items-planning-plugin
+    - name: 'Preparing time planning checkout'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        repository: microting/eform-angular-timeplanning-plugin
+        ref: ${{ steps.extract_branch.outputs.branch }}
+        path: eform-angular-timeplanning-plugin
+    - name: Copy dependencies
+      run: |
+        cp -av eform-angular-items-planning-plugin/eform-client/src/app/plugins/modules/items-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/items-planning-pn
+        cp -av eform-angular-timeplanning-plugin/eform-client/src/app/plugins/modules/time-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/time-planning-pn
+        cp -av eform-backendconfiguration-plugin/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
+        mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
+        cd eform-angular-frontend/eform-client && ../../eform-angular-items-planning-plugin/testinginstallpn.sh
+        ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
+        ../../eform-backendconfiguration-plugin/testinginstallpn.sh
+    - name: Copy frontendfiles
+      run: cp main/Dockerfile .
+    - name: Build the tagged Docker image
+      run: docker build . -t microtingas/work-items-planning-container:latest -t microtingas/work-items-planning-container:1.0.0 --build-arg GITVERSION=1.0.0 --build-arg PLUGINVERSION=1.0.0 --build-arg PLUGIN2VERSION=1.0.0 --build-arg PLUGIN3VERSION=1.0.0 --build-arg PLUGIN4VERSION=1.0.0 --build-arg PLUGIN5VERSION=1.0.0 --build-arg PLUGIN6VERSION=1.0.0
+    - name: Tag builds
+      run: |-
+        docker tag microtingas/work-items-planning-container:latest microtingas/work-items-planning-container:latest
+    - run: docker save microtingas/work-items-planning-container:latest -o work-items-planning-container.tar
+    - uses: actions/upload-artifact@v2
+      with:
+        name: work-items-planning-container
+        path: work-items-planning-container.tar        
+  backend-pn-test:
+    needs: backend-pn-build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         test: [a,b,c,d]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         path: main
-    - name: Upgrade Chrome browser
+    - uses: actions/download-artifact@v3
+      with:
+        name: work-items-planning-container
+    - run: docker load -i work-items-planning-container.tar
+    - name: Create docker network 🖧
+      run: docker network create --driver bridge --attachable data
+    - name: Start MariaDB
       run: |
-        sudo apt-get update
-        sudo apt-get --only-upgrade install google-chrome-stable
-        google-chrome --version
-    - uses: getong/mariadb-action@v1.1
-      with:
-        host port: 3306 # Optional, default value is 3306. The port of host
-        container port: 3306 # Optional, default value is 3306. The port of container
-        character set server: 'utf8' # Optional, default value is 'utf8mb4'. The '--character-set-server' option for mysqld
-        collation server: 'utf8_general_ci' # Optional, default value is 'utf8mb4_general_ci'. The '--collation-server' option for mysqld
-        mariadb version: 'latest' # Optional, default value is "latest". The version of the MariaDB
-        mysql database: 'some_test' # Optional, default value is "test". The specified database which will be create
-        mysql root password: 'secretpassword' # Required if "mysql user" is empty, default is empty. The root superuser password
-        mysql user: 'developer' # Required if "mysql root password" is empty, default is empty. The superuser for the specified database. Can use secrets, too
-        mysql password: 'passwordtoo' # Required if "mysql user" exists. The password for the "mysql user"
-    - name: Sleep 15 seconds
-      run: sleep 15
-    - uses: getong/rabbitmq-action@v1.2
-      with:
-        rabbitmq version: 'latest'
-        host port: 5672
-        rabbitmq user: 'admin'
-        rabbitmq password: 'password'
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
+        docker pull mariadb:10.8
+        docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
+    - name: Start rabbitmq
+      run: |
+        docker pull rabbitmq:latest
+        docker run -d --hostname my-rabbit --name some-rabbit --network data -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=password rabbitmq:latest
+    - name: Start the newly build Docker container
+      id: docker-run
+      run: docker run --name my-container -p 4200:5000 --network data microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" > docker_run_log 2>&1 &
     - name: Use Node.js
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
-        node-version: '14.18'
-    - name: Extract branch name
-      id: extract_branch
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        node-version: '18.12.1'
     - name: 'Preparing Frontend checkout'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: microting/eform-angular-frontend
-        ref: ${{ github.event.pull_request.base.ref }}
+        ref: stable
         path: eform-angular-frontend
-    - name: 'Preparing ItemsPlanning checkout'
-      uses: actions/checkout@v2
+    - name: 'Preparing bacend checkout'
+      uses: actions/checkout@v3
       with:
-        repository: microting/eform-angular-items-planning-plugin
-        ref: ${{ github.event.pull_request.base.ref }}
-        path: eform-angular-items-planning-plugin
-    - name: 'Preparing TimePlanning checkout'
-      uses: actions/checkout@v2
+        fetch-depth: 0
+        repository: microting/eform-backendconfiguration-plugin
+        ref: stable
+        path: eform-backendconfiguration-plugin
+    - name: Cache node_modules
+      id: cache
+      uses: actions/cache@v3
       with:
-        repository: microting/eform-angular-timeplanning-plugin
-        ref: ${{ github.event.pull_request.base.ref }}
-        path: eform-angular-timeplanning-plugin
-    - name: Install dependencies
-      run: dotnet restore main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
-    - name: Get the version
-      id: get_version
-      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3 | cut -d "v" -f 2)
-    - name: Build
-      run: dotnet build main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
-    - name: Build ItemsPlanning
-      run: dotnet build eform-angular-items-planning-plugin/eFormAPI/Plugins/ItemsPlanning.Pn/ItemsPlanning.Pn.sln
-    - name: Build TimePlanning
-      run: dotnet build eform-angular-timeplanning-plugin/eFormAPI/Plugins/TimePlanning.Pn/TimePlanning.Pn.sln
-    - name: Unit Tests
-      run: dotnet test --no-restore -c Release -v n main/eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
+        path: eform-angular-frontend/eform-client/node_modules
+        key: ${{ runner.os }}-build-${{ hashFiles('eform-angular-frontend/eform-client/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
     - name: Copy dependencies
       run: |
-        cp -av eform-angular-items-planning-plugin/eform-client/src/app/plugins/modules/items-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/items-planning-pn
-        cp -av eform-angular-timeplanning-plugin/eform-client/src/app/plugins/modules/time-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/time-planning-pn
-        cp -av main/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
-        cp -av main/eform-client/e2e/Tests/backend-configuration-settings eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
-        cp -av main/eform-client/e2e/Tests/backend-configuration-general eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
-        cp -av main/eform-client/e2e/Page\ objects/BackendConfiguration eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
-        cp -av eform-angular-items-planning-plugin/eform-client/e2e/Page\ objects/ItemsPlanning eform-angular-frontend/eform-client/e2e/Page\ objects/ItemsPlanning
-        cp -av main/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js eform-angular-frontend/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js
-        cp -av main/eform-client/wdio-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
-        mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
-        cp -av eform-angular-items-planning-plugin/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning
-        cp -av eform-angular-timeplanning-plugin/eFormAPI/eFormAPI.Web/Plugins/TimePlanning.Pn eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/TimePlanning,Pn
-        cp -av main/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn
-        cd eform-angular-frontend/eform-client && ../../main/testinginstallpn.sh
-        ../../eform-angular-items-planning-plugin/testinginstallpn.sh
-        ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
+        #cp -av eform-angular-items-planning-plugin/eform-client/src/app/plugins/modules/items-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/items-planning-pn
+        #cp -av eform-angular-timeplanning-plugin/eform-client/src/app/plugins/modules/time-planning-pn eform-angular-frontend/eform-client/src/app/plugins/modules/time-planning-pn
+        cp -av eform-backendconfiguration-plugin/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
+        cp -av eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-settings eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
+        cp -av eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-general eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
+        cp -av eform-backendconfiguration-plugin/eform-client/e2e/Page\ objects/BackendConfiguration eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
+        #cp -av eform-angular-items-planning-plugin/eform-client/e2e/Page\ objects/ItemsPlanning eform-angular-frontend/eform-client/e2e/Page\ objects/ItemsPlanning
+        cp -av eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js eform-angular-frontend/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js
+        cp -av eform-backendconfiguration-plugin/eform-client/wdio-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
+        #mkdir -p eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins
+        #cp -av eform-angular-items-planning-plugin/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/ItemsPlanning
+        #cp -av eform-angular-timeplanning-plugin/eFormAPI/eFormAPI.Web/Plugins/TimePlanning.Pn eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/TimePlanning.Pn
+        #cp -av eform-backendconfiguration-plugin/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn eform-angular-frontend/eFormAPI/eFormAPI.Web/Plugins/BackendConfiguration.Pn
+        #cd eform-angular-frontend/eform-client && ../../eform-backendconfiguration-plugin/testinginstallpn.sh
+        #../../eform-angular-items-planning-plugin/testinginstallpn.sh
+        #../../eform-angular-timeplanning-plugin/testinginstallpn.sh
     - name: Build frontend
-      run: dotnet build eform-angular-frontend/eFormAPI/eFormAPI.sln
+      run: dotnet build eform-angular-frontend/eFormAPI/eFormAPI.sln > dotnet_log 2>&1 &
     - name: NPM install
       run: cd eform-angular-frontend/eform-client && npm install
-    - name: NPM start
-      run: cd eform-angular-frontend/eform-client && npm start > npm_log 2>&1 &
-    - name: Sleep 75 seconds
-      run: sleep 75
-    - name: Dotnet run
-      run: dotnet run --project eform-angular-frontend/eFormAPI/eFormAPI.Web/eFormAPI.Web.csproj > dotnet_log 2>&1 &
-    - name: Sleep 75 seconds
-      run: sleep 75
+      if: steps.cache.outputs.cache-hit != 'true'
+    - name: Create errorShots directory
+      run: mkdir /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots
+    - name: Pretest changes to work with Docker container
+      run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
+    - name: Change rabbitmq hostname
+      run: docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
     - name: Plugin testing
       run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
-    - name: The job has failed
-      if: ${{ failure() }}
+    - name: Stop the newly build Docker container
+      run: docker stop my-container
+    - name: Get standard output
       run: |
-        cat dotnet_log
-        cat eform-angular-frontend/eform-client/npm_log
-        mysql -u root --password=secretpassword -e "show databases" -h localhost
+        cat docker_run_log
+        result=`cat docker_run_log | grep "Now listening on: http://0.0.0.0:5000" -m 1 | wc -l`
+        if [ $result -ne 1 ];then exit 1; fi
+    - name: The job has failed
+      if: always()
+      run: |
+        cat docker_run_log
+    - name: Archive screenshot artifacts
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: error Screenshots
+        path: |
+          /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots/chrome*.png
+        retention-days: 2
+  test-dotnet:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Create docker network 🖧
+      run: docker network create --driver bridge --attachable data
+    - name: Start MariaDB
+      run: |
+        docker pull mariadb:10.8
+        docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
+    - name: Sleep 15
+      run: sleep 15        
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+    - name: Build
+      run: dotnet build eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
+    - name: Unit Tests
+      run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
