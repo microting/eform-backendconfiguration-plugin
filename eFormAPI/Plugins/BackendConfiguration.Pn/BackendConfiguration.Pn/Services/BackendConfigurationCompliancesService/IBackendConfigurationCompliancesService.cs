@@ -39,6 +39,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
         Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
         Task<OperationDataResult<ReplyElement>> Read(int id);
         Task<OperationResult> Update(ReplyRequest model);
+        Task<OperationResult> Delete(int id);
         Task<HttpResponseMessage> GetEventCalendar(int propertyId);
     }
 }

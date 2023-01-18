@@ -10,7 +10,7 @@ import {
 import { updateTableSort } from 'src/app/common/helpers';
 import { getOffset } from 'src/app/common/helpers/pagination.helper';
 import { map } from 'rxjs/operators';
-import { CompliancesModel } from '../../../../models';
+import { ComplianceModel } from '../../../../models';
 import { BackendConfigurationPnCompliancesService } from '../../../../services';
 
 @Injectable({ providedIn: 'root' })
@@ -42,7 +42,7 @@ export class CompliancesStateService {
   }
 
   getAllCompliances(propertyId: number, thirtyDays: boolean = false):
-    Observable<OperationDataResult<Paged<CompliancesModel>>> {
+    Observable<OperationDataResult<Paged<ComplianceModel>>> {
     return this.service
       .getAllCompliances({
         ...this.query.pageSetting.pagination,

@@ -1,6 +1,6 @@
 import { PropertyCompliancesColorBadgesEnum } from '../../enums';
 
-export class CompliancesModel {
+export class ComplianceModel {
   id: number;
   controlArea: string;
   itemName: string;

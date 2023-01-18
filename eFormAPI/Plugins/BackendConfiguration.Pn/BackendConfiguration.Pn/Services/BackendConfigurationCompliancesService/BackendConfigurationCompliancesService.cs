@@ -418,6 +418,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
             }
         }
 
+        public async Task<OperationResult> Delete(int id)
+        {
+            var compliance = await _backendConfigurationPnDbContext.Compliances.FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
+            if (compliance == null)
+            {
+                return new OperationResult(false, _localizationService.GetString("ComplianceNotFound"));
+            }
+            await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
+            return new OperationResult(true, _localizationService.GetString("ComplianceHasBeenDeleted"));
+        }
+
         public async Task<HttpResponseMessage> GetEventCalendar(int propertyId)
         {
             CompliancesRequestModel compliancesRequestModel = new CompliancesRequestModel
