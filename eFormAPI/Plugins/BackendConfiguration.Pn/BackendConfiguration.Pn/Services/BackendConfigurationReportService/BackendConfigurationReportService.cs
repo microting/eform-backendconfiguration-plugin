@@ -181,7 +181,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                         var reportModel = new ReportEformModel
                         {
-                            TemplateName = checkListTranslation,
+                            CheckListId = checkList.Id,
+                            CheckListName = checkListTranslation,
                             FromDate = $"{fromDate:yyyy-MM-dd}",
                             ToDate = $"{toDate:yyyy-MM-dd}",
                             TextHeaders = new ReportEformTextHeaderModel(),
