@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
 import { Subscription } from 'rxjs';
 import { AuthStateService } from 'src/app/common/store';
-import { CompliancesModel, PropertyModel } from '../../../../models';
+import { ComplianceModel, PropertyModel } from '../../../../models';
 import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
@@ -26,7 +26,7 @@ export class CompliancesContainerComponent implements OnInit, OnDestroy {
     { name: '' },
   ];
   selectedProperty: PropertyModel;
-  complianceList: CompliancesModel[] = [];
+  complianceList: ComplianceModel[] = [];
   isComplianceThirtyDays: boolean;
 
   getAllPropertiesDictionarySub$: Subscription;

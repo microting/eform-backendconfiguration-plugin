@@ -41,8 +41,9 @@ namespace BackendConfiguration.Pn.Installers
         private readonly string _rabbitMqUser;
         private readonly string _rabbitMqPassword;
         private readonly string _rabbitMqHost;
+        private readonly string _customerNo;
 
-        public RebusInstaller(string connectionString, int maxParallelism, int numberOfWorkers, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
+        public RebusInstaller(string customerNo, string connectionString, int maxParallelism, int numberOfWorkers, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
         {
             if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
             _connectionString = connectionString;
@@ -51,6 +52,7 @@ namespace BackendConfiguration.Pn.Installers
             _rabbitMqHost = rabbitMqHost;
             _rabbitMqUser = rabbitMqUser;
             _rabbitMqPassword = rabbitMqPassword;
+            _customerNo = customerNo;
         }
 
         public void Install(IWindsorContainer container, IConfigurationStore store)
@@ -59,7 +61,7 @@ namespace BackendConfiguration.Pn.Installers
                 .Serialization(s => s.UseNewtonsoftJson())
                 .Logging(l => l.ColoredConsole(LogLevel.Info))
                 .Transport(t => t.UseRabbitMq($"amqp://{_rabbitMqUser}:{_rabbitMqPassword}@{_rabbitMqHost}",
-                    "eform-angular-backend-configuration-plugin"))
+                    $"{_customerNo}-eform-angular-backend-configuration-plugin"))
                 .Options(o =>
                 {
                     o.SetMaxParallelism(_maxParallelism);

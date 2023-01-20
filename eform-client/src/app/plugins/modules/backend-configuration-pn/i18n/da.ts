@@ -198,7 +198,7 @@ export const da = {
   "Expires today or has expired": "Udløber i dag eller er udløbet",
   "Expires in 1 month at the latest": "Udløber om mindre end 1 måned",
   "Expires in 3 months at the latest": "Udløber om mindre end 3 måneder",
-  "Expires in 6 months at the latest": "Udløber om mindre than 6 måneder",
+  "Expires in 6 months at the latest": "Udløber om mindre end 6 måneder",
   "Expires in 12 months at the latest.": "Udløber om mindre end 12 måneder",
   "Expires in more than 12 months.": "Udløber om mere end 12 måneder",
   'Rather than deleting the file, you can also hide the display of the file on your mobile. You do this by selecting Plan next to the document you want to hide and then de-activating the display of the PDF file.': 'Fremfor at slette filen, kan du også skjule visningen af filen på din mobil. Det gør du ved at vælge Plan ud for det dokument du ønsker at skjule og derefter de-aktivere visning af PDF-filen.',

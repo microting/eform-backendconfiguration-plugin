@@ -74,13 +74,13 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1));
                     break;
                 case 2:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(1) && x.EndAt <= DateTime.UtcNow.AddMonths(3));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(3));
                     break;
                 case 3:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(3) && x.EndAt <= DateTime.UtcNow.AddMonths(6));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(6));
                     break;
                 case 4:
-                    query = query.Where(x => x.EndAt >= DateTime.UtcNow.AddMonths(6) && x.EndAt <= DateTime.UtcNow.AddYears(1));
+                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddYears(1));
                     break;
                 case 5:
                     query = query.Where(x => x.EndAt > DateTime.UtcNow.AddYears(1));
@@ -234,7 +234,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 {
                     Id = x.Id,
                     Name = x.DocumentTranslations.FirstOrDefault(y => y.LanguageId == languageId)!.Name
-                }).ToListAsync().ConfigureAwait(false);
+                })
+                .OrderBy(x => x.Name)
+                .ToListAsync().ConfigureAwait(false);
         }
         return new OperationDataResult<List<BackendConfigurationDocumentSimpleModel>>(true,
             results);
@@ -559,7 +561,11 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             query = query.Where(x => x.Id == pnRequestModel.FolderId);
         }
 
-        var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+        var total = 0;
+        if (query.Any())
+        {
+            total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+        }
 
         var results = new List<BackendConfigurationDocumentFolderModel>();
 
@@ -585,8 +591,12 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                             Id = y.Id,
                             SdkFolderId = y.SdkFolderId,
                         }).ToList()
-                }).ToListAsync().ConfigureAwait(false);
+                })
+                .ToListAsync().ConfigureAwait(false);
         }
+
+        results = results.OrderBy(x =>
+            x.DocumentFolderTranslations.OrderBy(y => y.Name)).ToList();
         return new OperationDataResult<Paged<BackendConfigurationDocumentFolderModel>>(true,
             new Paged<BackendConfigurationDocumentFolderModel> { Entities = results, Total = total });
     }
@@ -646,6 +656,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 Name = folder.FolderTranslations.Any(x => x.LanguageId == languageId) ? folder.FolderTranslations.First(x => x.LanguageId == languageId).Name : folder.FolderTranslations.First().Name
             });
         }
+
+        result = result.OrderBy(x => x.Name).ToList();
 
         return new OperationDataResult<List<BackendConfigurationDocumentSimpleFolderModel>>(true, result);
     }

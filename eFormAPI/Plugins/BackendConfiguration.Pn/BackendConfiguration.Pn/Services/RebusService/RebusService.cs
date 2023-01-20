@@ -58,27 +58,18 @@ namespace BackendConfiguration.Pn.Services.RebusService
             _container = new WindsorContainer();
         }
 
-        public async Task Start(string connectionString, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
+        public async Task Start(string connectionString)
         {
-            Console.WriteLine($"rabbitMqUser: {rabbitMqUser}");
-            Console.WriteLine($"rabbitMqPassword: {rabbitMqPassword}");
-            Console.WriteLine($"rabbitMqHost: {rabbitMqHost}");
             Core core = await _coreHelper.GetCore();
             _connectionString = connectionString;
-
-            if (connectionString.Contains("frontend"))
-            {
-                var dbPrefix = Regex.Match(_connectionString, @"atabase=(\d*)_").Groups[1].Value;
-                rabbitMqHost = $"frontend-{dbPrefix}-rabbitmq";
-            }
-
+            var dbPrefix = Regex.Match(_connectionString, @"Database=(\d*)_").Groups[1].Value;
             var rabbitmqHost = core.GetSdkSetting(Settings.rabbitMqHost).GetAwaiter().GetResult();
             Console.WriteLine($"rabbitmqHost: {rabbitmqHost}");
+            var rabbitMqUser = core.GetSdkSetting(Settings.rabbitMqUser).GetAwaiter().GetResult();
+            Console.WriteLine($"rabbitMqUser: {rabbitMqUser}");
+            var rabbitMqPassword = core.GetSdkSetting(Settings.rabbitMqPassword).GetAwaiter().GetResult();
+            Console.WriteLine($"rabbitMqPassword: {rabbitMqPassword}");
 
-            if (!string.IsNullOrEmpty(rabbitmqHost))
-            {
-                rabbitMqHost = rabbitmqHost;
-            }
             _backendConfigurationDbContextHelper = new BackendConfigurationDbContextHelper(connectionString);
             var chemicalBaseConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
@@ -95,7 +86,7 @@ namespace BackendConfiguration.Pn.Services.RebusService
             _container.Register(Component.For<IBackendConfigurationLocalizationService>().Instance(_backendConfigurationLocalizationService));
             _container.Install(
                 new RebusHandlerInstaller()
-                , new RebusInstaller(connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitMqHost)
+                , new RebusInstaller(dbPrefix, connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitmqHost)
             );
 
             _bus = _container.Resolve<IBus>();

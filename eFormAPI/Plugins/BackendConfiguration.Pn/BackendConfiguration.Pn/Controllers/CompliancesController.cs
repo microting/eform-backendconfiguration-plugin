@@ -63,6 +63,13 @@ namespace BackendConfiguration.Pn.Controllers
             return _backendConfigurationCompliancesService.ComplianceStatus(propertyId);
         }
 
+        [HttpDelete]
+        [Route("delete/{id}")]
+        public Task<OperationResult> Delete(int id)
+        {
+            return _backendConfigurationCompliancesService.Delete(id);
+        }
+
         [HttpGet]
         [AllowAnonymous]
         [Route("compliance-calender")]

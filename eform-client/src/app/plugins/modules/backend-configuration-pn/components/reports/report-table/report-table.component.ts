@@ -46,8 +46,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
     {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y'}},
-    {header: this.translateService.stream('Done by'), field: 'doneBy',},
-    {header: this.translateService.stream('Item name'), field: 'itemName',},
+    {header: this.translateService.stream('Done by'), field: 'doneBy'},
+    {header: this.translateService.stream('Item name'), field: 'itemName'},
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
@@ -83,8 +83,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
     {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
-    {header: this.translateService.stream('Done by'), field: 'doneBy',},
-    {header: this.translateService.stream('Item name'), field: 'itemName',},
+    {header: this.translateService.stream('Done by'), field: 'doneBy'},
+    {header: this.translateService.stream('Item name'), field: 'itemName'},
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
@@ -130,31 +130,31 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (/*!changes.itemHeaders.isFirstChange() && */changes.itemHeaders) {
-      let itemHeaders = this.itemHeaders.map((x, i): MtxGridColumn => {
+      const itemHeaders = this.itemHeaders.map((x, i): MtxGridColumn => {
         return {
           header: x.value,
           field: x.value,
           formatter: (record: ReportEformItemModel) => {
-            if(record.caseFields[i].value === 'checked') {
+            if (record.caseFields[i].value === 'checked') {
               return `<span class="material-icons">done</span>`;
             }
-            if(record.caseFields[i].value !== 'checked' && record.caseFields[i].value !== 'unchecked') {
+            if (record.caseFields[i].value !== 'checked' && record.caseFields[i].value !== 'unchecked') {
               // @ts-ignore
-              if(record.caseFields[i].key === 'number') {
+              if (record.caseFields[i].key === 'number') {
                 return record.caseFields[i].value.replace('.', ',');
               }
               // @ts-ignore
-              if(record.caseFields[i].key === 'date') {
+              if (record.caseFields[i].key === 'date') {
                 return moment(record.caseFields[i].value).format('DD.MM.YYYY');
-                //return record.caseFields[i].value;
+                // return record.caseFields[i].value;
               }
               // @ts-ignore
-              if(record.caseFields[i].key !== 'number') {
+              if (record.caseFields[i].key !== 'number') {
                 return record.caseFields[i].value;
               }
             }
           },
-        }
+        };
       });
       if (this.authStateService.isAdmin) {
         this.mergedTableHeaders = [...this.adminTableHeaders, ...itemHeaders];
@@ -193,7 +193,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     this.btnViewPicturesClicked.emit({reportIndex: this.reportIndex, caseId});
   }
 
-  onClickEditCase(microtingSdkCaseId: number, eFormId: number, id: number){
+  onClickEditCase(microtingSdkCaseId: number, eFormId: number, id: number) {
     this.planningsReportStateService.updateScrollPosition(this.viewportScroller.getScrollPosition());
     this.router.navigate([`/plugins/backend-configuration-pn/case/`, microtingSdkCaseId, eFormId, id, this.dateFrom, this.dateTo])
       .then();

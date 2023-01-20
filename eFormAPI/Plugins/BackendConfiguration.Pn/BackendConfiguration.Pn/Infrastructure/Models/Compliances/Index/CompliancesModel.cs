@@ -47,5 +47,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index
         public int EformId { get; set; }
 
         public int CaseId { get; set; }
+
+        public DateTime CreatedAt { get; set; }
     }
 }

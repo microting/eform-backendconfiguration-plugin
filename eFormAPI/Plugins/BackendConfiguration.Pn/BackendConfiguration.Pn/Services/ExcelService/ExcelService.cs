@@ -207,7 +207,7 @@ public class ExcelService: IExcelService
                     {
                         var x = 0;
                         var y = 0;
-                        var sheetName = eformModel.TemplateName;
+                        var sheetName = $"{eformModel.CheckListId} - {eformModel.CheckListName}";
 
                         sheetName = sheetName
                             .Replace(":", "")
@@ -276,17 +276,17 @@ public class ExcelService: IExcelService
                                     switch (dataModelCaseField.Key)
                                     {
                                         case "date":
-                                            worksheet.Cell(x + 1, y + 1).Value = value;
-                                            worksheet.Cell(x + 1, y + 1).DataType = XLDataType.DateTime;
+                                            worksheet.Cell(x + 1, y + 1).SetValue(value);
+                                            //worksheet.Cell(x + 1, y + 1).DataType = XLDataType.DateTime;
                                             break;
                                         case "number":
-                                            worksheet.Cell(x + 1, y + 1).Value = value;
+                                            worksheet.Cell(x + 1, y + 1).SetValue(value);
                                             //worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
-                                            worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
+                                            //worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
                                             break;
                                         default:
-                                            worksheet.Cell(x + 1, y + 1).Value = "'" + value;
-                                            worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Text;
+                                            worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
+                                            //worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Text;
                                             break;
                                     }
                                 }

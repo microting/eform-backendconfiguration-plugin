@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {OperationDataResult, OperationResult, Paged, ReplyElementDto, ReplyRequest} from 'src/app/common/models';
-import { CompliancesModel, CompliancesRequestModel } from '../models';
+import { ComplianceModel, CompliancesRequestModel } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationPnCompliancesMethods = {
   Compliances: 'api/backend-configuration-pn/compliances/index',
   ComplianceStatus: 'api/backend-configuration-pn/compliances/compliance',
   GetCases: 'api/backend-configuration-pn/compliances/cases',
+  DeleteCompliance: 'api/backend-configuration-pn/compliances/delete',
 };
 
 @Injectable({
@@ -18,7 +19,7 @@ export class BackendConfigurationPnCompliancesService {
 
   getAllCompliances(
     model: CompliancesRequestModel
-  ): Observable<OperationDataResult<Paged<CompliancesModel>>> {
+  ): Observable<OperationDataResult<Paged<ComplianceModel>>> {
     return this.apiBaseService.post(
       BackendConfigurationPnCompliancesMethods.Compliances,
       model
@@ -51,5 +52,9 @@ export class BackendConfigurationPnCompliancesService {
       BackendConfigurationPnCompliancesMethods.GetCases,
       model
     );
+  }
+
+  deleteCompliance(id: number): Observable<OperationResult> {
+    return this.apiBaseService.delete(BackendConfigurationPnCompliancesMethods.DeleteCompliance + '/' + id);
   }
 }

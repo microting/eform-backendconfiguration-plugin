@@ -10,15 +10,18 @@ import {TranslateModule} from '@ngx-translate/core';
 import {
   CompliancesContainerComponent,
   CompliancesTableComponent,
+  ComplianceDeleteComponent
 } from './components';
 import {CompliancesRouting} from './compliance.routing';
 import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts/custom-date-time-adapter';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
+import {MatButtonModule} from '@angular/material/button';
+import {MatDialogModule} from '@angular/material/dialog';
 
 @NgModule({
-  declarations: [CompliancesContainerComponent, CompliancesTableComponent],
+  declarations: [CompliancesContainerComponent, CompliancesTableComponent, ComplianceDeleteComponent],
   imports: [
     CommonModule,
     TranslateModule,
@@ -30,6 +33,8 @@ import {MtxGridModule} from '@ng-matero/extensions/grid';
     EformSharedModule,
     FontAwesomeModule,
     MtxGridModule,
+    MatButtonModule,
+    MatDialogModule,
   ],
   providers: [
     {

@@ -141,6 +141,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     var complianceModel = new CompliancesModel
                     {
                         CaseId = compliance.MicrotingSdkCaseId,
+                        CreatedAt = compliance.CreatedAt,
                         Deadline = compliance.Deadline.AddDays(-1),
                         ComplianceTypeId = null,
                         ControlArea = areaTranslation.Name,
@@ -416,6 +417,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                 Log.LogException(ex.StackTrace);
                 return new OperationResult(false, _localizationService.GetString("CaseCouldNotBeUpdated") + $" Exception: {ex.Message}");
             }
+        }
+
+        public async Task<OperationResult> Delete(int id)
+        {
+            var compliance = await _backendConfigurationPnDbContext.Compliances.FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
+            if (compliance == null)
+            {
+                return new OperationResult(false, _localizationService.GetString("ComplianceNotFound"));
+            }
+            await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+
+            return new OperationResult(true, _localizationService.GetString("ComplianceHasBeenDeleted"));
         }
 
         public async Task<HttpResponseMessage> GetEventCalendar(int propertyId)

@@ -15,9 +15,10 @@
 
 <ng-container *ngIf="selectedProperty">
   <app-compliances-table
-    [compliances]="complianceList"
+    [complianceList]="complianceList"
     [propertyId]="selectedProperty.id"
     [isComplianceThirtyDays]="isComplianceThirtyDays"
+    (complianceDeleted)="getCompliances(selectedProperty.id)"
     (updateTable)="getCompliances(selectedProperty.id)"
   ></app-compliances-table>
 </ng-container>

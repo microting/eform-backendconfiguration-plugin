@@ -86,13 +86,13 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
       }
     });
     this.observableReportsModel.subscribe(x => {
-      if(x.length && this.startWithParams){
+      if (x.length && this.startWithParams) {
         const task = _ => this.planningsReportQuery.selectScrollPosition$
           .subscribe(value => this.viewportScroller.scrollToPosition(value));
         asyncScheduler.schedule(task, 1000);
         this.startWithParams = false;
       }
-    })
+    });
   }
 
   ngOnInit() {
@@ -122,7 +122,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
           this.reportsModel = data.model;
           this.isDescriptionBlockCollapsed = this.reportsModel.map(_ => {
             return true;
-          })
+          });
           this.observableReportsModel.next(data.model);
         }
       });
@@ -181,12 +181,12 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
 
   getImages(reportEformPnModel: ReportEformPnModel, caseId: number) {
     this.images = [];
-    const observables: Observable<any>[] = []
+    const observables: Observable<any>[] = [];
     const length = reportEformPnModel.imageNames.filter(x => x.key[0] === caseId.toString()).length;
     reportEformPnModel.imageNames.filter(x => x.key[0] === caseId.toString())
       .forEach((imageValue) => {
-        observables.push(this.imageService.getImage(imageValue.value[0]))
-        if(length === observables.length) {
+        observables.push(this.imageService.getImage(imageValue.value[0]));
+        if (length === observables.length) {
           this.imageSub$.push(forkJoin(observables).subscribe(blobArr => {
             if (length === blobArr.length) {
               blobArr.forEach((blob, index) => {
@@ -225,7 +225,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     }
   }
 
-  onClickViewPicture(model: {reportIndex: number, caseId: number }){
+  onClickViewPicture(model: {reportIndex: number, caseId: number }) {
     const reportEformPnModel = this.reportsModel[model.reportIndex];
     this.getImages(reportEformPnModel, model.caseId);
   }
