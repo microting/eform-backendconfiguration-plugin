@@ -72,6 +72,11 @@ export class CompliancesTableComponent implements OnInit {
   ];
   adminTableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'id'},
+    {header: this.translateService.stream('CreatedAt'),
+      field: 'createdAt',
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y HH:mm'},
+    },
     {
       header: this.translateService.stream('Deadline'),
       field: 'deadline',

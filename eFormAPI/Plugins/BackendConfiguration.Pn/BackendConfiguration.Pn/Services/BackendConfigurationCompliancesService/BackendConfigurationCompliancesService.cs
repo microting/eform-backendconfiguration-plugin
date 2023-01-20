@@ -141,6 +141,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     var complianceModel = new CompliancesModel
                     {
                         CaseId = compliance.MicrotingSdkCaseId,
+                        CreatedAt = compliance.CreatedAt,
                         Deadline = compliance.Deadline.AddDays(-1),
                         ComplianceTypeId = null,
                         ControlArea = areaTranslation.Name,
