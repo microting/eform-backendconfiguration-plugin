@@ -554,7 +554,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         var query = _caseTemplatePnDbContext.Folders
             .Include(x => x.FolderTranslations)
             .Include(x => x.FolderProperties)
-            .OrderBy(x => x.FolderTranslations.OrderBy(y => y.Name))
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
         if (pnRequestModel.FolderId != null)
@@ -562,7 +561,11 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             query = query.Where(x => x.Id == pnRequestModel.FolderId);
         }
 
-        var total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+        var total = 0;
+        if (query.Any())
+        {
+            total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
+        }
 
         var results = new List<BackendConfigurationDocumentFolderModel>();
 
@@ -591,6 +594,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 })
                 .ToListAsync().ConfigureAwait(false);
         }
+
+        results = results.OrderBy(x =>
+            x.DocumentFolderTranslations.OrderBy(y => y.Name)).ToList();
         return new OperationDataResult<Paged<BackendConfigurationDocumentFolderModel>>(true,
             new Paged<BackendConfigurationDocumentFolderModel> { Entities = results, Total = total });
     }
