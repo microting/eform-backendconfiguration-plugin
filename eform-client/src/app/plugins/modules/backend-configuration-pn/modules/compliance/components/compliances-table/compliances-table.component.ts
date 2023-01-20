@@ -115,7 +115,6 @@ export class CompliancesTableComponent implements OnInit {
           tooltip:  this.translateService.stream('Delete Case'),
           icon: 'delete',
           color: 'warn',
-          iif: (record: ComplianceModel) => this.canEdit(record.deadline),
           click: (record: ReportEformItemModel) => this.onShowDeleteComplianceModal(record),
         }
       ]
