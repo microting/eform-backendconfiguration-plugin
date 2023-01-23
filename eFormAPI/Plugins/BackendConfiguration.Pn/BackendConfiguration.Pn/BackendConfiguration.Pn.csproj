@@ -454,9 +454,9 @@
       <EmbeddedResource Include="Resources\eForms\2.1 Udslusning af gylle.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
-      <None Remove="Resources\eForms\2.2 Gyllekøling: Timer og MWh.xml" />
-      <None Remove="Resources\eForms\2.3 Gyllekøling: Driftsstop.xml" />
-      <None Remove="Resources\eForms\2.4 Forsuring: pH-værdi.xml" />
+      <None Remove="Resources\eForms\2.2 Gyllekoeling: Timer og MWh.xml" />
+      <None Remove="Resources\eForms\2.3 Gyllekoeling: Driftsstop.xml" />
+      <None Remove="Resources\eForms\2.4 Forsuring: pH-vaerdi.xml" />
       <None Remove="Resources\eForms\2.5 Forsuring: Driftsstop.xml" />
       <EmbeddedResource Include="Resources\eForms\2.5 Forsuring: Driftsstop.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
