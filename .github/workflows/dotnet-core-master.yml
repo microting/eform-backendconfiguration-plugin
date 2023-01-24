@@ -86,8 +86,6 @@ jobs:
       run: |
         docker pull mariadb:10.8
         docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
-    - name: Wait for mariadb to be running
-      run: until [ "`docker inspect -f {{.State.Running}} mariadbtest`"=="true" ]; do sleep 0.1; done;
     - name: Start rabbitmq
       run: |
         docker pull rabbitmq:latest

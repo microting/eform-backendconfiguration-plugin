@@ -841,19 +841,19 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			{
 				"01.Logbøger Miljøledelse","2.2Gyllekøling: Timer og MWh",""
 			};
-			item = new KeyValuePair<string, List<string>>("2.2 Gyllekoeling: Timer og MWh", headers);
+			item = new KeyValuePair<string, List<string>>("2.2 Gyllekøling: Timer og MWh", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
 				"01.Logbøger Miljøledelse","2.3Gyllekøling: Driftsstop",""
 			};
-			item = new KeyValuePair<string, List<string>>("2.3 Gyllekoeling: Driftsstop", headers);
+			item = new KeyValuePair<string, List<string>>("2.3 Gyllekøling: Driftsstop", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{
 				"01.Logbøger Miljøledelse","2.4Forsuring: pH-værdi",""
 			};
-			item = new KeyValuePair<string, List<string>>("2.4 Forsuring: pH-vaerdi", headers);
+			item = new KeyValuePair<string, List<string>>("2.4 Forsuring: pH-værdi", headers);
 			theList.Add(item);
 			headers = new List<string>
 			{

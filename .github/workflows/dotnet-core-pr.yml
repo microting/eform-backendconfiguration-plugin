@@ -80,8 +80,6 @@ jobs:
       run: |
         docker pull mariadb:10.8
         docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
-    - name: Wait for mariadb to be running
-      run: until [ "`docker inspect -f {{.State.Running}} mariadbtest`"=="true" ]; do sleep 0.1; done;
     - name: Start rabbitmq
       run: |
         docker pull rabbitmq:latest
@@ -89,6 +87,8 @@ jobs:
     - name: Start the newly build Docker container
       id: docker-run
       run: docker run --name my-container -p 4200:5000 --network data microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" > docker_run_log 2>&1 &
+    - name: Sleep 15
+      run: sleep 15
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
