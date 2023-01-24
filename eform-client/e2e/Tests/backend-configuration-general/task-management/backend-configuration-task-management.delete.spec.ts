@@ -21,6 +21,7 @@ const workerForCreate = {
   surname: generateRandmString(),
   language: 'Dansk',
   properties: [0],
+  workOrderFlow: true,
 };
 const areas = [generateRandmString(), generateRandmString(), generateRandmString(),]
 const filters: TaskManagementFilters = {

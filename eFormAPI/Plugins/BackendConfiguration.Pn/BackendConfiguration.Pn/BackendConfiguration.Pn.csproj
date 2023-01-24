@@ -455,17 +455,8 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <None Remove="Resources\eForms\2.2 Gyllekøling: Timer og MWh.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.2 Gyllekøling: Timer og MWh.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.3 Gyllekøling: Driftsstop.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.3 Gyllekøling: Driftsstop.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.4 Forsuring: pH-værdi.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.4 Forsuring: pH-værdi.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.5 Forsuring: Driftsstop.xml" />
       <EmbeddedResource Include="Resources\eForms\2.5 Forsuring: Driftsstop.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -538,22 +529,34 @@
       <EmbeddedResource Include="Resources\eForms\17. Brandslukkere.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Resources\eForms\2.2 Gyllekøling: Timer og MWh.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.2 Gyllekøling: Timer og MWh.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.3 Gyllekøling: Driftsstop.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.3 Gyllekøling: Driftsstop.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.4 Forsuring: pH-værdi.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.4 Forsuring: pH-værdi.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="ChemicalsBase" Version="7.0.1" />
       <PackageReference Include="Ical.Net" Version="4.2.0" />
       <PackageReference Include="Magick.NET-Q16-x64" Version="12.2.2" />
-      <PackageReference Include="Microting.eForm" Version="7.0.13" />
-      <PackageReference Include="Microting.EformAngularFrontendBase" Version="7.0.12" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.11" />
+      <PackageReference Include="Microting.eForm" Version="7.0.14" />
+      <PackageReference Include="Microting.EformAngularFrontendBase" Version="7.0.13" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.12" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="7.0.12" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="7.0.13" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="7.0.12" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.12" />
-      <PackageReference Include="ClosedXML" Version="0.97.0" />
-      <PackageReference Include="Microting.TimePlanningBase" Version="7.0.9" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.13" />
+      <PackageReference Include="ClosedXML" Version="0.100.3" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="7.0.10" />
     </ItemGroup>
 
     <ItemGroup>

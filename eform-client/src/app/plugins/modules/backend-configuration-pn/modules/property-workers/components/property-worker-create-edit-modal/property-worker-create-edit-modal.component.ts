@@ -78,7 +78,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     if (!this.edit) {
       this.selectedDeviceUser.languageCode = this.languages[0].locale;
       if (this.authStateService.checkClaim('task_management_enable')) {
-        this.selectedDeviceUser.taskManagementEnabled = true;
+        this.selectedDeviceUser.taskManagementEnabled = false;
       }
     }
   }
@@ -158,7 +158,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .assignPropertiesToWorker({
         siteId,
         assignments: this.assignments,
-        timeRegistrationEnabled: this.selectedDeviceUser.taskManagementEnabled,
+        timeRegistrationEnabled: this.selectedDeviceUser.timeRegistrationEnabled,
         taskManagementEnabled: this.selectedDeviceUser.taskManagementEnabled})
       .subscribe((operation) => {
         if (operation && operation.success) {

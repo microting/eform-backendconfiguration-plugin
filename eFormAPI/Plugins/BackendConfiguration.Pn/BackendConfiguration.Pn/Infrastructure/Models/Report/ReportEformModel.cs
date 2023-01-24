@@ -28,7 +28,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Report
 {
     public class ReportEformModel
     {
-        public string TemplateName { get; set; }
+        public int CheckListId { get; set; }
+
+        public string CheckListName { get; set; }
 
         public string FromDate { get; set; }
 

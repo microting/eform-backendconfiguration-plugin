@@ -5,6 +5,7 @@ export class ComplianceModel {
   controlArea: string;
   itemName: string;
   deadline: Date;
+  createdAt: Date;
   responsible: Array<ResponsibleModel>;
   compliance: PropertyCompliancesColorBadgesEnum;
   planningId: number;

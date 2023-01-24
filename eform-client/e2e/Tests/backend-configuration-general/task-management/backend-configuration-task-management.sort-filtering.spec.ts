@@ -34,22 +34,25 @@ const properties: PropertyCreateUpdate[] = [
 ];
 const workers = [
   {
-  name: generateRandmString(),
-  surname: generateRandmString(),
-  language: 'Dansk',
-  properties: [0, 1, 2],
+    name: generateRandmString(),
+    surname: generateRandmString(),
+    language: 'Dansk',
+    properties: [0, 1, 2],
+    workOrderFlow: true,
   },
   {
-  name: generateRandmString(),
-  surname: generateRandmString(),
-  language: 'Dansk',
-  properties: [0, 1, 2],
+    name: generateRandmString(),
+    surname: generateRandmString(),
+    language: 'Dansk',
+    properties: [0, 1, 2],
+    workOrderFlow: true,
   },
   {
-  name: generateRandmString(),
-  surname: generateRandmString(),
-  language: 'Dansk',
-  properties: [0, 1, 2],
+    name: generateRandmString(),
+    surname: generateRandmString(),
+    language: 'Dansk',
+    properties: [0, 1, 2],
+    workOrderFlow: true,
   }
 ];
 const areas1 = [generateRandmString(), generateRandmString(), generateRandmString(),];

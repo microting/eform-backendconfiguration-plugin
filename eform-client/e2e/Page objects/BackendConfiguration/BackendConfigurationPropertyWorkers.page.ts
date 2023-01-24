@@ -120,6 +120,13 @@ class BackendConfigurationPropertyWorkersPage extends Page {
     return ele;
   }
 
+  public async TaskManagementEnableToggleInput() {
+    const ele = await $('#taskManagementEnabledToggle');
+    await ele.waitForDisplayed({ timeout: 40000 });
+    // await ele.waitForClickable({ timeout: 40000 });
+    return ele;
+  }
+
   public async profileLanguageSelectorCreate() {
     const ele = await $('#profileLanguageSelectorCreate');
     // await ele.waitForDisplayed({ timeout: 40000 });
@@ -211,6 +218,10 @@ class BackendConfigurationPropertyWorkersPage extends Page {
           ).click();
           await browser.pause(500);
         }
+      }
+      if(propertyWorker.workOrderFlow === true){
+        await (await this.TaskManagementEnableToggleInput()).click();
+        await browser.pause(500);
       }
     }
   }
@@ -404,4 +415,5 @@ export class PropertyWorker {
   surname?: string;
   language?: string;
   properties?: number[];
+  workOrderFlow?: boolean
 }

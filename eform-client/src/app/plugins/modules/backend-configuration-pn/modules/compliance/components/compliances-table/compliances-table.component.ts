@@ -72,6 +72,11 @@ export class CompliancesTableComponent implements OnInit {
   ];
   adminTableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'id'},
+    {header: this.translateService.stream('CreatedAt'),
+      field: 'createdAt',
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y HH:mm'},
+    },
     {
       header: this.translateService.stream('Deadline'),
       field: 'deadline',
@@ -115,7 +120,6 @@ export class CompliancesTableComponent implements OnInit {
           tooltip:  this.translateService.stream('Delete Case'),
           icon: 'delete',
           color: 'warn',
-          iif: (record: ComplianceModel) => this.canEdit(record.deadline),
           click: (record: ReportEformItemModel) => this.onShowDeleteComplianceModal(record),
         }
       ]

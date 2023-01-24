@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [a,b,c,d]
+        test: [a,b,c,d,e,f,g,h]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -87,6 +87,8 @@ jobs:
     - name: Start the newly build Docker container
       id: docker-run
       run: docker run --name my-container -p 4200:5000 --network data microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" > docker_run_log 2>&1 &
+    - name: Sleep 15
+      run: sleep 15
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
@@ -131,8 +133,6 @@ jobs:
         #cd eform-angular-frontend/eform-client && ../../eform-backendconfiguration-plugin/testinginstallpn.sh
         #../../eform-angular-items-planning-plugin/testinginstallpn.sh
         #../../eform-angular-timeplanning-plugin/testinginstallpn.sh
-    - name: Build frontend
-      run: dotnet build eform-angular-frontend/eFormAPI/eFormAPI.sln > dotnet_log 2>&1 &
     - name: NPM install
       run: cd eform-angular-frontend/eform-client && npm install
       if: steps.cache.outputs.cache-hit != 'true'
@@ -140,6 +140,8 @@ jobs:
       run: mkdir /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
       run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
+    - name: Sleep 15
+      run: sleep 15
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
     - name: Change rabbitmq hostname
