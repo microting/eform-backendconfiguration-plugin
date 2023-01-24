@@ -1339,7 +1339,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new()
             {
-                EformName = "2.2 Gyllekoeling: Timer og MWh",
+                EformName = "2.2 Gyllekøling: Timer og MWh",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new() { LanguageId = 1, Name = "2.2 Gyllekøling: Timer og MWh" },
@@ -1358,7 +1358,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new()
             {
-                EformName = "2.3 Gyllekoeling: Driftsstop",
+                EformName = "2.3 Gyllekøling: Driftsstop",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new() { LanguageId = 1, Name = "2.3 Gyllekøling: Driftsstop" },
@@ -1377,7 +1377,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             },
             new()
             {
-                EformName = "2.4 Forsuring: pH-vaerdi",
+                EformName = "2.4 Forsuring: pH-værdi",
                 AreaRuleTranslations = new List<AreaRuleTranslation>
                 {
                     new() { LanguageId = 1, Name = "2.4 Forsuring: pH-værdi" },

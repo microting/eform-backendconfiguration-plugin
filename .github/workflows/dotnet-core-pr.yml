@@ -80,6 +80,8 @@ jobs:
       run: |
         docker pull mariadb:10.8
         docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
+    - name: Wait for mariadb to be running
+      run: until [ "`docker inspect -f {{.State.Running}} mariadbtest`"=="true" ]; do sleep 0.1; done;
     - name: Start rabbitmq
       run: |
         docker pull rabbitmq:latest
@@ -131,8 +133,6 @@ jobs:
         #cd eform-angular-frontend/eform-client && ../../eform-backendconfiguration-plugin/testinginstallpn.sh
         #../../eform-angular-items-planning-plugin/testinginstallpn.sh
         #../../eform-angular-timeplanning-plugin/testinginstallpn.sh
-    - name: Build frontend
-      run: dotnet build eform-angular-frontend/eFormAPI/eFormAPI.sln > dotnet_log 2>&1 &
     - name: NPM install
       run: cd eform-angular-frontend/eform-client && npm install
       if: steps.cache.outputs.cache-hit != 'true'
@@ -140,6 +140,8 @@ jobs:
       run: mkdir /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
       run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
+    - name: Sleep 15
+      run: sleep 15
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
     - name: Change rabbitmq hostname
