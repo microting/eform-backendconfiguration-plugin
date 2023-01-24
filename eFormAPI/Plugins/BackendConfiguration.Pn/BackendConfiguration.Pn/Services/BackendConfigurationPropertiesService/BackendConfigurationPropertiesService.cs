@@ -79,7 +79,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
         }
 
-        public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request)
+        public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request)
         {
             try
             {

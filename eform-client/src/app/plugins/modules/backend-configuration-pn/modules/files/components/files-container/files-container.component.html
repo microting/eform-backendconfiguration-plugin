@@ -1,0 +1,31 @@
+<eform-new-subheader>
+  <button
+    mat-icon-button
+    id="manageTagsBtn"
+    matTooltip="{{ 'Manage tags' | translate }}"
+    (click)="openTagsModal()"
+    color="accent"
+  >
+    <mat-icon>discount</mat-icon>
+  </button>
+</eform-new-subheader>
+
+<app-files-filters [availableTags]="availableTags" (updateTable)="updateTable()"></app-files-filters>
+
+<app-files-table
+  [files]="files"
+  (updateTable)="updateTable()"
+  (clickTag)="addTagToFilter($event)"
+  (openEditNameModal)="showEditModal($event)"
+  (openDeleteModal)="showDeleteModal($event)"
+  (openEditTagsModal)="showEditTagsModal($event)"
+  (openViewModal)="showFile($event)"
+>
+</app-files-table>
+
+<app-file-tags
+  #tagsModal
+  [availableTags]="availableTags"
+  (tagsChanged)="getTags()"
+>
+</app-file-tags>

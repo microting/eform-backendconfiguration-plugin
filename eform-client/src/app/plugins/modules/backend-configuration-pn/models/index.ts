@@ -11,3 +11,4 @@ export * from './device-users';
 export * from './cases';
 export * from './chemicals';
 export * from './pools';
+export * from './files';

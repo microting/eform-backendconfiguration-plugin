@@ -1,0 +1,30 @@
+<mtx-grid
+  [data]="files.entities"
+  [columns]="tableHeaders"
+  [cellTemplate]="{tags: tagsTpl}"
+  [showPaginator]="false"
+  [pageOnFront]="false"
+  [rowStriped]="true"
+  [showToolbar]="false"
+  [showColumnMenuButton]="false"
+  [sortActive]="filesStateService.getActiveSort() | async"
+  [sortDirection]="filesStateService.getActiveSortDirection() | async"
+  (sortChange)="onSortTable($event)"
+>
+</mtx-grid>
+<ng-template #tagsTpl let-row>
+  <div class="d-flex flex-wrap align-items-center">
+    <mat-chip-list>
+      <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
+        <mat-icon>discount</mat-icon>
+        <span>{{ tag.name }}</span>
+      </mat-chip>
+    </mat-chip-list>
+    <button
+      mat-icon-button
+      color="primary"
+      (click)="openEditTags(row)">
+      <mat-icon>edit</mat-icon>
+    </button>
+  </div>
+</ng-template>

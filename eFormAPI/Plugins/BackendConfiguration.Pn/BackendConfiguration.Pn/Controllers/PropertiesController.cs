@@ -48,7 +48,7 @@ namespace BackendConfiguration.Pn.Controllers
 
         [HttpPost]
         [Route("index")]
-        public Task<OperationDataResult<Paged<PropertiesModel>>> Index([FromBody]ProperiesRequesModel request)
+        public Task<OperationDataResult<Paged<PropertiesModel>>> Index([FromBody]PropertiesRequestModel request)
         {
             return _backendConfigurationPropertiesService.Index(request);
         }

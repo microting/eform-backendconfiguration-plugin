@@ -7,3 +7,5 @@ export * from './backend-configuration-pn-task-management.service';
 export * from './backend-configuration-pn-chemicals.service';
 export * from './backend-configuration-pn-documents.service';
 export * from './backend-configuration-pn-cases.service';
+export * from './backend-configuration-pn-file-tags.service';
+export * from './backend-configuration-pn-files.service';

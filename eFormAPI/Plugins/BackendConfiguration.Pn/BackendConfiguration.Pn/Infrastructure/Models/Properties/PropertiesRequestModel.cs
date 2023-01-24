@@ -22,30 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Infrastructure.Helpers;
-
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
+namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.Properties;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-    public interface IBackendConfigurationPropertiesService
+    public class PropertiesRequestModel : FilterAndSortModel
     {
-        Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request);
+        public int PageIndex { get; set; }
 
-        Task<OperationResult> Create(PropertyCreateModel createModel);
+        public int PageSize { get; set; }
 
-        Task<OperationDataResult<PropertiesModel>> Read(int id);
-
-        Task<OperationResult> Update(PropertiesUpdateModel updateModel);
-
-        Task<OperationResult> Delete(int id);
-
-        Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary();
-        Task<OperationDataResult<Result>> GetCompanyType(int number);
-        Task<OperationDataResult<ChrResult>> GetChrInformation(int number);
+        public int Offset { get; set; }
     }
 }

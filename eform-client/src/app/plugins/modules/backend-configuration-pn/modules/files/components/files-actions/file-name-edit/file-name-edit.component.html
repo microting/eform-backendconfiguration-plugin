@@ -1,0 +1,30 @@
+<h3 mat-dialog-title>{{'Edit filename' | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column">
+  <mat-form-field>
+    <mat-label>{{'Filename' | translate}}</mat-label>
+    <input
+      matInput
+      type="text"
+      [(ngModel)]="fileModel.fileName"
+      id="fileNameInput"
+    >
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="fileNameSaveBtn"
+    (click)="updateFile()"
+    [disabled]="oldFileModel.fileName === fileModel.fileName"
+  >
+    {{ 'Update' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelSaveFileNameBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
+</div>

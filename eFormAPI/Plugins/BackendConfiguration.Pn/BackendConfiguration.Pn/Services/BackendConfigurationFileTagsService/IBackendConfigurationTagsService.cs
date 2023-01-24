@@ -22,30 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Infrastructure.Helpers;
-
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.Properties;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+	using System.Collections.Generic;
+	using System.Threading.Tasks;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-    public interface IBackendConfigurationPropertiesService
+	public interface IBackendConfigurationTagsService
     {
-        Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request);
+        Task<OperationDataResult<List<CommonTagModel>>> GetTags();
 
-        Task<OperationResult> Create(PropertyCreateModel createModel);
+        Task<OperationResult> UpdateTag(CommonTagModel requestModel);
 
-        Task<OperationDataResult<PropertiesModel>> Read(int id);
+        Task<OperationResult> DeleteTag(int id);
 
-        Task<OperationResult> Update(PropertiesUpdateModel updateModel);
+        Task<OperationResult> CreateTag(CommonTagModel requestModel);
 
-        Task<OperationResult> Delete(int id);
-
-        Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary();
-        Task<OperationDataResult<Result>> GetCompanyType(int number);
-        Task<OperationDataResult<ChrResult>> GetChrInformation(int number);
+        Task<OperationDataResult<CommonTagModel>> GetById(int id);
     }
 }

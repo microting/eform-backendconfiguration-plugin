@@ -1,7 +1,7 @@
 ﻿/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2023 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
+namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
+
+using System;
+using System.Collections.Generic;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+public class BackendConfigurationFileModel
 {
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+	public int Id { get; set; }
 
-    public class ProperiesRequesModel : FilterAndSortModel
-    {
-        public int PageIndex { get; set; }
+	public DateTime CreateDate { get; set; }
 
-        public int PageSize { get; set; }
+	public string FileName { get; set; }
 
-        public int Offset { get; set; }
-    }
+	public string FileExtension { get; set; }
+
+	public string Property { get; set; }
+
+	public List<CommonTagModel> Tags { get; set; }
+		= new List<CommonTagModel>();
 }
