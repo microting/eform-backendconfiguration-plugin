@@ -529,6 +529,18 @@
       <EmbeddedResource Include="Resources\eForms\17. Brandslukkere.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Resources\eForms\2.2 Gyllekoeling: Timer og MWh.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.2 Gyllekoeling: Timer og MWh.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.3 Gyllekoeling: Driftsstop.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.3 Gyllekoeling: Driftsstop.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\eForms\2.4 Forsuring: pH-vaerdi.xml" />
+      <EmbeddedResource Include="Resources\eForms\2.4 Forsuring: pH-vaerdi.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
