@@ -15,8 +15,8 @@ exports.config = {
     'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
     'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.create.spec.ts',
     'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.edit.spec.ts',
-    'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.delete.spec.ts',
-    'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.areas.spec.ts',
+    // 'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.delete.spec.ts',
+    // 'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.areas.spec.ts',
   ],
   suites: {
     settings: [
