@@ -311,6 +311,7 @@ export class PropertyRowObject {
   public editPropertyAreasBtn: WebdriverIO.Element;
   public editPropertyBtn: WebdriverIO.Element;
   public deletePropertyBtn: WebdriverIO.Element;
+  public propertyTaskAreasBtn: WebdriverIO.Element;
 
   public async getRow(rowNum: number): Promise<PropertyRowObject> {
     rowNum = rowNum - 1;
@@ -322,6 +323,7 @@ export class PropertyRowObject {
     this.editPropertyAreasBtn = await $('#showPropertyAreasBtn-'+rowNum);
     this.editPropertyBtn = await $('#editPropertyBtn-'+rowNum);
     this.deletePropertyBtn = await $('#deletePropertyBtn-'+rowNum);
+    this.propertyTaskAreasBtn = await $('#updateEntityList-'+rowNum);
     return this;
   }
 
