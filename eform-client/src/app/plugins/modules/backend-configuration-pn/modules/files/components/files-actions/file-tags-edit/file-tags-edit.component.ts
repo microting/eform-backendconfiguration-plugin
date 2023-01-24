@@ -23,7 +23,7 @@ export class FileTagsEditComponent implements OnInit {
   constructor(
     private backendConfigurationPnFilesService: BackendConfigurationPnFilesService,
     public dialogRef: MatDialogRef<FileTagsEditComponent>,
-    @Inject(MAT_DIALOG_DATA) model: {fileModel: FilesModel, availableTags: SharedTagModel[]}
+    @Inject(MAT_DIALOG_DATA) model: { fileModel: FilesModel, availableTags: SharedTagModel[] }
   ) {
     this.oldFileModel = {...model.fileModel};
     this.currentTagIds = model.fileModel.tags.map(x => x.id);

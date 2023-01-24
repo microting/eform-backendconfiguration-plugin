@@ -25,6 +25,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   @ViewChild('tagsModal') tagsModal: EformsTagsComponent;
   availableTags: SharedTagModel[] = [];
   files: Paged<FilesModel> = new Paged<FilesModel>();
+  selectedFileIds: number[] = [];
 
   getTagsSub$: Subscription;
   filesDeletedSub$: Subscription;
@@ -53,13 +54,13 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
 
   showEditModal(file: FilesModel) {
     this.filesService.getFile(file.id).subscribe(model => {
-      if(model && model.success && model.model) {
+      if (model && model.success && model.model) {
         const editFileModal = this.dialog.open(FileNameEditComponent, {...dialogConfigHelper(this.overlay, model.model)});
         this.fileNameUpdatedSub$ = editFileModal.componentInstance.fileNameUpdated.subscribe(() => {
           this.updateTable();
         });
       }
-    })
+    });
   }
 
   showDeleteModal(file: FilesModel) {
@@ -99,10 +100,10 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   getFiles() {
     this.filesStateService.getFiles()
       .subscribe(model => {
-        if(model && model.success && model.model) {
+        if (model && model.success && model.model) {
           this.files = model.model;
         }
-      })
+      });
   }
 
   getTags() {
@@ -119,23 +120,23 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
 
   addTagToFilter(tagId: number) {
     const filters = this.filesStateService.store.getValue().filters;
-    if(!filters.tagIds.some(x => x === tagId)) {
+    if (!filters.tagIds.some(x => x === tagId)) {
       filters.tagIds = [...filters.tagIds, tagId];
-      this.filesStateService.updateFilters(filters)
+      this.filesStateService.updateFilters(filters);
       this.updateTable();
     }
   }
 
   showEditTagsModal(model: FilesModel) {
     this.filesService.getFile(model.id).subscribe(model => {
-      if(model && model.success && model.model) {
+      if (model && model.success && model.model) {
         const editFileTagsModal = this.dialog.open(FileTagsEditComponent,
           {...dialogConfigHelper(this.overlay, {fileModel: model.model, availableTags: this.availableTags})});
         this.fileTagsUpdatedSub$ = editFileTagsModal.componentInstance.fileTagsUpdated.subscribe(() => {
           this.updateTable();
         });
       }
-    })
+    });
   }
 
   showFile(fileId: number) {

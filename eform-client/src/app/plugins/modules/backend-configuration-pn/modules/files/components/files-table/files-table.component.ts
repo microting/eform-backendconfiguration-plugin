@@ -24,8 +24,14 @@ export class FilesTableComponent implements OnInit {
   @Output() openDeleteModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
   @Output() openEditNameModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
   @Output() openEditTagsModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
+  @Output() changeSelectedFiles: EventEmitter<number[]> = new EventEmitter<number[]>();
   @Output() clickTag: EventEmitter<number> = new EventEmitter<number>();
+
+  selectedFiles: number[] = [];
+  allFileSelected: boolean = false;
+
   tableHeaders: MtxGridColumn[] = [
+    {field: 'select', header: '', width: '50px'},
     {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'}},
     {
       field: 'createDate',
@@ -79,6 +85,10 @@ export class FilesTableComponent implements OnInit {
     },
   ];
 
+  get getIntermediateSelectedFiles() {
+    return this.selectedFiles.length > 0 && this.selectedFiles.length !== this.files.total;
+  }
+
   constructor(
     public filesStateService: FilesStateService,
     private translateService: TranslateService,
@@ -111,5 +121,35 @@ export class FilesTableComponent implements OnInit {
 
   onClickTag(tag: SharedTagModel) {
     this.clickTag.emit(tag.id);
+  }
+
+  onChangeSelectedFiles(row: FilesModel) {
+    const i = this.selectedFiles.findIndex(x => x === row.id);
+    if (i !== -1) {
+      this.selectedFiles = this.selectedFiles.filter(x => x !== row.id);
+    } else {
+      this.selectedFiles = [...this.selectedFiles, row.id];
+    }
+    if (this.selectedFiles.length === 0) {
+      this.allFileSelected = false;
+    } else if (this.selectedFiles.length !== this.files.total) {
+      this.allFileSelected = true;
+    }
+    this.changeSelectedFiles.emit(this.selectedFiles);
+  }
+
+  selectAllFiles(selected: boolean) {
+    this.allFileSelected = selected;
+    if (selected) {
+      this.selectedFiles = this.files.entities.map(x => x.id);
+    } else {
+      this.selectedFiles = [];
+    }
+    this.changeSelectedFiles.emit(this.selectedFiles);
+  }
+
+  getSelectedFile(row: FilesModel) {
+    const i = this.selectedFiles.findIndex(x => x === row.id);
+    return i !== -1;
   }
 }

@@ -38,4 +38,8 @@ export class BackendConfigurationPnFilesService {
   deleteFile(fileId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(`${BackendConfigurationPnFilesMethods.Files}/${fileId}`);
   }
+
+  downloadFiles(fileIds: number[]): Observable<any> {
+    return this.apiBaseService.getBlobData(`${BackendConfigurationPnFilesMethods.Files}/download`, {fileIds: fileIds});
+  }
 }

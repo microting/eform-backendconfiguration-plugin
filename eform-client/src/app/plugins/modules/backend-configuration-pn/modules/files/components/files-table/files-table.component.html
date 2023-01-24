@@ -1,7 +1,8 @@
 <mtx-grid
   [data]="files.entities"
   [columns]="tableHeaders"
-  [cellTemplate]="{tags: tagsTpl}"
+  [cellTemplate]="{select: selectTpl, tags: tagsTpl}"
+  [headerExtraTemplate]="selectHeaderTpl"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -12,6 +13,27 @@
   (sortChange)="onSortTable($event)"
 >
 </mtx-grid>
+
+<ng-template #selectHeaderTpl let-col>
+  <div *ngIf="col.field === 'select'" class="column-select">
+    <mat-checkbox
+      [indeterminate]="getIntermediateSelectedFiles"
+      [ngModel]="allFileSelected"
+      (ngModelChange)="selectAllFiles($event)"
+    ></mat-checkbox>
+  </div>
+</ng-template>
+
+
+<ng-template #selectTpl let-row>
+  <div class="column-select">
+    <mat-checkbox
+      (change)="onChangeSelectedFiles(row)"
+      [ngModel]="getSelectedFile(row)"
+    ></mat-checkbox>
+  </div>
+</ng-template>
+
 <ng-template #tagsTpl let-row>
   <div class="d-flex flex-wrap align-items-center">
     <mat-chip-list>
