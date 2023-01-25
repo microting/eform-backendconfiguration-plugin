@@ -691,9 +691,23 @@ namespace BackendConfiguration.Pn.Services.WordService
                                         itemsHtml.Append($@"<td></td>");
                                     } else
                                     {
-                                        itemsHtml.Append(dataModelCaseField.Key == "number"
-                                            ? $@"<td>{dataModelCaseField.Value.Replace(".", ",")}</td>"
-                                            : $@"<td>{dataModelCaseField.Value}</td>");
+                                        if (dataModelCaseField.Key == "date")
+                                        {
+                                            if (DateTime.TryParse(dataModelCaseField.Value, out var date))
+                                            {
+                                                itemsHtml.Append($@"<td>{date:dd.MM.yyyy}</td>");
+                                            }
+                                            else
+                                            {
+                                                itemsHtml.Append($@"<td>{dataModelCaseField.Value}</td>");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            itemsHtml.Append(dataModelCaseField.Key == "number"
+                                                ? $@"<td>{dataModelCaseField.Value.Replace(".", ",")}</td>"
+                                                : $@"<td>{dataModelCaseField.Value}</td>");
+                                        }
                                     }
                                 }
                             }
