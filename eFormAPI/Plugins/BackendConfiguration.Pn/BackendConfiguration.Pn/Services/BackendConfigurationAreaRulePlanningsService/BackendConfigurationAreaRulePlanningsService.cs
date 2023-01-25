@@ -530,9 +530,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                 foreach (var siteId in siteIdsForDelete)
                                 {
-                                    await rulePlanning.PlanningSites
-                                        .First(x => x.SiteId == siteId)
-                                        .Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                    foreach (var planningSite in rulePlanning.PlanningSites
+                                                 .Where(x => x.SiteId == siteId)
+                                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                                    {
+                                        await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                    }
+
+                                    // await rulePlanning.PlanningSites
+                                        // .First(x => x.SiteId == siteId)
+                                        // .Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                                 }
 
                                 await rulePlanning.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);

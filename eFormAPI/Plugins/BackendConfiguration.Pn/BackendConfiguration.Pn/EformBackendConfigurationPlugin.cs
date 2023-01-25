@@ -427,6 +427,32 @@ namespace BackendConfiguration.Pn
                 await field.Create(sdkDbContext);
             }
 
+            //string text = $"05. Halebid og risikovurdering - {propertyName}|05. Tail bite and risc assessment - {propertyName}";
+            var cltranslations = await sdkDbContext.CheckListTranslations
+                .Where(x => x.Text.Contains("05. Halebid og risikovurdering")).ToListAsync().ConfigureAwait(false);
+
+            var engLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US").ConfigureAwait(false);
+
+            foreach (var clTranslation in cltranslations)
+            {
+                var engClTranslation = await sdkDbContext.CheckListTranslations.Where(x => x.LanguageId == engLanguage.Id)
+                    .Where(x => x.CheckListId == clTranslation.CheckListId).FirstOrDefaultAsync().ConfigureAwait(false);
+
+                if (engClTranslation == null)
+                {
+                    var propertyParts = clTranslation.Text.Split(" - ");
+                    var propertyName = propertyParts[1];
+                    var newClTranslation = new CheckListTranslation
+                    {
+                        CheckListId = clTranslation.CheckListId,
+                        LanguageId = engLanguage.Id,
+                        Text = $"05. Tail bite and risc assessment - {propertyName}",
+                        Description = ""
+                    };
+                    await newClTranslation.Create(sdkDbContext).ConfigureAwait(false);
+                }
+            }
+
             // cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Elforbrug")
             //     .ConfigureAwait(false);
             // if (cltranslation != null)
