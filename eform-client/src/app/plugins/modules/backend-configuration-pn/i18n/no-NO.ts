@@ -230,4 +230,5 @@ export const noNO = {
   'Received by server': 'Mottatt av server',
   'Retrieved by device': 'Hentet av enhet',
   'System error: Contact Microting': 'Systemfeil: Kontakt Microting',
+  'Name': 'Navn',
 };

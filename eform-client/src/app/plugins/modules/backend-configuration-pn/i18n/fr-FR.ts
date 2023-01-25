@@ -231,4 +231,5 @@ export const frFR = {
   'Received by server': 'Reçu par le serveur',
   'Retrieved by device': 'Récupéré par l\'appareil',
   'System error: Contact Microting': 'Erreur système: Contactez Microting',
+  'Name': 'Nom',
 };

@@ -239,4 +239,5 @@ export const da = {
   'Received by server': 'Modtaget af server',
   'Retrieved by device': 'Modtaget af enhed',
   'System error: Contact Microting': 'Systemfejl: Kontakt Microting',
+  'Name': 'Navn',
 };
