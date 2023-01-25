@@ -24,7 +24,12 @@
   </button>
 </eform-new-subheader>
 
-<app-documents-filters (updateTable)="updateTable()"></app-documents-filters>
+<app-documents-filters (updateTable)="updateTable()"
+                       [properties]="properties"
+                       [folders]="folders"
+[documents]="simpleDocuments">
+
+</app-documents-filters>
 
 <ng-container *ngFor="let folder of folders">
   <ng-container *ngIf="getDocumentsByFolderId(folder.id).length > 0">
