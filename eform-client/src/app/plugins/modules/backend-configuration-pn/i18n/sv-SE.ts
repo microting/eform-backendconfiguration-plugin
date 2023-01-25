@@ -229,4 +229,5 @@ export const svSE = {
   'Received by server': 'Mottagen av server',
   'Retrieved by device': 'Hämtad av enhet',
   'System error: Contact Microting': 'Systemfel: Kontakta Microting',
+  'Name': 'Namn',
 };

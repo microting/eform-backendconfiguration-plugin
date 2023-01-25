@@ -119,4 +119,5 @@ export const enUS = {
   'Received by server': 'Received by server',
   'Retrieved by device': 'Retrieved by device',
   'System error: Contact Microting': 'System error: Contact Microting',
+  'Name': 'Name',
 };
