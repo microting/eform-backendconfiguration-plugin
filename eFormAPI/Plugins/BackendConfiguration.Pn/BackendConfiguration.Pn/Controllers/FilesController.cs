@@ -20,29 +20,44 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Controllers;
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
+using Services.BackendConfigurationLocalizationService;
 using Infrastructure.Models.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
+using BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService;
+using Microsoft.Extensions.Logging;
 
 [Authorize]
 [Route("api/backend-configuration-pn/files")]
 public class FilesController : Controller
 {
-	private readonly IBackendConfigurationFilesService _backendConfigurationTagsService;
+	private readonly IBackendConfigurationFilesService _backendConfigurationFilesService;
+	private readonly IBackendConfigurationLocalizationService _localizationService;
+	private ILogger<FilesController> logger;
 
-	public FilesController(IBackendConfigurationFilesService backendConfigurationTagsService)
+	public FilesController(
+		IBackendConfigurationFilesService backendConfigurationFilesService,
+		IBackendConfigurationLocalizationService localizationService,
+		ILogger<FilesController> logger
+		)
 	{
-		_backendConfigurationTagsService = backendConfigurationTagsService;
+		_backendConfigurationFilesService = backendConfigurationFilesService;
+		_localizationService = localizationService;
+		this.logger = logger;
 	}
 
 	[HttpGet]
 	public async Task<OperationDataResult<Paged<BackendConfigurationFileModel>>> Index([FromQuery] BackendConfigurationFileRequestModel request)
 	{
-		return await _backendConfigurationTagsService.Index(request);
+		return await _backendConfigurationFilesService.Index(request);
 	}
 
 	/// <summary>Updates the name file.</summary>
@@ -50,7 +65,7 @@ public class FilesController : Controller
 	[HttpPut]
 	public async Task<OperationResult> UpdateName([FromBody] BackendConfigurationFileUpdateFilenameModel model)
 	{
-		return await _backendConfigurationTagsService.UpdateName(model);
+		return await _backendConfigurationFilesService.UpdateName(model);
 	}
 
 	/// <summary>Updates the tags.</summary>
@@ -58,26 +73,93 @@ public class FilesController : Controller
 	[HttpPut("tags")]
 	public async Task<OperationResult> UpdateTags([FromBody] BackendConfigurationFileUpdateFileTags model)
 	{
-		return await _backendConfigurationTagsService.UpdateTags(model);
+		return await _backendConfigurationFilesService.UpdateTags(model);
 	}
 
 	[HttpPost]
 	public async Task<OperationResult> Create([FromBody] object model)
 	{
-		return await _backendConfigurationTagsService.Create(model);
+		return await _backendConfigurationFilesService.Create(model);
 	}
 
 	[HttpDelete]
 	[Route("{id}")]
 	public async Task<OperationResult> Delete(int id)
 	{
-		return await _backendConfigurationTagsService.Delete(id);
+		return await _backendConfigurationFilesService.Delete(id);
 	}
 
 	[HttpGet]
 	[Route("{id}")]
 	public async Task<OperationDataResult<BackendConfigurationFileModel>> GetById(int id)
 	{
-		return await _backendConfigurationTagsService.GetById(id);
+		return await _backendConfigurationFilesService.GetById(id);
+	}
+
+	[HttpGet]
+	[AllowAnonymous]
+	[Route("get-file/{id}")]
+	public async Task<IActionResult> GetLoginPageImage(int id)
+	{
+		var filePath = await _backendConfigurationFilesService.GetUploadedDataByFileId(id);
+
+		if (filePath != _localizationService.GetString("FileNotFound") &&
+		    filePath != _localizationService.GetString("ErrorWhileGetFile") &&
+		    !string.IsNullOrEmpty(filePath) &&
+		    System.IO.File.Exists(filePath))
+		{
+			var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+			return File(fileStream, "application/pdf");
+		}
+		return NotFound($"Trying to find file at location: {filePath}");
+	}
+
+	[HttpPost]
+	[Route("get-files")]
+	public async Task<IActionResult> GetArchiveFiles([FromBody] List<int> fileIds)
+	{
+		if (fileIds is { Count: > 0 })
+		{
+			using (var archiveStream = new MemoryStream())
+			{
+				using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
+				{
+					foreach (var fileId in fileIds)
+					{
+						var filePath = await _backendConfigurationFilesService.GetUploadedDataByFileId(fileId);
+						var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
+						if (filePath != _localizationService.GetString("FileNotFound") &&
+						    filePath != _localizationService.GetString("ErrorWhileGetFile") &&
+						    !string.IsNullOrEmpty(filePath) &&
+						    System.IO.File.Exists(filePath))
+						{
+							var zipArchiveEntry = archive.CreateEntry($"{operationDataResult.Model.FileName}.pdf",
+								CompressionLevel.Fastest);
+							var file = LoadFromFile(filePath);
+							using var zipStream = zipArchiveEntry.Open();
+							zipStream.Write(file, 0, file.Length);
+						}
+						else
+						{
+							logger.LogWarning($"File not found. File path: {filePath}; FileId in db: {operationDataResult.Model.Id}; FileId in http query: {fileId}.");
+						}
+					}
+				}
+
+				return File(archiveStream.ToArray(), "application/zip");
+			}
+		}
+		return Ok(new OperationResult(false, "NotSelectedFiles"));
+	}
+
+	static byte[] LoadFromFile(string path)
+	{
+		using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+		using var memFile = new MemoryStream();
+		fs.CopyTo(memFile);
+
+		memFile.Seek(0, SeekOrigin.Begin);
+
+		return memFile.ToArray();
 	}
 }

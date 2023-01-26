@@ -11,6 +11,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {Paged, SharedTagModel} from 'src/app/common/models';
 import {FilesStateService} from '../../store';
 import {Sort} from '@angular/material/sort';
+import {BackendConfigurationPnFilesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 
 @Component({
   selector: 'app-files-table',
@@ -20,7 +21,6 @@ import {Sort} from '@angular/material/sort';
 export class FilesTableComponent implements OnInit {
   @Input() files: Paged<FilesModel> = new Paged<FilesModel>();
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
-  @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();
   @Output() openDeleteModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
   @Output() openEditNameModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
   @Output() openEditTagsModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
@@ -62,7 +62,7 @@ export class FilesTableComponent implements OnInit {
           type: 'icon',
           icon: 'visibility',
           tooltip: this.translateService.stream('View PDF'),
-          click: (filesModel: FilesModel) => this.onOpenView(filesModel.id),
+          click: (filesModel: FilesModel) => this.onOpenView(filesModel),
           class: 'viewPdfBtn',
         },
         {
@@ -84,6 +84,7 @@ export class FilesTableComponent implements OnInit {
       ],
     },
   ];
+  pdfSub$: any;
 
   get getIntermediateSelectedFiles() {
     return this.selectedFiles.length > 0 && this.selectedFiles.length !== this.files.total;
@@ -92,14 +93,18 @@ export class FilesTableComponent implements OnInit {
   constructor(
     public filesStateService: FilesStateService,
     private translateService: TranslateService,
+    private filesService: BackendConfigurationPnFilesService,
   ) {
   }
 
   ngOnInit(): void {
   }
 
-  onOpenView(id: number) {
-    this.openViewModal.emit(id);
+  onOpenView(file: FilesModel) {
+    this.pdfSub$ = this.filesService.getPdfFile(file.id).subscribe((blob) => {
+      const fileURL = URL.createObjectURL(blob);
+      window.open(fileURL);
+    });
   }
 
   onOpenDeleteModal(model: FilesModel) {

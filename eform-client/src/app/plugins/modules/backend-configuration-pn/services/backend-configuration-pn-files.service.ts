@@ -6,6 +6,8 @@ import {FilesModel, FilesRequestModel, FilesUpdateFilename, FilesUpdateFileTags}
 
 export let BackendConfigurationPnFilesMethods = {
   Files: 'api/backend-configuration-pn/files',
+  GetFile: 'api/backend-configuration-pn/files/get-file',
+  GetFiles: 'api/backend-configuration-pn/files/get-files'
 }
 
 @Injectable({
@@ -40,6 +42,10 @@ export class BackendConfigurationPnFilesService {
   }
 
   downloadFiles(fileIds: number[]): Observable<any> {
-    return this.apiBaseService.getBlobData(`${BackendConfigurationPnFilesMethods.Files}/download`, {fileIds: fileIds});
+    return this.apiBaseService.postBlobData(BackendConfigurationPnFilesMethods.GetFiles, fileIds);
+  }
+
+  getPdfFile(id: number) {
+    return this.apiBaseService.getBlobData(`${BackendConfigurationPnFilesMethods.GetFile}/${id}`);
   }
 }

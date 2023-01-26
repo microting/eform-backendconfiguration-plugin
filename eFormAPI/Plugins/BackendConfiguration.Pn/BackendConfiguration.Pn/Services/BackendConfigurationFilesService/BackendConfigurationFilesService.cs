@@ -293,4 +293,29 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			return new OperationDataResult<BackendConfigurationFileModel>(false, _localizationService.GetString("ErrorWhileGetFile"));
 		}
 	}
+
+	public async Task<string> GetUploadedDataByFileId(int id)
+	{
+		try
+		{
+			var filePath = await _dbContext.UploadedDatas
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.Where(x => x.FileId == id)
+				.Select(x => $"{x.FileLocation}/{x.FileName}.{x.Extension}")
+				.FirstOrDefaultAsync();
+
+			if (string.IsNullOrEmpty(filePath))
+			{
+				return _localizationService.GetString("FileNotFound");
+			}
+
+			return filePath;
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine(e);
+			_logger.LogError(e.Message);
+			return _localizationService.GetString("ErrorWhileGetFile");
+		}
+	}
 }

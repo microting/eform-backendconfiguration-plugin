@@ -17,6 +17,7 @@
     mat-raised-button
     color="accent"
     [disabled]="selectedFileIds.length === 0"
+    (click)="downloadSelectedFiles()"
     >{{'Download selected' | translate}}</button>
 </div>
 <app-files-table
@@ -26,7 +27,6 @@
   (openEditNameModal)="showEditModal($event)"
   (openDeleteModal)="showDeleteModal($event)"
   (openEditTagsModal)="showEditTagsModal($event)"
-  (openViewModal)="showFile($event)"
   (changeSelectedFiles)="selectedFileIds = $event"
 >
 </app-files-table>

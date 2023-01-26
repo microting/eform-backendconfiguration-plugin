@@ -139,7 +139,10 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  showFile(fileId: number) {
-
+  downloadSelectedFiles() {
+    this.filesService.downloadFiles(this.selectedFileIds).subscribe((blob) => {
+      const fileURL = URL.createObjectURL(blob);
+      window.open(fileURL);
+    })
   }
 }

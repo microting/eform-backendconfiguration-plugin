@@ -18,4 +18,6 @@ public interface IBackendConfigurationFilesService
 	Task<OperationResult> Delete(int id);
 
 	Task<OperationDataResult<BackendConfigurationFileModel>> GetById(int id);
+
+	Task<string> GetUploadedDataByFileId(int id);
 }
