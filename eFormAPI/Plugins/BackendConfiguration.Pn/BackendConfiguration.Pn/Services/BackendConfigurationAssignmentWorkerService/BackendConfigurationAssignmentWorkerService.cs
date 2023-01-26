@@ -513,6 +513,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         x.WorkflowState != Constants.WorkflowStates.Removed
                         && x.WorkerId == deviceUserModel.SiteId
                         && x.TaskManagementEnabled == true);
+
+                    var propertyIds = await _backendConfigurationPnDbContext.PropertyWorkers
+                        .Where(x =>
+                            x.WorkerId == deviceUserModel.SiteId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.PropertyId).ToListAsync().ConfigureAwait(false);
+
+                    var numberOfAssignements = await _backendConfigurationPnDbContext.AreaRulePlannings
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.Status)
+                        .Where(x => propertyIds.Contains(x.PropertyId))
+                        .Where(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == deviceUserModel.SiteId).Select(y => y.SiteId).Any())
+                        .CountAsync().ConfigureAwait(false);
+
+                    deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfAssignements > 0;
+
+                    var siteName = await sdkDbContext.Sites
+                        .Where(x => x.Id == deviceUserModel.SiteId)
+                        .Select(x => x.Name)
+                        .SingleOrDefaultAsync().ConfigureAwait(false);
+
+                    var numberOfWorkOrderCases = await _backendConfigurationPnDbContext.WorkorderCases
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.LastAssignedToName == siteName)
+                        .CountAsync();
+
+                    deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfWorkOrderCases > 0;
+                    deviceUserModel.HasWorkOrdersAssigned = numberOfWorkOrderCases > 0;
                 }
 
                 return new OperationDataResult<List<DeviceUserModel>>(true, deviceUsers);

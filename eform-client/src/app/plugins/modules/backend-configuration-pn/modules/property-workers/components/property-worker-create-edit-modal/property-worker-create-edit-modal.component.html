@@ -48,6 +48,7 @@
     class="mb-2"
     id="taskManagementEnabledToggle"
     [checked]="selectedDeviceUser.taskManagementEnabled"
+    [disabled]="selectedDeviceUser.hasWorkOrdersAssigned"
     [(ngModel)]="selectedDeviceUser.taskManagementEnabled">
     {{ "Task management enabled" | translate }}
   </mat-slide-toggle>
@@ -91,6 +92,7 @@
                                     )
                                   "
                         [checked]="getAssignmentIsCheckedByPropertyId(property.id)"
+                        [disabled]="selectedDeviceUser.isLocked"
                       ></mat-checkbox>
                       <label for="checkboxCreateAssignment{{ i }}"></label>
                     </div>
