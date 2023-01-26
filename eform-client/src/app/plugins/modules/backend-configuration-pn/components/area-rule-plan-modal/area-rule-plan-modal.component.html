@@ -143,30 +143,30 @@
           </ng-container>
 
         </ng-container>
-        <mat-form-field
-          *ngIf="
-          selectedAreaRule.translatedName !== '01. Registrer halebid' &&
-          selectedArea.type !== 10 &&
-          selectedArea.type !== 9"
-          [owlDateTimeTrigger]="dt1">
-          <mat-label>{{ 'Start date' | translate }}</mat-label>
-          <input
-            matInput
-            [owlDateTime]="dt1"
-            [min]="currentDate"
-            [ngModel]="selectedAreaRulePlanning.startDate"
-            (ngModelChange)="updateStartDate($event)"
-            type="text"
-            id="planStartFrom"
-            name="createStartFrom"
-            [disabled]="!selectedAreaRulePlanning.status"
-          >
-          <owl-date-time
-            [pickerType]="'calendar'"
-            [firstDayOfWeek]="1"
-            #dt1
-          ></owl-date-time>
-        </mat-form-field>
+<!--        <mat-form-field-->
+<!--          *ngIf="-->
+<!--          selectedAreaRule.translatedName !== '01. Registrer halebid' &&-->
+<!--          selectedArea.type !== 10 &&-->
+<!--          selectedArea.type !== 9"-->
+<!--          [owlDateTimeTrigger]="dt1">-->
+<!--          <mat-label>{{ 'Start date' | translate }}</mat-label>-->
+<!--          <input-->
+<!--            matInput-->
+<!--            [owlDateTime]="dt1"-->
+<!--            [min]="currentDate"-->
+<!--            [ngModel]="selectedAreaRulePlanning.startDate"-->
+<!--            (ngModelChange)="updateStartDate($event)"-->
+<!--            type="text"-->
+<!--            id="planStartFrom"-->
+<!--            name="createStartFrom"-->
+<!--            [disabled]="!selectedAreaRulePlanning.status"-->
+<!--          >-->
+<!--          <owl-date-time-->
+<!--            [pickerType]="'calendar'"-->
+<!--            [firstDayOfWeek]="1"-->
+<!--            #dt1-->
+<!--          ></owl-date-time>-->
+<!--        </mat-form-field>-->
       </ng-container>
       <ng-container *ngIf="selectedArea.type === 2">
         <mat-form-field>
@@ -202,26 +202,26 @@
           </mtx-select>
         </mat-form-field>
       </ng-container>
-      <ng-container *ngIf="selectedArea.type === 4">
-        <mat-form-field [owlDateTimeTrigger]="dt2">
-          <mat-label>{{ 'Start date' | translate }}</mat-label>
-          <input
-            matInput
-            [owlDateTime]="dt2"
-            [min]="currentDate"
-            [ngModel]="selectedAreaRulePlanning.startDate"
-            (ngModelChange)="updateStartDate($event)"
-            type="text"
-            id="planEndDate"
-            [disabled]="!selectedAreaRulePlanning.status"
-          >
-          <owl-date-time
-            [pickerType]="'calendar'"
-            [firstDayOfWeek]="1"
-            #dt2
-          ></owl-date-time>
-        </mat-form-field>
-      </ng-container>
+<!--      <ng-container *ngIf="selectedArea.type === 4">-->
+<!--        <mat-form-field [owlDateTimeTrigger]="dt2">-->
+<!--          <mat-label>{{ 'Start date' | translate }}</mat-label>-->
+<!--          <input-->
+<!--            matInput-->
+<!--            [owlDateTime]="dt2"-->
+<!--            [min]="currentDate"-->
+<!--            [ngModel]="selectedAreaRulePlanning.startDate"-->
+<!--            (ngModelChange)="updateStartDate($event)"-->
+<!--            type="text"-->
+<!--            id="planEndDate"-->
+<!--            [disabled]="!selectedAreaRulePlanning.status"-->
+<!--          >-->
+<!--          <owl-date-time-->
+<!--            [pickerType]="'calendar'"-->
+<!--            [firstDayOfWeek]="1"-->
+<!--            #dt2-->
+<!--          ></owl-date-time>-->
+<!--        </mat-form-field>-->
+<!--      </ng-container>-->
     </ng-container>
 <!--    <mtx-grid-->
 <!--      [data]="selectedArea.availableWorkers"-->
