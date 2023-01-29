@@ -60,7 +60,8 @@ namespace BackendConfiguration.Pn.Infrastructure
             foreach (var assignmentSiteId in assignmentSiteIds)
             {
                 var sdkSite = await sdkDbContext.Sites.SingleAsync(x => x.Id == assignmentSiteId).ConfigureAwait(false);
-                var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == sdkSite.LanguageId).ConfigureAwait(false);
+                var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == sdkSite.LanguageId)
+                    .ConfigureAwait(false);
                 var mainElement = await sdkCore.ReadeForm(relatedEFormId, language).ConfigureAwait(false);
 
                 var planning = await _itemsPlanningPnDbContext.Plannings
@@ -74,7 +75,8 @@ namespace BackendConfiguration.Pn.Infrastructure
                     })
                     .FirstAsync().ConfigureAwait(false);
 
-                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == planningFolderId).ConfigureAwait(false);
+                var folder = await sdkDbContext.Folders.SingleAsync(x => x.Id == planningFolderId)
+                    .ConfigureAwait(false);
                 var folderMicrotingId = folder.MicrotingUid.ToString();
 
                 // get planning cases
@@ -110,10 +112,11 @@ namespace BackendConfiguration.Pn.Infrastructure
                         var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId)
                             .ConfigureAwait(false);
                         if (caseDto.MicrotingUId != null)
-                            await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
+                            await sdkCore.CaseDelete((int) caseDto.MicrotingUId).ConfigureAwait(false);
                         caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
                         await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
-                    } catch (Exception e)
+                    }
+                    catch (Exception e)
                     {
                         caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
                         await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -220,7 +223,7 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                     if (planningCaseSite.MicrotingSdkCaseDoneAt.HasValue)
                     {
-                        var unixTimestamp = (long)(planningCaseSite.MicrotingSdkCaseDoneAt.Value
+                        var unixTimestamp = (long) (planningCaseSite.MicrotingSdkCaseDoneAt.Value
                                 .Subtract(new DateTime(1970, 1, 1)))
                             .TotalSeconds;
 
@@ -233,7 +236,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                         if (planning.PushMessageOnDeployment)
                         {
                             var body = "";
-                            folder = await GetTopFolder((int)planning.SdkFolderId, sdkDbContext).ConfigureAwait(false);
+                            folder = await GetTopFolder((int) planning.SdkFolderId, sdkDbContext).ConfigureAwait(false);
                             if (folder != null)
                             {
                                 //planningPnModel.SdkFolderId = sdkDbContext.Folders
@@ -241,7 +244,8 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 //    ?.Id;
                                 var folderTranslation =
                                     await sdkDbContext.FolderTranslations.SingleOrDefaultAsync(x =>
-                                        x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId).ConfigureAwait(false);
+                                            x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId)
+                                        .ConfigureAwait(false);
                                 body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:dd.MM.yyyy})";
                             }
 
@@ -265,7 +269,8 @@ namespace BackendConfiguration.Pn.Infrastructure
                             mainElement.Repeated = 1;
                         }
 
-                        var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null).ConfigureAwait(false);
+                        var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null)
+                            .ConfigureAwait(false);
                         if (caseId != null)
                         {
                             if (sdkDbContext.Cases.Any(x => x.MicrotingUid == caseId))
@@ -278,32 +283,160 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 planningCaseSite.MicrotingCheckListSitId =
                                     sdkDbContext.CheckListSites.Single(x => x.MicrotingUid == caseId).Id;
                             }
+
                             await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
 
                         var now = DateTime.UtcNow;
-                        var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id).ConfigureAwait(false);
+                        var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id)
+                            .ConfigureAwait(false);
                         switch (dbPlanning.RepeatType)
                         {
                             case RepeatType.Day:
-                                dbPlanning.NextExecutionTime = now.AddDays(dbPlanning.RepeatEvery);
+                                // dbPlanning.NextExecutionTime = now.AddDays(dbPlanning.RepeatEvery);
+                                if (dbPlanning.RepeatEvery > 1)
+                                {
+                                    var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
+                                    var multiplier = (int) (diff / planning.RepeatEvery);
+                                    var nextExecutionTime =
+                                        new DateTime(now.Year, 1, 1).AddDays(multiplier * planning.RepeatEvery);
+                                    dbPlanning.NextExecutionTime = nextExecutionTime;
+                                }
+
                                 break;
                             case RepeatType.Week:
+                            {
+                                var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
+                                var multiplier = (int) (diff / (planning.RepeatEvery * 7));
+                                var dayOfWeek = (int) dbPlanning.DayOfWeek!;
+                                if (dayOfWeek == 0)
+                                {
+                                    dayOfWeek = 7;
+                                }
+
                                 var startOfWeek =
-                                    new DateTime(now.Year, now.Month, now.Day, 0, 0, 0).StartOfWeek(
-                                        (DayOfWeek) dbPlanning.DayOfWeek);
-                                dbPlanning.NextExecutionTime = startOfWeek.AddDays(dbPlanning.RepeatEvery * 7);
+                                    new DateTime(now.Year, 1, 1, 0, 0, 0).StartOfWeek(
+                                        (DayOfWeek) dayOfWeek);
+                                if (startOfWeek.Year != now.Year)
+                                {
+                                    startOfWeek = startOfWeek.AddDays(7);
+                                }
+
+                                var nextExecutionTime =
+                                    startOfWeek.AddDays(multiplier * planning.RepeatEvery * 7);
+                                dbPlanning.NextExecutionTime = nextExecutionTime;
+
+                            }
+                                // dbPlanning.NextExecutionTime = startOfWeek.AddDays(dbPlanning.RepeatEvery * 7);
                                 break;
                             case RepeatType.Month:
-                                dbPlanning.DayOfMonth ??= 1;
+                            {
                                 if (dbPlanning.DayOfMonth == 0)
                                 {
                                     dbPlanning.DayOfMonth = 1;
                                 }
-                                var startOfMonth = new DateTime(now.Year, now.Month, (int) dbPlanning.DayOfMonth, 0, 0, 0);
-                                dbPlanning.NextExecutionTime = startOfMonth.AddMonths(dbPlanning.RepeatEvery);
+                                if (planning.RepeatEvery == 1)
+                                {
+                                    dbPlanning.NextExecutionTime =
+                                        new DateTime(now.Year, now.Month + 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                }
+                                else
+                                {
+                                    switch (dbPlanning.RepeatEvery)
+                                    {
+                                        case 2:
+                                        {
+                                            var months = new[] {1, 3, 5, 7, 9, 11};
+
+                                            if (months.Contains(now.Month))
+                                            {
+                                                dbPlanning.NextExecutionTime =
+                                                    new DateTime(now.Year, now.Month + 2, (int) dbPlanning.DayOfMonth!,
+                                                        0, 0, 0);
+                                            }
+                                            else
+                                            {
+                                                dbPlanning.NextExecutionTime =
+                                                    new DateTime(now.Year, now.Month + 1, (int) dbPlanning.DayOfMonth!,
+                                                        0, 0, 0);
+                                            }
+                                        }
+                                            break;
+                                        case 3:
+                                        {
+                                            var months = new[] {1, 4, 7, 10};
+                                            if (months.Contains(now.Month))
+                                            {
+                                                dbPlanning.NextExecutionTime =
+                                                    new DateTime(now.Year, now.Month + 3, (int) dbPlanning.DayOfMonth!,
+                                                        0, 0, 0);
+                                            }
+                                            else
+                                            {
+                                                months = new[] {2, 5, 8, 11};
+                                                if (months.Contains(now.Month))
+                                                {
+                                                    dbPlanning.NextExecutionTime =
+                                                        new DateTime(now.Year, now.Month + 2, (int) dbPlanning.DayOfMonth!,
+                                                            0, 0, 0);
+                                                }
+                                                else
+                                                {
+                                                    dbPlanning.NextExecutionTime =
+                                                        new DateTime(now.Year, now.Month + 1, (int) dbPlanning.DayOfMonth!,
+                                                            0, 0, 0);
+                                                }
+                                            }
+                                        }
+                                            break;
+                                        case 6:
+                                            if (now.Month < 6)
+                                            {
+                                                dbPlanning.NextExecutionTime =
+                                                    new DateTime(now.Year, 6, (int)dbPlanning.DayOfMonth!,
+                                                        0, 0, 0);
+                                            }
+                                            else
+                                            {
+                                                dbPlanning.NextExecutionTime =
+                                                    new DateTime(now.Year + 1, 1, (int)dbPlanning.DayOfMonth!,
+                                                        0, 0, 0);
+                                            }
+                                            break;
+                                        case 12:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(now.Year + 1, 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 24:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(now.Year + 2, 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                    }
+
+                                    // var diff = now.Month;
+                                    // var multiplier = diff / planning.RepeatEvery;
+                                    // var startOfMonth =
+                                    //     new DateTime(now.Year, 1, 1, 0, 0, 0).AddMonths(multiplier * planning.RepeatEvery);
+                                    // // if (startOfMonth.Year != now.Year)
+                                    // // {
+                                    // //     startOfMonth = startOfMonth.AddMonths(1);
+                                    // // }
+                                    //
+                                    // var nextExecutionTime =
+                                    //     new DateTime(startOfMonth.Year, startOfMonth.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                    // dbPlanning.NextExecutionTime = nextExecutionTime;
+                                }
+                            }
+                                // dbPlanning.DayOfMonth ??= 1;
+                                // if (dbPlanning.DayOfMonth == 0)
+                                // {
+                                //     dbPlanning.DayOfMonth = 1;
+                                // }
+                                // var startOfMonth = new DateTime(now.Year, now.Month, (int) dbPlanning.DayOfMonth, 0, 0, 0);
+                                // dbPlanning.NextExecutionTime = startOfMonth.AddMonths(dbPlanning.RepeatEvery);
                                 break;
                         }
+
                         dbPlanning.LastExecutedTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
                         await dbPlanning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }

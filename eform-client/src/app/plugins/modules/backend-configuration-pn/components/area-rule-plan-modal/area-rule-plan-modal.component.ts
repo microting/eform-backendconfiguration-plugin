@@ -53,7 +53,8 @@ export class AreaRulePlanModalComponent implements OnInit {
    */
   repeatTypeMonth: { name: string, id: number }[] = R.map(x => {
     return {name: x === 1 ? 'Every' : x.toString(), id: x};
-  }, R.range(1, 25));
+  // }, R.range(1, 25));
+  }, [1,2,3,6,12,24]);
   dayOfWeekArr: { id: number, name: string }[];
   repeatEveryArr: { id: number, name: string }[];
   repeatTypeArr: { id: number, name: string }[];
@@ -128,7 +129,8 @@ export class AreaRulePlanModalComponent implements OnInit {
     }, R.range(1, 51)); // 1, 2, ..., 49, 50.
     this.repeatTypeMonth = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
-    }, R.range(1, 25)); // 1, 2, ..., 23, 24.
+    }, [1,2,3,6,12,24]); // 1, 2, ..., 23, 24.
+    // }, R.range(1, 25)); // 1, 2, ..., 23, 24.
     this.dayOfWeekArr = [
       {id: 1, name: this.translate.instant('Monday')},
       {id: 2, name: this.translate.instant('Tuesday')},
