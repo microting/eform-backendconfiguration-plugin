@@ -59,6 +59,7 @@ namespace BackendConfiguration.Pn.Infrastructure
             await using var _ = sdkDbContext.ConfigureAwait(false);
             foreach (var assignmentSiteId in assignmentSiteIds)
             {
+
                 var sdkSite = await sdkDbContext.Sites.SingleAsync(x => x.Id == assignmentSiteId).ConfigureAwait(false);
                 var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == sdkSite.LanguageId)
                     .ConfigureAwait(false);

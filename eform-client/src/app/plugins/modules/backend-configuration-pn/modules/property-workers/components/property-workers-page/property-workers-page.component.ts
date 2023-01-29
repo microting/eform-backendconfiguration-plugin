@@ -27,8 +27,6 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
   templateUrl: './property-workers-page.component.html',
 })
 export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
-  selectedSimpleSiteDto: DeviceUserModel = new DeviceUserModel();
-  selectedSimpleSite: DeviceUserModel = new DeviceUserModel();
   sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
   workersAssignments: PropertyAssignWorkersModel[];
@@ -132,6 +130,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     selectedSimpleSite.isLocked = simpleSiteDto.isLocked;
     selectedSimpleSite.timeRegistrationEnabled = simpleSiteDto.timeRegistrationEnabled;
     selectedSimpleSite.taskManagementEnabled = simpleSiteDto.taskManagementEnabled;
+    selectedSimpleSite.hasWorkOrdersAssigned = simpleSiteDto.hasWorkOrdersAssigned;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId

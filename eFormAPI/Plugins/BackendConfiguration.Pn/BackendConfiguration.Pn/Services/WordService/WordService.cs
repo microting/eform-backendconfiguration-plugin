@@ -309,7 +309,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append(@"<tr style='font-weight:bold;font-size:9pt;'>");
             itemsHtml.Append(@"<td></td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
-            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequency")}</td>");
             itemsHtml.Append(@"</tr>");
 
             foreach (var areaRuleForType7 in areaRulesForType7)
@@ -467,7 +467,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("IE-Control Areas")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
-            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequency")}</td>");
             itemsHtml.Append(@"</tr>");
 
             folderTranslations.RemoveAt(0);

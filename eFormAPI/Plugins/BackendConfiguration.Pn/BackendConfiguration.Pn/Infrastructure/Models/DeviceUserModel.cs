@@ -41,6 +41,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
         public int? UnitId { get; set; }
         public int? WorkerUid { get; set; }
         public bool IsLocked { get; set; }
+        public bool HasWorkOrdersAssigned { get; set; }
 
         public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
         {

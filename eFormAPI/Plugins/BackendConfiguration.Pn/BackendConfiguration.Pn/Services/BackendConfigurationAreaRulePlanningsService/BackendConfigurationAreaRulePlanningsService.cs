@@ -1298,11 +1298,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                         }
                                                         else
                                                         {
-                                                            var clSites = await sdkDbContext.CheckListSites.SingleAsync(
+                                                            var clSites = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(
                                                                 x =>
                                                                     x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
 
-                                                            await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                                                            if (clSites != null)
+                                                            {
+                                                                await core.CaseDelete(clSites.MicrotingUid)
+                                                                    .ConfigureAwait(false);
+                                                            }
                                                         }
                                                     }
                                                 }
