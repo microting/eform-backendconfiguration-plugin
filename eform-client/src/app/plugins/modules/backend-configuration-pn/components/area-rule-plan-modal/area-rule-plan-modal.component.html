@@ -91,7 +91,6 @@
                     [clearable]="false"
                     id="planRepeatType"
                     [disabled]="!selectedAreaRulePlanning.status"
-                    appendTo="body"
                   >
                   </mtx-select>
                 </mat-form-field>
@@ -107,7 +106,6 @@
                     [disabled]="!selectedAreaRulePlanning.status"
                     id="planRepeatEvery"
                     name="createRepeatEvery"
-                    appendTo="body"
                   >
                   </mtx-select>
                 </mat-form-field>
@@ -121,7 +119,6 @@
                   [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"
                   [disabled]="!selectedAreaRulePlanning.status"
                   id="createDayOfWeek"
-                  appendTo="body"
                   [clearable]="false"
                 >
                 </mtx-select>
@@ -134,7 +131,6 @@
                   [disabled]="!selectedAreaRulePlanning.status"
                   id="createDayOfMonth"
                   name="createDayOfMonth"
-                  appendTo="body"
                   [clearable]="false"
                 >
                 </mtx-select>
@@ -181,7 +177,6 @@
             [ngModel]="selectedAreaRule.typeSpecificFields.type"
             [disabled]="true"
             id="planRuleType"
-            appendTo="body"
           >
           </mtx-select>
         </mat-form-field>
@@ -197,7 +192,6 @@
             [ngModel]="selectedAreaRule.typeSpecificFields.alarm"
             [disabled]="true"
             id="planRuleAlarm"
-            appendTo="body"
           >
           </mtx-select>
         </mat-form-field>
