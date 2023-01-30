@@ -10,7 +10,7 @@ import backendConfigurationAreaRulesPage, {
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
 import { format } from 'date-fns';
 import itemsPlanningPlanningPage from '../../../Page objects/ItemsPlanning/ItemsPlanningPlanningPage';
-import applicationSettingsPage from "../../../Page objects/ApplicationSettings.page";
+import applicationSettingsPage from '../../../Page objects/ApplicationSettings.page';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),
@@ -80,6 +80,23 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(2);
     expect(itemPlanning.repeatType).eq('Måned');
+
+    // compare itemPlanning.lastExecution with today's date
+    const today = new Date();
+    const todayDate = format(today, 'dd.MM.y');
+    const months = [1, 3, 5, 7, 9, 11];
+    if (months.includes(today.getMonth() + 1)) {
+      const newDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+      const newDateDate = format(newDate, 'dd.MM.y');
+      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    } else {
+      const newDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const newDateDate = format(newDate, 'dd.MM.y');
+      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    }
+    const lastExecution = itemPlanning.lastExecution.split(' ')[0];
+    expect(lastExecution).eq(todayDate);
+
     const workers = await itemPlanning.readPairing();
     expect([
       {
@@ -131,6 +148,29 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(3);
     expect(itemPlanning.repeatType).eq('Måned');
+
+    const today = new Date();
+    const todayDate = format(today, 'dd.MM.y');
+    let months = [1, 4, 7, 10];
+    if (months.includes(today.getMonth() + 1)) {
+      const newDate = new Date(today.getFullYear(), today.getMonth() + 3, 1);
+      const newDateDate = format(newDate, 'dd.MM.y');
+      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    } else {
+      months = [2, 5, 8, 11];
+      if (months.includes(today.getMonth() + 1)) {
+        const newDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+        const newDateDate = format(newDate, 'dd.MM.y');
+        expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+      } else {
+        const newDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const newDateDate = format(newDate, 'dd.MM.y');
+        expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+      }
+    }
+    const lastExecution = itemPlanning.lastExecution.split(' ')[0];
+    expect(lastExecution).eq(todayDate);
+
     const workers = await itemPlanning.readPairing();
     expect([
       {
@@ -140,7 +180,8 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     ]).deep.eq(workers);
     // browser.back();
     // await areaRule.createUpdatePlanning({status: false});
-  });it('should create new planning from default area rule at 6 months', async () => {
+  });
+  it('should create new planning from default area rule at 6 months', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
     expect(rowNum, 'have some non-default area rules').eq(8);
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
@@ -181,6 +222,21 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(6);
     expect(itemPlanning.repeatType).eq('Måned');
+
+    const today = new Date();
+    const todayDate = format(today, 'dd.MM.y');
+    if (today.getMonth() + 1 < 6) {
+      const newDate = new Date(today.getFullYear(), 6, 1);
+      const newDateDate = format(newDate, 'dd.MM.y');
+      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    } else {
+      const newDate = new Date(today.getFullYear() + 1, 0, 1);
+      const newDateDate = format(newDate, 'dd.MM.y');
+      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    }
+    const lastExecution = itemPlanning.lastExecution.split(' ')[0];
+    expect(lastExecution).eq(todayDate);
+
     const workers = await itemPlanning.readPairing();
     expect([
       {
@@ -190,7 +246,8 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     ]).deep.eq(workers);
     // browser.back();
     // await areaRule.createUpdatePlanning({status: false});
-  });it('should create new planning from default area rule at 12 months', async () => {
+  });
+  it('should create new planning from default area rule at 12 months', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
     expect(rowNum, 'have some non-default area rules').eq(8);
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
@@ -231,6 +288,14 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(12);
     expect(itemPlanning.repeatType).eq('Måned');
+
+    const today = new Date();
+    const todayDate = format(today, 'dd.MM.y');
+    const newDate = new Date(today.getFullYear() + 1, 0, 1);
+    const newDateDate = format(newDate, 'dd.MM.y');
+    expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    const lastExecution = itemPlanning.lastExecution.split(' ')[0];
+    expect(lastExecution).eq(todayDate);
     const workers = await itemPlanning.readPairing();
     expect([
       {
@@ -281,6 +346,14 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(24);
     expect(itemPlanning.repeatType).eq('Måned');
+
+    const today = new Date();
+    const todayDate = format(today, 'dd.MM.y');
+    const newDate = new Date(today.getFullYear() + 2, 0, 1);
+    const newDateDate = format(newDate, 'dd.MM.y');
+    expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    const lastExecution = itemPlanning.lastExecution.split(' ')[0];
+    expect(lastExecution).eq(todayDate);
     const workers = await itemPlanning.readPairing();
     expect([
       {

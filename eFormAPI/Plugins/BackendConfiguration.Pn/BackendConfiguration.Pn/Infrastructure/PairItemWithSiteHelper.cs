@@ -394,7 +394,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                                             if (now.Month < 6)
                                             {
                                                 dbPlanning.NextExecutionTime =
-                                                    new DateTime(now.Year, 6, (int)dbPlanning.DayOfMonth!,
+                                                    new DateTime(now.Year, 7, (int)dbPlanning.DayOfMonth!,
                                                         0, 0, 0);
                                             }
                                             else
