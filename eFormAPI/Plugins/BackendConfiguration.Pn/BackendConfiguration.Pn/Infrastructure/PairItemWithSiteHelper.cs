@@ -325,6 +325,10 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                                 var nextExecutionTime =
                                     startOfWeek.AddDays(multiplier * planning.RepeatEvery * 7);
+                                if (nextExecutionTime < now)
+                                {
+                                    nextExecutionTime = nextExecutionTime.AddDays(planning.RepeatEvery * 7);
+                                }
                                 dbPlanning.NextExecutionTime = nextExecutionTime;
 
                             }
