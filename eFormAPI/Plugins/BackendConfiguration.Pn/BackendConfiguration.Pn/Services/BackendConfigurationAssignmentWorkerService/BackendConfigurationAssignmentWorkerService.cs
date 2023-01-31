@@ -89,6 +89,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         {
             try
             {
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var assignWorkersModels = new List<PropertyAssignWorkersModel>();
                 var query = _backendConfigurationPnDbContext.PropertyWorkers.AsQueryable();
                 query = query
@@ -109,6 +111,43 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                             .Select(x => new PropertyAssignmentWorkerModel
                                 { PropertyId = x.PropertyId, IsChecked = true })
                             .ToListAsync().ConfigureAwait(false);
+
+                        foreach (var assignmentWorkerModel in assignments)
+                        {
+                            var numberOfAssignements = await _backendConfigurationPnDbContext.AreaRulePlannings
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.Status)
+                                .Where(x => x.PropertyId == assignmentWorkerModel.PropertyId)
+                                .Where(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == workerId.WorkerId).Select(y => y.SiteId).Any())
+                                .CountAsync().ConfigureAwait(false);
+
+                            assignmentWorkerModel.IsLocked = numberOfAssignements > 0;
+
+                            // var siteName = await sdkDbContext.Sites
+                            //     .Where(x => x.Id == workerId.WorkerId)
+                            //     .Select(x => x.Name)
+                            //     .SingleOrDefaultAsync().ConfigureAwait(false);
+
+
+                            var numberOfWorkOrderCases = await _backendConfigurationPnDbContext.WorkorderCases
+                                .Join(_backendConfigurationPnDbContext.PropertyWorkers,
+                                    workorderCase => workorderCase.PropertyWorkerId,
+                                    propertyWorker => propertyWorker.Id,
+                                    (workorderCase, propertyWorker) => new
+                                    {
+                                        workorderCase.WorkflowState,
+                                        propertyWorker.PropertyId,
+                                        propertyWorker.WorkerId
+                                    })
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Where(x => x.WorkerId == workerId.WorkerId)
+                                .Where(x => x.PropertyId == assignmentWorkerModel.PropertyId)
+                                //.Where(x => x.LastAssignedToName == siteName)
+                                .CountAsync();
+
+                            assignmentWorkerModel.IsLocked = assignmentWorkerModel.IsLocked ? assignmentWorkerModel.IsLocked : numberOfWorkOrderCases > 0;
+
+                        }
 
                         assignWorkersModels.Add(new PropertyAssignWorkersModel
                             { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
@@ -525,6 +564,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         .Where(x => propertyIds.Contains(x.PropertyId))
                         .Where(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && y.SiteId == deviceUserModel.SiteId).Select(y => y.SiteId).Any())
                         .CountAsync().ConfigureAwait(false);
+
+                    deviceUserModel.IsBackendUser = deviceUserModel.IsLocked;
 
                     deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfAssignements > 0;
 

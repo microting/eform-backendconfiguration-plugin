@@ -4,7 +4,7 @@
     <mat-label>{{'First name' | translate }}</mat-label>
     <input
       matInput
-      [disabled]="selectedDeviceUser.isLocked"
+      [disabled]="selectedDeviceUser.isBackendUser"
       [(ngModel)]="selectedDeviceUser.userFirstName"
       required
       type="text"
@@ -15,7 +15,7 @@
     <mat-label>{{'Last name' | translate }}</mat-label>
     <input
       matInput
-      [disabled]="selectedDeviceUser.isLocked"
+      [disabled]="selectedDeviceUser.isBackendUser"
       [(ngModel)]="selectedDeviceUser.userLastName"
       type="text"
       name="email"
@@ -92,7 +92,7 @@
                                     )
                                   "
                         [checked]="getAssignmentIsCheckedByPropertyId(property.id)"
-                        [disabled]="selectedDeviceUser.isLocked && getAssignmentIsCheckedByPropertyId(property.id)"
+                        [disabled]="getAssignmentIsLockedByPropertyId(property.id)"
                       ></mat-checkbox>
                       <label for="checkboxCreateAssignment{{ i }}"></label>
                     </div>

@@ -131,6 +131,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     selectedSimpleSite.timeRegistrationEnabled = simpleSiteDto.timeRegistrationEnabled;
     selectedSimpleSite.taskManagementEnabled = simpleSiteDto.taskManagementEnabled;
     selectedSimpleSite.hasWorkOrdersAssigned = simpleSiteDto.hasWorkOrdersAssigned;
+    selectedSimpleSite.isBackendUser = simpleSiteDto.isBackendUser;
 
     const workersAssignments = this.workersAssignments.find(
       (x) => x.siteId === simpleSiteDto.siteId
