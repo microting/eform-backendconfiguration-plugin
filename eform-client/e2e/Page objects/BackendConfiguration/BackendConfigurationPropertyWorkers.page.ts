@@ -241,7 +241,10 @@ class BackendConfigurationPropertyWorkersPage extends Page {
     await browser.pause(2000);
     const rowCount = await this.rowNum();
     for (let i = 1; i <= rowCount; i++) {
-      await (await new PropertyWorkerRowObject().getRow(1)).delete();
+      const row = await new PropertyWorkerRowObject().getRow(1);
+      if (row.fullName !== 'John Smith') {
+        await row.delete();
+      }
     }
   }
 }
