@@ -30,6 +30,7 @@
       [bindValue]="'locale'"
       [clearable]="false"
       [(ngModel)]="selectedDeviceUser.languageCode"
+      [disabled]="selectedDeviceUser.isLocked"
       [items]="languages">
     </mtx-select>
   </mat-form-field>
