@@ -356,7 +356,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 }
                             }
 
-                            var dbCase = await sdkDbContext.Cases.FirstAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+                            var dbCase = await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+
+                            if (dbCase == null)
+                            {
+                                Console.BackgroundColor = ConsoleColor.Red;
+                                Console.ForegroundColor = ConsoleColor.White;
+                                Console.WriteLine($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
+
+                                continue;
+                            }
+
 
                             if (planningNameTranslation != null)
                             {
@@ -511,7 +521,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
                 return new OperationDataResult<List<ReportEformModel>>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport"));
+                    _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
             }
         }
 
