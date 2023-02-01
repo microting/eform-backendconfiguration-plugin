@@ -1,4 +1,3 @@
-const path = require("path");
 exports.config = {
     runner: 'local',
     path: '/',
@@ -13,8 +12,9 @@ exports.config = {
     //
     specs: [
       'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1-months.spec.ts',
+      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1-days.spec.ts',
       'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1-weeks.spec.ts',
+      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1-months.spec.ts',
     ],
     suites: {
         settings: [

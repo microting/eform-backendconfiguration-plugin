@@ -301,6 +301,10 @@ namespace BackendConfiguration.Pn.Infrastructure
                                     var multiplier = (int) (diff / planning.RepeatEvery);
                                     var nextExecutionTime =
                                         new DateTime(now.Year, 1, 1).AddDays(multiplier * planning.RepeatEvery);
+                                    if (nextExecutionTime < now)
+                                    {
+                                        nextExecutionTime = nextExecutionTime.AddDays(planning.RepeatEvery);
+                                    }
                                     dbPlanning.NextExecutionTime = nextExecutionTime;
                                 }
 
