@@ -80,6 +80,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(2);
     expect(itemPlanning.repeatType).eq('Uge');
+    expect(itemPlanning.planningDayOfWeek).eq('Mandag');
 
     // compare itemPlanning.lastExecution with today's date
     const today = new Date();
@@ -153,6 +154,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(3);
     expect(itemPlanning.repeatType).eq('Uge');
+    expect(itemPlanning.planningDayOfWeek).eq('Mandag');
 
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
@@ -225,6 +227,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(6);
     expect(itemPlanning.repeatType).eq('Uge');
+    expect(itemPlanning.planningDayOfWeek).eq('Mandag');
 
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
@@ -297,6 +300,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(12);
     expect(itemPlanning.repeatType).eq('Uge');
+    expect(itemPlanning.planningDayOfWeek).eq('Mandag');
 
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
@@ -367,6 +371,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(24);
     expect(itemPlanning.repeatType).eq('Uge');
+    expect(itemPlanning.planningDayOfWeek).eq('Mandag');
 
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');

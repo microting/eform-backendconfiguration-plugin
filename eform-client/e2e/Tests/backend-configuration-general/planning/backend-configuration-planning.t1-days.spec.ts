@@ -39,6 +39,65 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     await lastProperty.editBindWithAreas([1]); // bind specific type1
     await lastProperty.openAreasViewModal(0); // go to area rule page
   });
+  it('should create new planning from default area rule at 0 days', async () => {
+    const rowNum = await backendConfigurationAreaRulesPage.rowNum();
+    expect(rowNum, 'have some non-default area rules').eq(8);
+    const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
+    const areaRulePlanning: AreaRulePlanningCreateUpdate = {
+      //   startDate: format(new Date(), 'yyyy/MM/dd'),
+      workers: [{ workerNumber: 0 }],
+      enableCompliance: false,
+      repeatEvery: 'Hver',
+      repeatType: 'Dag',
+    };
+    await areaRule.createUpdatePlanning(areaRulePlanning);
+    // areaRulePlanning.startDate = format(
+    //   sub(new Date(), { days: 1 }),
+    //   'yyyy/MM/dd'
+    // ); // fix test
+    const areaRulePlanningCreated = await areaRule.readPlanning();
+    // expect(areaRulePlanningCreated.startDate).eq(areaRulePlanning.startDate);
+    expect(areaRulePlanningCreated.workers[0].name).eq(
+      `${workerForCreate.name} ${workerForCreate.surname}`
+    );
+    // expect(
+    //   await (await $(`#mat-checkbox-0`)).getValue(),
+    //   `User ${areaRulePlanningCreated.workers[0]} not paired`
+    // ).eq('true');
+    expect(areaRulePlanningCreated.workers[0].checked).eq(true);
+    expect(areaRulePlanningCreated.workers[0].status).eq('Klar til server');
+    expect(areaRulePlanningCreated.enableCompliance).eq(areaRulePlanning.enableCompliance);
+    await itemsPlanningPlanningPage.goToPlanningsPage();
+    expect(
+      await itemsPlanningPlanningPage.rowNum(),
+      'items planning not create or create not correct'
+    ).eq(1);
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    expect(itemPlanning.eFormName).eq('1.1 Aflæsning vand');
+    expect(itemPlanning.name).eq(areaRule.name);
+    expect(itemPlanning.folderName).eq(
+      `${property.name} - 01. Logbøger Miljøledelse`
+    );
+    expect(itemPlanning.repeatEvery).eq(0);
+    expect(itemPlanning.repeatType).eq('Dag');
+
+    const today = new Date();
+    const todayDate = format(today, 'dd.MM.y');
+
+    expect(itemPlanning.nextExecution.split(' ')[0]).eq('--');
+    const lastExecution = itemPlanning.lastExecution.split(' ')[0];
+    expect(lastExecution).eq(todayDate);
+
+    const workers = await itemPlanning.readPairing();
+    expect([
+      {
+        workerName: `${workerForCreate.name} ${workerForCreate.surname}`,
+        workerValue: true,
+      },
+    ]).deep.eq(workers);
+    // browser.back();
+    // await areaRule.createUpdatePlanning({status: false});
+  });
   it('should create new planning from default area rule at 2 days', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
     expect(rowNum, 'have some non-default area rules').eq(8);
