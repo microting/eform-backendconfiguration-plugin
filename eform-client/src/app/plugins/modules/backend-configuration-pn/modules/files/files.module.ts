@@ -1,23 +1,24 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {MDBBootstrapModule} from 'angular-bootstrap-md';
 import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
 import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule, OwlMomentDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {NgSelectModule} from '@ng-select/ng-select';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts';
 import {
   FilesContainerComponent,
-  DocumentsDocumentCreateComponent,
+  FileCreateComponent,
   FileNameEditComponent,
   FilesFiltersComponent,
   FilesTableComponent,
   FileTagsComponent,
   FileTagsEditComponent,
+  FileCreateDropZoneComponent,
+  FileCreateEditFileComponent,
+  DownloadFilesNameArchiveComponent,
 } from './components';
 import {FilesRouting} from './files.routing';
 import {MatButtonModule} from '@angular/material/button';
@@ -34,20 +35,24 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
 import {EformSharedTagsModule} from 'src/app/common/modules/eform-shared-tags/eform-shared-tags.module';
 import {filesPersistProvider} from './store';
 import {MatChipsModule} from '@angular/material/chips';
+import {PdfViewerModule} from 'ng2-pdf-viewer';
+import {DragulaModule} from 'ng2-dragula';
 
 @NgModule({
   declarations: [
     FilesContainerComponent,
     FilesTableComponent,
     FilesFiltersComponent,
-    DocumentsDocumentCreateComponent,
+    FileCreateComponent,
     FileNameEditComponent,
     FileTagsComponent,
     FileTagsEditComponent,
+    FileCreateDropZoneComponent,
+    FileCreateEditFileComponent,
+    DownloadFilesNameArchiveComponent,
   ],
   imports: [
     CommonModule,
-    MDBBootstrapModule,
     TranslateModule,
     RouterModule,
     OwlDateTimeModule,
@@ -57,7 +62,6 @@ import {MatChipsModule} from '@angular/material/chips';
     EformSharedModule,
     FontAwesomeModule,
     ReactiveFormsModule,
-    NgSelectModule,
     EformImportedModule,
     FormsModule,
     MatButtonModule,
@@ -73,6 +77,8 @@ import {MatChipsModule} from '@angular/material/chips';
     MatCheckboxModule,
     EformSharedTagsModule,
     MatChipsModule,
+    PdfViewerModule,
+    DragulaModule,
   ],
   providers: [
     {
@@ -83,4 +89,5 @@ import {MatChipsModule} from '@angular/material/chips';
   ],
 })
 
-export class FilesModule {}
+export class FilesModule {
+}

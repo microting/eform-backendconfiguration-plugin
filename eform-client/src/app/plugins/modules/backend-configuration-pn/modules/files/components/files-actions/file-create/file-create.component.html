@@ -1,0 +1,117 @@
+<eform-new-subheader forceStaticTitle="true" [title]="'Upload files' | translate">
+  <button
+    mat-raised-button
+    id="uploadFilesBtn"
+    (click)="uploadFiles()"
+    color="accent"
+    *ngIf="selectedFile === null"
+    [disabled]="disabledUploadBtn"
+  >
+    {{'Upload files' | translate}}
+  </button>
+  <button
+    mat-icon-button
+    id="manageTagsBtn"
+    matTooltip="{{ 'Manage tags' | translate }}"
+    (click)="openTagsModal()"
+    color="primary"
+  >
+    <mat-icon>discount</mat-icon>
+  </button>
+</eform-new-subheader>
+
+<ng-container *ngIf="selectedFile === null">
+  <div class="selectors need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Property' | translate}}</mat-label>
+      <mtx-select
+        [items]="availableProperties"
+        bindLabel="name"
+        bindValue="id"
+        [ngModel]="selectedProperty"
+        (ngModelChange)="selectedPropertyChange($event)"
+        id="propertyIdSelector"
+        [multiple]="false"
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Tags' | translate}}</mat-label>
+      <mtx-select
+        [items]="availableTags"
+        bindLabel="name"
+        bindValue="id"
+        [ngModel]="selectedTags"
+        (ngModelChange)="selectedTagsChange($event)"
+        id="tagsSelector"
+        [multiple]="true"
+        [clearable]="true"
+      >
+      </mtx-select>
+    </mat-form-field>
+  </div>
+
+  <app-file-create-drop-zone
+    (filesChanged)="onFilesChanged($event)"
+    [dropZoneHeight]="filesSelected ? '10vh' : '25vh'"
+    [mimePdfType]="mimePdfType"
+  >
+  </app-file-create-drop-zone>
+
+  <!--if files selected-->
+  <ng-container *ngIf="filesSelected">
+    <div class="d-grid grid-4-columns">
+      <mat-card
+        *ngFor="let file of files; index as i"
+        class="m-2 d-flex flex-column justify-content-between"
+      >
+        <mat-card-title>{{file.file.name}}</mat-card-title>
+        <mat-card-content>
+          <pdf-viewer
+            [src]="file.src"
+            [render-text]="false"
+            [original-size]="false"
+            [show-all]="false"
+            [external-link-target]="'none'"
+            [page]="1"
+            [zoom]="1"
+          ></pdf-viewer>
+        </mat-card-content>
+        <mat-card-footer class="d-flex justify-content-end align-items-end">
+          <button
+            mat-icon-button
+            color="accent"
+            (click)="editFile(file)"
+            matTooltip="{{ 'Edit file' | translate }}"
+            id="editFile{{i}}Btn">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            color="warn"
+            (click)="deleteFile(file)"
+            matTooltip="{{ 'Delete file' | translate }}"
+            id="deleteFile{{i}}Btn">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-card-footer>
+      </mat-card>
+    </div>
+  </ng-container>
+</ng-container>
+
+<app-file-create-edit-file
+  [availableTags]="availableTags"
+  [availableProperties]="availableProperties"
+  [file]="selectedFile"
+  *ngIf="selectedFile !== null"
+  (cancelSaveFile)="selectedFile = null"
+  (saveFile)="onSaveEditedFile($event)"
+></app-file-create-edit-file>
+
+<app-file-tags
+  #tagsModal
+  [availableTags]="availableTags"
+  (tagsChanged)="getTags()"
+>
+</app-file-tags>

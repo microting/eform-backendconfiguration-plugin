@@ -1,0 +1,19 @@
+<div
+  id="dropZone"
+  [style.height]="dropZoneHeight"
+  (drop)="dropHandler($event)"
+  (dragover)="dragOverHandler($event)"
+  (click)="fileUpload.click()"
+>
+  <p [innerHTML]="'Drop file(s) here or a choose from your computer' | translate"></p>
+</div>
+
+<input
+  type="file"
+  hidden
+  [accept]="mimePdfType"
+  (change)="onFileSelected($event)"
+  id="pdfInput"
+  #fileUpload
+  multiple="multiple"
+/>

@@ -1,0 +1,11 @@
+.selectors {
+  display: grid;
+  grid-template-columns: repeat(2, 2fr) .3fr .3fr;
+  align-items: center;
+  justify-content: center;
+}
+
+pdf-viewer {
+  width: 220px;
+  height: 325px;
+}

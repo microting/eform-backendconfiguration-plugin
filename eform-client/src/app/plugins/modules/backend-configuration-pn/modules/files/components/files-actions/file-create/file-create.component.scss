@@ -1,0 +1,9 @@
+.selectors {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+pdf-viewer {
+  width: 220px;
+  height: 325px;
+}

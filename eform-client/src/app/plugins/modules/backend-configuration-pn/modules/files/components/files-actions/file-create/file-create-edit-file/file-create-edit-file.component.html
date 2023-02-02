@@ -1,0 +1,89 @@
+<div class="selectors need-wrapper">
+  <mat-form-field>
+    <mat-label>{{'Property' | translate}}</mat-label>
+    <mtx-select
+      [items]="availableProperties"
+      bindLabel="name"
+      bindValue="id"
+      [(ngModel)]="selectedProperty"
+      id="propertyIdSelector"
+      [multiple]="false"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Tags' | translate}}</mat-label>
+    <mtx-select
+      [items]="availableTags"
+      bindLabel="name"
+      bindValue="id"
+      [(ngModel)]="selectedTags"
+      id="tagsSelector"
+      [multiple]="true"
+      [clearable]="true"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <button
+    mat-raised-button
+    color="accent"
+    (click)="saveEditFile()"
+    id="saveEditFileBtn"
+    class="ml-2"
+  >
+    {{'Save' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="cancelEditFile()"
+    id="cancelEditFileBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+</div>
+
+<div
+  class="d-grid grid-4-columns"
+  id="dragula-container"
+  *ngIf="file && file.file"
+  dragula="dragula-container"
+  [(dragulaModel)]="changedPagesInFile"
+>
+  <mat-card
+    *ngFor="let page of pageInFile; index as i"
+    class="m-2 d-flex flex-column justify-content-between page"
+  >
+    <ng-container>
+    <mat-card-title>
+      <mat-icon
+        class="dragula-handle align-middle"
+        style="cursor: pointer"
+      >menu
+      </mat-icon>
+      {{('Page №' | translate) + (i + 1)}}</mat-card-title>
+    <mat-card-content>
+      <pdf-viewer
+        [src]="file.src"
+        [render-text]="false"
+        [original-size]="false"
+        [show-all]="false"
+        [external-link-target]="'none'"
+        [page]="i + 1"
+        [zoom]="1"
+      ></pdf-viewer>
+    </mat-card-content>
+    <mat-card-footer class="d-flex justify-content-end align-items-end">
+      <button
+        mat-icon-button
+        color="warn"
+        (click)="deletePage(i)"
+        matTooltip="{{ 'Delete page' | translate }}"
+        [disabled]="pagesInFile.length === 1"
+        id="deletePage{{i}}Btn">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </mat-card-footer>
+    </ng-container>
+  </mat-card>
+</div>

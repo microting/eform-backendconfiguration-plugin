@@ -22,9 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Collections.Generic;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfigurationFileTagsService;
@@ -39,6 +42,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using File = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.File;
 
 public class BackendConfigurationFilesService : IBackendConfigurationFilesService
 {
@@ -46,17 +50,19 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	private readonly IBackendConfigurationLocalizationService _localizationService;
 	private readonly BackendConfigurationPnDbContext _dbContext;
 	private readonly IUserService _userService;
+	private readonly IEFormCoreService _coreHelper;
+
 	public BackendConfigurationFilesService(
 		ILogger<BackendConfigurationTagsService> logger,
 		IBackendConfigurationLocalizationService localizationService,
 		BackendConfigurationPnDbContext dbContext,
-		IUserService userService
-		)
+		IUserService userService, IEFormCoreService coreHelper)
 	{
 		_logger = logger;
 		_localizationService = localizationService;
 		_dbContext = dbContext;
 		_userService = userService;
+		_coreHelper = coreHelper;
 	}
 
 	public async Task<OperationDataResult<Paged<BackendConfigurationFileModel>>> Index(BackendConfigurationFileRequestModel request)
@@ -98,7 +104,9 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			}
 			if (request.TagIds.Count > 0)
 			{
-				query = query.Where(x => x.FileTags.Any(y => request.TagIds.Contains(y.FileTagId)));
+				query = query.Where(x => x.FileTags
+					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+					.Any(y => request.TagIds.Contains(y.FileTagId)));
 			}
 			// sort
 			query = QueryHelper.AddSortToQuery(query, request.Sort, request.IsSortDsc);
@@ -210,9 +218,67 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		}
 	}
 
-	public async Task<OperationResult> Create(object model)
+	public async Task<OperationResult> Create(List<BackendConfigurationFileCreate> model)
 	{
-		throw new System.NotImplementedException();
+		try
+		{
+			var core = await _coreHelper.GetCore();
+			foreach (var fileCreate in model.Where(x => x.File != null))
+			{
+				// create file in db
+				var fileForDb = new File
+				{
+					CreatedByUserId = _userService.UserId,
+					FileName = fileCreate.File.FileName.Replace(".pdf", ""), // save only filename, without extension
+					PropertyId = fileCreate.PropertyId,
+					UpdatedByUserId = _userService.UserId,
+				};
+				await fileForDb.Create(_dbContext);
+
+				// add tags to file
+				foreach (var fileTag in fileCreate.TagIds.Select(tagId => new FileTags
+				         {
+					         CreatedByUserId = _userService.UserId,
+					         FileId = fileForDb.Id,
+					         FileTagId = tagId,
+					         UpdatedByUserId = _userService.UserId,
+				         }))
+				{
+					await fileTag.Create(_dbContext);
+				}
+
+				// upload file and save in db file info
+				var folder = Path.Combine(Path.GetTempPath(), "backend-configuration-pdf");
+				Directory.CreateDirectory(folder);
+				var fileName = $"{DateTime.Now.Ticks}_{DateTime.Now.Microsecond}";
+				var filePath = Path.Combine(folder, $"{fileName}.pdf");
+				// if you replace using to await using - stream not start copy until it goes beyond the current block
+				using (var stream = new FileStream(filePath, FileMode.Create))
+				{
+					await fileCreate.File.CopyToAsync(stream);
+				}
+				await core.PutFileToStorageSystem(filePath, fileCreate.File.FileName);
+				var checkSum = await core.PdfUpload(filePath);
+				var uploadedData = new UploadedData
+				{
+					Extension = "pdf",
+					FileName = fileName,
+					Checksum = checkSum,
+					CreatedByUserId = _userService.UserId,
+					UpdatedByUserId = _userService.UserId,
+					FileLocation = filePath,
+					FileId = fileForDb.Id,
+				};
+				await uploadedData.Create(_dbContext);
+			}
+			return new OperationResult(true);
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine(e);
+			_logger.LogError(e.Message);
+			return new OperationResult(false, _localizationService.GetString("ErrorWhileCreateFiles"));
+		}
 	}
 
 	public async Task<OperationResult> Delete(int id)
@@ -301,7 +367,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			var filePath = await _dbContext.UploadedDatas
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.Where(x => x.FileId == id)
-				.Select(x => $"{x.FileLocation}/{x.FileName}.{x.Extension}")
+				.Select(x => x.FileLocation)
 				.FirstOrDefaultAsync();
 
 			if (string.IsNullOrEmpty(filePath))

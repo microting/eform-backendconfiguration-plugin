@@ -1,4 +1,6 @@
-﻿namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
+﻿using System.Collections.Generic;
+
+namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
 
 using System.Threading.Tasks;
 using Infrastructure.Models.Files;
@@ -13,7 +15,7 @@ public interface IBackendConfigurationFilesService
 
 	Task<OperationResult> UpdateTags(BackendConfigurationFileUpdateFileTags model);
 
-	Task<OperationResult> Create(object model);
+	Task<OperationResult> Create(List<BackendConfigurationFileCreate> model);
 
 	Task<OperationResult> Delete(int id);
 

@@ -34,6 +34,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
 using BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService;
 using Microsoft.Extensions.Logging;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
 
 [Authorize]
 [Route("api/backend-configuration-pn/files")]
@@ -77,9 +78,13 @@ public class FilesController : Controller
 	}
 
 	[HttpPost]
-	public async Task<OperationResult> Create([FromBody] object model)
+	public async Task<OperationResult> Create([FromForm] BackendConfigurationFileCreateList model)
 	{
-		return await _backendConfigurationFilesService.Create(model);
+		foreach (var formFile in HttpContext.Request.Form.Files)
+		{
+			ReflectionSetProperty.SetProperty(model, formFile.Name.Replace("][", ".").Replace("[", ".").Replace("]", ""), formFile);
+		}
+		return await _backendConfigurationFilesService.Create(model.FilesForCreate);
 	}
 
 	[HttpDelete]
@@ -116,15 +121,15 @@ public class FilesController : Controller
 
 	[HttpPost]
 	[Route("get-files")]
-	public async Task<IActionResult> GetArchiveFiles([FromBody] List<int> fileIds)
+	public async Task<IActionResult> GetArchiveFiles([FromBody] BackendConfigurationArchiveFile model)
 	{
-		if (fileIds is { Count: > 0 })
+		if (model.FileIds is { Count: > 0 })
 		{
 			using (var archiveStream = new MemoryStream())
 			{
 				using (var archive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
 				{
-					foreach (var fileId in fileIds)
+					foreach (var fileId in model.FileIds)
 					{
 						var filePath = await _backendConfigurationFilesService.GetUploadedDataByFileId(fileId);
 						var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
@@ -146,7 +151,7 @@ public class FilesController : Controller
 					}
 				}
 
-				return File(archiveStream.ToArray(), "application/zip");
+				return File(archiveStream.ToArray(), "application/zip", model.ArchiveName);
 			}
 		}
 		return Ok(new OperationResult(false, "NotSelectedFiles"));

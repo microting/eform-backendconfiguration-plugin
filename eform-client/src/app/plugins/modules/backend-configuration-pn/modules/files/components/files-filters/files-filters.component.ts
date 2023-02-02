@@ -36,10 +36,10 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     this._availableTags = val ?? [];
     if(this.filtersForm && this.filtersForm.controls) {
       // delete from filter deleted tags
-      const newTagIds = this.filtersForm.value.tagIds.filter((x: number) => this._availableTags.some(y => y.id === x));
-      if (newTagIds.length !== this.filesStateService.store.getValue().filters.tagIds.length) {
+      const newTagIdsWithoutDeletedTags = this.filtersForm.value.tagIds.filter((x: number) => this._availableTags.some(y => y.id === x));
+      if (newTagIdsWithoutDeletedTags.length !== this.filesStateService.store.getValue().filters.tagIds.length) {
         this.filtersForm.patchValue({
-          tagIds: this.filtersForm.value.tagIds.filter((x: number) => this._availableTags.some(y => y.id === x)),
+          tagIds: newTagIdsWithoutDeletedTags,
         });
       }
     }

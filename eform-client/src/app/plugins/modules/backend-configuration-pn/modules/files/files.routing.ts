@@ -1,6 +1,7 @@
 import {RouterModule, Routes} from '@angular/router';
 import {
-  FilesContainerComponent
+  FilesContainerComponent,
+  FileCreateComponent,
 } from './components';
 import {NgModule} from '@angular/core';
 
@@ -8,6 +9,10 @@ export const routes: Routes = [
   {
     path: '',
     component: FilesContainerComponent,
+  },
+  {
+    path: 'create',
+    component: FileCreateComponent,
   },
 ];
 

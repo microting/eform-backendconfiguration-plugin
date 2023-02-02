@@ -1,0 +1,29 @@
+<h3 mat-dialog-title>{{'Download selected files' | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column">
+  <mat-form-field>
+    <mat-label>{{ 'Name ZIP-folder' | translate }}</mat-label>
+    <input
+      matInput
+      id="zipArchiveName"
+      [(ngModel)]="zipName"
+    >
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="downloadFilesBtn"
+    (click)="downloadFiles()"
+    [disabled]="disabled"
+  >
+    {{ 'Download' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelDownloadFilesBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
+</div>

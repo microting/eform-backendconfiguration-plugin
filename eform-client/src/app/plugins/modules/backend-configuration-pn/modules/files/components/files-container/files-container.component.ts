@@ -1,5 +1,5 @@
 import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {FileNameEditComponent, FileTagsEditComponent} from '../';
+import {DownloadFilesNameArchiveComponent, FileNameEditComponent, FileTagsComponent, FileTagsEditComponent} from '../';
 import {FilesModel} from '../../../../models';
 import {
   DeleteModalSettingModel,
@@ -12,17 +12,19 @@ import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {BackendConfigurationPnFilesService, BackendConfigurationPnFileTagsService} from '../../../../services';
-import {EformsTagsComponent} from 'src/app/common/modules/eform-shared-tags/components';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {TranslateService} from '@ngx-translate/core';
+import {saveAs} from 'file-saver';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 
+@AutoUnsubscribe()
 @Component({
   selector: 'app-files-container',
   templateUrl: './files-container.component.html',
   styleUrls: ['./files-container.component.scss'],
 })
 export class FilesContainerComponent implements OnInit, OnDestroy {
-  @ViewChild('tagsModal') tagsModal: EformsTagsComponent;
+  @ViewChild('tagsModal') tagsModal: FileTagsComponent;
   availableTags: SharedTagModel[] = [];
   files: Paged<FilesModel> = new Paged<FilesModel>();
   selectedFileIds: number[] = [];
@@ -32,6 +34,8 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   fileNameUpdatedSub$: Subscription;
   translatesSub$: Subscription;
   fileTagsUpdatedSub$: Subscription;
+  downloadFilesSub$: Subscription;
+  clickDownloadFilesSub$: Subscription;
 
   constructor(
     public dialog: MatDialog,
@@ -102,6 +106,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
       .subscribe(model => {
         if (model && model.success && model.model) {
           this.files = model.model;
+          this.selectedFileIds = [];
         }
       });
   }
@@ -140,9 +145,11 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   }
 
   downloadSelectedFiles() {
-    this.filesService.downloadFiles(this.selectedFileIds).subscribe((blob) => {
-      const fileURL = URL.createObjectURL(blob);
-      window.open(fileURL);
+    const downloadFilesNameArchiveModal = this.dialog.open(DownloadFilesNameArchiveComponent, {...dialogConfigHelper(this.overlay)});
+    this.clickDownloadFilesSub$ = downloadFilesNameArchiveModal.componentInstance.clickDownloadFiles.subscribe(zipName => {
+      this.downloadFilesSub$ = this.filesService.downloadFiles({fileIds: this.selectedFileIds, archiveName: zipName}).subscribe((blob) => {
+        saveAs(blob, `${zipName}.zip`);
+      })
     })
   }
 }
