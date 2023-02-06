@@ -542,7 +542,7 @@
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="7.0.15" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="7.0.12" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.14" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.15" />
       <PackageReference Include="ClosedXML" Version="0.100.3" />
       <PackageReference Include="Microting.TimePlanningBase" Version="7.0.11" />
     </ItemGroup>
