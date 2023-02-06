@@ -124,7 +124,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   }
 
   addTagToFilter(tagId: number) {
-    const filters = this.filesStateService.store.getValue().filters;
+    const filters = {...this.filesStateService.store.getValue().filters};
     if (!filters.tagIds.some(x => x === tagId)) {
       filters.tagIds = [...filters.tagIds, tagId];
       this.filesStateService.updateFilters(filters);

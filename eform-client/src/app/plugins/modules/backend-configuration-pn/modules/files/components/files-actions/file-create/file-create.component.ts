@@ -11,7 +11,6 @@ import {FileTagsComponent} from '../../';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import * as R from 'ramda';
 import {ActivatedRoute, Router} from '@angular/router';
-import {FilesCreateListModel} from 'src/app/plugins/modules/backend-configuration-pn/models/files/files-create-list.model';
 
 @AutoUnsubscribe()
 @Component({
@@ -125,7 +124,9 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   }
 
   editFile(file: FilesCreateModel) {
-    this.selectedFile = file;
+    file.file.arrayBuffer().then(arrayBuffer => {
+      this.selectedFile = {...file, file: new File([arrayBuffer], file.file.name), src: new Uint8Array(arrayBuffer)};
+    })
   }
 
   onSaveEditedFile(file: FilesCreateModel) {

@@ -38,6 +38,10 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       header: this.translateService.stream('Property name'),
       field: 'name',
     },
+    {
+      header: this.translateService.stream('Select'),
+      field: 'select',
+    },
   ];
 
   deviceUserCreate$: Subscription;
@@ -66,11 +70,6 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     return applicationLanguages2;
   }
 
-  get selectedProperties() {
-    const checkedAssignments = this.assignments.filter(x => x.isChecked);
-    return this.availableProperties.filter(x => checkedAssignments.some(y => y.propertyId === x.id));
-  }
-
   ngOnInit() {
     if (this.selectedDeviceUser.id) {
       this.edit = true;
@@ -78,7 +77,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     if (!this.edit) {
       this.selectedDeviceUser.languageCode = this.languages[0].locale;
       if (this.authStateService.checkClaim('task_management_enable')) {
-        this.selectedDeviceUser.taskManagementEnabled = false;
+        this.selectedDeviceUser.taskManagementEnabled = true;
       }
     }
   }
@@ -126,11 +125,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.deviceUserCreate$ = this.propertiesService
         .updateSingleDeviceUser(this.selectedDeviceUser)
         .subscribe((operation) => {
-          if (operation && operation.success) {
-            if (this.assignments) {
-              this.assignWorkerToPropertiesUpdate();
-            } else {
-            }
+          if (operation && operation.success && this.assignments) {
+            this.assignWorkerToPropertiesUpdate();
           }
         });
     } else {
@@ -145,10 +141,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {
             this.assignWorkerToProperties(operation.model);
-            this.hide(true);
-          } else {
-            this.hide(true);
           }
+          this.hide(true);
         }
       });
   }
@@ -158,7 +152,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       .assignPropertiesToWorker({
         siteId,
         assignments: this.assignments,
-        timeRegistrationEnabled: this.selectedDeviceUser.timeRegistrationEnabled,
+        timeRegistrationEnabled: this.selectedDeviceUser.taskManagementEnabled,
         taskManagementEnabled: this.selectedDeviceUser.taskManagementEnabled})
       .subscribe((operation) => {
         if (operation && operation.success) {

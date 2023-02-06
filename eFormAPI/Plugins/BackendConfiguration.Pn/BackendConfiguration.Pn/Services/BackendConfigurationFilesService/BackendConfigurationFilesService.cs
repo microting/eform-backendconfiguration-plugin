@@ -289,6 +289,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.Where(x => x.Id == id)
 				.Include(x => x.FileTags)
+				.Include(x => x.UploadedData)
 				.FirstOrDefaultAsync();
 
 			if (file == null)

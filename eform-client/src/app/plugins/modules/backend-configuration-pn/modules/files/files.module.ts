@@ -19,6 +19,7 @@ import {
   FileCreateDropZoneComponent,
   FileCreateEditFileComponent,
   DownloadFilesNameArchiveComponent,
+  FileCreateZoomPageComponent,
 } from './components';
 import {FilesRouting} from './files.routing';
 import {MatButtonModule} from '@angular/material/button';
@@ -37,6 +38,7 @@ import {filesPersistProvider} from './store';
 import {MatChipsModule} from '@angular/material/chips';
 import {PdfViewerModule} from 'ng2-pdf-viewer';
 import {DragulaModule} from 'ng2-dragula';
+import {MtxProgressModule} from '@ng-matero/extensions/progress';
 
 @NgModule({
   declarations: [
@@ -50,36 +52,38 @@ import {DragulaModule} from 'ng2-dragula';
     FileCreateDropZoneComponent,
     FileCreateEditFileComponent,
     DownloadFilesNameArchiveComponent,
+    FileCreateZoomPageComponent,
   ],
-  imports: [
-    CommonModule,
-    TranslateModule,
-    RouterModule,
-    OwlDateTimeModule,
-    FilesRouting,
-    OwlDateTimeModule,
-    OwlMomentDateTimeModule,
-    EformSharedModule,
-    FontAwesomeModule,
-    ReactiveFormsModule,
-    EformImportedModule,
-    FormsModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MtxSelectModule,
-    MatInputModule,
-    MtxGridModule,
-    MatDialogModule,
-    MatCardModule,
-    MatSlideToggleModule,
-    MatCheckboxModule,
-    EformSharedTagsModule,
-    MatChipsModule,
-    PdfViewerModule,
-    DragulaModule,
-  ],
+    imports: [
+        CommonModule,
+        TranslateModule,
+        RouterModule,
+        OwlDateTimeModule,
+        FilesRouting,
+        OwlDateTimeModule,
+        OwlMomentDateTimeModule,
+        EformSharedModule,
+        FontAwesomeModule,
+        ReactiveFormsModule,
+        EformImportedModule,
+        FormsModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MtxSelectModule,
+        MatInputModule,
+        MtxGridModule,
+        MatDialogModule,
+        MatCardModule,
+        MatSlideToggleModule,
+        MatCheckboxModule,
+        EformSharedTagsModule,
+        MatChipsModule,
+        PdfViewerModule,
+        DragulaModule,
+        MtxProgressModule,
+    ],
   providers: [
     {
       provide: OWL_DATE_TIME_FORMATS,

@@ -5,3 +5,11 @@ mtx-grid {
 .column-select {
   padding-top: 8px;
 }
+
+.column-actions {
+  button {
+    position: absolute;
+    right: 10px;
+    top: 7px;
+  }
+}

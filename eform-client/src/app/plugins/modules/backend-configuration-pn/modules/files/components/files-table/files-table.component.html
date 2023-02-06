@@ -1,5 +1,5 @@
 <mtx-grid
-  [data]="files.entities"
+  [data]="_files.entities"
   [columns]="tableHeaders"
   [cellTemplate]="{select: selectTpl, tags: tagsTpl}"
   [headerExtraTemplate]="selectHeaderTpl"
@@ -21,6 +21,15 @@
       [ngModel]="allFileSelected"
       (ngModelChange)="selectAllFiles($event)"
     ></mat-checkbox>
+  </div>
+  <div *ngIf="col.field === 'actions'" class="column-actions">
+    <button
+      mat-icon-button
+      color="primary"
+      matTooltip="{{'Refresh table'}}"
+      (click)="updateTable.emit()">
+      <mat-icon>refresh</mat-icon>
+    </button>
   </div>
 </ng-template>
 
@@ -45,6 +54,7 @@
     <button
       mat-icon-button
       color="primary"
+      matTooltip="{{'Edit tags file' | translate}}"
       (click)="openEditTags(row)">
       <mat-icon>edit</mat-icon>
     </button>

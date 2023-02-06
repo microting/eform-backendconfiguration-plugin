@@ -19,7 +19,16 @@ import {BackendConfigurationPnFilesService} from 'src/app/plugins/modules/backen
   styleUrls: ['./files-table.component.scss'],
 })
 export class FilesTableComponent implements OnInit {
-  @Input() files: Paged<FilesModel> = new Paged<FilesModel>();
+  _files: Paged<FilesModel> = new Paged<FilesModel>();
+  @Input()
+  set files(files: Paged<FilesModel>) {
+    this._files = files;
+    this.selectedFiles = [];
+    this.allFileSelected = false;
+  }
+  get files() {
+    return this._files;
+  }
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openDeleteModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
   @Output() openEditNameModal: EventEmitter<FilesModel> = new EventEmitter<FilesModel>();
@@ -43,7 +52,7 @@ export class FilesTableComponent implements OnInit {
     },
     {
       field: 'fileName',
-      header: this.translateService.stream('Filename'),
+      header: this.translateService.stream('File name'),
       sortable: true,
       sortProp: {id: 'FileName'},
       formatter: (filesModel: FilesModel) => `${filesModel.fileName}.${filesModel.fileExtension}`
@@ -69,7 +78,7 @@ export class FilesTableComponent implements OnInit {
           color: 'accent',
           type: 'icon',
           icon: 'edit',
-          tooltip: this.translateService.stream('Edit filename'),
+          tooltip: this.translateService.stream('Edit file name'),
           click: (filesModel: FilesModel) => this.onShowEditDocumentModal(filesModel),
           class: 'editFilenameBtn',
         },
@@ -87,7 +96,7 @@ export class FilesTableComponent implements OnInit {
   pdfSub$: any;
 
   get getIntermediateSelectedFiles() {
-    return this.selectedFiles.length > 0 && this.selectedFiles.length !== this.files.total;
+    return this.selectedFiles.length > 0 && this.selectedFiles.length !== this._files.total;
   }
 
   constructor(
@@ -137,7 +146,7 @@ export class FilesTableComponent implements OnInit {
     }
     if (this.selectedFiles.length === 0) {
       this.allFileSelected = false;
-    } else if (this.selectedFiles.length !== this.files.total) {
+    } else if (this.selectedFiles.length !== this._files.total) {
       this.allFileSelected = true;
     }
     this.changeSelectedFiles.emit(this.selectedFiles);
@@ -146,7 +155,7 @@ export class FilesTableComponent implements OnInit {
   selectAllFiles(selected: boolean) {
     this.allFileSelected = selected;
     if (selected) {
-      this.selectedFiles = this.files.entities.map(x => x.id);
+      this.selectedFiles = this._files.entities.map(x => x.id);
     } else {
       this.selectedFiles = [];
     }
