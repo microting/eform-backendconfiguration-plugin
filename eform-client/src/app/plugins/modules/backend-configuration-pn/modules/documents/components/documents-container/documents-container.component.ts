@@ -5,19 +5,21 @@ import {
   DocumentsDocumentEditComponent,
   DocumentsFoldersComponent
 } from '../';
-import {
-  DocumentFolderModel,
-  DocumentModel, DocumentSimpleFolderModel,
+import {DocumentModel, DocumentSimpleFolderModel, DocumentSimpleModel,
 } from '../../../../models';
-import {Paged} from 'src/app/common/models';
+import {CommonDictionaryModel, Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
 import {DocumentsStateService} from '../../../documents/store';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {applicationLanguagesTranslated} from "src/app/common/const";
-import {BackendConfigurationPnDocumentsService} from "src/app/plugins/modules/backend-configuration-pn/services";
+import {applicationLanguagesTranslated} from 'src/app/common/const';
+import {
+  BackendConfigurationPnDocumentsService,
+  BackendConfigurationPnPropertiesService
+} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {TranslateService} from '@ngx-translate/core';
 
 @Component({
   selector: 'app-documents-container',
@@ -27,18 +29,20 @@ import {BackendConfigurationPnDocumentsService} from "src/app/plugins/modules/ba
 export class DocumentsContainerComponent implements OnInit, OnDestroy {
   folders: DocumentSimpleFolderModel[];
   documents: Paged<DocumentModel> = new Paged<DocumentModel>();
-  getFoldersSub$: Subscription;
+  simpleDocuments: DocumentSimpleModel[];
   documentDeletedSub$: Subscription;
   documentUpdatedSub$: Subscription;
   documentCreatedSub$: Subscription;
   folderManageModalClosedSub$: Subscription;
-  getDocumentsSub$: Subscription;
   selectedLanguage: number;
+  properties: CommonDictionaryModel[] = [];
 
   constructor(
+    private propertyService: BackendConfigurationPnPropertiesService,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     public dialog: MatDialog,
     private overlay: Overlay,
+    private translate: TranslateService,
     public documentsStateService: DocumentsStateService,
     public localeService: LocaleService) {
     this.selectedLanguage = applicationLanguagesTranslated.find(
@@ -47,6 +51,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.getProperties();
     //this.getFolders();
   }
 
@@ -81,17 +86,6 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  // getFolders() {
-  //   this.getFoldersSub$ = this.documentsStateService
-  //     .getFolders()
-  //     .subscribe((data) => {
-  //       if (data && data.success && data.model) {
-  //         this.folders = data.model;
-  //         this.updateTable();
-  //       }
-  //     });
-  // }
-
   getFolders() {
     this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
       if (data && data.success) {
@@ -105,35 +99,39 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-
   updateTable() {
-    this.getFolders();
-    // this.getDocumentsSub$ = this.documentsStateService.getDocuments().subscribe((data) => {
-    //   if (data && data.success && data.model) {
-    //     this.documents = data.model;
-    //   }
-    // });
-    // this.getDocumentsSub$ = this.documentsStateService
-    //   .getFolders()
-    //   .subscribe((data) => {
-    //     if (data && data.success && data.model) {
-    //       this.folders = data.model;
-    //
-    //       //       this.workOrderCases = data.model;
-    //     }
-    //   });
+    this.getProperties();
   }
 
   getDocumentsByFolderId(folderId: number) {
     return this.documents.entities.filter(x => x.folderId === folderId);
   }
 
-  getFolderTranslation(folder: DocumentFolderModel) {
-    if(folder.documentFolderTranslations[0].name) {
-      return folder.documentFolderTranslations[0].name;
-    } else if(folder.documentFolderTranslations.some(x => x.name)) {
-      return folder.documentFolderTranslations.filter(x => x.name)[0].name
-    }
-    return '';
+  getProperties() {
+    this.propertyService.getAllProperties({
+      nameFilter: '',
+      sort: 'Id',
+      isSortDsc: false,
+      pageSize: 100000,
+      offset: 0,
+      pageIndex: 0
+    }).subscribe((data) => {
+      if (data && data.success && data.model) {
+        this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities
+          .map((x) => {
+            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+          })];
+        this.getFolders();
+        this.getDocuments();
+      }
+    });
+  }
+
+  getDocuments(selectedPropertyId?: number) {
+    this.backendConfigurationPnDocumentsService.getSimpleDocuments(this.selectedLanguage, selectedPropertyId).subscribe((data) => {
+      if (data && data.success) {
+        this.simpleDocuments = data.model;
+      }
+    });
   }
 }

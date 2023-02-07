@@ -14,6 +14,8 @@ export class DeviceUserModel {
   languageId: number;
   normalId: number;
   isLocked: boolean;
+  isBackendUser: boolean;
+  hasWorkOrdersAssigned: boolean;
   timeRegistrationEnabled: boolean;
   taskManagementEnabled: boolean;
 }

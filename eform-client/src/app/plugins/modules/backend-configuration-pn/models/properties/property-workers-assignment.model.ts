@@ -8,6 +8,7 @@ export class PropertyAssignWorkersModel {
 export class PropertyAssignmentWorkerModel {
   propertyId: number;
   isChecked: boolean;
+  isLocked: boolean;
 }
 
 

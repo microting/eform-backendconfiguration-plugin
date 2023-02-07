@@ -310,7 +310,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append(@"<tr style='font-weight:bold;font-size:9pt;'>");
             itemsHtml.Append(@"<td></td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
-            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequency")}</td>");
             itemsHtml.Append(@"</tr>");
 
             foreach (var areaRuleForType7 in areaRulesForType7)
@@ -468,7 +468,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append(@"<tr style='background-color:#d0cece;font-weight:bold;font-size:9pt;'>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("IE-Control Areas")}</td>");
             itemsHtml.Append($@"<td>{_localizationService.GetString("StartDate")}</td>");
-            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequence")}</td>");
+            itemsHtml.Append($@"<td>{_localizationService.GetString("Frequency")}</td>");
             itemsHtml.Append(@"</tr>");
 
             folderTranslations.RemoveAt(0);
@@ -692,9 +692,23 @@ namespace BackendConfiguration.Pn.Services.WordService
                                         itemsHtml.Append($@"<td></td>");
                                     } else
                                     {
-                                        itemsHtml.Append(dataModelCaseField.Key == "number"
-                                            ? $@"<td>{dataModelCaseField.Value.Replace(".", ",")}</td>"
-                                            : $@"<td>{dataModelCaseField.Value}</td>");
+                                        if (dataModelCaseField.Key == "date")
+                                        {
+                                            if (DateTime.TryParse(dataModelCaseField.Value, out var date))
+                                            {
+                                                itemsHtml.Append($@"<td>{date:dd.MM.yyyy}</td>");
+                                            }
+                                            else
+                                            {
+                                                itemsHtml.Append($@"<td>{dataModelCaseField.Value}</td>");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            itemsHtml.Append(dataModelCaseField.Key == "number"
+                                                ? $@"<td>{dataModelCaseField.Value.Replace(".", ",")}</td>"
+                                                : $@"<td>{dataModelCaseField.Value}</td>");
+                                        }
                                     }
                                 }
                             }

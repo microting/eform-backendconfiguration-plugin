@@ -229,4 +229,5 @@ export const deDE = {
   'Received by server': 'Vom Server empfangen',
   'Retrieved by device': 'Vom Gerät abgerufen',
   'System error: Contact Microting': 'Systemfehler: Kontaktieren Sie Microting',
+  'Name': 'Name',
 };

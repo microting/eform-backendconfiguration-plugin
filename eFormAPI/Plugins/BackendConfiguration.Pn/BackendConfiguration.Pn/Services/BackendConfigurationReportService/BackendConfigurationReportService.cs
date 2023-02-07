@@ -332,31 +332,41 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             }
                             else
                             {
-                                if (model.TagIds.Count == 1)
-                                {
-                                    var planningTag = await _itemsPlanningPnDbContext.PlanningTags
-                                        .FirstOrDefaultAsync(x => x.Id == model.TagIds.First());
-                                    propertyName = planningTag.Name.Replace("00. ", "");
-                                    foreach (var property in await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync())
-                                    {
-                                        if (propertyName.Contains(property.Name))
-                                        {
-                                            propertyName = property.Name;
-                                            var areaRulePlanningNew = new AreaRulePlanning
-                                            {
-                                                PropertyId = property.Id,
-                                                ItemPlanningId = planningCase.PlanningId,
-                                                AreaRuleId = 1
-                                            };
-                                            await areaRulePlanningNew.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                                            await areaRulePlanningNew.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                                            break;
-                                        }
-                                    }
-                                }
+                                // if (model.TagIds.Count == 1)
+                                // {
+                                //     var planningTag = await _itemsPlanningPnDbContext.PlanningTags
+                                //         .FirstOrDefaultAsync(x => x.Id == model.TagIds.First());
+                                //     propertyName = planningTag.Name.Replace("00. ", "");
+                                //     foreach (var property in await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync())
+                                //     {
+                                //         if (propertyName.Contains(property.Name))
+                                //         {
+                                //             propertyName = property.Name;
+                                //             var areaRulePlanningNew = new AreaRulePlanning
+                                //             {
+                                //                 PropertyId = property.Id,
+                                //                 ItemPlanningId = planningCase.PlanningId,
+                                //                 AreaRuleId = 1
+                                //             };
+                                //             await areaRulePlanningNew.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                //             await areaRulePlanningNew.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                //             break;
+                                //         }
+                                //     }
+                                // }
                             }
 
-                            var dbCase = await sdkDbContext.Cases.FirstAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+                            var dbCase = await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+
+                            if (dbCase == null)
+                            {
+                                Console.BackgroundColor = ConsoleColor.Red;
+                                Console.ForegroundColor = ConsoleColor.White;
+                                Console.WriteLine($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
+
+                                continue;
+                            }
+
 
                             if (planningNameTranslation != null)
                             {
@@ -511,7 +521,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
                 return new OperationDataResult<List<ReportEformModel>>(false,
-                    _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport"));
+                    _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
             }
         }
 

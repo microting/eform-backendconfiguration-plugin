@@ -230,4 +230,5 @@ export const nlNL = {
   'Received by server': '',
   'Retrieved by device': '',
   'System error: Contact Microting': '',
+  'Name': '',
 };

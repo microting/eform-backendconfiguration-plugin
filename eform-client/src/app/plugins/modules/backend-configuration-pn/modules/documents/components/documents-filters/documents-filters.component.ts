@@ -1,30 +1,19 @@
 import {
   Component,
-  EventEmitter,
+  EventEmitter, Input,
   OnDestroy,
   OnInit,
   Output,
 } from '@angular/core';
-// import {TaskManagementStateService} from '../store';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
-import {
-  BackendConfigurationPnDocumentsService,
-  BackendConfigurationPnPropertiesService,
-  BackendConfigurationPnTaskManagementService,
-} from '../../../../services';
-import {CommonDictionaryModel, Paged} from 'src/app/common/models';
-import {LocaleService, SitesService} from 'src/app/common/services';
-import {format, set} from 'date-fns';
+import {CommonDictionaryModel} from 'src/app/common/models';
+import {LocaleService} from 'src/app/common/services';
 import {TranslateService} from '@ngx-translate/core';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {AuthStateService} from 'src/app/common/store';
-import {
-  DocumentFolderModel,
-  DocumentFolderRequestModel, DocumentModel, DocumentSimpleFolderModel, DocumentSimpleModel,
-  DocumentsRequestModel
-} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {DocumentSimpleFolderModel, DocumentSimpleModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
 import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {DocumentsStateService} from 'src/app/plugins/modules/backend-configuration-pn/modules/documents/store';
 
@@ -36,23 +25,11 @@ import {DocumentsStateService} from 'src/app/plugins/modules/backend-configurati
 })
 export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
-  private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
+  @Input() folders: DocumentSimpleFolderModel[];
+  @Input() documents: DocumentSimpleModel[];
+  @Input() properties: CommonDictionaryModel[] = [];
   filtersForm: FormGroup;
-  propertyAreas: string[] = [];
-  documentNames: string[] = [];
-  properties: CommonDictionaryModel[] = [];
-  assignedSitesToProperty: CommonDictionaryModel[] = [];
-  expirationTimes: CommonDictionaryModel[] = [
-    {id: 1, name: 'Udløber om mindre end 1 måned', description: 'sfsdf'},
-    {id: 1, name: 'Udløber om 1-3 måneder', description: 'sfsdf'},
-    {id: 1, name: 'Udløber om 4-6 måneder', description: 'sfsdf'},
-    {id: 1, name: 'Udløber om 6-12 måneder', description: 'sfsdf'},
-    {id: 1, name: 'Udløber om over 12 måneder', description: 'sfsdf'},
-  ];
-  folders: DocumentSimpleFolderModel[];
-  documents: DocumentSimpleModel[];
   selectedLanguage: number;
-  selectedPropertyId: number;
 
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
@@ -61,14 +38,9 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   expireChangesSub$: Subscription;
 
   constructor(
-    public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     dateTimeAdapter: DateTimeAdapter<any>,
     private translate: TranslateService,
     public documentsStateService: DocumentsStateService,
-    // public taskManagementStateService: TaskManagementStateService,
-    private propertyService: BackendConfigurationPnPropertiesService,
-    // private sitesService: SitesService,
-    // private taskManagementService: BackendConfigurationPnTaskManagementService,,
     localeService: LocaleService,
     authStateService: AuthStateService
   ) {
@@ -79,7 +51,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.getProperties();
+    //this.getProperties();
     this.selectFiltersSub$ = this.documentsStateService
        .getFiltersAsync()
        .subscribe((filters) => {
@@ -99,7 +71,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
              }));
            }
            if (filters.propertyId && filters.propertyId !== -1) {
-             this.getDocuments(filters.propertyId);
+             //this.getDocuments(filters.propertyId);
              //this.getSites(filters.propertyId);
           }
          }
@@ -111,9 +83,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
            this.documentsStateService.store.getValue().filters
              .propertyId !== value
          ) {
-           if(value !== -1) {
-           } else {
-           }
+           if(value !== -1) { /* empty */ } else { /* empty */ }
            this.documentsStateService.store.update((state) => ({
              filters: {
                ...state.filters,
@@ -167,44 +137,6 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
            }));
          }
       });
-  }
-
-
-  getProperties() {
-    this.propertyService.getAllProperties({
-      nameFilter: '',
-      sort: 'Id',
-      isSortDsc: false,
-      pageSize: 100000,
-      offset: 0,
-      pageIndex: 0
-    }).subscribe((data) => {
-      if (data && data.success && data.model) {
-        this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities
-          .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
-          })];
-        this.getFolders();
-      }
-    });
-  }
-
-  getFolders() {
-    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
-      if (data && data.success) {
-        this.folders = data.model;
-        this.getDocuments();
-      }
-    });
-  }
-
-  getDocuments(selectedPropertyId?: number) {
-    const requestModel = new DocumentsRequestModel();
-    this.backendConfigurationPnDocumentsService.getSimpleDocuments(this.selectedLanguage, selectedPropertyId).subscribe((data) => {
-      if (data && data.success) {
-        this.documents = data.model;
-      }
-    });
   }
 
   ngOnDestroy(): void {

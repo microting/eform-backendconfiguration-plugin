@@ -6,7 +6,7 @@ import { expect } from 'chai';
 import { generateRandmString } from '../../../Helpers/helper-functions';
 import backendConfigurationPropertyWorkersPage from '../../../Page objects/BackendConfiguration/BackendConfigurationPropertyWorkers.page';
 import backendConfigurationTaskManagementPage, {TaskManagementFilters} from '../../../Page objects/BackendConfiguration/BackendConfigurationTaskManagement.page';
-import {SelectableListRowObject} from '../../../Page objects/SelectableLists.page';
+import selectableLists, {EntitySelectItemEditRowObject, SelectableListRowObject} from '../../../Page objects/SelectableLists.page';
 import myEformsPage from '../../../Page objects/MyEforms.page';
 
 const property: PropertyCreateUpdate = {
@@ -36,9 +36,25 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     await backendConfigurationPropertiesPage.createProperty(property);
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
-    await myEformsPage.Navbar.goToEntitySelect();
-    const selectableListRowObject = await new SelectableListRowObject().getRow(2);
-    await selectableListRowObject.edit({items: areas}, true);
+    await backendConfigurationPropertiesPage.goToProperties();
+    const createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
+    await createdProperty.propertyTaskAreasBtn.click();
+    for (let i = 0; i < (areas).length; i++) {
+      const btn = await $('#addSingleEntitySelectableItem');
+      await btn.click();
+      const itemObj = new EntitySelectItemEditRowObject();
+      const item = await itemObj.getRow(i + 1);
+      const editBtn = await $$('#entityItemEditBtn')[i];
+      await editBtn.click();
+      const ele = $(`#entityItemEditNameBox`);
+      await ele.waitForDisplayed({timeout: 40000});
+      await ele.setValue(areas[i]);
+      await browser.pause(500);
+      const saveBtn = await $('#entityItemSaveBtn');
+      await saveBtn.click();
+    }
+    const saveBtn = await $('#entityListSaveBtn');
+    await saveBtn.click();
     await backendConfigurationTaskManagementPage.goToTaskManagement();
     await backendConfigurationTaskManagementPage.createTask(
       {

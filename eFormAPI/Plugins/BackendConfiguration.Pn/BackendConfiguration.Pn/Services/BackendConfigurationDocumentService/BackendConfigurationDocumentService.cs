@@ -28,13 +28,15 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
     private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
     private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
     private readonly IBus _bus;
+    private readonly IUserService _userService;
 
-    public BackendConfigurationDocumentService(CaseTemplatePnDbContext caseTemplatePnDbContext, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService)
+    public BackendConfigurationDocumentService(CaseTemplatePnDbContext caseTemplatePnDbContext, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService, IUserService userService)
     {
         _caseTemplatePnDbContext = caseTemplatePnDbContext;
         _coreHelper = coreHelper;
         _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
         _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
+        _userService = userService;
         _bus = rebusService.GetBus();
     }
 
@@ -551,9 +553,20 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
     public async Task<OperationDataResult<Paged<BackendConfigurationDocumentFolderModel>>> GetFolders(BackendConfigurationDocumentFolderRequestModel pnRequestModel)
     {
+
+        var currentUserLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+
+        var folderNameIds = await _caseTemplatePnDbContext.FolderTranslations
+            .Where(x => !string.IsNullOrEmpty(x.Name))
+            .Where(x => x.LanguageId == currentUserLanguage.Id)
+            .OrderBy(x => x.Name)
+            .Select(x => x.FolderId)
+            .ToListAsync().ConfigureAwait(false);
+
         var query = _caseTemplatePnDbContext.Folders
             .Include(x => x.FolderTranslations)
             .Include(x => x.FolderProperties)
+            .Where(x => folderNameIds.Contains(x.Id))
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
         if (pnRequestModel.FolderId != null)
@@ -561,17 +574,16 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             query = query.Where(x => x.Id == pnRequestModel.FolderId);
         }
 
-        var total = 0;
-        if (query.Any())
-        {
-            total = await query.Select(x => x.Id).CountAsync().ConfigureAwait(false);
-        }
+        var query2 = query.AsEnumerable()
+            .OrderBy(x => folderNameIds.IndexOf(x.Id));
+
+        var total = query2.Select(x => x.Id).Count();
 
         var results = new List<BackendConfigurationDocumentFolderModel>();
 
         if (total > 0)
         {
-            results = await query
+            results = query2
                 .Select(x => new BackendConfigurationDocumentFolderModel
                 {
                     Id = x.Id,
@@ -592,11 +604,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                             SdkFolderId = y.SdkFolderId,
                         }).ToList()
                 })
-                .ToListAsync().ConfigureAwait(false);
+                .ToList();
         }
-
-        results = results.OrderBy(x =>
-            x.DocumentFolderTranslations.OrderBy(y => y.Name)).ToList();
         return new OperationDataResult<Paged<BackendConfigurationDocumentFolderModel>>(true,
             new Paged<BackendConfigurationDocumentFolderModel> { Entities = results, Total = total });
     }

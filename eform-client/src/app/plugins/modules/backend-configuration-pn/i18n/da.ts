@@ -239,6 +239,7 @@ export const da = {
   'Received by server': 'Modtaget af server',
   'Retrieved by device': 'Modtaget af enhed',
   'System error: Contact Microting': 'Systemfejl: Kontakt Microting',
+  'Name': 'Navn',
   'Drop file(s) here or a choose from your computer': 'Slip fil (er) her eller en <u class="choose">Vælg</u> fra din computer',
   'Create file': 'Opret fil',
   'Download selected': 'Hent valgte',

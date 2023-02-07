@@ -298,77 +298,7 @@ namespace BackendConfiguration.Pn
 
             CreateFoldersTranslations(core);
 
-            var clTranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
-            var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == clTranslation.CheckListId);
-
-            if (!sdkDbContext.Fields.Any(x => x.OriginalId == "376999"))
-            {
-                var field = new Microting.eForm.Infrastructure.Data.Entities.Field
-                {
-                    CheckListId = clCheckList.Id,
-                    Color = Microting.eForm.Infrastructure.Constants.Constants.FieldColors.Yellow,
-                    BarcodeEnabled = 0,
-                    BarcodeType = "",
-                    DisplayIndex = 0,
-                    FieldType = await sdkDbContext.FieldTypes.FirstAsync(x => x.Type == "EntitySelect"),
-                    EntityGroupId = 12345,
-                    Mandatory = 1,
-                    ReadOnly = 0,
-                    Dummy = 0,
-                    OriginalId = "376999",
-                    Translations = new List<FieldTranslation>
-                    {
-                        new()
-                        {
-                            LanguageId = 1,
-                            Text = "Vælg lokation",
-                            Description = ""
-                        },
-                        new()
-                        {
-                            LanguageId = 2,
-                            Text = "Select location",
-                            Description = ""
-                        },
-                        new()
-                        {
-                            LanguageId = 3,
-                            Text = "Ort auswählen",
-                            Description = ""
-                        }
-                    }
-                };
-                await field.Create(sdkDbContext);
-            }
-
-			/*cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Elforbrug")
-                .ConfigureAwait(false);
-            if (cltranslation != null)
-            {
-                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
-                    .ConfigureAwait(false);
-                if (clCheckList != null)
-                {
-                    clCheckList.ReportH1 = "24.00Aflæsninger";
-                    clCheckList.ReportH2 = "24.00.02Aflæsning el";
-                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
-                }
-            }
-
-            cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Vandforbrug")
-                .ConfigureAwait(false);
-            if (cltranslation != null)
-            {
-                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
-                    .ConfigureAwait(false);
-
-                if (clCheckList != null)
-                {
-                    clCheckList.ReportH1 = "24.00Aflæsninger";
-                    clCheckList.ReportH2 = "24.00.01Aflæsning vand";
-                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
-                }
-            }*/
+			UpdateCheckLists(sdkDbContext);
 
 			var propertyWorkers = await context.PropertyWorkers
                 .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
@@ -429,7 +359,7 @@ namespace BackendConfiguration.Pn
             }
         }
 
-        public void ConfigureDbContext(IServiceCollection services, string connectionString)
+		public void ConfigureDbContext(IServiceCollection services, string connectionString)
         {
             var itemsPlannigConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
@@ -1224,5 +1154,105 @@ namespace BackendConfiguration.Pn
 			}
 		}
 
+		private static async void UpdateCheckLists(MicrotingDbContext sdkDbContext)
+		{
+			var clTranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
+			var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == clTranslation.CheckListId);
+
+			if (!sdkDbContext.Fields.Any(x => x.OriginalId == "376999"))
+			{
+				var field = new Microting.eForm.Infrastructure.Data.Entities.Field
+				{
+					CheckListId = clCheckList.Id,
+					Color = Microting.eForm.Infrastructure.Constants.Constants.FieldColors.Yellow,
+					BarcodeEnabled = 0,
+					BarcodeType = "",
+					DisplayIndex = 0,
+					FieldType = await sdkDbContext.FieldTypes.FirstAsync(x => x.Type == "EntitySelect"),
+					EntityGroupId = 12345,
+					Mandatory = 1,
+					ReadOnly = 0,
+					Dummy = 0,
+					OriginalId = "376999",
+					Translations = new List<FieldTranslation>
+					{
+						new()
+						{
+							LanguageId = 1,
+							Text = "Vælg lokation",
+							Description = ""
+						},
+						new()
+						{
+							LanguageId = 2,
+							Text = "Select location",
+							Description = ""
+						},
+						new()
+						{
+							LanguageId = 3,
+							Text = "Ort auswählen",
+							Description = ""
+						}
+					}
+				};
+				await field.Create(sdkDbContext);
+			}
+
+			//string text = $"05. Halebid og risikovurdering - {propertyName}|05. Tail bite and risc assessment - {propertyName}";
+			var clTranslations = await sdkDbContext.CheckListTranslations
+				.Where(x => x.Text.Contains("05. Halebid og risikovurdering")).ToListAsync().ConfigureAwait(false);
+
+			var engLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US").ConfigureAwait(false);
+
+			foreach (var clTranslation1 in clTranslations)
+			{
+				var engClTranslation = await sdkDbContext.CheckListTranslations.Where(x => x.LanguageId == engLanguage.Id)
+					.Where(x => x.CheckListId == clTranslation1.CheckListId).FirstOrDefaultAsync().ConfigureAwait(false);
+
+				if (engClTranslation == null)
+				{
+					var propertyParts = clTranslation1.Text.Split(" - ");
+					var propertyName = propertyParts[1];
+					var newClTranslation = new CheckListTranslation
+					{
+						CheckListId = clTranslation1.CheckListId,
+						LanguageId = engLanguage.Id,
+						Text = $"05. Tail bite and risc assessment - {propertyName}",
+						Description = ""
+					};
+					await newClTranslation.Create(sdkDbContext).ConfigureAwait(false);
+				}
+			}
+
+			/*cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Elforbrug")
+                .ConfigureAwait(false);
+            if (cltranslation != null)
+            {
+                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+                    .ConfigureAwait(false);
+                if (clCheckList != null)
+                {
+                    clCheckList.ReportH1 = "24.00Aflæsninger";
+                    clCheckList.ReportH2 = "24.00.02Aflæsning el";
+                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+                }
+            }
+
+            cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Vandforbrug")
+                .ConfigureAwait(false);
+            if (cltranslation != null)
+            {
+                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+                    .ConfigureAwait(false);
+
+                if (clCheckList != null)
+                {
+                    clCheckList.ReportH1 = "24.00Aflæsninger";
+                    clCheckList.ReportH2 = "24.00.01Aflæsning vand";
+                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+                }
+            }*/
+		}
 	}
 }

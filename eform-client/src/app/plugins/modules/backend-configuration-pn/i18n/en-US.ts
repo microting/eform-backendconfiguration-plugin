@@ -119,6 +119,7 @@ export const enUS = {
   'Received by server': 'Received by server',
   'Retrieved by device': 'Retrieved by device',
   'System error: Contact Microting': 'System error: Contact Microting',
+  'Name': 'Name',
   'Drop file(s) here or a choose from your computer': 'Drop file(s) here or a <u class="choose">choose</u> from your computer',
   'Create file': 'Create file',
   'Download selected': 'Download selected',

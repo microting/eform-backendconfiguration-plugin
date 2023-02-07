@@ -4,7 +4,7 @@
     <mat-label>{{'First name' | translate }}</mat-label>
     <input
       matInput
-      [disabled]="selectedDeviceUser.isLocked"
+      [disabled]="selectedDeviceUser.isBackendUser"
       [(ngModel)]="selectedDeviceUser.userFirstName"
       required
       type="text"
@@ -15,7 +15,7 @@
     <mat-label>{{'Last name' | translate }}</mat-label>
     <input
       matInput
-      [disabled]="selectedDeviceUser.isLocked"
+      [disabled]="selectedDeviceUser.isBackendUser"
       [(ngModel)]="selectedDeviceUser.userLastName"
       type="text"
       name="email"
@@ -30,6 +30,7 @@
       [bindValue]="'locale'"
       [clearable]="false"
       [(ngModel)]="selectedDeviceUser.languageCode"
+      [disabled]="selectedDeviceUser.isLocked"
       [items]="languages">
     </mtx-select>
   </mat-form-field>
@@ -48,6 +49,7 @@
     class="mb-2"
     id="taskManagementEnabledToggle"
     [checked]="selectedDeviceUser.taskManagementEnabled"
+    [disabled]="selectedDeviceUser.hasWorkOrdersAssigned"
     [(ngModel)]="selectedDeviceUser.taskManagementEnabled">
     {{ "Task management enabled" | translate }}
   </mat-slide-toggle>
@@ -68,6 +70,7 @@
         id="checkboxCreateAssignment{{ i }}"
         (change)="addToArray($event, getAssignmentByPropertyId(row.id).propertyId)"
         [checked]="getAssignmentIsCheckedByPropertyId(row.id)"
+        [disabled]="getAssignmentIsLockedByPropertyId(property.id)"
       ></mat-checkbox>
     </div>
   </ng-template>

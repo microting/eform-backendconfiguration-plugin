@@ -231,4 +231,5 @@ export const ukUA = {
   'Received by server': 'Отримано сервером',
   'Retrieved by device': 'Отримано пристроєм',
   'System error: Contact Microting': 'Системна помилка: зв\'яжіться з Microting',
+  'Name': 'Ім\'я',
 };

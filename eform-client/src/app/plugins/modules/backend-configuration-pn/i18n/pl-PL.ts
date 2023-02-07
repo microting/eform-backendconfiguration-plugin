@@ -231,4 +231,5 @@ export const plPl = {
   'Received by server': 'Otrzymane przez serwer',
   'Retrieved by device': 'Odebrane przez urządzenie',
   'System error: Contact Microting': 'Błąd systemu: Skontaktuj się z Microting',
+  'Name': 'Nazwa',
 };

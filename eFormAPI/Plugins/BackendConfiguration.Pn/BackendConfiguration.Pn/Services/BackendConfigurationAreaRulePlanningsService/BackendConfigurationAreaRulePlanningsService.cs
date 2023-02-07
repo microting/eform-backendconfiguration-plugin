@@ -434,10 +434,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                     }
                                                     else
                                                     {
-                                                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                                        var clSites = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
                                                             x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
 
-                                                        await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                                                        if (clSites != null)
+                                                        {
+                                                            await core.CaseDelete(clSites.MicrotingUid)
+                                                                .ConfigureAwait(false);
+                                                        }
                                                     }
                                                 }
                                             }
@@ -530,9 +534,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                                 foreach (var siteId in siteIdsForDelete)
                                 {
-                                    await rulePlanning.PlanningSites
-                                        .First(x => x.SiteId == siteId)
-                                        .Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                    foreach (var planningSite in rulePlanning.PlanningSites
+                                                 .Where(x => x.SiteId == siteId)
+                                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                                    {
+                                        await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                                    }
+
+                                    // await rulePlanning.PlanningSites
+                                        // .First(x => x.SiteId == siteId)
+                                        // .Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                                 }
 
                                 await rulePlanning.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
@@ -1291,11 +1302,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                                         }
                                                         else
                                                         {
-                                                            var clSites = await sdkDbContext.CheckListSites.SingleAsync(
+                                                            var clSites = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(
                                                                 x =>
                                                                     x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
 
-                                                            await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                                                            if (clSites != null)
+                                                            {
+                                                                await core.CaseDelete(clSites.MicrotingUid)
+                                                                    .ConfigureAwait(false);
+                                                            }
                                                         }
                                                     }
                                                 }

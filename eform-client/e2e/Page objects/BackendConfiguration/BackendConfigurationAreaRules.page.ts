@@ -631,18 +631,6 @@ export class AreaRuleRowObject {
           await backendConfigurationAreaRulesPage.planAreaRuleStatusToggle()
         ).click();
       }
-      if (areaRulePlanningCreateUpdate.repeatEvery) {
-        await (
-          await (await backendConfigurationAreaRulesPage.planRepeatEvery()).$(
-            'input'
-          )
-        ).setValue(areaRulePlanningCreateUpdate.repeatEvery);
-        const value = await (
-          await backendConfigurationAreaRulesPage.planRepeatEvery()
-        ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatEvery}`);
-        value.waitForDisplayed({ timeout: 40000 });
-        await value.click();
-      }
       if (areaRulePlanningCreateUpdate.repeatType) {
         await (
           await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
@@ -655,6 +643,19 @@ export class AreaRuleRowObject {
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
       }
+      if (areaRulePlanningCreateUpdate.repeatEvery) {
+        await (
+          await (await backendConfigurationAreaRulesPage.planRepeatEvery()).$(
+            'input'
+          )
+        ).setValue(areaRulePlanningCreateUpdate.repeatEvery);
+        const value = await (
+          await backendConfigurationAreaRulesPage.planRepeatEvery()
+        ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatEvery}`);
+        value.waitForDisplayed({ timeout: 40000 });
+        await value.click();
+      }
+
       if (areaRulePlanningCreateUpdate.notification !== undefined) {
         await (
           await backendConfigurationAreaRulesPage.planAreaRuleNotificationsToggle()

@@ -29,5 +29,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
         public int PropertyId { get; set; }
 
         public bool IsChecked { get; set; }
+
+        public bool IsLocked { get; set; }
     }
 }

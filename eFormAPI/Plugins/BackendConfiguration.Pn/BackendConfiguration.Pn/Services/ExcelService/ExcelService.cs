@@ -24,6 +24,7 @@ SOFTWARE.
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using BackendConfiguration.Pn.Infrastructure.Models.Report;
 using Microsoft.Extensions.Logging;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -280,7 +281,20 @@ public class ExcelService: IExcelService
                                             //worksheet.Cell(x + 1, y + 1).DataType = XLDataType.DateTime;
                                             break;
                                         case "number":
-                                            worksheet.Cell(x + 1, y + 1).SetValue(value);
+                                            try
+                                            {
+                                                if (!string.IsNullOrEmpty(value))
+                                                {
+                                                    var number = Double.Parse(value, CultureInfo.InvariantCulture);
+                                                    worksheet.Cell(x + 1, y + 1).SetValue(number);
+                                                }
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                Console.WriteLine(e);
+                                                throw;
+                                            }
+
                                             //worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
                                             //worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
                                             break;

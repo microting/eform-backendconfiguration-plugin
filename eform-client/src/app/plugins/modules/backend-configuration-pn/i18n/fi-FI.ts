@@ -229,4 +229,5 @@ export const fiFI = {
   'Received by server': '',
   'Retrieved by device': '',
   'System error: Contact Microting': '',
+  'Name': '',
 };

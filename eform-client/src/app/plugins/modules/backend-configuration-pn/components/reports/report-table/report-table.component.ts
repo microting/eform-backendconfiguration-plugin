@@ -47,7 +47,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
     {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
-    {header: this.translateService.stream('Item name'), field: 'itemName'},
+    {header: this.translateService.stream('Name'), field: 'itemName'},
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
@@ -84,7 +84,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
-    {header: this.translateService.stream('Item name'), field: 'itemName'},
+    {header: this.translateService.stream('Area'), field: 'itemName'},
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',

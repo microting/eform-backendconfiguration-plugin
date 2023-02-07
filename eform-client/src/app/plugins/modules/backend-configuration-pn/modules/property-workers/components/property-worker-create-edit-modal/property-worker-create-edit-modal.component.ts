@@ -108,6 +108,13 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
     return assignment ? assignment.isChecked : false;
   }
 
+  getAssignmentIsLockedByPropertyId(propertyId: number): boolean {
+    const assignment = this.assignments.find(
+      (x) => x.propertyId === propertyId
+    );
+    return assignment ? assignment.isLocked : false;
+  }
+
   updateSingle() {
     if (
       this.selectedDeviceUserCopy.userFirstName !==
@@ -182,6 +189,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.assignments.find((x) => x.propertyId === propertyId) ?? {
         propertyId: propertyId,
         isChecked: false,
+        isLocked: false,
       }
     );
   }
