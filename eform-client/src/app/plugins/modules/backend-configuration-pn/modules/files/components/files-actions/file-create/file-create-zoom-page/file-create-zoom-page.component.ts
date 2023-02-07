@@ -9,7 +9,7 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 export class FileCreateZoomPageComponent {
   page: number = 0;
   src: Uint8Array = new Uint8Array();
-  zoom: number = 0.28;
+  zoom: number = 1;
 
   constructor(
     public dialogRef: MatDialogRef<FileCreateZoomPageComponent>,

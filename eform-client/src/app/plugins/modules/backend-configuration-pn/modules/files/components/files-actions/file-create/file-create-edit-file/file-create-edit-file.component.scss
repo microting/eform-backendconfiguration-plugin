@@ -9,3 +9,28 @@ pdf-viewer {
   width: 220px;
   height: 325px;
 }
+
+@media (max-width: 1605px) {
+  .grid-5-columns {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (max-width: 1400px) {
+  .selectors {
+    display: flex;
+  }
+}
+@media (max-width: 1290px) {
+  .grid-5-columns {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 830px) {
+  .grid-5-columns {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}@media (max-width: 600px) {
+  .grid-5-columns {
+    grid-template-columns: repeat(1, 1fr) !important;;
+  }
+}
