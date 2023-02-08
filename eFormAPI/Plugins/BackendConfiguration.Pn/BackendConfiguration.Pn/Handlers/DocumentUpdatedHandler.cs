@@ -83,7 +83,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                     var folderTranslationList = new List<CommonTranslationsModel>();
                     foreach (var translation in folderTranslations)
                     {
-                        folderTranslationList.Add(new CommonTranslationsModel()
+                        folderTranslationList.Add(new CommonTranslationsModel
                         {
                             Description = translation.Description,
                             LanguageId = translation.LanguageId,
@@ -148,37 +148,42 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 var sdkFolder = await sdkDbContext.Folders.FirstAsync(x => x.Id == folderProperty.SdkFolderId);
                 var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == propertyWorker.WorkerId);
                 var language = await sdkDbContext.Languages.FirstAsync(x => x.Id == site.LanguageId);
-                var mainElement = await _sdkCore.ReadeForm(clt.CheckListId, language);
-                mainElement.CheckListFolderName = sdkFolder.MicrotingUid.ToString();
-                mainElement.EndDate = DateTime.Now.AddYears(20).ToUniversalTime();
 
-                mainElement.Label = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name;
-                mainElement.ElementList[0].Label = mainElement.Label;
-                mainElement.ElementList[0].DoneButtonEnabled = false;
-                mainElement.ElementList[0].Description.InderValue = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
-                mainElement.Repeated = 0;
-
-                if (document.DocumentUploadedDatas.Count(x => x.Hash != null && x.LanguageId == language.Id) > 0)
+                if (!string.IsNullOrEmpty(document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name) && document.DocumentUploadedDatas.First(x => x.LanguageId == language.Id).Hash != null)
                 {
-                    ShowPdf showPdf = new ShowPdf(0,
-                        false,
-                        false,
-                        mainElement.Label,
-                        document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description,
-                        Constants.FieldColors.Default, 1, false,
-                        document.DocumentUploadedDatas.First(x => x.LanguageId == language.Id).Hash);
-                    ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(0);
-                    ((DataElement)mainElement.ElementList[0]).DataItemList.Add(showPdf);
-                }
-                else
-                {
-                    ((DataElement) mainElement.ElementList[0]).DataItemList[0].Label = mainElement.Label;
-                    ((DataElement) mainElement.ElementList[0]).DataItemList[0].Description.InderValue =
-                        document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
-                }
-                var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, sdkFolder.Id);
+                    var mainElement = await _sdkCore.ReadeForm(clt.CheckListId, language);
+                    mainElement.CheckListFolderName = sdkFolder.MicrotingUid.ToString();
+                    mainElement.EndDate = DateTime.Now.AddYears(20).ToUniversalTime();
+                    mainElement.Label = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name;
+                    mainElement.ElementList[0].Label = mainElement.Label;
+                    mainElement.ElementList[0].DoneButtonEnabled = false;
+                    mainElement.ElementList[0].Description.InderValue = document.DocumentTranslations
+                        .First(x => x.LanguageId == language.Id).Description;
+                    mainElement.Repeated = 0;
 
-                documentSite.SdkCaseId = (int) caseId!;
+                    if (document.DocumentUploadedDatas.Count(x => x.Hash != null && x.LanguageId == language.Id) > 0)
+                    {
+                        ShowPdf showPdf = new ShowPdf(0,
+                            false,
+                            false,
+                            mainElement.Label,
+                            document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description,
+                            Constants.FieldColors.Default, 1, false,
+                            document.DocumentUploadedDatas.First(x => x.LanguageId == language.Id).Hash);
+                        ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(0);
+                        ((DataElement)mainElement.ElementList[0]).DataItemList.Add(showPdf);
+                    }
+                    else
+                    {
+                        ((DataElement)mainElement.ElementList[0]).DataItemList[0].Label = mainElement.Label;
+                        ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue =
+                            document.DocumentTranslations.First(x => x.LanguageId == language.Id).Description;
+                    }
+
+                    var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, sdkFolder.Id);
+
+                    documentSite.SdkCaseId = (int)caseId!;
+                }
                 document.IsLocked = false;
                 await document.Update(documentDbContext);
                 await documentSite.Update(documentDbContext);
