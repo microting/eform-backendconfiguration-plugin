@@ -8,5 +8,6 @@ export const BackendConfigurationPnClaims = {
   enableDocumentManagement: 'document_management_enable',
   enableChemicalManagement: 'chemical_management_enable',
   enableTimeRegistration: 'time_registration_enable',
-  assignProperties: 'properties_assign'
+  assignProperties: 'properties_assign',
+  enableFilesManagement: 'files_management_enable',
 };

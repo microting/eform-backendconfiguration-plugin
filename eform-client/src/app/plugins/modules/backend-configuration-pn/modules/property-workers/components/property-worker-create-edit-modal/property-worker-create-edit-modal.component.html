@@ -54,58 +54,26 @@
     {{ "Task management enabled" | translate }}
   </mat-slide-toggle>
 
-<!--  <mtx-grid-->
-<!--    [data]="availableProperties"-->
-<!--    [columns]="tableHeaders"-->
-<!--    [pageOnFront]="false"-->
-<!--    [rowStriped]="true"-->
-<!--    [rowSelectable]="true"-->
-<!--    [showPaginator]="false"-->
-<!--    [rowSelected]="selectedProperties"-->
-<!--    (rowSelectionChange)="changeArray($event)"-->
-<!--  >-->
-<!--  </mtx-grid>-->
-  <div class="mtx-grid ng-star-inserted">
-    <div class="mtx-grid-main mtx-grid-layout">
-      <div class="mtx-grid-content mtx-grid-layout">
-        <div class="mat-table-container mat-table-with-data">
-          <table class="mat-table cdk-table mat-sort mat-table-striped ng-star-inserted" style="width: 100%">
-            <thead>
-            <tr role="rowgroup" class="mat-header-row cdk-header-row ng-star-inserted" mat-header-row>
-              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id ng-star-inserted mat-table-sticky mat-table-sticky-border-elem-top">ID</th>
-              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id ng-star-inserted mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Property name' | translate }}</th>
-              <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id ng-star-inserted mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Select' | translate }}</th>
-            </tr>
-            </thead>
-            <tbody id="pairingModalTableBody" role="rowgroup">
-              <ng-container *ngFor="let property of availableProperties; let i = index">
-                <tr  class="mat-row cdk-row ng-star-inserted {{i%2 ? 'mat-row-odd' : ''}}">
-                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id ng-star-inserted" >{{ property.id }}</td>
-                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id ng-star-inserted" id="propertyName">{{ property.name }}</td>
-                  <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id ng-star-inserted" >
-                    <div class="mat-checkbox">
-                      <mat-checkbox class="mat-checkbox"
-                        id="checkboxCreateAssignment{{ i }}"
-                        (change)="
-                                    addToArray(
-                                      $event,
-                                      getAssignmentByPropertyId(property.id).propertyId
-                                    )
-                                  "
-                        [checked]="getAssignmentIsCheckedByPropertyId(property.id)"
-                        [disabled]="getAssignmentIsLockedByPropertyId(property.id)"
-                      ></mat-checkbox>
-                      <label for="checkboxCreateAssignment{{ i }}"></label>
-                    </div>
-                  </td>
-                </tr>
-              </ng-container>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <mtx-grid
+    [data]="availableProperties"
+    [columns]="tableHeaders"
+    [cellTemplate]="{select: selectTpl}"
+    [pageOnFront]="false"
+    [rowStriped]="true"
+    [showPaginator]="false"
+  >
+  </mtx-grid>
+
+  <ng-template #selectTpl let-row let-i="index">
+    <div class="column-select">
+      <mat-checkbox
+        id="checkboxCreateAssignment{{ i }}"
+        (change)="addToArray($event, getAssignmentByPropertyId(row.id).propertyId)"
+        [checked]="getAssignmentIsCheckedByPropertyId(row.id)"
+        [disabled]="getAssignmentIsLockedByPropertyId(property.id)"
+      ></mat-checkbox>
     </div>
-  </div>
+  </ng-template>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button

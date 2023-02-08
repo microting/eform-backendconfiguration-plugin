@@ -79,7 +79,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
         }
 
-        public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request)
+        public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request)
         {
             try
             {
@@ -857,7 +857,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var property = await _backendConfigurationPnDbContext.Properties
                     .Where(x => x.Id == id)
                     .Include(x => x.SelectedLanguages)
-                    .Include(x => x.PropertyWorkers)
+                    .Include(x => x.SelectedLanguages)
+					.Include(x => x.PropertyWorkers)
                     .Include(x => x.AreaProperties)
                     .ThenInclude(x => x.ProperyAreaFolders)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
@@ -1092,8 +1093,27 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     await propertyFolderForTasks.Delete(sdkDbContext).ConfigureAwait(false);
                 }
 
-                // delete property
-                property.UpdatedByUserId = _userService.UserId;
+                // delete linked files
+                var propertyFiles = await _backendConfigurationPnDbContext.Files
+	                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+	                .Where(x => x.PropertyId == property.Id)
+	                .Include(x => x.FileTags)
+	                .ToListAsync();
+                foreach (var propertyFile in propertyFiles)
+                {
+                    // delete tags linked to file
+	                foreach (var fileFileTag in propertyFile.FileTags)
+	                {
+		                fileFileTag.UpdatedByUserId = _userService.UserId;
+		                await fileFileTag.Delete(_backendConfigurationPnDbContext);
+	                }
+
+	                propertyFile.UpdatedByUserId = _userService.UserId;
+					await propertyFile.Delete(_backendConfigurationPnDbContext);
+                }
+
+				// delete property
+				property.UpdatedByUserId = _userService.UserId;
                 await property.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 if (property.EntitySelectListAreas != null)

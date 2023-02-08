@@ -34,7 +34,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
     public interface IBackendConfigurationPropertiesService
     {
-        Task<OperationDataResult<Paged<PropertiesModel>>> Index(ProperiesRequesModel request);
+        Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request);
 
         Task<OperationResult> Create(PropertyCreateModel createModel);
 

@@ -1,0 +1,62 @@
+<mtx-grid
+  [data]="_files.entities"
+  [columns]="tableHeaders"
+  [cellTemplate]="{select: selectTpl, tags: tagsTpl}"
+  [headerExtraTemplate]="selectHeaderTpl"
+  [showPaginator]="false"
+  [pageOnFront]="false"
+  [rowStriped]="true"
+  [showToolbar]="false"
+  [showColumnMenuButton]="false"
+  [sortActive]="filesStateService.getActiveSort() | async"
+  [sortDirection]="filesStateService.getActiveSortDirection() | async"
+  (sortChange)="onSortTable($event)"
+>
+</mtx-grid>
+
+<ng-template #selectHeaderTpl let-col>
+  <div *ngIf="col.field === 'select'" class="column-select">
+    <mat-checkbox
+      [indeterminate]="getIntermediateSelectedFiles"
+      [ngModel]="allFileSelected"
+      (ngModelChange)="selectAllFiles($event)"
+    ></mat-checkbox>
+  </div>
+  <div *ngIf="col.field === 'actions'" class="column-actions">
+    <button
+      mat-icon-button
+      color="primary"
+      matTooltip="{{'Refresh table'}}"
+      (click)="updateTable.emit()">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+</ng-template>
+
+
+<ng-template #selectTpl let-row>
+  <div class="column-select">
+    <mat-checkbox
+      (change)="onChangeSelectedFiles(row)"
+      [ngModel]="getSelectedFile(row)"
+    ></mat-checkbox>
+  </div>
+</ng-template>
+
+<ng-template #tagsTpl let-row>
+  <div class="d-flex flex-wrap align-items-center">
+    <mat-chip-list>
+      <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
+        <mat-icon>discount</mat-icon>
+        <span>{{ tag.name }}</span>
+      </mat-chip>
+    </mat-chip-list>
+    <button
+      mat-icon-button
+      color="primary"
+      matTooltip="{{'Edit tags file' | translate}}"
+      (click)="openEditTags(row)">
+      <mat-icon>edit</mat-icon>
+    </button>
+  </div>
+</ng-template>

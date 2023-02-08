@@ -52,6 +52,7 @@ namespace BackendConfiguration.Pn.Services.WordService
     using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
     using Microting.ItemsPlanningBase.Infrastructure.Enums;
+    using File = System.IO.File;
 
     public class WordService : IWordService
     {

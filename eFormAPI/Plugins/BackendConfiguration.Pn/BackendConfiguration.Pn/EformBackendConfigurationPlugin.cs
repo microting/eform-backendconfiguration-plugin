@@ -22,68 +22,64 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-
-using BackendConfiguration.Pn.Messages;
-using BackendConfiguration.Pn.Services.BackendConfigurationCaseService;
-using BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
-using BackendConfiguration.Pn.Services.BackendConfigurationReportService;
-using BackendConfiguration.Pn.Services.ChemicalService;
-using Castle.MicroKernel.Registration;
-using Castle.Windsor;
-using ChemicalsBase.Infrastructure;
-using ChemicalsBase.Infrastructure.Data.Factories;
-using eFormCore;
-using Microting.eForm.Dto;
-using Microting.eFormCaseTemplateBase.Infrastructure.Data;
-using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
-using Microting.TimePlanningBase.Infrastructure.Data;
-using Rebus.Bus;
-
 namespace BackendConfiguration.Pn
 {
-    using Infrastructure.Data.Seed;
-    using Infrastructure.Data.Seed.Data;
-    using Infrastructure.Models.Settings;
-    using Microsoft.AspNetCore.Builder;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Configuration;
-    using Microsoft.Extensions.DependencyInjection;
-    using Microting.eForm.Infrastructure.Constants;
-    using Microting.eForm.Infrastructure.Data.Entities;
-    using Microting.eForm.Infrastructure.Models;
-    using Microting.eFormApi.BasePn;
-    using Microting.eFormApi.BasePn.Abstractions;
-    using Microting.eFormApi.BasePn.Infrastructure.Consts;
-    using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
-    using Microting.eFormApi.BasePn.Infrastructure.Helpers;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Application;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Application.NavigationMenu;
-    using Microting.eFormApi.BasePn.Infrastructure.Settings;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Const;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
-    using Microting.ItemsPlanningBase.Infrastructure.Data;
-    using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
-    using Services.BackendConfigurationAreaRulePlanningsService;
-    using Services.BackendConfigurationAreaRulesService;
-    using Services.BackendConfigurationAssignmentWorkerService;
-    using Services.BackendConfigurationCompliancesService;
-    using Services.BackendConfigurationLocalizationService;
-    using Services.BackendConfigurationPropertiesService;
-    using Services.BackendConfigurationPropertyAreasService;
-    using Services.BackendConfigurationTaskManagementService;
-    using Services.ExcelService;
-    using Services.RebusService;
-    using Services.WordService;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Reflection;
-    using System.Text.RegularExpressions;
+	using ChemicalsBase.Infrastructure;
+	using ChemicalsBase.Infrastructure.Data.Factories;
+	using eFormCore;
+	using Infrastructure.Data.Seed;
+	using Infrastructure.Data.Seed.Data;
+	using Infrastructure.Models.Settings;
+	using Messages;
+	using Microsoft.AspNetCore.Builder;
+	using Microsoft.EntityFrameworkCore;
+	using Microsoft.Extensions.Configuration;
+	using Microsoft.Extensions.DependencyInjection;
+	using Microting.eForm.Infrastructure;
+	using Microting.eForm.Infrastructure.Data.Entities;
+	using Microting.eForm.Infrastructure.Models;
+	using Microting.eFormApi.BasePn;
+	using Microting.eFormApi.BasePn.Abstractions;
+	using Microting.eFormApi.BasePn.Infrastructure.Consts;
+	using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
+	using Microting.eFormApi.BasePn.Infrastructure.Helpers;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.Application;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.Application.NavigationMenu;
+	using Microting.eFormApi.BasePn.Infrastructure.Settings;
+	using Microting.EformBackendConfigurationBase.Infrastructure.Const;
+	using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+	using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
+	using Microting.eFormCaseTemplateBase.Infrastructure.Data;
+	using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
+	using Microting.ItemsPlanningBase.Infrastructure.Data;
+	using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+	using Microting.TimePlanningBase.Infrastructure.Data;
+	using Rebus.Bus;
+	using Services.BackendConfigurationAreaRulePlanningsService;
+	using Services.BackendConfigurationAreaRulesService;
+	using Services.BackendConfigurationAssignmentWorkerService;
+	using Services.BackendConfigurationCaseService;
+	using Services.BackendConfigurationCompliancesService;
+	using Services.BackendConfigurationDocumentService;
+	using Services.BackendConfigurationLocalizationService;
+	using Services.BackendConfigurationPropertiesService;
+	using Services.BackendConfigurationPropertyAreasService;
+	using Services.BackendConfigurationReportService;
+	using Services.BackendConfigurationTaskManagementService;
+	using Services.ChemicalService;
+	using Services.ExcelService;
+	using Services.RebusService;
+	using Services.WordService;
+	using System;
+	using System.Collections.Generic;
+	using System.IO;
+	using System.Linq;
+	using System.Reflection;
+	using Services.BackendConfigurationFilesService;
+	using Services.BackendConfigurationFileTagsService;
+	using FolderTranslation = Microting.eForm.Infrastructure.Data.Entities.FolderTranslation;
 
-    public class EformBackendConfigurationPlugin : IEformPlugin
+	public class EformBackendConfigurationPlugin : IEformPlugin
     {
         public string Name => "Microting Backend Configuration Plugin";
         public string PluginId => "eform-backend-configuration-plugin";
@@ -101,23 +97,19 @@ namespace BackendConfiguration.Pn
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
-            services
-                .AddTransient<IBackendConfigurationAssignmentWorkerService,
-                    BackendConfigurationAssignmentWorkerService>();
+            services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
             services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
-            services
-                .AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
+            services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
             services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
-            services
-                .AddTransient<IBackendConfigurationAreaRulePlanningsService,
-                    BackendConfigurationAreaRulePlanningsService>();
+            services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
             services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
-            services
-                .AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
+            services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
             services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
             services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
             services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
-            services.AddSingleton<IRebusService, RebusService>();
+            services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
+            services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
+			services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
             services.AddTransient<IChemicalService, ChemicalService>();
@@ -302,355 +294,21 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            UpdateAreaTranslations(context);
 
-            var areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Kemisk APV");
-            if (areaTranslation != null)
-            {
-                areaTranslation.Name = "25. Kemikontrol";
-                await areaTranslation.Update(context).ConfigureAwait(false);
-            }
-            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Chemical APV");
-            if (areaTranslation != null)
-            {
-                areaTranslation.Name = "25. Chemical control";
-                await areaTranslation.Update(context).ConfigureAwait(false);
-            }
-            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "25. Chemisches APV");
-            if (areaTranslation != null)
-            {
-                areaTranslation.Name = "25. Chemische Kontrolle";
-                await areaTranslation.Update(context).ConfigureAwait(false);
-            }
+            CreateFoldersTranslations(core);
 
-            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Fokusområder Miljøledelse");
-            if (areaTranslation != null)
-            {
-                areaTranslation.Name = "01. Logbøger Miljøledelse";
-                await areaTranslation.Update(context).ConfigureAwait(false);
-            }
+			UpdateCheckLists(sdkDbContext);
 
-            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Focus areas Environmental management");
-            if (areaTranslation != null)
-            {
-                areaTranslation.Name = "01. Log books Environmental management";
-                await areaTranslation.Update(context).ConfigureAwait(false);
-            }
-            areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == "01. Schwerpunkte Umweltverwaltung");
-            if (areaTranslation != null)
-            {
-                areaTranslation.Name = "01. Logbücher Umweltmanagement";
-                await areaTranslation.Update(context).ConfigureAwait(false);
-            }
-
-            var envFolderTranslationList = await sdkDbContext.FolderTranslations
+			var propertyWorkers = await context.PropertyWorkers
                 .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .Where(x => x.Name == "01. Fokusområder Miljøledelse").ToListAsync();
-
-            foreach (var envFolderTranslation in envFolderTranslationList)
-            {
-                if (envFolderTranslation != null)
-                {
-                    var envFolderTranslations = new List<CommonTranslationsModel>
-                    {
-                        new()
-                        {
-                            Name = "01. Logbøger Miljøledelse",
-                            LanguageId = 1, // da
-                            Description = "",
-                        },
-                        new()
-                        {
-                            Name = "01. Log books Environmental management",
-                            LanguageId = 2, // en
-                            Description = "",
-                        },
-                        new()
-                        {
-                            Name = "01. Logbücher Umweltmanagement",
-                            LanguageId = 3, // de
-                            Description = "",
-                        },
-                    };
-                    var folder = await sdkDbContext.Folders
-                        .Where(x => x.Id == envFolderTranslation.FolderId)
-                        .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                        .FirstOrDefaultAsync();
-                    if (folder != null)
-                    {
-                        await core.FolderUpdate(folder.Id, envFolderTranslations, folder.ParentId);
-                    }
-                }
-
-            }
-
-
-            var cltranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
-            var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == cltranslation.CheckListId);
-
-            if (!sdkDbContext.Fields.Any(x => x.OriginalId == "376999"))
-            {
-                var field = new Microting.eForm.Infrastructure.Data.Entities.Field
-                {
-                    CheckListId = clCheckList.Id,
-                    Color = Microting.eForm.Infrastructure.Constants.Constants.FieldColors.Yellow,
-                    BarcodeEnabled = 0,
-                    BarcodeType = "",
-                    DisplayIndex = 0,
-                    FieldType = await sdkDbContext.FieldTypes.FirstAsync(x => x.Type == "EntitySelect"),
-                    EntityGroupId = 12345,
-                    Mandatory = 1,
-                    ReadOnly = 0,
-                    Dummy = 0,
-                    OriginalId = "376999",
-                    Translations = new List<FieldTranslation>
-                    {
-                        new()
-                        {
-                            LanguageId = 1,
-                            Text = "Vælg lokation",
-                            Description = ""
-                        },
-                        new()
-                        {
-                            LanguageId = 2,
-                            Text = "Select location",
-                            Description = ""
-                        },
-                        new()
-                        {
-                            LanguageId = 3,
-                            Text = "Ort auswählen",
-                            Description = ""
-                        }
-                    }
-                };
-                await field.Create(sdkDbContext);
-            }
-
-            //string text = $"05. Halebid og risikovurdering - {propertyName}|05. Tail bite and risc assessment - {propertyName}";
-            var cltranslations = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text.Contains("05. Halebid og risikovurdering")).ToListAsync().ConfigureAwait(false);
-
-            var engLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US").ConfigureAwait(false);
-
-            foreach (var clTranslation in cltranslations)
-            {
-                var engClTranslation = await sdkDbContext.CheckListTranslations.Where(x => x.LanguageId == engLanguage.Id)
-                    .Where(x => x.CheckListId == clTranslation.CheckListId).FirstOrDefaultAsync().ConfigureAwait(false);
-
-                if (engClTranslation == null)
-                {
-                    var propertyParts = clTranslation.Text.Split(" - ");
-                    var propertyName = propertyParts[1];
-                    var newClTranslation = new CheckListTranslation
-                    {
-                        CheckListId = clTranslation.CheckListId,
-                        LanguageId = engLanguage.Id,
-                        Text = $"05. Tail bite and risc assessment - {propertyName}",
-                        Description = ""
-                    };
-                    await newClTranslation.Create(sdkDbContext).ConfigureAwait(false);
-                }
-            }
-
-            // cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Elforbrug")
-            //     .ConfigureAwait(false);
-            // if (cltranslation != null)
-            // {
-            //     clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
-            //         .ConfigureAwait(false);
-            //     if (clCheckList != null)
-            //     {
-            //         clCheckList.ReportH1 = "24.00Aflæsninger";
-            //         clCheckList.ReportH2 = "24.00.02Aflæsning el";
-            //         await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
-            //     }
-            // }
-            //
-            // cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Vandforbrug")
-            //     .ConfigureAwait(false);
-            // if (cltranslation != null)
-            // {
-            //     clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
-            //         .ConfigureAwait(false);
-            //
-            //     if (clCheckList != null)
-            //     {
-            //         clCheckList.ReportH1 = "24.00Aflæsninger";
-            //         clCheckList.ReportH2 = "24.00.01Aflæsning vand";
-            //         await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
-            //     }
-            // }
-            var folderTranslations =
-                await sdkDbContext.FolderTranslations.Where(x =>
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                    && x.Name == "24.01 Logbøger miljøteknologier").ToListAsync();
-
-            foreach (var folderTranslation in folderTranslations)
-            {
-                if (folderTranslation != null)
-                {
-                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
-                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                        &&  x.Id == folderTranslation.FolderId);
-
-                    if (folder != null)
-                    {
-                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
-                        {
-                            new()
-                            {
-                                LanguageId = 1, // da
-                                Name = "24.01 Logbøger og bilag", // todo
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 2, // en
-                                Name = "24.01 Logbooks and appendices",
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 3, // ge
-                                Name = "24.01 Logbücher und Anhänge", // todo
-                                Description = "",
-                            },
-                        }, folder.ParentId);
-                    }
-                }
-            }
-
-            folderTranslations =
-                await sdkDbContext.FolderTranslations.Where(x =>
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                    && x.Name == "24.02 Dokumentation afsluttede inspektioner").ToListAsync();
-            foreach (var folderTranslation in folderTranslations)
-            {
-
-                if (folderTranslation != null)
-                {
-                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
-                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                        &&  x.Id == folderTranslation.FolderId);
-
-                    if (folder != null)
-                    {
-                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
-                        {
-                            new()
-                            {
-                                LanguageId = 1, // da
-                                Name = "24.02 Kontroller og bilag", // todo
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 2, // en
-                                Name = "24.02 Checks and attachments",
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 3, // ge
-                                Name = "24.02 Schecks und Anhänge", // todo
-                                Description = "",
-                            },
-                        }, folder.ParentId);
-                    }
-                }
-            }
-
-            folderTranslations =
-                await sdkDbContext.FolderTranslations.Where(x =>
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                    && x.Name == "24.03 Dokumentation miljøledelse").ToListAsync();
-            foreach (var folderTranslation in folderTranslations)
-            {
-
-                if (folderTranslation != null)
-                {
-                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
-                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                        &&  x.Id == folderTranslation.FolderId);
-
-                    if (folder != null)
-                    {
-                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
-                        {
-                            new()
-                            {
-                                LanguageId = 1, // da
-                                Name = "24.03 Miljøledelse", // todo
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 2, // en
-                                Name = "24.03 Environmental management",
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 3, // ge
-                                Name = "24.03 Umweltmanagement", // todo
-                                Description = "",
-                            },
-                        }, folder.ParentId);
-                    }
-                }
-            }
-
-            folderTranslations =
-                await sdkDbContext.FolderTranslations.Where(x =>
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                    && x.Name == "24.04 Overholdelse fodringskrav").ToListAsync();
-
-            foreach (var folderTranslation in folderTranslations)
-            {
-                if (folderTranslation != null)
-                {
-                    var folder = await sdkDbContext.Folders.FirstOrDefaultAsync(x =>
-                        x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
-                        &&  x.Id == folderTranslation.FolderId);
-                    if (folder != null)
-                    {
-                        await core.FolderUpdate(folder.Id, new List<CommonTranslationsModel>
-                        {
-                            new()
-                            {
-                                LanguageId = 1, // da
-                                Name = "24.04 Fodringskrav", // todo
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 2, // en
-                                Name = "24.04 Feeding requirements",
-                                Description = "",
-                            },
-                            new()
-                            {
-                                LanguageId = 3, // ge
-                                Name = "24.04 Fütterungsanforderungen", // todo
-                                Description = "",
-                            },
-                        }, folder.ParentId);
-                    }
-                }
-            }
-
-            var propertyWorkers = await context.PropertyWorkers
-                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+				.Where(x => x.TaskManagementEnabled == null)
                 .ToListAsync();
 
             foreach (var propertyWorker in propertyWorkers)
             {
-                if (propertyWorker.TaskManagementEnabled == null)
-                {
-                    propertyWorker.TaskManagementEnabled = true;
-                    await propertyWorker.Update(context);
-                }
+                propertyWorker.TaskManagementEnabled = true;
+                await propertyWorker.Update(context);
             }
 
             var planningSites = await context.PlanningSites
@@ -701,7 +359,7 @@ namespace BackendConfiguration.Pn
             }
         }
 
-        public void ConfigureDbContext(IServiceCollection services, string connectionString)
+		public void ConfigureDbContext(IServiceCollection services, string connectionString)
         {
             var itemsPlannigConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
@@ -1031,7 +689,7 @@ namespace BackendConfiguration.Pn
                                 }
                             }
                         },
-                        new PluginMenuItemModel
+                        new()
                             {
                                 Name = "Reports",
                                 E2EId = "backend-configuration-pn-reports",
@@ -1169,7 +827,76 @@ namespace BackendConfiguration.Pn
                                 }
                             }
                         },
-                    }
+						new()
+						{
+							Name = "Files",
+							E2EId = "backend-configuration-pn-files",
+							Link = "/plugins/backend-configuration-pn/files",
+							Type = MenuItemTypeEnum.Link,
+							Position = 1,
+							MenuTemplate = new PluginMenuTemplateModel
+							{
+								Name = "Files",
+								E2EId = "backend-configuration-pn-files",
+								DefaultLink = "/plugins/backend-configuration-pn/files",
+								Permissions = new List<PluginMenuTemplatePermissionModel>(),
+								Translations = new List<PluginMenuTranslationModel>
+								{
+									new()
+									{
+										LocaleName = LocaleNames.English,
+										Name = "Files",
+										Language = LanguageNames.English,
+									},
+									new()
+									{
+										LocaleName = LocaleNames.German,
+										Name = "Datei",
+										Language = LanguageNames.German,
+									},
+									new()
+									{
+										LocaleName = LocaleNames.Danish,
+										Name = "Fil",
+										Language = LanguageNames.Danish,
+									},
+									new()
+									{
+										LocaleName = LocaleNames.Ukrainian,
+										Name = "Файли",
+										Language = LanguageNames.Ukrainian,
+									}
+								}
+							},
+							Translations = new List<PluginMenuTranslationModel>
+							{
+								new()
+								{
+									LocaleName = LocaleNames.English,
+									Name = "Files",
+									Language = LanguageNames.English,
+								},
+								new()
+								{
+									LocaleName = LocaleNames.German,
+									Name = "Datei",
+									Language = LanguageNames.German,
+								},
+								new()
+								{
+									LocaleName = LocaleNames.Danish,
+									Name = "Fil",
+									Language = LanguageNames.Danish,
+								},
+								new()
+								{
+									LocaleName = LocaleNames.Ukrainian,
+									Name = "Файли",
+									Language = LanguageNames.Ukrainian,
+								}
+							}
+						},
+					}
                 }
             };
 
@@ -1220,9 +947,17 @@ namespace BackendConfiguration.Pn
                         E2EId = "backend-configuration-documents",
                         Link = "/plugins/backend-configuration/documents",
                         Guards = new List<string>(),
-                        Position = 2,
+                        Position = 3,
                     },
-                }
+                    new()
+                    {
+	                    Name = localizationService?.GetString("Files"),
+	                    E2EId = "backend-configuration-files",
+	                    Link = "/plugins/backend-configuration/files",
+	                    Guards = new List<string>(),
+	                    Position = 4,
+                    },
+				}
             });
             return result;
         }
@@ -1240,8 +975,284 @@ namespace BackendConfiguration.Pn
         {
             var contextFactory = new BackendConfigurationPnContextFactory();
             var context = contextFactory.CreateDbContext(new[] { connectionString });
+			return new PluginPermissionsManager(context);
+		}
 
-            return new PluginPermissionsManager(context);
-        }
-    }
+        private static async void CreateFolderTranslations(Core core, MicrotingDbContext sdkDbContext, IEnumerable<FolderTranslation> folderTranslations, List<CommonTranslationsModel> translations)
+        {
+	        foreach (var folderTranslation in folderTranslations.Where(x => x != null))
+	        {
+		        var folder = await sdkDbContext.Folders
+			        .Where(x => x.Id == folderTranslation.FolderId)
+			        .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+					.FirstOrDefaultAsync();
+
+		        if (folder != null)
+		        {
+			        await core.FolderUpdate(folder.Id, translations, folder.ParentId);
+		        }
+	        }
+		}
+
+        private static async void CreateFoldersTranslations(Core core)
+		{
+			var sdkDbContext = core.DbContextHelper.GetDbContext();
+			CreateFolderTranslations(core, sdkDbContext,
+				await sdkDbContext.FolderTranslations
+			        .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+			        .Where(x => x.Name == "01. Fokusområder Miljøledelse").ToListAsync(),
+		        new List<CommonTranslationsModel>
+		        {
+			        new()
+			        {
+				        Name = "01. Logbøger Miljøledelse",
+				        LanguageId = 1, // da
+				        Description = "",
+			        },
+			        new()
+			        {
+				        Name = "01. Log books Environmental management",
+				        LanguageId = 2, // en
+				        Description = "",
+			        },
+			        new()
+			        {
+				        Name = "01. Logbücher Umweltmanagement",
+				        LanguageId = 3, // de
+				        Description = "",
+			        },
+		        }
+	        );
+			CreateFolderTranslations(core, sdkDbContext,
+				await sdkDbContext.FolderTranslations.Where(x =>
+					x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+					&& x.Name == "24.01 Logbøger miljøteknologier").ToListAsync(),
+				new List<CommonTranslationsModel>
+				{
+					new()
+					{
+						LanguageId = 1, // da
+						Name = "24.01 Logbøger og bilag",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 2, // en
+						Name = "24.01 Logbooks and appendices",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 3, // ge
+						Name = "24.01 Logbücher und Anhänge",
+						Description = "",
+					},
+				}
+			);
+
+			CreateFolderTranslations(core, sdkDbContext,
+				await sdkDbContext.FolderTranslations.Where(x =>
+					x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+					&& x.Name == "24.02 Dokumentation afsluttede inspektioner").ToListAsync(),
+				new List<CommonTranslationsModel>
+				{
+					new()
+					{
+						LanguageId = 1, // da
+						Name = "24.02 Kontroller og bilag",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 2, // en
+						Name = "24.02 Checks and attachments",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 3, // ge
+						Name = "24.02 Schecks und Anhänge",
+						Description = "",
+					},
+				}
+			);
+
+			CreateFolderTranslations(core, sdkDbContext,
+				await sdkDbContext.FolderTranslations.Where(x =>
+					x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
+					&& x.Name == "24.03 Dokumentation miljøledelse").ToListAsync(),
+				new List<CommonTranslationsModel>
+				{
+					new()
+					{
+						LanguageId = 1, // da
+						Name = "24.03 Miljøledelse",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 2, // en
+						Name = "24.03 Environmental management",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 3, // ge
+						Name = "24.03 Umweltmanagement",
+						Description = "",
+					},
+				}
+			);
+
+			CreateFolderTranslations(core, sdkDbContext,
+				await sdkDbContext.FolderTranslations
+					.Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+					.Where(x => x.Name == "24.04 Overholdelse fodringskrav")
+					.ToListAsync(),
+				new List<CommonTranslationsModel>
+				{
+					new()
+					{
+						LanguageId = 1, // da
+						Name = "24.04 Fodringskrav",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 2, // en
+						Name = "24.04 Feeding requirements",
+						Description = "",
+					},
+					new()
+					{
+						LanguageId = 3, // ge
+						Name = "24.04 Fütterungsanforderungen",
+						Description = "",
+					},
+				}
+			);
+		}
+
+        private static async void UpdateAreaTranslations(BackendConfigurationPnDbContext context)
+        {
+            var listWithOldAndNewTranslates = new List<KeyValuePair<string, string>>
+            { // old value - key, new value - value
+                new("25. Kemisk APV", "25. Kemikontrol"),
+                new("25. Chemical APV", "25. Chemical control"),
+                new("25. Chemisches APV", "25. Chemische Kontrolle"),
+                new("01. Fokusområder Miljøledelse", "01. Logbøger Miljøledelse"),
+                new("01. Focus areas Environmental management", "01. Log books Environmental management"),
+                new("01. Schwerpunkte Umweltverwaltung", "01. Logbücher Umweltmanagement"),
+			};
+
+            foreach (var (oldValue, newValue) in listWithOldAndNewTranslates)
+			{
+				var areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.Name == oldValue);
+				if (areaTranslation == null) continue;
+				areaTranslation.Name = newValue;
+				await areaTranslation.Update(context);
+			}
+		}
+
+		private static async void UpdateCheckLists(MicrotingDbContext sdkDbContext)
+		{
+			var clTranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
+			var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == clTranslation.CheckListId);
+
+			if (!sdkDbContext.Fields.Any(x => x.OriginalId == "376999"))
+			{
+				var field = new Microting.eForm.Infrastructure.Data.Entities.Field
+				{
+					CheckListId = clCheckList.Id,
+					Color = Microting.eForm.Infrastructure.Constants.Constants.FieldColors.Yellow,
+					BarcodeEnabled = 0,
+					BarcodeType = "",
+					DisplayIndex = 0,
+					FieldType = await sdkDbContext.FieldTypes.FirstAsync(x => x.Type == "EntitySelect"),
+					EntityGroupId = 12345,
+					Mandatory = 1,
+					ReadOnly = 0,
+					Dummy = 0,
+					OriginalId = "376999",
+					Translations = new List<FieldTranslation>
+					{
+						new()
+						{
+							LanguageId = 1,
+							Text = "Vælg lokation",
+							Description = ""
+						},
+						new()
+						{
+							LanguageId = 2,
+							Text = "Select location",
+							Description = ""
+						},
+						new()
+						{
+							LanguageId = 3,
+							Text = "Ort auswählen",
+							Description = ""
+						}
+					}
+				};
+				await field.Create(sdkDbContext);
+			}
+
+			//string text = $"05. Halebid og risikovurdering - {propertyName}|05. Tail bite and risc assessment - {propertyName}";
+			var clTranslations = await sdkDbContext.CheckListTranslations
+				.Where(x => x.Text.Contains("05. Halebid og risikovurdering")).ToListAsync().ConfigureAwait(false);
+
+			var engLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US").ConfigureAwait(false);
+
+			foreach (var clTranslation1 in clTranslations)
+			{
+				var engClTranslation = await sdkDbContext.CheckListTranslations.Where(x => x.LanguageId == engLanguage.Id)
+					.Where(x => x.CheckListId == clTranslation1.CheckListId).FirstOrDefaultAsync().ConfigureAwait(false);
+
+				if (engClTranslation == null)
+				{
+					var propertyParts = clTranslation1.Text.Split(" - ");
+					var propertyName = propertyParts[1];
+					var newClTranslation = new CheckListTranslation
+					{
+						CheckListId = clTranslation1.CheckListId,
+						LanguageId = engLanguage.Id,
+						Text = $"05. Tail bite and risc assessment - {propertyName}",
+						Description = ""
+					};
+					await newClTranslation.Create(sdkDbContext).ConfigureAwait(false);
+				}
+			}
+
+			/*cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Elforbrug")
+                .ConfigureAwait(false);
+            if (cltranslation != null)
+            {
+                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+                    .ConfigureAwait(false);
+                if (clCheckList != null)
+                {
+                    clCheckList.ReportH1 = "24.00Aflæsninger";
+                    clCheckList.ReportH2 = "24.00.02Aflæsning el";
+                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+                }
+            }
+
+            cltranslation = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "01. Vandforbrug")
+                .ConfigureAwait(false);
+            if (cltranslation != null)
+            {
+                clCheckList = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == cltranslation.CheckListId)
+                    .ConfigureAwait(false);
+
+                if (clCheckList != null)
+                {
+                    clCheckList.ReportH1 = "24.00Aflæsninger";
+                    clCheckList.ReportH2 = "24.00.01Aflæsning vand";
+                    await clCheckList.Update(sdkDbContext).ConfigureAwait(false);
+                }
+            }*/
+		}
+	}
 }

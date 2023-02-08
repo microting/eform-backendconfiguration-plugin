@@ -1,0 +1,104 @@
+<div class="selectors need-wrapper">
+  <mat-form-field>
+    <mat-label>{{'Property' | translate}}</mat-label>
+    <mtx-select
+      [items]="availableProperties"
+      bindLabel="name"
+      bindValue="id"
+      [(ngModel)]="selectedProperty"
+      id="propertyIdSelector"
+      [multiple]="false"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Tags' | translate}}</mat-label>
+    <mtx-select
+      [items]="availableTags"
+      bindLabel="name"
+      bindValue="id"
+      [(ngModel)]="selectedTags"
+      id="tagsSelector"
+      [multiple]="true"
+      [clearable]="true"
+    >
+    </mtx-select>
+  </mat-form-field>
+  <button
+    mat-raised-button
+    color="accent"
+    (click)="saveEditFile()"
+    id="saveEditFileBtn"
+    class="ml-2"
+  >
+    {{'Save' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="cancelEditFile()"
+    id="cancelEditFileBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+</div>
+
+<ng-container *ngIf="progressLoad !== 100">
+  <mtx-progress
+    [type]="'info'"
+    [value]="progressLoad"
+    height="16px"
+    [animate]="true"
+    [striped]="true"
+  >
+    {{progressLoad}}%
+  </mtx-progress>
+</ng-container>
+
+<ng-container *ngIf="progressLoad === 100">
+  <div
+  class="d-grid grid-5-columns"
+  [id]="dragulaContainerId"
+  *ngIf="file && file.file"
+  dragula="{{dragulaContainerName}}"
+  [(dragulaModel)]="changedPagesInFile"
+>
+  <mat-card
+    *ngFor="let page of pageInFile; index as i"
+    class="m-2 d-flex flex-column justify-content-between page"
+  >
+    <mat-card-title>
+      <mat-icon class="{{dragulaHandle}} align-middle" style="cursor: pointer">drag_handle</mat-icon>{{('Page' | translate) + ' №' + (i + 1)}}
+    </mat-card-title>
+    <mat-card-content>
+      <pdf-viewer
+        [src]="file.src"
+        [render-text]="false"
+        [original-size]="false"
+        [show-all]="false"
+        [page]="i + 1"
+        [zoom]="1"
+      ></pdf-viewer>
+    </mat-card-content>
+    <mat-card-footer class="d-flex justify-content-end align-items-end">
+      <button
+        mat-icon-button
+        color="accent"
+        (click)="zoomPage(i)"
+        matTooltip="{{'Zoom page' | translate}}"
+        id="zoomPage{{i}}Btn">
+        <mat-icon>zoom_in</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        color="warn"
+        (click)="deletePage(i)"
+        matTooltip="{{'Delete page' | translate}}"
+        [disabled]="pagesInFile.length === 1"
+        id="deletePage{{i}}Btn">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </mat-card-footer>
+  </mat-card>
+</div>
+</ng-container>

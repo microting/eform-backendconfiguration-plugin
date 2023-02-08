@@ -1,0 +1,15 @@
+mtx-grid {
+  max-height: max-content;
+}
+
+.column-select {
+  padding-top: 8px;
+}
+
+.column-actions {
+  button {
+    position: absolute;
+    right: 10px;
+    top: 7px;
+  }
+}

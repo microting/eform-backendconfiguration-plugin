@@ -1,0 +1,48 @@
+<eform-new-subheader>
+  <button
+    mat-icon-button
+    id="addNewFileBtn"
+    matTooltip="{{ 'Create file' | translate }}"
+    routerLink="./create"
+    color="accent"
+  >
+    <mat-icon>add</mat-icon>
+  </button>
+  <button
+    mat-icon-button
+    id="manageTagsBtn"
+    matTooltip="{{ 'Manage tags' | translate }}"
+    (click)="openTagsModal()"
+    color="primary"
+  >
+    <mat-icon>discount</mat-icon>
+  </button>
+</eform-new-subheader>
+
+<app-files-filters [availableTags]="availableTags" (updateTable)="updateTable()"></app-files-filters>
+
+<div class="d-flex flex-row justify-content-end mb-2">
+  <button
+    mat-raised-button
+    color="accent"
+    [disabled]="selectedFileIds.length === 0"
+    (click)="downloadSelectedFiles()"
+    >{{'Download selected' | translate}}</button>
+</div>
+<app-files-table
+  [files]="files"
+  (updateTable)="updateTable()"
+  (clickTag)="addTagToFilter($event)"
+  (openEditNameModal)="showEditModal($event)"
+  (openDeleteModal)="showDeleteModal($event)"
+  (openEditTagsModal)="showEditTagsModal($event)"
+  (changeSelectedFiles)="selectedFileIds = $event"
+>
+</app-files-table>
+
+<app-file-tags
+  #tagsModal
+  [availableTags]="availableTags"
+  (tagsChanged)="getTags()"
+>
+</app-file-tags>

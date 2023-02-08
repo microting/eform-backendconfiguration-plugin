@@ -1,0 +1,35 @@
+<h3 mat-dialog-title>{{'Edit file tags' | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column">
+  <mat-form-field>
+    <mat-label>{{ 'Current tags' | translate }}</mat-label>
+    <mtx-select
+      class="custom"
+      [dropdownPosition]="'bottom'"
+      [(ngModel)]="currentTagIds"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      [items]="availableTags"
+      id="tagSelector"
+      [multiple]="true"
+      appendTo="body"
+    ></mtx-select>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="fileTagsSaveBtn"
+    (click)="updateFile()"
+    [disabled]="disabled"
+  >
+    {{ 'Update' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelSaveFileTagsBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
+</div>

@@ -101,6 +101,17 @@ export const routes: Routes = [
             (m) => m.BackendConfigurationCaseModule
           ),
       },
+      {
+        path: 'files',
+/*        canActivate: [PermissionGuard],
+        data: {
+          requiredPermission: BackendConfigurationPnClaims.enableFilesManagement,
+        },*/
+        loadChildren: () =>
+          import('./modules/files/files.module').then(
+            (m) => m.FilesModule
+          ),
+      },
     ],
   },
 ];

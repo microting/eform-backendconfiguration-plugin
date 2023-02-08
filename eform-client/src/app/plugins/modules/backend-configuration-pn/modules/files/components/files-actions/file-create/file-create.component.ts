@@ -1,0 +1,170 @@
+import {Component, OnDestroy, OnInit, ViewChild,} from '@angular/core';
+import {FilesCreateModel} from '../../../../../models';
+import {SharedTagModel} from 'src/app/common/models';
+import {
+  BackendConfigurationPnFilesService,
+  BackendConfigurationPnFileTagsService,
+  BackendConfigurationPnPropertiesService
+} from '../../../../../services';
+import {Subscription} from 'rxjs';
+import {FileTagsComponent} from '../../';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import * as R from 'ramda';
+import {ActivatedRoute, Router} from '@angular/router';
+
+@AutoUnsubscribe()
+@Component({
+  selector: 'app-files-file-create',
+  templateUrl: './file-create.component.html',
+  styleUrls: ['./file-create.component.scss']
+})
+export class FileCreateComponent implements OnInit, OnDestroy {
+  @ViewChild('tagsModal') tagsModal: FileTagsComponent;
+
+  mimePdfType = 'application/pdf';
+  files: FilesCreateModel[] = [];
+  getAllPropertiesSub$: any;
+  availableProperties: { name: string; id: number }[];
+  selectedProperty: number;
+  selectedTags: number[] = [];
+  selectedFile: FilesCreateModel = null;
+  getTagsSub$: Subscription;
+
+  get availableTags(): SharedTagModel[] {
+    return this._availableTags;
+  }
+
+  get disabledUploadBtn(): boolean {
+    // disabled if not files and not set property for all files
+    return this.files.length === 0 || /*(*/!this.selectedProperty/* || this.files.findIndex(x => !!x.propertyId) === -1)*/;
+  }
+
+  set availableTags(val: SharedTagModel[]) {
+    this._availableTags = val ?? [];
+    if (this.selectedTags) {
+      // delete from selector deleted tags
+      const newTagIdsWithoutDeletedTags = this.selectedTags.filter((x: number) => this._availableTags.some(y => y.id === x));
+      if (newTagIdsWithoutDeletedTags.length !== this.selectedTags.length) {
+        this.selectedTags = newTagIdsWithoutDeletedTags;
+      }
+    }
+  }
+
+  private _availableTags: SharedTagModel[] = [];
+
+  get filesSelected(): boolean {
+    return this.files.length > 0;
+  }
+
+  constructor(
+    private propertiesService: BackendConfigurationPnPropertiesService,
+    private backendConfigurationPnFilesService: BackendConfigurationPnFilesService,
+    private tagsService: BackendConfigurationPnFileTagsService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) {
+  }
+
+  ngOnInit(): void {
+    this.getProperties();
+    this.getTags();
+  }
+
+  getProperties() {
+    this.getAllPropertiesSub$ = this.propertiesService.getAllProperties({
+      nameFilter: '',
+      sort: 'Id',
+      isSortDsc: false,
+      pageSize: 100000,
+      offset: 0,
+      pageIndex: 0
+    }).subscribe((data) => {
+      if (data && data.success && data.model) {
+        this.availableProperties = data.model.entities
+          .map((x) => {
+            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, id: x.id};
+          });
+      }
+    });
+  }
+
+  getTags() {
+    this.getTagsSub$ = this.tagsService.getTags().subscribe((data) => {
+      if (data && data.success) {
+        this.availableTags = data.model;
+      }
+    });
+  }
+
+  openTagsModal() {
+    this.tagsModal.show();
+  }
+
+  onFilesChanged(files: File[]) {
+    this.files = [...this.files, ...files
+      .filter(x => !this.files.some(y => y.file.name === x.name))
+      .map((file): FilesCreateModel => {
+        let mappedFile: FilesCreateModel = {
+          src: undefined,
+          file: file,
+          propertyId: this.selectedProperty,
+          tagIds: [...this.selectedTags]
+        };
+        file.arrayBuffer().then(src => mappedFile.src = new Uint8Array(src));
+        return mappedFile;
+      })]
+      .sort((a, b) => a.file.name < b.file.name ? -1 : a.file.name > b.file.name ? 1 : 0);
+  }
+
+  deleteFile(file: FilesCreateModel) {
+    this.files = this.files.filter(x => x.file.name !== file.file.name);
+  }
+
+  ngOnDestroy(): void {
+  }
+
+  editFile(file: FilesCreateModel) {
+    file.file.arrayBuffer().then(arrayBuffer => {
+      this.selectedFile = {...file, file: new File([arrayBuffer], file.file.name), src: new Uint8Array(arrayBuffer)};
+    })
+  }
+
+  onSaveEditedFile(file: FilesCreateModel) {
+    const i = this.files.findIndex(x => x.file.name === file.file.name);
+    if (i !== -1) {
+      this.files[i] = file;
+      this.selectedFile = null;
+    }
+  }
+
+  selectedPropertyChange(selectedProperty: number) {
+    // filter files, where propertyId is old
+    this.files.filter(y => y.propertyId === this.selectedProperty).forEach(x => x.propertyId = selectedProperty);
+    this.selectedProperty = selectedProperty;
+  }
+
+  selectedTagsChange(tags: number[]) {
+    // change tags for all files
+    this.files.forEach(x => {
+      if (R.difference(x.tagIds, tags).length === 0) {
+        x.tagIds = tags;
+      }
+    });
+    this.selectedTags = tags;
+  }
+
+  uploadFiles() {
+    let model = this.files.map((x) => ({
+          file: x.file,
+          propertyId: x.propertyId,
+          tagIds: x.tagIds
+        }));
+    this.backendConfigurationPnFilesService
+      .createFiles({filesForCreate: [...model]})
+      .subscribe(operationResult => {
+        if(operationResult && operationResult.success){
+          this.router.navigate([`..`], {relativeTo: this.route}).then();
+        }
+      });
+  }
+}

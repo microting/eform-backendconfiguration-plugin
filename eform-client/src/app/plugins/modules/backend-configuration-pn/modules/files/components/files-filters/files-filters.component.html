@@ -1,0 +1,66 @@
+<div [formGroup]="filtersForm">
+  <div class="align-items-center d-flex flex-row need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Property' | translate}}</mat-label>
+      <mtx-select
+        [items]="properties"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="propertyIds"
+        id="propertyIdsFilter"
+        [multiple]="true"
+        [clearable]="true"
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field [owlDateTimeTrigger]="dateRangePicker">
+      <mat-label>{{ 'Select date range' | translate }}</mat-label>
+      <mat-icon matPrefix>calendar_today</mat-icon>
+      <input
+        matInput
+        formControlName="dateRange"
+        name="dateRange"
+        type="text"
+        [owlDateTime]="dateRangePicker"
+        [selectMode]="'range'"
+        id="dateFormInput"
+      >
+      <button *ngIf="dateRangeFilterControl.value.length" matSuffix mat-icon-button aria-label="Clear" (click)="dateRangeFilterControl.patchValue([])">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+  <div class="align-items-center d-flex flex-row need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'File name' | translate}}</mat-label>
+      <input
+        matInput
+        formControlName="nameFilter"
+        id="nameFilter"
+        type="text"
+      >
+      <button *ngIf="nameFilterControl.value.length" matSuffix mat-icon-button aria-label="Clear" (click)="nameFilterControl.patchValue('')">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Tags' | translate}}</mat-label>
+      <mtx-select
+        [items]="availableTags"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="tagIds"
+        id="tagsFilter"
+        [multiple]="true"
+        [clearable]="true"
+      >
+      </mtx-select>
+    </mat-form-field>
+  </div>
+</div>
+
+<owl-date-time
+  [pickerType]="'calendar'"
+  [firstDayOfWeek]="1"
+  #dateRangePicker
+></owl-date-time>
