@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microting.ItemsPlanningBase.Infrastructure.Enums;
-
 namespace BackendConfiguration.Pn.Infrastructure
 {
     using System;
@@ -34,13 +32,12 @@ namespace BackendConfiguration.Pn.Infrastructure
     using Microting.eForm.Infrastructure;
     using Microting.eForm.Infrastructure.Constants;
     using Microting.eForm.Infrastructure.Data.Entities;
-    using Microting.eFormApi.BasePn.Abstractions;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+    using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
     public static class PairItemWithSiteHelper
     {
-
         public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext)
         {
             var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();

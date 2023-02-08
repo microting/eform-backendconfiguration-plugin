@@ -15,28 +15,29 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
-public class WorkOrderHelper
+public static class WorkOrderHelper
 {
-    private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-    private readonly IEFormCoreService _coreHelper;
-    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-    private readonly IUserService _userService;
-    public WorkOrderHelper(
-        IEFormCoreService coreHelper,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-        IUserService userService
-        )
-    {
-        _coreHelper = coreHelper;
-        _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-        _userService = userService;
-    }
+    // private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
+    // private readonly IEFormCoreService _coreHelper;
+    // private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
+    // private readonly IUserService _userService;
+    // public WorkOrderHelper(
+    //     IEFormCoreService coreHelper,
+    //     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+    //     IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+    //     IUserService userService
+    //     )
+    // {
+    //     _coreHelper = coreHelper;
+    //     _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
+    //     _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+    //     _userService = userService;
+    // }
 
-    public async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers)
+    public static async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers, Core core, int userId,
+        BackendConfigurationPnDbContext _backendConfigurationPnDbContext,
+        IBackendConfigurationLocalizationService _backendConfigurationLocalizationService)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         foreach (var propertyWorker in propertyWorkers.Where(x => x.TaskManagementEnabled == true))
         {
@@ -125,15 +126,14 @@ public class WorkOrderHelper
             {
                 await DeployEform(propertyWorker, eformIdForNewTasks, property,
                     $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
-                    int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid)).ConfigureAwait(false);
+                    int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userId, _backendConfigurationPnDbContext).ConfigureAwait(false);
             }
         }
     }
 
-    public async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
-        string description, int? areasGroupUid, int? deviceUsersGroupId)
+    public static  async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
+        string description, int? areasGroupUid, int? deviceUsersGroupId, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         await using var _ = sdkDbContext.ConfigureAwait(false);
         if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
@@ -186,14 +186,13 @@ public class WorkOrderHelper
             CaseId = (int)caseId,
             PropertyWorkerId = propertyWorker.Id,
             CaseStatusesEnum = CaseStatusesEnum.NewTask,
-            CreatedByUserId = _userService.UserId,
-            UpdatedByUserId = _userService.UserId,
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
         }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
     }
 
-    public async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder)
+    public static async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         await using var _ = sdkDbContext.ConfigureAwait(false);
         foreach (var propertyWorker in propertyWorkers)
@@ -217,7 +216,7 @@ public class WorkOrderHelper
                         // throw;
                     }
                     // await core.CaseDelete(workorderCase.CaseId);
-                    workOrderCase.UpdatedByUserId = _userService.UserId;
+                    workOrderCase.UpdatedByUserId = userId;
                     await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
@@ -245,7 +244,7 @@ public class WorkOrderHelper
                         {
                             Console.WriteLine(e);
                         }
-                        workOrderCase.UpdatedByUserId = _userService.UserId;
+                        workOrderCase.UpdatedByUserId = userId;
                         await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 }
