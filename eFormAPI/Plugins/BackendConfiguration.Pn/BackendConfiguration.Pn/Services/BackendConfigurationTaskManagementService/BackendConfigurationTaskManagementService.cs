@@ -851,7 +851,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
         // Convert to PDF
         ReportHelper.ConvertToPdf(Path.Combine(Path.GetTempPath(), "reports", "results", docxFileName), downloadPath);
-        File.Delete(docxFileName);
+        System.IO.File.Delete(docxFileName);
 
         // Upload PDF
         // string pdfFileName = null;

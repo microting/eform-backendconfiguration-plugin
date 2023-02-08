@@ -22,21 +22,21 @@ jobs:
       with:
         fetch-depth: 0
         repository: microting/eform-angular-frontend
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: stable
         path: eform-angular-frontend
     - name: 'Preparing items planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-items-planning-plugin
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: stable
         path: eform-angular-items-planning-plugin
     - name: 'Preparing time planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-timeplanning-plugin
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: stable
         path: eform-angular-timeplanning-plugin
     - name: Copy dependencies
       run: |

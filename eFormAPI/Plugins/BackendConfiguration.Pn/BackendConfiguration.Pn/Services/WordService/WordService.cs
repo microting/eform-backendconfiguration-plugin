@@ -796,7 +796,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                 Console.WriteLine("Getting file from S3 " +imageName);
                 var storageResult = await core.GetFileFromS3Storage(imageName);
                 stream = storageResult.ResponseStream;
-            } else if (!File.Exists(filePath))
+            } else if (!System.IO.File.Exists(filePath))
             {
                 return null;
                 // return new OperationDataResult<Stream>(
