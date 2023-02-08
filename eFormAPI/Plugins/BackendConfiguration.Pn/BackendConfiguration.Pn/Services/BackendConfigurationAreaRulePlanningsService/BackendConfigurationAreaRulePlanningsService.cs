@@ -30,7 +30,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
     using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
     using PlanningSite = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite;
 
-    public class BackendConfigurationAreaRulePlanningsService : IBackendConfigurationAreaRulePlanningsService
+    public class BackendConfigurationAreaRulePlanningsService  : IBackendConfigurationAreaRulePlanningsService
     {
         private readonly IEFormCoreService _coreHelper;
         private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
