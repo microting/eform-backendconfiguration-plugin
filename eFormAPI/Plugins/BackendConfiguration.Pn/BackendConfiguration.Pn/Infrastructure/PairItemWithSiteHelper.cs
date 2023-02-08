@@ -38,23 +38,11 @@ namespace BackendConfiguration.Pn.Infrastructure
     using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 
-    public class PairItemWichSiteHelper
+    public static class PairItemWithSiteHelper
     {
-        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-        private readonly IEFormCoreService _coreService;
 
-        public PairItemWichSiteHelper(
-            ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-            IEFormCoreService coreService)
+        public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext)
         {
-            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-            _coreService = coreService;
-        }
-
-        public async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId)
-        {
-            var sdkCore =
-                await _coreService.GetCore().ConfigureAwait(false);
             var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
             await using var _ = sdkDbContext.ConfigureAwait(false);
             foreach (var assignmentSiteId in assignmentSiteIds)

@@ -1,15 +1,19 @@
+using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
 using BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
+using File = System.IO.File;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
-public class BackendConfigurationAreaRulePlanningsServiceTest
+public class BackendConfigurationAreaRulePlanningsServiceHelperTest
 {
 
     private readonly MySqlTestcontainer _mySqlTestcontainer = new TestcontainersBuilder<MySqlTestcontainer>()
@@ -115,12 +119,26 @@ public class BackendConfigurationAreaRulePlanningsServiceTest
 
     }
 
-    // Should test for no properties
+    // Should test the CreateAreaRulePlanningObject method
     [Test]
-    public async Task BackendConfigurationAreaRulePlanningsService_GetAllProperties_ReturnsEmptyList()
+    public async Task
+        BackendConfigurationAreaRulePlanningsServiceHelper_CreateAreaRulePlanningObject_DoesCreateAreaRulePlanningObject()
     {
-        var propertyCount = await BackendConfigurationPnDbContext.Properties.CountAsync();
+        // Arrange
+        // AreaRulePlanningModel areaRulePlanningModel,
+        // AreaRule areaRule, int planningId, int folderId, BackendConfigurationPnDbContext dbContext, int userId
+        AreaRulePlanningModel areaRulePlanningModel = new AreaRulePlanningModel();
+        AreaRule areaRule = new AreaRule();
+        int planningId = 1;
+        int folderId = 1;
+        int userId = 1;
 
-        Assert.That(propertyCount, Is.EqualTo(0));
+        // Act
+        var result = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateAreaRulePlanningObject(
+            areaRulePlanningModel, areaRule, planningId, folderId, BackendConfigurationPnDbContext, userId);
+
+        // Assert
+        Assert.NotNull(result);
     }
+
 }
