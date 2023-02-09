@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Threading.Tasks;
+
 namespace BackendConfiguration.Pn
 {
 	using ChemicalsBase.Infrastructure;
@@ -294,11 +296,11 @@ namespace BackendConfiguration.Pn
                 }
             }
 
-            UpdateAreaTranslations(context);
+            await UpdateAreaTranslations(context);
 
-            CreateFoldersTranslations(core);
+            await CreateFoldersTranslations(core);
 
-			UpdateCheckLists(sdkDbContext);
+			await UpdateCheckLists(sdkDbContext);
 
 			var propertyWorkers = await context.PropertyWorkers
                 .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
@@ -978,7 +980,7 @@ namespace BackendConfiguration.Pn
 			return new PluginPermissionsManager(context);
 		}
 
-        private static async void CreateFolderTranslations(Core core, MicrotingDbContext sdkDbContext, IEnumerable<FolderTranslation> folderTranslations, List<CommonTranslationsModel> translations)
+        private static async Task CreateFolderTranslations(Core core, MicrotingDbContext sdkDbContext, IEnumerable<FolderTranslation> folderTranslations, List<CommonTranslationsModel> translations)
         {
 	        foreach (var folderTranslation in folderTranslations.Where(x => x != null))
 	        {
@@ -994,10 +996,10 @@ namespace BackendConfiguration.Pn
 	        }
 		}
 
-        private static async void CreateFoldersTranslations(Core core)
+        private static async Task CreateFoldersTranslations(Core core)
 		{
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
-			CreateFolderTranslations(core, sdkDbContext,
+			await CreateFolderTranslations(core, sdkDbContext,
 				await sdkDbContext.FolderTranslations
 			        .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
 			        .Where(x => x.Name == "01. Fokusområder Miljøledelse").ToListAsync(),
@@ -1023,7 +1025,7 @@ namespace BackendConfiguration.Pn
 			        },
 		        }
 	        );
-			CreateFolderTranslations(core, sdkDbContext,
+			await CreateFolderTranslations(core, sdkDbContext,
 				await sdkDbContext.FolderTranslations.Where(x =>
 					x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
 					&& x.Name == "24.01 Logbøger miljøteknologier").ToListAsync(),
@@ -1050,7 +1052,7 @@ namespace BackendConfiguration.Pn
 				}
 			);
 
-			CreateFolderTranslations(core, sdkDbContext,
+			await CreateFolderTranslations(core, sdkDbContext,
 				await sdkDbContext.FolderTranslations.Where(x =>
 					x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
 					&& x.Name == "24.02 Dokumentation afsluttede inspektioner").ToListAsync(),
@@ -1077,7 +1079,7 @@ namespace BackendConfiguration.Pn
 				}
 			);
 
-			CreateFolderTranslations(core, sdkDbContext,
+			await CreateFolderTranslations(core, sdkDbContext,
 				await sdkDbContext.FolderTranslations.Where(x =>
 					x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed
 					&& x.Name == "24.03 Dokumentation miljøledelse").ToListAsync(),
@@ -1104,7 +1106,7 @@ namespace BackendConfiguration.Pn
 				}
 			);
 
-			CreateFolderTranslations(core, sdkDbContext,
+			await CreateFolderTranslations(core, sdkDbContext,
 				await sdkDbContext.FolderTranslations
 					.Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
 					.Where(x => x.Name == "24.04 Overholdelse fodringskrav")
@@ -1133,7 +1135,7 @@ namespace BackendConfiguration.Pn
 			);
 		}
 
-        private static async void UpdateAreaTranslations(BackendConfigurationPnDbContext context)
+        private static async Task UpdateAreaTranslations(BackendConfigurationPnDbContext context)
         {
             var listWithOldAndNewTranslates = new List<KeyValuePair<string, string>>
             { // old value - key, new value - value
@@ -1154,7 +1156,7 @@ namespace BackendConfiguration.Pn
 			}
 		}
 
-		private static async void UpdateCheckLists(MicrotingDbContext sdkDbContext)
+		private static async Task UpdateCheckLists(MicrotingDbContext sdkDbContext)
 		{
 			var clTranslation = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "25.01 Registrer produkter");
 			var clCheckList = await sdkDbContext.CheckLists.FirstAsync(x => x.ParentId == clTranslation.CheckListId);
