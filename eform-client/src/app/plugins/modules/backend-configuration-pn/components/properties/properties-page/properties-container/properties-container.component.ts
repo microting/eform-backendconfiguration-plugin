@@ -66,6 +66,43 @@ export class PropertiesContainerComponent implements OnInit, OnDestroy {
       sortable: true,
     },
     {
+      header: this.translateService.stream('Actions'),
+      field: 'actions',
+    },
+  ];
+  adminTableHeaders: MtxGridColumn[] = [
+    {
+      header: this.translateService.stream('Id'),
+      field: 'id',
+      sortProp: {id: 'Id'},
+      sortable: true,
+    },
+    {
+      header: this.translateService.stream('Property name'),
+      sortProp: {id: 'Name'},
+      field: 'name',
+      sortable: true,
+    },
+    {
+      header: this.translateService.stream('CVR Number'),
+      field: 'cvr',
+      sortable: true,
+      sortProp: {id: 'CVR'},
+    },
+    {
+      header: this.translateService.stream('CHR Number'),
+      field: 'chr',
+      sortProp: {id: 'CHR'},
+      sortable: true,
+      hide: this.isFarms,
+    },
+    {
+      header: this.translateService.stream('Property address'),
+      field: 'address',
+      sortProp: {id: 'Address'},
+      sortable: true,
+    },
+    {
       header: this.translateService.stream('Compliance'),
       field: 'compliance',
     },

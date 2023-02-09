@@ -24,6 +24,7 @@ export class PropertiesTableComponent implements OnInit {
   @Input() propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
 
   @Input() tableHeaders: MtxGridColumn[];
+  @Input() adminTableHeaders: MtxGridColumn[];
   @Output()
   showEditPropertyModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   @Output()
