@@ -90,6 +90,8 @@ jobs:
       run: |
         docker pull rabbitmq:latest
         docker run -d --hostname my-rabbit --name some-rabbit --network data -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=password rabbitmq:latest
+    - name: Sleep 15
+      run: sleep 15
     - name: Start the newly build Docker container
       id: docker-run
       run: docker run --name my-container -p 4200:5000 --network data microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" > docker_run_log 2>&1 &
@@ -146,8 +148,6 @@ jobs:
     - name: Get standard output
       run: |
         cat docker_run_log
-    - name: Sleep 15
-      run: sleep 15
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
     - name: Change rabbitmq hostname
