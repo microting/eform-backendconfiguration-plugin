@@ -21,7 +21,6 @@ public static class BackendConfigurationPropertiesServiceHelper
 {
     public static async Task<OperationResult> Create(PropertyCreateModel propertyCreateModel, Core core, int userId,
         BackendConfigurationPnDbContext _backendConfigurationPnDbContext,
-        IBackendConfigurationLocalizationService _backendConfigurationLocalizationService,
         ItemsPlanningPnDbContext _itemsPlanningPnDbContext, int maxChrNumbers, int maxCvrNumbers)
     {
                     var currentListOfCvrNumbers = await _backendConfigurationPnDbContext.Properties
@@ -33,21 +32,21 @@ public static class BackendConfigurationPropertiesServiceHelper
                     x.CVR == propertyCreateModel.Cvr))
             {
                 return new OperationResult(false,
-                    _backendConfigurationLocalizationService.GetString("PropertyAlreadyExists"));
+                    "PropertyAlreadyExists");
             }
 
             if (!currentListOfChrNumbers.Contains(propertyCreateModel.Chr) &&
                 currentListOfChrNumbers.Count >= maxChrNumbers)
             {
                 return new OperationResult(false,
-                    $"{_backendConfigurationLocalizationService.GetString("MaxChrNumbersReached")}");
+                    "MaxChrNumbersReached");
             }
 
             if (!currentListOfCvrNumbers.Contains(propertyCreateModel.Cvr) &&
                 currentListOfCvrNumbers.Count >= maxCvrNumbers)
             {
                 return new OperationResult(false,
-                    $"{_backendConfigurationLocalizationService.GetString("MaxCvrNumbersReached")}");
+                    "MaxCvrNumbersReached");
             }
 
             try
@@ -101,7 +100,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                     .ToListAsync().ConfigureAwait(false);
                 newProperty.FolderId = await core.FolderCreate(translatesForFolder, null).ConfigureAwait(false);
 
-                newProperty = await BackendConfigurationPropertiesServiceHelper.CreateTaskManagementFolders(newProperty, sdkDbContext, core);
+                newProperty = await CreateTaskManagementFolders(newProperty, sdkDbContext, core);
 
                 // create area select list filled manually
                 var areasGroup = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
@@ -115,14 +114,14 @@ public static class BackendConfigurationPropertiesServiceHelper
                 await newProperty.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 return new OperationResult(true,
-                    _backendConfigurationLocalizationService.GetString("SuccessfullyCreatingProperties"));
+                    "SuccessfullyCreatingProperties");
             }
             catch (Exception e)
             {
                 //Log.LogException(e.Message);
                 //Log.LogException(e.StackTrace);
                 return new OperationResult(false,
-                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileCreatingProperties")}: {e.Message}");
+                    "ErrorWhileCreatingProperties");
             }
     }
 

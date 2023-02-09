@@ -143,7 +143,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             var maxCvrNumbers = _options.Value.MaxCvrNumbers;
             var maxChrNumbers = _options.Value.MaxChrNumbers;
 
-            return await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
+            var result = await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
+
+            if (result.Success)
+            {
+                return result;
+            }
+
+            return new OperationResult(false, _backendConfigurationLocalizationService.GetString(result.Message));
         }
 
         public async Task<OperationDataResult<PropertiesModel>> Read(int id)

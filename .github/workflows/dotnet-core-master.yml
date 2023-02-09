@@ -193,3 +193,5 @@ jobs:
       run: dotnet build eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
     - name: Unit Tests
       run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
+    - name: Integration Tests
+      run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Integration.Test/BackendConfiguration.Pn.Integration.Test.csproj
