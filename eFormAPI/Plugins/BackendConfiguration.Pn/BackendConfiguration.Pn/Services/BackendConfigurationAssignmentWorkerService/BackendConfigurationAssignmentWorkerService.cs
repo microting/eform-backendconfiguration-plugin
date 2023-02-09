@@ -228,7 +228,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     await _bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, _userService.UserId, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, _userService.UserId, _backendConfigurationPnDbContext, $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong>").ConfigureAwait(false);
 
                 return new OperationResult(true,
                     _backendConfigurationLocalizationService.GetString("SuccessfullyAssignmentsCreatingProperties"));
@@ -396,7 +396,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     }
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, _userService.UserId, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, _userService.UserId, _backendConfigurationPnDbContext, $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong>").ConfigureAwait(false);
                 return new OperationResult(true,
                     _backendConfigurationLocalizationService.GetString("SuccessfullyUpdateAssignmentsProperties"));
             }
