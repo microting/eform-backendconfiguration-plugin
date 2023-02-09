@@ -61,6 +61,7 @@
     [pageOnFront]="false"
     [rowStriped]="true"
     [showPaginator]="false"
+    id="pairingModalTableBody"
   >
   </mtx-grid>
 
@@ -70,7 +71,7 @@
         id="checkboxCreateAssignment{{ i }}"
         (change)="addToArray($event, getAssignmentByPropertyId(row.id).propertyId)"
         [checked]="getAssignmentIsCheckedByPropertyId(row.id)"
-        [disabled]="getAssignmentIsLockedByPropertyId(property.id)"
+        [disabled]="getAssignmentIsLockedByPropertyId(row.id)"
       ></mat-checkbox>
     </div>
   </ng-template>

@@ -135,9 +135,9 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async checkboxEditAssignment(i: number) {
-    const ele = await $(`#checkboxCreateAssignment${i}`);
-    // await ele.waitForDisplayed({ timeout: 40000 });
-    // await ele.waitForClickable({ timeout: 40000 });
+    const ele = await $(`#checkboxCreateAssignment${i}-input`);
+    //await ele.waitForDisplayed({ timeout: 40000 });
+    //await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
@@ -358,7 +358,7 @@ export class PropertyWorkerRowObject {
                 propertyWorker.properties[i]
               )
             )
-          ).click();
+          ).$('..').click();
           await browser.pause(500);
         }
       }
@@ -391,15 +391,15 @@ export class PropertyWorkerRowObject {
       checked: boolean;
     }>();
     const propertyLength = await (
-      await pairingEditModalTableBody.$$('#propertyName')
+      await pairingEditModalTableBody.$$('.propertyName')
     ).length;
-    for (let i = 0; i < propertyLength; i++) {
+    for (let i = 0; i < propertyLength - 1; i++) {
        masForReturn = [
          ...masForReturn,
          {
            propertyName: await (
-             await $$('#propertyName')
-           )[i].getText(),
+             await $$('.propertyName')
+           )[i+1].getText(),
            checked:
             (await (
               await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(
