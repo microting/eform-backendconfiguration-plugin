@@ -127,14 +127,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
             Address = Guid.NewGuid().ToString(),
             CHR = Guid.NewGuid().ToString(),
             CVR = Guid.NewGuid().ToString(),
-            ComplianceStatus = 0
+            IsFarm = true,
+            ComplianceStatus = 0,
+            Name = Guid.NewGuid().ToString()
         };
         await property.Create(BackendConfigurationPnDbContext);
-        // AreaRulePlanningModel areaRulePlanningModel = new AreaRulePlanningModel();
-        // AreaRule areaRule = new AreaRule();
-        // int planningId = 1;
-        // int folderId = 1;
-        // int userId = 1;
 
         // Act
         // var result = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateAreaRulePlanningObject(

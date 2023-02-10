@@ -145,12 +145,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
             var result = await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
 
-            if (result.Success)
-            {
-                return result;
-            }
-
-            return new OperationResult(false, _backendConfigurationLocalizationService.GetString(result.Message));
+            return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
         }
 
         public async Task<OperationDataResult<PropertiesModel>> Read(int id)
@@ -198,7 +193,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
         public async Task<OperationResult> Update(PropertiesUpdateModel updateModel)
         {
-            return await BackendConfigurationPropertiesServiceHelper.Update(updateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _itemsPlanningPnDbContext).ConfigureAwait(false);
+            var result =  await BackendConfigurationPropertiesServiceHelper.Update(updateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, _backendConfigurationLocalizationService.GetString("Location")).ConfigureAwait(false);
+
+            return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
         }
 
         public async Task<OperationResult> Delete(int id)
