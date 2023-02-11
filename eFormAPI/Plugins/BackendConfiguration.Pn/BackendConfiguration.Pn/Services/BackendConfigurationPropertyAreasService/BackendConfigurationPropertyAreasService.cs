@@ -22,13 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.IO;
-using System.Reflection;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
-using eFormCore;
-using Microting.eForm.Infrastructure;
-using Microting.eForm.Infrastructure.Data.Entities;
-using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
 {
@@ -48,10 +42,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
-    using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationPropertyAreasService : IBackendConfigurationPropertyAreasService
     {

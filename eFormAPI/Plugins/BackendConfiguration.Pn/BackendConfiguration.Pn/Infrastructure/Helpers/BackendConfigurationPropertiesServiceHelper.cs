@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
-using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
@@ -20,14 +19,14 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 public static class BackendConfigurationPropertiesServiceHelper
 {
     public static async Task<OperationResult> Create(PropertyCreateModel propertyCreateModel, Core core, int userId,
-        BackendConfigurationPnDbContext _backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext _itemsPlanningPnDbContext, int maxChrNumbers, int maxCvrNumbers)
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext, int maxChrNumbers, int maxCvrNumbers)
     {
-                    var currentListOfCvrNumbers = await _backendConfigurationPnDbContext.Properties
+                    var currentListOfCvrNumbers = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CVR).ToListAsync().ConfigureAwait(false);
-            var currentListOfChrNumbers = await _backendConfigurationPnDbContext.Properties
+            var currentListOfChrNumbers = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.CHR).ToListAsync().ConfigureAwait(false);
-            if (_backendConfigurationPnDbContext.Properties.Any(x =>
+            if (backendConfigurationPnDbContext.Properties.Any(x =>
                     x.CHR == propertyCreateModel.Chr && x.WorkflowState != Constants.WorkflowStates.Removed &&
                     x.CVR == propertyCreateModel.Cvr))
             {
@@ -55,9 +54,9 @@ public static class BackendConfigurationPropertiesServiceHelper
 
                 var planningTag = new PlanningTag
                 {
-                    Name = propertyCreateModel.FullName(),
+                    Name = propertyCreateModel.FullName()
                 };
-                await planningTag.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                await planningTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                 var newProperty = new Property
                 {
                     Address = propertyCreateModel.Address,
@@ -72,20 +71,21 @@ public static class BackendConfigurationPropertiesServiceHelper
                     IsFarm = propertyCreateModel.IsFarm,
                     MainMailAddress = propertyCreateModel.MainMailAddress
                 };
-                await newProperty.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await newProperty.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
+                var property = newProperty;
                 var selectedTranslates = propertyCreateModel.LanguagesIds
                     .Select(x => new PropertySelectedLanguage
                     {
                         LanguageId = x,
-                        PropertyId = newProperty.Id,
+                        PropertyId = property.Id,
                         CreatedByUserId = userId,
                         UpdatedByUserId = userId
                     });
 
                 foreach (var selectedTranslate in selectedTranslates)
                 {
-                    await selectedTranslate.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await selectedTranslate.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 var translatesForFolder = await sdkDbContext.Languages
@@ -111,12 +111,12 @@ public static class BackendConfigurationPropertiesServiceHelper
                     $"{newProperty.Name} - Device Users", "", true, false).ConfigureAwait(false);
                 newProperty.EntitySelectListDeviceUsers = deviceUsersGroup.Id;
 
-                await newProperty.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await newProperty.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 return new OperationResult(true,
                     "SuccessfullyCreatingProperties");
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //Log.LogException(e.Message);
                 //Log.LogException(e.StackTrace);
@@ -127,14 +127,14 @@ public static class BackendConfigurationPropertiesServiceHelper
 
 
     public static async Task<OperationResult> Update(PropertiesUpdateModel updateModel, Core core, int userId,
-        BackendConfigurationPnDbContext _backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext _itemsPlanningPnDbContext,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
         string locationName)
     {
         try
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var property = await _backendConfigurationPnDbContext.Properties
+            var property = await backendConfigurationPnDbContext.Properties
                 .Where(x => x.Id == updateModel.Id)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Include(x => x.SelectedLanguages)
@@ -146,7 +146,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                 return new OperationResult(false, "PropertyNotFound");
             }
 
-            if (_backendConfigurationPnDbContext.Properties.Any(x =>
+            if (backendConfigurationPnDbContext.Properties.Any(x =>
                     x.WorkflowState != Constants.WorkflowStates.Removed
                     && x.CHR == updateModel.Chr
                     && x.CVR == updateModel.Cvr
@@ -156,28 +156,6 @@ public static class BackendConfigurationPropertiesServiceHelper
             {
                 return new OperationResult(false, "PropertyAlreadyExists");
             }
-
-
-            // if (property.Name != updateModel.Name && property.WorkorderEnable)
-            // {
-            //     var areaGroupUid = await sdkDbContext.EntityGroups
-            //         .Where(x => x.Id == property.EntitySelectListAreas)
-            //         //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //         .Select(x => x.MicrotingUid)
-            //         .FirstAsync().ConfigureAwait(false);
-            //     var areasGroup = await core.EntityGroupRead(areaGroupUid).ConfigureAwait(false);
-            //     areasGroup.Name = $"eForm Backend Configurations - {updateModel.Name} - Areas";
-            //     await core.EntityGroupUpdate(areasGroup).ConfigureAwait(false);
-            //
-            //     var deviceUserGroupUid = await sdkDbContext.EntityGroups
-            //         .Where(x => x.Id == property.EntitySelectListDeviceUsers)
-            //         //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-            //         .Select(x => x.MicrotingUid)
-            //         .FirstAsync().ConfigureAwait(false);
-            //     var deviceUserGroup = await core.EntityGroupRead(deviceUserGroupUid).ConfigureAwait(false);
-            //     deviceUserGroup.Name = $"eForm Backend Configurations - {updateModel.Name} - Device Users";
-            //     await core.EntityGroupUpdate(deviceUserGroup).ConfigureAwait(false);
-            // }
 
             var pooleForm =
                 await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x =>
@@ -208,7 +186,8 @@ public static class BackendConfigurationPropertiesServiceHelper
                 await eg.Update(sdkDbContext);
             }
 
-            var planningTag = await _itemsPlanningPnDbContext.PlanningTags
+            var planningTag = await itemsPlanningPnDbContext.PlanningTags
+                // ReSharper disable once AccessToModifiedClosure
                 .Where(x => x.Id == property.ItemPlanningTagId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstOrDefaultAsync().ConfigureAwait(false);
@@ -216,17 +195,18 @@ public static class BackendConfigurationPropertiesServiceHelper
             {
                 planningTag.Name = updateModel.FullName();
                 planningTag.UpdatedByUserId = userId;
-                await planningTag.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                await planningTag.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
-            var planningTags = await _itemsPlanningPnDbContext.PlanningTags
+            var planningTags = await itemsPlanningPnDbContext.PlanningTags
+                // ReSharper disable once AccessToModifiedClosure
                 .Where(x => x.Name.StartsWith(property.Name)).ToListAsync();
 
             foreach (var tag in planningTags)
             {
                 tag.Name = tag.Name.Replace(property.Name, updateModel.FullName());
                 tag.UpdatedByUserId = userId;
-                await tag.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                await tag.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
             var translatesForFolder = await sdkDbContext.Languages
@@ -240,7 +220,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                     })
                 .ToListAsync().ConfigureAwait(false);
 
-            await core.FolderUpdate((int)property.FolderId, translatesForFolder, null).ConfigureAwait(false);
+            await core.FolderUpdate((int)property.FolderId!, translatesForFolder, null).ConfigureAwait(false);
 
             property.Address = updateModel.Address;
             property.CHR = updateModel.Chr;
@@ -249,9 +229,9 @@ public static class BackendConfigurationPropertiesServiceHelper
             property.UpdatedByUserId = userId;
             property.MainMailAddress = updateModel.MainMailAddress;
 
-            property = await BackendConfigurationPropertiesServiceHelper.CreateTaskManagementFolders(property,
+            property = await CreateTaskManagementFolders(property,
                 sdkDbContext, core);
-            await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var deviceUsersEntityGroup = await sdkDbContext.EntityGroups.FirstAsync(x => x.Id == property.EntitySelectListDeviceUsers)
                 .ConfigureAwait(false);
@@ -318,13 +298,13 @@ public static class BackendConfigurationPropertiesServiceHelper
                                 .ConfigureAwait(false);
                             nextItemUid++;
                             propertyWorker.EntityItemId = entityItem.Id;
-                            await propertyWorker.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 
                             // todo need change language to site language for correct translates and change back after end translate
                             await WorkOrderHelper.DeployEform(propertyWorker, eformId, property,
                                 $"<strong>{locationName}:</strong> {property.Name}",
                                 int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid), core,
-                                userId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+                                userId, backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         var entityItems = await sdkDbContext.EntityItems
@@ -346,68 +326,20 @@ public static class BackendConfigurationPropertiesServiceHelper
                     }
                     case false:
                     {
-                        //await core.FolderDelete((int)property.FolderIdForCompletedTasks).ConfigureAwait(false);
-                        //await core.FolderDelete((int)property.FolderIdForOngoingTasks).ConfigureAwait(false);
-                        //await core.FolderDelete((int)property.FolderIdForNewTasks).ConfigureAwait(false);
-                        //property.FolderIdForCompletedTasks = null;
-                        //property.FolderIdForOngoingTasks = null;
-                        //property.FolderIdForNewTasks = null;
-                        //property.FolderIdForTasks = null;
-                        /*var eformIdForNewTasks = await sdkDbContext.CheckListTranslations
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Where(x => x.Text == "01. New task")
-                            .Select(x => x.CheckListId)
-                            .FirstAsync();
-
-                        var eformIdForOngoingTasks = await sdkDbContext.CheckListTranslations
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Where(x => x.Text == "02. Ongoing task")
-                            .Select(x => x.CheckListId)
-                            .FirstAsync();
-
-                        var eformIdForCompletedTasks = await sdkDbContext.CheckListTranslations
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Where(x => x.Text == "03. Completed task")
-                            .Select(x => x.CheckListId)
-                            .FirstAsync();*/
 
                         var propertyWorkerIds = property.PropertyWorkers
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .ToList();
 
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, true, core, userId, _backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkerIds, true, core, userId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, false, core, userId, _backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkerIds, false, core, userId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, false, core, userId, _backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkerIds, false, core, userId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
-
-
-                        // var areaGroupUid = await sdkDbContext.EntityGroups
-                        //     .Where(x => x.Id == property.EntitySelectListAreas)
-                        //     //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        //     .Select(x => x.MicrotingUid)
-                        //     .FirstOrDefaultAsync().ConfigureAwait(false);
-                        // if (areaGroupUid != null)
-                        // {
-                        //     await core.EntityGroupDelete(areaGroupUid).ConfigureAwait(false);
-                        // }
-                        //
-                        // var deviceUserGroupUid = await sdkDbContext.EntityGroups
-                        //     .Where(x => x.Id == property.EntitySelectListDeviceUsers)
-                        //     //.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        //     .Select(x => x.MicrotingUid)
-                        //     .FirstOrDefaultAsync().ConfigureAwait(false);
-                        // if (deviceUserGroupUid != null)
-                        // {
-                        //     await core.EntityGroupDelete(deviceUserGroupUid).ConfigureAwait(false);
-                        // }
-
-                        //property.EntitySelectListAreas = null;
-                        //property.EntitySelectListDeviceUsers = null;
                         break;
                     }
                 }
@@ -418,7 +350,7 @@ public static class BackendConfigurationPropertiesServiceHelper
             property.SelectedLanguages = property.SelectedLanguages
                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToList();
-            await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var selectedLanguagesForDelete = property.SelectedLanguages
                 .Where(x => !updateModel.LanguagesIds.Contains(x.LanguageId))
@@ -438,7 +370,7 @@ public static class BackendConfigurationPropertiesServiceHelper
             foreach (var selectedLanguageForDelete in selectedLanguagesForDelete)
             {
                 selectedLanguageForDelete.UpdatedByUserId = userId;
-                await selectedLanguageForDelete.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await selectedLanguageForDelete.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
 
@@ -446,12 +378,12 @@ public static class BackendConfigurationPropertiesServiceHelper
             {
                 selectedLanguageForCreate.UpdatedByUserId = userId;
                 selectedLanguageForCreate.CreatedByUserId = userId;
-                await selectedLanguageForCreate.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await selectedLanguageForCreate.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
             return new OperationResult(true, "SuccessfullyUpdateProperties");
         }
-        catch (Exception e)
+        catch (Exception)
         {
             //Log.LogException(e.Message);
             //Log.LogException(e.StackTrace);
@@ -459,12 +391,7 @@ public static class BackendConfigurationPropertiesServiceHelper
         }
     }
 
-    // public static async Task<OperationResult> Delete()
-    // {
-    //
-    // }
-
-    public static async Task<Property> CreateTaskManagementFolders(Property property,
+    private static async Task<Property> CreateTaskManagementFolders(Property property,
         MicrotingDbContext sdkDbContext, Core core)
     {
         var parentFolderTranslation =
@@ -475,7 +402,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                 .FirstOrDefaultAsync(x =>
                     x.FolderTranslations.Any(y => y.Name == "00.00 Opret ny opgave"));
 
-        int? parentFolderId = null;
+        int? parentFolderId;
         var danishLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
         var englishLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await sdkDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
@@ -487,21 +414,21 @@ public static class BackendConfigurationPropertiesServiceHelper
                 new()
                 {
                     Name = "00.00 Opret ny opgave",
-                    LanguageId = danishLanguage.Id, // da
-                    Description = "",
+                    LanguageId = danishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.00 Create a new task",
-                    LanguageId = englishLanguage.Id, // en
-                    Description = "",
+                    LanguageId = englishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.00 Erstellen Sie eine neue Aufgabe",
-                    LanguageId = germanLanguage.Id, // de
-                    Description = "",
-                },
+                    LanguageId = germanLanguage.Id,
+                    Description = ""
+                }
             };
             property.FolderIdForNewTasks =
                 await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
@@ -526,21 +453,21 @@ public static class BackendConfigurationPropertiesServiceHelper
                 new()
                 {
                     Name = "00.02 Mine øvrige opgaver",
-                    LanguageId = danishLanguage.Id, // da
-                    Description = "",
+                    LanguageId = danishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.02 My other tasks",
-                    LanguageId = englishLanguage.Id, // en
-                    Description = "",
+                    LanguageId = englishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.02 Meine anderen Aufgaben",
-                    LanguageId = germanLanguage.Id, // de
-                    Description = "",
-                },
+                    LanguageId = germanLanguage.Id,
+                    Description = ""
+                }
             };
             parentFolderId =
                 await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
@@ -555,21 +482,21 @@ public static class BackendConfigurationPropertiesServiceHelper
             new()
             {
                 Name = property.Name,
-                LanguageId = danishLanguage.Id, // da
-                Description = "",
+                LanguageId = danishLanguage.Id,
+                Description = ""
             },
             new()
             {
                 Name = property.Name,
-                LanguageId = englishLanguage.Id, // en
-                Description = "",
+                LanguageId = englishLanguage.Id,
+                Description = ""
             },
             new()
             {
                 Name = property.Name,
-                LanguageId = germanLanguage.Id, // de
-                Description = "",
-            },
+                LanguageId = germanLanguage.Id,
+                Description = ""
+            }
         };
 
         if (!sdkDbContext.Folders
@@ -600,21 +527,21 @@ public static class BackendConfigurationPropertiesServiceHelper
                 new()
                 {
                     Name = "00.03 Andres opgaver",
-                    LanguageId = danishLanguage.Id, // da
-                    Description = "",
+                    LanguageId = danishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.03 Others' tasks",
-                    LanguageId = englishLanguage.Id, // en
-                    Description = "",
+                    LanguageId = englishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.03 Aufgaben anderer",
-                    LanguageId = germanLanguage.Id, // de
-                    Description = "",
-                },
+                    LanguageId = germanLanguage.Id,
+                    Description = ""
+                }
             };
             parentFolderId =
                 await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
@@ -629,21 +556,21 @@ public static class BackendConfigurationPropertiesServiceHelper
             new()
             {
                 Name = property.Name,
-                LanguageId = danishLanguage.Id, // da
-                Description = "",
+                LanguageId = danishLanguage.Id,
+                Description = ""
             },
             new()
             {
                 Name = property.Name,
-                LanguageId = englishLanguage.Id, // en
-                Description = "",
+                LanguageId = englishLanguage.Id,
+                Description = ""
             },
             new()
             {
                 Name = property.Name,
-                LanguageId = germanLanguage.Id, // de
-                Description = "",
-            },
+                LanguageId = germanLanguage.Id,
+                Description = ""
+            }
         };
 
         if (!sdkDbContext.Folders
@@ -674,21 +601,21 @@ public static class BackendConfigurationPropertiesServiceHelper
                 new()
                 {
                     Name = "00.01 Mine hasteopgaver",
-                    LanguageId = danishLanguage.Id, // da
-                    Description = "",
+                    LanguageId = danishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.01 My urgent tasks",
-                    LanguageId = englishLanguage.Id, // en
-                    Description = "",
+                    LanguageId = englishLanguage.Id,
+                    Description = ""
                 },
                 new()
                 {
                     Name = "00.01 Meine dringenden Aufgaben",
-                    LanguageId = germanLanguage.Id, // de
-                    Description = "",
-                },
+                    LanguageId = germanLanguage.Id,
+                    Description = ""
+                }
             };
             parentFolderId =
                 await core.FolderCreate(translatesFolderForTasks, null).ConfigureAwait(false);
@@ -703,21 +630,21 @@ public static class BackendConfigurationPropertiesServiceHelper
             new()
             {
                 Name = property.Name,
-                LanguageId = danishLanguage.Id, // da
-                Description = "",
+                LanguageId = danishLanguage.Id,
+                Description = ""
             },
             new()
             {
                 Name = property.Name,
-                LanguageId = englishLanguage.Id, // en
-                Description = "",
+                LanguageId = englishLanguage.Id,
+                Description = ""
             },
             new()
             {
                 Name = property.Name,
-                LanguageId = germanLanguage.Id, // de
-                Description = "",
-            },
+                LanguageId = germanLanguage.Id,
+                Description = ""
+            }
         };
 
         if (!sdkDbContext.Folders

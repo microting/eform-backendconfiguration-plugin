@@ -24,13 +24,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 public static class BackendConfigurationPropertyAreasServiceHelper
 {
     public static async Task<OperationResult> Update(PropertyAreasUpdateModel updateModel, Core core,
-        BackendConfigurationPnDbContext _backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext _itemsPlanningPnDbContext, int userId)
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId)
     {
         try
         {
             updateModel.Areas = updateModel.Areas.Where(x => x.Activated).ToList();
-            var assignments = await _backendConfigurationPnDbContext.AreaProperties
+            var assignments = await backendConfigurationPnDbContext.AreaProperties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyId == updateModel.PropertyId)
                 .ToListAsync().ConfigureAwait(false);
@@ -44,14 +44,12 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 .Where(x => !updateModel.Areas.Where(y => y.Id.HasValue).Select(y => y.Id).Contains(x.Id))
                 .ToList();
 
-            //var core = await _coreHelper.GetCore().ConfigureAwait(false);
-
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             await using var _ = sdkDbContext.ConfigureAwait(false);
 
             foreach (var assignmentForCreate in assignmentsForCreate)
             {
-                var area = await _backendConfigurationPnDbContext.Areas
+                var area = await backendConfigurationPnDbContext.Areas
                     .Include(x => x.AreaTranslations)
                     .FirstAsync(x => x.Id == assignmentForCreate.AreaId).ConfigureAwait(false);
 
@@ -61,11 +59,11 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                     UpdatedByUserId = userId,
                     AreaId = assignmentForCreate.AreaId,
                     PropertyId = updateModel.PropertyId,
-                    Checked = assignmentForCreate.Activated,
+                    Checked = assignmentForCreate.Activated
                 };
-                await newAssignment.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await newAssignment.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                var property = await _backendConfigurationPnDbContext.Properties
+                var property = await backendConfigurationPnDbContext.Properties
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == updateModel.PropertyId)
                     .FirstAsync().ConfigureAwait(false);
@@ -82,32 +80,32 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
+                                LanguageId = danishLanguage.Id,
                                 // Name = "05. Halebid og klargøring af stalde",
                                 Name = "25. KemiKontrol",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 // Name = "05. Tailbite and preparation of stables",
                                 Name = "25. Chemistry Control",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
+                                LanguageId = germanLanguage.Id,
                                 // Name = "05. Stallungen",
                                 Name = "25. Chemiekontrolle",
-                                Description = "",
-                            },
+                                Description = ""
+                            }
                         }, property.FolderId).ConfigureAwait(false);
                         var assignmentWithOneFolder = new ProperyAreaFolder
                         {
                             FolderId = folderId,
-                            ProperyAreaAsignmentId = newAssignment.Id,
+                            ProperyAreaAsignmentId = newAssignment.Id
                         };
-                        await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await assignmentWithOneFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
                         var folderIds = new List<int>
                         {
@@ -115,169 +113,164 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "25.01 Opret kemiprodukt", // todo
-                                    Description = property.Name,
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "25.01 Opret kemiprodukt",
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "25.01 Create chemical product",
-                                    Description = property.Name,
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "25.01 Chemisches Produkt herstellen", // todo
-                                    Description = property.Name,
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "25.01 Chemisches Produkt herstellen",
+                                    Description = property.Name
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "25.02 Udløber i dag eller er udløbet", // todo
-                                    Description = property.Name,
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "25.02 Udløber i dag eller er udløbet",
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "25.02 Expires today or has expired",
-                                    Description = property.Name,
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "25.02 Läuft heute ab oder ist abgelaufen", // todo
-                                    Description = property.Name,
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "25.02 Läuft heute ab oder ist abgelaufen",
+                                    Description = property.Name
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "25.03 Udløber om senest 1 mdr.", // todo
-                                    Description = property.Name,
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "25.03 Udløber om senest 1 mdr.",
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "25.03 Expires in 1 month at the latest",
-                                    Description = property.Name,
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "25.03 Läuft spätestens in 1 Monat ab", // todo
-                                    Description = property.Name,
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "25.03 Läuft spätestens in 1 Monat ab",
+                                    Description = property.Name
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "25.04 Udløber om senest 3 mdr.", // todo
-                                    Description = property.Name,
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "25.04 Udløber om senest 3 mdr.",
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "25.04 Expires in 3 months at the latest",
-                                    Description = property.Name,
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "25.04 Läuft spätestens in 3 Monaten ab", // todo
-                                    Description = property.Name,
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "25.04 Läuft spätestens in 3 Monaten ab",
+                                    Description = property.Name
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "25.05 Udløber om senest 6 mdr.", // todo
-                                    Description = property.Name,
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "25.05 Udløber om senest 6 mdr.",
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "25.05 Expires in 6 months at the latest",
-                                    Description = property.Name,
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "25.05 Läuft spätestens in 6 Monaten ab", // todo
-                                    Description = property.Name,
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "25.05 Läuft spätestens in 6 Monaten ab",
+                                    Description = property.Name
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "25.06 Udløber om senest 12 mdr.", // todo
-                                    Description = property.Name,
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "25.06 Udløber om senest 12 mdr.",
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "25.06 Expires in 12 months at the latest",
-                                    Description = property.Name,
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "25.06 Läuft spätestens in 12 Monaten ab", // todo
-                                    Description = property.Name,
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "25.06 Läuft spätestens in 12 Monaten ab",
+                                    Description = property.Name
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "25.07 Udløber om mere end 12 mdr.", // todo
-                                    Description = property.Name,
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "25.07 Udløber om mere end 12 mdr.",
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "25.07 Expires in more than 12 months.",
-                                    Description = property.Name,
+                                    Description = property.Name
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "25.07 Läuft in mehr als 12 Monaten ab.", // todo
-                                    Description = property.Name,
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "25.07 Läuft in mehr als 12 Monaten ab.",
+                                    Description = property.Name
+                                }
                             }, folderId).ConfigureAwait(false)
                         };
 
                         foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                                  {
                                      FolderId = folderIdLocal,
-                                     ProperyAreaAsignmentId = newAssignment.Id,
+                                     ProperyAreaAsignmentId = newAssignment.Id
                                  }))
                         {
-                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await assignmentWithFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
-
-                        // var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Barcode - {property.Name}", "", true, false).ConfigureAwait(false);
-                        // property.EntitySearchListChemicals = Convert.ToInt32(groupCreate.MicrotingUid);
-                        // groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySearch, $"Chemicals - Regno - {property.Name}", "", true, false).ConfigureAwait(false);
-                        // property.EntitySearchListChemicalRegNos = Convert.ToInt32(groupCreate.MicrotingUid);
                         var groupCreate = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
                             $"Chemicals - Areas - {property.Name}", "", true, false).ConfigureAwait(false);
                         property.EntitySelectListChemicalAreas = Convert.ToInt32(groupCreate.MicrotingUid);
-                        await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
                         string text = "25.01 Registrer produkter";
 
                         var eformId = await sdkDbContext.CheckListTranslations
@@ -296,11 +289,11 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             EformName = text,
                             AreaId = area.Id
                         };
-                        AreaInitialField areaInitialField = await _backendConfigurationPnDbContext.AreaInitialFields
+                        AreaInitialField areaInitialField = await backendConfigurationPnDbContext.AreaInitialFields
                             .Where(x => x.AreaId == area.Id).FirstOrDefaultAsync().ConfigureAwait(false);
                         areaInitialField.EformName = text;
-                        await areaInitialField.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                        await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await areaInitialField.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         AreaRuleInitialField areaRuleInitialField = new AreaRuleInitialField
                         {
                             AreaRuleId = areaRule.Id,
@@ -308,9 +301,9 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             ComplianceEnabled = false,
                             RepeatEvery = 0,
                             RepeatType = 0,
-                            EformName = text,
+                            EformName = text
                         };
-                        await areaRuleInitialField.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await areaRuleInitialField.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         break;
                     }
                     case AreaTypesEnum.Type10:
@@ -324,38 +317,38 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                         await SeedFaeceseForm(property.Name, core, sdkDbContext, groupCreate.MicrotingUid)
                             .ConfigureAwait(false);
                         property.EntitySearchListPoolWorkers = int.Parse(groupCreate.MicrotingUid);
-                        await property.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
                         var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
+                                LanguageId = danishLanguage.Id,
                                 // Name = "05. Halebid og klargøring af stalde",
                                 Name = "00. Aflæsninger, målinger, forbrug og fækale uheld",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 // Name = "05. Tailbite and preparation of stables",
                                 Name = "00. Readings, measurements, consumption and fecal accidents",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
+                                LanguageId = germanLanguage.Id,
                                 // Name = "05. Stallungen",
                                 Name = "00. Messwerte, Messungen, Verbrauch und Fäkalunfälle",
-                                Description = "",
-                            },
+                                Description = ""
+                            }
                         }, property.FolderId).ConfigureAwait(false);
                         var assignmentWithOneFolder = new ProperyAreaFolder
                         {
                             FolderId = folderId,
-                            ProperyAreaAsignmentId = newAssignment.Id,
+                            ProperyAreaAsignmentId = newAssignment.Id
                         };
 
-                        await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await assignmentWithOneFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         break;
                     }
                     case AreaTypesEnum.Type3:
@@ -364,33 +357,33 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
+                                LanguageId = danishLanguage.Id,
                                 // Name = "05. Halebid og klargøring af stalde",
                                 Name = "05. Stalde: Halebid og klargøring",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 // Name = "05. Tailbite and preparation of stables",
                                 Name = "05. Stables: Tail biting and preparation",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
+                                LanguageId = germanLanguage.Id,
                                 // Name = "05. Stallungen",
                                 Name = "05. Ställe: Schwanzbeißen und Vorbereitung",
-                                Description = "",
-                            },
+                                Description = ""
+                            }
                         }, property.FolderId).ConfigureAwait(false);
                         var assignmentWithOneFolder = new ProperyAreaFolder
                         {
                             FolderId = folderId,
-                            ProperyAreaAsignmentId = newAssignment.Id,
+                            ProperyAreaAsignmentId = newAssignment.Id
                         };
 
-                        await assignmentWithOneFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await assignmentWithOneFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         // await assignmentWithTwoFolder.Create(_backendConfigurationPnDbContext);
 
                         var groupCreate = await core
@@ -400,7 +393,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                         await SeedTailBite(property.Name, core, sdkDbContext, groupCreate.MicrotingUid)
                             .ConfigureAwait(false);
                         newAssignment.GroupMicrotingUuid = Convert.ToInt32(groupCreate.MicrotingUid);
-                        await newAssignment.Update(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await newAssignment.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
                         string text = $"05. Halebid og risikovurdering - {property.Name}";
                         foreach (var areaRule in
                                  BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
@@ -419,7 +412,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 areaRule.EformId = eformId;
                             }
 
-                            await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         break;
@@ -432,7 +425,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 Name = x.Name,
                                 LanguageId = x.LanguageId,
-                                Description = "",
+                                Description = ""
                             }).ToList(),
                             property.FolderId).ConfigureAwait(false);
                         //create 7 folders
@@ -442,164 +435,164 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
+                                    LanguageId = danishLanguage.Id,
                                     Name = "20.07 Søndag",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "20.07 Sunday",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
+                                    LanguageId = germanLanguage.Id,
                                     Name = "20.07 Sonntag",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
+                                    LanguageId = danishLanguage.Id,
                                     Name = "20.01 Mandag",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "20.01 Monday",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
+                                    LanguageId = germanLanguage.Id,
                                     Name = "20.01 Montag",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
+                                    LanguageId = danishLanguage.Id,
                                     Name = "20.02 Tirsdag",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "20.02 Tuesday",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
+                                    LanguageId = germanLanguage.Id,
                                     Name = "20.02 Dienstag",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
+                                    LanguageId = danishLanguage.Id,
                                     Name = "20.03 Onsdag",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "20.03 Wednesday",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
+                                    LanguageId = germanLanguage.Id,
                                     Name = "20.03 Mittwoch",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
+                                    LanguageId = danishLanguage.Id,
                                     Name = "20.04 Torsdag",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "20.04 Thursday",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
+                                    LanguageId = germanLanguage.Id,
                                     Name = "20.04 Donnerstag",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
+                                    LanguageId = danishLanguage.Id,
                                     Name = "20.05 Fredag",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "20.05 Friday",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
+                                    LanguageId = germanLanguage.Id,
                                     Name = "20.05 Freitag",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
+                                    LanguageId = danishLanguage.Id,
                                     Name = "20.06 Lørdag",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "20.06 Saturday",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
+                                    LanguageId = germanLanguage.Id,
                                     Name = "20.06 Samstag",
-                                    Description = "",
-                                },
-                            }, folderId).ConfigureAwait(false),
+                                    Description = ""
+                                }
+                            }, folderId).ConfigureAwait(false)
                         };
 
                         await new ProperyAreaFolder
                         {
                             FolderId = folderId,
-                            ProperyAreaAsignmentId = newAssignment.Id,
-                        }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            ProperyAreaAsignmentId = newAssignment.Id
+                        }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
                         foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                                  {
                                      FolderId = folderIdLocal,
-                                     ProperyAreaAsignmentId = newAssignment.Id,
+                                     ProperyAreaAsignmentId = newAssignment.Id
                                  }))
                         {
-                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await assignmentWithFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         foreach (var areaRule in
@@ -620,7 +613,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 areaRule.EformId = eformId;
                             }
 
-                            await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         break;
@@ -633,7 +626,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 Name = x.Name,
                                 LanguageId = x.LanguageId,
-                                Description = "",
+                                Description = ""
                             }).ToList(),
                             property.FolderId).ConfigureAwait(false);
                         //create 4 folders
@@ -643,122 +636,122 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "23.00 Aflæsninger", // todo
-                                    Description = "",
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "23.00 Aflæsninger",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "23.00 Readings environmental management",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "23.00 Messungen Umweltmanagement", // todo
-                                    Description = "",
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "23.00 Messungen Umweltmanagement",
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "23.01 Logbøger miljøteknologier", // todo
-                                    Description = "",
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "23.01 Logbøger miljøteknologier",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "23.01 Logbooks for any environmental technologies",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "23.01 Fahrtenbücher für alle Umwelttechnologien", // todo
-                                    Description = "",
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "23.01 Fahrtenbücher für alle Umwelttechnologien",
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "23.02 Dokumentation afsluttede inspektioner", // todo
-                                    Description = "",
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "23.02 Dokumentation afsluttede inspektioner",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "23.02 Documentation of completed inspections",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "23.02 Dokumentation abgeschlossener Inspektionen", // todo
-                                    Description = "",
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "23.02 Dokumentation abgeschlossener Inspektionen",
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "23.03 Dokumentation miljøledelse", // todo
-                                    Description = "",
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "23.03 Dokumentation miljøledelse",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "23.03 Documentation for environmental management",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "23.03 Dokumentation für das Umweltmanagement", // todo
-                                    Description = "",
-                                },
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "23.03 Dokumentation für das Umweltmanagement",
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<CommonTranslationsModel>
                             {
                                 new()
                                 {
-                                    LanguageId = danishLanguage.Id, // da
-                                    Name = "23.04 Overholdelse fodringskrav", // todo
-                                    Description = "",
+                                    LanguageId = danishLanguage.Id,
+                                    Name = "23.04 Overholdelse fodringskrav",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = englishLanguage.Id, // en
+                                    LanguageId = englishLanguage.Id,
                                     Name = "23.04 Compliance with feeding requirements",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
-                                    LanguageId = germanLanguage.Id, // ge
-                                    Name = "23.04 Einhaltung der Fütterungsanforderungen", // todo
-                                    Description = "",
-                                },
-                            }, folderId).ConfigureAwait(false),
+                                    LanguageId = germanLanguage.Id,
+                                    Name = "23.04 Einhaltung der Fütterungsanforderungen",
+                                    Description = ""
+                                }
+                            }, folderId).ConfigureAwait(false)
                         };
 
                         await new ProperyAreaFolder
                         {
                             FolderId = folderId,
-                            ProperyAreaAsignmentId = newAssignment.Id,
-                        }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            ProperyAreaAsignmentId = newAssignment.Id
+                        }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
                         foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                                  {
                                      FolderId = folderIdLocal,
-                                     ProperyAreaAsignmentId = newAssignment.Id,
+                                     ProperyAreaAsignmentId = newAssignment.Id
                                  }))
                         {
-                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await assignmentWithFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         foreach (var areaRule in
@@ -777,7 +770,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 areaRule.EformId = eformId;
                             }
 
-                            await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         break;
@@ -791,7 +784,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 Name = x.Name,
                                 LanguageId = x.LanguageId,
-                                Description = "",
+                                Description = ""
                             }).ToList(),
                             property.FolderId).ConfigureAwait(false);
                         //create 4 folders
@@ -801,570 +794,570 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.00 Aflæsninger", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.00 Aflæsninger",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.00 Readings environmental management",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.00 Messungen Umweltmanagement", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.00 Messungen Umweltmanagement",
+                                Description = ""
+                            }
                         }, folderId).ConfigureAwait(false);
                         folderIds.Add(subFolderId);
                         subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01 Logbøger og bilag", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01 Logbøger og bilag",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01 Logbooks and appendices",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01 Logbücher und Anhänge", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01 Logbücher und Anhänge",
+                                Description = ""
+                            }
                         }, folderId).ConfigureAwait(false);
                         folderIds.Add(subFolderId);
                         var subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.01 Gyllebeholdere", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.01 Gyllebeholdere",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.01 Manure containers",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.01 Güllebehälter", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.01 Güllebehälter",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.02 Gyllekøling", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.02 Gyllekøling",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.02 Slurry cooling",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.02 Schlammkühlung", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.02 Schlammkühlung",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.03 Forsuring", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.03 Forsuring",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.03 Acidification",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.03 Versauerung", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.03 Versauerung",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.04 Ugentlig udslusning af gylle", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.04 Ugentlig udslusning af gylle",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.04 Weekly slurry disposal",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.04 Wöchentliche Gülleentsorgung", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.04 Wöchentliche Gülleentsorgung",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.05 Punktudsugning i slagtesvinestalde", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.05 Punktudsugning i slagtesvinestalde",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.05 Point extraction in fattening pig stables",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.05 Punktabsaugung in Mastschweineställen", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.05 Punktabsaugung in Mastschweineställen",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.06 Varmevekslere til traditionelle slagtekyllingestalde", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.06 Varmevekslere til traditionelle slagtekyllingestalde",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.06 Heat exchangers for traditional broiler houses",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.06 Wärmetauscher für traditionelle Masthähnchenställe", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.06 Wärmetauscher für traditionelle Masthähnchenställe",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.07 Gødningsbånd til æglæggende høns", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.07 Gødningsbånd til æglæggende høns",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.07 Manure belt for laying hens",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.07 Kotband für Legehennen", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.07 Kotband für Legehennen",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.08 Biologisk luftrensning", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.08 Biologisk luftrensning",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.08 Biological air purification",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.08 Biologische Luftreinigung", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.08 Biologische Luftreinigung",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.01.09 Kemisk luftrensning", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.01.09 Kemisk luftrensning",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.01.09 Chemical air purification",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.01.09 Chemische Luftreinigung", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.01.09 Chemische Luftreinigung",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.02 Kontroller og bilag", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.02 Kontroller og bilag",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02 Checks and attachments",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02 Schecks und Anhänge", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02 Schecks und Anhänge",
+                                Description = ""
+                            }
                         }, folderId).ConfigureAwait(false);
                         folderIds.Add(subFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.02.01 Visuel kontrol af tom gyllebeholdere", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.02.01 Visuel kontrol af tom gyllebeholdere",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02.01 Visual inspection of empty slurry tankers",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02.01 Sichtprüfung von leeren Güllefässern", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02.01 Sichtprüfung von leeren Güllefässern",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.02.02 Gyllepumper", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.02.02 Gyllepumper",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02.02 Slurry pumps",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02.02 Schlammpumpen", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02.02 Schlammpumpen",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.02.03 Forsyningssystemer til vand og foder", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.02.03 Forsyningssystemer til vand og foder",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02.03 Water and feed supply systems",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02.03 Wasser- und Futterversorgungssysteme", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02.03 Wasser- und Futterversorgungssysteme",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.02.04 Varme-, køle- og ventilationssystemer", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.02.04 Varme-, køle- og ventilationssystemer",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02.04 Heating, cooling and ventilation systems",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02.04 Heiz-, Kühl- und Lüftungssysteme", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02.04 Heiz-, Kühl- und Lüftungssysteme",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
+                                LanguageId = danishLanguage.Id,
                                 Name =
-                                    "24.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.", // todo
-                                Description = "",
+                                    "24.02.05 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv.",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name =
                                     "24.02.05 Silos and equipment in transport equipment in connection with feed systems - pipes, augers, etc.",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
+                                LanguageId = germanLanguage.Id,
                                 Name =
-                                    "24.02.05 Silos und Einrichtungen in Transporteinrichtungen in Verbindung mit Beschickungssystemen - Rohre, Schnecken usw.", // todo
-                                Description = "",
-                            },
+                                    "24.02.05 Silos und Einrichtungen in Transporteinrichtungen in Verbindung mit Beschickungssystemen - Rohre, Schnecken usw.",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.02.06 Luftrensningssystemer", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.02.06 Luftrensningssystemer",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02.06 Air purification systems",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02.06 Luftreinigungssysteme", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02.06 Luftreinigungssysteme",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.02.07 Udstyr til drikkevand", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.02.07 Udstyr til drikkevand",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02.07 Equipment for drinking water",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02.07 Ausrüstung für Trinkwasser", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02.07 Ausrüstung für Trinkwasser",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
+                                LanguageId = danishLanguage.Id,
                                 Name =
-                                    "24.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme", // todo
-                                Description = "",
+                                    "24.02.08 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.02.08 Machines for application of livestock manure and dosing mechanism",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.02.08 Maschinen zum Ausbringen von Viehmist und Dosiermechanismus", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.02.08 Maschinen zum Ausbringen von Viehmist und Dosiermechanismus",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.03 Miljøledelse", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.03 Miljøledelse",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.03 Environmental management",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.03 Umweltmanagement", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.03 Umweltmanagement",
+                                Description = ""
+                            }
                         }, folderId).ConfigureAwait(false);
                         folderIds.Add(subFolderId);
                         subFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.04 Fodringskrav", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.04 Fodringskrav",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.04 Feeding requirements",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.04 Fütterungsanforderungen", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.04 Fütterungsanforderungen",
+                                Description = ""
+                            }
                         }, folderId).ConfigureAwait(false);
                         folderIds.Add(subFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.04.01 Fasefodring", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.04.01 Fasefodring",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.04.01 Phase feeding",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.04.01 Phasenfütterung", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.04.01 Phasenfütterung",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.04.02 Reduceret indhold af råprotein", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.04.02 Reduceret indhold af råprotein",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.04.02 Reduced content of crude protein",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.04.02 Reduzierter Gehalt an Rohprotein", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.04.02 Reduzierter Gehalt an Rohprotein",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
                         subSubFolderId = await core.FolderCreate(new List<CommonTranslationsModel>
                         {
                             new()
                             {
-                                LanguageId = danishLanguage.Id, // da
-                                Name = "24.04.03 Tilsætningsstoffer i foder - fytase eller andet", // todo
-                                Description = "",
+                                LanguageId = danishLanguage.Id,
+                                Name = "24.04.03 Tilsætningsstoffer i foder - fytase eller andet",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = englishLanguage.Id, // en
+                                LanguageId = englishLanguage.Id,
                                 Name = "24.04.03 Additives in feed - phytase or other",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
-                                LanguageId = germanLanguage.Id, // ge
-                                Name = "24.04.03 Zusatzstoffe in Futtermitteln – Phytase oder andere", // todo
-                                Description = "",
-                            },
+                                LanguageId = germanLanguage.Id,
+                                Name = "24.04.03 Zusatzstoffe in Futtermitteln – Phytase oder andere",
+                                Description = ""
+                            }
                         }, subFolderId).ConfigureAwait(false);
                         folderIds.Add(subSubFolderId);
 
                         await new ProperyAreaFolder
                         {
                             FolderId = folderId,
-                            ProperyAreaAsignmentId = newAssignment.Id,
-                        }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            ProperyAreaAsignmentId = newAssignment.Id
+                        }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
                         foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                                  {
                                      FolderId = folderIdLocal,
-                                     ProperyAreaAsignmentId = newAssignment.Id,
+                                     ProperyAreaAsignmentId = newAssignment.Id
                                  }))
                         {
-                            await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await assignmentWithFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         foreach (var areaRule in
@@ -1383,7 +1376,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 areaRule.EformId = eformId;
                             }
 
-                            await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         break;
@@ -1395,15 +1388,15 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 Name = x.Name,
                                 LanguageId = x.LanguageId,
-                                Description = "",
+                                Description = ""
                             }).ToList(),
                             property.FolderId).ConfigureAwait(false);
                         var assignmentWithFolder = new ProperyAreaFolder
                         {
                             FolderId = folderId,
-                            ProperyAreaAsignmentId = newAssignment.Id,
+                            ProperyAreaAsignmentId = newAssignment.Id
                         };
-                        await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await assignmentWithFolder.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         foreach (var areaRule in
                                  BackendConfigurationSeedAreas.AreaRules.Where(x => x.AreaId == area.Id))
                         {
@@ -1422,7 +1415,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 areaRule.EformId = eformId;
                             }
 
-                            await areaRule.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await areaRule.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         break;
@@ -1433,7 +1426,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
             foreach (var areaPropertyForDelete in assignmentsForDelete)
             {
                 // get areaRules and select all linked entity for delete
-                var areaRules = await _backendConfigurationPnDbContext.AreaRules
+                var areaRules = await backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.PropertyId == areaPropertyForDelete.PropertyId)
                     .Where(x => x.AreaId == areaPropertyForDelete.AreaId)
                     .Include(x => x.Area)
@@ -1456,7 +1449,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                         }
 
                         Property property =
-                            await _backendConfigurationPnDbContext.Properties
+                            await backendConfigurationPnDbContext.Properties
                                 .SingleOrDefaultAsync(x => x.Id == areaRule.PropertyId).ConfigureAwait(false);
                         string eformName = $"05. Halebid og risikovurdering - {property.Name}";
                         var eformId = await sdkDbContext.CheckListTranslations
@@ -1475,7 +1468,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                  x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         areaRuleAreaRuleTranslation.UpdatedByUserId = userId;
-                        await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext)
+                        await areaRuleAreaRuleTranslation.Delete(backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                     }
 
@@ -1487,12 +1480,12 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                      .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             planningSite.UpdatedByUserId = userId;
-                            await planningSite.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await planningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
 
                         if (areaRulePlanning.ItemPlanningId != 0)
                         {
-                            var planning = await _itemsPlanningPnDbContext.Plannings
+                            var planning = await itemsPlanningPnDbContext.Plannings
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
                                 .Include(x => x.NameTranslations)
@@ -1503,20 +1496,20 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                              .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                                 {
                                     translation.UpdatedByUserId = userId;
-                                    await translation.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                    await translation.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                                 }
 
                                 planning.UpdatedByUserId = userId;
-                                await planning.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                await planning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
 
-                                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                                var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
                                     .Where(x => x.PlanningId == planning.Id)
                                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                     .ToListAsync().ConfigureAwait(false);
                                 foreach (PlanningCaseSite planningCaseSite in planningCaseSites)
                                 {
                                     planningCaseSite.UpdatedByUserId = userId;
-                                    await planningCaseSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                                    await planningCaseSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                                     var result =
                                         await sdkDbContext.Cases.SingleAsync(x =>
                                             x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
@@ -1529,12 +1522,12 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                         }
 
                         areaRulePlanning.UpdatedByUserId = userId;
-                        await areaRulePlanning.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await areaRulePlanning.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
 
                     // delete area rule
                     areaRule.UpdatedByUserId = userId;
-                    await areaRule.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await areaRule.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 // delete entity select group. only for type 3(tail bite and stables)
@@ -1545,9 +1538,9 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 }
 
                 areaPropertyForDelete.UpdatedByUserId = userId;
-                await areaPropertyForDelete.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                await areaPropertyForDelete.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                var foldersIdForDelete = _backendConfigurationPnDbContext.ProperyAreaFolders
+                var foldersIdForDelete = backendConfigurationPnDbContext.ProperyAreaFolders
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.ProperyAreaAsignmentId == areaPropertyForDelete.Id)
                     .Select(x => x.FolderId)
@@ -1565,7 +1558,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
 
             return new OperationResult(true, "SuccessfullyUpdatePropertyAreas");
         }
-        catch (Exception e)
+        catch (Exception)
         {
             //Log.LogException(e.Message);
             //Log.LogException(e.StackTrace);
@@ -1583,10 +1576,10 @@ public static class BackendConfigurationPropertyAreasServiceHelper
             var assembly = Assembly.GetExecutingAssembly();
             var resourceStream =
                 assembly.GetManifestResourceStream(
-                    $"BackendConfiguration.Pn.Resources.eForms.05. Halebid og risikovurdering.xml");
+                    "BackendConfiguration.Pn.Resources.eForms.05. Halebid og risikovurdering.xml");
 
             string contents;
-            using (var sr = new StreamReader(resourceStream))
+            using (var sr = new StreamReader(resourceStream!))
             {
                 contents = await sr.ReadToEndAsync().ConfigureAwait(false);
             }
@@ -1620,10 +1613,10 @@ public static class BackendConfigurationPropertyAreasServiceHelper
         {
             var assembly = Assembly.GetExecutingAssembly();
             var resourceStream =
-                assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.01. Aflæsninger.xml");
+                assembly.GetManifestResourceStream("BackendConfiguration.Pn.Resources.eForms.01. Aflæsninger.xml");
 
             string contents;
-            using (var sr = new StreamReader(resourceStream))
+            using (var sr = new StreamReader(resourceStream!))
             {
                 contents = await sr.ReadToEndAsync().ConfigureAwait(false);
             }
@@ -1638,8 +1631,6 @@ public static class BackendConfigurationPropertyAreasServiceHelper
             cl.IsLocked = true;
             cl.IsEditable = false;
             cl.IsDoneAtEditable = true;
-            //cl.ReportH1 = "05.Stalde: Halebid og klargøring";
-            //cl.ReportH2 = "05.01Halebid";
             cl.QuickSyncEnabled = 1;
             await cl.Update(sdkDbContext).ConfigureAwait(false);
             var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
@@ -1657,10 +1648,10 @@ public static class BackendConfigurationPropertyAreasServiceHelper
         {
             var assembly = Assembly.GetExecutingAssembly();
             var resourceStream =
-                assembly.GetManifestResourceStream($"BackendConfiguration.Pn.Resources.eForms.02. Fækale uheld.xml");
+                assembly.GetManifestResourceStream("BackendConfiguration.Pn.Resources.eForms.02. Fækale uheld.xml");
 
             string contents;
-            using (var sr = new StreamReader(resourceStream))
+            using (var sr = new StreamReader(resourceStream!))
             {
                 contents = await sr.ReadToEndAsync().ConfigureAwait(false);
             }
@@ -1675,8 +1666,6 @@ public static class BackendConfigurationPropertyAreasServiceHelper
             cl.IsLocked = true;
             cl.IsEditable = false;
             cl.IsDoneAtEditable = true;
-            //cl.ReportH1 = "05.Stalde: Halebid og klargøring";
-            //cl.ReportH2 = "05.01Halebid";
             cl.QuickSyncEnabled = 1;
             await cl.Update(sdkDbContext).ConfigureAwait(false);
             var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
