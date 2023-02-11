@@ -3,35 +3,31 @@ using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using File = System.IO.File;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
+[Parallelizable(ParallelScope.Fixtures)]
+[TestFixture]
 public class BackendConfigurationAreaRulePlanningsServiceHelperTest
 {
-
-    private readonly MySqlTestcontainer _mySqlTestcontainer = new TestcontainersBuilder<MySqlTestcontainer>()
-        // .WithImage("mariadb:10.8")
-        // .ConfigureContainer(container =>
-        // {
-        //     container.Username = "bla";
-        //     container.Password = "secretpassword";
-        // })
+#pragma warning disable CS0618
+    private readonly MsSqlTestcontainer _mySqlTestcontainer = new ContainerBuilder<MsSqlTestcontainer>()
+#pragma warning restore CS0618
         .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
         {
             Database = "myDb",
             Username = "root",
-            Password = "secretpassword",
+            Password = "secretpassword"
         })
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "secretpassword")
         .Build();
-    protected BackendConfigurationPnDbContext BackendConfigurationPnDbContext;
-    protected ItemsPlanningPnDbContext ItemsPlanningPnDbContext;
-    protected TimePlanningPnDbContext TimePlanningPnDbContext;
-    protected string ConnectionString;
+
+    private BackendConfigurationPnDbContext? _backendConfigurationPnDbContext;
+    private ItemsPlanningPnDbContext? _itemsPlanningPnDbContext;
+    private TimePlanningPnDbContext? _timePlanningPnDbContext;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
@@ -100,19 +96,18 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         Console.WriteLine($"{DateTime.Now} : Starting MariaDb Container...");
         await _mySqlTestcontainer.StartAsync();
         Console.WriteLine($"{DateTime.Now} : Started MariaDb Container");
-        ConnectionString = _mySqlTestcontainer.ConnectionString;
 
-        BackendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
+        _backendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
 
-        BackendConfigurationPnDbContext.Database.SetCommandTimeout(300);
+        _backendConfigurationPnDbContext!.Database.SetCommandTimeout(300);
 
-        ItemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
+        _itemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
 
-        ItemsPlanningPnDbContext.Database.SetCommandTimeout(300);
+        _itemsPlanningPnDbContext.Database.SetCommandTimeout(300);
 
-        TimePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
+        _timePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
 
-        TimePlanningPnDbContext.Database.SetCommandTimeout(300);
+        _timePlanningPnDbContext.Database.SetCommandTimeout(300);
 
     }
 
@@ -122,16 +117,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         BackendConfigurationAreaRulePlanningsServiceHelper_CreateAreaRulePlanningObject_DoesCreateAreaRulePlanningObject()
     {
         // Arrange
-        Property property = new Property
-        {
-            Address = Guid.NewGuid().ToString(),
-            CHR = Guid.NewGuid().ToString(),
-            CVR = Guid.NewGuid().ToString(),
-            IsFarm = true,
-            ComplianceStatus = 0,
-            Name = Guid.NewGuid().ToString()
-        };
-        await property.Create(BackendConfigurationPnDbContext);
+
 
         // Act
         // var result = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateAreaRulePlanningObject(

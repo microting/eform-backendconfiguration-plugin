@@ -1,17 +1,12 @@
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
-using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
-using ClosedXML.Excel;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
-using Microting.eForm.Infrastructure.Constants;
-using Microting.eFormApi.BasePn.Localization;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using File = System.IO.File;
@@ -19,28 +14,26 @@ using File = System.IO.File;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
+[Parallelizable(ParallelScope.Fixtures)]
+[TestFixture]
 public class BackendConfigurationPropertiesServiceHelperTest
 {
-    private readonly MySqlTestcontainer _mySqlTestcontainer = new TestcontainersBuilder<MySqlTestcontainer>()
-        // .WithImage("mariadb:10.8")
-        // .ConfigureContainer(container =>
-        // {
-        //     container.Username = "bla";
-        //     container.Password = "secretpassword";
-        // })
+#pragma warning disable CS0618
+    private readonly MsSqlTestcontainer _mySqlTestcontainer = new ContainerBuilder<MsSqlTestcontainer>()
+#pragma warning restore CS0618
         .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
         {
             Database = "myDb",
             Username = "root",
-            Password = "secretpassword",
+            Password = "secretpassword"
         })
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "secretpassword")
         .Build();
-    protected BackendConfigurationPnDbContext BackendConfigurationPnDbContext;
-    protected ItemsPlanningPnDbContext ItemsPlanningPnDbContext;
-    protected TimePlanningPnDbContext TimePlanningPnDbContext;
-    protected MicrotingDbContext MicrotingDbContext;
-    protected string ConnectionString;
+
+    private BackendConfigurationPnDbContext? _backendConfigurationPnDbContext;
+    private ItemsPlanningPnDbContext? _itemsPlanningPnDbContext;
+    private TimePlanningPnDbContext? _timePlanningPnDbContext;
+    private MicrotingDbContext? _microtingDbContext;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
@@ -131,23 +124,22 @@ public class BackendConfigurationPropertiesServiceHelperTest
         Console.WriteLine($"{DateTime.Now} : Starting MariaDb Container...");
         await _mySqlTestcontainer.StartAsync();
         Console.WriteLine($"{DateTime.Now} : Started MariaDb Container");
-        ConnectionString = _mySqlTestcontainer.ConnectionString;
 
-        BackendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
+        _backendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
 
-        BackendConfigurationPnDbContext.Database.SetCommandTimeout(300);
+        _backendConfigurationPnDbContext.Database.SetCommandTimeout(300);
 
-        ItemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
+        _itemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
 
-        ItemsPlanningPnDbContext.Database.SetCommandTimeout(300);
+        _itemsPlanningPnDbContext.Database.SetCommandTimeout(300);
 
-        TimePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
+        _timePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
 
-        TimePlanningPnDbContext.Database.SetCommandTimeout(300);
+        _timePlanningPnDbContext.Database.SetCommandTimeout(300);
 
-        MicrotingDbContext = GetContext(_mySqlTestcontainer.ConnectionString);
+        _microtingDbContext = GetContext(_mySqlTestcontainer.ConnectionString);
 
-        MicrotingDbContext.Database.SetCommandTimeout(300);
+        _microtingDbContext.Database.SetCommandTimeout(300);
     }
 
     // Should test the Create method with correct information
@@ -174,13 +166,13 @@ public class BackendConfigurationPropertiesServiceHelperTest
         var core = await GetCore();
 
         // Act
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
-        var properties = await BackendConfigurationPnDbContext.Properties.ToListAsync();
-        var entityGroups = await MicrotingDbContext.EntityGroups.ToListAsync();
-        var folderTranslations = await MicrotingDbContext.FolderTranslations.ToListAsync();
-        var propertySelectedLanguages = await BackendConfigurationPnDbContext.PropertySelectedLanguages.ToListAsync();
-        var planningTags = await ItemsPlanningPnDbContext.PlanningTags.ToListAsync();
+        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
+        var entityGroups = await _microtingDbContext!.EntityGroups.ToListAsync();
+        var folderTranslations = await _microtingDbContext.FolderTranslations.ToListAsync();
+        var propertySelectedLanguages = await _backendConfigurationPnDbContext.PropertySelectedLanguages.ToListAsync();
+        var planningTags = await _itemsPlanningPnDbContext!.PlanningTags.ToListAsync();
 
         // Assert properties
         Assert.NotNull(properties);
@@ -324,7 +316,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1,1);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1,1);
 
         var propertyCreateModel2 = new PropertyCreateModel
         {
@@ -343,9 +335,9 @@ public class BackendConfigurationPropertiesServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel2, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2,2);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 2,2);
 
-        var properties = await BackendConfigurationPnDbContext.Properties.ToListAsync();
+        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
 
         // Assert
         Assert.NotNull(properties);
@@ -375,7 +367,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -395,7 +387,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 2, 2);
 
         // Assert
         Assert.NotNull(result);
@@ -428,7 +420,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -448,7 +440,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 2, 2);
 
         // Assert
         Assert.NotNull(result);
@@ -480,7 +472,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -500,7 +492,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 2, 2);
 
         // Assert
         Assert.NotNull(result);
@@ -532,7 +524,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -552,7 +544,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 1);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 2, 1);
 
         // Assert
         Assert.NotNull(result);
@@ -585,7 +577,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         var core = await GetCore();
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
         var newPropertyCreateModel = new PropertyCreateModel
         {
@@ -605,7 +597,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Create(newPropertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 2);
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 2);
 
         // Assert
         Assert.NotNull(result);
@@ -637,10 +629,10 @@ public class BackendConfigurationPropertiesServiceHelperTest
         };
 
         var core = await GetCore();
-        var createResult = await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
-        var properties = await BackendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
+        var properties = await _backendConfigurationPnDbContext!.Properties.AsNoTracking().ToListAsync();
 
         var propertyUpdateModel = new PropertiesUpdateModel
         {
@@ -659,13 +651,13 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Update(propertyUpdateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, "Location");
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, "Location");
 
-        properties = await BackendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
-        var entityGroups = await MicrotingDbContext.EntityGroups.ToListAsync();
-        var folderTranslations = await MicrotingDbContext.FolderTranslations.ToListAsync();
-        var propertySelectedLanguages = await BackendConfigurationPnDbContext.PropertySelectedLanguages.ToListAsync();
-        var planningTags = await ItemsPlanningPnDbContext.PlanningTags.ToListAsync();
+        properties = await _backendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
+        var entityGroups = await _microtingDbContext!.EntityGroups.ToListAsync();
+        var folderTranslations = await _microtingDbContext.FolderTranslations.ToListAsync();
+        var propertySelectedLanguages = await _backendConfigurationPnDbContext.PropertySelectedLanguages.ToListAsync();
+        var planningTags = await _itemsPlanningPnDbContext!.PlanningTags.ToListAsync();
 
         // Assert
         Assert.NotNull(result);

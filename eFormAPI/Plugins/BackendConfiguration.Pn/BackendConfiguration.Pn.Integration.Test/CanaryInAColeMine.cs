@@ -1,12 +1,12 @@
-﻿namespace BackendConfiguration.Pn.Integration.Test
+﻿namespace BackendConfiguration.Pn.Integration.Test;
+
+[Parallelizable(ParallelScope.Fixtures)]
+[TestFixture]
+public class CanaryInAColeMine
 {
-    [TestFixture]
-    public class CanaryInAColeMine
+    [Test]
+    public void CanPeep()
     {
-        [Test]
-        public void CanPeep()
-        {
-            Assert.True(true);
-        }
+        Assert.True(true);
     }
 }
