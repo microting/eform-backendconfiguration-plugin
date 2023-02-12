@@ -1,7 +1,11 @@
+using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
+using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
@@ -14,7 +18,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 public class BackendConfigurationAreaRulePlanningsServiceHelperTest
 {
 #pragma warning disable CS0618
-    private readonly MsSqlTestcontainer _mySqlTestcontainer = new ContainerBuilder<MsSqlTestcontainer>()
+    private readonly MariaDbTestcontainer _mySqlTestcontainer = new ContainerBuilder<MariaDbTestcontainer>()
 #pragma warning restore CS0618
         .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
         {
@@ -28,6 +32,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
     private BackendConfigurationPnDbContext? _backendConfigurationPnDbContext;
     private ItemsPlanningPnDbContext? _itemsPlanningPnDbContext;
     private TimePlanningPnDbContext? _timePlanningPnDbContext;
+    private MicrotingDbContext? _microtingDbContext;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
@@ -89,6 +94,28 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         return backendConfigurationPnDbContext;
     }
 
+    private MicrotingDbContext GetContext(string connectionStr)
+    {
+        DbContextOptionsBuilder dbContextOptionsBuilder = new DbContextOptionsBuilder();
+
+        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK"), new MariaDbServerVersion(
+            new Version(10, 8)));
+        var microtingDbContext =  new MicrotingDbContext(dbContextOptionsBuilder.Options);
+        string file = Path.Combine("SQL", "420_SDK.sql");
+        string rawSql = File.ReadAllText(file);
+
+        microtingDbContext.Database.EnsureCreated();
+        microtingDbContext.Database.ExecuteSqlRaw(rawSql);
+
+        return microtingDbContext;
+    }
+
+    private async Task<Core> GetCore()
+    {
+        var core = new Core();
+        await core.StartSqlOnly(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK"));
+        return core;
+    }
 
     [SetUp]
     public async Task Setup()
@@ -109,6 +136,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
 
         _timePlanningPnDbContext.Database.SetCommandTimeout(300);
 
+        _microtingDbContext = GetContext(_mySqlTestcontainer.ConnectionString);
+
+        _microtingDbContext.Database.SetCommandTimeout(300);
+
     }
 
     // Should test the CreateAreaRulePlanningObject method
@@ -117,14 +148,26 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         BackendConfigurationAreaRulePlanningsServiceHelper_CreateAreaRulePlanningObject_DoesCreateAreaRulePlanningObject()
     {
         // Arrange
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = false,
+            LanguagesIds = new List<int>
+            {
+                1
+            },
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
 
+        var core = await GetCore();
 
-        // Act
-        // var result = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateAreaRulePlanningObject(
-        //     areaRulePlanningModel, areaRule, planningId, folderId, BackendConfigurationPnDbContext, userId);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
 
-        // Assert
-        //Assert.NotNull(result);
     }
 
 }

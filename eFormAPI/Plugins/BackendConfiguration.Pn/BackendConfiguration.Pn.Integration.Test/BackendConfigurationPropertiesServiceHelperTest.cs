@@ -19,7 +19,7 @@ namespace BackendConfiguration.Pn.Integration.Test;
 public class BackendConfigurationPropertiesServiceHelperTest
 {
 #pragma warning disable CS0618
-    private readonly MsSqlTestcontainer _mySqlTestcontainer = new ContainerBuilder<MsSqlTestcontainer>()
+    private readonly MariaDbTestcontainer _mySqlTestcontainer = new ContainerBuilder<MariaDbTestcontainer>()
 #pragma warning restore CS0618
         .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
         {
@@ -154,7 +154,7 @@ public class BackendConfigurationPropertiesServiceHelperTest
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>()
+            LanguagesIds = new List<int>
             {
                 1
             },
