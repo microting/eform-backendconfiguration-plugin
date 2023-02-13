@@ -1,40 +1,38 @@
 using BackendConfiguration.Pn.Infrastructure.Helpers;
-using BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
-using BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService;
+using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
+using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
 using File = System.IO.File;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
+[Parallelizable(ParallelScope.Fixtures)]
+[TestFixture]
 public class BackendConfigurationAreaRulePlanningsServiceHelperTest
 {
-
-    private readonly MySqlTestcontainer _mySqlTestcontainer = new TestcontainersBuilder<MySqlTestcontainer>()
-        // .WithImage("mariadb:10.8")
-        // .ConfigureContainer(container =>
-        // {
-        //     container.Username = "bla";
-        //     container.Password = "secretpassword";
-        // })
+#pragma warning disable CS0618
+    private readonly MariaDbTestcontainer _mySqlTestcontainer = new ContainerBuilder<MariaDbTestcontainer>()
+#pragma warning restore CS0618
         .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
         {
             Database = "myDb",
             Username = "root",
-            Password = "secretpassword",
+            Password = "secretpassword"
         })
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "secretpassword")
         .Build();
-    protected BackendConfigurationPnDbContext BackendConfigurationPnDbContext;
-    protected ItemsPlanningPnDbContext ItemsPlanningPnDbContext;
-    protected TimePlanningPnDbContext TimePlanningPnDbContext;
-    protected string ConnectionString;
+
+    private BackendConfigurationPnDbContext? _backendConfigurationPnDbContext;
+    private ItemsPlanningPnDbContext? _itemsPlanningPnDbContext;
+    private TimePlanningPnDbContext? _timePlanningPnDbContext;
+    private MicrotingDbContext? _microtingDbContext;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
@@ -96,6 +94,28 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         return backendConfigurationPnDbContext;
     }
 
+    private MicrotingDbContext GetContext(string connectionStr)
+    {
+        DbContextOptionsBuilder dbContextOptionsBuilder = new DbContextOptionsBuilder();
+
+        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK"), new MariaDbServerVersion(
+            new Version(10, 8)));
+        var microtingDbContext =  new MicrotingDbContext(dbContextOptionsBuilder.Options);
+        string file = Path.Combine("SQL", "420_SDK.sql");
+        string rawSql = File.ReadAllText(file);
+
+        microtingDbContext.Database.EnsureCreated();
+        microtingDbContext.Database.ExecuteSqlRaw(rawSql);
+
+        return microtingDbContext;
+    }
+
+    private async Task<Core> GetCore()
+    {
+        var core = new Core();
+        await core.StartSqlOnly(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK"));
+        return core;
+    }
 
     [SetUp]
     public async Task Setup()
@@ -103,19 +123,22 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         Console.WriteLine($"{DateTime.Now} : Starting MariaDb Container...");
         await _mySqlTestcontainer.StartAsync();
         Console.WriteLine($"{DateTime.Now} : Started MariaDb Container");
-        ConnectionString = _mySqlTestcontainer.ConnectionString;
 
-        BackendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
+        _backendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
 
-        BackendConfigurationPnDbContext.Database.SetCommandTimeout(300);
+        _backendConfigurationPnDbContext!.Database.SetCommandTimeout(300);
 
-        ItemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
+        _itemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
 
-        ItemsPlanningPnDbContext.Database.SetCommandTimeout(300);
+        _itemsPlanningPnDbContext.Database.SetCommandTimeout(300);
 
-        TimePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
+        _timePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
 
-        TimePlanningPnDbContext.Database.SetCommandTimeout(300);
+        _timePlanningPnDbContext.Database.SetCommandTimeout(300);
+
+        _microtingDbContext = GetContext(_mySqlTestcontainer.ConnectionString);
+
+        _microtingDbContext.Database.SetCommandTimeout(300);
 
     }
 
@@ -125,20 +148,26 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         BackendConfigurationAreaRulePlanningsServiceHelper_CreateAreaRulePlanningObject_DoesCreateAreaRulePlanningObject()
     {
         // Arrange
-        // AreaRulePlanningModel areaRulePlanningModel,
-        // AreaRule areaRule, int planningId, int folderId, BackendConfigurationPnDbContext dbContext, int userId
-        AreaRulePlanningModel areaRulePlanningModel = new AreaRulePlanningModel();
-        AreaRule areaRule = new AreaRule();
-        int planningId = 1;
-        int folderId = 1;
-        int userId = 1;
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = false,
+            LanguagesIds = new List<int>
+            {
+                1
+            },
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = false
+        };
 
-        // Act
-        var result = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateAreaRulePlanningObject(
-            areaRulePlanningModel, areaRule, planningId, folderId, BackendConfigurationPnDbContext, userId);
+        var core = await GetCore();
 
-        // Assert
-        Assert.NotNull(result);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+
     }
 
 }

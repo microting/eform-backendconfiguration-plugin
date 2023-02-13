@@ -1,6 +1,4 @@
-﻿using NUnit.Framework;
-
-namespace BackendConfiguration.Pn.Test;
+﻿namespace BackendConfiguration.Pn.Integration.Test;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]

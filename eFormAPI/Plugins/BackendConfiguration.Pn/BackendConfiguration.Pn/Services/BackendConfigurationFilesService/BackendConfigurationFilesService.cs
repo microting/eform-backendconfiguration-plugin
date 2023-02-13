@@ -104,9 +104,16 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			}
 			if (request.TagIds.Count > 0)
 			{
-				query = query.Where(x => x.FileTags
-					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-					.Any(y => request.TagIds.Contains(y.FileTagId)));
+				/*query = query.Where(x => x.FileTags
+					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && request.TagIds.Contains(y.FileTagId))
+					.Any(y => request.TagIds.Contains(y.FileTagId)));*/
+				
+				foreach (var tagId in request.TagIds)
+				{
+					query = query.Where(x =>
+							x.FileTags.Any(y => y.FileTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
+						.AsNoTracking();
+				}
 			}
 			// sort
 			query = QueryHelper.AddSortToQuery(query, request.Sort, request.IsSortDsc);

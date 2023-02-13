@@ -17,26 +17,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public static class WorkOrderHelper
 {
-    // private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
-    // private readonly IEFormCoreService _coreHelper;
-    // private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
-    // private readonly IUserService _userService;
-    // public WorkOrderHelper(
-    //     IEFormCoreService coreHelper,
-    //     BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-    //     IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
-    //     IUserService userService
-    //     )
-    // {
-    //     _coreHelper = coreHelper;
-    //     _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-    //     _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-    //     _userService = userService;
-    // }
-
     public static async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers, Core core, int userId,
-        BackendConfigurationPnDbContext _backendConfigurationPnDbContext,
-        IBackendConfigurationLocalizationService _backendConfigurationLocalizationService)
+        BackendConfigurationPnDbContext _backendConfigurationPnDbContext, string locationTranslation)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         foreach (var propertyWorker in propertyWorkers.Where(x => x.TaskManagementEnabled == true))
@@ -124,8 +106,7 @@ public static class WorkOrderHelper
 
             if (propertyWorker.TaskManagementEnabled == true || propertyWorker.TaskManagementEnabled == null)
             {
-                await DeployEform(propertyWorker, eformIdForNewTasks, property,
-                    $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {property.Name}",
+                await DeployEform(propertyWorker, eformIdForNewTasks, property, $"{locationTranslation} {property.Name}",
                     int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userId, _backendConfigurationPnDbContext).ConfigureAwait(false);
             }
         }
