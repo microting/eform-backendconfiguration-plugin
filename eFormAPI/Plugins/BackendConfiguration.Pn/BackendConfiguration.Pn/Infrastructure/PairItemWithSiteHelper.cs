@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microting.ItemsPlanningBase.Infrastructure.Enums;
-
 namespace BackendConfiguration.Pn.Infrastructure
 {
     using System;
@@ -34,27 +32,14 @@ namespace BackendConfiguration.Pn.Infrastructure
     using Microting.eForm.Infrastructure;
     using Microting.eForm.Infrastructure.Constants;
     using Microting.eForm.Infrastructure.Data.Entities;
-    using Microting.eFormApi.BasePn.Abstractions;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+    using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
-    public class PairItemWichSiteHelper
+    public static class PairItemWithSiteHelper
     {
-        private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-        private readonly IEFormCoreService _coreService;
-
-        public PairItemWichSiteHelper(
-            ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-            IEFormCoreService coreService)
+        public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext)
         {
-            _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
-            _coreService = coreService;
-        }
-
-        public async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId)
-        {
-            var sdkCore =
-                await _coreService.GetCore().ConfigureAwait(false);
             var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
             await using var _ = sdkDbContext.ConfigureAwait(false);
             foreach (var assignmentSiteId in assignmentSiteIds)

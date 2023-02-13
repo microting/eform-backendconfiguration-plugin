@@ -486,9 +486,10 @@ export class PropertyRowObject {
   public async openAreasViewModal(indexAreaForClick: number) {
     await this.editPropertyAreasBtn.waitForClickable({ timeout: 40000 });
     await this.editPropertyAreasBtn.click();
+    await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
     await (
       await backendConfigurationPropertiesPage.configurePropertyAreasBtn()
-    )
+    );
     await browser.pause(500);
     await (
       await backendConfigurationPropertiesPage.navigateToPropertyArea(

@@ -48,7 +48,7 @@ jobs:
         ../../eform-angular-timeplanning-plugin/testinginstallpn.sh
         ../../eform-backendconfiguration-plugin/testinginstallpn.sh
     - name: Copy frontendfiles
-      run: cp main/Dockerfile .
+      run: cp eform-backendconfiguration-plugin/Dockerfile .
     - name: Build the tagged Docker image
       run: docker build . -t microtingas/work-items-planning-container:latest -t microtingas/work-items-planning-container:1.0.0 --build-arg GITVERSION=1.0.0 --build-arg PLUGINVERSION=1.0.0 --build-arg PLUGIN2VERSION=1.0.0 --build-arg PLUGIN3VERSION=1.0.0 --build-arg PLUGIN4VERSION=1.0.0 --build-arg PLUGIN5VERSION=1.0.0 --build-arg PLUGIN6VERSION=1.0.0
     - name: Tag builds
@@ -69,7 +69,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        path: main
+        path: eform-backendconfiguration-plugin
     - uses: actions/download-artifact@v3
       with:
         name: work-items-planning-container
@@ -84,11 +84,11 @@ jobs:
       run: |
         docker pull rabbitmq:latest
         docker run -d --hostname my-rabbit --name some-rabbit --network data -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=password rabbitmq:latest
+    - name: Sleep 15
+      run: sleep 15
     - name: Start the newly build Docker container
       id: docker-run
       run: docker run --name my-container -p 4200:5000 --network data microtingas/work-items-planning-container:latest "/ConnectionString=host=mariadbtest;Database=420_Angular;user=root;password=secretpassword;port=3306;Convert Zero Datetime = true;SslMode=none;" > docker_run_log 2>&1 &
-    - name: Sleep 15
-      run: sleep 15
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
@@ -140,8 +140,6 @@ jobs:
       run: mkdir /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
       run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
-    - name: Sleep 15
-      run: sleep 15
     - name: Configuration testing
       run: cd eform-angular-frontend/eform-client && npm run testheadless
     - name: Change rabbitmq hostname
@@ -187,3 +185,5 @@ jobs:
       run: dotnet build eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.sln
     - name: Unit Tests
       run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Test/BackendConfiguration.Pn.Test.csproj
+    - name: Integration Tests
+      run: dotnet test --no-restore -c Release -v n eFormAPI/Plugins/BackendConfiguration.Pn/BackendConfiguration.Pn.Integration.Test/BackendConfiguration.Pn.Integration.Test.csproj

@@ -136,13 +136,13 @@ class BackendConfigurationPropertyWorkersPage extends Page {
 
   public async checkboxEditAssignment(i: number) {
     const ele = await $(`#checkboxCreateAssignment${i}-input`);
-    // await ele.waitForDisplayed({ timeout: 40000 });
-    // await ele.waitForClickable({ timeout: 40000 });
+    //await ele.waitForDisplayed({ timeout: 40000 });
+    //await ele.waitForClickable({ timeout: 40000 });
     return ele;
   }
 
   public async checkboxCreateAssignment(i: number) {
-    const ele = await $(`#checkboxCreateAssignment${i}-input`);
+    const ele = await $(`#checkboxCreateAssignment${i}`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -208,13 +208,14 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         await browser.pause(500);
       }
       if (propertyWorker.properties) {
+        await browser.pause(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
           await (
             await (
               await backendConfigurationPropertyWorkersPage.checkboxCreateAssignment(
                 propertyWorker.properties[i]
               )
-            ).$('..')
+            )
           ).click();
           await browser.pause(500);
         }
@@ -356,8 +357,8 @@ export class PropertyWorkerRowObject {
               await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(
                 propertyWorker.properties[i]
               )
-            ).$('..')
-          ).click();
+            )
+          ).$('..').click();
           await browser.pause(500);
         }
       }
@@ -390,15 +391,15 @@ export class PropertyWorkerRowObject {
       checked: boolean;
     }>();
     const propertyLength = await (
-      await pairingEditModalTableBody.$$('#propertyName')
+      await pairingEditModalTableBody.$$('.propertyName')
     ).length;
-    for (let i = 0; i < propertyLength; i++) {
+    for (let i = 0; i < propertyLength - 1; i++) {
        masForReturn = [
          ...masForReturn,
          {
            propertyName: await (
-             await $$('#propertyName')
-           )[i].getText(),
+             await $$('.propertyName')
+           )[i+1].getText(),
            checked:
             (await (
               await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(

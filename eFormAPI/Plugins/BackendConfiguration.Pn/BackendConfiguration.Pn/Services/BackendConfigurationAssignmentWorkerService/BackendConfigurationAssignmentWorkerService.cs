@@ -62,7 +62,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         private readonly IUserService _userService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
-        private readonly WorkOrderHelper _workOrderHelper;
         private readonly TimePlanningPnDbContext _timePlanningDbContext;
         private readonly CaseTemplatePnDbContext _caseTemplatePnDbContext;
         private readonly IBus _bus;
@@ -81,7 +80,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             _timePlanningDbContext = timePlanningDbContext;
             _caseTemplatePnDbContext = caseTemplatePnDbContext;
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-            _workOrderHelper = new WorkOrderHelper(_coreHelper, _backendConfigurationPnDbContext, _backendConfigurationLocalizationService, _userService);
             _bus = rebusService.GetBus();
         }
 
@@ -230,7 +228,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     await _bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
-                await _workOrderHelper.WorkorderFlowDeployEform(propertyWorkers).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, _userService.UserId, _backendConfigurationPnDbContext, $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong>").ConfigureAwait(false);
 
                 return new OperationResult(true,
                     _backendConfigurationLocalizationService.GetString("SuccessfullyAssignmentsCreatingProperties"));
@@ -333,9 +331,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                 if(assignmentsForDelete.Any())
                 {
-                    await _workOrderHelper.RetractEform(assignmentsForDelete, true).ConfigureAwait(false);
-                    await _workOrderHelper.RetractEform(assignmentsForDelete, false).ConfigureAwait(false);
-                    await _workOrderHelper.RetractEform(assignmentsForDelete, false).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(assignmentsForDelete, true, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
 
                     foreach (var propertyWorker in assignmentsForDelete)
                     {
@@ -379,10 +377,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         {
                             await core.EntityItemDelete((int)propertyWorker.EntityItemId).ConfigureAwait(false);
 
-                            await _workOrderHelper.RetractEform(new List<PropertyWorker>()
+                            await WorkOrderHelper.RetractEform(new List<PropertyWorker>
                             {
                                 propertyWorker
-                            }, true).ConfigureAwait(false);
+                            }, true, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
                     }
                 }
@@ -398,7 +396,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     }
                 }
 
-                await _workOrderHelper.WorkorderFlowDeployEform(propertyWorkers).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, _userService.UserId, _backendConfigurationPnDbContext, $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong>").ConfigureAwait(false);
                 return new OperationResult(true,
                     _backendConfigurationLocalizationService.GetString("SuccessfullyUpdateAssignmentsProperties"));
             }
@@ -472,9 +470,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     await DeleteAllEntriesForPropertyAssignment(propertyAssignment, core, property, sdkDbContext).ConfigureAwait(false);
                 }
 
-                await _workOrderHelper.RetractEform(propertyWorkers, true).ConfigureAwait(false);
-                await _workOrderHelper.RetractEform(propertyWorkers, false).ConfigureAwait(false);
-                await _workOrderHelper.RetractEform(propertyWorkers, false).ConfigureAwait(false);
+                await WorkOrderHelper.RetractEform(propertyWorkers, true, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+                await WorkOrderHelper.RetractEform(propertyWorkers, false, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+                await WorkOrderHelper.RetractEform(propertyWorkers, false, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
                 foreach (var assignment in propertyWorkers)
                 {
                     await assignment.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
