@@ -360,7 +360,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         {
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var resut = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
-                _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext,
+                _userService.UserId, _backendConfigurationPnDbContext,
                 _timePlanningDbContext);
 
             return new OperationResult(resut.Success, _backendConfigurationLocalizationService.GetString(resut.Message));
@@ -370,11 +370,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         {
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core,
-                _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext,
+                _userService.UserId,
                 _timePlanningDbContext);
 
             return new OperationDataResult<int>(result.Success,
-                _backendConfigurationLocalizationService.GetString(result.Message));
+                _backendConfigurationLocalizationService.GetString(result.Message), result.Model);
         }
 
     }

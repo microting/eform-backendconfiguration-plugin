@@ -25,7 +25,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
 {
     public class DeviceUserModel
     {
-        public int Id { get; set; }
+        public int SiteMicrotingUid { get; set; }
         public int SiteId { get; set; }
         public int? SiteUid { get; set; }
         public string SiteName { get; set; }
@@ -46,9 +46,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
 
         public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
         {
-            return new DeviceUserModel()
+            return new DeviceUserModel
             {
-                Id = model.Id,
+                SiteMicrotingUid = model.Id,
                 LanguageId = model.Language,
                 LanguageCode = model.LanguageCode,
                 TimeRegistrationEnabled = null,
@@ -60,9 +60,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
         public static implicit operator Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel(DeviceUserModel model)
         {
 
-            return new Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel()
+            return new Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel
             {
-                Id = model.Id,
+                Id = model.SiteMicrotingUid,
                 Language = model.LanguageId,
                 LanguageCode = model.LanguageCode,
                 UserFirstName = model.UserFirstName,
