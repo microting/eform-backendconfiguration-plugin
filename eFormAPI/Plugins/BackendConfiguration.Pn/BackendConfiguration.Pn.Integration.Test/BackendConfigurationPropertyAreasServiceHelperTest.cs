@@ -745,6 +745,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == property.Id).ToListAsync();
         var areaProperties = await _backendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == property.Id).ToListAsync();
         var folderTranslations = await _microtingDbContext!.FolderTranslations.ToListAsync();
+        var entityGroups = await _microtingDbContext!.EntityGroups.ToListAsync();
 
         // Assert result
         Assert.NotNull(result);
@@ -825,6 +826,15 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
         Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
         Assert.That(folderTranslations[30].Name, Is.EqualTo("05. Ställe: Schwanzbeißen und Vorbereitung"));
         Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
+
+        // Assert entity groups
+        Assert.That(entityGroups.Count, Is.EqualTo(5));
+        Assert.That(entityGroups[2].Name, Is.EqualTo($"{propertyCreateModel.Name} - Areas"));
+        Assert.That(entityGroups[2].Type, Is.EqualTo("EntitySelect"));
+        Assert.That(entityGroups[3].Name, Is.EqualTo($"{propertyCreateModel.Name} - Device Users"));
+        Assert.That(entityGroups[3].Type, Is.EqualTo("EntitySelect"));
+        Assert.That(entityGroups[4].Name, Is.EqualTo($"{propertyCreateModel.Name}"));
+        Assert.That(entityGroups[4].Type, Is.EqualTo("EntitySelect"));
     }
 
     // Should test the Update method and enable "06. Fodersiloer" and return success
