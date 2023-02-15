@@ -38,7 +38,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
     }
   }
   selectedTags: number[] = [];
-  selectedProperty: number;
+  selectedProperties: number[] = [];
   pagesInFile: number[] = [];
   changedPagesInFile: number[] = [];
   fileAsPdfDocument: PDFDocument;
@@ -90,7 +90,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
           this.fileAsPdfDocument = pdf;
           this.changedPagesInFile = this.pagesInFile = R.range(0, this.fileAsPdfDocument.getPages().length);
           this.selectedTags = [...this.file.tagIds];
-          this.selectedProperty = this.file.propertyId;
+          this.selectedProperties = this.file.propertyIds;
           this.progressLoad = 100;
         });
       });
@@ -118,7 +118,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
         this.file.file = new File([x], this.file.file.name, {type: this.file.file.type});
         this.file.src = x;
         this.file.tagIds = this.selectedTags;
-        this.file.propertyId = this.selectedProperty;
+        this.file.propertyIds = this.selectedProperties;
         this.saveFile.emit(this.file);
       });
     });

@@ -36,12 +36,12 @@
       <mat-label>{{'Property' | translate}}</mat-label>
       <mtx-select
         [items]="availableProperties"
-        bindLabel="name"
-        bindValue="id"
-        [ngModel]="selectedProperty"
-        (ngModelChange)="selectedPropertyChange($event)"
+        [bindLabel]="'name'"
+        [bindValue]="'id'"
+        [value]="selectedProperties"
+        (change)="selectedPropertyChange($event)"
         id="propertyIdSelector"
-        [multiple]="false"
+        [multiple]="true"
       >
       </mtx-select>
     </mat-form-field>
@@ -51,8 +51,8 @@
         [items]="availableTags"
         bindLabel="name"
         bindValue="id"
-        [ngModel]="selectedTags"
-        (ngModelChange)="selectedTagsChange($event)"
+        [value]="selectedTags"
+        (change)="selectedTagsChange($event)"
         id="tagsSelector"
         [multiple]="true"
         [clearable]="true"

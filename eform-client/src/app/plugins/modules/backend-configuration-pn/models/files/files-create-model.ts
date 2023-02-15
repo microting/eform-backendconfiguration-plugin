@@ -3,5 +3,5 @@ export interface FilesCreateModel {
   // only for front-end(for display)
   src?: Uint8Array;
   tagIds: number[];
-  propertyId: number;
+  propertyIds: number[];
 }

@@ -57,7 +57,7 @@ export class FilesTableComponent implements OnInit {
       sortProp: {id: 'FileName'},
       formatter: (filesModel: FilesModel) => `${filesModel.fileName}.${filesModel.fileExtension}`
     },
-    {field: 'property', header: this.translateService.stream('Property'), sortable: true, sortProp: {id: 'PropertyId'}},
+    {field: 'property', header: this.translateService.stream('Property'), sortable: false, sortProp: {id: 'PropertyId'}},
     {field: 'tags', header: this.translateService.stream('Tags')},
     {
       field: 'actions',

@@ -443,21 +443,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 }
 
                 // delete linked files
-                var propertyFiles = await _backendConfigurationPnDbContext.Files
+                var propertyFiles = await _backendConfigurationPnDbContext.PropertyFiles
 	                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 	                .Where(x => x.PropertyId == property.Id)
-	                .Include(x => x.FileTags)
+	                .Include(x => x.File)
+	                .ThenInclude(x => x.FileTags)
 	                .ToListAsync();
                 foreach (var propertyFile in propertyFiles)
                 {
                     // delete tags linked to file
-	                foreach (var fileFileTag in propertyFile.FileTags)
+	                foreach (var fileFileTag in propertyFile.File.FileTags)
 	                {
 		                fileFileTag.UpdatedByUserId = _userService.UserId;
 		                await fileFileTag.Delete(_backendConfigurationPnDbContext);
-	                }
+					}
 
-	                propertyFile.UpdatedByUserId = _userService.UserId;
+					propertyFile.File.UpdatedByUserId = _userService.UserId;
+					await propertyFile.File.Delete(_backendConfigurationPnDbContext);
+
+					propertyFile.UpdatedByUserId = _userService.UserId;
 					await propertyFile.Delete(_backendConfigurationPnDbContext);
                 }
 
