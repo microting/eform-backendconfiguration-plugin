@@ -178,7 +178,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     await WorkOrderHelper.RetractEform(assignmentsForDelete, true, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
                     await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
-                    await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
 
                     foreach (var propertyWorker in assignmentsForDelete)
                     {

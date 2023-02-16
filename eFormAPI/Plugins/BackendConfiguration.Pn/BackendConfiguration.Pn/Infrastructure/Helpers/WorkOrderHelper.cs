@@ -116,7 +116,6 @@ public static class WorkOrderHelper
         string description, int? areasGroupUid, int? deviceUsersGroupId, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        await using var _ = sdkDbContext.ConfigureAwait(false);
         if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
                 x.PropertyWorkerId == propertyWorker.Id
                 && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
@@ -174,8 +173,6 @@ public static class WorkOrderHelper
 
     public static async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
     {
-        var sdkDbContext = core.DbContextHelper.GetDbContext();
-        await using var _ = sdkDbContext.ConfigureAwait(false);
         foreach (var propertyWorker in propertyWorkers)
         {
             if (newWorkOrder)
@@ -205,14 +202,14 @@ public static class WorkOrderHelper
             else
             {
                 // var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId);
-                var pWorkers = await _backendConfigurationPnDbContext.PropertyWorkers.Where(x =>
-                    x.WorkerId == propertyWorker.WorkerId
-                    && x.PropertyId == propertyWorker.PropertyId).ToListAsync().ConfigureAwait(false);
-
-                foreach (var pWorker in pWorkers)
-                {
+                // var pWorkers = await _backendConfigurationPnDbContext.PropertyWorkers.Where(x =>
+                //     x.WorkerId == propertyWorker.WorkerId
+                //     && x.PropertyId == propertyWorker.PropertyId).ToListAsync().ConfigureAwait(false);
+                //
+                // foreach (var pWorker in pWorkers)
+                // {
                     var workOrderCases = await _backendConfigurationPnDbContext.WorkorderCases.Where(x =>
-                            x.PropertyWorkerId == pWorker.Id
+                            x.PropertyWorkerId == propertyWorker.Id
                             && x.WorkflowState != Constants.WorkflowStates.Removed)
                         .ToListAsync().ConfigureAwait(false);
                     foreach (var workOrderCase in workOrderCases)
@@ -228,11 +225,8 @@ public static class WorkOrderHelper
                         workOrderCase.UpdatedByUserId = userId;
                         await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
-                }
+                //}
             }
-
-            // await core.CaseDelete(eformId, (int)site.MicrotingUid);
-
         }
     }
 }

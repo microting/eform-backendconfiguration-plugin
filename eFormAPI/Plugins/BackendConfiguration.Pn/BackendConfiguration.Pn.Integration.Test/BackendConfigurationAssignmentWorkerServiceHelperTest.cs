@@ -909,6 +909,176 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         Assert.That(checkListSites[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(checkListSites[0].MicrotingUid, Is.EqualTo(workOrders[0].CaseId));
     }
+
+    // Should test Update method and reassign from one property to another
+    [Test]
+    public async Task BackendConfigurationAssignmentWorkerServiceHelper_Update_ReassignFromOnePropertyToAnother()
+    {
+        // Arrange
+        var core = await GetCore();
+
+        var propertyCreateModel = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = false,
+            LanguagesIds = new List<int>
+            {
+                1
+            },
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = true
+        };
+
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+
+        // create another propertycreateModel
+        var propertyCreateModel2 = new PropertyCreateModel
+        {
+            Address = Guid.NewGuid().ToString(),
+            Chr = Guid.NewGuid().ToString(),
+            IndustryCode = Guid.NewGuid().ToString(),
+            Cvr = Guid.NewGuid().ToString(),
+            IsFarm = false,
+            LanguagesIds = new List<int>
+            {
+                1
+            },
+            MainMailAddress = Guid.NewGuid().ToString(),
+            Name = Guid.NewGuid().ToString(),
+            WorkorderEnable = true
+        };
+
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel2, core, 1,
+            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 2, 2);
+
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString(),
+            TaskManagementEnabled = true
+        };
+
+        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            _timePlanningPnDbContext);
+
+        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+
+        var propertyAssignWorkersModel = new PropertyAssignWorkersModel
+        {
+            Assignments = new List<PropertyAssignmentWorkerModel>
+            {
+                new()
+                {
+                    PropertyId = properties[0].Id,
+                    IsChecked = true
+                }
+            },
+            TaskManagementEnabled = true,
+            TimeRegistrationEnabled = false,
+            SiteId = sites[2].Id
+        };
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+
+        var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
+        {
+            Assignments = new List<PropertyAssignmentWorkerModel>
+            {
+                new()
+                {
+                    PropertyId = properties[0].Id,
+                    IsChecked = false
+                },
+                new()
+                {
+                    PropertyId = properties[1].Id,
+                    IsChecked = true
+                }
+            },
+            TaskManagementEnabled = true,
+            TimeRegistrationEnabled = false,
+            SiteId = sites[2].Id
+        };
+
+        // Act
+        var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core,
+            1,
+            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus, _itemsPlanningPnDbContext);
+
+
+        // Assert
+        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
+        var timeregistrationSiteAssignments =
+            await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+        var propertyWorkers = await _backendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
+        var workOrders = await _backendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
+        var sdkCases = await _microtingDbContext!.Cases.AsNoTracking().ToListAsync();
+        var checkListSites = await _microtingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
+
+        Assert.NotNull(result2);
+        Assert.That(result2.Success, Is.True);
+        Assert.That(sites.Count, Is.EqualTo(3));
+        Assert.That(workers.Count, Is.EqualTo(3));
+        Assert.That(units.Count, Is.EqualTo(3));
+
+        // Assert site
+        Assert.That(sites[2].Name, Is.EqualTo(deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName));
+
+        // Assert worker
+        Assert.That(workers[2].FirstName, Is.EqualTo(deviceUserModel.UserFirstName));
+
+        // Assert siteWorker
+        Assert.That(siteWorkers[2].WorkerId, Is.EqualTo(workers[2].Id));
+
+        // Assert unit
+        Assert.That(units[2].SiteId, Is.EqualTo(sites[2].Id));
+
+        // Assert timeregistrationSiteAssignments
+        Assert.That(timeregistrationSiteAssignments.Count, Is.EqualTo(0));
+
+        // Assert propertyWorkers
+        Assert.That(propertyWorkers.Count, Is.EqualTo(2));
+        Assert.That(propertyWorkers[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(propertyWorkers[0].PropertyId, Is.EqualTo(properties[0].Id));
+        Assert.That(propertyWorkers[0].WorkerId, Is.EqualTo(workers[2].Id));
+        Assert.That(propertyWorkers[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        Assert.That(propertyWorkers[1].PropertyId, Is.EqualTo(properties[1].Id));
+        Assert.That(propertyWorkers[1].WorkerId, Is.EqualTo(workers[2].Id));
+
+        // Assert workOrders
+        // Assert.That(workOrders.Count, Is.EqualTo(2)); TODO: fix this
+        // Assert.That(workOrders[0].PropertyWorkerId, Is.EqualTo(propertyWorkers[0].Id));
+        // Assert.That(workOrders[0].LeadingCase, Is.EqualTo(false));
+        // Assert.That(workOrders[1].PropertyWorkerId, Is.EqualTo(propertyWorkers[1].Id));
+        // Assert.That(workOrders[1].LeadingCase, Is.EqualTo(false));
+        //
+        // // Assert sdkCases
+        // Assert.That(sdkCases.Count, Is.EqualTo(0));
+        //
+        // // Assert checkListSites
+        // Assert.That(checkListSites.Count, Is.EqualTo(2));
+        // Assert.That(checkListSites[0].SiteId, Is.EqualTo(sites[2].Id));
+        // Assert.That(checkListSites[0].MicrotingUid, Is.EqualTo(workOrders[0].CaseId));
+        // Assert.That(checkListSites[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        // Assert.That(checkListSites[1].SiteId, Is.EqualTo(sites[2].Id));
+        // Assert.That(checkListSites[1].MicrotingUid, Is.EqualTo(workOrders[1].CaseId));
+        // Assert.That(checkListSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+    }
 }
 
 public class EFormCoreService : IEFormCoreService
