@@ -17,7 +17,6 @@ import {
 import {TaskManagementRouting} from './task-management.routing';
 import {MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT} from '../../consts';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {MatButtonModule} from '@angular/material/button';
@@ -47,7 +46,6 @@ import {MatCardModule} from '@angular/material/card';
     OwlDateTimeModule,
     OwlMomentDateTimeModule,
     EformSharedModule,
-    FontAwesomeModule,
     ReactiveFormsModule,
     EformImportedModule,
     FormsModule,

@@ -10,7 +10,6 @@ import {
 } from './components';
 import {PropertyWorkersRouting} from './property-workers.routing';
 import {TranslateModule} from '@ngx-translate/core';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {DeviceUsersPersistProvider} from 'src/app/modules/device-users/components/store';
 import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule} from '@angular/material/button';
@@ -21,7 +20,7 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
-import {MatMenuModule} from "@angular/material/menu";
+import {MatMenuModule} from '@angular/material/menu';
 
 @NgModule({
     imports: [
@@ -30,7 +29,6 @@ import {MatMenuModule} from "@angular/material/menu";
         EformSharedModule,
         TranslateModule,
         FormsModule,
-        FontAwesomeModule,
         MatIconModule,
         MatButtonModule,
         MatTooltipModule,

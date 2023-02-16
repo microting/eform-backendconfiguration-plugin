@@ -15,7 +15,6 @@ import {
 import {CompliancesRouting} from './compliance.routing';
 import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts/custom-date-time-adapter';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialogModule} from '@angular/material/dialog';
@@ -31,7 +30,6 @@ import {MatDialogModule} from '@angular/material/dialog';
     OwlDateTimeModule,
     OwlMomentDateTimeModule,
     EformSharedModule,
-    FontAwesomeModule,
     MtxGridModule,
     MatButtonModule,
     MatDialogModule,

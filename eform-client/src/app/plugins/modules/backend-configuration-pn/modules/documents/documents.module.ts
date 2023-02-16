@@ -1,11 +1,9 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {MDBBootstrapModule} from 'angular-bootstrap-md';
 import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
 import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule, OwlMomentDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {NgSelectModule} from '@ng-select/ng-select';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
@@ -48,7 +46,6 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
   ],
   imports: [
     CommonModule,
-    MDBBootstrapModule,
     TranslateModule,
     RouterModule,
     OwlDateTimeModule,
@@ -56,7 +53,6 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     OwlDateTimeModule,
     OwlMomentDateTimeModule,
     EformSharedModule,
-    FontAwesomeModule,
     ReactiveFormsModule,
     NgSelectModule,
     EformImportedModule,

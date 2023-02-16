@@ -2,7 +2,6 @@ import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {TranslateModule} from '@ngx-translate/core';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {MY_MOMENT_FORMATS_FOR_AREA_RULES_PLAN} from '../consts';
 import {
@@ -26,7 +25,6 @@ import {MatCardModule} from '@angular/material/card';
     CommonModule,
     FormsModule,
     TranslateModule,
-    FontAwesomeModule,
     EformSharedModule,
     MatDialogModule,
     MatButtonModule,
