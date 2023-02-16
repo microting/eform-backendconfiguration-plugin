@@ -993,6 +993,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
             _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
 
+        var workOrders = await _backendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
+        Assert.That(workOrders.Count, Is.EqualTo(1)); // TODO: fix this
+
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
             Assignments = new List<PropertyAssignmentWorkerModel>
@@ -1026,9 +1029,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         var timeregistrationSiteAssignments =
             await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
         var propertyWorkers = await _backendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
-        var workOrders = await _backendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
+        workOrders = await _backendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
         var sdkCases = await _microtingDbContext!.Cases.AsNoTracking().ToListAsync();
         var checkListSites = await _microtingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
+        var entityItems = await _microtingDbContext!.EntityItems.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result2);
         Assert.That(result2.Success, Is.True);
@@ -1061,23 +1065,30 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         Assert.That(propertyWorkers[1].WorkerId, Is.EqualTo(workers[2].Id));
 
         // Assert workOrders
-        // Assert.That(workOrders.Count, Is.EqualTo(2)); TODO: fix this
-        // Assert.That(workOrders[0].PropertyWorkerId, Is.EqualTo(propertyWorkers[0].Id));
-        // Assert.That(workOrders[0].LeadingCase, Is.EqualTo(false));
-        // Assert.That(workOrders[1].PropertyWorkerId, Is.EqualTo(propertyWorkers[1].Id));
-        // Assert.That(workOrders[1].LeadingCase, Is.EqualTo(false));
-        //
-        // // Assert sdkCases
-        // Assert.That(sdkCases.Count, Is.EqualTo(0));
-        //
-        // // Assert checkListSites
-        // Assert.That(checkListSites.Count, Is.EqualTo(2));
-        // Assert.That(checkListSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        // Assert.That(checkListSites[0].MicrotingUid, Is.EqualTo(workOrders[0].CaseId));
-        // Assert.That(checkListSites[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
-        // Assert.That(checkListSites[1].SiteId, Is.EqualTo(sites[2].Id));
-        // Assert.That(checkListSites[1].MicrotingUid, Is.EqualTo(workOrders[1].CaseId));
-        // Assert.That(checkListSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+        Assert.That(workOrders.Count, Is.EqualTo(2)); // TODO: fix this
+        Assert.That(workOrders[0].PropertyWorkerId, Is.EqualTo(propertyWorkers[0].Id));
+        Assert.That(workOrders[0].LeadingCase, Is.EqualTo(false));
+        Assert.That(workOrders[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(workOrders[1].PropertyWorkerId, Is.EqualTo(propertyWorkers[1].Id));
+        Assert.That(workOrders[1].LeadingCase, Is.EqualTo(false));
+        Assert.That(workOrders[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+
+        // Assert sdkCases
+        Assert.That(sdkCases.Count, Is.EqualTo(0));
+
+        // Assert checkListSites
+        Assert.That(checkListSites.Count, Is.EqualTo(2));
+        Assert.That(checkListSites[0].SiteId, Is.EqualTo(sites[2].Id));
+        Assert.That(checkListSites[0].MicrotingUid, Is.EqualTo(workOrders[0].CaseId));
+        Assert.That(checkListSites[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
+        Assert.That(checkListSites[1].SiteId, Is.EqualTo(sites[2].Id));
+        Assert.That(checkListSites[1].MicrotingUid, Is.EqualTo(workOrders[1].CaseId));
+        Assert.That(checkListSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
+
+        // Assert entityItems
+        Assert.That(entityItems.Count, Is.EqualTo(8));
+        Assert.That(entityItems[7].Name, Is.EqualTo(sites[2].Name));
+        Assert.That(entityItems[7].EntityGroupId, Is.EqualTo(properties[1].EntitySelectListDeviceUsers));
     }
 }
 
