@@ -107,7 +107,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				/*query = query.Where(x => x.FileTags
 					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && request.TagIds.Contains(y.FileTagId))
 					.Any(y => request.TagIds.Contains(y.FileTagId)));*/
-				
+
 				foreach (var tagId in request.TagIds)
 				{
 					query = query.Where(x =>
@@ -130,18 +130,17 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				Id = x.Id,
 				Property = x.Property.Name,
 				Tags = x.FileTags
-					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 					.Select(tag => new CommonTagModel
 					{
 						Id = tag.FileTagId,
-						Name = tag.FileTag.Name,
-					}).ToList(),
+						Name = tag.FileTag.Name
+					}).ToList()
 			}).ToListAsync();
 
 			var pagedFilesModel = new Paged<BackendConfigurationFileModel>
 			{
 				Entities = files,
-				Total = total,
+				Total = total
 			};
 
 			return new OperationDataResult<Paged<BackendConfigurationFileModel>>(true, pagedFilesModel);
