@@ -4,7 +4,6 @@ import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
 import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule, OwlMomentDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts';
@@ -63,7 +62,6 @@ import {MtxProgressModule} from '@ng-matero/extensions/progress';
         OwlDateTimeModule,
         OwlMomentDateTimeModule,
         EformSharedModule,
-        FontAwesomeModule,
         ReactiveFormsModule,
         EformImportedModule,
         FormsModule,

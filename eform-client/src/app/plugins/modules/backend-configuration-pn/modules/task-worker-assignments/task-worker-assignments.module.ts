@@ -7,7 +7,6 @@ import {
 } from './components';
 import {TaskWorkerAssignmentsRouting} from './task-worker-assignments.routing';
 import {TranslateModule} from '@ngx-translate/core';
-import {FontAwesomeModule} from '@fortawesome/angular-fontawesome';
 import {AreaRulePlanModalModule} from '../../components/area-rule-plan-modal.module';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 
@@ -18,7 +17,6 @@ import {MtxGridModule} from '@ng-matero/extensions/grid';
     EformSharedModule,
     TranslateModule,
     FormsModule,
-    FontAwesomeModule,
     AreaRulePlanModalModule,
     MtxGridModule,
   ],
