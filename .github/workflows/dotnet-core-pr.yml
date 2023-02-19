@@ -99,13 +99,6 @@ jobs:
         repository: microting/eform-angular-frontend
         ref: stable
         path: eform-angular-frontend
-    - name: 'Preparing bacend checkout'
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        repository: microting/eform-backendconfiguration-plugin
-        ref: stable
-        path: eform-backendconfiguration-plugin
     - name: Cache node_modules
       id: cache
       uses: actions/cache@v3
@@ -137,7 +130,7 @@ jobs:
       run: cd eform-angular-frontend/eform-client && npm install
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Create errorShots directory
-      run: mkdir /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots
+      run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
       run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
     - name: Configuration testing
@@ -163,8 +156,8 @@ jobs:
       with:
         name: error Screenshots
         path: |
-          /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots/chrome*.png
-        retention-days: 2
+          eform-angular-frontend/eform-client/errorShots/chrome*.png
+        retention-days: 3
   test-dotnet:
     runs-on: ubuntu-latest
     steps:
