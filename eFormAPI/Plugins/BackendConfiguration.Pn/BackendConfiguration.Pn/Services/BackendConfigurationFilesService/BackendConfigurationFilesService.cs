@@ -69,11 +69,15 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	{
 		try
 		{
+			var propertyFiles = await _dbContext.PropertyFiles
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.ToListAsync();
+
 			var query = _dbContext.Files
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Include(x => x.Property)
 				.Include(x => x.FileTags)
 				.ThenInclude(x => x.FileTag)
+				.Include(x => x.PropertyFiles)
 				.AsQueryable();
 			// filtration
 			if(!string.IsNullOrEmpty(request.NameFilter))
@@ -100,12 +104,15 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			}
 			if (request.PropertyIds.Count > 0)
 			{
-				query = query.Where(x => request.PropertyIds.Contains(x.PropertyId));
+				query = query.Where(x => x.PropertyFiles
+					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+					.Where(y => y.FileId == x.Id)
+					.Select(y => y.PropertyId)
+					.Any(y => request.PropertyIds.Contains(y)));
 			}
 			if (request.TagIds.Count > 0)
 			{
-				/*query = query.Where(x => x.FileTags
-					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed && request.TagIds.Contains(y.FileTagId))
+				/*query = query.Where(x => x.FileTags.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
 					.Any(y => request.TagIds.Contains(y.FileTagId)));*/
 
 				foreach (var tagId in request.TagIds)
@@ -128,7 +135,11 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				FileName = x.FileName,
 				FileExtension = x.UploadedData.Extension,
 				Id = x.Id,
-				Property = x.Property.Name,
+				Properties = x.PropertyFiles
+					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+					.Where(y => y.FileId == x.Id)
+					.Select(y => y.Property).Select(y => y.Name)
+					.ToList(),
 				Tags = x.FileTags
 					.Select(tag => new CommonTagModel
 					{
@@ -236,10 +247,21 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				{
 					CreatedByUserId = _userService.UserId,
 					FileName = fileCreate.File.FileName.Replace(".pdf", ""), // save only filename, without extension
-					PropertyId = fileCreate.PropertyId,
 					UpdatedByUserId = _userService.UserId,
 				};
 				await fileForDb.Create(_dbContext);
+
+				// add file to property
+				foreach (var propertyFile in fileCreate.PropertyIds.Select(x => new PropertyFile
+				{
+					FileId = fileForDb.Id,
+					PropertyId = x,
+					CreatedByUserId = _userService.UserId,
+					UpdatedByUserId = _userService.UserId,
+				}))
+				{
+					await propertyFile.Create(_dbContext);
+				}
 
 				// add tags to file
 				foreach (var fileTag in fileCreate.TagIds.Select(tagId => new FileTags
@@ -302,6 +324,17 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			{
 				return new OperationResult(false, _localizationService.GetString("FileNotFound"));
 			}
+			// todo add delete file from storage
+
+			// delete link to property
+			var propertyFiles = await _dbContext.PropertyFiles
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.Where(x => x.FileId == id)
+				.ToListAsync();
+			foreach (var propertyFile in propertyFiles)
+			{
+				await propertyFile.Delete(_dbContext);
+			}
 
 			// delete all links from db
 			file.UploadedData.UpdatedByUserId = _userService.UserId;
@@ -331,6 +364,11 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	{
 		try
 		{
+			var propertyFiles = await _dbContext.PropertyFiles
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.Where(x => x.PropertyId == id)
+				.ToListAsync();
+
 			var file = await _dbContext.Files
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.Where(x => x.Id == id)
@@ -341,7 +379,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					FileName = x.FileName,
 					FileExtension = x.UploadedData.Extension,
 					Id = x.Id,
-					Property = x.Property.Name,
+					Properties = propertyFiles.Select(y => y.Property.Name).ToList(),
 					Tags = x.FileTags
 						.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 						.Select(tag => new CommonTagModel

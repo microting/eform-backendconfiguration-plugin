@@ -5,6 +5,6 @@ export interface FilesModel {
   createDate: Date,
   fileName: string,
   fileExtension: string,
-  property: string,
+  properties: string[],
   tags: SharedTagModel[],
 }

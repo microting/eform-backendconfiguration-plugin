@@ -25,7 +25,7 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   files: FilesCreateModel[] = [];
   getAllPropertiesSub$: any;
   availableProperties: { name: string; id: number }[];
-  selectedProperty: number;
+  selectedProperties: number[];
   selectedTags: number[] = [];
   selectedFile: FilesCreateModel = null;
   getTagsSub$: Subscription;
@@ -36,7 +36,7 @@ export class FileCreateComponent implements OnInit, OnDestroy {
 
   get disabledUploadBtn(): boolean {
     // disabled if not files and not set property for all files
-    return this.files.length === 0 || /*(*/!this.selectedProperty/* || this.files.findIndex(x => !!x.propertyId) === -1)*/;
+    return this.files.length === 0 || /*(*/!this.selectedProperties/* || this.files.findIndex(x => !!x.propertyId) === -1)*/;
   }
 
   set availableTags(val: SharedTagModel[]) {
@@ -107,7 +107,7 @@ export class FileCreateComponent implements OnInit, OnDestroy {
         let mappedFile: FilesCreateModel = {
           src: undefined,
           file: file,
-          propertyId: this.selectedProperty,
+          propertyIds: this.selectedProperties,
           tagIds: [...this.selectedTags]
         };
         file.arrayBuffer().then(src => mappedFile.src = new Uint8Array(src));
@@ -137,28 +137,29 @@ export class FileCreateComponent implements OnInit, OnDestroy {
     }
   }
 
-  selectedPropertyChange(selectedProperty: number) {
-    // filter files, where propertyId is old
-    this.files.filter(y => y.propertyId === this.selectedProperty).forEach(x => x.propertyId = selectedProperty);
-    this.selectedProperty = selectedProperty;
+  selectedPropertyChange(selectedProperty: { name: string; id: number }[]) {
+    const propertyIds = selectedProperty.map(x => x.id);
+    this.files.forEach(x => x.propertyIds = [...propertyIds]);
+    this.selectedProperties = [...propertyIds];
   }
 
-  selectedTagsChange(tags: number[]) {
+  selectedTagsChange(tags: SharedTagModel[]) {
+    const tagIds = tags.map(x => x.id);
     // change tags for all files
     this.files.forEach(x => {
-      if (R.difference(x.tagIds, tags).length === 0) {
-        x.tagIds = tags;
+      if (R.difference(x.tagIds, tagIds).length === 0) {
+        x.tagIds = tagIds;
       }
     });
-    this.selectedTags = tags;
+    this.selectedTags = tagIds;
   }
 
   uploadFiles() {
     let model = this.files.map((x) => ({
-          file: x.file,
-          propertyId: x.propertyId,
-          tagIds: x.tagIds
-        }));
+      file: x.file,
+      propertyIds: x.propertyIds,
+      tagIds: x.tagIds
+    }));
     this.backendConfigurationPnFilesService
       .createFiles({filesForCreate: [...model]})
       .subscribe(operationResult => {

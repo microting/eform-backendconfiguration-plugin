@@ -29,9 +29,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
 
 public class BackendConfigurationFileCreate
 {
-    public int PropertyId { get; set; }
+    public List<int> PropertyIds { get; set; }
+	    = new List<int>();
 
-    public List<int> TagIds { get; set; }
+	public List<int> TagIds { get; set; }
         = new List<int>();
 
     public IFormFile File { get; set; }
