@@ -32,6 +32,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfigurationFileTagsService;
 using BackendConfigurationLocalizationService;
+using Castle.Core;
 using Infrastructure.Models.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -364,24 +365,24 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 	{
 		try
 		{
-			var propertyFiles = await _dbContext.PropertyFiles
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Where(x => x.PropertyId == id)
-				.ToListAsync();
-
 			var file = await _dbContext.Files
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.Where(x => x.Id == id)
 				.Include(x => x.FileTags)
+				.Include(x => x.PropertyFiles)
 				.Select(x => new BackendConfigurationFileModel
 				{
 					CreateDate = x.CreatedAt,
 					FileName = x.FileName,
 					FileExtension = x.UploadedData.Extension,
 					Id = x.Id,
-					Properties = propertyFiles.Select(y => y.Property.Name).ToList(),
+					Properties = x.PropertyFiles
+						.Where(y => y.FileId == x.Id)
+						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+						.Select(y => y.Property.Name)
+						.ToList(),
 					Tags = x.FileTags
-						.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
 						.Select(tag => new CommonTagModel
 						{
 							Id = tag.FileTagId,
