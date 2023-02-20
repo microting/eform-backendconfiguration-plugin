@@ -78,6 +78,10 @@ public class ExcelService: IExcelService
                 .Replace("*", "")
                 .Replace("[", "")
                 .Replace("]", "");
+            if (sheetName.Length > 31)
+            {
+                sheetName = sheetName.Substring(0, 31);
+            }
             var worksheet = wb.Worksheets.Add(sheetName);
 
             // table with selected filters
