@@ -1,5 +1,10 @@
 using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Infrastructure.Models;
+using BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
+using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+using BackendConfiguration.Pn.Services.RebusService;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
@@ -7,8 +12,10 @@ using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
+using Rebus.Bus;
 using File = System.IO.File;
 
 namespace BackendConfiguration.Pn.Integration.Test;
@@ -33,6 +40,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
     private ItemsPlanningPnDbContext? _itemsPlanningPnDbContext;
     private TimePlanningPnDbContext? _timePlanningPnDbContext;
     private MicrotingDbContext? _microtingDbContext;
+    private CaseTemplatePnDbContext? _caseTemplatePnDbContext;
+    private IBus _bus;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
@@ -94,6 +103,24 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         return backendConfigurationPnDbContext;
     }
 
+    private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
+    {
+
+        var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
+
+        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin"), new MariaDbServerVersion(
+            new Version(10, 8)));
+
+        var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
+        string file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
+        string rawSql = File.ReadAllText(file);
+
+        backendConfigurationPnDbContext.Database.EnsureCreated();
+        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
+
+        return backendConfigurationPnDbContext;
+    }
+
     private MicrotingDbContext GetContext(string connectionStr)
     {
         DbContextOptionsBuilder dbContextOptionsBuilder = new DbContextOptionsBuilder();
@@ -140,6 +167,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
 
         _microtingDbContext.Database.SetCommandTimeout(300);
 
+        _caseTemplatePnDbContext = GetCaseTemplatePnDbContext(_mySqlTestcontainer.ConnectionString);
+
+        _caseTemplatePnDbContext.Database.SetCommandTimeout(300);
+
+        var rebusService =
+            new RebusService(new EFormCoreService(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")), new BackendConfigurationLocalizationService());
+        rebusService.Start(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")).GetAwaiter().GetResult();
+        _bus = rebusService.GetBus();
+
     }
 
     // Should test the CreateAreaRulePlanningObject method
@@ -167,6 +203,76 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTest
         var core = await GetCore();
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+
+        // should create a device user model and assign it to the property
+        var deviceUserModel = new DeviceUserModel
+        {
+            CustomerNo = 0,
+            HasWorkOrdersAssigned = false,
+            IsBackendUser = false,
+            IsLocked = false,
+            LanguageCode = "da",
+            TimeRegistrationEnabled = false,
+            UserFirstName = Guid.NewGuid().ToString(),
+            UserLastName = Guid.NewGuid().ToString()
+        };
+
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            _timePlanningPnDbContext);
+
+        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+
+        var propertyAssignWorkersModel = new PropertyAssignWorkersModel
+        {
+            Assignments = new List<PropertyAssignmentWorkerModel>
+            {
+                new()
+                {
+                    PropertyId = properties[0].Id,
+                    IsChecked = true
+                }
+            },
+            SiteId = sites[2].Id
+        };
+
+        var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+
+        var areaTranslation = await _backendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
+        var areaId = areaTranslation.AreaId;
+        var currentSite = await _microtingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+
+        var propertyAreasUpdateModel = new PropertyAreasUpdateModel
+        {
+            Areas = new List<PropertyAreaModel>
+            {
+                new()
+                {
+                    AreaId = areaTranslation.AreaId,
+                    Activated = true
+                }
+            },
+            PropertyId = properties[0].Id
+        };
+
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1);
+
+        // should create AreaRulePlanningModel for areaId
+        var areaRulePlanningModel = new AreaRulePlanningModel()
+        {
+            AssignedSites = new List<AreaRuleAssignedSitesModel>()
+            {
+                new AreaRuleAssignedSitesModel()
+                {
+                    Checked = true,
+                    SiteId = currentSite.Id
+
+                }
+            }
+        };
+
+        //var result3 = await UpdatePlanning(areaRulePlanningModel);
 
     }
 
