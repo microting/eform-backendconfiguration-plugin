@@ -1307,6 +1307,16 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
         // Assert areaRules
         Assert.NotNull(areaRules);
         Assert.That(areaRules.Count, Is.EqualTo(3));
+        Assert.That(areaRules[0].PropertyId, Is.EqualTo(property.Id));
+        Assert.That(areaRules[1].PropertyId, Is.EqualTo(property.Id));
+        Assert.That(areaRules[2].PropertyId, Is.EqualTo(property.Id));
+        Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
+        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
+        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
+        Assert.That(areaRules[0].EformName, Is.EqualTo("09. Forsuring pH værdi"));
+        Assert.That(areaRules[1].EformName, Is.EqualTo("09. Forsuring serviceaftale"));
+        Assert.That(areaRules[2].EformName, Is.EqualTo("09. Forsuring driftsstop"));
+
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
