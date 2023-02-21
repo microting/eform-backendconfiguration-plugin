@@ -97,6 +97,7 @@ public class ExcelService: IExcelService
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Priority");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Status");
             worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Date");
 
@@ -129,10 +130,10 @@ public class ExcelService: IExcelService
             currentRow++;
             currentColumn = startColumnForDataTable;
             SetBorders(worksheet.Range(currentRow, startColumnForDataTable, workOrderCaseModels.Count + currentRow,
-                startColumnForDataTable + 10));
-            worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style
+                startColumnForDataTable + 11));
+            worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 11).Cells().Style
                 .Font.Bold = true;
-            worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 10).Cells().Style
+            worksheet.Range(currentRow, startColumnForDataTable, currentRow, startColumnForDataTable + 11).Cells().Style
                 .Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
 
             // table report
@@ -147,6 +148,7 @@ public class ExcelService: IExcelService
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Description");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdateDate");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastUpdatedBy");
+            worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Priority");
             worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Status");
 
 
@@ -156,17 +158,28 @@ public class ExcelService: IExcelService
                 currentColumn = startColumnForDataTable;
 
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Id;
-                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CaseInitiated.ToString("dd.MM.yyyy");
+                worksheet.Cell(currentRow, currentColumn++).SetValue(workOrderCaseModel.CaseInitiated);
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.PropertyName;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.AreaName;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByName;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.CreatedByText;
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastAssignedTo;
-                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description != null ? workOrderCaseModel.Description.Replace("<br>", "").Replace("<br />", "\n") : "";
-                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdateDate.HasValue
-                    ? workOrderCaseModel.LastUpdateDate.Value.ToString("dd.MM.yyyy")
+                worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.Description != null
+                    ? workOrderCaseModel.Description.Replace("<br>", "").Replace("<br />", "\n")
                     : "";
+                worksheet.Cell(currentRow, currentColumn++).SetValue(workOrderCaseModel.LastUpdateDate.HasValue
+                    ? workOrderCaseModel.LastUpdateDate.Value
+                    : "");
                 worksheet.Cell(currentRow, currentColumn++).Value = workOrderCaseModel.LastUpdatedBy;
+                var priorityText = workOrderCaseModel.Priority switch
+                {
+                    1 => _localizationService.GetString("Urgent"),
+                    2 => _localizationService.GetString("High"),
+                    3 => _localizationService.GetString("Medium"),
+                    4 => _localizationService.GetString("Low"),
+                    _ => ""
+                };
+                worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString(priorityText);
                 worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString(workOrderCaseModel.Status);
             }
 
