@@ -78,8 +78,8 @@ jobs:
       run: docker network create --driver bridge --attachable data
     - name: Start MariaDB
       run: |
-        docker pull mariadb:10.8
-        docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
+        docker pull mariadb:latest
+        docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:latest
     - name: Start rabbitmq
       run: |
         docker pull rabbitmq:latest
@@ -99,13 +99,6 @@ jobs:
         repository: microting/eform-angular-frontend
         ref: stable
         path: eform-angular-frontend
-    - name: 'Preparing bacend checkout'
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        repository: microting/eform-backendconfiguration-plugin
-        ref: stable
-        path: eform-backendconfiguration-plugin
     - name: Cache node_modules
       id: cache
       uses: actions/cache@v3
@@ -137,7 +130,7 @@ jobs:
       run: cd eform-angular-frontend/eform-client && npm install
       if: steps.cache.outputs.cache-hit != 'true'
     - name: Create errorShots directory
-      run: mkdir /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots
+      run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
       run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
     - name: Configuration testing
@@ -163,8 +156,8 @@ jobs:
       with:
         name: error Screenshots
         path: |
-          /home/runner/work/work-items-planning-container/work-items-planning-container/eform-angular-frontend/eform-client/errorShots/chrome*.png
-        retention-days: 2
+          eform-angular-frontend/eform-client/errorShots/chrome*.png
+        retention-days: 3
   test-dotnet:
     runs-on: ubuntu-latest
     steps:
@@ -173,8 +166,12 @@ jobs:
       run: docker network create --driver bridge --attachable data
     - name: Start MariaDB
       run: |
-        docker pull mariadb:10.8
-        docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:10.8
+        docker pull mariadb:latest
+        docker run --name mariadbtest --network data -e MYSQL_ROOT_PASSWORD=secretpassword -p 3306:3306 -d mariadb:latest
+    - name: Start rabbitmq
+      run: |
+        docker pull rabbitmq:latest
+        docker run -d --hostname my-rabbit --name some-rabbit --network data -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=password -p 5672:5672 rabbitmq:latest
     - name: Sleep 15
       run: sleep 15        
     - name: Setup .NET Core
