@@ -23,6 +23,9 @@ SOFTWARE.
 */
 
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using Amazon.S3.Model;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
 
@@ -282,12 +285,20 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				var fileName = $"{DateTime.Now.Ticks}_{DateTime.Now.Microsecond}";
 				var filePath = Path.Combine(folder, $"{fileName}.pdf");
 				// if you replace using to await using - stream not start copy until it goes beyond the current block
-				using (var stream = new FileStream(filePath, FileMode.Create))
+				await using (var stream = new FileStream(filePath, FileMode.Create))
 				{
 					await fileCreate.File.CopyToAsync(stream);
 				}
-				await core.PutFileToStorageSystem(filePath, fileCreate.File.FileName);
-				var checkSum = await core.PdfUpload(filePath);
+				string checkSum;
+				using (var md5 = MD5.Create())
+				{
+					await using (var stream = System.IO.File.OpenRead(filePath))
+					{
+						byte[] grr = await md5.ComputeHashAsync(stream);
+						checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
+					}
+				}
+				await core.PutFileToStorageSystem(filePath, $"{checkSum}.pdf");
 				var uploadedData = new UploadedData
 				{
 					Extension = "pdf",
@@ -296,7 +307,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					CreatedByUserId = _userService.UserId,
 					UpdatedByUserId = _userService.UserId,
 					FileLocation = filePath,
-					FileId = fileForDb.Id,
+					FileId = fileForDb.Id
 				};
 				await uploadedData.Create(_dbContext);
 			}
@@ -406,28 +417,13 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		}
 	}
 
-	public async Task<string> GetUploadedDataByFileId(int id)
+	public async Task<UploadedData> GetUploadedDataByFileId(int id)
 	{
-		try
-		{
-			var filePath = await _dbContext.UploadedDatas
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Where(x => x.FileId == id)
-				.Select(x => x.FileLocation)
-				.FirstOrDefaultAsync();
+		var uploadedData = await _dbContext.UploadedDatas
+			.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+			.Where(x => x.FileId == id)
+			.FirstOrDefaultAsync();
 
-			if (string.IsNullOrEmpty(filePath))
-			{
-				return _localizationService.GetString("FileNotFound");
-			}
-
-			return filePath;
-		}
-		catch (Exception e)
-		{
-			Console.WriteLine(e);
-			_logger.LogError(e.Message);
-			return _localizationService.GetString("ErrorWhileGetFile");
-		}
+		return uploadedData;
 	}
 }

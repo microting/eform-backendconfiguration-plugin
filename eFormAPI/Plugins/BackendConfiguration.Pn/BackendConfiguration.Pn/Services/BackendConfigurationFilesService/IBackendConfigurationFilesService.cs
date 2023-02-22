@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
 
@@ -21,5 +22,5 @@ public interface IBackendConfigurationFilesService
 
 	Task<OperationDataResult<BackendConfigurationFileModel>> GetById(int id);
 
-	Task<string> GetUploadedDataByFileId(int id);
+	Task<UploadedData> GetUploadedDataByFileId(int id);
 }
