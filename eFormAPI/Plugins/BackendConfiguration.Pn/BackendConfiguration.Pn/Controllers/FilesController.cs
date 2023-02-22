@@ -58,8 +58,8 @@ public class FilesController : Controller
 		_coreHelper = coreHelper;
 	}
 
-	[HttpGet]
-	public async Task<OperationDataResult<Paged<BackendConfigurationFileModel>>> Index([FromQuery] BackendConfigurationFileRequestModel request)
+	[HttpPost]
+	public async Task<OperationDataResult<Paged<BackendConfigurationFileModel>>> Index([FromBody] BackendConfigurationFileRequestModel request)
 	{
 		return await _backendConfigurationFilesService.Index(request);
 	}
@@ -81,6 +81,7 @@ public class FilesController : Controller
 	}
 
 	[HttpPost]
+	[Route("create")]
 	public async Task<OperationResult> Create([FromForm] BackendConfigurationFileCreateList model)
 	{
 		foreach (var formFile in HttpContext.Request.Form.Files)
