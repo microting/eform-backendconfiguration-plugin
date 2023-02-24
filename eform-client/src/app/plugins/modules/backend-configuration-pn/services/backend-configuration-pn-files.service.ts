@@ -13,6 +13,7 @@ import {
 
 export let BackendConfigurationPnFilesMethods = {
   Files: 'api/backend-configuration-pn/files',
+  CreateFiles: 'api/backend-configuration-pn/files/create',
   GetFile: 'api/backend-configuration-pn/files/get-file',
   GetFiles: 'api/backend-configuration-pn/files/get-files'
 };
@@ -26,7 +27,7 @@ export class BackendConfigurationPnFilesService {
   }
 
   getAllFiles(model: FilesRequestModel): Observable<OperationDataResult<Paged<FilesModel>>> {
-    return this.apiBaseService.get(BackendConfigurationPnFilesMethods.Files, {...model});
+    return this.apiBaseService.post(BackendConfigurationPnFilesMethods.Files, model);
   }
 
   getFile(fileId: number): Observable<OperationDataResult<FilesModel>> {
@@ -42,7 +43,7 @@ export class BackendConfigurationPnFilesService {
   }
 
   createFiles(model: FilesCreateListModel): Observable<OperationResult> {
-    return this.apiBaseService.postFormData(BackendConfigurationPnFilesMethods.Files, model);
+    return this.apiBaseService.postFormData(BackendConfigurationPnFilesMethods.CreateFiles, model);
   }
 
   deleteFile(fileId: number): Observable<OperationResult> {

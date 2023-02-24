@@ -86,7 +86,6 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
     {
         var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
         var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
-        await using var _ = sdkDbContext.ConfigureAwait(false);
 
         var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases.FirstAsync(x => x.Id == workorderCaseId);
         DateTime startDate = new DateTime(2022, 12, 5);

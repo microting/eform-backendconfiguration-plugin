@@ -41,7 +41,6 @@ namespace BackendConfiguration.Pn.Infrastructure
         public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext)
         {
             var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
-            await using var _ = sdkDbContext.ConfigureAwait(false);
             foreach (var assignmentSiteId in assignmentSiteIds)
             {
 

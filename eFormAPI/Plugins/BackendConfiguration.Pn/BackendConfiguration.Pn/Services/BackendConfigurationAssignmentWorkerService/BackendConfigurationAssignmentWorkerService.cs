@@ -359,11 +359,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
         {
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
-            var resut = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
+            var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
                 _userService.UserId, _backendConfigurationPnDbContext,
                 _timePlanningDbContext);
 
-            return new OperationResult(resut.Success, _backendConfigurationLocalizationService.GetString(resut.Message));
+            return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
         }
 
         public async Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel)

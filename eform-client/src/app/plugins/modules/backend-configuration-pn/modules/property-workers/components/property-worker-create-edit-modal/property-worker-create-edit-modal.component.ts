@@ -130,6 +130,7 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
       this.selectedDeviceUser.timeRegistrationEnabled
     ) {
       // if fields device user edited
+      this.selectedDeviceUser.siteUid = this.selectedDeviceUser.id;
       this.deviceUserCreate$ = this.propertiesService
         .updateSingleDeviceUser(this.selectedDeviceUser)
         .subscribe((operation) => {

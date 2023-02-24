@@ -53,7 +53,6 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
 
         var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
         var sdkDbContext = _sdkCore.DbContextHelper.GetDbContext();
-        await using var _ = sdkDbContext.ConfigureAwait(false);
 
         int? folderId = null;
         var i = 0;

@@ -258,8 +258,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         {
             try
             {
+                if (deviceUserModel.SiteMicrotingUid == 0)
+                {
+                    deviceUserModel.SiteMicrotingUid = (int) deviceUserModel.SiteUid!;
+                }
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
-                await using var _ = sdkDbContext.ConfigureAwait(false);
                 var language = sdkDbContext.Languages.Single(x => x.LanguageCode == deviceUserModel.LanguageCode);
                 var siteDto = await core.SiteRead(deviceUserModel.SiteMicrotingUid).ConfigureAwait(false);
                 if (siteDto.WorkerUid != null)
