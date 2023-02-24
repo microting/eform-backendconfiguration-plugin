@@ -1727,5 +1727,62 @@
       "pt-PT": "Última atualização",
       "fi-FI": "Viimeksi päivitetty"
     }
+  },
+  {
+    "Key": "TaskDeletedSuccessful",
+    "LocalizedValue": {
+      "da": "Opgaven er blevet slettet",
+      "de": "Aufgabe wurde gelöscht",
+      "en-US": "Task was deleted",
+      "uk-UA": "Завдання видалено",
+      "pl-PL": "Zadanie zostało usunięte",
+      "no-NO": "Oppgaven ble slettet",
+      "sv-SE": "Uppgiften har tagits bort",
+      "es-ES": "La tarea se ha eliminado",
+      "fr-FR": "La tâche a été supprimée",
+      "it-IT": "L'attività è stata eliminata",
+      "nl-NL": "De taak is verwijderd",
+      "pt-BR": "A tarefa foi excluída",
+      "pt-PT": "A tarefa foi excluída",
+      "fi-FI": "Tehtävä poistettiin"
+    }
+  },
+  {
+    "Key": "TaskCreatedSuccessful",
+    "LocalizedValue": {
+      "da": "Opgaven er blevet oprettet",
+      "de": "Aufgabe wurde erstellt",
+      "en-US": "Task was created",
+      "uk-UA": "Завдання створено",
+      "pl-PL": "Zadanie zostało utworzone",
+      "no-NO": "Oppgaven ble opprettet",
+      "sv-SE": "Uppgiften har skapats",
+      "es-ES": "La tarea se ha creado",
+      "fr-FR": "La tâche a été créée",
+      "it-IT": "L'attività è stata creata",
+      "nl-NL": "De taak is aangemaakt",
+      "pt-BR": "A tarefa foi criada",
+      "pt-PT": "A tarefa foi criada",
+      "fi-FI": "Tehtävä luotiin"
+    }
+  },
+  {
+    "Key": "TaskUpdatedSuccessful",
+    "LocalizedValue": {
+      "da": "Opgaven er blevet opdateret",
+      "de": "Aufgabe wurde aktualisiert",
+      "en-US": "Task was updated",
+      "uk-UA": "Завдання оновлено",
+      "pl-PL": "Zadanie zostało zaktualizowane",
+      "no-NO": "Oppgaven ble oppdatert",
+      "sv-SE": "Uppgiften har uppdaterats",
+      "es-ES": "La tarea se ha actualizado",
+      "fr-FR": "La tâche a été mise à jour",
+      "it-IT": "L'attività è stata aggiornata",
+      "nl-NL": "De taak is bijgewerkt",
+      "pt-BR": "A tarefa foi atualizada",
+      "pt-PT": "A tarefa foi atualizada",
+      "fi-FI": "Tehtävä päivitettiin"
+    }
   }
 ]
