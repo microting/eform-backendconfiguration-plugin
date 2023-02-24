@@ -45,7 +45,6 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 .ToList();
 
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            await using var _ = sdkDbContext.ConfigureAwait(false);
 
             foreach (var assignmentForCreate in assignmentsForCreate)
             {

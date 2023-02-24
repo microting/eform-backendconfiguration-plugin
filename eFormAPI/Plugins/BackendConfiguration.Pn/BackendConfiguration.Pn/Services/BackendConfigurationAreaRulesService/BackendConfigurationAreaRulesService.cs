@@ -513,7 +513,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
             {
                 var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
-                await using var _ = sdkDbContext.ConfigureAwait(false);
                 var areaRule = await _backendConfigurationPnDbContext.AreaRules
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.Id == areaId)
@@ -1165,7 +1164,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 {
                     var core = await _coreHelper.GetCore().ConfigureAwait(false);
                     var sdkDbContext = core.DbContextHelper.GetDbContext();
-                    await using var _ = sdkDbContext.ConfigureAwait(false);
                     var areaRule = await _backendConfigurationPnDbContext.AreaRules
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.Id == areaRuleId)
