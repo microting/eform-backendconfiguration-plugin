@@ -312,7 +312,13 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             if (workOrderCase.CaseId != 0)
             {
-                await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
+                try { await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false); }
+                catch (Exception e)
+                {
+                    Log.LogException(e.Message);
+                    Log.LogException(e.StackTrace);
+                }
+                // await core.CaseDelete(workOrderCase.CaseId).ConfigureAwait(false);
             }
 
             await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
@@ -346,7 +352,15 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
                     if (parentTask.CaseId != 0)
                     {
-                        await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
+                        try
+                        {
+                            await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.LogException(e.Message);
+                            Log.LogException(e.StackTrace);
+                        }
                     }
                     // await core.CaseDelete(parentTask.CaseId).ConfigureAwait(false);
 
@@ -360,7 +374,15 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
                         if (childTask.CaseId != 0)
                         {
-                            await core.CaseDelete(childTask.CaseId).ConfigureAwait(false);
+                            try
+                            {
+                                await core.CaseDelete(childTask.CaseId).ConfigureAwait(false);
+                            }
+                            catch (Exception e)
+                            {
+                                Log.LogException(e.Message);
+                                Log.LogException(e.StackTrace);
+                            }
                         }
 
                         await childTask.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);

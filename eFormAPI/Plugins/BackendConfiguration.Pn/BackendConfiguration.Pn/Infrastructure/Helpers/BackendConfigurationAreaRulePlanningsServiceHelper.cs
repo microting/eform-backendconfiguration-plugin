@@ -1394,37 +1394,37 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             {
                 case AreaTypesEnum.Type2: // tanks
                     {
-                        await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType2(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType2(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type3: // stables and tail bite
                     {
-                        await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType3(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType3(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type5: // recuring tasks(mon-sun)
                     {
-                        await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType5(areaRule, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType5(areaRule, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type6: // heat pumps
                     {
-                        await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType6(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType6(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type9: // chemical APV
                     {
-                        await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType9(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType9(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type10:
                 {
-                    await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType10(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                    await CreatePlanningType10(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                     break;
                 }
                 default:
                     {
-                        await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core, backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId).ConfigureAwait(false);
+                        await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core, backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId).ConfigureAwait(false);
                         break;
                     }
             }

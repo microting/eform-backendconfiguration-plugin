@@ -45,7 +45,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
             var result = await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel, core, _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext).ConfigureAwait(false);
 
-            return new OperationResult(result.Success, result.Message);
+            return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
         }
 
         public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId)
