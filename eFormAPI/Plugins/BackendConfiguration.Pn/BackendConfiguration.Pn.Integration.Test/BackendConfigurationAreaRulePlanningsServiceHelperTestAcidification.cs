@@ -433,7 +433,17 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        //Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(new DateTime(DateTime.Now.AddDays(1).Year, DateTime.Now.AddDays(1).Month, DateTime.Now.AddDays(1).Day, 0,0,0))); // TODO fix this
+        var now = DateTime.UtcNow;
+        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
+        var multiplier = (int) (diff / 2);
+        var nextExecutionTime =
+            new DateTime(now.Year, 1, 1).AddDays(multiplier * 2);
+        if (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddDays(2);
+        }
+
+        Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(2));
         Assert.That(plannings[0].RepeatType, Is.EqualTo(RepeatType.Day));
 
