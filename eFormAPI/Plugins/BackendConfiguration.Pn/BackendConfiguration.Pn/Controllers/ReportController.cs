@@ -68,12 +68,11 @@ public class ReportController : Controller
             else
             {
                 var wordStream = result.Model;
-                await using var _ = wordStream.ConfigureAwait(false);
                 int bytesRead;
                 Response.ContentLength = wordStream.Length;
                 Response.ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-                while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
+                while ((bytesRead = await wordStream.ReadAsync(buffer, 0, buffer.Length)) > 0 &&
                        !HttpContext.RequestAborted.IsCancellationRequested)
                 {
                     await Response.Body.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);

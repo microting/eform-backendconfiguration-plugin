@@ -87,7 +87,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
 
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var sdkDbContext = core.DbContextHelper.GetDbContext();
-            await using var _ = sdkDbContext.ConfigureAwait(false);
 
             var complianceList = _backendConfigurationPnDbContext.Compliances
                 .Where(x => x.PropertyId == request.PropertyId)
