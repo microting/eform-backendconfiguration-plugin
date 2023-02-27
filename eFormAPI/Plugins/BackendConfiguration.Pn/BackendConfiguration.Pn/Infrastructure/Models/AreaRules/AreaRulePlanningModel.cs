@@ -36,6 +36,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public bool Status { get; set; }
 
+        public bool ServerStatus { get; set; }
+
         public bool SendNotifications { get; set; }
 
         public DateTime StartDate { get; set; }
