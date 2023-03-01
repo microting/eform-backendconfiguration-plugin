@@ -779,7 +779,7 @@ export class AreaRuleRowObject {
     const masWorkers = await $$('#pairingModalTableBody > tr');
     for (let i = 0; i < masWorkers.length; i++) {
       const workerName = await (await masWorkers[i].$$('td')[1]).getText();
-      const status = await $('#pairingModalTableBody status-bar-compact div div').getAttribute('title');
+      const status = await $('#pairingModalTableBody status-bar-compact div span').getAttribute('title');
       const workerChecked =
         (await (
           await backendConfigurationAreaRulesPage.checkboxCreateAssignment(i)
