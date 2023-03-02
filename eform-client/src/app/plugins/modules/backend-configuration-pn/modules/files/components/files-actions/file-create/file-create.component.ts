@@ -71,21 +71,12 @@ export class FileCreateComponent implements OnInit, OnDestroy {
   }
 
   getProperties() {
-    this.getAllPropertiesSub$ = this.propertiesService.getAllProperties({
-      nameFilter: '',
-      sort: 'Id',
-      isSortDsc: false,
-      pageSize: 100000,
-      offset: 0,
-      pageIndex: 0
-    }).subscribe((data) => {
-      if (data && data.success && data.model) {
-        this.availableProperties = data.model.entities
-          .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, id: x.id};
-          });
-      }
-    });
+    this.getAllPropertiesSub$ = this.propertiesService.getAllPropertiesDictionary()
+      .subscribe((data) => {
+        if (data && data.success && data.model) {
+          this.availableProperties = data.model;
+        }
+      });
   }
 
   getTags() {

@@ -79,10 +79,10 @@ namespace BackendConfiguration.Pn.Controllers
 
         [HttpGet]
         [Route("dictionary")]
-        public Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary()
+        public Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary([FromQuery] bool fullNames)
         {
-            return _backendConfigurationPropertiesService.GetCommonDictionary();
-        }
+            return _backendConfigurationPropertiesService.GetCommonDictionary(fullNames);
+		}
 
         [HttpGet]
         [AllowAnonymous]

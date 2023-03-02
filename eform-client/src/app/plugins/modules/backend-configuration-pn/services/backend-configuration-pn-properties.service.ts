@@ -31,6 +31,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   GetAll: 'api/backend-configuration-pn/properties/assignment/index-device-user',
   GetCompanyType: 'api/backend-configuration-pn/properties/get-company-type',
   GetChrInformation: 'api/backend-configuration-pn/properties/get-chr-information',
+  DictionaryProperties: 'api/backend-configuration-pn/properties/dictionary',
 }
 
 @Injectable({
@@ -57,11 +58,12 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getAllPropertiesDictionary(): Observable<
+  getAllPropertiesDictionary(fullNames: boolean = true): Observable<
     OperationDataResult<CommonDictionaryModel[]>
   > {
     return this.apiBaseService.get(
-      `${BackendConfigurationPnPropertiesMethods.Properties}/dictionary`
+      BackendConfigurationPnPropertiesMethods.DictionaryProperties,
+      {fullNames: fullNames}
     );
   }
 

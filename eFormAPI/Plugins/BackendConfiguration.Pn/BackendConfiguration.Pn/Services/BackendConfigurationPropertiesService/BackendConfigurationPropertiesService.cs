@@ -492,7 +492,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             }
         }
 
-        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary()
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary(bool fullNames)
         {
             try
             {
@@ -501,7 +501,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Select(x => new CommonDictionaryModel
                     {
                         Id = x.Id,
-                        Name = $"{x.CVR} - {x.CHR} - {x.Name}",
+                        Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
                         Description = "",
                     }).ToListAsync().ConfigureAwait(false);
                 return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);

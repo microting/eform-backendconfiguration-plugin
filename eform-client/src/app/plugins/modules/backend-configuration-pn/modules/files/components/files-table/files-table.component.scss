@@ -3,7 +3,9 @@ mtx-grid {
 }
 
 .column-select {
-  padding-top: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .column-actions {
