@@ -10,7 +10,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
 public interface IBackendConfigurationFilesService
 {
-	Task<OperationDataResult<Paged<BackendConfigurationFileModel>>> Index(BackendConfigurationFileRequestModel request);
+	Task<OperationDataResult<Paged<BackendConfigurationFilesModel>>> Index(BackendConfigurationFileRequestModel request);
 
 	Task<OperationResult> UpdateName(BackendConfigurationFileUpdateFilenameModel model);
 

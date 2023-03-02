@@ -59,7 +59,7 @@ public class FilesController : Controller
 	}
 
 	[HttpPost]
-	public async Task<OperationDataResult<Paged<BackendConfigurationFileModel>>> Index([FromBody] BackendConfigurationFileRequestModel request)
+	public async Task<OperationDataResult<Paged<BackendConfigurationFilesModel>>> Index([FromBody] BackendConfigurationFileRequestModel request)
 	{
 		return await _backendConfigurationFilesService.Index(request);
 	}

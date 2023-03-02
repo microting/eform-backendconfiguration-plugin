@@ -9,6 +9,20 @@
       id="fileNameInput"
     >
   </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Properties' | translate}}</mat-label>
+    <mtx-select
+      [items]="availableProperties"
+      [bindLabel]="'name'"
+      [bindValue]="'id'"
+      [value]="fileModel.properties"
+      (change)="changeSelectedProperties($event)"
+      id="propertyIdSelector"
+      [multiple]="true"
+      [appendTo]="'body'"
+    >
+    </mtx-select>
+  </mat-form-field>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
@@ -16,7 +30,7 @@
     color="accent"
     id="fileNameSaveBtn"
     (click)="updateFile()"
-    [disabled]="oldFileModel.fileName === fileModel.fileName"
+    [disabled]="disabledSaveBtn"
   >
     {{ 'Update' | translate }}
   </button>

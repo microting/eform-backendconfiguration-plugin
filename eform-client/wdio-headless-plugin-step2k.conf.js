@@ -1,5 +1,7 @@
+const path = require("path");
 exports.config = {
-
+    runner: 'local',
+    path: '/',
     //
     // ==================
     // Specify Test Files
@@ -9,29 +11,12 @@ exports.config = {
     // NPM script (see https://docs.npmjs.com/cli/run-script) then the current working
     // directory is where your package.json resides, so `wdio` will be called from there.
     //
-  specs: [
+    specs: [
       'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.create.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.edit.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.delete.spec.ts',
-      'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.areas.spec.ts',
-      'e2e/Tests/backend-configuration-general/property-workers/backend-configuration-property-workers.create.spec.ts',
-      'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t1.spec.ts',
-      'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t2.spec.ts',
-      'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t3.spec.ts',
-      'e2e/Tests/backend-configuration-general/area-rules/backend-configuration-property-area-rules.t5.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t2.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t3.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t4.spec.ts',
-      'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t5.spec.ts',
-      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.create.spec.ts',
-      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.delete.spec.ts',
-      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.sort-filtering.spec.ts',
       'e2e/Tests/backend-configuration-general/files/backend-configuration-files.create.spec.ts',
       'e2e/Tests/backend-configuration-general/files/backend-configuration-files.edit.spec.ts',
       'e2e/Tests/backend-configuration-general/files/backend-configuration-files.delete.spec.ts',
-  ],
+    ],
     suites: {
         settings: [
             'e2e/Tests/application-settings/**/*.spec.ts'
@@ -64,15 +49,23 @@ exports.config = {
     // https://docs.saucelabs.com/reference/platforms-configurator
     //
     capabilities: [{
+
         // maxInstances can get overwritten per capability. So if you have an in-house Selenium
         // grid with only 5 firefox instances available you can make sure that not more than
         // 5 instances get started at a time.
-        maxInstances: 1,
+        maxInstances: 5,
         //
         browserName: 'chrome',
-        chromeOptions: {
-            args: ['--window-size=1920,1080']
-        }
+        'goog:chromeOptions': {
+            args: [
+                'headless',
+                'window-size=1920,1080',
+                'disable-gpu'],
+        },
+        // If outputDir is provided WebdriverIO can capture driver session logs
+        // it is possible to configure which logTypes to include/exclude.
+        // excludeDriverLogs: ['*'], // pass '*' to exclude all driver session logs
+        // excludeDriverLogs: ['bugreport', 'server'],
     }],
     //
     // ===================
@@ -83,7 +76,7 @@ exports.config = {
     // By default WebdriverIO commands are executed in a synchronous way using
     // the wdio-sync package. If you still want to run your Tests in an async way
     // e.g. using promises you can set the sync option to false.
-    sync: false
+    sync: true,
     //
     // Level of logging verbosity: silent | verbose | command | data | result | error
     logLevel: 'silent',
@@ -96,7 +89,7 @@ exports.config = {
     //
     // If you only want to run your Tests until a specific amount of Tests have failed use
     // bail (default is 0 - don't bail, run all Tests).
-    bail: 1,
+    bail: 0,
     //
     // Saves a screenshot to a given path if a command fails.
     screenshotPath: './errorShots/',
@@ -139,7 +132,9 @@ exports.config = {
     // Services take over a specific job you don't want to take care of. They enhance
     // your test setup with almost no effort. Unlike plugins, they don't add new
     // commands. Instead, they hook themselves up into the test process.
-    services: ['selenium-standalone', 'chromedriver'],
+    services: ['chromedriver'],
+    //chromeDriverArgs: ['--whitelisted-ips', '--port=9515', '--url-base=\'/\''], // default for ChromeDriver
+    //chromeDriverLogs: './',
     //
     // Framework you want to run your specs with.
     // The following are supported: Mocha, Jasmine, and Cucumber
@@ -159,9 +154,8 @@ exports.config = {
     // See the full list at http://mochajs.org/
     mochaOpts: {
         ui: 'bdd',
-        compilers: ['ts:ts-node/register'],
+        compilers: ['tsconfig-paths/register'],
         timeout: 1200000
-        // requires: ['./test/helpers/common.js']
     },
     //
     // =====
@@ -232,8 +226,39 @@ exports.config = {
      * Function to be executed after a test (in Mocha/Jasmine) or a step (in Cucumber) ends.
      * @param {Object} test test details
      */
-    // afterTest: function (test) {
-    // },
+    afterTest: function (test, context, { error, result, duration, passed, retries }) {
+      const path = require('path');
+
+      // if test passed, ignore, else take and save screenshot.
+      if (passed) {
+        return;
+      }
+
+      /*
+       * get the current date and clean it
+       * const date = (new Date()).toString().replace(/\s/g, '-').replace(/-\(\w+\)/, '');
+       */
+      //const { browserName } = browser.desiredCapabilities;
+      const timestamp = new Date().toLocaleString('iso', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/[ ]/g, '--').replace(':', '-');
+
+      // get current test title and clean it, to use it as file name
+      const filename = encodeURIComponent(
+        `chrome-${timestamp}`.replace(/[/]/g, '__')
+      ).replace(/%../, '.');
+
+      const filePath = path.resolve(this.screenshotPath, `${filename}.png`);
+
+      console.log('Saving screenshot to:', filePath);
+      browser.saveScreenshot(filePath);
+      console.log('Saved screenshot to:', filePath);
+    },
     /**
      * Hook that gets executed after the suite has ended
      * @param {Object} suite suite details

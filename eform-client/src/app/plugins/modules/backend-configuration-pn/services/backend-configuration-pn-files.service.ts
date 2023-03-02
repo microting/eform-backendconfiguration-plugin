@@ -3,6 +3,7 @@ import {Injectable} from '@angular/core';
 import {OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
 import {Observable} from 'rxjs';
 import {
+  FileModel,
   FilesArchiveModel,
   FilesCreateListModel,
   FilesModel,
@@ -30,7 +31,7 @@ export class BackendConfigurationPnFilesService {
     return this.apiBaseService.post(BackendConfigurationPnFilesMethods.Files, model);
   }
 
-  getFile(fileId: number): Observable<OperationDataResult<FilesModel>> {
+  getFile(fileId: number): Observable<OperationDataResult<FileModel>> {
     return this.apiBaseService.get(`${BackendConfigurationPnFilesMethods.Files}/${fileId}`);
   }
 

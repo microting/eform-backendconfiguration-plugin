@@ -24,14 +24,23 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
 
+using System;
 using System.Collections.Generic;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-public class BackendConfigurationFileUpdateFilenameModel
+public class BackendConfigurationFilesModel
 {
 	public int Id { get; set; }
 
-	public string NewName { get; set; }
+	public DateTime CreateDate { get; set; }
 
-	public List<int> PropertyIds { get; set; }
-		= new List<int>();
+	public string FileName { get; set; }
+
+	public string FileExtension { get; set; }
+
+	public List<string> Properties { get; set; }
+		= new ();
+
+	public List<CommonTagModel> Tags { get; set; }
+		= new List<CommonTagModel>();
 }

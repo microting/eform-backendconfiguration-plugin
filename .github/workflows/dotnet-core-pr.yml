@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [a,b,c,d,e,f,g,h,i,j]
+        test: [a,b,c,d,e,f,g,h,i,j,k]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -120,6 +120,7 @@ jobs:
         cp -av eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-settings eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
         cp -av eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-general eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
         cp -av eform-backendconfiguration-plugin/eform-client/e2e/Page\ objects/BackendConfiguration eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
+        cp -av eform-backendconfiguration-plugin/eform-client/e2e/Assets eform-angular-frontend/eform-client/e2e/Assets
         cp -av eform-angular-items-planning-plugin/eform-client/e2e/Page\ objects/ItemsPlanning eform-angular-frontend/eform-client/e2e/Page\ objects/ItemsPlanning
         cp -av eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js eform-angular-frontend/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.js
         cp -av eform-backendconfiguration-plugin/eform-client/wdio-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
