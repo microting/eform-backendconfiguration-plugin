@@ -14,9 +14,6 @@ jobs:
     - uses: actions/checkout@v3
       with:
         path: eform-backendconfiguration-plugin
-    - name: Extract branch name
-      id: extract_branch
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
     - name: 'Preparing Frontend checkout'
       uses: actions/checkout@v3
       with:
@@ -55,7 +52,7 @@ jobs:
       run: |-
         docker tag microtingas/work-items-planning-container:latest microtingas/work-items-planning-container:latest
     - run: docker save microtingas/work-items-planning-container:latest -o work-items-planning-container.tar
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: work-items-planning-container
         path: work-items-planning-container.tar        
