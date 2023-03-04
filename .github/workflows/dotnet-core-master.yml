@@ -19,27 +19,27 @@ jobs:
         path: eform-backendconfiguration-plugin
     - name: Extract branch name
       id: extract_branch
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
     - name: 'Preparing Frontend checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-frontend
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-frontend
     - name: 'Preparing items planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-items-planning-plugin
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-items-planning-plugin
     - name: 'Preparing time planning checkout'
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
         repository: microting/eform-angular-timeplanning-plugin
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-timeplanning-plugin
     - name: Copy dependencies
       run: |
@@ -58,7 +58,7 @@ jobs:
       run: |-
         docker tag microtingas/work-items-planning-container:latest microtingas/work-items-planning-container:latest
     - run: docker save microtingas/work-items-planning-container:latest -o work-items-planning-container.tar
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: work-items-planning-container
         path: work-items-planning-container.tar        
@@ -75,7 +75,7 @@ jobs:
         path: eform-backendconfiguration-plugin
     - name: Extract branch name
       id: extract_branch
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
     - uses: actions/download-artifact@v3
       with:
         name: work-items-planning-container
@@ -103,7 +103,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: microting/eform-angular-frontend
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-frontend
     - name: Cache node_modules
       id: cache
@@ -118,7 +118,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: microting/eform-angular-items-planning-plugin
-        ref: ${{ steps.extract_branch.outputs.branch }}
+        ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-items-planning-plugin
     - name: Copy dependencies
       run: |
