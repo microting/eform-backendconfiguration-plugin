@@ -15,14 +15,14 @@ public class CvrHelper
     {
         if (number == 0)
         {
-            return new Result()
+            return new Result
             {
                 Industrycode = "0",
             };
         }
         if (number == 1)
         {
-            return new Result()
+            return new Result
             {
                 Industrycode = "1",
             };

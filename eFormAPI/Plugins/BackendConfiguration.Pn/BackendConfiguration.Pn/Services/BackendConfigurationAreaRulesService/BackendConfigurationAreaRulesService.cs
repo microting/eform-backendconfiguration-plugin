@@ -337,7 +337,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 //Description = languages.First(z => z.Id == y.LanguageId).Name,
                             }).ToList(),
                         IsDefault = x.IsDefault,
-                        TypeSpecificFields = new TypeSpecificFields()
+                        TypeSpecificFields = new TypeSpecificFields
                         {
                             Alarm = x.Alarm ?? AreaRuleT2AlarmsEnum.No,
                             DayOfWeek = x.DayOfWeek,
@@ -367,7 +367,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                 {
                     areaRule.TypeSpecificFields.PoolHoursModel = new PoolHoursModel
                     {
-                        Parrings = await _backendConfigurationPnDbContext.PoolHours.Where(x => x.AreaRuleId == areaRule.Id).Select(y => new PoolHourModel()
+                        Parrings = await _backendConfigurationPnDbContext.PoolHours.Where(x => x.AreaRuleId == areaRule.Id).Select(y => new PoolHourModel
                         {
                             IsActive = y.IsActive,
                             AreaRuleId = y.AreaRuleId,

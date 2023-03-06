@@ -65,7 +65,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             {
                 SectionProperties sectionProps = new SectionProperties();
                 var marginUint = uint.Parse(margin.Value.ToString());
-                PageMargin pageMargin = new PageMargin() { Top = margin, Right = marginUint, Bottom = margin, Left = marginUint, Header = 720U, Footer = 720U, Gutter = 0U };
+                PageMargin pageMargin = new PageMargin { Top = margin, Right = marginUint, Bottom = margin, Left = marginUint, Header = 720U, Footer = 720U, Gutter = 0U };
                 sectionProps.Append(pageMargin);
                 mainPart.Document.Body.Append(sectionProps);
             }
