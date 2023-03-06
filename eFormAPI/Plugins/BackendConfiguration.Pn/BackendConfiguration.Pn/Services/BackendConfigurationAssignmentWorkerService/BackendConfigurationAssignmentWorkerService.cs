@@ -90,7 +90,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                 if (query.Any())
                 {
-                    var listWorkerId = await query.Select(x => new PropertyWorker()
+                    var listWorkerId = await query.Select(x => new PropertyWorker
                     {
                         WorkerId = x.WorkerId,
                         TaskManagementEnabled = x.TaskManagementEnabled

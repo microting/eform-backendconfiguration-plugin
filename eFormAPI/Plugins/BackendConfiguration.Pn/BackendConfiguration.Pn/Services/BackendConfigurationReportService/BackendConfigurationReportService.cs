@@ -153,7 +153,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                 var result = new List<ReportEformModel>();
                 // Exclude field types: None, Picture, Audio, Movie, Signature, Show PDF, FieldGroup, SaveButton
-                var excludedFieldTypes = new List<string>()
+                var excludedFieldTypes = new List<string>
                 {
                     Constants.FieldTypes.None,
                     Constants.FieldTypes.Picture,
@@ -615,7 +615,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                     if (planningCaseSite == null)
                     {
-                        planningCaseSite = new PlanningCaseSite()
+                        planningCaseSite = new PlanningCaseSite
                         {
                             MicrotingSdkCaseId = model.Id,
                             PlanningCaseId = planningCase.Id,
