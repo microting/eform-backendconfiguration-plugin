@@ -24,8 +24,6 @@ SOFTWARE.
 
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using Amazon.S3.Model;
-using Microsoft.AspNetCore.Mvc;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
 
@@ -35,12 +33,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfigurationFileTagsService;
 using BackendConfigurationLocalizationService;
-using Castle.Core;
 using Infrastructure.Models.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microting.eForm.Infrastructure.Constants;
-using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;

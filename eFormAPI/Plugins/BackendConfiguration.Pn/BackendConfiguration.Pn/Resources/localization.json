@@ -1617,7 +1617,7 @@
   {
     "Key": "Urgent",
     "LocalizedValue": {
-      "da":  "Haster",
+      "da": "Haster",
       "de": "Dringend",
       "en-US": "Urgent",
       "uk-UA": "Терміново",
@@ -1783,6 +1783,158 @@
       "pt-BR": "A tarefa foi atualizada",
       "pt-PT": "A tarefa foi atualizada",
       "fi-FI": "Tehtävä päivitettiin"
+    }
+  },
+  {
+    "Key": "NotSelectedFiles",
+    "LocalizedValue": {
+      "da": "Ikke valgte filer",
+      "de": "Nicht ausgewählte Dateien",
+      "en-US": "Not selected files",
+      "uk-UA": "Файли не вибрано",
+      "pl-PL": "Nie wybrane pliki",
+      "no-NO": "Ikke valgte filer",
+      "sv-SE": "Ej valda filer",
+      "es-ES": "Archivos no seleccionados",
+      "fr-FR": "Fichiers non sélectionnés",
+      "it-IT": "File non selezionati",
+      "nl-NL": "Niet geselecteerde bestanden",
+      "pt-BR": "Arquivos não selecionados",
+      "pt-PT": "Ficheiros não selecionados",
+      "fi-FI": "Ei valittuja tiedostoja"
+    }
+  },
+  {
+    "Key": "FileNotFound",
+    "LocalizedValue": {
+      "da": "Filen blev ikke fundet",
+      "de": "Datei nicht gefunden",
+      "en-US": "File not found",
+      "uk-UA": "Файл не знайдено",
+      "pl-PL": "Nie znaleziono pliku",
+      "no-NO": "Filen ble ikke funnet",
+      "sv-SE": "Filen hittades inte",
+      "es-ES": "Archivo no encontrado",
+      "fr-FR": "Fichier non trouvé",
+      "it-IT": "File non trovato",
+      "nl-NL": "Bestand niet gevonden",
+      "pt-BR": "Arquivo não encontrado",
+      "pt-PT": "Ficheiro não encontrado",
+      "fi-FI": "Tiedostoa ei löytynyt"
+    }
+  },
+  {
+    "Key": "ErrorWhileGetFile",
+    "LocalizedValue": {
+      "da": "Fejl under hentning af fil",
+      "de": "Fehler beim Abrufen der Datei",
+      "en-US": "Error while get file",
+      "uk-UA": "Помилка під час отримання файлу",
+      "pl-PL": "Błąd podczas pobierania pliku",
+      "no-NO": "Feil under henting av fil",
+      "sv-SE": "Fel vid hämtning av fil",
+      "es-ES": "Error al obtener el archivo",
+      "fr-FR": "Erreur lors de la récupération du fichier",
+      "it-IT": "Errore durante il recupero del file",
+      "nl-NL": "Fout bij ophalen van bestand",
+      "pt-BR": "Erro ao obter o arquivo",
+      "pt-PT": "Erro ao obter o ficheiro",
+      "fi-FI": "Virhe tiedoston hakemisessa"
+    }
+  },
+  {
+    "Key": "ErrorWhileObtainingFiles",
+    "LocalizedValue": {
+      "da": "Fejl under hentning af filer",
+      "de": "Fehler beim Abrufen von Dateien",
+      "en-US": "Error while obtaining files",
+      "uk-UA": "Помилка під час отримання файлів",
+      "pl-PL": "Błąd podczas pobierania plików",
+      "no-NO": "Feil under henting av filer",
+      "sv-SE": "Fel vid hämtning av filer",
+      "es-ES": "Error al obtener archivos",
+      "fr-FR": "Erreur lors de l'obtention des fichiers",
+      "it-IT": "Errore durante l'ottenimento dei file",
+      "nl-NL": "Fout bij ophalen bestanden",
+      "pt-BR": "Erro ao obter arquivos",
+      "pt-PT": "Erro ao obter ficheiros",
+      "fi-FI": "Virhe tiedostojen hakuessa"
+    }
+  },
+  {
+    "Key": "ErrorWhileUpdateFile",
+    "LocalizedValue": {
+      "da": "Fejl under opdatering af fil",
+      "de": "Fehler beim Aktualisieren der Datei",
+      "en-US": "Error while update file",
+      "uk-UA": "Помилка при оновленні файлу",
+      "pl-PL": "Błąd podczas aktualizacji pliku",
+      "no-NO": "Feil under oppdatering av fil",
+      "sv-SE": "Fel vid uppdatering av fil",
+      "es-ES": "Error al actualizar archivo",
+      "fr-FR": "Erreur lors de la mise à jour du fichier",
+      "it-IT": "Errore durante l'aggiornamento del file",
+      "nl-NL": "Fout bij bijwerken bestand",
+      "pt-BR": "Erro ao atualizar arquivo",
+      "pt-PT": "Erro ao atualizar ficheiro",
+      "fi-FI": "Virhe tiedoston päivittämisessä"
+    }
+  },
+  {
+    "Key": "ErrorWhileUpdateFileTags",
+    "LocalizedValue": {
+      "da": "Fejl under opdatering af filtags",
+      "de": "Fehler beim Aktualisieren von Dateitags",
+      "en-US": "Error while update file tags",
+      "uk-UA": "Помилка при оновленні тегів файлу",
+      "pl-PL": "Błąd podczas aktualizacji tagów pliku",
+      "no-NO": "Feil ved oppdatering av filtags",
+      "sv-SE": "Fel vid uppdatering av filtaggar",
+      "es-ES": "Error al actualizar las etiquetas de archivo",
+      "fr-FR": "Erreur lors de la mise à jour des balises de fichier",
+      "it-IT": "Errore durante l'aggiornamento delle tag del file",
+      "nl-NL": "Fout bij het bijwerken van bestandstags",
+      "pt-BR": "Erro ao atualizar tags de arquivo",
+      "pt-PT": "Erro ao atualizar tags de ficheiro",
+      "fi-FI": "Virhe päivitettäessä tiedostotunnisteita"
+    }
+  },
+  {
+    "Key": "ErrorWhileCreateFiles",
+    "LocalizedValue": {
+      "da": "Fejl under oprettelse af filer",
+      "de": "Fehler beim Erstellen von Dateien",
+      "en-US": "Error while create files",
+      "uk-UA": "Помилка під час створення файлів",
+      "pl-PL": "Błąd podczas tworzenia plików",
+      "no-NO": "Feil under oppretting av filer",
+      "sv-SE": "Fel vid skapande av filer",
+      "es-ES": "Error al crear archivos",
+      "fr-FR": "Erreur lors de la création de fichiers",
+      "it-IT": "Errore durante la creazione di file",
+      "nl-NL": "Fout bij het maken van bestanden",
+      "pt-BR": "Erro ao criar arquivos",
+      "pt-PT": "Erro ao criar ficheiros",
+      "fi-FI": "Virhe tiedostojen luomisen aikana"
+    }
+  },
+  {
+    "Key": "ErrorWhileDeleteFile",
+    "LocalizedValue": {
+      "da": "Fejl ved sletning af fil",
+      "de": "Fehler beim Löschen der Datei",
+      "en-US": "Error while delete file",
+      "uk-UA": "Помилка при видаленні файлу",
+      "pl-PL": "Błąd podczas usuwania pliku",
+      "no-NO": "Feil ved sletting av fil",
+      "sv-SE": "Fel vid radering av fil",
+      "es-ES": "Error al eliminar archivo",
+      "fr-FR": "Erreur lors de la suppression du fichier",
+      "it-IT": "Errore durante la cancellazione del file",
+      "nl-NL": "Fout bij het verwijderen van bestand",
+      "pt-BR": "Erro ao excluir arquivo",
+      "pt-PT": "Erro ao eliminar ficheiro",
+      "fi-FI": "Virhe poistettaessa tiedostoa"
     }
   }
 ]
