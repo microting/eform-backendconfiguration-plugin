@@ -698,7 +698,7 @@ namespace BackendConfiguration.Pn
                                 Link = "/plugins/backend-configuration-pn/reports",
                                 Type = MenuItemTypeEnum.Link,
                                 Position = 1,
-                                MenuTemplate = new PluginMenuTemplateModel()
+                                MenuTemplate = new PluginMenuTemplateModel
                                 {
                                     Name = "Reports",
                                     E2EId = "backend-configuration-pn-reports",

@@ -4,6 +4,7 @@ import {EntityItemModel} from 'src/app/common/models';
 export class AreaRulePlanningModel {
   ruleId: number;
   status: boolean;
+  serverStatus: boolean;
   sendNotifications: boolean;
   startDate: string;
   assignedSites: AreaRuleAssignedSitesModel[] = [];

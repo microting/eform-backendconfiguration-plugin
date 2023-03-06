@@ -211,6 +211,7 @@ export class AreaRulePlanModalComponent implements OnInit {
     this.selectedAreaRule = {...rule};
     if (planning) {
       this.selectedAreaRulePlanning = {...planning, propertyId: selectedPropertyId};
+      this.selectedAreaRulePlanning.status = planning.serverStatus;
     }
     if (!planning) {
       this.selectedAreaRulePlanning = this.generateInitialPlanningObject({

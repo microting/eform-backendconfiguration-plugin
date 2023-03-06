@@ -51,7 +51,7 @@ public class ChemicalAreaCreatedHandler : IHandleMessages<ChemicalAreaCreated>
             {
                 var nextItemUid = 0;
                 var chemicals = await chemicalsDbContext.Chemicals.Include(x => x.Products).ToListAsync();
-                var options = new ParallelOptions()
+                var options = new ParallelOptions
                 {
                     MaxDegreeOfParallelism = 20
                 };

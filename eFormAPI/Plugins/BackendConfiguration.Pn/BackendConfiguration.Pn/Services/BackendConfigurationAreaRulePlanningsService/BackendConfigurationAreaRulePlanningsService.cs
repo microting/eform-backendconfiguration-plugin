@@ -81,7 +81,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         Id = x.Id,
                         RuleId = ruleId,
                         StartDate = (DateTime)x.StartDate,
-                        Status = x.Status,
+                        ServerStatus = x.Status,
                         TypeSpecificFields = new AreaRuleTypePlanningModel
                         {
                             DayOfWeek = x.DayOfWeek,
@@ -239,7 +239,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         Id = x.Id,
                         RuleId = x.AreaRuleId,
                         StartDate = (DateTime)x.StartDate,
-                        Status = x.Status,
+                        ServerStatus = x.Status,
                         TypeSpecificFields = new AreaRuleTypePlanningModel
                         {
                             DayOfWeek = x.DayOfWeek,

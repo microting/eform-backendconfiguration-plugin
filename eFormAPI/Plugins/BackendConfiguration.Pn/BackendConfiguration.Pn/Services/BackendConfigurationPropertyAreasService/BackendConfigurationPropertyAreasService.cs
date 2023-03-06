@@ -208,7 +208,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     var site = await sdkDbContex.Sites
                         .Where(x => x.Id == worker)
                         .FirstAsync().ConfigureAwait(false);
-                    sites.Add(new SiteDto()
+                    sites.Add(new SiteDto
                     {
                         SiteId = worker,
                         SiteName = site.Name,
@@ -320,7 +320,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     var site = await sdkDbContex.Sites
                         .Where(x => x.Id == worker)
                         .FirstAsync().ConfigureAwait(false);
-                    sites.Add(new SiteDto()
+                    sites.Add(new SiteDto
                     {
                         SiteId = worker,
                         SiteName = site.Name,

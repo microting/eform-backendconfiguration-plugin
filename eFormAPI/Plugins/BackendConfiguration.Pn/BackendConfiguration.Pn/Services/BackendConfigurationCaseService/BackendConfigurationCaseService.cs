@@ -87,7 +87,7 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
 
                 if (planningCaseSite == null)
                 {
-                    planningCaseSite = new PlanningCaseSite()
+                    planningCaseSite = new PlanningCaseSite
                     {
                         MicrotingSdkCaseId = model.Id,
                         PlanningCaseId = planningCase.Id,

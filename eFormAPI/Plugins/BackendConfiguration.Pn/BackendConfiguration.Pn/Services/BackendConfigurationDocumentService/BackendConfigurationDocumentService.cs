@@ -659,7 +659,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         List<BackendConfigurationDocumentSimpleFolderModel> result = new List<BackendConfigurationDocumentSimpleFolderModel>();
         foreach (var folder in folders)
         {
-            result.Add(new BackendConfigurationDocumentSimpleFolderModel()
+            result.Add(new BackendConfigurationDocumentSimpleFolderModel
             {
                 Id = folder.Id,
                 Name = folder.FolderTranslations.Any(x => x.LanguageId == languageId) ? folder.FolderTranslations.First(x => x.LanguageId == languageId).Name : folder.FolderTranslations.First().Name
@@ -689,7 +689,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 LanguageId = translation.LanguageId,
                 FolderId = folder.Id,
             };
-            folderTranslations.Add(new CommonTranslationsModel()
+            folderTranslations.Add(new CommonTranslationsModel
             {
                 Description = translation.Description,
                 LanguageId = translation.LanguageId,
@@ -797,7 +797,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 translation.Description = backendConfigurationDocumentFolderTranslationModel.Description;
                 await translation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
             }
-            folderTranslations.Add(new CommonTranslationsModel()
+            folderTranslations.Add(new CommonTranslationsModel
             {
                 Description = translation.Description,
                 LanguageId = translation.LanguageId,

@@ -90,7 +90,7 @@
                     (ngModelChange)="onChangeRepeatType($event)"
                     [clearable]="false"
                     id="planRepeatType"
-                    [disabled]="!selectedAreaRulePlanning.status"
+                    [disabled]="selectedAreaRulePlanning.serverStatus"
                   >
                   </mtx-select>
                 </mat-form-field>
@@ -103,7 +103,7 @@
                     [ngModel]="selectedAreaRulePlanning.typeSpecificFields.repeatEvery"
                     (ngModelChange)="onChangeRepeatEvery($event)"
                     [clearable]="false"
-                    [disabled]="!selectedAreaRulePlanning.status"
+                    [disabled]="selectedAreaRulePlanning.serverStatus"
                     id="planRepeatEvery"
                     name="createRepeatEvery"
                   >
@@ -117,7 +117,7 @@
                   bindLabel="name"
                   bindValue="id"
                   [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"
-                  [disabled]="!selectedAreaRulePlanning.status"
+                  [disabled]="selectedAreaRulePlanning.serverStatus"
                   id="createDayOfWeek"
                   [clearable]="false"
                 >
@@ -128,7 +128,7 @@
                 <mtx-select
                   [items]="daysOfMonth"
                   [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfMonth"
-                  [disabled]="!selectedAreaRulePlanning.status"
+                  [disabled]="selectedAreaRulePlanning.serverStatus"
                   id="createDayOfMonth"
                   name="createDayOfMonth"
                   [clearable]="false"
