@@ -22,8 +22,6 @@ using Microting.eFormApi.BasePn.Abstractions;
 
 namespace BackendConfiguration.Pn.Controllers;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
@@ -34,9 +32,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
-using BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService;
 using Microsoft.Extensions.Logging;
-using BackendConfiguration.Pn.Infrastructure.Helpers;
+using Infrastructure.Helpers;
 
 [Authorize]
 [Route("api/backend-configuration-pn/files")]
@@ -157,17 +154,6 @@ public class FilesController : Controller
 
 			return File(archiveStream.ToArray(), "application/zip", model.ArchiveName);
 		}
-		return Ok(new OperationResult(false, "NotSelectedFiles"));
+		return Ok(new OperationResult(false, _localizationService.GetString("NotSelectedFiles")));
 	}
-
-	// static byte[] LoadFromFile(string path)
-	// {
-	// 	using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-	// 	using var memFile = new MemoryStream();
-	// 	fs.CopyTo(memFile);
-	//
-	// 	memFile.Seek(0, SeekOrigin.Begin);
-	//
-	// 	return memFile.ToArray();
-	// }
 }
