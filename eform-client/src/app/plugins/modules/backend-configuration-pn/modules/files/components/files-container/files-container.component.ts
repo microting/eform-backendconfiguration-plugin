@@ -59,7 +59,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   showEditModal(file: FilesModel) {
     this.filesService.getFile(file.id).subscribe(model => {
       if (model && model.success && model.model) {
-        const editFileModal = this.dialog.open(FileNameEditComponent, {...dialogConfigHelper(this.overlay, model.model)});
+        const editFileModal = this.dialog.open(FileNameEditComponent, {...dialogConfigHelper(this.overlay, model.model), minWidth: 500});
         this.fileNameUpdatedSub$ = editFileModal.componentInstance.fileNameUpdated.subscribe(() => {
           this.updateTable();
         });
@@ -136,7 +136,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
     this.filesService.getFile(model.id).subscribe(model => {
       if (model && model.success && model.model) {
         const editFileTagsModal = this.dialog.open(FileTagsEditComponent,
-          {...dialogConfigHelper(this.overlay, {fileModel: model.model, availableTags: this.availableTags})});
+          {...dialogConfigHelper(this.overlay, {fileModel: model.model, availableTags: this.availableTags}), minWidth: 500});
         this.fileTagsUpdatedSub$ = editFileTagsModal.componentInstance.fileTagsUpdated.subscribe(() => {
           this.updateTable();
         });

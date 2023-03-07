@@ -24,8 +24,6 @@ SOFTWARE.
 
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using Amazon.S3.Model;
-using Microsoft.AspNetCore.Mvc;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationFilesService;
 
@@ -35,7 +33,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfigurationFileTagsService;
 using BackendConfigurationLocalizationService;
-using Castle.Core;
 using Infrastructure.Models.Files;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -47,6 +44,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using File = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.File;
+using UploadedData = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.UploadedData;
 
 public class BackendConfigurationFilesService : IBackendConfigurationFilesService
 {
@@ -69,14 +67,10 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 		_coreHelper = coreHelper;
 	}
 
-	public async Task<OperationDataResult<Paged<BackendConfigurationFileModel>>> Index(BackendConfigurationFileRequestModel request)
+	public async Task<OperationDataResult<Paged<BackendConfigurationFilesModel>>> Index(BackendConfigurationFileRequestModel request)
 	{
 		try
 		{
-			var propertyFiles = await _dbContext.PropertyFiles
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.ToListAsync();
-
 			var query = _dbContext.Files
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.Include(x => x.FileTags)
@@ -116,9 +110,6 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			}
 			if (request.TagIds.Count > 0)
 			{
-				/*query = query.Where(x => x.FileTags.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
-					.Any(y => request.TagIds.Contains(y.FileTagId)));*/
-
 				foreach (var tagId in request.TagIds)
 				{
 					query = query.Where(x =>
@@ -133,7 +124,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			var total = await query.Select(x => x.Id).CountAsync();
 
 			// select
-			var files = await query.Select(x => new BackendConfigurationFileModel
+			var files = await query.Select(x => new BackendConfigurationFilesModel
 			{
 				CreateDate = x.CreatedAt,
 				FileName = x.FileName,
@@ -145,6 +136,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					.Select(y => y.Property).Select(y => y.Name)
 					.ToList(),
 				Tags = x.FileTags
+					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
 					.Select(tag => new CommonTagModel
 					{
 						Id = tag.FileTagId,
@@ -152,19 +144,19 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					}).ToList()
 			}).ToListAsync();
 
-			var pagedFilesModel = new Paged<BackendConfigurationFileModel>
+			var pagedFilesModel = new Paged<BackendConfigurationFilesModel>
 			{
 				Entities = files,
 				Total = total
 			};
 
-			return new OperationDataResult<Paged<BackendConfigurationFileModel>>(true, pagedFilesModel);
+			return new OperationDataResult<Paged<BackendConfigurationFilesModel>>(true, pagedFilesModel);
 		}
 		catch (Exception e)
 		{
 			Console.WriteLine(e);
 			_logger.LogError(e.Message);
-			return new OperationDataResult<Paged<BackendConfigurationFileModel>>(false, _localizationService.GetString("ErrorWhileObtainingFiles"));
+			return new OperationDataResult<Paged<BackendConfigurationFilesModel>>(false, _localizationService.GetString("ErrorWhileObtainingFiles"));
 		}
 	}
 
@@ -175,6 +167,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			var file = await _dbContext.Files
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.Where(x => x.Id == model.Id)
+				.Include(x => x.PropertyFiles)
 				.FirstOrDefaultAsync();
 
 			if (file == null)
@@ -185,6 +178,28 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 			file.FileName = model.NewName;
 			file.UpdatedByUserId = _userService.UserId;
 			await file.Update(_dbContext);
+
+			var propertiesForDeleteFromFile =
+				file.PropertyFiles.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed).Where(x => !model.PropertyIds.Contains(x.PropertyId)).ToList();
+			var propertiesForAddToFile =
+				model.PropertyIds.Where(x => !file.PropertyFiles.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed).Select(y => y.PropertyId).Contains(x)).ToList();
+
+			foreach (var propertyFile in propertiesForDeleteFromFile)
+			{
+				propertyFile.UpdatedByUserId = _userService.UserId;
+				await propertyFile.Delete(_dbContext);
+			}
+
+			foreach (var propertyFile in propertiesForAddToFile.Select(x => new PropertyFile
+			         {
+				         FileId = model.Id,
+				         PropertyId = x,
+				         CreatedByUserId = _userService.UserId,
+				         UpdatedByUserId = _userService.UserId,
+			         }))
+			{
+				await propertyFile.Create(_dbContext);
+			}
 
 			return new OperationResult(true);
 		}
@@ -345,6 +360,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				.ToListAsync();
 			foreach (var propertyFile in propertyFiles)
 			{
+				propertyFile.UpdatedByUserId = _userService.UserId;
 				await propertyFile.Delete(_dbContext);
 			}
 
@@ -383,14 +399,12 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				.Include(x => x.PropertyFiles)
 				.Select(x => new BackendConfigurationFileModel
 				{
-					CreateDate = x.CreatedAt,
-					FileName = x.FileName,
-					FileExtension = x.UploadedData.Extension,
 					Id = x.Id,
+					FileName = x.FileName,
 					Properties = x.PropertyFiles
 						.Where(y => y.FileId == x.Id)
 						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-						.Select(y => y.Property.Name)
+						.Select(y => y.PropertyId)
 						.ToList(),
 					Tags = x.FileTags
 						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)

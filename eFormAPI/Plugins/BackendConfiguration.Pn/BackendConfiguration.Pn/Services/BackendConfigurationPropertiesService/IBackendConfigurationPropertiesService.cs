@@ -44,8 +44,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
         Task<OperationResult> Delete(int id);
 
-        Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary();
+        Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary(bool fullNames);
+
         Task<OperationDataResult<Result>> GetCompanyType(int number);
+
         Task<OperationDataResult<ChrResult>> GetChrInformation(int number);
     }
 }

@@ -2,7 +2,6 @@
   <button
     mat-raised-button
     id="backBtn"
-    (click)="uploadFiles()"
     color="primary"
     *ngIf="selectedFile === null"
     [routerLink]="'..'"
@@ -33,7 +32,7 @@
 <ng-container *ngIf="selectedFile === null">
   <div class="selectors need-wrapper">
     <mat-form-field>
-      <mat-label>{{'Property' | translate}}</mat-label>
+      <mat-label>{{'Properties' | translate}}</mat-label>
       <mtx-select
         [items]="availableProperties"
         [bindLabel]="'name'"

@@ -24,7 +24,6 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
 
-using System;
 using System.Collections.Generic;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
@@ -32,15 +31,11 @@ public class BackendConfigurationFileModel
 {
 	public int Id { get; set; }
 
-	public DateTime CreateDate { get; set; }
-
 	public string FileName { get; set; }
 
-	public string FileExtension { get; set; }
-
-	public List<string> Properties { get; set; }
+	public List<int> Properties { get; set; }
 		= new ();
 
 	public List<CommonTagModel> Tags { get; set; }
-		= new List<CommonTagModel>();
+		= new();
 }

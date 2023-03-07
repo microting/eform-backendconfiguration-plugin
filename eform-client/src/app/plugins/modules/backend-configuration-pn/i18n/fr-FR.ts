@@ -1,3 +1,4 @@
+// French
 export const frFR = {
   Actions: 'Actions',
   areas: 'zones',
@@ -232,4 +233,22 @@ export const frFR = {
   'Retrieved by device': 'Récupéré par l\'appareil',
   'System error: Contact Microting': 'Erreur système: Contactez Microting',
   'Name': 'Nom',
+  'Drop file(s) here or a choose from your computer': 'Déposez des fichiers ici ou <u class="choose">choisissez</u> à partir de votre ordinateur',
+  'Create file': 'Créer un fichier',
+  'Download selected': 'Télécharger sélectionné',
+  'File name': 'Nom de fichier',
+  'Refresh table': 'Rafraîchir le tableau',
+  'Upload files': 'Télécharger des fichiers',
+  'Edit file': 'Modifier le fichier',
+  'Delete file': 'Supprimer le fichier',
+  'Page': 'Page',
+  'Zoom page': 'Zoomer la page',
+  'Delete page': 'Supprimer la page',
+  'Create date': 'Date de création',
+  'View PDF': 'Voir le PDF',
+  'Edit file name': 'Modifier le nom du fichier',
+  'Edit tags file': 'Modifier les tags du fichier',
+  'Download selected files': 'Télécharger les fichiers sélectionnés',
+  'Name ZIP-folder': 'Nom du dossier ZIP',
+  'Back': 'Retour',
 };

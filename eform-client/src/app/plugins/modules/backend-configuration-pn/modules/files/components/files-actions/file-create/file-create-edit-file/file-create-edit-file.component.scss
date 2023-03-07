@@ -1,8 +1,11 @@
 .selectors {
   display: grid;
-  grid-template-columns: repeat(2, 2fr) .3fr .3fr;
+  grid-template-columns: repeat(2, 2fr) repeat(2, .3fr);
   align-items: center;
   justify-content: center;
+  .mat-form-field {
+    width: unset;
+  }
 }
 
 pdf-viewer {

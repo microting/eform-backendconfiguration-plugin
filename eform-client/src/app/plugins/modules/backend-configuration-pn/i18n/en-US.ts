@@ -137,4 +137,5 @@ export const enUS = {
   'Edit tags file': 'Edit tags file',
   'Download selected files': 'Download selected files',
   'Name ZIP-folder': 'Name ZIP-folder',
+  'Back': 'Back',
 };

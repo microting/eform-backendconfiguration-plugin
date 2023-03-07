@@ -123,19 +123,10 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
   }
 
   getProperties() {
-    this.getAllPropertiesSub$ = this.propertyService.getAllProperties({
-      nameFilter: '',
-      sort: 'Id',
-      isSortDsc: false,
-      pageSize: 100000,
-      offset: 0,
-      pageIndex: 0
-    }).subscribe((data) => {
+    this.getAllPropertiesSub$ = this.propertyService.getAllPropertiesDictionary()
+      .subscribe((data) => {
       if (data && data.success && data.model) {
-        this.properties = [/*{id: -1, name: this.translate.instant('All'), description: ''}, */...data.model.entities
-          .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
-          })];
+        this.properties = data.model;
         // delete from filter deleted properties
         this.filtersForm.patchValue({
           propertyIds: this.filtersForm.value.propertyIds.filter((x: number) => this.properties.some(y => y.id === x)),
