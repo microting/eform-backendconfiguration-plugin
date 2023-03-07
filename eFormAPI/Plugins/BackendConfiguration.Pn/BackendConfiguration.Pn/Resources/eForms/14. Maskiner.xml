@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142401</Id>
+  <Id>142401a</Id>
   <Repeated>0</Repeated>
   <Label>14. Maskiner|14. Machines</Label>
   <StartDate>2021-05-20</StartDate>
@@ -13,7 +13,7 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142401</Id>
+      <Id>142401a</Id>
       <Label>14. Maskiner|14. Machines</Label>
       <Description><![CDATA[<br>]]></Description>
       <DisplayOrder>0</DisplayOrder>
@@ -34,7 +34,7 @@
             <DataItem type="None">
               <Id>373706</Id>
               <Label>INFO|INFO</Label>
-              <Description><![CDATA[Det er vigtigt, at maskinparken løbende vedligeholdes for at sikre optimal drift og for at undgå uheld.<br>|<br>It is important that the machinery is continuously maintained to ensure optimal operation and to avoid accidents.]]></Description>
+              <Description><![CDATA[Det er vigtigt, at maskinparken løbende vedligeholdes for at sikre optimal drift og for at undgå uheld.|It is important that the machinery is continuously maintained to ensure optimal operation and to avoid accidents.]]></Description>
               <DisplayOrder>0</DisplayOrder>
               <Color>fff6df</Color>
             </DataItem>
@@ -42,81 +42,97 @@
         </DataItemGroup>
       </DataItemGroupList>
       <DataItemList>
-        <DataItem type="Date">
-          <Id>373704</Id>
-          <Label>Indtast dato for sidste service|Enter date of last service</Label>
+        <DataItem type="CheckBox">
+          <Id>376936</Id>
+          <Label>Gennemgået|Reviewed</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>1</DisplayOrder>
-          <MinValue>2021-09-08</MinValue>
-          <MaxValue>2031-09-08</MaxValue>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="Picture">
+          <Id>373702</Id>
+          <Label>Billede|Picture</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>2</DisplayOrder>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="Comment">
+          <Id>373701</Id>
+          <Label>Kommentar|Comment</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>3</DisplayOrder>
+          <Multi>1</Multi>
+          <GeolocationEnabled>false</GeolocationEnabled>
+          <Split>false</Split>
+          <Value/>
+          <ReadOnly>false</ReadOnly>
+          <Mandatory>false</Mandatory>
+          <Color>e2f4fb</Color>
+        </DataItem>
+        <DataItem type="None">
+          <Id>376937</Id>
+          <Label>Udfyld hvis relevant|Fill in if applicable</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>4</DisplayOrder>
+          <Color>fff6df</Color>
+        </DataItem>
+        <DataItem type="Date">
+          <Id>376938</Id>
+          <Label>Dato for sidste service|Date of last service</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>5</DisplayOrder>
+          <MinValue>2023-01-09</MinValue>
+          <MaxValue>2033-01-09</MaxValue>
           <Value/>
           <Mandatory>false</Mandatory>
           <ReadOnly>false</ReadOnly>
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="CheckBox">
-          <Id>373707</Id>
-          <Label>Hydrauliksystem og slanger kontrolleret|Hydraulic system and hoses checked</Label>
-          <Description><![CDATA[]]></Description>
-          <DisplayOrder>2</DisplayOrder>
-          <Selected>false</Selected>
-          <Mandatory>false</Mandatory>
-          <Color>e8eaf6</Color>
-        </DataItem>
-        <DataItem type="CheckBox">
           <Id>373708</Id>
-          <Label>Lys, blinklys og bremser kontrolleret|Lights, turn signals and brakes checked</Label>
-          <Description><![CDATA[]]></Description>
-          <DisplayOrder>3</DisplayOrder>
-          <Selected>false</Selected>
-          <Mandatory>false</Mandatory>
-          <Color>e8eaf6</Color>
-        </DataItem>
-        <DataItem type="CheckBox">
-          <Id>373709</Id>
-          <Label>Ingen utætheder|No leaks</Label>
-          <Description><![CDATA[]]></Description>
-          <DisplayOrder>4</DisplayOrder>
-          <Selected>false</Selected>
-          <Mandatory>false</Mandatory>
-          <Color>e8eaf6</Color>
-        </DataItem>
-        <DataItem type="CheckBox">
-          <Id>373710</Id>
-          <Label>Sliddele kontrolleret|Wear parts checked</Label>
-          <Description><![CDATA[]]></Description>
-          <DisplayOrder>5</DisplayOrder>
-          <Selected>false</Selected>
-          <Mandatory>false</Mandatory>
-          <Color>e8eaf6</Color>
-        </DataItem>
-        <DataItem type="CheckBox">
-          <Id>373711</Id>
-          <Label>Olie kontrolleret|Oil checked</Label>
+          <Label>Lys, blinklys og bremser OK|Lights, indicators and brakes OK</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>6</DisplayOrder>
           <Selected>false</Selected>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
-        <DataItem type="Picture">
-          <Id>373702</Id>
-          <Label>Billede|Picture</Label>
+        <DataItem type="CheckBox">
+          <Id>373710</Id>
+          <Label>Hydraulik og slanger OK|Hydraulics and hoses OK</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>7</DisplayOrder>
+          <Selected>false</Selected>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
-        <DataItem type="Comment">
-          <Id>373701</Id>
-          <Label>Kommentar|Comment</Label>
+        <DataItem type="CheckBox">
+          <Id>375249</Id>
+          <Label>Sliddele OK|Wear parts OK</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>8</DisplayOrder>
-          <Multi>1</Multi>
-          <GeolocationEnabled>false</GeolocationEnabled>
-          <Split>false</Split>
-          <Value/>
-          <ReadOnly>false</ReadOnly>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373709</Id>
+          <Label>Olie OK|Oil OK</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>9</DisplayOrder>
+          <Selected>false</Selected>
+          <Mandatory>false</Mandatory>
+          <Color>e8eaf6</Color>
+        </DataItem>
+        <DataItem type="CheckBox">
+          <Id>373707</Id>
+          <Label>Ingen utætheder|No leaks</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>10</DisplayOrder>
+          <Selected>false</Selected>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
@@ -124,7 +140,7 @@
           <Id>373703</Id>
           <Label>Gem registrering|Save registration</Label>
           <Description><![CDATA[]]></Description>
-          <DisplayOrder>9</DisplayOrder>
+          <DisplayOrder>11</DisplayOrder>
           <Value>GEM|SAVE</Value>
           <Color>f0f8db</Color>
         </DataItem>
