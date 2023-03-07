@@ -34,4 +34,3 @@ cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-clie
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2h.conf.js Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2h.conf.js
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2i.conf.js Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2i.conf.js
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2j.conf.js Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2j.conf.js
-cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2k.conf.js Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2k.conf.js
