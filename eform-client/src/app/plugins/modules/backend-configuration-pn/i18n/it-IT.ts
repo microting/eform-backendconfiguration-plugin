@@ -1,3 +1,4 @@
+//Italian
 export const itIT = {
   Actions: '',
   areas: '',
@@ -231,4 +232,22 @@ export const itIT = {
   'Retrieved by device': '',
   'System error: Contact Microting': '',
   'Name': '',
+  'Drop file(s) here or a choose from your computer': 'Rilascia file qui o <u class="choose">scegli</u> dal tuo computer',
+  'Create file': 'Crea file',
+  'Download selected': 'Scarica selezionato',
+  'File name': 'Nome del file',
+  'Refresh table': 'Aggiorna tabella',
+  'Upload files': 'Carica file',
+  'Edit file': 'Modifica file',
+  'Delete file': 'Elimina file',
+  'Page': 'Pagina',
+  'Zoom page': 'Zoom pagina',
+  'Delete page': 'Elimina pagina',
+  'Create date': 'Data di creazione',
+  'View PDF': 'Visualizza PDF',
+  'Edit file name': 'Modifica nome file',
+  'Edit tags file': 'Modifica tag file',
+  'Download selected files': 'Scarica file selezionati',
+  'Name ZIP-folder': 'Nome cartella ZIP',
+  'Back': 'Indietro',
 };

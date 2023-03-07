@@ -1,3 +1,4 @@
+//Spanish
 export const esES = {
   Actions: 'Acciones',
   areas: 'áreas',
@@ -231,4 +232,22 @@ export const esES = {
   'Retrieved by device': '',
   'System error: Contact Microting': '',
   'Name': '',
+  'Drop file(s) here or a choose from your computer': 'Arrastra el archivo aquí o <u class="choose">elija</u> desde tu computadora',
+  'Create file': 'Crear archivo',
+  'Download selected': 'Descargar seleccionado',
+  'File name': 'Nombre del archivo',
+  'Refresh table': 'Actualizar tabla',
+  'Upload files': 'Subir archivos',
+  'Edit file': 'Editar archivo',
+  'Delete file': 'Eliminar archivo',
+  'Page': 'Página',
+  'Zoom page': 'Acercar página',
+  'Delete page': 'Eliminar página',
+  'Create date': 'Fecha de creación',
+  'View PDF': 'Ver PDF',
+  'Edit file name': 'Editar nombre del archivo',
+  'Edit tags file': 'Editar etiquetas de archivo',
+  'Download selected files': 'Descargar archivos seleccionados',
+  'Name ZIP-folder': 'Nombrar carpeta ZIP',
+  'Back': 'Atrás',
 };

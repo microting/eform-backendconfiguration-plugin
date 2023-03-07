@@ -1,3 +1,4 @@
+//Norwegian
 export const noNO = {
   Actions: 'Handlinger',
   areas: 'områder',
@@ -231,4 +232,22 @@ export const noNO = {
   'Retrieved by device': 'Hentet av enhet',
   'System error: Contact Microting': 'Systemfeil: Kontakt Microting',
   'Name': 'Navn',
+  'Drop file(s) here or a choose from your computer': 'Slipp filer her eller <u class="choose">velg</u> fra datamaskinen',
+  'Create file': 'Opprett fil',
+  'Download selected': 'Last ned valgt',
+  'File name': 'Filnavn',
+  'Refresh table': 'Oppdater tabell',
+  'Upload files': 'Last opp filer',
+  'Edit file': 'Rediger fil',
+  'Delete file': 'Slett fil',
+  'Page': 'Side',
+  'Zoom page': 'Zoom side',
+  'Delete page': 'Slett side',
+  'Create date': 'Opprettelsesdato',
+  'View PDF': 'Vis PDF',
+  'Edit file name': 'Rediger filnavn',
+  'Edit tags file': 'Rediger filtagger',
+  'Download selected files': 'Last ned valgte filer',
+  'Name ZIP-folder': 'Navn ZIP-mappe',
+  'Back': 'Tilbake',
 };
