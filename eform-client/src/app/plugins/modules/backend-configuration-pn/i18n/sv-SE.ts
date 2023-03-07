@@ -1,3 +1,4 @@
+//Swedish
 export const svSE = {
   Actions: 'Åtgärder',
   areas: 'områden',
@@ -230,4 +231,22 @@ export const svSE = {
   'Retrieved by device': 'Hämtad av enhet',
   'System error: Contact Microting': 'Systemfel: Kontakta Microting',
   'Name': 'Namn',
+  'Drop file(s) here or a choose from your computer': 'Släpp filer här eller <u class="choose">välj</u> från din dator',
+  'Create file': 'Skapa fil',
+  'Download selected': 'Ladda ner vald',
+  'File name': 'Filnamn',
+  'Refresh table': 'Uppdatera tabell',
+  'Upload files': 'Ladda upp filer',
+  'Edit file': 'Redigera fil',
+  'Delete file': 'Ta bort fil',
+  'Page': 'Sida',
+  'Zoom page': 'Zooma sida',
+  'Delete page': 'Ta bort sida',
+  'Create date': 'Skapad datum',
+  'View PDF': 'Visa PDF',
+  'Edit file name': 'Redigera filnamn',
+  'Edit tags file': 'Redigera filtagg',
+  'Download selected files': 'Ladda ner valda filer',
+  'Name ZIP-folder': 'Namn ZIP-mapp',
+  'Back': 'Tillbaka',
 };

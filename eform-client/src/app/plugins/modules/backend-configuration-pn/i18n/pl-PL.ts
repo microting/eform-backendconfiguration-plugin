@@ -1,3 +1,4 @@
+//Polish
 export const plPl = {
   Actions: 'Akcje',
   areas: 'Obszary',
@@ -232,4 +233,22 @@ export const plPl = {
   'Retrieved by device': 'Odebrane przez urządzenie',
   'System error: Contact Microting': 'Błąd systemu: Skontaktuj się z Microting',
   'Name': 'Nazwa',
+  'Drop file(s) here or a choose from your computer': 'Upuść pliki tutaj lub <u class="choose">wybierz</u> z komputera',
+  'Create file': 'Utwórz plik',
+  'Download selected': 'Pobierz wybrane',
+  'File name': 'Nazwa pliku',
+  'Refresh table': 'Odśwież tabelę',
+  'Upload files': 'Prześlij pliki',
+  'Edit file': 'Edytuj plik',
+  'Delete file': 'Usuń plik',
+  'Page': 'Strona',
+  'Zoom page': 'Powiększ stronę',
+  'Delete page': 'Usuń stronę',
+  'Create date': 'Data utworzenia',
+  'View PDF': 'Wyświetl PDF',
+  'Edit file name': 'Edytuj nazwę pliku',
+  'Edit tags file': 'Edytuj tagi pliku',
+  'Download selected files': 'Pobierz wybrane pliki',
+  'Name ZIP-folder': 'Nazwa folderu ZIP',
+  'Back': 'Powrót',
 };

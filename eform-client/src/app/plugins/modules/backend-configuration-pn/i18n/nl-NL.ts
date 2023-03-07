@@ -1,3 +1,4 @@
+//Dutch
 export const nlNL = {
   Actions: 'Acties',
   areas: 'gebieden',
@@ -231,4 +232,22 @@ export const nlNL = {
   'Retrieved by device': '',
   'System error: Contact Microting': '',
   'Name': '',
+  'Drop file(s) here or a choose from your computer': 'Sleep bestanden hier of <u class="choose">kies</u> uit uw computer',
+  'Create file': 'Maak bestand',
+  'Download selected': 'Download geselecteerd',
+  'File name': 'Bestandsnaam',
+  'Refresh table': 'Tabel verversen',
+  'Upload files': 'Bestanden uploaden',
+  'Edit file': 'Bestand bewerken',
+  'Delete file': 'Bestand verwijderen',
+  'Page': 'Pagina',
+  'Zoom page': 'Zoom pagina',
+  'Delete page': 'Pagina verwijderen',
+  'Create date': 'Aanmaakdatum',
+  'View PDF': 'PDF bekijken',
+  'Edit file name': 'Bestandsnaam bewerken',
+  'Edit tags file': 'Bestandstags bewerken',
+  'Download selected files': 'Geselecteerde bestanden downloaden',
+  'Name ZIP-folder': 'Naam ZIP-map',
+  'Back': 'Terug',
 };
