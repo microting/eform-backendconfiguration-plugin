@@ -140,7 +140,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesServic
                     Id = compliance.Id,
                     ItemName = planningNameTranslation.Name,
                     PlanningId = compliance.PlanningId,
-                    Responsible = responsible,
+                    Responsible = responsible
                 };
 
                 result.Entities.Add(complianceModel);

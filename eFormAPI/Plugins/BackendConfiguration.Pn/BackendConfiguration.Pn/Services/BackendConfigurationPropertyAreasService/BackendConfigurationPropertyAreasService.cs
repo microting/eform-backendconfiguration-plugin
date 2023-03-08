@@ -107,7 +107,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Any(y => y.Status),
                             AreaId = x.AreaId,
-                            Type = x.Area.Type,
+                            Type = x.Area.Type
                         })
                         .ToListAsync().ConfigureAwait(false);
                     areasForAdd = areas.Where(x => !propertyAreasQuery.Any(y => y.AreaId == x.Id))
@@ -121,7 +121,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .FirstOrDefault(),
                             Status = false,
                             AreaId = x.Id,
-                            Type = x.Type,
+                            Type = x.Type
                         })
                         .ToList();
                 }
@@ -138,7 +138,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                                 .FirstOrDefault(),
                             Status = false,
                             AreaId = x.Id,
-                            Type = x.Type,
+                            Type = x.Type
                         })
                         .ToList();
                 }
@@ -211,7 +211,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     sites.Add(new SiteDto
                     {
                         SiteId = worker,
-                        SiteName = site.Name,
+                        SiteName = site.Name
                     });
                 }
 
@@ -228,7 +228,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .Select(x => new CommonDictionaryModel
                         {
                             Id = x.LanguageId,
-                            Name = languages.First(y => y.Id == x.LanguageId).Name,
+                            Name = languages.First(y => y.Id == x.LanguageId).Name
                         }).ToList(),
                     AvailableWorkers = sites,
                     Type = areaProperties.Area.Type,
@@ -243,7 +243,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Type = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.Type,
                             RepeatEvery = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.RepeatEvery,
                             EndDate = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.EndDate,
-                            ComplianceEnabled = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.ComplianceEnabled,
+                            ComplianceEnabled = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaProperties.AreaId).AreaInitialField.ComplianceEnabled
                         }
                         : null,
                     InfoBox = areaProperties.Area.AreaTranslations
@@ -258,7 +258,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .Where(x => x.LanguageId == language.Id)
                         .Select(x => x.NewItemName)
                         .FirstOrDefault(),
-                    GroupId = areaProperties.GroupMicrotingUuid,
+                    GroupId = areaProperties.GroupMicrotingUuid
                 };
 
                 if (areaModel.Type == AreaTypesEnum.Type9)
@@ -323,7 +323,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     sites.Add(new SiteDto
                     {
                         SiteId = worker,
-                        SiteName = site.Name,
+                        SiteName = site.Name
                     });
                 }
 
@@ -338,7 +338,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         .Select(x => new CommonDictionaryModel
                         {
                             Id = x.LanguageId,
-                            Name = languages.First(y => y.Id == x.LanguageId).Name,
+                            Name = languages.First(y => y.Id == x.LanguageId).Name
                         }).ToList(),
                     AvailableWorkers = sites,
                     InitialFields = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField != null
@@ -352,9 +352,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Type = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.Type,
                             RepeatEvery = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.RepeatEvery,
                             EndDate = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.EndDate,
-                            ComplianceEnabled = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.ComplianceEnabled,
+                            ComplianceEnabled = BackendConfigurationSeedAreas.AreasSeed.First(x => x.Id == areaRule.AreaId).AreaInitialField.ComplianceEnabled
                         }
-                        : null,
+                        : null
                 };
                 if (areaModel.InitialFields != null && !string.IsNullOrEmpty(areaModel.InitialFields.EformName))
                 {

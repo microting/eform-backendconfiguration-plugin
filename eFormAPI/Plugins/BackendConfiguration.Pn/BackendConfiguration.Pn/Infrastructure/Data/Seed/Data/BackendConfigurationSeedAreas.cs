@@ -68,7 +68,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Placeholder = "Fokusbereich",
                         NewItemName = "Neues Fokusområde"
                     }
-                },
+                }
                 // AreaInitialField = new AreaInitialField
                 // {
                 //     EformName = "01. Vandforbrug",
@@ -118,8 +118,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -163,8 +163,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Alarm = AreaRuleT2AlarmsEnum.No,
                     Type = AreaRuleT2TypesEnum.Closed,
                     Notifications = true,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -207,8 +207,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = false,
                     RepeatEvery = 1, // 1
                     RepeatType = 1, // day
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -252,8 +252,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "05. Stald_klargøring",
                     Notifications = true,
                     ComplianceEnabled = true,
-                    RepeatEvery = 0,
-                },
+                    RepeatEvery = 0
+                }
             },
             new Area
             {
@@ -295,8 +295,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                     RepeatEvery = 1, // 1
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -338,8 +338,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = false,
                     RepeatEvery = 1, // 1
                     RepeatType = 1, // day
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -381,8 +381,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -424,8 +424,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -467,8 +467,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -510,8 +510,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = false,
                     RepeatEvery = 1, // 1
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -553,8 +553,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -595,8 +595,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     EformName = "13. APV Medarbejder",
                     Notifications = false,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -638,8 +638,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "14. Maskiner",
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -681,8 +681,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "15. Elværktøj",
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -724,8 +724,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "16. Stiger",
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -767,8 +767,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -810,8 +810,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                     RepeatEvery = 1, // 1
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -853,8 +853,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                     RepeatEvery = 1, // 1
                     RepeatType = 3, // month
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -899,7 +899,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     EformName = "20. Arbejdsopgave udført",
                     RepeatEvery = 7, // 7
                     RepeatType = 1, // days
-                    ComplianceEnabled = false,
+                    ComplianceEnabled = false
                 }
             },
             new Area
@@ -935,7 +935,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                         Placeholder = "",
                         NewItemName = ""
                     }
-                },
+                }
             },
             new Area
             {
@@ -977,8 +977,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     Notifications = true,
                     RepeatEvery = 14, // 14
                     RepeatType = 1, // days
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -1017,8 +1017,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaInitialField = new AreaInitialField
                 {
                     Notifications = true,
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             // new Area
             // {
@@ -1102,8 +1102,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     Notifications = true,
                     RepeatType = 1, // days
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -1143,8 +1143,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     Notifications = false,
                     RepeatType = 0, // days
-                    ComplianceEnabled = false,
-                },
+                    ComplianceEnabled = false
+                }
             },
             new Area
             {
@@ -1184,7 +1184,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     Notifications = false,
                     RepeatType = 0, // days
-                    ComplianceEnabled = false,
+                    ComplianceEnabled = false
                 },
                 IsFarm = false
             },
@@ -1229,8 +1229,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     DayOfWeek = 1, // monday
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -1273,9 +1273,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     DayOfWeek = 1, // monday
-                    ComplianceEnabled = true,
-                },
-            },
+                    ComplianceEnabled = true
+                }
+            }
         };
 
         public static List<AreaRule> AreaRules => new()
@@ -1294,10 +1294,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1313,10 +1313,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1332,10 +1332,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1351,10 +1351,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1370,10 +1370,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1389,10 +1389,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1408,10 +1408,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1427,10 +1427,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // one
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 1,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1446,10 +1446,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 2,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1465,10 +1465,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 2,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1484,10 +1484,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 2,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1503,10 +1503,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // 1
                     RepeatType = 1, // day
                     Notifications = false,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 7,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1522,10 +1522,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // 1
                     RepeatType = 1, // day
                     Notifications = false,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 7,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1541,10 +1541,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 8,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1560,10 +1560,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 8,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1579,10 +1579,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // 1
                     RepeatType = 1, // day
                     Notifications = false,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 8,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1598,10 +1598,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 9,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1617,10 +1617,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 9,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1636,10 +1636,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // 1
                     RepeatType = 1, // day
                     Notifications = false,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 9,
-                IsDefault = true,
+                IsDefault = true
             },
             /*new()
             {
@@ -1724,10 +1724,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 12,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1743,10 +1743,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 12,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1762,10 +1762,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 12,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1781,10 +1781,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 1, // 1
                     RepeatType = 1, // day
                     Notifications = false,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 12,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1796,7 +1796,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new() { LanguageId = 3, Name = "13. Arbeitsplatz Landwirtschaft" }
                 },
                 AreaId = 13,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1812,10 +1812,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     RepeatEvery = 12, // 12
                     RepeatType = 3, // month
                     Notifications = true,
-                    ComplianceEnabled = true,
+                    ComplianceEnabled = true
                 },
                 AreaId = 21,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1824,10 +1824,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "01. Registrer halebid" },
                     new() { LanguageId = 2, Name = "01. Register tail bite" },
-                    new() { LanguageId = 3, Name = "01. Schwanzbiss registrieren" },
+                    new() { LanguageId = 3, Name = "01. Schwanzbiss registrieren" }
                 },
                 AreaId = 5,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1836,10 +1836,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "01. Gyllekøling" }, // Danish
                     new() { LanguageId = 2, Name = "01. Slurry cooling" }, // English
-                    new() { LanguageId = 3, Name = "01. Schlammkühlung" }, // German
+                    new() { LanguageId = 3, Name = "01. Schlammkühlung" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1848,10 +1848,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "02. Forsuring" }, // Danish
                     new() { LanguageId = 2, Name = "02. Acidification" }, // English
-                    new() { LanguageId = 3, Name = "02. Ansäuerung" }, // German
+                    new() { LanguageId = 3, Name = "02. Ansäuerung" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1860,10 +1860,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "03. Luftrensning" }, // Danish
                     new() { LanguageId = 2, Name = "03. Air purification" }, // English
-                    new() { LanguageId = 3, Name = "03. Luftreinigung" }, // German
+                    new() { LanguageId = 3, Name = "03. Luftreinigung" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1872,10 +1872,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "04. Beholderkontrol gennemført" }, // Danish
                     new() { LanguageId = 2, Name = "04. Container control completed" }, // English
-                    new() { LanguageId = 3, Name = "04. Behälterkontrolle abgeschlossen" }, // German
+                    new() { LanguageId = 3, Name = "04. Behälterkontrolle abgeschlossen" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1884,10 +1884,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "05. Gyllebeholdere" }, // Danish
                     new() { LanguageId = 2, Name = "05. Slurry containers" }, // English
-                    new() { LanguageId = 3, Name = "05. Güllebehälter" }, // German
+                    new() { LanguageId = 3, Name = "05. Güllebehälter" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1896,10 +1896,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "06. Gyllepumper, - miksere, - seperatorer og spredere" }, // Danish
                     new() { LanguageId = 2, Name = "06. Slurry pumps, - mixers, - separators and spreaders" }, // English
-                    new() { LanguageId = 3, Name = "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler" }, // German
+                    new() { LanguageId = 3, Name = "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1908,10 +1908,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "07. Forsyningssystemer til vand og foder" }, // Danish
                     new() { LanguageId = 2, Name = "07. Supply systems for water and feed" }, // English
-                    new() { LanguageId = 3, Name = "07. Versorgungssysteme für Wasser und Futter" }, // German
+                    new() { LanguageId = 3, Name = "07. Versorgungssysteme für Wasser und Futter" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1920,10 +1920,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "08. Varme-, køle- og ventilationssystemer samt temperaturfølere" }, // Danish
                     new() { LanguageId = 2, Name = "08. Heating, cooling and ventilation systems and temperature sensors" }, // English
-                    new() { LanguageId = 3, Name = "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren" }, // German
+                    new() { LanguageId = 3, Name = "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1932,10 +1932,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "09. Siloer og transportudstyr" }, // Danish
                     new() { LanguageId = 2, Name = "09. Silos and transport equipment" }, // English
-                    new() { LanguageId = 3, Name = "09. Silos und Transportgeräte" }, // German
+                    new() { LanguageId = 3, Name = "09. Silos und Transportgeräte" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1944,10 +1944,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "10. Luftrensningssystemer" }, // Danish
                     new() { LanguageId = 2, Name = "10. Air purification systems" }, // English
-                    new() { LanguageId = 3, Name = "10. Luftreinigungssysteme" }, // German
+                    new() { LanguageId = 3, Name = "10. Luftreinigungssysteme" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1956,10 +1956,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "11. Udstyr til drikkevand" }, // Danish
                     new() { LanguageId = 2, Name = "11. Equipment for drinking water" }, // English
-                    new() { LanguageId = 3, Name = "11. Ausrüstung für Trinkwasser" }, // German
+                    new() { LanguageId = 3, Name = "11. Ausrüstung für Trinkwasser" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1968,10 +1968,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse" }, // Danish
                     new() { LanguageId = 2, Name = "12. Machines for spreading livestock manure and dosing mechanisms or nozzles" }, // English
-                    new() { LanguageId = 3, Name = "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen" }, // German
+                    new() { LanguageId = 3, Name = "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1980,10 +1980,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "13. Miljøledelse gennemgået og revideret" }, // Danish
                     new() { LanguageId = 2, Name = "13. Environmental management reviewed and revised" }, // English
-                    new() { LanguageId = 3, Name = "13. Umweltmanagement überprüft und überarbeitet" }, // German
+                    new() { LanguageId = 3, Name = "13. Umweltmanagement überprüft und überarbeitet" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
+                IsDefault = true
             },
             new()
             {
@@ -1992,11 +1992,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new() { LanguageId = 1, Name = "14. Beredskabsplan gennemgået og revideret" }, // Danish
                     new() { LanguageId = 2, Name = "14. Contingency plan reviewed and revised" }, // English
-                    new() { LanguageId = 3, Name = "14. Notfallplan überprüft und überarbeitet" }, // German
+                    new() { LanguageId = 3, Name = "14. Notfallplan überprüft und überarbeitet" } // German
                 },
                 AreaId = 31,
-                IsDefault = true,
-            },
+                IsDefault = true
+            }
         };
 
         public static List<AreaRule> AreaRulesForType8 => new()
@@ -2016,7 +2016,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2034,7 +2034,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2054,7 +2054,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2074,7 +2074,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2092,7 +2092,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2112,7 +2112,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2132,7 +2132,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2150,7 +2150,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2170,7 +2170,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             // Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
@@ -2209,7 +2209,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             // Commented pr https://app.userback.io/viewer/33542/62605/2162452EVA7bLB5/
@@ -2250,7 +2250,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2268,7 +2268,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2288,7 +2288,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2308,7 +2308,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2326,7 +2326,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2346,7 +2346,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2366,7 +2366,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2384,7 +2384,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2404,7 +2404,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2424,7 +2424,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2442,7 +2442,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2462,7 +2462,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2482,7 +2482,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2500,7 +2500,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2520,7 +2520,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2560,7 +2560,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2578,7 +2578,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2598,7 +2598,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2616,7 +2616,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2636,7 +2636,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2654,7 +2654,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2674,7 +2674,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2692,7 +2692,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2712,7 +2712,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2730,7 +2730,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2750,7 +2750,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2768,7 +2768,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2788,7 +2788,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2806,7 +2806,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2826,7 +2826,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2866,7 +2866,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = false,
                     Notifications = false,
                     RepeatEvery = 1,
-                    RepeatType = 1,
+                    RepeatType = 1
                 }
             },
             new AreaRule
@@ -2884,7 +2884,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2902,7 +2902,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
             },
             new AreaRule
@@ -2920,9 +2920,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
                     ComplianceEnabled = true,
-                    Notifications = true,
+                    Notifications = true
                 }
-            },
+            }
         };
 
         public static List<AreaRule> AreaRulesForType7 => new()
@@ -2938,7 +2938,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 23,
                 IsDefault = true,
-                FolderName = "23.00 Readings environmental management",
+                FolderName = "23.00 Readings environmental management"
             },
             new AreaRule
             {
@@ -2954,8 +2954,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.00 Readings environmental management",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -2971,8 +2971,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -2988,8 +2988,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3005,8 +3005,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3022,8 +3022,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3039,8 +3039,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3059,8 +3059,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3076,8 +3076,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3093,8 +3093,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3110,8 +3110,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.01 Logbooks for any environmental technologies",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3127,8 +3127,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3144,8 +3144,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3161,8 +3161,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3178,8 +3178,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3198,8 +3198,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3215,8 +3215,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3232,8 +3232,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3249,8 +3249,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.02 Documentation of completed inspections",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3266,8 +3266,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.03 Documentation for environmental management",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3283,8 +3283,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.04 Compliance with feeding requirements",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3300,8 +3300,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.04 Compliance with feeding requirements",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new AreaRule
             {
@@ -3317,9 +3317,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 FolderName = "23.04 Compliance with feeding requirements",
                 AreaRuleInitialField = new AreaRuleInitialField
                 {
-                    ComplianceEnabled = true,
-                },
-            },
+                    ComplianceEnabled = true
+                }
+            }
         };
     }
 }

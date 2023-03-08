@@ -151,7 +151,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 				{
 					Name = requestModel.Name,
 					CreatedByUserId = _userService.UserId,
-					UpdatedByUserId = _userService.UserId,
+					UpdatedByUserId = _userService.UserId
 				};
 
 				await tag.Create(_dbContext);
@@ -175,7 +175,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 					.Select(x => new CommonTagModel
 					{
 						Id = x.Id,
-						Name = x.Name,
+						Name = x.Name
 					})
 					.FirstOrDefaultAsync(x => x.Id == id);
 

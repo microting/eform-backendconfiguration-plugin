@@ -51,7 +51,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Name = $"{TagBackendConfigurationSettingsName}:MaxCvrNumbers",
                 Value = "10"
-            },
+            }
         };
     }
 }

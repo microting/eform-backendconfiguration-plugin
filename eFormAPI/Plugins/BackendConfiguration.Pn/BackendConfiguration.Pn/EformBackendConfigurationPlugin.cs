@@ -284,7 +284,7 @@ namespace BackendConfiguration.Pn
                 // create tag for area
                 var planningTag = new PlanningTag
                 {
-                    Name = newArea.AreaTranslations.First(x => x.LanguageId == 1).Name, // danish
+                    Name = newArea.AreaTranslations.First(x => x.LanguageId == 1).Name // danish
                 };
                 await planningTag.Create(itemsPlanningContext).ConfigureAwait(false);
                 newArea.ItemPlanningTagId = planningTag.Id;
@@ -477,25 +477,25 @@ namespace BackendConfiguration.Pn
                         {
                             LocaleName = LocaleNames.English,
                             Name = "Backend Configuration",
-                            Language = LanguageNames.English,
+                            Language = LanguageNames.English
                         },
                         new()
                         {
                             LocaleName = LocaleNames.German,
                             Name = "Aufbau",
-                            Language = LanguageNames.German,
+                            Language = LanguageNames.German
                         },
                         new()
                         {
                             LocaleName = LocaleNames.Danish,
                             Name = "Konfiguration",
-                            Language = LanguageNames.Danish,
+                            Language = LanguageNames.Danish
                         },
                         new()
                         {
                             LocaleName = LocaleNames.Ukrainian,
                             Name = "Конфігурація серверної частини",
-                            Language = LanguageNames.Ukrainian,
+                            Language = LanguageNames.Ukrainian
                         }
                     },
                     ChildItems = new List<PluginMenuItemModel>
@@ -519,26 +519,26 @@ namespace BackendConfiguration.Pn
                                     {
                                         LocaleName = LocaleNames.English,
                                         Name = "Properties",
-                                        Language = LanguageNames.English,
+                                        Language = LanguageNames.English
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.German,
                                         Name = "Eigenschaften",
-                                        Language = LanguageNames.German,
+                                        Language = LanguageNames.German
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
                                         Name = "Ejendomme",
-                                        Language = LanguageNames.Danish,
+                                        Language = LanguageNames.Danish
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
                                         Name = "Властивості",
-                                        Language = LanguageNames.Ukrainian,
-                                    },
+                                        Language = LanguageNames.Ukrainian
+                                    }
                                 }
                             },
                             Translations = new List<PluginMenuTranslationModel>
@@ -547,27 +547,27 @@ namespace BackendConfiguration.Pn
                                 {
                                     LocaleName = LocaleNames.English,
                                     Name = "Properties",
-                                    Language = LanguageNames.English,
+                                    Language = LanguageNames.English
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.German,
                                     Name = "Eigenschaften",
-                                    Language = LanguageNames.German,
+                                    Language = LanguageNames.German
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
                                     Name = "Ejendomme",
-                                    Language = LanguageNames.Danish,
+                                    Language = LanguageNames.Danish
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
                                     Name = "Властивості",
-                                    Language = LanguageNames.Ukrainian,
-                                },
-                            },
+                                    Language = LanguageNames.Ukrainian
+                                }
+                            }
                         },
                         new()
                         {
@@ -588,25 +588,25 @@ namespace BackendConfiguration.Pn
                                     {
                                         LocaleName = LocaleNames.English,
                                         Name = "Workers",
-                                        Language = LanguageNames.English,
+                                        Language = LanguageNames.English
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.German,
                                         Name = "Mitarbeiter",
-                                        Language = LanguageNames.German,
+                                        Language = LanguageNames.German
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
                                         Name = "Medarbejdere",
-                                        Language = LanguageNames.Danish,
+                                        Language = LanguageNames.Danish
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
                                         Name = "працівників",
-                                        Language = LanguageNames.Ukrainian,
+                                        Language = LanguageNames.Ukrainian
                                     }
                                 }
                             },
@@ -616,25 +616,25 @@ namespace BackendConfiguration.Pn
                                 {
                                     LocaleName = LocaleNames.English,
                                     Name = "Workers",
-                                    Language = LanguageNames.English,
+                                    Language = LanguageNames.English
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.German,
                                     Name = "Mitarbeiter",
-                                    Language = LanguageNames.German,
+                                    Language = LanguageNames.German
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
                                     Name = "Medarbejdere",
-                                    Language = LanguageNames.Danish,
+                                    Language = LanguageNames.Danish
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
                                     Name = "працівників",
-                                    Language = LanguageNames.Ukrainian,
+                                    Language = LanguageNames.Ukrainian
                                 }
                             }
                         },
@@ -657,25 +657,25 @@ namespace BackendConfiguration.Pn
                                     {
                                         LocaleName = LocaleNames.English,
                                         Name = "Task management",
-                                        Language = LanguageNames.English,
+                                        Language = LanguageNames.English
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.German,
                                         Name = "Aufgabenverwaltung",
-                                        Language = LanguageNames.German,
+                                        Language = LanguageNames.German
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
                                         Name = "Opgavestyring",
-                                        Language = LanguageNames.Danish,
+                                        Language = LanguageNames.Danish
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
                                         Name = "Управління завданнями",
-                                        Language = LanguageNames.Ukrainian,
+                                        Language = LanguageNames.Ukrainian
                                     }
                                 }
                             },
@@ -685,25 +685,25 @@ namespace BackendConfiguration.Pn
                                 {
                                     LocaleName = LocaleNames.English,
                                     Name = "Task management",
-                                    Language = LanguageNames.English,
+                                    Language = LanguageNames.English
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.German,
                                     Name = "Aufgabenverwaltung",
-                                    Language = LanguageNames.German,
+                                    Language = LanguageNames.German
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
                                     Name = "Opgavestyring",
-                                    Language = LanguageNames.Danish,
+                                    Language = LanguageNames.Danish
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
                                     Name = "Управління завданнями",
-                                    Language = LanguageNames.Ukrainian,
+                                    Language = LanguageNames.Ukrainian
                                 }
                             }
                         },
@@ -726,25 +726,25 @@ namespace BackendConfiguration.Pn
                                         {
                                             LocaleName = LocaleNames.English,
                                             Name = "Reports",
-                                            Language = LanguageNames.English,
+                                            Language = LanguageNames.English
                                         },
                                         new PluginMenuTranslationModel
                                         {
                                             LocaleName = LocaleNames.German,
                                             Name = "Berichte",
-                                            Language = LanguageNames.German,
+                                            Language = LanguageNames.German
                                         },
                                         new PluginMenuTranslationModel
                                         {
                                             LocaleName = LocaleNames.Danish,
                                             Name = "Rapporter",
-                                            Language = LanguageNames.Danish,
+                                            Language = LanguageNames.Danish
                                         },
                                         new PluginMenuTranslationModel
                                         {
                                             LocaleName = LocaleNames.Ukrainian,
                                             Name = "Звіти",
-                                            Language = LanguageNames.Ukrainian,
+                                            Language = LanguageNames.Ukrainian
                                         }
                                     }
                                 },
@@ -754,25 +754,25 @@ namespace BackendConfiguration.Pn
                                     {
                                         LocaleName = LocaleNames.English,
                                         Name = "Reports",
-                                        Language = LanguageNames.English,
+                                        Language = LanguageNames.English
                                     },
                                     new PluginMenuTranslationModel
                                     {
                                         LocaleName = LocaleNames.German,
                                         Name = "Berichte",
-                                        Language = LanguageNames.German,
+                                        Language = LanguageNames.German
                                     },
                                     new PluginMenuTranslationModel
                                     {
                                         LocaleName = LocaleNames.Danish,
                                         Name = "Rapporter",
-                                        Language = LanguageNames.Danish,
+                                        Language = LanguageNames.Danish
                                     },
                                     new PluginMenuTranslationModel
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
                                         Name = "Звіти",
-                                        Language = LanguageNames.Ukrainian,
+                                        Language = LanguageNames.Ukrainian
                                     }
                                 }
                             },
@@ -795,25 +795,25 @@ namespace BackendConfiguration.Pn
                                     {
                                         LocaleName = LocaleNames.English,
                                         Name = "Documents",
-                                        Language = LanguageNames.English,
+                                        Language = LanguageNames.English
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.German,
                                         Name = "Unterlagen",
-                                        Language = LanguageNames.German,
+                                        Language = LanguageNames.German
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Danish,
                                         Name = "Dokumenter",
-                                        Language = LanguageNames.Danish,
+                                        Language = LanguageNames.Danish
                                     },
                                     new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
                                         Name = "Документи",
-                                        Language = LanguageNames.Ukrainian,
+                                        Language = LanguageNames.Ukrainian
                                     }
                                 }
                             },
@@ -823,25 +823,25 @@ namespace BackendConfiguration.Pn
                                 {
                                     LocaleName = LocaleNames.English,
                                     Name = "Documents",
-                                    Language = LanguageNames.English,
+                                    Language = LanguageNames.English
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.German,
                                     Name = "Unterlagen",
-                                    Language = LanguageNames.German,
+                                    Language = LanguageNames.German
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Danish,
                                     Name = "Dokumenter",
-                                    Language = LanguageNames.Danish,
+                                    Language = LanguageNames.Danish
                                 },
                                 new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
                                     Name = "Документи",
-                                    Language = LanguageNames.Ukrainian,
+                                    Language = LanguageNames.Ukrainian
                                 }
                             }
                         },
@@ -864,25 +864,25 @@ namespace BackendConfiguration.Pn
 									{
 										LocaleName = LocaleNames.English,
 										Name = "Files",
-										Language = LanguageNames.English,
+										Language = LanguageNames.English
 									},
 									new()
 									{
 										LocaleName = LocaleNames.German,
 										Name = "Datei",
-										Language = LanguageNames.German,
+										Language = LanguageNames.German
 									},
 									new()
 									{
 										LocaleName = LocaleNames.Danish,
 										Name = "Fil",
-										Language = LanguageNames.Danish,
+										Language = LanguageNames.Danish
 									},
 									new()
 									{
 										LocaleName = LocaleNames.Ukrainian,
 										Name = "Файли",
-										Language = LanguageNames.Ukrainian,
+										Language = LanguageNames.Ukrainian
 									}
 								}
 							},
@@ -892,29 +892,29 @@ namespace BackendConfiguration.Pn
 								{
 									LocaleName = LocaleNames.English,
 									Name = "Files",
-									Language = LanguageNames.English,
+									Language = LanguageNames.English
 								},
 								new()
 								{
 									LocaleName = LocaleNames.German,
 									Name = "Datei",
-									Language = LanguageNames.German,
+									Language = LanguageNames.German
 								},
 								new()
 								{
 									LocaleName = LocaleNames.Danish,
 									Name = "Fil",
-									Language = LanguageNames.Danish,
+									Language = LanguageNames.Danish
 								},
 								new()
 								{
 									LocaleName = LocaleNames.Ukrainian,
 									Name = "Файли",
-									Language = LanguageNames.Ukrainian,
+									Language = LanguageNames.Ukrainian
 								}
 							}
-						},
-					}
+						}
+                    }
                 }
             };
 
@@ -941,7 +941,7 @@ namespace BackendConfiguration.Pn
                         E2EId = "backend-configuration-properties",
                         Link = "/plugins/backend-configuration/properties",
                         Guards = new List<string>(),
-                        Position = 0,
+                        Position = 0
                     },
                     new()
                     {
@@ -949,7 +949,7 @@ namespace BackendConfiguration.Pn
                         E2EId = "backend-configuration-workers",
                         Link = "/plugins/backend-configuration/workers",
                         Guards = new List<string>(),
-                        Position = 1,
+                        Position = 1
                     },
                     new()
                     {
@@ -957,7 +957,7 @@ namespace BackendConfiguration.Pn
                         E2EId = "backend-configuration-task-management",
                         Link = "/plugins/backend-configuration/task-management",
                         Guards = new List<string>(),
-                        Position = 2,
+                        Position = 2
                     },
                     new()
                     {
@@ -965,7 +965,7 @@ namespace BackendConfiguration.Pn
                         E2EId = "backend-configuration-documents",
                         Link = "/plugins/backend-configuration/documents",
                         Guards = new List<string>(),
-                        Position = 3,
+                        Position = 3
                     },
                     new()
                     {
@@ -973,9 +973,9 @@ namespace BackendConfiguration.Pn
 	                    E2EId = "backend-configuration-files",
 	                    Link = "/plugins/backend-configuration/files",
 	                    Guards = new List<string>(),
-	                    Position = 4,
-                    },
-				}
+	                    Position = 4
+                    }
+                }
             });
             return result;
         }
@@ -1025,20 +1025,20 @@ namespace BackendConfiguration.Pn
 			        {
 				        Name = "01. Logbøger Miljøledelse",
 				        LanguageId = 1, // da
-				        Description = "",
+				        Description = ""
 			        },
 			        new()
 			        {
 				        Name = "01. Log books Environmental management",
 				        LanguageId = 2, // en
-				        Description = "",
+				        Description = ""
 			        },
 			        new()
 			        {
 				        Name = "01. Logbücher Umweltmanagement",
 				        LanguageId = 3, // de
-				        Description = "",
-			        },
+				        Description = ""
+			        }
 		        }
 	        );
 			await CreateFolderTranslations(core, sdkDbContext,
@@ -1051,20 +1051,20 @@ namespace BackendConfiguration.Pn
 					{
 						LanguageId = 1, // da
 						Name = "24.01 Logbøger og bilag",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 2, // en
 						Name = "24.01 Logbooks and appendices",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 3, // ge
 						Name = "24.01 Logbücher und Anhänge",
-						Description = "",
-					},
+						Description = ""
+					}
 				}
 			);
 
@@ -1078,20 +1078,20 @@ namespace BackendConfiguration.Pn
 					{
 						LanguageId = 1, // da
 						Name = "24.02 Kontroller og bilag",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 2, // en
 						Name = "24.02 Checks and attachments",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 3, // ge
 						Name = "24.02 Schecks und Anhänge",
-						Description = "",
-					},
+						Description = ""
+					}
 				}
 			);
 
@@ -1105,20 +1105,20 @@ namespace BackendConfiguration.Pn
 					{
 						LanguageId = 1, // da
 						Name = "24.03 Miljøledelse",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 2, // en
 						Name = "24.03 Environmental management",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 3, // ge
 						Name = "24.03 Umweltmanagement",
-						Description = "",
-					},
+						Description = ""
+					}
 				}
 			);
 
@@ -1133,20 +1133,20 @@ namespace BackendConfiguration.Pn
 					{
 						LanguageId = 1, // da
 						Name = "24.04 Fodringskrav",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 2, // en
 						Name = "24.04 Feeding requirements",
-						Description = "",
+						Description = ""
 					},
 					new()
 					{
 						LanguageId = 3, // ge
 						Name = "24.04 Fütterungsanforderungen",
-						Description = "",
-					},
+						Description = ""
+					}
 				}
 			);
 		}
@@ -1160,8 +1160,8 @@ namespace BackendConfiguration.Pn
                 new("25. Chemisches APV", "25. Chemische Kontrolle"),
                 new("01. Fokusområder Miljøledelse", "01. Logbøger Miljøledelse"),
                 new("01. Focus areas Environmental management", "01. Log books Environmental management"),
-                new("01. Schwerpunkte Umweltverwaltung", "01. Logbücher Umweltmanagement"),
-			};
+                new("01. Schwerpunkte Umweltverwaltung", "01. Logbücher Umweltmanagement")
+            };
 
             foreach (var (oldValue, newValue) in listWithOldAndNewTranslates)
 			{
