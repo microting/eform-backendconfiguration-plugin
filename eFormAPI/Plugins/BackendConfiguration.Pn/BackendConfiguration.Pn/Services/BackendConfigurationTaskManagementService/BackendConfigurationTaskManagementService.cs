@@ -139,7 +139,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             var excludeSort = new List<string>
             {
-                "PropertyName",
+                "PropertyName"
             };
             query = QueryHelper.AddFilterAndSortToQuery(query, filtersModel, new List<string>(), excludeSort);
 
@@ -159,7 +159,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     LastUpdatedBy = x.LastUpdatedByName,
                     LastAssignedTo = x.LastAssignedToName,
                     ParentWorkorderCaseId = x.ParentWorkorderCaseId,
-                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority),
+                    Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority)
                 })
                 .ToListAsync().ConfigureAwait(false);
 

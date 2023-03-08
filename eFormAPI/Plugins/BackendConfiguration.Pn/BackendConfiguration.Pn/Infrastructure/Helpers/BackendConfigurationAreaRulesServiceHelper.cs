@@ -74,7 +74,7 @@ public static class BackendConfigurationAreaRulesServiceHelper
                         UpdatedByUserId = userId,
                         CreatedByUserId = userId,
                         EformId = eformId,
-                        PropertyId = areaProperty.PropertyId,
+                        PropertyId = areaProperty.PropertyId
                     };
 
                     if (areaProperty.Area.Type is AreaTypesEnum.Type7)
@@ -170,7 +170,7 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 LanguageId = (int)x.Id,
                                 Name = x.Name,
                                 CreatedByUserId = userId,
-                                UpdatedByUserId = userId,
+                                UpdatedByUserId = userId
                             }).ToList();
                     }
 
@@ -183,7 +183,7 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 LanguageId = x.LanguageId,
                                 Name = x.Name,
                                 CreatedByUserId = userId,
-                                UpdatedByUserId = userId,
+                                UpdatedByUserId = userId
                             }).ToList();
                     }
 
@@ -196,7 +196,7 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 LanguageId = x.LanguageId,
                                 Name = x.Name,
                                 CreatedByUserId = userId,
-                                UpdatedByUserId = userId,
+                                UpdatedByUserId = userId
                             }).ToList();
                     }
 
@@ -238,20 +238,20 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 {
                                     LanguageId = 1, // da
                                     Name = "7. Søn",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "7. Sun",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "7. Son",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
                             {
@@ -259,20 +259,20 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 {
                                     LanguageId = 1, // da
                                     Name = "1. Man",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "1. Mon",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "1. Mon",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
                             {
@@ -280,20 +280,20 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 {
                                     LanguageId = 1, // da
                                     Name = "2. Tir",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "2. Tue",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "2. Die",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
                             {
@@ -301,20 +301,20 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 {
                                     LanguageId = 1, // da
                                     Name = "3. Ons",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "3. Wed",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "3. Mit",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
                             {
@@ -322,20 +322,20 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 {
                                     LanguageId = 1, // da
                                     Name = "4. Tor",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "4. Thu",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "4. Don",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
                             {
@@ -343,20 +343,20 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 {
                                     LanguageId = 1, // da
                                     Name = "5. Fre",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "5. Fri",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "5. Fre",
-                                    Description = "",
-                                },
+                                    Description = ""
+                                }
                             }, folderId).ConfigureAwait(false),
                             await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
                             {
@@ -364,28 +364,28 @@ public static class BackendConfigurationAreaRulesServiceHelper
                                 {
                                     LanguageId = 1, // da
                                     Name = "6. Lør",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "6. Sat",
-                                    Description = "",
+                                    Description = ""
                                 },
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "6. Sam",
-                                    Description = "",
-                                },
-                            }, folderId).ConfigureAwait(false),
+                                    Description = ""
+                                }
+                            }, folderId).ConfigureAwait(false)
                         };
 
 
                         foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
                         {
                             FolderId = folderIdLocal,
-                            ProperyAreaAsignmentId = areaProperty.Id,
+                            ProperyAreaAsignmentId = areaProperty.Id
                         }))
                         {
                             await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);

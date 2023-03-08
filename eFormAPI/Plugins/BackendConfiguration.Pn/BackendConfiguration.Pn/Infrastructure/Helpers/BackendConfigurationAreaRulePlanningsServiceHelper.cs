@@ -222,7 +222,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             CreatedByUserId = userId,
                                             UpdatedByUserId = userId,
                                             AreaId = areaRule.AreaId,
-                                            AreaRuleId = areaRule.Id,
+                                            AreaRuleId = areaRule.Id
                                         };
                                         await siteForCreate.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                                         var planningSite =
@@ -232,7 +232,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     SiteId = i,
                                                     PlanningId = areaRulePlanning.ItemPlanningId,
                                                     CreatedByUserId = userId,
-                                                    UpdatedByUserId = userId,
+                                                    UpdatedByUserId = userId
                                                 };
                                         await planningSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                                         var planning = await itemsPlanningPnDbContext.Plannings
@@ -495,6 +495,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                         SiteId = siteId,
                                         CreatedByUserId = userId,
                                         UpdatedByUserId = userId,
+                                        Status = 33
                                     })
                                     .ToList();
 
@@ -547,7 +548,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 1)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Flydelag",
+                                                                    .FirstOrDefault() + ": Flydelag"
                                                             },
                                                             new()
                                                             {
@@ -555,7 +556,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 2)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Floating layer",
+                                                                    .FirstOrDefault() + ": Floating layer"
                                                             },
                                                             new()
                                                             {
@@ -563,8 +564,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 2)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Schwimmende Ebene",
-                                                            },
+                                                                    .FirstOrDefault() + ": Schwimmende Ebene"
+                                                            }
                                                             // new PlanningNameTranslation
                                                             // {
                                                             //     LanguageId = 4,// uk-ua
@@ -641,7 +642,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 1)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Alarm",
+                                                                    .FirstOrDefault() + ": Alarm"
                                                             },
                                                             new()
                                                             {
@@ -649,7 +650,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 2)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Alarm",
+                                                                    .FirstOrDefault() + ": Alarm"
                                                             },
                                                             new()
                                                             {
@@ -657,8 +658,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 3)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Alarm",
-                                                            },
+                                                                    .FirstOrDefault() + ": Alarm"
+                                                            }
                                                             // new ()
                                                             // {
                                                             //     LanguageId = 4,// uk-ua
@@ -728,7 +729,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 1)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + ": Konstruktion",
+                                                            .FirstOrDefault() + ": Konstruktion"
                                                     },
                                                     new()
                                                     {
@@ -736,7 +737,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 2)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + ": Construction",
+                                                            .FirstOrDefault() + ": Construction"
                                                     },
                                                     new()
                                                     {
@@ -744,8 +745,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         Name = areaRule.AreaRuleTranslations
                                                             .Where(x => x.LanguageId == 3)
                                                             .Select(x => x.Name)
-                                                            .FirstOrDefault() + ": Konstruktion",
-                                                    },
+                                                            .FirstOrDefault() + ": Konstruktion"
+                                                    }
                                                     // new PlanningNameTranslation
                                                     // {
                                                     //     LanguageId = 4,// uk-ua
@@ -851,7 +852,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                     Name = areaRule.AreaRuleTranslations
                                                                         .Where(x => x.LanguageId == 1)
                                                                         .Select(x => x.Name)
-                                                                        .FirstOrDefault() + ": Timer og energi",
+                                                                        .FirstOrDefault() + ": Timer og energi"
                                                                 },
                                                                 new()
                                                                 {
@@ -859,7 +860,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                     Name = areaRule.AreaRuleTranslations
                                                                         .Where(x => x.LanguageId == 2)
                                                                         .Select(x => x.Name)
-                                                                        .FirstOrDefault() + ": Hours and energy",
+                                                                        .FirstOrDefault() + ": Hours and energy"
                                                                 },
                                                                 new()
                                                                 {
@@ -867,8 +868,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                     Name = areaRule.AreaRuleTranslations
                                                                         .Where(x => x.LanguageId == 3)
                                                                         .Select(x => x.Name)
-                                                                        .FirstOrDefault() + ": Stunden und Energie",
-                                                                },
+                                                                        .FirstOrDefault() + ": Stunden und Energie"
+                                                                }
                                                             };
                                                         if (areaRulePlanningModel.TypeSpecificFields is not null)
                                                         {
@@ -947,7 +948,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 1)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Service",
+                                                                    .FirstOrDefault() + ": Service"
                                                             },
                                                             new()
                                                             {
@@ -955,7 +956,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 2)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Service",
+                                                                    .FirstOrDefault() + ": Service"
                                                             },
                                                             new()
                                                             {
@@ -963,8 +964,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 3)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Service",
-                                                            },
+                                                                    .FirstOrDefault() + ": Service"
+                                                            }
                                                         };
                                                     planningForType6One.RepeatEvery = 12;
                                                     planningForType6One.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
@@ -980,7 +981,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 1)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Logbog",
+                                                                    .FirstOrDefault() + ": Logbog"
                                                             },
                                                             new()
                                                             {
@@ -988,7 +989,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 2)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Logbook",
+                                                                    .FirstOrDefault() + ": Logbook"
                                                             },
                                                             new()
                                                             {
@@ -996,8 +997,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 Name = areaRule.AreaRuleTranslations
                                                                     .Where(x => x.LanguageId == 3)
                                                                     .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Logbook",
-                                                            },
+                                                                    .FirstOrDefault() + ": Logbook"
+                                                            }
                                                         };
                                                     planningForType6Two.RepeatEvery = 12;
                                                     planningForType6Two.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
@@ -1114,7 +1115,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     areaRuleAreaRuleTranslation => new PlanningNameTranslation
                                                     {
                                                         LanguageId = areaRuleAreaRuleTranslation.LanguageId,
-                                                        Name = areaRuleAreaRuleTranslation.Name,
+                                                        Name = areaRuleAreaRuleTranslation.Name
                                                     }).ToList();
                                                 if (areaRulePlanningModel.TypeSpecificFields is not null)
                                                 {
@@ -1296,7 +1297,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                             SiteId = siteId,
                                                             PlanningId = planning.Id,
                                                             CreatedByUserId = userId,
-                                                            UpdatedByUserId = userId,
+                                                            UpdatedByUserId = userId
                                                         };
                                                 await planningSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                                             }
@@ -1346,6 +1347,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         .GetResult();
                                                 }
                                             }
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine("Create planning");
                                         }
 
                                         break;

@@ -170,7 +170,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                             .Select(y => new CommonDictionaryModel { Id = y.LanguageId })
                             .ToList(),
-                        WorkorderEnable = x.WorkorderEnable,
+                        WorkorderEnable = x.WorkorderEnable
                     })
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
@@ -502,7 +502,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     {
                         Id = x.Id,
                         Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
-                        Description = "",
+                        Description = ""
                     }).ToListAsync().ConfigureAwait(false);
                 return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
             }

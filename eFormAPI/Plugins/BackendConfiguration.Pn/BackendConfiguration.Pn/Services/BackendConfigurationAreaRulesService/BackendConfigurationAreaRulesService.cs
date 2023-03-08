@@ -126,7 +126,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 ComplianceEnabled = x.ComplianceEnabled,
                                 ComplianceModifiable = x.ComplianceModifiable,
                                 Notifications = x.Notifications,
-                                NotificationsModifiable = x.NotificationsModifiable,
+                                NotificationsModifiable = x.NotificationsModifiable
                             },
                         InitialFields = x.AreaRuleInitialField != null
                             ? new AreaRuleInitialFields
@@ -139,9 +139,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                                 EformName = x.AreaRuleInitialField.EformName,
                                 EndDate = x.AreaRuleInitialField.EndDate,
                                 SendNotifications = x.AreaRuleInitialField.Notifications,
-                                ComplianceEnabled = x.AreaRuleInitialField.ComplianceEnabled,
+                                ComplianceEnabled = x.AreaRuleInitialField.ComplianceEnabled
                             }
-                            : null,
+                            : null
                     });
 
                 if (areaProperty.Type == AreaTypesEnum.Type7 || areaProperty.Type == AreaTypesEnum.Type8)
@@ -186,20 +186,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             {
                                 LanguageId = 1, // da
                                 Name = "00. Morgenrundtur",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
                                 LanguageId = 2, // en
                                 Name = "00. Morning tour",
-                                Description = "",
+                                Description = ""
                             },
                             new()
                             {
                                 LanguageId = 3, // ge
                                 Name = "00. Morgentour",
-                                Description = "",
-                            },
+                                Description = ""
+                            }
                         }, property.FolderId).ConfigureAwait(false);
                         areaRule.FolderName = "00. Morgenrundtur";
 
@@ -210,7 +210,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             LanguageId = 1,
                             Name = "Morgenrundtur",
                             CreatedByUserId = _userService.UserId,
-                            UpdatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId
                         };
                         await areaRuleTranslation.Create(_backendConfigurationPnDbContext);
                         areaRuleTranslation = new AreaRuleTranslation
@@ -219,7 +219,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             LanguageId = 2,
                             Name = "Morning tour",
                             CreatedByUserId = _userService.UserId,
-                            UpdatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId
                         };
                         await areaRuleTranslation.Create(_backendConfigurationPnDbContext);
                     }
@@ -333,7 +333,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .Select(y => new CommonDictionaryModel
                             {
                                 Id = y.LanguageId,
-                                Name = y.Name,
+                                Name = y.Name
                                 //Description = languages.First(z => z.Id == y.LanguageId).Name,
                             }).ToList(),
                         IsDefault = x.IsDefault,
@@ -346,7 +346,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             EformId = x.EformId
                         },
                         // {x.Type, x.Alarm, x.DayOfWeek, x.RepeatEvery, x.RepeatType},
-                        EformId = x.EformId,
+                        EformId = x.EformId
                     })
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
@@ -467,7 +467,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             LanguageId = updateModelTranslatedName.LanguageId,
                             AreaRuleId = areaRule.Id,
                             CreatedByUserId = _userService.UserId,
-                            UpdatedByUserId = _userService.UserId,
+                            UpdatedByUserId = _userService.UserId
                         };
                         await newTranslate.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
@@ -702,7 +702,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .SelectMany(y => y.AreaRuleTranslations
                                 .Where(z => z.LanguageId == curentLanguage.Id)
                                 .Select(z => z.Name))
-                            .ToList(),
+                            .ToList()
                     })
                     .ToList();
 
@@ -745,7 +745,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                             .SelectMany(y => y.AreaRuleTranslations
                                 .Where(z => z.LanguageId == curentLanguage.Id)
                                 .Select(z => z.Name))
-                            .ToList(),
+                            .ToList()
                     })
                     .ToList();
 

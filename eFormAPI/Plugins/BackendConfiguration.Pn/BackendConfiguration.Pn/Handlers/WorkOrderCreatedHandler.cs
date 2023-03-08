@@ -223,7 +223,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                 LastUpdatedByName = "",
                 LeadingCase = false,
                 Priority = workOrderCase.Priority,
-                CreatedByUserId = createdByUserId,
+                CreatedByUserId = createdByUserId
             };
             await newWorkOrderCase.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
         }

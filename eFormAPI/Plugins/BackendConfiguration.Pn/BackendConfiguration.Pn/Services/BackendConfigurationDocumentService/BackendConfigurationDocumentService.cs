@@ -338,7 +338,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 {
                     DocumentId = document.Id,
                     LanguageId = documentUploadedData.LanguageId,
-                    Name = documentUploadedData.Name,
+                    Name = documentUploadedData.Name
                 };
 
                 await documentUploadedDataDb.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -446,7 +446,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 Name = translation.Name,
                 Description = translation.Description,
                 LanguageId = translation.LanguageId,
-                DocumentId = document.Id,
+                DocumentId = document.Id
             };
 
             await documentTranslation.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -458,7 +458,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             {
                 DocumentId = document.Id,
                 LanguageId = documentUploadedData.LanguageId,
-                Name = documentUploadedData.Name,
+                Name = documentUploadedData.Name
             };
 
             await documentUploadedDataModel.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -601,7 +601,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                         .Select(y => new BackendConfigurationDocumentFolderPropertyModel
                         {
                             Id = y.Id,
-                            SdkFolderId = y.SdkFolderId,
+                            SdkFolderId = y.SdkFolderId
                         }).ToList()
                 })
                 .ToList();
@@ -641,7 +641,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 .Select(x => new BackendConfigurationDocumentFolderPropertyModel
                 {
                     Id = x.Id,
-                    SdkFolderId = x.SdkFolderId,
+                    SdkFolderId = x.SdkFolderId
                 }).ToList()
         };
 
@@ -687,7 +687,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 Name = translation.Name,
                 Description = translation.Description,
                 LanguageId = translation.LanguageId,
-                FolderId = folder.Id,
+                FolderId = folder.Id
             };
             folderTranslations.Add(new CommonTranslationsModel
             {

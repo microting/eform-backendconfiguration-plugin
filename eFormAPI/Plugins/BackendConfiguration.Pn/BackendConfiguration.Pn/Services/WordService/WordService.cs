@@ -239,7 +239,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         .SelectMany(y => y.AreaRuleTranslations
                             .Where(z => z.LanguageId == curentLanguage.Id)
                             .Select(z => z.Name))
-                        .ToList(),
+                        .ToList()
                 })
                 .ToList();
 
@@ -397,7 +397,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         .SelectMany(y => y.AreaRuleTranslations
                             .Where(z => z.LanguageId == currentLanguage.Id)
                             .Select(z => z.Name))
-                        .ToList(),
+                        .ToList()
                 })
                 .ToList();
 

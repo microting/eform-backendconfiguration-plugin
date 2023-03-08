@@ -195,7 +195,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				         FileId = model.Id,
 				         PropertyId = x,
 				         CreatedByUserId = _userService.UserId,
-				         UpdatedByUserId = _userService.UserId,
+				         UpdatedByUserId = _userService.UserId
 			         }))
 			{
 				await propertyFile.Create(_dbContext);
@@ -229,7 +229,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					FileId = model.Id,
 					FileTagId = tagForCreateId,
 					CreatedByUserId = _userService.UserId,
-					UpdatedByUserId = _userService.UserId,
+					UpdatedByUserId = _userService.UserId
 				})
 				.ToList();
 
@@ -266,7 +266,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 				{
 					CreatedByUserId = _userService.UserId,
 					FileName = fileCreate.File.FileName.Replace(".pdf", ""), // save only filename, without extension
-					UpdatedByUserId = _userService.UserId,
+					UpdatedByUserId = _userService.UserId
 				};
 				await fileForDb.Create(_dbContext);
 
@@ -276,7 +276,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					FileId = fileForDb.Id,
 					PropertyId = x,
 					CreatedByUserId = _userService.UserId,
-					UpdatedByUserId = _userService.UserId,
+					UpdatedByUserId = _userService.UserId
 				}))
 				{
 					await propertyFile.Create(_dbContext);
@@ -288,7 +288,7 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 					         CreatedByUserId = _userService.UserId,
 					         FileId = fileForDb.Id,
 					         FileTagId = tagId,
-					         UpdatedByUserId = _userService.UserId,
+					         UpdatedByUserId = _userService.UserId
 				         }))
 				{
 					await fileTag.Create(_dbContext);
@@ -411,8 +411,8 @@ public class BackendConfigurationFilesService : IBackendConfigurationFilesServic
 						.Select(tag => new CommonTagModel
 						{
 							Id = tag.FileTagId,
-							Name = tag.FileTag.Name,
-						}).ToList(),
+							Name = tag.FileTag.Name
+						}).ToList()
 				})
 				.FirstOrDefaultAsync();
 
