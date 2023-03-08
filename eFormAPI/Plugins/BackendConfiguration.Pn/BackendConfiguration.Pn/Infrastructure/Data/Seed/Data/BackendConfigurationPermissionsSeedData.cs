@@ -71,7 +71,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 PermissionName = "Enable time registration",
                 ClaimName = BackendConfigurationClaims.EnableTimeRegistration
-            },
+            }
         };
     }
 }

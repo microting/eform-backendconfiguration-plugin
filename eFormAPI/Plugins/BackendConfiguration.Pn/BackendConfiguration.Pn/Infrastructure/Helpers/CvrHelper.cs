@@ -17,14 +17,14 @@ public class CvrHelper
         {
             return new Result
             {
-                Industrycode = "0",
+                Industrycode = "0"
             };
         }
         if (number == 1)
         {
             return new Result
             {
-                Industrycode = "1",
+                Industrycode = "1"
             };
         }
         var client = new HttpClient();

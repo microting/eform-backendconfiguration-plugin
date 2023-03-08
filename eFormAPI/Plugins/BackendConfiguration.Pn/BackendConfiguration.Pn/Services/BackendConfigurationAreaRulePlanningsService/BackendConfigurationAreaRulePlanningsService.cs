@@ -91,7 +91,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             Alarm = x.Alarm,
                             Type = x.Type,
                             HoursAndEnergyEnabled = x.HoursAndEnergyEnabled,
-                            DayOfMonth = x.DayOfMonth,
+                            DayOfMonth = x.DayOfMonth
                         },
                         SendNotifications = x.SendNotifications,
                         AssignedSites = x.PlanningSites
@@ -100,7 +100,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             .Select(y => new AreaRuleAssignedSitesModel { SiteId = y.SiteId, Checked = true, Status = y.Status, PlanningSiteId = y.Id})
                             .ToList(),
                         ComplianceEnabled = x.ComplianceEnabled,
-                        PropertyId = x.PropertyId,
+                        PropertyId = x.PropertyId
                     })
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
@@ -202,8 +202,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                                     Type = sitePlanning.AreaRule.Type,
                                     Alarm = sitePlanning.AreaRule.Alarm,
                                     DayOfWeek = sitePlanning.AreaRule.DayOfWeek,
-                                    RepeatEvery = sitePlanning.AreaRule.RepeatEvery,
-                                },
+                                    RepeatEvery = sitePlanning.AreaRule.RepeatEvery
+                                }
                             }
                         });
                     }
@@ -249,7 +249,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                             Alarm = x.Alarm,
                             Type = x.Type,
                             HoursAndEnergyEnabled = x.HoursAndEnergyEnabled,
-                            DayOfMonth = x.DayOfMonth,
+                            DayOfMonth = x.DayOfMonth
                         },
                         SendNotifications = x.SendNotifications,
                         AssignedSites = x.PlanningSites

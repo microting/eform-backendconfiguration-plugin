@@ -146,7 +146,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     .Select(x => new
                     {
                         templateId = x.Key,
-                        cases = x.ToList(),
+                        cases = x.ToList()
                     })
                     .ToList();
 
@@ -186,7 +186,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             FromDate = $"{fromDate:yyyy-MM-dd}",
                             ToDate = $"{toDate:yyyy-MM-dd}",
                             TextHeaders = new ReportEformTextHeaderModel(),
-                            TableName = checkListTranslation,
+                            TableName = checkListTranslation
                         };
                         // first pass
                         if (result.Count <= 0)
