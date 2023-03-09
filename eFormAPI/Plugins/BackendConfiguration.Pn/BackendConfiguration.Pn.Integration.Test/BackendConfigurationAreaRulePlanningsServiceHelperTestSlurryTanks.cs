@@ -315,7 +315,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Closed
             }
@@ -672,7 +672,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Closed
             }
@@ -1083,7 +1083,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -1560,7 +1560,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -1600,7 +1600,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -2139,7 +2139,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -2179,7 +2179,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -2216,7 +2216,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -2756,7 +2756,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -2795,7 +2795,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
@@ -2833,7 +2833,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
                 DayOfMonth = 0,
                 DayOfWeek = 0,
                 HoursAndEnergyEnabled = false,
-                RepeatEvery = 2,
+                RepeatEvery = 0,
                 RepeatType = 1,
                 Type = AreaRuleT2TypesEnum.Open
             }
