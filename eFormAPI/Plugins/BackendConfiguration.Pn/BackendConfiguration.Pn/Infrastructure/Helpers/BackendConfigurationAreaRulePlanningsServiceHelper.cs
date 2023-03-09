@@ -452,7 +452,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                 rulePlanning.Status = areaRulePlanningModel.Status;
                                 rulePlanning.ComplianceEnabled = areaRulePlanningModel.ComplianceEnabled;
                                 rulePlanning.SendNotifications = areaRulePlanningModel.SendNotifications;
-                                if (rulePlanning.RepeatType == 1 && rulePlanning.RepeatEvery == 0)
+                                if (rulePlanning.RepeatType == 1 && rulePlanning.RepeatEvery == 0 && areaRule.Area.Type != AreaTypesEnum.Type2)
                                 {
                                     rulePlanning.ComplianceEnabled = false;
                                     rulePlanning.SendNotifications = false;
