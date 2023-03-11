@@ -37,7 +37,6 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin"), new MariaDbServerVersion(
@@ -61,7 +60,6 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
     private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -79,7 +77,6 @@ public class BackendConfigurationPropertiesServiceHelperTest
 
     private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -784,5 +781,4 @@ public class BackendConfigurationPropertiesServiceHelperTest
         Assert.That(entityGroups[3].Name, Is.EqualTo($"{propertyUpdateModel.Name} - Device Users"));
         Assert.That(entityGroups[3].Type, Is.EqualTo("EntitySelect"));
     }
-
 }

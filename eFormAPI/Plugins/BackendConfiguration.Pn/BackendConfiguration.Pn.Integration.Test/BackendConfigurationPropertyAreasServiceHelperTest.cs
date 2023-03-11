@@ -37,7 +37,6 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin"), new MariaDbServerVersion(
@@ -61,7 +60,6 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
 
     private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -79,7 +77,6 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
 
     private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -140,7 +137,6 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
         _microtingDbContext = GetContext(_mySqlTestcontainer.ConnectionString);
 
         _microtingDbContext.Database.SetCommandTimeout(300);
-
     }
 
     // Should test the Update method and enable "01. Logbøger" and return success
@@ -373,7 +369,6 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
         Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
         Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
-
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -3495,7 +3490,6 @@ public class BackendConfigurationPropertyAreasServiceHelperTest
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
         Assert.That(areaRuleTranslations.Count, Is.EqualTo(0));
-
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
