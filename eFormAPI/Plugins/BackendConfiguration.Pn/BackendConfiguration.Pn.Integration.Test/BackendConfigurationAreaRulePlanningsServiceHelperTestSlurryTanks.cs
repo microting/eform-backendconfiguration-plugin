@@ -45,11 +45,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
     private TimePlanningPnDbContext? _timePlanningPnDbContext;
     private MicrotingDbContext? _microtingDbContext;
     private CaseTemplatePnDbContext? _caseTemplatePnDbContext;
-    private IBus _bus;
+    private IBus? _bus;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin"), new MariaDbServerVersion(
@@ -73,7 +72,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
     private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -91,7 +89,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
     private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -109,7 +106,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
     private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin"), new MariaDbServerVersion(
@@ -179,7 +175,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             new RebusService(new EFormCoreService(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")), new BackendConfigurationLocalizationService());
         rebusService.Start(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")).GetAwaiter().GetResult();
         _bus = rebusService.GetBus();
-
     }
 
     // Should test the UpdatePlanning method for area rule "03. Gyllebeholdere" for areaRule: 0 with construction only enabled
@@ -287,9 +282,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        var newAreaRule = await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
         var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -363,13 +357,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        // Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        // Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("Beholeder 1"));
-
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -430,9 +417,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(folderTranslations[27].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[28].Name, Is.EqualTo("03. Gyllebeholdere"));
         Assert.That(folderTranslations[28].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks")); // TODO: This should be "00. Log books"
+        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks"));
         Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks")); // TODO: This should be "00. Logbücher"
+        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks"));
         Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[31].Name, Is.EqualTo("Beholeder 1"));
         Assert.That(folderTranslations[31].LanguageId, Is.EqualTo(1));
@@ -454,11 +441,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
         var nextExecutionTime =new DateTime(now.Year + 1, 1, (int)plannings[0].DayOfMonth!, 0, 0, 0);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -644,9 +628,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        var newAreaRule = await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
         var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -721,13 +704,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        // Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        // Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("Beholeder 1"));
-
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -788,9 +764,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(folderTranslations[27].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[28].Name, Is.EqualTo("03. Gyllebeholdere"));
         Assert.That(folderTranslations[28].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks")); // TODO: This should be "00. Log books"
+        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks"));
         Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks")); // TODO: This should be "00. Logbücher"
+        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks"));
         Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[31].Name, Is.EqualTo("Beholeder 1"));
         Assert.That(folderTranslations[31].LanguageId, Is.EqualTo(1));
@@ -827,11 +803,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
         var nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -842,10 +815,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[1].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[1].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[1].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year + 1, 1, (int)plannings[0].DayOfMonth!, 0, 0, 0);
 
         Assert.That(plannings[1].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -1055,9 +1025,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        var newAreaRule = await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
         var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -1132,13 +1101,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        // Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        // Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("Beholeder 1"));
-
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -1199,9 +1161,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(folderTranslations[27].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[28].Name, Is.EqualTo("03. Gyllebeholdere"));
         Assert.That(folderTranslations[28].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks")); // TODO: This should be "00. Log books"
+        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks"));
         Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks")); // TODO: This should be "00. Logbücher"
+        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks"));
         Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[31].Name, Is.EqualTo("Beholeder 1"));
         Assert.That(folderTranslations[31].LanguageId, Is.EqualTo(1));
@@ -1233,11 +1195,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
         var nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -1248,10 +1207,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[1].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[1].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[1].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[1].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -1263,10 +1219,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[2].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[2].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[2].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[2].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year + 1, 1, (int)plannings[0].DayOfMonth!, 0, 0, 0);
 
         Assert.That(plannings[2].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -1532,9 +1485,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        var newAreaRule = await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
         var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -1570,8 +1522,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
 
         var areaRulePlannings = await _backendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
-        // Act
 
+        // Act
         var areaRulePlanningModel2 = new AreaRulePlanningModel
         {
             Id = areaRulePlannings.First().Id,
@@ -1646,13 +1598,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        // Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        // Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("Beholeder 1"));
-
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -1713,9 +1658,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(folderTranslations[27].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[28].Name, Is.EqualTo("03. Gyllebeholdere"));
         Assert.That(folderTranslations[28].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks")); // TODO: This should be "00. Log books"
+        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks"));
         Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks")); // TODO: This should be "00. Logbücher"
+        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks"));
         Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[31].Name, Is.EqualTo("Beholeder 1"));
         Assert.That(folderTranslations[31].LanguageId, Is.EqualTo(1));
@@ -1747,11 +1692,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
         var nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -1762,10 +1704,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[1].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[1].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[1].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[1].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -1777,10 +1716,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[2].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[2].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[2].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[2].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year + 1, 1, (int)plannings[0].DayOfMonth!, 0, 0, 0);
 
         Assert.That(plannings[2].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -2112,7 +2048,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        var newAreaRule = await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
         var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -2262,13 +2198,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        // Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        // Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("Beholeder 1"));
-
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -2329,9 +2258,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(folderTranslations[27].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[28].Name, Is.EqualTo("03. Gyllebeholdere"));
         Assert.That(folderTranslations[28].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks")); // TODO: This should be "00. Log books"
+        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks"));
         Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks")); // TODO: This should be "00. Logbücher"
+        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks"));
         Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[31].Name, Is.EqualTo("Beholeder 1"));
         Assert.That(folderTranslations[31].LanguageId, Is.EqualTo(1));
@@ -2363,11 +2292,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
         var nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -2378,10 +2304,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(plannings[1].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[1].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[1].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[1].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -2393,10 +2316,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[2].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(plannings[2].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[2].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[2].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year + 1, 1, (int)plannings[0].DayOfMonth!, 0, 0, 0);
 
         Assert.That(plannings[2].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -2728,7 +2648,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        var newAreaRule = await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
         var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
 
@@ -2879,12 +2799,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
         Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        // Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("Beholeder 1"));
-        // Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
-        // Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        // Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("Beholeder 1"));
 
 
         // Assert areaProperties
@@ -2946,9 +2860,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(folderTranslations[27].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[28].Name, Is.EqualTo("03. Gyllebeholdere"));
         Assert.That(folderTranslations[28].LanguageId, Is.EqualTo(1));
-        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks")); // TODO: This should be "00. Log books"
+        Assert.That(folderTranslations[29].Name, Is.EqualTo("03. Slurry tanks"));
         Assert.That(folderTranslations[29].LanguageId, Is.EqualTo(2));
-        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks")); // TODO: This should be "00. Logbücher"
+        Assert.That(folderTranslations[30].Name, Is.EqualTo("03. Gülletanks"));
         Assert.That(folderTranslations[30].LanguageId, Is.EqualTo(3));
         Assert.That(folderTranslations[31].Name, Is.EqualTo("Beholeder 1"));
         Assert.That(folderTranslations[31].LanguageId, Is.EqualTo(1));
@@ -2980,11 +2894,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
         var nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -2995,10 +2906,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(plannings[1].SdkFolderId, Is.EqualTo(folderTranslations[31].FolderId));
         Assert.That(plannings[1].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[1].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[1].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -3012,8 +2920,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[2].LastExecutedTime, Is.Not.Null);
         // test last executed time within 1 minute
         Assert.That(plannings[2].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year + 1, 1, (int)plannings[0].DayOfMonth!, 0, 0, 0);
 
         Assert.That(plannings[2].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -3026,8 +2932,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         // test last executed time within 1 minute
         Assert.That(plannings[3].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         now = DateTime.UtcNow;
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[3].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -3040,8 +2944,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[4].LastExecutedTime, Is.Not.Null);
         // test last executed time within 1 minute
         Assert.That(plannings[4].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[4].NextExecutionTime, Is.EqualTo(nextExecutionTime));
@@ -3055,8 +2957,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings[5].LastExecutedTime, Is.Not.Null);
         // test last executed time within 1 minute
         Assert.That(plannings[5].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
-        diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        multiplier = (int) (diff / 2);
         nextExecutionTime =new DateTime(now.Year + 1, 1, (int)plannings[0].DayOfMonth!, 0, 0, 0);
 
         Assert.That(plannings[5].NextExecutionTime, Is.EqualTo(nextExecutionTime));

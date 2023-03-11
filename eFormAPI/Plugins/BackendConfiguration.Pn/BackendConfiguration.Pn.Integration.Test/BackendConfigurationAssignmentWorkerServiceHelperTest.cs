@@ -12,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Services;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
@@ -43,11 +42,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
     private TimePlanningPnDbContext? _timePlanningPnDbContext;
     private MicrotingDbContext? _microtingDbContext;
     private CaseTemplatePnDbContext? _caseTemplatePnDbContext;
-    private IBus _bus;
+    private IBus? _bus;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin"), new MariaDbServerVersion(
@@ -71,7 +69,6 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
     private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -89,7 +86,6 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
     private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -107,7 +103,6 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
     private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin"), new MariaDbServerVersion(
@@ -815,7 +810,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
             UserLastName = Guid.NewGuid().ToString()
         };
 
-        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
             _timePlanningPnDbContext);
 
         var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
@@ -969,7 +964,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
             TaskManagementEnabled = true
         };
 
-        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
             _timePlanningPnDbContext);
 
         var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
@@ -1020,7 +1015,6 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core,
             1,
             _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus, _itemsPlanningPnDbContext);
-
 
         // Assert
         var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();

@@ -44,11 +44,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
     private TimePlanningPnDbContext? _timePlanningPnDbContext;
     private MicrotingDbContext? _microtingDbContext;
     private CaseTemplatePnDbContext? _caseTemplatePnDbContext;
-    private IBus _bus;
+    private IBus? _bus;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin"), new MariaDbServerVersion(
@@ -72,7 +71,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
 
     private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -90,7 +88,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
 
     private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
@@ -108,7 +105,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
 
     private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
     {
-
         var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
 
         optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin"), new MariaDbServerVersion(
@@ -178,7 +174,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
             new RebusService(new EFormCoreService(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")), new BackendConfigurationLocalizationService());
         rebusService.Start(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")).GetAwaiter().GetResult();
         _bus = rebusService.GetBus();
-
     }
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" for areaRule: 0 with repeat type "days" adn repeat every "2"
@@ -349,7 +344,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("09. Ausfallzeit der Ansäuerung"));
         Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
 
-
         // Assert areaProperties
         Assert.NotNull(areaProperties);
         Assert.That(areaProperties.Count, Is.EqualTo(1));
@@ -508,6 +502,5 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         Assert.That(cases[0].FolderId, Is.EqualTo(null));
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-
     }
 }
