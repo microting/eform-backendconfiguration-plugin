@@ -264,7 +264,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
-        // test last executed time within 1 minute
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
