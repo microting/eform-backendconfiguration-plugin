@@ -4,179 +4,18 @@ using BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
-using BackendConfiguration.Pn.Services.RebusService;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
-using eFormCore;
 using Microsoft.EntityFrameworkCore;
-using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
-using Microting.eFormCaseTemplateBase.Infrastructure.Data;
-using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
-using Microting.TimePlanningBase.Infrastructure.Data;
-using Rebus.Bus;
-using File = System.IO.File;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
-public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
+public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : TestBaseSetup
 {
-#pragma warning disable CS0618
-    private readonly MariaDbTestcontainer _mySqlTestcontainer = new ContainerBuilder<MariaDbTestcontainer>()
-#pragma warning restore CS0618
-        .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
-        {
-            Database = "myDb",
-            Username = "root",
-            Password = "secretpassword"
-        })
-        .WithEnvironment("MYSQL_ROOT_PASSWORD", "secretpassword")
-        .Build();
-
-    private BackendConfigurationPnDbContext? _backendConfigurationPnDbContext;
-    private ItemsPlanningPnDbContext? _itemsPlanningPnDbContext;
-    private TimePlanningPnDbContext? _timePlanningPnDbContext;
-    private MicrotingDbContext? _microtingDbContext;
-    private CaseTemplatePnDbContext? _caseTemplatePnDbContext;
-    private IBus? _bus;
-
-    private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new BackendConfigurationPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-backend-configuration-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        try
-        {
-            backendConfigurationPnDbContext.Database.EnsureCreated();
-        } catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private MicrotingDbContext GetContext(string connectionStr)
-    {
-        DbContextOptionsBuilder dbContextOptionsBuilder = new DbContextOptionsBuilder();
-
-        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK"), new MariaDbServerVersion(
-            new Version(10, 8)));
-        var microtingDbContext =  new MicrotingDbContext(dbContextOptionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_SDK.sql");
-        string rawSql = File.ReadAllText(file);
-
-        microtingDbContext.Database.EnsureCreated();
-        microtingDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return microtingDbContext;
-    }
-
-    private async Task<Core> GetCore()
-    {
-        var core = new Core();
-        await core.StartSqlOnly(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK"));
-        return core;
-    }
-
-    [SetUp]
-    public async Task Setup()
-    {
-        Console.WriteLine($"{DateTime.Now} : Starting MariaDb Container...");
-        await _mySqlTestcontainer.StartAsync();
-        Console.WriteLine($"{DateTime.Now} : Started MariaDb Container");
-
-        _backendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _backendConfigurationPnDbContext!.Database.SetCommandTimeout(300);
-
-        _itemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _itemsPlanningPnDbContext.Database.SetCommandTimeout(300);
-
-        _timePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _timePlanningPnDbContext.Database.SetCommandTimeout(300);
-
-        _microtingDbContext = GetContext(_mySqlTestcontainer.ConnectionString);
-
-        _microtingDbContext.Database.SetCommandTimeout(300);
-
-        _caseTemplatePnDbContext = GetCaseTemplatePnDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _caseTemplatePnDbContext.Database.SetCommandTimeout(300);
-
-        var rebusService =
-            new RebusService(new EFormCoreService(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")), new BackendConfigurationLocalizationService());
-        rebusService.Start(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")).GetAwaiter().GetResult();
-        _bus = rebusService.GetBus();
-    }
-
     // Should test the UpdatePlanning method for area rule "03. Gyllebeholdere" for areaRule: 0 with construction only enabled
     [Test]
     public async Task UpdatePlanning_AreaRule0COnstructionOnly_ReturnsSuccess()
@@ -199,7 +38,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -214,10 +53,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -233,11 +72,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
-        var areaTranslation = await _backendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
-        var area = await _backendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
-        var currentSite = await _microtingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
+        var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
@@ -252,12 +91,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1);
-        var propertyArea = await _backendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
-        var areaInitialFields = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
-        var checkListTranslation = await _microtingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
@@ -282,8 +121,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
-        var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -318,27 +157,27 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         // Assert
-        var areaRuleTranslations = await _backendConfigurationPnDbContext!.AreaRuleTranslations
-            .Join(_backendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
+        var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
+            .Join(BackendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == properties[0].Id).ToListAsync();
-        var areaProperties = await _backendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-        var folderTranslations = await _microtingDbContext!.FolderTranslations.ToListAsync();
-        var areaRulePlannings = await _backendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
-        var planningSites = await _backendConfigurationPnDbContext.PlanningSites.ToListAsync();
-        var plannings = await _itemsPlanningPnDbContext!.Plannings.ToListAsync();
-        var planningNameTranslations = await _itemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
-        var itemPlanningSites = await _itemsPlanningPnDbContext!.PlanningSites.ToListAsync();
-        var itemPlanningCases = await _itemsPlanningPnDbContext!.PlanningCases.ToListAsync();
-        var itemPlanningCaseSites = await _itemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
-        var compliances = await _backendConfigurationPnDbContext!.Compliances.ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.ToListAsync();
-        var cases = await _microtingDbContext!.Cases.ToListAsync();
+        var areaProperties = await BackendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
+        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
+        var planningSites = await BackendConfigurationPnDbContext.PlanningSites.ToListAsync();
+        var plannings = await ItemsPlanningPnDbContext!.Plannings.ToListAsync();
+        var planningNameTranslations = await ItemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
+        var itemPlanningSites = await ItemsPlanningPnDbContext!.PlanningSites.ToListAsync();
+        var itemPlanningCases = await ItemsPlanningPnDbContext!.PlanningCases.ToListAsync();
+        var itemPlanningCaseSites = await ItemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
+        var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
+        var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
-        var englishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
 
         // Assert result
         Assert.NotNull(result);
@@ -545,7 +384,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -560,10 +399,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -579,11 +418,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
-        var areaTranslation = await _backendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
-        var area = await _backendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
-        var currentSite = await _microtingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
+        var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
@@ -598,12 +437,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1);
-        var propertyArea = await _backendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
-        var areaInitialFields = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
-        var checkListTranslation = await _microtingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
@@ -628,8 +467,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
-        var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -664,28 +503,28 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         // Assert
-        var areaRuleTranslations = await _backendConfigurationPnDbContext!.AreaRuleTranslations
-            .Join(_backendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
+        var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
+            .Join(BackendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == properties[0].Id).ToListAsync();
-        var areaProperties = await _backendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-        var folderTranslations = await _microtingDbContext!.FolderTranslations.ToListAsync();
-        var areaRulePlannings = await _backendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
-        var planningSites = await _backendConfigurationPnDbContext.PlanningSites.ToListAsync();
-        var plannings = await _itemsPlanningPnDbContext!.Plannings.ToListAsync();
-        var planningNameTranslations = await _itemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
-        var itemPlanningSites = await _itemsPlanningPnDbContext!.PlanningSites.ToListAsync();
-        var itemPlanningCases = await _itemsPlanningPnDbContext!.PlanningCases.ToListAsync();
-        var itemPlanningCaseSites = await _itemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
-        var compliances = await _backendConfigurationPnDbContext!.Compliances.ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.ToListAsync();
-        var cases = await _microtingDbContext!.Cases.ToListAsync();
+        var areaProperties = await BackendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
+        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
+        var planningSites = await BackendConfigurationPnDbContext.PlanningSites.ToListAsync();
+        var plannings = await ItemsPlanningPnDbContext!.Plannings.ToListAsync();
+        var planningNameTranslations = await ItemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
+        var itemPlanningSites = await ItemsPlanningPnDbContext!.PlanningSites.ToListAsync();
+        var itemPlanningCases = await ItemsPlanningPnDbContext!.PlanningCases.ToListAsync();
+        var itemPlanningCaseSites = await ItemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
+        var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
+        var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
-        var englishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
 
         // Assert result
         Assert.NotNull(result);
@@ -795,7 +634,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(2));
         const string eformName = "03. Kontrol alarmanlæg gyllebeholder";
-        var eformId = await _microtingDbContext.CheckListTranslations
+        var eformId = await MicrotingDbContext.CheckListTranslations
             .Where(x => x.Text == eformName)
             .Select(x => x.CheckListId)
             .FirstAsync().ConfigureAwait(false);
@@ -942,7 +781,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -957,10 +796,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -976,11 +815,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
-        var areaTranslation = await _backendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
-        var area = await _backendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
-        var currentSite = await _microtingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
+        var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
@@ -995,12 +834,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1);
-        var propertyArea = await _backendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
-        var areaInitialFields = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
-        var checkListTranslation = await _microtingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
@@ -1025,8 +864,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
-        var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -1061,29 +900,29 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         // Assert
-        var areaRuleTranslations = await _backendConfigurationPnDbContext!.AreaRuleTranslations
-            .Join(_backendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
+        var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
+            .Join(BackendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == properties[0].Id).ToListAsync();
-        var areaProperties = await _backendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-        var folderTranslations = await _microtingDbContext!.FolderTranslations.ToListAsync();
-        var areaRulePlannings = await _backendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
-        var planningSites = await _backendConfigurationPnDbContext.PlanningSites.ToListAsync();
-        var plannings = await _itemsPlanningPnDbContext!.Plannings.ToListAsync();
-        var planningNameTranslations = await _itemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
-        var itemPlanningSites = await _itemsPlanningPnDbContext!.PlanningSites.ToListAsync();
-        var itemPlanningCases = await _itemsPlanningPnDbContext!.PlanningCases.ToListAsync();
-        var itemPlanningCaseSites = await _itemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
-        var compliances = await _backendConfigurationPnDbContext!.Compliances.ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.ToListAsync();
-        var cases = await _microtingDbContext!.Cases.ToListAsync();
+        var areaProperties = await BackendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
+        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
+        var planningSites = await BackendConfigurationPnDbContext.PlanningSites.ToListAsync();
+        var plannings = await ItemsPlanningPnDbContext!.Plannings.ToListAsync();
+        var planningNameTranslations = await ItemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
+        var itemPlanningSites = await ItemsPlanningPnDbContext!.PlanningSites.ToListAsync();
+        var itemPlanningCases = await ItemsPlanningPnDbContext!.PlanningCases.ToListAsync();
+        var itemPlanningCaseSites = await ItemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
+        var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
+        var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
-        var englishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
-        var floatingLayerEformId = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);
         Assert.That(result.Success, Is.EqualTo(true));
@@ -1372,7 +1211,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -1387,7 +1226,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -1402,10 +1241,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel2, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -1421,7 +1260,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -1437,10 +1276,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
-        var areaTranslation = await _backendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
-        var area = await _backendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
+        var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
+        var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
@@ -1455,12 +1294,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1);
-        var propertyArea = await _backendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
-        var areaInitialFields = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
-        var checkListTranslation = await _microtingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
@@ -1485,8 +1324,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
-        var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -1519,9 +1358,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
-        var areaRulePlannings = await _backendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
+        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
         // Act
         var areaRulePlanningModel2 = new AreaRulePlanningModel
@@ -1559,28 +1398,28 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         // Assert
-        var areaRuleTranslations = await _backendConfigurationPnDbContext!.AreaRuleTranslations
-            .Join(_backendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
+        var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
+            .Join(BackendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == properties[0].Id).ToListAsync();
-        var areaProperties = await _backendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-        var folderTranslations = await _microtingDbContext!.FolderTranslations.ToListAsync();
-        var planningSites = await _backendConfigurationPnDbContext.PlanningSites.ToListAsync();
-        var plannings = await _itemsPlanningPnDbContext!.Plannings.ToListAsync();
-        var planningNameTranslations = await _itemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
-        var itemPlanningSites = await _itemsPlanningPnDbContext!.PlanningSites.ToListAsync();
-        var itemPlanningCases = await _itemsPlanningPnDbContext!.PlanningCases.ToListAsync();
-        var itemPlanningCaseSites = await _itemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
-        var compliances = await _backendConfigurationPnDbContext!.Compliances.ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.ToListAsync();
-        var cases = await _microtingDbContext!.Cases.ToListAsync();
+        var areaProperties = await BackendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
+        var planningSites = await BackendConfigurationPnDbContext.PlanningSites.ToListAsync();
+        var plannings = await ItemsPlanningPnDbContext!.Plannings.ToListAsync();
+        var planningNameTranslations = await ItemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
+        var itemPlanningSites = await ItemsPlanningPnDbContext!.PlanningSites.ToListAsync();
+        var itemPlanningCases = await ItemsPlanningPnDbContext!.PlanningCases.ToListAsync();
+        var itemPlanningCaseSites = await ItemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
+        var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
+        var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
-        var englishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
-        var floatingLayerEformId = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);
         Assert.That(result.Success, Is.EqualTo(true));
@@ -1935,7 +1774,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -1950,7 +1789,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -1965,10 +1804,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel2, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -1984,7 +1823,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -2000,10 +1839,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
-        var areaTranslation = await _backendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
-        var area = await _backendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
+        var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
+        var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
@@ -2018,12 +1857,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1);
-        var propertyArea = await _backendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
-        var areaInitialFields = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
-        var checkListTranslation = await _microtingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
@@ -2048,8 +1887,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
-        var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
@@ -2082,9 +1921,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
-        var areaRulePlannings = await _backendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
+        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
         // Act
 
         var areaRulePlanningModel2 = new AreaRulePlanningModel
@@ -2122,7 +1961,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         var areaRulePlanningModel3 = new AreaRulePlanningModel
         {
@@ -2159,28 +1998,28 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         // Assert
-        var areaRuleTranslations = await _backendConfigurationPnDbContext!.AreaRuleTranslations
-            .Join(_backendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
+        var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
+            .Join(BackendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == properties[0].Id).ToListAsync();
-        var areaProperties = await _backendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-        var folderTranslations = await _microtingDbContext!.FolderTranslations.ToListAsync();
-        var planningSites = await _backendConfigurationPnDbContext.PlanningSites.ToListAsync();
-        var plannings = await _itemsPlanningPnDbContext!.Plannings.ToListAsync();
-        var planningNameTranslations = await _itemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
-        var itemPlanningSites = await _itemsPlanningPnDbContext!.PlanningSites.ToListAsync();
-        var itemPlanningCases = await _itemsPlanningPnDbContext!.PlanningCases.ToListAsync();
-        var itemPlanningCaseSites = await _itemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
-        var compliances = await _backendConfigurationPnDbContext!.Compliances.ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.ToListAsync();
-        var cases = await _microtingDbContext!.Cases.ToListAsync();
+        var areaProperties = await BackendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
+        var planningSites = await BackendConfigurationPnDbContext.PlanningSites.ToListAsync();
+        var plannings = await ItemsPlanningPnDbContext!.Plannings.ToListAsync();
+        var planningNameTranslations = await ItemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
+        var itemPlanningSites = await ItemsPlanningPnDbContext!.PlanningSites.ToListAsync();
+        var itemPlanningCases = await ItemsPlanningPnDbContext!.PlanningCases.ToListAsync();
+        var itemPlanningCaseSites = await ItemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
+        var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
+        var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
-        var englishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
-        var floatingLayerEformId = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);
         Assert.That(result.Success, Is.EqualTo(true));
@@ -2535,7 +2374,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             WorkorderEnable = false
         };
 
-        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+        await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -2550,7 +2389,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -2565,10 +2404,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel2, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -2584,7 +2423,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -2600,10 +2439,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
-        var areaTranslation = await _backendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
-        var area = await _backendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
+        var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
+        var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
@@ -2618,12 +2457,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyId = properties[0].Id
         };
 
-        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1);
-        var propertyArea = await _backendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
-        var areaInitialFields = await _backendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
+        var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+        var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
-        var checkListTranslation = await _microtingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
@@ -2648,8 +2487,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
             PropertyAreaId = propertyArea.Id
         };
 
-        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, _backendConfigurationPnDbContext, danishLanguage);
-        var areaRules = await _backendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+        var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
 
         // should create AreaRulePlanningModel for areaId
@@ -2683,9 +2522,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
-        var areaRulePlannings = await _backendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
+        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
         var areaRulePlanningModel2 = new AreaRulePlanningModel
         {
@@ -2722,7 +2561,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         // Act
         var areaRulePlanningModel3 = new AreaRulePlanningModel
@@ -2760,28 +2599,28 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
 
         // Assert
-        var areaRuleTranslations = await _backendConfigurationPnDbContext!.AreaRuleTranslations
-            .Join(_backendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
+        var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
+            .Join(BackendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == properties[0].Id).ToListAsync();
-        var areaProperties = await _backendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
-        var folderTranslations = await _microtingDbContext!.FolderTranslations.ToListAsync();
-        var planningSites = await _backendConfigurationPnDbContext.PlanningSites.AsNoTracking().ToListAsync();
-        var plannings = await _itemsPlanningPnDbContext!.Plannings.AsNoTracking().ToListAsync();
-        var planningNameTranslations = await _itemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
-        var itemPlanningSites = await _itemsPlanningPnDbContext!.PlanningSites.AsNoTracking().ToListAsync();
-        var itemPlanningCases = await _itemsPlanningPnDbContext!.PlanningCases.ToListAsync();
-        var itemPlanningCaseSites = await _itemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
-        var compliances = await _backendConfigurationPnDbContext!.Compliances.ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.ToListAsync();
-        var cases = await _microtingDbContext!.Cases.ToListAsync();
+        var areaProperties = await BackendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
+        var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
+        var planningSites = await BackendConfigurationPnDbContext.PlanningSites.AsNoTracking().ToListAsync();
+        var plannings = await ItemsPlanningPnDbContext!.Plannings.AsNoTracking().ToListAsync();
+        var planningNameTranslations = await ItemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
+        var itemPlanningSites = await ItemsPlanningPnDbContext!.PlanningSites.AsNoTracking().ToListAsync();
+        var itemPlanningCases = await ItemsPlanningPnDbContext!.PlanningCases.ToListAsync();
+        var itemPlanningCaseSites = await ItemsPlanningPnDbContext!.PlanningCaseSites.ToListAsync();
+        var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
+        var cases = await MicrotingDbContext!.Cases.ToListAsync();
 
-        var englishLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await _microtingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
-        var floatingLayerEformId = await _microtingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);
         Assert.That(result.Success, Is.EqualTo(true));
