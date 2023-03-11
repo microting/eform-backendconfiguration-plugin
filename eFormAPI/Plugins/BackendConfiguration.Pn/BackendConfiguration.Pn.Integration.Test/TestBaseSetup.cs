@@ -27,12 +27,12 @@ public class TestBaseSetup
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "secretpassword")
         .Build();
 
-    public BackendConfigurationPnDbContext? BackendConfigurationPnDbContext;
-    public ItemsPlanningPnDbContext? ItemsPlanningPnDbContext;
-    public TimePlanningPnDbContext? TimePlanningPnDbContext;
-    public MicrotingDbContext? MicrotingDbContext;
-    public CaseTemplatePnDbContext? CaseTemplatePnDbContext;
-    public IBus? Bus;
+    protected BackendConfigurationPnDbContext? BackendConfigurationPnDbContext;
+    protected ItemsPlanningPnDbContext? ItemsPlanningPnDbContext;
+    protected TimePlanningPnDbContext? TimePlanningPnDbContext;
+    protected MicrotingDbContext? MicrotingDbContext;
+    protected CaseTemplatePnDbContext? CaseTemplatePnDbContext;
+    protected IBus? Bus;
 
     private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
     {
