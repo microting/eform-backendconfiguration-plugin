@@ -66,7 +66,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                 await areaRuleAreaRulesPlanning.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                             }
 
-                            await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType9(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                            await CreatePlanningType9(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
                         if (!areaRulePlanningModel.Status && oldStatus)
                         {
@@ -356,7 +356,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                         await areaRuleAreaRulesPlanning.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                                     }
 
-                                    await BackendConfigurationAreaRulePlanningsServiceHelper.CreatePlanningType10(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                                    await CreatePlanningType10(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                 }
 
                                 if (!areaRulePlanningModel.Status && oldStatus)
@@ -452,7 +452,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                 rulePlanning.Status = areaRulePlanningModel.Status;
                                 rulePlanning.ComplianceEnabled = areaRulePlanningModel.ComplianceEnabled;
                                 rulePlanning.SendNotifications = areaRulePlanningModel.SendNotifications;
-                                if (rulePlanning.RepeatType == 1 && rulePlanning.RepeatEvery == 0)
+                                if (rulePlanning.RepeatType == 1 && rulePlanning.RepeatEvery == 0 && areaRule.Area.Type != AreaTypesEnum.Type2)
                                 {
                                     rulePlanning.ComplianceEnabled = false;
                                     rulePlanning.SendNotifications = false;
@@ -535,10 +535,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         .Where(x => x.Text == eformName)
                                                         .Select(x => x.CheckListId)
                                                         .FirstAsync().ConfigureAwait(false);
-                                                    var planningForType2TypeTankOpen = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateItemPlanningObject(
+                                                    var planningForType2TypeTankOpen = await CreateItemPlanningObject(
                                                         eformId,
                                                         eformName, areaRule.AreaRulesPlannings[0].FolderId,
-                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                     planningForType2TypeTankOpen.NameTranslations =
                                                         new List<PlanningNameTranslation>
                                                         {
@@ -591,8 +591,15 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                     }
 
-                                                    await planningForType2TypeTankOpen.Create(
+                                                    await planningForType2TypeTankOpen.Update(
                                                         itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                                                    foreach (var planningSite in areaRule.AreaRulesPlannings[0].PlanningSites)
+                                                    {
+                                                        planningSite.Status = 33;
+                                                        await planningSite.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                    }
+
                                                     await PairItemWithSiteHelper.Pair(
                                                         rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
                                                         eformId,
@@ -612,7 +619,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 {
                                                     if (areaRule.AreaRulesPlannings[0].ItemPlanningId != 0)
                                                     {
-                                                        await BackendConfigurationAreaRulePlanningsServiceHelper.DeleteItemPlanning(areaRule.AreaRulesPlannings[0]
+                                                        await DeleteItemPlanning(areaRule.AreaRulesPlannings[0]
                                                             .ItemPlanningId, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                         areaRule.AreaRulesPlannings[0].ItemPlanningId = 0;
                                                         await areaRule.AreaRulesPlannings[0]
@@ -629,10 +636,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         .Where(x => x.Text == eformName)
                                                         .Select(x => x.CheckListId)
                                                         .FirstAsync().ConfigureAwait(false);
-                                                    var planningForType2AlarmYes = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateItemPlanningObject(
+                                                    var planningForType2AlarmYes = await CreateItemPlanningObject(
                                                         eformId,
                                                         eformName, areaRule.AreaRulesPlannings[1].FolderId,
-                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                     planningForType2AlarmYes.NameTranslations =
                                                         new List<PlanningNameTranslation>
                                                         {
@@ -688,7 +695,12 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                     }
 
-                                                    await planningForType2AlarmYes.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                    await planningForType2AlarmYes.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                    foreach (var planningSite in areaRule.AreaRulesPlannings[1].PlanningSites)
+                                                    {
+                                                        planningSite.Status = 33;
+                                                        await planningSite.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                    }
                                                     await PairItemWithSiteHelper.Pair(
                                                         rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
                                                         eformId,
@@ -708,7 +720,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 {
                                                     if (areaRule.AreaRulesPlannings[1].ItemPlanningId != 0)
                                                     {
-                                                        await BackendConfigurationAreaRulePlanningsServiceHelper.DeleteItemPlanning(areaRule.AreaRulesPlannings[1]
+                                                        await DeleteItemPlanning(areaRule.AreaRulesPlannings[1]
                                                             .ItemPlanningId, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                         areaRule.AreaRulesPlannings[1].ItemPlanningId = 0;
                                                         await areaRule.AreaRulesPlannings[1]
@@ -717,10 +729,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 }
 
                                                 /*areaRule.EformName must be "03. Kontrol konstruktion"*/
-                                                var planningForType2 = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateItemPlanningObject(
+                                                var planningForType2 = await CreateItemPlanningObject(
                                                     (int) areaRule.EformId,
                                                     areaRule.EformName, areaRule.AreaRulesPlannings[2].FolderId,
-                                                    areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                    areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                 planningForType2.NameTranslations = new List<PlanningNameTranslation>
                                                 {
                                                     new()
@@ -774,7 +786,12 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 }
 
-                                                await planningForType2.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                await planningForType2.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                foreach (var planningSite in areaRule.AreaRulesPlannings[2].PlanningSites)
+                                                {
+                                                    planningSite.Status = 33;
+                                                    await planningSite.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                }
                                                 await PairItemWithSiteHelper.Pair(
                                                     rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
                                                     (int) areaRule.EformId,
@@ -839,10 +856,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                             .Select(x => x.CheckListId)
                                                             .FirstAsync().ConfigureAwait(false);
                                                         var planningForType6HoursAndEnergyEnabled =
-                                                            await BackendConfigurationAreaRulePlanningsServiceHelper.CreateItemPlanningObject(eformId, eformName,
+                                                            await CreateItemPlanningObject(eformId, eformName,
                                                                 areaRule.AreaRulesPlannings[0].FolderId,
                                                                 areaRulePlanningModel,
-                                                                areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                                areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                         planningForType6HoursAndEnergyEnabled.NameTranslations =
                                                             new List<PlanningNameTranslation>
                                                             {
@@ -904,7 +921,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                                         .DayOfWeek;
                                                         }
 
-                                                        await planningForType6HoursAndEnergyEnabled.Create(
+                                                        await planningForType6HoursAndEnergyEnabled.Update(
                                                             itemsPlanningPnDbContext).ConfigureAwait(false);
                                                         areaRule.AreaRulesPlannings[0].ItemPlanningId =
                                                             planningForType6HoursAndEnergyEnabled.Id;
@@ -918,7 +935,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         areaRule.AreaRulesPlannings[2].HoursAndEnergyEnabled = false;
                                                         if (areaRule.AreaRulesPlannings[0].ItemPlanningId != 0)
                                                         {
-                                                            await BackendConfigurationAreaRulePlanningsServiceHelper.DeleteItemPlanning(areaRule.AreaRulesPlannings[0]
+                                                            await DeleteItemPlanning(areaRule.AreaRulesPlannings[0]
                                                                 .ItemPlanningId, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                             areaRule.AreaRulesPlannings[0].ItemPlanningId = 0;
                                                             await areaRule.AreaRulesPlannings[0]
@@ -936,9 +953,9 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         .Where(x => x.Text == eformNameTwo)
                                                         .Select(x => x.CheckListId)
                                                         .FirstAsync().ConfigureAwait(false);
-                                                    var planningForType6One = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateItemPlanningObject(eformIdOne,
+                                                    var planningForType6One = await CreateItemPlanningObject(eformIdOne,
                                                         eformNameOne, areaRule.AreaRulesPlannings[1].FolderId,
-                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                     planningForType6One.NameTranslations =
                                                         new List<PlanningNameTranslation>
                                                         {
@@ -969,9 +986,9 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         };
                                                     planningForType6One.RepeatEvery = 12;
                                                     planningForType6One.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
-                                                    var planningForType6Two = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateItemPlanningObject(eformIdTwo,
+                                                    var planningForType6Two = await CreateItemPlanningObject(eformIdTwo,
                                                         eformNameTwo, areaRule.AreaRulesPlannings[2].FolderId,
-                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                        areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                     planningForType6Two.NameTranslations =
                                                         new List<PlanningNameTranslation>
                                                         {
@@ -1030,8 +1047,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                             areaRulePlanningModel.TypeSpecificFields.EndDate;
                                                     }
 
-                                                    await planningForType6One.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
-                                                    await planningForType6Two.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                    await planningForType6One.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                    await planningForType6Two.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                                                     await PairItemWithSiteHelper.Pair(
                                                         rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
                                                         eformIdOne,
@@ -1108,9 +1125,9 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         areaRule.RepeatEvery; // repeat every mast be from area rule
                                                 }
 
-                                                var planning = await BackendConfigurationAreaRulePlanningsServiceHelper.CreateItemPlanningObject((int) areaRule.EformId,
+                                                var planning = await CreateItemPlanningObject((int) areaRule.EformId,
                                                     areaRule.EformName, areaRule.FolderId, areaRulePlanningModel,
-                                                    areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                    areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                                                 planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
                                                     areaRuleAreaRuleTranslation => new PlanningNameTranslation
                                                     {
@@ -1152,7 +1169,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     planning.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Day;
                                                 }
 
-                                                await planning.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                                                 await PairItemWithSiteHelper.Pair(
                                                     rulePlanning.PlanningSites
                                                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -1183,7 +1200,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 }
                                             }
 
-                                            await BackendConfigurationAreaRulePlanningsServiceHelper.DeleteItemPlanning(rulePlanning.ItemPlanningId, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                                            await DeleteItemPlanning(rulePlanning.ItemPlanningId, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
 
                                             rulePlanning.ItemPlanningId = 0;
                                             rulePlanning.Status = false;
@@ -1502,13 +1519,13 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
     public static async Task<Planning> CreateItemPlanningObject(int eformId, string eformName, int folderId,
         AreaRulePlanningModel areaRulePlanningModel, AreaRule areaRule, int userId,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext)
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
     {
         var propertyItemPlanningTagId = await backendConfigurationPnDbContext.Properties
             .Where(x => x.Id == areaRule.PropertyId)
             .Select(x => x.ItemPlanningTagId)
             .FirstAsync().ConfigureAwait(false);
-        return new Planning
+        var planning = new Planning
         {
             CreatedByUserId = userId,
             Enabled = areaRulePlanningModel.Status,
@@ -1521,20 +1538,55 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             StartDate = areaRulePlanningModel.StartDate,
             IsLocked = true,
             IsEditable = false,
-            IsHidden = true,
-            PlanningSites = areaRulePlanningModel.AssignedSites
-                .Select(x =>
-                    new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
-                    {
-                        SiteId = x.SiteId
-                    })
-                .ToList(),
-            PlanningsTags = new List<PlanningsTags>
-            {
-                new() { PlanningTagId = areaRule.Area.ItemPlanningTagId },
-                new() { PlanningTagId = propertyItemPlanningTagId }
-            }
+            IsHidden = true
         };
+
+        await planning.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+        foreach (var assignedSite in areaRulePlanningModel.AssignedSites)
+        {
+            var planningSite = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+            {
+                SiteId = assignedSite.SiteId,
+                PlanningId = planning.Id,
+                CreatedByUserId = userId,
+                UpdatedByUserId = userId
+            };
+            await planningSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+        }
+
+        var planningsTags = new PlanningsTags
+        {
+            PlanningId = planning.Id,
+            PlanningTagId = areaRule.Area.ItemPlanningTagId,
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await planningsTags.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+        var planningsTags2 = new PlanningsTags
+        {
+            PlanningId = planning.Id,
+            PlanningTagId = propertyItemPlanningTagId,
+            CreatedByUserId = userId,
+            UpdatedByUserId = userId
+        };
+        await planningsTags2.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+        // PlanningSites = areaRulePlanningModel.AssignedSites
+        //     .Select(x =>
+        //         new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+        //         {
+        //             SiteId = x.SiteId
+        //         })
+        //     .ToList(),
+        // PlanningsTags = new List<PlanningsTags>
+        // {
+        //     new() { PlanningTagId = areaRule.Area.ItemPlanningTagId },
+        //     new() { PlanningTagId = propertyItemPlanningTagId }
+        // }
+
+        return planning;
     }
 
     public static async Task CreatePlanningDefaultType(AreaRule areaRule, MicrotingDbContext sdkDbContext,
@@ -1566,7 +1618,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         if (areaRulePlanningModel.Status)
         {
             var planning = await CreateItemPlanningObject((int)areaRule.EformId!, areaRule.EformName,
-                    areaRule.FolderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                    areaRule.FolderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
             planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
                 areaRuleAreaRuleTranslation => new PlanningNameTranslation
@@ -1604,7 +1656,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 planning.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Day;
             }
 
-            await planning.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
                 planning.Id,
@@ -1647,7 +1699,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             if (areaRulePlanningModel.Status)
             {
                 var planningForType2TypeTankOpen = await CreateItemPlanningObject(eformId, eformName,
-                        folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                        folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                     .ConfigureAwait(false);
                 planningForType2TypeTankOpen.NameTranslations =
                     new List<PlanningNameTranslation>
@@ -1702,7 +1754,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                 }
 
-                await planningForType2TypeTankOpen.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                await planningForType2TypeTankOpen.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                 await PairItemWithSiteHelper.Pair(
                     areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
                     planningForType2TypeTankOpen.Id,
@@ -1728,7 +1780,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             if (areaRulePlanningModel.Status)
             {
                 var planningForType2AlarmYes = await CreateItemPlanningObject(eformId, eformName, folderId,
-                    areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                    areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
                 planningForType2AlarmYes.NameTranslations =
                     new List<PlanningNameTranslation>
                     {
@@ -1782,7 +1834,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                 }
 
-                await planningForType2AlarmYes.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                await planningForType2AlarmYes.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                 await PairItemWithSiteHelper.Pair(
                     areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
                     planningForType2AlarmYes.Id,
@@ -1802,7 +1854,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             //areaRule.EformName must be "03. Kontrol konstruktion"
             var planningForType2 = await CreateItemPlanningObject((int)areaRule.EformId!,
                     areaRule.EformName, folderId, areaRulePlanningModel, areaRule, userId,
-                    backendConfigurationPnDbContext)
+                    backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
             planningForType2.NameTranslations = new List<PlanningNameTranslation>
             {
@@ -1855,7 +1907,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
             }
 
-            await planningForType2.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            await planningForType2.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
                 planningForType2.Id,
@@ -1935,7 +1987,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             areaRulePlanningModel.TypeSpecificFields.RepeatEvery =
                 areaRule.RepeatEvery; // repeat every mast be from area rule
             var planning = await CreateItemPlanningObject((int)areaRule.EformId!, areaRule.EformName,
-                    folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                    folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
             planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
                 areaRuleAreaRuleTranslation => new PlanningNameTranslation
@@ -1971,7 +2023,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
             }
 
-            await planning.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
                 planning.Id,
@@ -2015,7 +2067,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 .Select(x => x.CheckListId)
                 .FirstAsync().ConfigureAwait(false);
             var planningForType6HoursAndEnergyEnabled = await CreateItemPlanningObject(eformId, eformName,
-                    folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                    folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
             planningForType6HoursAndEnergyEnabled.NameTranslations = new List<PlanningNameTranslation>
             {
@@ -2059,7 +2111,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
             }
 
-            await planningForType6HoursAndEnergyEnabled.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            await planningForType6HoursAndEnergyEnabled.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
                 planningForType6HoursAndEnergyEnabled.Id,
@@ -2080,7 +2132,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 .Select(x => x.CheckListId)
                 .FirstAsync().ConfigureAwait(false);
             var planningForType6One = await CreateItemPlanningObject(eformIdOne, eformNameOne, folderId,
-                areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
             planningForType6One.NameTranslations = new List<PlanningNameTranslation>
             {
                 new()
@@ -2112,7 +2164,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             planningForType6One.RepeatType =
                 (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
             var planningForType6Two = await CreateItemPlanningObject(eformIdTwo, eformNameTwo, folderId,
-                areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
             planningForType6Two.NameTranslations = new List<PlanningNameTranslation>
             {
                 new()
@@ -2168,13 +2220,13 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     areaRulePlanningModel.TypeSpecificFields.EndDate;
             }
 
-            await planningForType6One.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            await planningForType6One.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformIdOne,
                 planningForType6One.Id,
                 folderId, core, itemsPlanningPnDbContext).ConfigureAwait(false);
             planningForType6IdOne = planningForType6One.Id;
-            await planningForType6Two.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            await planningForType6Two.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformIdTwo,
                 planningForType6Two.Id,
@@ -2314,7 +2366,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 .ConfigureAwait(false);
 
             var planning = await CreateItemPlanningObject((int)areaRule.EformId, areaRule.EformName,
-                    areaRule.FolderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                    areaRule.FolderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
             planning.RepeatEvery = 0;
             planning.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Day;
@@ -2322,7 +2374,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             planning.SdkFolderId = folderTranslation.Id;
             var now = DateTime.UtcNow;
             planning.LastExecutedTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
-            await planning.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             var planningCase = new PlanningCase
             {
                 PlanningId = planning.Id,
@@ -2385,7 +2437,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 }
 
                 var planning = await CreateItemPlanningObject((int)areaRule.EformId!, areaRule.EformName,
-                        areaRule.FolderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                        areaRule.FolderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                     .ConfigureAwait(false);
                 planning.NameTranslations = areaRule.AreaRuleTranslations.Select(
                     areaRuleAreaRuleTranslation => new PlanningNameTranslation
@@ -2398,7 +2450,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 planning.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Day;
                 planning.PlanningsTags.Add(new() { PlanningTagId = globalPlanningTag.Id });
 
-                await planning.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                 await PairItemWithSiteHelper.Pair(
                     areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
                     planning.Id,
@@ -2466,7 +2518,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 if (currentWeekDay == null || currentWeekDay != (DayOfWeek)poolHour.DayOfWeek)
                 {
                     var planningStatic = await CreateItemPlanningObject(clId, $"02. Fækale uheld - {property.Name}",
-                            poolDayFolder.Id, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                            poolDayFolder.Id, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                         .ConfigureAwait(false);
                     planningStatic.RepeatEvery = 0;
                     planningStatic.RepeatType =
@@ -2499,7 +2551,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     planningStatic.PlanningsTags.Add(new() { PlanningTagId = planningTagStatic.Id });
                     planningStatic.PlanningsTags.Add(new() { PlanningTagId = globalPlanningTag1.Id });
 
-                    await planningStatic.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                    await planningStatic.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                     await PairItemWithSiteHelper.Pair(
                         areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), clId, planningStatic.Id,
                         poolDayFolder.Id, core, itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -2522,7 +2574,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Where(x => x.Text == $"01. Aflæsninger - {property.Name}").Select(x => x.CheckListId)
                         .FirstOrDefault();
                     var planning = await CreateItemPlanningObject(clId, $"01. Aflæsninger - {property.Name}",
-                            poolDayFolder.Id, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext)
+                            poolDayFolder.Id, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                         .ConfigureAwait(false);
                     planning.DayOfWeek = (DayOfWeek)poolHour.DayOfWeek;
                     planning.RepeatEvery = 1;
@@ -2548,7 +2600,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     planning.PlanningsTags.Add(new() { PlanningTagId = globalPlanningTag1.Id });
                     planning.DaysBeforeRedeploymentPushMessageRepeat = false;
 
-                    await planning.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                    await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
 
                     poolHour.ItemsPlanningId = planning.Id;
                     await poolHour.Update(backendConfigurationPnDbContext).ConfigureAwait(false);

@@ -3,182 +3,17 @@ using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
-using BackendConfiguration.Pn.Services.RebusService;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
-using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Services;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-using Microting.eFormCaseTemplateBase.Infrastructure.Data;
-using Microting.ItemsPlanningBase.Infrastructure.Data;
-using Microting.TimePlanningBase.Infrastructure.Data;
-using Rebus.Bus;
-using File = System.IO.File;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
 [Parallelizable(ParallelScope.Fixtures)]
 [TestFixture]
-public class BackendConfigurationAssignmentWorkerServiceHelperTest
+public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSetup
 {
-#pragma warning disable CS0618
-    private readonly MariaDbTestcontainer _mySqlTestcontainer = new ContainerBuilder<MariaDbTestcontainer>()
-#pragma warning restore CS0618
-        .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
-        {
-            Database = "myDb",
-            Username = "root",
-            Password = "secretpassword"
-        })
-        .WithEnvironment("MYSQL_ROOT_PASSWORD", "secretpassword")
-        .Build();
-
-    private BackendConfigurationPnDbContext? _backendConfigurationPnDbContext;
-    private ItemsPlanningPnDbContext? _itemsPlanningPnDbContext;
-    private TimePlanningPnDbContext? _timePlanningPnDbContext;
-    private MicrotingDbContext? _microtingDbContext;
-    private CaseTemplatePnDbContext? _caseTemplatePnDbContext;
-    private IBus _bus;
-
-    private BackendConfigurationPnDbContext GetBackendDbContext(string connectionStr)
-    {
-
-        var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new BackendConfigurationPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-backend-configuration-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        try
-        {
-            backendConfigurationPnDbContext.Database.EnsureCreated();
-        } catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private ItemsPlanningPnDbContext GetItemsPlanningPnDbContext(string connectionStr)
-    {
-
-        var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private TimePlanningPnDbContext GetTimePlanningPnDbContext(string connectionStr)
-    {
-
-        var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private CaseTemplatePnDbContext GetCaseTemplatePnDbContext(string connectionStr)
-    {
-
-        var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
-
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin"), new MariaDbServerVersion(
-            new Version(10, 8)));
-
-        var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
-        string rawSql = File.ReadAllText(file);
-
-        backendConfigurationPnDbContext.Database.EnsureCreated();
-        backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return backendConfigurationPnDbContext;
-    }
-
-    private MicrotingDbContext GetContext(string connectionStr)
-    {
-        DbContextOptionsBuilder dbContextOptionsBuilder = new DbContextOptionsBuilder();
-
-        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK"), new MariaDbServerVersion(
-            new Version(10, 8)));
-        var microtingDbContext =  new MicrotingDbContext(dbContextOptionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_SDK.sql");
-        string rawSql = File.ReadAllText(file);
-
-        microtingDbContext.Database.EnsureCreated();
-        microtingDbContext.Database.ExecuteSqlRaw(rawSql);
-
-        return microtingDbContext;
-    }
-
-    private async Task<Core> GetCore()
-    {
-        var core = new Core();
-        await core.StartSqlOnly(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK"));
-        return core;
-    }
-
-    [SetUp]
-    public async Task Setup()
-    {
-        Console.WriteLine($"{DateTime.Now} : Starting MariaDb Container...");
-        await _mySqlTestcontainer.StartAsync();
-        Console.WriteLine($"{DateTime.Now} : Started MariaDb Container");
-
-        _backendConfigurationPnDbContext = GetBackendDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _backendConfigurationPnDbContext!.Database.SetCommandTimeout(300);
-
-        _itemsPlanningPnDbContext = GetItemsPlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _itemsPlanningPnDbContext.Database.SetCommandTimeout(300);
-
-        _timePlanningPnDbContext = GetTimePlanningPnDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _timePlanningPnDbContext.Database.SetCommandTimeout(300);
-
-        _microtingDbContext = GetContext(_mySqlTestcontainer.ConnectionString);
-
-        _microtingDbContext.Database.SetCommandTimeout(300);
-
-        _caseTemplatePnDbContext = GetCaseTemplatePnDbContext(_mySqlTestcontainer.ConnectionString);
-
-        _caseTemplatePnDbContext.Database.SetCommandTimeout(300);
-
-        var rebusService =
-            new RebusService(new EFormCoreService(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")), new BackendConfigurationLocalizationService());
-        rebusService.Start(_mySqlTestcontainer.ConnectionString.Replace("myDb", "420_SDK")).GetAwaiter().GetResult();
-        _bus = rebusService.GetBus();
-    }
-
     // Should test the CreateDeviceUser method and return success
     [Test]
     public async Task BackendConfigurationAssignmentWorkerServiceHelper_CreateDeviceUser_ReturnsSuccess()
@@ -200,13 +35,13 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
         // Assert
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result);
         Assert.That(sites.Count, Is.EqualTo(3));
@@ -250,14 +85,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
         // Assert
-        var sites = await _microtingDbContext!.Sites.ToListAsync();
-        var workers = await _microtingDbContext.Workers.ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.ToListAsync();
-        var timeregistrationSiteAssignments = await _timePlanningPnDbContext!.AssignedSites.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.ToListAsync();
+        var workers = await MicrotingDbContext.Workers.ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.ToListAsync();
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
 
         Assert.NotNull(result);
         Assert.That(sites.Count, Is.EqualTo(3));
@@ -307,7 +142,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1,1);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1,1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -322,9 +157,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var currentSite = await _microtingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
 
         var newDeviceUserModel = new DeviceUserModel
         {
@@ -341,15 +176,15 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core, 1,
-            _backendConfigurationPnDbContext,
-            _timePlanningPnDbContext);
+            BackendConfigurationPnDbContext,
+            TimePlanningPnDbContext);
 
         // Assert
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
-        var timeregistrationSiteAssignments = await _timePlanningPnDbContext!.AssignedSites.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.ToListAsync();
 
         Assert.NotNull(result);
         Assert.That(sites.Count, Is.EqualTo(3));
@@ -399,7 +234,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -414,9 +249,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var currentSite = await _microtingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
 
         var newDeviceUserModel = new DeviceUserModel
         {
@@ -434,15 +269,15 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
-            _backendConfigurationPnDbContext,
-            _timePlanningPnDbContext);
+            BackendConfigurationPnDbContext,
+            TimePlanningPnDbContext);
 
         // Assert
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
-        var timeregistrationSiteAssignments = await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result);
         Assert.That(sites.Count, Is.EqualTo(3));
@@ -493,7 +328,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -508,9 +343,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var currentSite = await _microtingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
+        var currentSite = await MicrotingDbContext!.Sites.OrderByDescending(x => x.Id).FirstAsync();
 
         var newDeviceUserModel = new DeviceUserModel
         {
@@ -528,16 +363,16 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         // Act
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(newDeviceUserModel, core,
             1,
-            _backendConfigurationPnDbContext,
-            _timePlanningPnDbContext);
+            BackendConfigurationPnDbContext,
+            TimePlanningPnDbContext);
 
         // Assert
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
-        var timeregistrationSiteAssignments = await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
-        var propertyWorkers = await _backendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
+        var timeregistrationSiteAssignments = await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+        var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result);
         Assert.That(sites.Count, Is.EqualTo(3));
@@ -591,7 +426,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -606,10 +441,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -626,15 +461,15 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
         // Act
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-             _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
         // Assert
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments =
-            await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
-        var propertyWorkers = await _backendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
+            await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+        var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result2);
         Assert.That(result2.Success, Is.True);
@@ -687,7 +522,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -702,10 +537,10 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -721,7 +556,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -740,15 +575,15 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         // Act
 
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus, _itemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus, ItemsPlanningPnDbContext);
 
         // Assert
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments =
-            await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
-        var propertyWorkers = await _backendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
+            await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+        var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result2);
         Assert.That(result2.Success, Is.True);
@@ -801,7 +636,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -815,11 +650,11 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
             UserLastName = Guid.NewGuid().ToString()
         };
 
-        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -837,7 +672,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -857,18 +692,18 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
 
         // Act
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus, _itemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus, ItemsPlanningPnDbContext);
 
         // Assert
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments =
-            await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
-        var propertyWorkers = await _backendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
-        var workOrders = await _backendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
-        var sdkCases = await _microtingDbContext!.Cases.AsNoTracking().ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
+            await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+        var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
+        var workOrders = await BackendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
+        var sdkCases = await MicrotingDbContext!.Cases.AsNoTracking().ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result2);
         Assert.That(result2.Success, Is.True);
@@ -934,7 +769,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 1, 1);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1, 1);
 
         // create another propertycreateModel
         var propertyCreateModel2 = new PropertyCreateModel
@@ -954,7 +789,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel2, core, 1,
-            _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, 2, 2);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 2, 2);
 
         var deviceUserModel = new DeviceUserModel
         {
@@ -969,11 +804,11 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
             TaskManagementEnabled = true
         };
 
-        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
-            _timePlanningPnDbContext);
+        await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+            TimePlanningPnDbContext);
 
-        var properties = await _backendConfigurationPnDbContext!.Properties.ToListAsync();
-        var sites = await _microtingDbContext!.Sites.AsNoTracking().ToListAsync();
+        var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
+        var sites = await MicrotingDbContext!.Sites.AsNoTracking().ToListAsync();
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
@@ -991,9 +826,9 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
 
-        var workOrders = await _backendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
+        var workOrders = await BackendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
         Assert.That(workOrders.Count, Is.EqualTo(1)); // TODO: fix this
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
@@ -1019,20 +854,19 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest
         // Act
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core,
             1,
-            _backendConfigurationPnDbContext, _caseTemplatePnDbContext, "location", _bus, _itemsPlanningPnDbContext);
-
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus, ItemsPlanningPnDbContext);
 
         // Assert
-        var workers = await _microtingDbContext.Workers.AsNoTracking().ToListAsync();
-        var siteWorkers = await _microtingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
-        var units = await _microtingDbContext.Units.AsNoTracking().ToListAsync();
+        var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
+        var siteWorkers = await MicrotingDbContext.SiteWorkers.AsNoTracking().ToListAsync();
+        var units = await MicrotingDbContext.Units.AsNoTracking().ToListAsync();
         var timeregistrationSiteAssignments =
-            await _timePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
-        var propertyWorkers = await _backendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
-        workOrders = await _backendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
-        var sdkCases = await _microtingDbContext!.Cases.AsNoTracking().ToListAsync();
-        var checkListSites = await _microtingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
-        var entityItems = await _microtingDbContext!.EntityItems.AsNoTracking().ToListAsync();
+            await TimePlanningPnDbContext!.AssignedSites.AsNoTracking().ToListAsync();
+        var propertyWorkers = await BackendConfigurationPnDbContext!.PropertyWorkers.AsNoTracking().ToListAsync();
+        workOrders = await BackendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
+        var sdkCases = await MicrotingDbContext!.Cases.AsNoTracking().ToListAsync();
+        var checkListSites = await MicrotingDbContext!.CheckListSites.AsNoTracking().ToListAsync();
+        var entityItems = await MicrotingDbContext!.EntityItems.AsNoTracking().ToListAsync();
 
         Assert.NotNull(result2);
         Assert.That(result2.Success, Is.True);
