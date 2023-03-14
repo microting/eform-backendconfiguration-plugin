@@ -222,7 +222,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             CreatedByUserId = userId,
                                             UpdatedByUserId = userId,
                                             AreaId = areaRule.AreaId,
-                                            AreaRuleId = areaRule.Id
+                                            AreaRuleId = areaRule.Id,
+                                            Status = 33
                                         };
                                         await siteForCreate.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
                                         var planningSite =
@@ -1167,6 +1168,15 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 {
                                                     planning.RepeatEvery = 0;
                                                     planning.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Day;
+                                                }
+
+                                                foreach (var planningSite in rulePlanning.PlanningSites)
+                                                {
+                                                    if (planningSite.Status == 0)
+                                                    {
+                                                        planningSite.Status = 33;
+                                                        await planningSite.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                                    }
                                                 }
 
                                                 await planning.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
