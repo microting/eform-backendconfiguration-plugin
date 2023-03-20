@@ -248,4 +248,5 @@ export const fiFI = {
   'Download selected files': 'Lataa valitut tiedostot',
   'Name ZIP-folder': 'Nimeä ZIP-kansio',
   'Back': 'Takaisin',
+  'Download Document': 'Lataa {{language}} {{extension}}',
 };

@@ -21,6 +21,9 @@ using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTran
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
 
+using DocumentFormat.OpenXml.InkML;
+using Microting.eForm.Helpers;
+
 public class BackendConfigurationDocumentService : IBackendConfigurationDocumentService
 {
     private readonly CaseTemplatePnDbContext _caseTemplatePnDbContext;
@@ -30,14 +33,21 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
     private readonly IBus _bus;
     private readonly IUserService _userService;
 
-    public BackendConfigurationDocumentService(CaseTemplatePnDbContext caseTemplatePnDbContext, IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IRebusService rebusService, IUserService userService)
+    public BackendConfigurationDocumentService(
+	    CaseTemplatePnDbContext caseTemplatePnDbContext,
+	    IEFormCoreService coreHelper,
+	    IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+	    BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+	    IRebusService rebusService,
+	    IUserService userService
+    )
     {
-        _caseTemplatePnDbContext = caseTemplatePnDbContext;
-        _coreHelper = coreHelper;
-        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-        _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
-        _userService = userService;
-        _bus = rebusService.GetBus();
+	    _caseTemplatePnDbContext = caseTemplatePnDbContext;
+	    _coreHelper = coreHelper;
+	    _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+	    _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
+	    _userService = userService;
+	    _bus = rebusService.GetBus();
     }
 
     public async Task<OperationDataResult<Paged<BackendConfigurationDocumentModel>>> Index(BackendConfigurationDocumentRequestModel pnRequestModel)
@@ -98,48 +108,50 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
         if (total > 0)
         {
-            results = await query
-                .Select(x => new BackendConfigurationDocumentModel
-                {
-                    Id = x.Id,
-                    StartDate = x.StartAt,
-                    EndDate = x.EndAt,
-                    FolderId = x.FolderId,
-                    Status = x.Status,
-                    IsLocked = x.IsLocked,
-                    DocumentUploadedDatas = x.DocumentUploadedDatas
-                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(y => new BackendConfigurationDocumentUploadedData
-                        {
-                            Id = y.Id,
-                            DocumentId = y.DocumentId,
-                            LanguageId = y.LanguageId,
-                            Name = y.Name,
-                            Hash = y.Hash,
-                            FileName = y.File
-                        }).ToList(),
-                    DocumentTranslations = x.DocumentTranslations
-                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(y => new BackendConfigurationDocumentTranslationModel
-                        {
-                            Id = y.Id,
-                            Name = y.Name,
-                            Description = y.Description,
-                            LanguageId = y.LanguageId
-                        }).ToList(),
-                    DocumentProperties = x.DocumentProperties
-                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(y => new BackendConfigurationDocumentProperty
-                    {
-                        Id = y.Id,
-                        DocumentId = y.DocumentId,
-                        PropertyId = y.PropertyId
-                    }).ToList()
-                })
-                .OrderBy(x => x.EndDate)
-                .ToListAsync().ConfigureAwait(false);
+	        results = await query
+		        .Select(x => new BackendConfigurationDocumentModel
+		        {
+			        Id = x.Id,
+			        StartDate = x.StartAt,
+			        EndDate = x.EndAt,
+			        FolderId = x.FolderId,
+			        Status = x.Status,
+			        IsLocked = x.IsLocked,
+			        DocumentUploadedDatas = x.DocumentUploadedDatas
+				        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+				        .Select(y => new BackendConfigurationDocumentUploadedData
+				        {
+					        Id = y.Id,
+					        DocumentId = y.DocumentId,
+					        LanguageId = y.LanguageId,
+					        Name = y.Name,
+					        Hash = y.Hash,
+					        FileName = y.File,
+					        Extension = y.Extension,
+				        }).ToList(),
+			        DocumentTranslations = x.DocumentTranslations
+				        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+				        .Select(y => new BackendConfigurationDocumentTranslationModel
+				        {
+					        Id = y.Id,
+					        Name = y.Name,
+					        Description = y.Description,
+					        LanguageId = y.LanguageId,
+					        ExtensionFile = y.ExtensionFile,
+				        }).ToList(),
+			        DocumentProperties = x.DocumentProperties
+				        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+				        .Select(y => new BackendConfigurationDocumentProperty
+				        {
+					        Id = y.Id,
+					        DocumentId = y.DocumentId,
+					        PropertyId = y.PropertyId
+				        }).ToList()
+		        })
+		        .OrderBy(x => x.EndDate)
+		        .ToListAsync().ConfigureAwait(false);
 
-            foreach (var backendConfigurationDocumentModel in results)
+			foreach (var backendConfigurationDocumentModel in results)
             {
                 string propertyNames = "";
                 foreach (var backendConfigurationDocumentProperty in backendConfigurationDocumentModel.DocumentProperties)
@@ -190,7 +202,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     LanguageId = x.LanguageId,
                     Name = x.Name,
                     Hash = x.Hash,
-                    FileName = x.File
+                    FileName = x.File,
+                    Extension = x.Extension,
                 }).ToList(),
             DocumentTranslations = document.DocumentTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -199,7 +212,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     Id = x.Id,
                     Name = x.Name,
                     Description = x.Description,
-                    LanguageId = x.LanguageId
+                    LanguageId = x.LanguageId,
+                    ExtensionFile = x.ExtensionFile,
                 }).ToList(),
             DocumentProperties = document.DocumentProperties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -338,7 +352,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 {
                     DocumentId = document.Id,
                     LanguageId = documentUploadedData.LanguageId,
-                    Name = documentUploadedData.Name
+                    Name = documentUploadedData.Name,
+                    Extension = documentUploadedData.Extension,
                 };
 
                 await documentUploadedDataDb.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -354,7 +369,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                         checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
 
-                    var fileName = checkSum + "." + documentUploadedDataDb.Name.Split(".")[1];
+                    var fileName = checkSum + "." + documentUploadedDataDb.Name.Split(".")[^1];
 
                     memoryStream.Seek(0, SeekOrigin.Begin);
                     await core.PdfUpload(memoryStream, checkSum, fileName);
@@ -364,7 +379,46 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     documentUploadedDataDb.Hash = checkSum;
                     documentUploadedDataDb.Name = documentUploadedData.Name;
                     await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
-                }
+
+					// if we have office document - we need convert doc to pdf and save pdf and doc
+					// user uploaded only pdf - save pdf.
+					// user uploaded pdf and doc - save pdf and doc.
+					// the user uploaded the doc - convert the doc to pdf and save them both
+					if (
+						(documentUploadedData.Name.Split(".")[^1] is "doc" or "docx")
+						&& !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId))
+					{
+						ReportHelper.ConvertToPdf(fileName, Path.Combine(Path.GetTempPath(), "results"));
+						using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
+						using MemoryStream memoryStreamConvertedFile = new MemoryStream();
+						await fileStream.CopyToAsync(memoryStreamConvertedFile);
+
+						string checkSumConvertedFile;
+						using (var md5 = MD5.Create())
+						{
+							byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
+							checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
+						}
+						// fileName = checkSum.extension
+						var fileNameConvertedFile = checkSumConvertedFile + ".pdf";
+
+						memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+						await core.PdfUpload(memoryStreamConvertedFile, checkSumConvertedFile, fileNameConvertedFile);
+						memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+						await core.PutFileToS3Storage(memoryStreamConvertedFile, fileNameConvertedFile);
+						var documentUploadedDataConvertedFileModel = new DocumentUploadedData
+						{
+							DocumentId = document.Id,
+							LanguageId = documentUploadedData.LanguageId,
+							Name = documentUploadedData.Name,
+							Extension = "pdf",
+							File = fileNameConvertedFile,
+							Hash = checkSumConvertedFile,
+							CreatedByUserId = _userService.UserId,
+						};
+						await documentUploadedDataConvertedFileModel.Create(_caseTemplatePnDbContext);
+					}
+				}
             }
             else
             {
@@ -392,7 +446,58 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                         documentUploadedDataDb.Hash = checkSum;
                         documentUploadedDataDb.Name = documentUploadedData.Name;
                         await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
-                    }
+
+						// if we have office document - we need convert doc to pdf and save pdf and doc
+						// user uploaded only pdf - save pdf.
+						// user uploaded pdf and doc - save pdf and doc.
+						// the user uploaded the doc - convert the doc to pdf and save them both
+						if (
+							(documentUploadedData.Name.Split(".")[^1] is "doc" or "docx")
+							&& !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId))
+						{
+							ReportHelper.ConvertToPdf(fileName, Path.Combine(Path.GetTempPath(), "results"));
+							using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
+							using MemoryStream memoryStreamConvertedFile = new MemoryStream();
+							await fileStream.CopyToAsync(memoryStreamConvertedFile);
+
+							string checkSumConvertedFile;
+							using (var md5 = MD5.Create())
+							{
+								byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
+								checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
+							}
+							// fileName = checkSum.extension
+							var fileNameConvertedFile = checkSumConvertedFile + ".pdf";
+
+							memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+							await core.PdfUpload(memoryStreamConvertedFile, checkSumConvertedFile, fileNameConvertedFile);
+							memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+							await core.PutFileToS3Storage(memoryStreamConvertedFile, fileNameConvertedFile);
+							documentUploadedDataDb = document.DocumentUploadedDatas
+								.FirstOrDefault(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId);
+							if (documentUploadedDataDb != null)
+							{
+								documentUploadedDataDb.File = fileNameConvertedFile;
+								documentUploadedDataDb.Hash = checkSumConvertedFile;
+								documentUploadedDataDb.Name = documentUploadedData.Name;
+								await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+							}
+							else
+							{
+								var documentUploadedDataConvertedFileModel = new DocumentUploadedData
+								{
+									DocumentId = document.Id,
+									LanguageId = documentUploadedData.LanguageId,
+									Name = documentUploadedData.Name,
+									Extension = "pdf",
+									File = fileNameConvertedFile,
+									Hash = checkSumConvertedFile,
+									CreatedByUserId = _userService.UserId,
+								};
+								await documentUploadedDataConvertedFileModel.Create(_caseTemplatePnDbContext);
+							}
+						}
+					}
                 }
             }
         }
@@ -428,13 +533,14 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         }
 
         var core = await _coreHelper.GetCore();
-        var document = new Document
+		var document = new Document
         {
             // StartAt = model.StartDate,
             EndAt = model.EndDate,
             FolderId = model.FolderId,
             Status = model.Status,
-            IsLocked = model.Status
+            IsLocked = model.Status,
+            CreatedByUserId = _userService.UserId,
         };
 
         await document.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -446,7 +552,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 Name = translation.Name,
                 Description = translation.Description,
                 LanguageId = translation.LanguageId,
-                DocumentId = document.Id
+                DocumentId = document.Id,
+                ExtensionFile = translation.ExtensionFile,
+                CreatedByUserId = _userService.UserId,
             };
 
             await documentTranslation.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -458,7 +566,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             {
                 DocumentId = document.Id,
                 LanguageId = documentUploadedData.LanguageId,
-                Name = documentUploadedData.Name
+                Name = documentUploadedData.Name,
+                Extension = documentUploadedData.Extension,
+                CreatedByUserId = _userService.UserId,
             };
 
             await documentUploadedDataModel.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -473,8 +583,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     byte[] grr = md5.ComputeHash(memoryStream.ToArray());
                     checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
                 }
-
-                var fileName = checkSum + "." + documentUploadedDataModel.Name.Split(".")[1];
+				// fileName = checkSum.extension
+				var fileName = checkSum + "." + documentUploadedDataModel.Name.Split(".")[^1];
 
                 memoryStream.Seek(0, SeekOrigin.Begin);
                 await core.PdfUpload(memoryStream, checkSum, fileName);
@@ -483,8 +593,47 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 documentUploadedDataModel.File = fileName;
                 documentUploadedDataModel.Hash = checkSum;
                 await documentUploadedDataModel.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+
+				// if we have office document - we need convert doc to pdf and save pdf and doc
+				// user uploaded only pdf - save pdf.
+				// user uploaded pdf and doc - save pdf and doc.
+				// the user uploaded the doc - convert the doc to pdf and save them both
+				if (
+	                (documentUploadedDataModel.Name.Split(".")[^1] is "doc" or "docx")
+	                && !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId))
+				{
+					ReportHelper.ConvertToPdf(fileName, Path.Combine(Path.GetTempPath(), "results"));
+					using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
+					using MemoryStream memoryStreamConvertedFile = new MemoryStream();
+					await fileStream.CopyToAsync(memoryStreamConvertedFile);
+
+					string checkSumConvertedFile;
+					using (var md5 = MD5.Create())
+					{
+						byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
+						checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
+					}
+					// fileName = checkSum.extension
+					var fileNameConvertedFile = checkSumConvertedFile + ".pdf";
+
+					memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+					await core.PdfUpload(memoryStreamConvertedFile, checkSumConvertedFile, fileNameConvertedFile);
+					memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+					await core.PutFileToS3Storage(memoryStreamConvertedFile, fileNameConvertedFile);
+					var documentUploadedDataConvertedFileModel = new DocumentUploadedData
+					{
+						DocumentId = document.Id,
+						LanguageId = documentUploadedData.LanguageId,
+						Name = documentUploadedData.Name,
+						Extension = "pdf",
+						File = fileNameConvertedFile,
+						Hash = checkSumConvertedFile,
+                        CreatedByUserId = _userService.UserId,
+					};
+					await documentUploadedDataConvertedFileModel.Create(_caseTemplatePnDbContext);
+				}
             }
-        }
+		}
 
         if (model.DocumentProperties != null)
         {
@@ -508,7 +657,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentCreatedSuccessfully"));
     }
@@ -528,11 +676,10 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 _backendConfigurationLocalizationService.GetString("DocumentNotFound"));
         }
 
-        await document.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
-
         foreach (var translation in document.DocumentTranslations)
         {
-            await translation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+	        translation.UpdatedByUserId = _userService.UserId;
+            await translation.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
         var core = await _coreHelper.GetCore();
@@ -542,10 +689,14 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             if (documentSite.SdkCaseId != 0)
             {
                 await core.CaseDelete(documentSite.SdkCaseId);
-            }
+			}
 
+            documentSite.UpdatedByUserId = _userService.UserId;
             await documentSite.Delete(_caseTemplatePnDbContext);
         }
+
+        document.UpdatedByUserId = _userService.UserId;
+		await document.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DocumentDeletedSuccessfully"));
@@ -826,7 +977,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 _backendConfigurationLocalizationService.GetString("DescriptionFolderNotFound"));
         }
 
-        await descriptionFolder.Delete(_caseTemplatePnDbContext);
+        descriptionFolder.UpdatedByUserId = _userService.UserId;
+		await descriptionFolder.Delete(_caseTemplatePnDbContext);
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DescriptionFolderDeletedSuccessfully"));

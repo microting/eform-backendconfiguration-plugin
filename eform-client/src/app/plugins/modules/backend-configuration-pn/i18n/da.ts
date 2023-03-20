@@ -257,4 +257,5 @@ export const da = {
   'Edit tags file': 'Rediger tags fil',
   'Download selected files': 'Hent valgte filer',
   'Name ZIP-folder': 'Navn ZIP-mappe',
+  'Download Document': 'Download {{language}} {{extension}}',
 };

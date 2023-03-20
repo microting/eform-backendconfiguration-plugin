@@ -250,4 +250,5 @@ export const itIT = {
   'Download selected files': 'Scarica file selezionati',
   'Name ZIP-folder': 'Nome cartella ZIP',
   'Back': 'Indietro',
+  'Download Document': 'Carica {{language}} {{extension}}',
 };

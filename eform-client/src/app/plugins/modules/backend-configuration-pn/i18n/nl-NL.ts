@@ -250,4 +250,5 @@ export const nlNL = {
   'Download selected files': 'Geselecteerde bestanden downloaden',
   'Name ZIP-folder': 'Naam ZIP-map',
   'Back': 'Terug',
+  'Download Document': 'Bestand {{language}} {{extension}}',
 };

@@ -59,7 +59,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   openCreateModal() {
-    const createDocumentModal = this.dialog.open(DocumentsDocumentCreateComponent, {...dialogConfigHelper(this.overlay), minWidth: 500});
+    const createDocumentModal = this.dialog.open(DocumentsDocumentCreateComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
     this.documentCreatedSub$ = createDocumentModal.componentInstance.documentCreated.subscribe(() => {
       this.updateTable();
     });
@@ -73,7 +73,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   showEditDocumentModal(documentModel: DocumentModel) {
-    const editDocumentModal = this.dialog.open(DocumentsDocumentEditComponent, {...dialogConfigHelper(this.overlay, documentModel)});
+    const editDocumentModal = this.dialog.open(DocumentsDocumentEditComponent, {...dialogConfigHelper(this.overlay, documentModel), minWidth: 800});
     this.documentUpdatedSub$ = editDocumentModal.componentInstance.documentUpdated.subscribe(() => {
       this.updateTable();
     });

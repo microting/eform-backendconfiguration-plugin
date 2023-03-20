@@ -38,6 +38,24 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   get languages() {
     return applicationLanguages2;
   }
+
+  getLanguageByLanguageId(languageId: number) {
+    const languages = this.languages.filter(x => x.id === languageId);
+    if(languages && languages.length > 0) {
+      return languages[0];
+    }
+    return this.languages[0];
+  }
+
+  getTranslateByLanguageId(languageId: number, extension: string) {
+    const index = this.newDocumentModel.documentTranslations.findIndex(
+      x => x.languageId === languageId && x.extensionFile === extension
+    );
+    if(index !== -1) {
+      return this.newDocumentModel.documentTranslations[index];
+    }
+  }
+
   constructor(
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
@@ -66,11 +84,11 @@ export class DocumentsDocumentCreateComponent implements OnInit {
         ...this.newDocumentModel,
         documentUploadedDatas: [
           ...this.newDocumentModel.documentUploadedDatas,
-          { languageId: language.id, name: '', file: null },
+          ...(['pdf', 'doc'].map((extension) => ({ languageId: language.id, name: '', file: null, extension: extension }))),
         ],
         documentTranslations: [
           ...this.newDocumentModel.documentTranslations,
-          { languageId: language.id, description: '', name: '' },
+          ...(['pdf', 'doc'].map((extension) => ({ languageId: language.id, description: '', name: '', extensionFile: extension }))),
         ],
       };
     }
@@ -152,21 +170,34 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     );
   }
 
-  onFileSelected(event: Event, selectedLanguage: number) {
+  onFileSelected(event: Event, selectedLanguage: number, extension: string) {
     // @ts-ignore
     const files: File[] = event.target.files;
     const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
-      (x) => x.languageId === selectedLanguage || x.id === selectedLanguage
+      (x) => (x.languageId === selectedLanguage || x.id === selectedLanguage)
+        && x.extension === extension
     );
     if (filesIndexByLanguage !== -1) {
       const file: File = R.last(files);
       this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = file;
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = file.name;
+      const filename = file ? file.name : '';
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = file ? file.name : '';
+      const fileTranslationsIndexByLanguage = this.newDocumentModel.documentTranslations.findIndex(
+        (x) => (x.languageId === selectedLanguage/* || x.id === selectedLanguage*/)
+          && x.extensionFile === extension
+      );
+      if (fileTranslationsIndexByLanguage !== -1) {
+        const translation = this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name;
+        this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name = translation ?
+          translation :
+          filename.replace(/\.(pdf|doc|docx|dot)$/, ''); // Remove the extension if it is pdf, doc, docx, or dot.
+      }
     }
   }
 
-  getFileNameByLanguage(languageId: number): string {
-    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+  getFileNameByLanguage(languageId: number, extension: string = 'pdf'): string {
+    const index = this.newDocumentModel.documentUploadedDatas
+      .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
       const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {
@@ -181,8 +212,9 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     return '';
   }
 
-  getPdf(languageId: number) {
-    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+  getFile(languageId: number, extension: string = 'pdf') {
+    const index = this.newDocumentModel.documentUploadedDatas
+      .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
       const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {

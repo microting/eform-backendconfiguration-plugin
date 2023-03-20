@@ -3,4 +3,5 @@ export class DocumentTranslationModel {
   languageId: number;
   name: string;
   description: string;
+  extensionFile: string;
 }

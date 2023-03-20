@@ -12,4 +12,5 @@ public class BackendConfigurationDocumentUploadedData
     public string Name { get; set; }
     public string Hash { get; set; }
     public string FileName { get; set; }
+    public string Extension { get; set; }
 }
