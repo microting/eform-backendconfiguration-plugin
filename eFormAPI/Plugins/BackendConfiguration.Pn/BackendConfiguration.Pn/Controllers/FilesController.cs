@@ -134,21 +134,10 @@ public class FilesController : Controller
 					var uploadedData = await _backendConfigurationFilesService.GetUploadedDataByFileId(fileId);
 					var ss = await core.GetFileFromS3Storage($"{uploadedData.Checksum}.pdf");
 					var operationDataResult = await _backendConfigurationFilesService.GetById(fileId);
-					var filePath = uploadedData.FileLocation;
-					if (filePath != _localizationService.GetString("FileNotFound") &&
-					    filePath != _localizationService.GetString("ErrorWhileGetFile") &&
-					    !string.IsNullOrEmpty(filePath) &&
-					    System.IO.File.Exists(filePath))
-					{
-						var zipArchiveEntry = archive.CreateEntry($"{operationDataResult.Model.FileName}.pdf",
-							CompressionLevel.Fastest);
-						await using var zipStream = zipArchiveEntry.Open();
-						await ss.ResponseStream.CopyToAsync(zipStream);
-					}
-					else
-					{
-						logger.LogWarning($"File not found. File path: {filePath}; FileId in db: {operationDataResult.Model.Id}; FileId in http query: {fileId}.");
-					}
+					var zipArchiveEntry = archive.CreateEntry($"{operationDataResult.Model.FileName}.pdf",
+						CompressionLevel.Fastest);
+					await using var zipStream = zipArchiveEntry.Open();
+					await ss.ResponseStream.CopyToAsync(zipStream);
 				}
 			}
 
