@@ -68,6 +68,7 @@ export class FileCreateEditFileComponent implements OnChanges, OnDestroy {
       accepts: (el, target) => {
         return target.id.includes(this.dragulaContainerId);
       },
+      direction:'horizontal'
     });
   }
 
