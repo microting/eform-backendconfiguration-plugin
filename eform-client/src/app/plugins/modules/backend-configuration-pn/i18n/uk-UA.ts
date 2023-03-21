@@ -250,4 +250,5 @@ export const ukUA = {
   'Download selected files': 'Завантажити обрані файли',
   'Name ZIP-folder': 'Назва ZIP-папки',
   'Back': 'Назад',
+  'Download Document': 'Завантажити {{language}}ий {{extension}}',
 };

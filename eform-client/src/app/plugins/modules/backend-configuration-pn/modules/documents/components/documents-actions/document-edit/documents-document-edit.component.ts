@@ -7,7 +7,7 @@ import {
 } from '../../../../../models';
 import {CommonDictionaryModel,} from 'src/app/common/models';
 import {Subscription} from 'rxjs';
-import {applicationLanguages2, PdfIcon} from 'src/app/common/const';
+import {applicationLanguages2, PdfIcon, WordIcon} from 'src/app/common/const';
 import {
   BackendConfigurationPnDocumentsService,
   BackendConfigurationPnPropertiesService
@@ -39,6 +39,25 @@ export class DocumentsDocumentEditComponent implements OnInit {
   get languages() {
     return applicationLanguages2;
   }
+
+  getLanguageByLanguageId(languageId: number) {
+    const languages = this.languages.filter(x => x.id === languageId);
+    if(languages && languages.length > 0) {
+      return languages[0];
+    }
+    return this.languages[0];
+  }
+
+  getTranslateByLanguageId(languageId: number, extension: string) {
+    const index = this.newDocumentModel.documentTranslations.findIndex(
+      x => x.languageId === languageId && x.extensionFile === extension
+    );
+    if(index !== -1) {
+      return this.newDocumentModel.documentTranslations[index];
+    }
+    return {name: '', description: '', extensionFile: extension, languageId: languageId}
+  }
+
   constructor(
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
@@ -54,6 +73,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
+    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
   }
 
   ngOnInit(): void {}
@@ -146,21 +166,63 @@ export class DocumentsDocumentEditComponent implements OnInit {
     );
   }
 
-  onFileSelected(event: Event, selectedLanguage: number) {
+
+  onFileSelected(event: Event, selectedLanguage: number, extension: string) {
     // @ts-ignore
     const files: File[] = event.target.files;
+    const file: File = R.last(files);
     const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
-      (x) => x.languageId === selectedLanguage || x.id === selectedLanguage
+      (x) => (x.languageId === selectedLanguage || x.id === selectedLanguage)
+        && x.extension === extension
     );
     if (filesIndexByLanguage !== -1) {
-      const file: File = R.last(files);
       this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = file;
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = file.name;
+      const filename = file ? file.name : '';
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = file ? file.name : '';
+      const fileTranslationsIndexByLanguage = this.newDocumentModel.documentTranslations.findIndex(
+        (x) => (x.languageId === selectedLanguage/* || x.id === selectedLanguage*/)
+          && x.extensionFile === extension
+      );
+      if (fileTranslationsIndexByLanguage !== -1) {
+        const translation = this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name;
+        this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name = translation ?
+          translation :
+          filename.replace(/\.(pdf|doc|docx|dot)$/, ''); // Remove the extension if it is pdf, doc, docx, or dot.
+      }
+    } else {
+      const filename = file ? file.name : '';
+      this.newDocumentModel.documentUploadedDatas = [...this.newDocumentModel.documentUploadedDatas,
+        {
+          file: file,
+          fileName: (file ? file.name : ''),
+          name: (file ? file.name : ''),
+          extension: extension,
+          languageId: selectedLanguage,
+        }];
+      const fileTranslationsIndexByLanguage = this.newDocumentModel.documentTranslations.findIndex(
+        (x) => (x.languageId === selectedLanguage/* || x.id === selectedLanguage*/)
+          && x.extensionFile === extension
+      );
+      if (fileTranslationsIndexByLanguage !== -1) {
+        const translation = this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name;
+        this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name = translation ?
+          translation :
+          filename.replace(/\.(pdf|doc|docx|dot)$/, ''); // Remove the extension if it is pdf, doc, docx, or dot.
+      } else {
+        this.newDocumentModel.documentTranslations = [...this.newDocumentModel.documentTranslations,
+          {
+            extensionFile: extension,
+            languageId: selectedLanguage,
+            description: '',
+            name: filename.replace(/\.(pdf|doc|docx|dot)$/, ''), // Remove the extension if it is pdf, doc, docx, or dot.
+          }];
+      }
     }
   }
 
-  getFileNameByLanguage(languageId: number): string {
-    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+  getFileNameByLanguage(languageId: number, extension: string = 'pdf'): string {
+    const index = this.newDocumentModel.documentUploadedDatas
+      .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
       const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {
@@ -175,12 +237,14 @@ export class DocumentsDocumentEditComponent implements OnInit {
     return '';
   }
 
-  getPdf(languageId: number) {
-    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+  getFile(languageId: number, extension: string = 'pdf') {
+    const index = this.newDocumentModel.documentUploadedDatas
+      .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
       const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {
-        this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName).subscribe((blob) => {
+        this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName)
+          .subscribe((blob) => {
           const fileURL = URL.createObjectURL(blob);
           window.open(fileURL, '_blank');
         });

@@ -250,4 +250,5 @@ export const noNO = {
   'Download selected files': 'Last ned valgte filer',
   'Name ZIP-folder': 'Navn ZIP-mappe',
   'Back': 'Tilbake',
+  'Download Document': 'Last opp {{language}} {{extension}}',
 };

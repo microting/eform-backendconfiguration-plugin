@@ -249,4 +249,5 @@ export const ptPT = {
   'Download selected files': 'Descarregar ficheiros selecionados',
   'Name ZIP-folder': 'Nome da pasta ZIP',
   'Back': 'Voltar',
+  'Download Document': 'Carregar {{language}} {{extension}}',
 }

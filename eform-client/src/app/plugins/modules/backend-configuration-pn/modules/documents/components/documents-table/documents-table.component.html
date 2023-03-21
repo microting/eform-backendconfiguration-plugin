@@ -5,5 +5,24 @@
   [pageOnFront]="false"
   [rowStriped]="true"
   [showToolbar]="false"
+  [cellTemplate]="{downloadButton: downloadButton}"
   [showColumnMenuButton]="false">
 </mtx-grid>
+
+
+<ng-template #downloadButton let-row let-i="index">
+  <div class="d-flex">
+    <div *ngFor="let documentUploadedData of row.documentUploadedDatas">
+      <button
+        mat-icon-button
+        color="accent"
+        *ngIf="documentUploadedData.id && documentUploadedData.fileName"
+        (click)="getFile(i, documentUploadedData.languageId, documentUploadedData.extension)"
+        matTooltip="{{ 'Download Document' | translate:{language: (getLanguageById(documentUploadedData.languageId).text | translate), extension: (documentUploadedData.extension | uppercase)} }}"
+      >
+        <mat-icon *ngIf="documentUploadedData.extension === 'doc'" svgIcon="file-word"></mat-icon>
+        <mat-icon *ngIf="documentUploadedData.extension === 'pdf'" svgIcon="file-pdf"></mat-icon>
+      </button>
+    </div>
+  </div>
+</ng-template>

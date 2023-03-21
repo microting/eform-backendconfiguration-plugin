@@ -248,4 +248,5 @@ export const deDE = {
   'Download selected files': 'Ausgewählte Dateien herunterladen',
   'Name ZIP-folder': 'Name ZIP-Ordner',
   'Back': 'Zurück',
+  'Download Document': 'Herunterladen {{language}} {{extension}}',
 };

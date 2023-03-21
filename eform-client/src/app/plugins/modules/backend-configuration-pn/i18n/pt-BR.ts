@@ -249,4 +249,5 @@ export const ptBR = {
   'Download selected files': 'Baixar arquivos selecionados',
   'Name ZIP-folder': 'Nome da pasta ZIP',
   'Back': 'Voltar',
+  'Download Document': 'Carregar {{language}} {{extension}}',
 };

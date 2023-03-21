@@ -251,4 +251,5 @@ export const frFR = {
   'Download selected files': 'Télécharger les fichiers sélectionnés',
   'Name ZIP-folder': 'Nom du dossier ZIP',
   'Back': 'Retour',
+  'Download Document': 'Télécharger {{language}} {{extension}}',
 };

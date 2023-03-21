@@ -249,4 +249,5 @@ export const svSE = {
   'Download selected files': 'Ladda ner valda filer',
   'Name ZIP-folder': 'Namn ZIP-mapp',
   'Back': 'Tillbaka',
+  'Download Document': 'Ladda ner {{language}} {{extension}}',
 };

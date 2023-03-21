@@ -33,7 +33,7 @@
 
 <ng-container *ngFor="let folder of folders">
   <ng-container *ngIf="getDocumentsByFolderId(folder.id).length > 0">
-    <h3 class="mt-3">{{ folder.name }}</h3>
+    <h3 class="mt-3">{{('Folder name' | translate) + ": " + folder.name }}</h3>
     <app-documents-table
       [documents]="getDocumentsByFolderId(folder.id)"
       (openEditModal)="showEditDocumentModal($event)"

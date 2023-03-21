@@ -6,4 +6,5 @@ export class DocumentUploadedDataModel {
   name?: string;
   file?: File;
   fileName?: string;
+  extension: string;
 }

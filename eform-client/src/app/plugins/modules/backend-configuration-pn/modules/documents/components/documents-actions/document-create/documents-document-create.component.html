@@ -1,10 +1,10 @@
 <h3 mat-dialog-title>{{'Create document' | translate}}</h3>
 <div mat-dialog-content class="d-flex flex-column">
   <mat-card class="mb-3">
-    <mat-card-content *ngIf="folders !== undefined">
+    <mat-card-content *ngIf="folders">
       <div class="d-flex flex-column">
         <mat-slide-toggle
-          id="planAreaRuleStatusToggle"
+          id="documentStatusToggle"
           [(ngModel)]="newDocumentModel.status"
         >
           {{ 'Enabled' | translate }}
@@ -18,7 +18,7 @@
             [bindLabel]="'name'"
             [bindValue]="'id'"
             [(ngModel)]="selectedFolder"
-            id="createLanguageSelector"
+            id="createDocumentFolderSelector"
             [items]="folders"
           >
           </mtx-select>
@@ -42,23 +42,70 @@
       </div>
     </mat-card-content>
   </mat-card>
-  <mat-card class="mb-3" *ngFor="let translation of newDocumentModel.documentTranslations; let translationIndex = index">
-    <mat-card-title>{{ languages[translationIndex].text }}</mat-card-title>
+  <mat-card class="mb-3" *ngFor="let translation of languages; let translationIndex = index">
+    <mat-card-title>{{ getLanguageByLanguageId(translation.id).text }}</mat-card-title>
     <mat-card-content class="d-flex flex-column need-wrapper">
       <mat-form-field>
-        <mat-label>{{'Name' | translate}}</mat-label>
+        <mat-label>{{'Name DOCX' | translate}}</mat-label>
         <input
           matInput
           type="text"
-          id="createFolderNameTranslation_{{ translationIndex }}"
-          name="createFolderNameTranslation_{{translationIndex}}"
-          [(ngModel)]="translation.name"
+          id="createDocumentNameDocxTranslation_{{ translationIndex }}"
+          name="createDocumentNameDocxTranslation_{{translationIndex}}"
+          [(ngModel)]="getTranslateByLanguageId(translation.id, 'doc').name"
         />
       </mat-form-field>
       <formatting-text-editor
-        [(value)]="translation.description"
-        [placeholder]="'Description' | translate"
-        id="createFolderDescriptionTranslation_{{translationIndex}}"
+        [(value)]="getTranslateByLanguageId(translation.id, 'doc').description"
+        [placeholder]="'Description DOCX' | translate"
+        id="createDocumentDescriptionDocxTranslation_{{translationIndex}}"
+      >
+      </formatting-text-editor>
+      <div class="mt-3">
+        <input
+          type="file"
+          hidden
+          [accept]="'application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
+          (change)="onFileSelected($event, translation.id, 'doc')"
+          id="docInput{{ translationIndex }}"
+          #fileDocUpload
+        />
+        <div>{{getFileNameByLanguage(translation.id, 'doc') || 'No file uploaded yet.' | translate}}
+          <button
+            mat-raised-button
+            color="accent"
+            (click)="fileDocUpload.click()"
+          >
+            {{ 'Upload' | translate }}
+          </button>
+          <ng-container *ngIf="getFileNameByLanguage(translation.id, 'doc')">
+            <button
+              mat-icon-button
+              color="accent"
+              (click)="getFile(translation.id, 'doc')"
+              matTooltip="{{ 'Show DOC' | translate }}"
+            >
+              <mat-icon svgIcon="file-word"></mat-icon>
+            </button>
+          </ng-container>
+        </div>
+      </div>
+    </mat-card-content>
+    <mat-card-content class="d-flex flex-column need-wrapper mt-3">
+      <mat-form-field>
+        <mat-label>{{'Name PDF' | translate}}</mat-label>
+        <input
+          matInput
+          type="text"
+          id="createDocumentNamePdfTranslation_{{ translationIndex }}"
+          name="createDocumentNamePdfTranslation_{{translationIndex}}"
+          [(ngModel)]="getTranslateByLanguageId(translation.id, 'pdf').name"
+        />
+      </mat-form-field>
+      <formatting-text-editor
+        [(value)]="getTranslateByLanguageId(translation.id, 'pdf').description"
+        [placeholder]="'Description PDF' | translate"
+        id="createDocumentDescriptionPdfTranslation_{{translationIndex}}"
       >
       </formatting-text-editor>
       <div class="mt-3">
@@ -66,23 +113,23 @@
           type="file"
           hidden
           [accept]="'application/pdf'"
-          (change)="onFileSelected($event, languages[translationIndex].id)"
+          (change)="onFileSelected($event, translation.id, 'pdf')"
           id="pdfInput{{ translationIndex }}"
-          #fileUpload
+          #filePdfUpload
         />
-        <div>{{getFileNameByLanguage(languages[translationIndex].id) || 'No file uploaded yet.' | translate}}
+        <div>{{getFileNameByLanguage(translation.id, 'pdf') || 'No file uploaded yet.' | translate}}
           <button
             mat-raised-button
             color="accent"
-            (click)="fileUpload.click()"
+            (click)="filePdfUpload.click()"
           >
             {{ 'Upload' | translate }}
           </button>
-          <ng-container *ngIf="getFileNameByLanguage(languages[translationIndex].id)">
+          <ng-container *ngIf="getFileNameByLanguage(translation.id)">
             <button
               mat-icon-button
               color="accent"
-              (click)="getPdf(languages[translationIndex].id)"
+              (click)="getFile(translation.id)"
               matTooltip="{{ 'Show PDF' | translate }}"
             >
               <mat-icon svgIcon="file-pdf"></mat-icon>

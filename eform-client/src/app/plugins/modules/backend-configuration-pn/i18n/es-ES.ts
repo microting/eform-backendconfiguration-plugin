@@ -250,4 +250,5 @@ export const esES = {
   'Download selected files': 'Descargar archivos seleccionados',
   'Name ZIP-folder': 'Nombrar carpeta ZIP',
   'Back': 'Atrás',
+  'Download Document': 'Descargar {{language}} {{extension}}',
 };
