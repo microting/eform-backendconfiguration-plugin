@@ -109,7 +109,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     }
                 }
 
-                if (planningCase.Status == 100)
+                if (planningCase.Status == 100 && planning.RepeatType != RepeatType.Day && planning.RepeatEvery != 0)
                 {
                     var planningCaseSite =
                         await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x =>
