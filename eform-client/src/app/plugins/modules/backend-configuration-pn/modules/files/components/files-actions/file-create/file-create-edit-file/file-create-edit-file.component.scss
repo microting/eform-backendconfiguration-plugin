@@ -1,8 +1,10 @@
 .selectors {
-  display: grid;
+/*  display: grid;
   grid-template-columns: repeat(2, 2fr) repeat(2, .3fr);
   align-items: center;
-  justify-content: center;
+  justify-content: center;*/
+  display: flex;
+  justify-content: flex-end;
   .mat-form-field {
     width: unset;
   }
