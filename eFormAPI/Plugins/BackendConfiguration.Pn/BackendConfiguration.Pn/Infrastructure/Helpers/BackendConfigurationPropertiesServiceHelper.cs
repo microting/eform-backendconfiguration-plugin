@@ -233,12 +233,26 @@ public static class BackendConfigurationPropertiesServiceHelper
                 sdkDbContext, core);
             await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 
+            if (property.EntitySelectListDeviceUsers == null)
+            {
+                var group = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
+                    $"{property.Name} - Device Users", "", true, false).ConfigureAwait(false);
+                property.EntitySelectListDeviceUsers = group.Id;
+            }
+
             var deviceUsersEntityGroup = await sdkDbContext.EntityGroups.FirstAsync(x => x.Id == property.EntitySelectListDeviceUsers)
                 .ConfigureAwait(false);
 
             deviceUsersEntityGroup.Name = $"{property.Name} - Device Users";
 
             await deviceUsersEntityGroup.Update(sdkDbContext).ConfigureAwait(false);
+
+            if (property.EntitySelectListAreas == null)
+            {
+                var group = await core.EntityGroupCreate(Constants.FieldTypes.EntitySelect,
+                    $"{property.Name} - Areas", "", true, true).ConfigureAwait(false);
+                property.EntitySelectListAreas = group.Id;
+            }
 
             var areasEntityGroup = await sdkDbContext.EntityGroups.FirstAsync(x => x.Id == property.EntitySelectListAreas)
                 .ConfigureAwait(false);
@@ -383,8 +397,9 @@ public static class BackendConfigurationPropertiesServiceHelper
 
             return new OperationResult(true, "SuccessfullyUpdateProperties");
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Console.WriteLine(e.Message);
             //Log.LogException(e.Message);
             //Log.LogException(e.StackTrace);
             return new OperationResult(false, "ErrorWhileUpdateProperties");

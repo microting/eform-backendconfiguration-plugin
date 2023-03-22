@@ -251,4 +251,6 @@ export const nlNL = {
   'Name ZIP-folder': 'Naam ZIP-map',
   'Back': 'Terug',
   'Download Document': 'Bestand {{language}} {{extension}}',
+  'Select DOCX': '',
+  'Select PDF': '',
 };

@@ -258,4 +258,6 @@ export const da = {
   'Download selected files': 'Hent valgte filer',
   'Name ZIP-folder': 'Navn ZIP-mappe',
   'Download Document': 'Download {{language}} {{extension}}',
+  'Select DOCX': 'Vælg DOCX',
+  'Select PDF': 'Vælg PDF',
 };

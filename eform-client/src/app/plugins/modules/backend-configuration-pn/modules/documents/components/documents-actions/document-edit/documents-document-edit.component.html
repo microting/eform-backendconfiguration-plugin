@@ -66,7 +66,7 @@
           type="file"
           hidden
           [accept]="'application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
-          (change)="onFileSelected($event, translation.id, 'doc')"
+          (change)="onFileSelected($event, translation.id, 'docx')"
           id="docInput{{ translationIndex }}"
           #fileDocUpload
         />
@@ -76,7 +76,7 @@
             color="accent"
             (click)="fileDocUpload.click()"
           >
-            {{ 'Upload' | translate }}
+            {{ 'Select DOCX' | translate }}
           </button>
           <ng-container *ngIf="getFileNameByLanguage(translation.id, 'doc')">
             <button
@@ -123,7 +123,7 @@
             color="accent"
             (click)="filePdfUpload.click()"
           >
-            {{ 'Upload' | translate }}
+            {{ 'Select PDF' | translate }}
           </button>
           <ng-container *ngIf="getFileNameByLanguage(translation.id)">
             <button

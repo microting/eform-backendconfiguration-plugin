@@ -171,6 +171,9 @@ export class DocumentsDocumentEditComponent implements OnInit {
     // @ts-ignore
     const files: File[] = event.target.files;
     const file: File = R.last(files);
+    if (file.name.indexOf(extension) === -1) {
+      return;
+    }
     const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
       (x) => (x.languageId === selectedLanguage || x.id === selectedLanguage)
         && x.extension === extension

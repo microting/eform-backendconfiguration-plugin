@@ -149,7 +149,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == propertyWorker.WorkerId);
                 var language = await sdkDbContext.Languages.FirstAsync(x => x.Id == site.LanguageId);
 
-                if (!string.IsNullOrEmpty(document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name) && document.DocumentUploadedDatas.First(x => x.LanguageId == language.Id).Hash != null)
+                if (!string.IsNullOrEmpty(document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name) && document.DocumentUploadedDatas.First(x => x.LanguageId == language.Id && x.Extension == "pdf").Hash != null)
                 {
                     var mainElement = await _sdkCore.ReadeForm(clt.CheckListId, language);
                     mainElement.CheckListFolderName = sdkFolder.MicrotingUid.ToString();

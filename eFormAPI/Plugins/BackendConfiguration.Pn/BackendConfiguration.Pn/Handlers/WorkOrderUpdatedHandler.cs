@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
@@ -65,6 +67,8 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             var priorityText = "";
 
             var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.Value).ConfigureAwait(false);
+            var siteLanguage = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
+            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(siteLanguage.LanguageCode);
             switch (workOrderCase.Priority)
             {
                 case "1":
@@ -115,7 +119,6 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                                    priorityText +
                                    assignedTo +
                                    $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
-            var siteLanguage = await sdkDbContext.Languages.FirstAsync(x => x.Id == site.LanguageId);
             var mainElement = await _sdkCore.ReadeForm(eformId, siteLanguage);
             mainElement.Label = " ";
             mainElement.ElementList[0].QuickSyncEnabled = true;

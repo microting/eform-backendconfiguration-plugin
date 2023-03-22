@@ -109,7 +109,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     }
                 }
 
-                if (planningCase.Status == 100)
+                if (planningCase.Status == 100 && planning.RepeatType != RepeatType.Day && planning.RepeatEvery != 0)
                 {
                     var planningCaseSite =
                         await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x =>
@@ -208,8 +208,8 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                     if (planningCaseSite.MicrotingSdkCaseDoneAt.HasValue)
                     {
-                        var unixTimestamp = (long) (planningCaseSite.MicrotingSdkCaseDoneAt.Value
-                                .Subtract(new DateTime(1970, 1, 1)))
+                        var unixTimestamp = (long) planningCaseSite.MicrotingSdkCaseDoneAt.Value
+                            .Subtract(new DateTime(1970, 1, 1))
                             .TotalSeconds;
 
                         mainElement.ElementList[0].Description.InderValue = unixTimestamp.ToString();

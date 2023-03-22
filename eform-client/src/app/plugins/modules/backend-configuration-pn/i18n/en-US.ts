@@ -139,4 +139,6 @@ export const enUS = {
   'Name ZIP-folder': 'Name ZIP-folder',
   'Back': 'Back',
   'Download Document': 'Download {{language}} {{extension}}',
+  'Select DOCX': 'Select DOCX',
+  'Select PDF': 'Select PDF',
 };
