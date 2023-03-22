@@ -252,4 +252,6 @@ export const plPl = {
   'Name ZIP-folder': 'Nazwa folderu ZIP',
   'Back': 'Powrót',
   'Download Document': 'Pobierz {{language}} {{extension}}',
+  'Select DOCX': '',
+  'Select PDF': '',
 };

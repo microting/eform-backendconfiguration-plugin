@@ -250,4 +250,6 @@ export const svSE = {
   'Name ZIP-folder': 'Namn ZIP-mapp',
   'Back': 'Tillbaka',
   'Download Document': 'Ladda ner {{language}} {{extension}}',
+  'Select DOCX': '',
+  'Select PDF': '',
 };

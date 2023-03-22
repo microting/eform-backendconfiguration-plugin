@@ -250,4 +250,6 @@ export const ptPT = {
   'Name ZIP-folder': 'Nome da pasta ZIP',
   'Back': 'Voltar',
   'Download Document': 'Carregar {{language}} {{extension}}',
+  'Select DOCX': '',
+  'Select PDF': '',
 }

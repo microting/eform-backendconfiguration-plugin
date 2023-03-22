@@ -251,4 +251,6 @@ export const itIT = {
   'Name ZIP-folder': 'Nome cartella ZIP',
   'Back': 'Indietro',
   'Download Document': 'Carica {{language}} {{extension}}',
+  'Select DOCX': '',
+  'Select PDF': '',
 };

@@ -173,12 +173,16 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   onFileSelected(event: Event, selectedLanguage: number, extension: string) {
     // @ts-ignore
     const files: File[] = event.target.files;
+    const file: File = R.last(files);
+    debugger;
+    if (file.name.indexOf(extension) === -1) {
+      return;
+    }
     const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
       (x) => (x.languageId === selectedLanguage || x.id === selectedLanguage)
         && x.extension === extension
     );
     if (filesIndexByLanguage !== -1) {
-      const file: File = R.last(files);
       this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = file;
       const filename = file ? file.name : '';
       this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = file ? file.name : '';

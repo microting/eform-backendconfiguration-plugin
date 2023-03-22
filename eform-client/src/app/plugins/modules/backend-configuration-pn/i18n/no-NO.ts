@@ -251,4 +251,6 @@ export const noNO = {
   'Name ZIP-folder': 'Navn ZIP-mappe',
   'Back': 'Tilbake',
   'Download Document': 'Last opp {{language}} {{extension}}',
+  'Select DOCX': '',
+  'Select PDF': '',
 };
