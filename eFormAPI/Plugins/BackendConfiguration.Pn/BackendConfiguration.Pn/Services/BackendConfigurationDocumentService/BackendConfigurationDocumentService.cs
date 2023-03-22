@@ -422,82 +422,88 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             }
             else
             {
+                var documentUploadedDataModel = await _caseTemplatePnDbContext.DocumentUploadedDatas
+                .FirstAsync(x => x.DocumentId == document.Id
+                                 && x.LanguageId == documentUploadedData.LanguageId
+                                 && x.Extension == documentUploadedData.Extension)
+                .ConfigureAwait(false);
                 MemoryStream memoryStream = new MemoryStream();
+                MemoryStream memoryStream2 = new MemoryStream();
 
                 if (documentUploadedData.File != null)
                 {
                     await documentUploadedData.File.CopyToAsync(memoryStream);
-                    memoryStream.Seek(0, SeekOrigin.Begin);
                     string checkSum;
                     using (var md5 = MD5.Create())
                     {
                         byte[] grr = md5.ComputeHash(memoryStream.ToArray());
                         checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
+				    // fileName = checkSum.extension
+				    var fileName = checkSum + "." + documentUploadedDataModel.Name.Split(".")[^1];
 
-                    var fileName = checkSum + "." + documentUploadedData.Name.Split(".")[1];
-                    if (documentUploadedDataDb.File != fileName)
-                    {
-                        memoryStream.Seek(0, SeekOrigin.Begin);
-                        await core.PdfUpload(memoryStream, checkSum, fileName);
-                        memoryStream.Seek(0, SeekOrigin.Begin);
-                        await core.PutFileToS3Storage(memoryStream, fileName);
-                        documentUploadedDataDb.File = fileName;
-                        documentUploadedDataDb.Hash = checkSum;
-                        documentUploadedDataDb.Name = documentUploadedData.Name;
-                        await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    await core.PdfUpload(memoryStream, checkSum, fileName);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    await memoryStream.CopyToAsync(memoryStream2);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    await core.PutFileToS3Storage(memoryStream, fileName);
+                    documentUploadedDataModel.File = fileName;
+                    documentUploadedDataModel.Hash = checkSum;
+                    await documentUploadedDataModel.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 
-						// if we have office document - we need convert doc to pdf and save pdf and doc
-						// user uploaded only pdf - save pdf.
-						// user uploaded pdf and doc - save pdf and doc.
-						// the user uploaded the doc - convert the doc to pdf and save them both
-						if (
-							(documentUploadedData.Name.Split(".")[^1] is "doc" or "docx")
-							&& !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
-						{
-							ReportHelper.ConvertToPdf(fileName, Path.Combine(Path.GetTempPath(), "results"));
-							using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
-							using MemoryStream memoryStreamConvertedFile = new MemoryStream();
-							await fileStream.CopyToAsync(memoryStreamConvertedFile);
+				    // if we have office document - we need convert doc to pdf and save pdf and doc
+				    // user uploaded only pdf - save pdf.
+				    // user uploaded pdf and doc - save pdf and doc.
+				    // the user uploaded the doc - convert the doc to pdf and save them both
+				    if (
+	                    (documentUploadedDataModel.Name.Split(".")[^1] is "doc" or "docx")
+	                    && !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
+				    {
+                        memoryStream2.Seek(0, SeekOrigin.Begin);
+                        string downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
+                        Directory.CreateDirectory(downloadPath);
+                        FileStream writeFileStream = new(Path.Combine(downloadPath, fileName), FileMode.Create, FileAccess.Write);
+                        await memoryStream2.CopyToAsync(writeFileStream);
+                        writeFileStream.Close();
+					    ReportHelper.ConvertToPdf(Path.Combine(Path.GetTempPath(), "reports", "results", fileName), downloadPath);
+                        var pdfFileName = fileName.Replace(".docx", ".pdf").Replace(".doc", ".pdf");
+                        await using FileStream fileStream = new(Path.Combine(downloadPath, pdfFileName), FileMode.Open, FileAccess.Read);
+					    using MemoryStream memoryStreamConvertedFile = new MemoryStream();
+					    await fileStream.CopyToAsync(memoryStreamConvertedFile);
 
-							string checkSumConvertedFile;
-							using (var md5 = MD5.Create())
-							{
-								byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
-								checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
-							}
-							// fileName = checkSum.extension
-							var fileNameConvertedFile = checkSumConvertedFile + ".pdf";
+					    string checkSumConvertedFile;
+					    using (var md5 = MD5.Create())
+					    {
+						    byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
+						    checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
+					    }
+					    // fileName = checkSum.extension
+					    var fileNameConvertedFile = checkSumConvertedFile + ".pdf";
 
-							memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
-							await core.PdfUpload(memoryStreamConvertedFile, checkSumConvertedFile, fileNameConvertedFile);
-							memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
-							await core.PutFileToS3Storage(memoryStreamConvertedFile, fileNameConvertedFile);
-							documentUploadedDataDb = document.DocumentUploadedDatas
-								.FirstOrDefault(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId);
-							if (documentUploadedDataDb != null)
-							{
-								documentUploadedDataDb.File = fileNameConvertedFile;
-								documentUploadedDataDb.Hash = checkSumConvertedFile;
-								documentUploadedDataDb.Name = documentUploadedData.Name;
-								await documentUploadedDataDb.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
-							}
-							else
-							{
-								var documentUploadedDataConvertedFileModel = new DocumentUploadedData
-								{
-									DocumentId = document.Id,
-									LanguageId = documentUploadedData.LanguageId,
-									Name = documentUploadedData.Name,
-									Extension = "pdf",
-									File = fileNameConvertedFile,
-									Hash = checkSumConvertedFile,
-									CreatedByUserId = _userService.UserId,
-								};
-								await documentUploadedDataConvertedFileModel.Create(_caseTemplatePnDbContext);
-							}
-						}
-					}
+					    memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+					    await core.PdfUpload(memoryStreamConvertedFile, checkSumConvertedFile, fileNameConvertedFile);
+					    memoryStreamConvertedFile.Seek(0, SeekOrigin.Begin);
+					    await core.PutFileToS3Storage(memoryStreamConvertedFile, fileNameConvertedFile);
+                        var documentUploadedDataConvertedFileModel = await _caseTemplatePnDbContext.DocumentUploadedDatas
+                            .FirstAsync(x => x.DocumentId == document.Id
+                                             && x.LanguageId == documentUploadedData.LanguageId
+                                             && x.Extension == "pdf")
+                            .ConfigureAwait(false);
+
+                        documentUploadedDataConvertedFileModel.File = fileNameConvertedFile;
+                        documentUploadedDataConvertedFileModel.Hash = checkSumConvertedFile;
+                        await documentUploadedDataConvertedFileModel.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+
+                        var documentTranslation = _caseTemplatePnDbContext.DocumentTranslations
+                            .First(x => x.DocumentId == document.Id
+                                        && x.LanguageId == documentUploadedData.LanguageId
+                                        && x.ExtensionFile == "pdf");
+
+                        documentTranslation.ExtensionFile = "pdf";
+                        documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "doc").Name;
+                        await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
+                    }
                 }
             }
         }
@@ -657,20 +663,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     documentTranslation.ExtensionFile = "pdf";
                     documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "doc").Name;
                     await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
-
-
-					// var documentUploadedDataConvertedFileModel = new DocumentUploadedData
-					// {
-					// 	DocumentId = document.Id,
-					// 	LanguageId = documentUploadedData.LanguageId,
-					// 	Name = documentUploadedData.Name,
-					// 	Extension = "pdf",
-					// 	File = fileNameConvertedFile,
-					// 	Hash = checkSumConvertedFile,
-     //                    CreatedByUserId = _userService.UserId,
-					// };
-					// await documentUploadedDataConvertedFileModel.Create(_caseTemplatePnDbContext);
-				}
+                }
             }
 		}
 
