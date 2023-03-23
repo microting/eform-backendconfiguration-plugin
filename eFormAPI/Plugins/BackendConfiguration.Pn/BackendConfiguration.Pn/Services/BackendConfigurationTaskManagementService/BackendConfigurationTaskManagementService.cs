@@ -216,7 +216,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             var uploadIds = await _backendConfigurationPnDbContext.WorkorderCaseImages
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.WorkorderCaseId == task.ParentWorkorderCaseId)
+                .Where(task.ParentWorkorderCaseId != null ? x => x.WorkorderCaseId == task.ParentWorkorderCaseId : x => x.WorkorderCaseId == task.Id)
                 .Select(x => x.UploadedDataId)
                 .ToListAsync().ConfigureAwait(false);
 
@@ -473,6 +473,8 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     var fileName = $"{uploadData.Id}_{hash}{uploadData.Extension}";
                     string smallFilename = $"{uploadData.Id}_300_{hash}{uploadData.Extension}";
                     string bigFilename = $"{uploadData.Id}_700_{hash}{uploadData.Extension}";
+                    uploadData.FileName = smallFilename;
+                    await uploadData.Update(sdkDbContext).ConfigureAwait(false);
                     baseMemoryStream.Seek(0, SeekOrigin.Begin);
                     MemoryStream s3Stream = new MemoryStream();
                     await baseMemoryStream.CopyToAsync(s3Stream).ConfigureAwait(false);
