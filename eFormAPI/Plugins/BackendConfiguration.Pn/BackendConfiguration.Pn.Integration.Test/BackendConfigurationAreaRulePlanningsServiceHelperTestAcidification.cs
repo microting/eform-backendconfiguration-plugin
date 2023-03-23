@@ -306,7 +306,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         Assert.That(itemPlanningSites.Count, Is.EqualTo(1));
         Assert.That(itemPlanningSites[0].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.Null);
 
         // Assert itemPlanningCases
         Assert.That(itemPlanningCases, Is.Not.Null);
@@ -337,7 +337,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
-        Assert.That(cases[0].FolderId, Is.EqualTo(null));
+        Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
     }
