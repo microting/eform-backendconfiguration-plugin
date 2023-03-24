@@ -245,12 +245,12 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             {
                 foreach (var value in profile.Values)
                 {
-                    Console.WriteLine("{0}({1}): {2}", value.Tag, value.DataType, value.ToString());
+                    Console.WriteLine("{0}({1}): {2}", value.Tag, value.DataType, value);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(e);
+                // Console.WriteLine(e);
             }
 
             image.Rotate(90);

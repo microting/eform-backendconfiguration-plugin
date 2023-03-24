@@ -462,7 +462,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(itemPlanningSites.Count, Is.EqualTo(1));
         Assert.That(itemPlanningSites[0].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.Null);
 
         // Assert itemPlanningCases
         Assert.That(itemPlanningCases, Is.Not.Null);
@@ -493,7 +493,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(cases[0].FolderId, Is.EqualTo(null));
+        Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
     }
@@ -960,7 +960,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(itemPlanningSites.Count, Is.EqualTo(1));
         Assert.That(itemPlanningSites[0].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.Null);
 
         // Assert itemPlanningCases
         Assert.That(itemPlanningCases, Is.Not.Null);
@@ -991,7 +991,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(cases[0].FolderId, Is.EqualTo(null));
+        Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
     }
@@ -1458,7 +1458,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(itemPlanningSites.Count, Is.EqualTo(1));
         Assert.That(itemPlanningSites[0].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.Null);
 
         // Assert itemPlanningCases
         Assert.That(itemPlanningCases, Is.Not.Null);
@@ -1489,7 +1489,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(cases[0].FolderId, Is.EqualTo(null));
+        Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
     }
@@ -1901,7 +1901,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
 
-        Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(null));
+        Assert.That(plannings[0].NextExecutionTime, Is.Null);
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(0));
         Assert.That(plannings[0].RepeatType, Is.EqualTo(RepeatType.Day));
         Assert.That(plannings[0].DayOfWeek, Is.EqualTo(DayOfWeek.Monday));
@@ -1933,7 +1933,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(itemPlanningSites.Count, Is.EqualTo(1));
         Assert.That(itemPlanningSites[0].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.Null);
 
         // Assert itemPlanningCases
         Assert.That(itemPlanningCases, Is.Not.Null);
@@ -1960,7 +1960,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(checkListSites.Count, Is.EqualTo(1));
         Assert.That(checkListSites[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(checkListSites[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(checkListSites[0].FolderId, Is.EqualTo(null));
+        Assert.That(checkListSites[0].FolderId, Is.Null);
         Assert.That(checkListSites[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 
         // Assert cases
@@ -2434,7 +2434,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
 
-        Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(null));
+        Assert.That(plannings[0].NextExecutionTime, Is.Null);
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(0));
         Assert.That(plannings[0].RepeatType, Is.EqualTo(RepeatType.Day));
         Assert.That(plannings[0].DayOfWeek, Is.EqualTo(DayOfWeek.Friday));
@@ -2471,10 +2471,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(itemPlanningSites.Count, Is.EqualTo(2));
         Assert.That(itemPlanningSites[0].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.Null);
         Assert.That(itemPlanningSites[1].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[1].SiteId, Is.EqualTo(sites[3].Id));
-        Assert.That(itemPlanningSites[1].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[1].LastExecutedTime, Is.Null);
 
         // Assert itemPlanningCases
         Assert.That(itemPlanningCases, Is.Not.Null);
@@ -2508,11 +2508,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(checkListSites.Count, Is.EqualTo(2));
         Assert.That(checkListSites[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(checkListSites[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(checkListSites[0].FolderId, Is.EqualTo(null));
+        Assert.That(checkListSites[0].FolderId, Is.Null);
         Assert.That(checkListSites[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(checkListSites[1].SiteId, Is.EqualTo(sites[3].Id));
         Assert.That(checkListSites[1].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(checkListSites[1].FolderId, Is.EqualTo(null));
+        Assert.That(checkListSites[1].FolderId, Is.Null);
         Assert.That(checkListSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
 
         // Assert cases
@@ -3052,10 +3052,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(itemPlanningSites.Count, Is.EqualTo(2));
         Assert.That(itemPlanningSites[0].PlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(itemPlanningSites[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[0].LastExecutedTime, Is.Null);
         Assert.That(itemPlanningSites[1].PlanningId, Is.EqualTo(plannings[1].Id));
         Assert.That(itemPlanningSites[1].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(itemPlanningSites[1].LastExecutedTime, Is.EqualTo(null));
+        Assert.That(itemPlanningSites[1].LastExecutedTime, Is.Null);
 
         // Assert itemPlanningCases
         Assert.That(itemPlanningCases, Is.Not.Null);
@@ -3094,12 +3094,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(cases.Count, Is.EqualTo(2));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(cases[0].FolderId, Is.EqualTo(null));
+        Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(cases[1].SiteId, Is.EqualTo(sites[2].Id));
         Assert.That(cases[1].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
-        Assert.That(cases[1].FolderId, Is.EqualTo(null));
+        Assert.That(cases[1].FolderId, Is.Null);
         Assert.That(cases[1].Status, Is.EqualTo(66));
         Assert.That(cases[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
     }

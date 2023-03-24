@@ -216,7 +216,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
 
             var uploadIds = await _backendConfigurationPnDbContext.WorkorderCaseImages
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.WorkorderCaseId == task.ParentWorkorderCaseId)
+                .Where(task.ParentWorkorderCaseId != null ? x => x.WorkorderCaseId == task.ParentWorkorderCaseId : x => x.WorkorderCaseId == task.Id)
                 .Select(x => x.UploadedDataId)
                 .ToListAsync().ConfigureAwait(false);
 
@@ -466,13 +466,15 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         Checksum = hash,
                         FileName = picture.FileName,
                         FileLocation = "",
-                        Extension = picture.ContentType.Split("/")[1]
+                        Extension = $".{picture.ContentType.Split("/")[1]}"
                     };
                     await uploadData.Create(sdkDbContext).ConfigureAwait(false);
 
-                    var fileName = $"{uploadData.Id}_{hash}.{picture.ContentType.Split("/")[1]}";
-                    string smallFilename = $"{uploadData.Id}_300_{hash}.{picture.ContentType.Split("/")[1]}";
-                    string bigFilename = $"{uploadData.Id}_700_{hash}.{picture.ContentType.Split("/")[1]}";
+                    var fileName = $"{uploadData.Id}_{hash}{uploadData.Extension}";
+                    string smallFilename = $"{uploadData.Id}_300_{hash}{uploadData.Extension}";
+                    string bigFilename = $"{uploadData.Id}_700_{hash}{uploadData.Extension}";
+                    uploadData.FileName = smallFilename;
+                    await uploadData.Update(sdkDbContext).ConfigureAwait(false);
                     baseMemoryStream.Seek(0, SeekOrigin.Begin);
                     MemoryStream s3Stream = new MemoryStream();
                     await baseMemoryStream.CopyToAsync(s3Stream).ConfigureAwait(false);
@@ -500,7 +502,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     {
                         decimal currentRation = image.Height / (decimal)image.Width;
                         int newWidth = 700;
-                        int newHeight = (int)Math.Round((currentRation * newWidth));
+                        int newHeight = (int)Math.Round(currentRation * newWidth);
 
                         image.Resize(newWidth, newHeight);
                         image.Crop(newWidth, newHeight);
@@ -520,7 +522,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         WorkorderCaseId = newWorkOrderCase.Id,
                         UploadedDataId = uploadData.Id
                     };
-                    picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}.{uploadData.Extension}");
+                    picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}");
                     await workOrderCaseImage.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
@@ -667,7 +669,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             var workOrderCaseImage = new WorkorderCaseImage
             {
                 WorkorderCaseId = workOrderCase.Id,
-                UploadedDataId = (int)uploadedData.Id
+                UploadedDataId = uploadedData.Id
             };
             await workOrderCaseImage.Create(_backendConfigurationPnDbContext);
         }
