@@ -3,7 +3,7 @@ import {DocumentModel} from '../../../../../models';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {Subscription} from 'rxjs';
 import {TemplateFilesService} from 'src/app/common/services';
-import {applicationLanguagesTranslated, PdfIcon} from 'src/app/common/const';
+import {applicationLanguages2, PdfIcon} from 'src/app/common/const';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
@@ -20,7 +20,26 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
   documentSub$: Subscription;
 
   get languages() {
-    return applicationLanguagesTranslated;
+    return applicationLanguages2;
+  }
+
+  getLanguageByLanguageId(languageId: number) {
+    const languages = this.languages.filter(x => x.id === languageId);
+    if(languages && languages.length > 0) {
+      return languages[0];
+    }
+    return this.languages[0];
+  }
+
+  getTranslateByLanguageId(languageId: number, extension: string) {
+    const index = this.newDocumentModel.documentTranslations.findIndex(
+      x => x.languageId === languageId && x.extensionFile === extension
+    );
+    if(index !== -1) {
+      return this.newDocumentModel.documentTranslations[index];
+    } else {
+      return {languageId: languageId, name: '', extensionFile: extension, description: ''};
+    }
   }
 
   constructor(
@@ -58,8 +77,9 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
     });
   }
 
-  getFileNameByLanguage(languageId: number): string {
-    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+  getFileNameByLanguage(languageId: number, extension: string = 'pdf'): string {
+    const index = this.newDocumentModel.documentUploadedDatas
+      .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
       const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {
@@ -74,8 +94,9 @@ export class DocumentsDocumentDeleteComponent implements OnInit {
     return '';
   }
 
-  getPdf(languageId: number) {
-    const index = this.newDocumentModel.documentUploadedDatas.findIndex((x) => x.languageId === languageId);
+  getFile(languageId: number, extension: string = 'pdf') {
+    const index = this.newDocumentModel.documentUploadedDatas
+      .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
       const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {

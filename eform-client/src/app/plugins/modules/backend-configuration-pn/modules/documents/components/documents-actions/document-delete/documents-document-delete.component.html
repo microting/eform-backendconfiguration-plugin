@@ -1,37 +1,71 @@
 <h3 mat-dialog-title>{{'Are you sure you want to delete' | translate}}?</h3>
 <div mat-dialog-content class="d-flex flex-column">
   <h6>{{'Rather than deleting the file, you can also hide the display of the file on your mobile. You do this by selecting Plan next to the document you want to hide and then de-activating the display of the PDF file.' | translate}}</h6>
-  <mat-card class="mb-2"
-            *ngFor="let translation of newDocumentModel.documentTranslations; let translationIndex = index">
+  <mat-card class="mb-2" *ngFor="let translation of languages; let translationIndex = index">
     <mat-card-title><h4>{{ languages[translationIndex].text }}</h4></mat-card-title>
     <mat-card-content class="d-flex flex-column need-wrapper">
       <mat-form-field>
-        <mat-label>{{'Name' | translate}}</mat-label>
+        <mat-label>{{'Name DOCX' | translate}}</mat-label>
         <input
           matInput
           type="text"
-          id="createFolderNameTranslation_{{ translationIndex }}"
-          name="createFolderNameTranslation_{{translationIndex}}"
-          [(ngModel)]="translation.name"
-          [disabled]="true"
-        >
+          id="createDocumentNameDocxTranslation_{{ translationIndex }}"
+          name="createDocumentNameDocxTranslation_{{translationIndex}}"
+          [(ngModel)]="getTranslateByLanguageId(translation.id, 'doc').name"
+          disabled
+        />
       </mat-form-field>
       <formatting-text-editor
+        [(value)]="getTranslateByLanguageId(translation.id, 'doc').description"
+        [placeholder]="'Description DOCX' | translate"
+        id="createDocumentDescriptionDocxTranslation_{{translationIndex}}"
         [disabled]="true"
-        [(value)]="translation.description"
-        [placeholder]="'Description' | translate"
-        id="createFolderDescriptionTranslation_{{translationIndex}}"
       >
       </formatting-text-editor>
-      <button
-        *ngIf="getFileNameByLanguage(languages[translationIndex].id)"
-        mat-icon-button
-        color="primary"
-        (click)="getPdf(languages[translationIndex].id)"
-        matTooltip="{{ 'Show PDF' | translate }}"
+      <div class="mt-3">
+        <ng-container *ngIf="getFileNameByLanguage(translation.id, 'doc')">
+          <button
+            mat-icon-button
+            color="accent"
+            (click)="getFile(translation.id, 'doc')"
+            matTooltip="{{ 'Show DOC' | translate }}"
+          >
+            <mat-icon svgIcon="file-word"></mat-icon>
+          </button>
+        </ng-container>
+      </div>
+    </mat-card-content>
+    <mat-card-content class="d-flex flex-column need-wrapper mt-3">
+      <mat-form-field>
+        <mat-label>{{'Name PDF' | translate}}</mat-label>
+        <input
+          matInput
+          type="text"
+          id="createDocumentNamePdfTranslation_{{ translationIndex }}"
+          name="createDocumentNamePdfTranslation_{{translationIndex}}"
+          [(ngModel)]="getTranslateByLanguageId(translation.id, 'pdf').name"
+          disabled
+        />
+      </mat-form-field>
+      <formatting-text-editor
+        [(value)]="getTranslateByLanguageId(translation.id, 'pdf').description"
+        [placeholder]="'Description PDF' | translate"
+        id="createDocumentDescriptionPdfTranslation_{{translationIndex}}"
+        [disabled]="true"
       >
-        <mat-icon svgIcon="file-pdf"></mat-icon>
-      </button>
+      </formatting-text-editor>
+      <div class="mt-3">
+        <ng-container *ngIf="getFileNameByLanguage(translation.id)">
+          <button
+            mat-icon-button
+            color="accent"
+            (click)="getFile(translation.id)"
+            matTooltip="{{ 'Show PDF' | translate }}"
+          >
+            <mat-icon svgIcon="file-pdf"></mat-icon>
+          </button>
+        </ng-container>
+      </div>
     </mat-card-content>
   </mat-card>
 </div>
@@ -40,12 +74,14 @@
     mat-raised-button
     color="accent"
     (click)="submitCaseDelete()"
+    id="deleteDocumentSaveBtn"
   >
     {{ 'Delete' | translate }}
   </button>
   <button
     mat-raised-button
     (click)="hide()"
+    id="deleteDocumentCancelBtn"
   >
     {{ 'Cancel' | translate }}
   </button>
