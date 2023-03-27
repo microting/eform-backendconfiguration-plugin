@@ -81,6 +81,14 @@
           <ng-container *ngIf="getFileNameByLanguage(translation.id, 'docx')">
             <button
               mat-icon-button
+              color="warn"
+              (click)="removeFile(translation.id, 'docx')"
+              [matTooltip]="'Remove file' | translate"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+            <button
+              mat-icon-button
               color="accent"
               (click)="getFile(translation.id, 'docx')"
               matTooltip="{{ 'Show DOCX' | translate }}"
@@ -128,6 +136,14 @@
           <ng-container *ngIf="getFileNameByLanguage(translation.id)">
             <button
               mat-icon-button
+              color="warn"
+              (click)="removeFile(translation.id, 'pdf')"
+              [matTooltip]="'Remove file' | translate"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+            <button
+              mat-icon-button
               color="accent"
               (click)="getFile(translation.id)"
               matTooltip="{{ 'Show PDF' | translate }}"
@@ -161,14 +177,15 @@
   <button
     mat-raised-button
     color="accent"
-    id="folderSaveBtn"
+    id="createDocumentSaveBtn"
     (click)="createDocument()"
+    [disabled]="disabledSaveBtn"
   >
     {{ 'Create' | translate }}
   </button>
   <button
     mat-raised-button
-    id="cancelCreateBtn"
+    id="createDocumentCancelBtn"
     (click)="hide()"
   >
     {{ 'Cancel' | translate }}

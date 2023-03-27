@@ -40,6 +40,10 @@ export class DocumentsDocumentEditComponent implements OnInit {
     return applicationLanguages2;
   }
 
+  get disabledSaveBtn() {
+    return !this.newDocumentModel.documentTranslations.some(x => x.name);
+  }
+
   getLanguageByLanguageId(languageId: number) {
     const languages = this.languages.filter(x => x.id === languageId);
     if(languages && languages.length > 0) {
@@ -116,6 +120,18 @@ export class DocumentsDocumentEditComponent implements OnInit {
           this.hide();
         }
       });
+  }
+
+  removeFile(selectedLanguage: number, extension: string) {
+    const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
+      (x) => (x.languageId === selectedLanguage || x.id === selectedLanguage)
+        && x.extension === extension
+    );
+
+    if (filesIndexByLanguage !== -1) {
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = null;
+      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = '';
+    }
   }
 
   getFolders() {
