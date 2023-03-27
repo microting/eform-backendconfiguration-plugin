@@ -20,6 +20,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import { PdfIcon } from 'src/app/common/const';
+import {AuthStateService} from 'src/app/common/store';
 
 @Component({
   selector: 'app-area-rules-table',
@@ -364,34 +365,50 @@ export class AreaRulesTableComponent implements OnChanges {
     },
   ];
 
+  tableHeaderAdmin: MtxGridColumn[] = [
+    {
+      field: 'createdAt',
+      header: this.translateService.stream('Creation Date'),
+    },
+    {
+      field: 'updatedAt',
+      header: this.translateService.stream('Updated At'),
+    }
+  ];
+
   getColumns(): MtxGridColumn[] {
+    if (!this.authStateService.isAdmin) {
+      this.tableHeaderAdmin = [];
+    }
+
     switch (this.selectedArea.type) {
       case 1:
-        return this.tableHeadersT1;
+        return [...this.tableHeadersT1, ...this.tableHeaderAdmin];
       case 2:
-        return this.tableHeadersT2;
+        return [...this.tableHeadersT2, ...this.tableHeaderAdmin];
       case 3:
-        return this.tableHeadersT3;
+        return [...this.tableHeadersT3, ...this.tableHeaderAdmin];
       case 4:
-        return this.tableHeadersT4;
+        return [...this.tableHeadersT4, ...this.tableHeaderAdmin];
       case 5:
-        return this.tableHeadersT5;
+        return [...this.tableHeadersT5, ...this.tableHeaderAdmin];
       case 6:
-        return this.tableHeadersT6;
+        return [...this.tableHeadersT6, ...this.tableHeaderAdmin];
       case 7:
-        return this.tableHeadersT7;
+        return [...this.tableHeadersT7, ...this.tableHeaderAdmin];
       case 8:
-        return this.tableHeadersT7;
+        return [...this.tableHeadersT7, ...this.tableHeaderAdmin];
       case 9:
-        return this.tableHeadersT9;
+        return [...this.tableHeadersT9, ...this.tableHeaderAdmin];
       case 10:
-        return this.tableHeadersT10;
+        return [...this.tableHeadersT10, ...this.tableHeaderAdmin];
       default:
         return [];
     }
   }
 
   constructor(
+    private authStateService: AuthStateService,
     private templateFilesService: TemplateFilesService,
     private translateService: TranslateService,
     iconRegistry: MatIconRegistry,
