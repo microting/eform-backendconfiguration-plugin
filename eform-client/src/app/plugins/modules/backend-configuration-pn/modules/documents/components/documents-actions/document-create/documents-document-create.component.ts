@@ -84,11 +84,11 @@ export class DocumentsDocumentCreateComponent implements OnInit {
         ...this.newDocumentModel,
         documentUploadedDatas: [
           ...this.newDocumentModel.documentUploadedDatas,
-          ...(['pdf', 'doc'].map((extension) => ({ languageId: language.id, name: '', file: null, extension: extension }))),
+          ...(['pdf', 'docx'].map((extension) => ({ languageId: language.id, name: '', file: null, extension: extension }))),
         ],
         documentTranslations: [
           ...this.newDocumentModel.documentTranslations,
-          ...(['pdf', 'doc'].map((extension) => ({ languageId: language.id, description: '', name: '', extensionFile: extension }))),
+          ...(['pdf', 'docx'].map((extension) => ({ languageId: language.id, description: '', name: '', extensionFile: extension }))),
         ],
       };
     }

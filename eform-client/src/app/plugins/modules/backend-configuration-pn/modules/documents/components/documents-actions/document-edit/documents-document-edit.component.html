@@ -52,11 +52,11 @@
           type="text"
           id="createDocumentNameDocxTranslation_{{ translationIndex }}"
           name="createDocumentNameDocxTranslation_{{translationIndex}}"
-          [(ngModel)]="getTranslateByLanguageId(translation.id, 'doc').name"
+          [(ngModel)]="getTranslateByLanguageId(translation.id, 'docx').name"
         />
       </mat-form-field>
       <formatting-text-editor
-        [(value)]="getTranslateByLanguageId(translation.id, 'doc').description"
+        [(value)]="getTranslateByLanguageId(translation.id, 'docx').description"
         [placeholder]="'Description DOCX' | translate"
         id="createDocumentDescriptionDocxTranslation_{{translationIndex}}"
       >
@@ -70,7 +70,7 @@
           id="docInput{{ translationIndex }}"
           #fileDocUpload
         />
-        <div>{{getFileNameByLanguage(translation.id, 'doc') || 'No file uploaded yet.' | translate}}
+        <div>{{getFileNameByLanguage(translation.id, 'docx') || 'No file uploaded yet.' | translate}}
           <button
             mat-raised-button
             color="accent"
@@ -78,11 +78,11 @@
           >
             {{ 'Select DOCX' | translate }}
           </button>
-          <ng-container *ngIf="getFileNameByLanguage(translation.id, 'doc')">
+          <ng-container *ngIf="getFileNameByLanguage(translation.id, 'docx')">
             <button
               mat-icon-button
               color="accent"
-              (click)="getFile(translation.id, 'doc')"
+              (click)="getFile(translation.id, 'docx')"
               matTooltip="{{ 'Show DOC' | translate }}"
             >
               <mat-icon svgIcon="file-word"></mat-icon>

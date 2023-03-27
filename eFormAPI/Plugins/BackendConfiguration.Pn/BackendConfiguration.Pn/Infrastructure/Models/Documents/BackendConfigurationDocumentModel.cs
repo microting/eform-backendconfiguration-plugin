@@ -21,4 +21,6 @@ public class BackendConfigurationDocumentModel
         = new();
     public bool Status { get; set; }
     public bool IsLocked { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
