@@ -26,6 +26,8 @@ export class AreaRuleModel {
   translatedNames: CommonDictionaryModel[] = [];
   typeSpecificFields: AreaRuleTypeSpecificFields;
   planning: AreaRulePlanningModel;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export class AreaRuleInitialFieldsModel {
