@@ -107,6 +107,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     .Select(x => new AreaRuleSimpleModel
                     {
                         Id = x.Id,
+                        CreatedAt = x.CreatedAt,
+                        UpdatedAt = x.UpdatedAt,
                         // EformName = x.EformName,
                         TranslatedName = x.AreaRuleTranslations
                             .Where(y => y.LanguageId == currentUserLanguage.Id)

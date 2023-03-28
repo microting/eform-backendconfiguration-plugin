@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System;
+
 namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
     public class AreaRuleSimpleModel: AreaRuleNameAndTypeSpecificFields
@@ -39,5 +41,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
         public int SecondaryeFormId { get; set; }
 
         public string SecondaryeFormName { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
     }
 }

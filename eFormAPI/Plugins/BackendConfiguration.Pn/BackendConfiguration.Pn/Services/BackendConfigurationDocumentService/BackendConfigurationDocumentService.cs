@@ -112,6 +112,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 		        .Select(x => new BackendConfigurationDocumentModel
 		        {
 			        Id = x.Id,
+                    CreatedAt = x.CreatedAt,
+                    UpdatedAt = x.UpdatedAt,
 			        StartDate = x.StartAt,
 			        EndDate = x.EndAt,
 			        FolderId = x.FolderId,
@@ -385,11 +387,11 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 					// user uploaded pdf and doc - save pdf and doc.
 					// the user uploaded the doc - convert the doc to pdf and save them both
 					if (
-						(documentUploadedData.Name.Split(".")[^1] is "doc" or "docx")
+						(documentUploadedData.Name.Split(".")[^1] is "docx" or "docx")
 						&& !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
 					{
 						ReportHelper.ConvertToPdf(fileName, Path.Combine(Path.GetTempPath(), "results"));
-						using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
+                        await using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
 						using MemoryStream memoryStreamConvertedFile = new MemoryStream();
 						await fileStream.CopyToAsync(memoryStreamConvertedFile);
 
@@ -427,6 +429,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                                  && x.LanguageId == documentUploadedData.LanguageId
                                  && x.Extension == documentUploadedData.Extension)
                 .ConfigureAwait(false);
+                documentUploadedDataModel.Name = documentUploadedData.Name;
                 MemoryStream memoryStream = new MemoryStream();
                 MemoryStream memoryStream2 = new MemoryStream();
 
@@ -457,7 +460,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 				    // user uploaded pdf and doc - save pdf and doc.
 				    // the user uploaded the doc - convert the doc to pdf and save them both
 				    if (
-	                    (documentUploadedDataModel.Name.Split(".")[^1] is "doc" or "docx")
+	                    (documentUploadedDataModel.Name.Split(".")[^1] is "docx" or "docx")
 	                    && !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
 				    {
                         memoryStream2.Seek(0, SeekOrigin.Begin);
@@ -501,7 +504,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                                         && x.ExtensionFile == "pdf");
 
                         documentTranslation.ExtensionFile = "pdf";
-                        documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "doc").Name;
+                        documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "docx").Name;
                         await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
                     }
                 }
@@ -617,7 +620,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 				// user uploaded pdf and doc - save pdf and doc.
 				// the user uploaded the doc - convert the doc to pdf and save them both
 				if (
-	                (documentUploadedDataModel.Name.Split(".")[^1] is "doc" or "docx")
+	                (documentUploadedDataModel.Name.Split(".")[^1] is "docx" or "docx")
 	                && !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
 				{
                     memoryStream2.Seek(0, SeekOrigin.Begin);
@@ -661,7 +664,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                                     && x.ExtensionFile == "pdf");
 
                     documentTranslation.ExtensionFile = "pdf";
-                    documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "doc").Name;
+                    documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "docx").Name;
                     await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
                 }
             }
