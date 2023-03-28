@@ -391,7 +391,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 						&& !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
 					{
 						ReportHelper.ConvertToPdf(fileName, Path.Combine(Path.GetTempPath(), "results"));
-						using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
+                        await using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
 						using MemoryStream memoryStreamConvertedFile = new MemoryStream();
 						await fileStream.CopyToAsync(memoryStreamConvertedFile);
 
@@ -429,6 +429,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                                  && x.LanguageId == documentUploadedData.LanguageId
                                  && x.Extension == documentUploadedData.Extension)
                 .ConfigureAwait(false);
+                documentUploadedDataModel.Name = documentUploadedData.Name;
                 MemoryStream memoryStream = new MemoryStream();
                 MemoryStream memoryStream2 = new MemoryStream();
 
