@@ -76,9 +76,10 @@
       id="showEditRuleBtn-{{i}}"
       matTooltip="{{ 'Edit rule' | translate }}"
       (click)="onShowEditRuleModal(row)"
-      [disabled]="row.planningStatus && selectedArea.type === 9">
+      [disabled]="row.planningStatus">
       <mat-icon>edit</mat-icon>
     </button>
+    {{row.planningStatus}}
     <button
       mat-icon-button
       *ngIf="selectedArea.type !== 9"

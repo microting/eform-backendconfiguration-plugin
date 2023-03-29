@@ -1936,5 +1936,100 @@
       "pt-PT": "Erro ao eliminar ficheiro",
       "fi-FI": "Virhe poistettaessa tiedostoa"
     }
+  },
+  {
+    "Key": "DocumentCreatedSuccessfully",
+    "LocalizedValue": {
+      "da": "Dokumentet blev oprettet",
+      "de": "Dokument wurde erfolgreich erstellt",
+      "en-US": "Document created successfully",
+      "uk-UA": "Документ успішно створено",
+      "pl-PL": "Dokument został pomyślnie utworzony",
+      "no-NO": "Dokumentet ble opprettet",
+      "sv-SE": "Dokumentet skapades",
+      "es-ES": "Documento creado correctamente",
+      "fr-FR": "Document créé avec succès",
+      "it-IT": "Documento creato con successo",
+      "nl-NL": "Document succesvol gemaakt",
+      "pt-BR": "Documento criado com sucesso",
+      "pt-PT": "Documento criado com sucesso",
+      "fi-FI": "Dokumentti luotiin onnistuneesti"
+    }
+  },
+  {
+    "Key": "DocumentUpdatedSuccessfully",
+    "LocalizedValue": {
+      "da": "Dokumentet blev opdateret",
+      "de": "Dokument wurde erfolgreich aktualisiert",
+      "en-US": "Document updated successfully",
+      "uk-UA": "Документ успішно оновлено",
+      "pl-PL": "Dokument został pomyślnie zaktualizowany",
+      "no-NO": "Dokumentet ble oppdatert",
+      "sv-SE": "Dokumentet uppdaterades",
+      "es-ES": "Documento actualizado correctamente",
+      "fr-FR": "Document mis à jour avec succès",
+      "it-IT": "Documento aggiornato con successo",
+      "nl-NL": "Document succesvol bijgewerkt",
+      "pt-BR": "Documento atualizado com sucesso",
+      "pt-PT": "Documento atualizado com sucesso",
+      "fi-FI": "Dokumentti päivitettiin onnistuneesti"
+    }
+  },
+  {
+    "Key": "DocumentDeletedSuccessfully",
+    "LocalizedValue": {
+      "da": "Dokumentet blev slettet",
+      "de": "Dokument wurde erfolgreich gelöscht",
+      "en-US": "Document deleted successfully",
+      "uk-UA": "Документ успішно видалено",
+      "pl-PL": "Dokument został pomyślnie usunięty",
+      "no-NO": "Dokumentet ble slettet",
+      "sv-SE": "Dokumentet raderades",
+      "es-ES": "Documento eliminado correctamente",
+      "fr-FR": "Document supprimé avec succès",
+      "it-IT": "Documento cancellato con successo",
+      "nl-NL": "Document succesvol verwijderd",
+      "pt-BR": "Documento excluído com sucesso",
+      "pt-PT": "Documento eliminado com sucesso",
+      "fi-FI": "Dokumentti poistettiin onnistuneesti"
+    }
+  },
+  {
+    "Key": "FolderCreatedSuccessfully",
+    "LocalizedValue": {
+      "da": "Mappen blev oprettet",
+      "de": "Ordner wurde erfolgreich erstellt",
+      "en-US": "Folder created successfully",
+      "uk-UA": "Папку успішно створено",
+      "pl-PL": "Folder został pomyślnie utworzony",
+      "no-NO": "Mappen ble opprettet",
+      "sv-SE": "Mappen skapades",
+      "es-ES": "Carpeta creada correctamente",
+      "fr-FR": "Dossier créé avec succès",
+      "it-IT": "Cartella creata con successo",
+      "nl-NL": "Map succesvol gemaakt",
+      "pt-BR": "Pasta criada com sucesso",
+      "pt-PT": "Pasta criada com sucesso",
+      "fi-FI": "Kansio luotiin onnistuneesti"
+    }
+  },
+  {
+    "Key": "FolderUpdatedSuccessfully",
+    "LocalizedValue": {
+      "da": "Mappen blev opdateret",
+      "de": "Ordner wurde erfolgreich aktualisiert",
+      "en-US": "Folder updated successfully",
+      "uk-UA": "Папку успішно оновлено",
+      "pl-PL": "Folder został pomyślnie zaktualizowany",
+      "no-NO": "Mappen ble oppdatert",
+      "sv-SE": "Mappen uppdaterades",
+      "es-ES": "Carpeta actualizada correctamente",
+      "fr-FR": "Dossier mis à jour avec succès",
+      "it-IT": "Cartella aggiornata con successo",
+      "nl-NL": "Map succesvol bijgewerkt",
+      "pt-BR": "Pasta atualizada com sucesso",
+      "pt-PT": "Pasta atualizada com sucesso",
+      "fi-FI": "Kansio päivitettiin onnistuneesti"
+    }
   }
 ]
