@@ -664,7 +664,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                                     && x.ExtensionFile == "pdf");
 
                     documentTranslation.ExtensionFile = "pdf";
-                    documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "docx").Name;
+                    documentTranslation.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "docx" && x.LanguageId == documentUploadedData.LanguageId).Name;
                     await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
                 }
             }

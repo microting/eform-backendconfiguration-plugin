@@ -357,7 +357,7 @@ export class AreaRulesTableComponent implements OnChanges {
           type: 'icon',
           color: 'accent',
           icon: 'edit',
-          iif: (rowData: AreaRuleSimpleModel) => !rowData.isDefault && this.selectedArea.type !== 9,
+          iif: (rowData: AreaRuleSimpleModel) => !rowData.isDefault && this.selectedArea.type !== 9 && !rowData.planningStatus,
           click: (rowData: AreaRuleSimpleModel) => this.onShowEditRuleModal(rowData),
           tooltip: this.translateService.stream('Edit rule'),
         },
