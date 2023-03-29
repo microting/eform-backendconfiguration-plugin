@@ -1,4 +1,5 @@
 import Page from '../Page';
+import {selectValueInNgSelector} from '../../Helpers/helper-functions';
 
 export class BackendConfigurationAreaRulesPage extends Page {
   constructor() {
@@ -330,44 +331,17 @@ export class BackendConfigurationAreaRulesPage extends Page {
     if (areaRule) {
       if (areaRule.name) {
         if (areaRule.dayOfWeek) {
-          await (await (await this.createAreasDayOfWeek()).$('input')).setValue(
-            areaRule.dayOfWeek
-          );
-          await browser.pause(500);
-          const value = await (await this.createAreasDayOfWeek()).$(
-            `.ng-option=${areaRule.dayOfWeek}`
-          );
-          await value.waitForDisplayed({ timeout: 40000 });
-          await value.click();
-          await browser.pause(500);
+          await selectValueInNgSelector(await this.createAreasDayOfWeek(), areaRule.dayOfWeek)
         }
         await (await this.createAreaRulesString()).setValue(areaRule.name);
         await browser.pause(500);
         await (await this.areaRulesGenerateBtn()).click();
         await browser.pause(500);
         if (areaRule.type) {
-          await (await (await this.createRuleType(0)).$('input')).setValue(
-            areaRule.type
-          );
-          await browser.pause(500);
-          const value = await (await this.createRuleType(0)).$(
-            `.ng-option=${areaRule.type}`
-          );
-          await value.waitForDisplayed({ timeout: 40000 });
-          await value.click();
-          await browser.pause(500);
+          await selectValueInNgSelector(await this.createRuleType(0), areaRule.type)
         }
         if (areaRule.alarm) {
-          await (await (await this.createRuleAlarm(0)).$('input')).setValue(
-            areaRule.alarm
-          );
-          await browser.pause(500);
-          const value = await (await this.createRuleAlarm(0)).$(
-            `.ng-option=${areaRule.alarm}`
-          );
-          await value.waitForDisplayed({ timeout: 40000 });
-          await value.click();
-          await browser.pause(500);
+          await selectValueInNgSelector(await this.createRuleAlarm(0), areaRule.alarm);
         }
         // if (areaRule.dayOfWeek) {
         //   await (await (await this.createAreaDayOfWeek(0)).$('input')).setValue(
@@ -380,16 +354,7 @@ export class BackendConfigurationAreaRulesPage extends Page {
         //   await value.click();
         // }
         if (areaRule.eform) {
-          await (await (await this.createRuleEformId(0)).$('input')).setValue(
-            areaRule.eform
-          );
-          await browser.pause(500);
-          const value = await (await this.createRuleEformId(0)).$(
-            `.ng-option=${areaRule.eform}`
-          );
-          await value.waitForDisplayed({ timeout: 40000 });
-          await value.click();
-          await browser.pause(500);
+          await selectValueInNgSelector(await this.createRuleEformId(0), areaRule.eform, true);
         }
       }
     }
