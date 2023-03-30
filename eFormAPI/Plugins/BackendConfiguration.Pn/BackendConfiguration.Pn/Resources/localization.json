@@ -2031,5 +2031,43 @@
       "pt-PT": "Pasta atualizada com sucesso",
       "fi-FI": "Kansio päivitettiin onnistuneesti"
     }
+  },
+  {
+    "Key": "FileTagsCreatedSuccessfully",
+    "LocalizedValue": {
+      "da": "Tags oprettet med succes",
+      "de": "Tags erfolgreich erstellt",
+      "en-US": "Tags created successfully",
+      "uk-UA": "Теги успішно створені",
+      "pl-PL": "Tagi utworzone pomyślnie",
+      "no-NO": "Tags opprettet",
+      "sv-SE": "Taggar skapade",
+      "es-ES": "Etiquetas creadas correctamente",
+      "fr-FR": "Tags créés avec succès",
+      "it-IT": "Tag creati con successo",
+      "nl-NL": "Tags succesvol aangemaakt",
+      "pt-BR": "Tags criadas com sucesso",
+      "pt-PT": "Tags criadas com sucesso",
+      "fi-FI": "Tunnisteet luotu onnistuneesti"
+    }
+  },
+  {
+    "Key": "ErrorWhileCreatingFileTags",
+    "LocalizedValue": {
+      "da": "Fejl under oprettelse af tags",
+      "de": "Fehler beim Erstellen von Tags",
+      "en-US": "Error while creating tags",
+      "uk-UA": "Помилка під час створення тегів",
+      "pl-PL": "Błąd podczas tworzenia tagów",
+      "no-NO": "Feil ved oppretting av merkelapper",
+      "sv-SE": "Fel vid skapande av taggar",
+      "es-ES": "Error al crear etiquetas",
+      "fr-FR": "Erreur lors de la création de tags",
+      "it-IT": "Errore durante la creazione dei tag",
+      "nl-NL": "Fout bij het maken van tags",
+      "pt-BR": "Erro ao criar tags",
+      "pt-PT": "Erro ao criar tags",
+      "fi-FI": "Virhe luotaessa tunnisteita"
+    }
   }
 ]
