@@ -4,12 +4,13 @@ import {
   OperationDataResult,
   OperationResult,
   SharedTagCreateModel,
-  SharedTagModel,
+  SharedTagModel, SharedTagMultipleCreateModel,
 } from 'src/app/common/models';
 import { ApiBaseService } from 'src/app/common/services';
 
 export let BackendConfigurationFileTagsMethods = {
   Tags: 'api/backend-configuration-pn/file-tags',
+  CreateBulkTags: 'api/backend-configuration-pn/file-tags/bulk',
 };
 
 @Injectable({
@@ -42,5 +43,13 @@ export class BackendConfigurationPnFileTagsService {
 
   getTagById(id: number): Observable<OperationDataResult<SharedTagModel>> {
     return this.apiBaseService.get(`${BackendConfigurationFileTagsMethods.Tags}/${id}`);
+  }
+
+
+  createTags(model: SharedTagMultipleCreateModel): Observable<OperationResult> {
+    return this.apiBaseService.post(
+      BackendConfigurationFileTagsMethods.CreateBulkTags,
+      model
+    );
   }
 }

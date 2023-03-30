@@ -27,6 +27,7 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Infrastructure.Models.Files;
 
 [Authorize]
 [Route("api/backend-configuration-pn/file-tags")]
@@ -69,5 +70,13 @@ public class FileTagsController : Controller
 	public async Task<OperationDataResult<CommonTagModel>> GetById(int id)
 	{
 		return await _backendConfigurationTagsService.GetById(id);
+	}
+
+
+	[HttpPost]
+	[Route("bulk")]
+	public async Task<OperationResult> BulkFileTags([FromBody] BackendConfigurationFileBulkTags tags)
+	{
+		return await _backendConfigurationTagsService.BulkFileTags(tags);
 	}
 }
