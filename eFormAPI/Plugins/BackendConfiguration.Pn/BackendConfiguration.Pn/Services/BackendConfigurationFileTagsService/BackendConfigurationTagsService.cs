@@ -28,6 +28,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 	using System.Collections.Generic;
 	using System.Linq;
 	using System.Threading.Tasks;
+	using BackendConfiguration.Pn.Infrastructure.Models.Files;
 	using BackendConfigurationLocalizationService;
 	using Microsoft.EntityFrameworkCore;
 	using Microsoft.Extensions.Logging;
@@ -40,9 +41,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 
 	public class BackendConfigurationTagsService : IBackendConfigurationTagsService
 	{
-        private readonly ILogger<BackendConfigurationTagsService> _logger;
-        private readonly IBackendConfigurationLocalizationService _localizationService;
-        private readonly BackendConfigurationPnDbContext _dbContext;
+		private readonly ILogger<BackendConfigurationTagsService> _logger;
+		private readonly IBackendConfigurationLocalizationService _localizationService;
+		private readonly BackendConfigurationPnDbContext _dbContext;
 		private readonly IUserService _userService;
 
 		public BackendConfigurationTagsService(
@@ -50,10 +51,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 			ILogger<BackendConfigurationTagsService> logger,
 			BackendConfigurationPnDbContext dbContext,
 			IUserService userService
-			)
+		)
 		{
 			_localizationService = itemsPlanningLocalizationService;
-            _logger = logger;
+			_logger = logger;
 			_dbContext = dbContext;
 			_userService = userService;
 		}
@@ -77,7 +78,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 			{
 				Console.WriteLine(e);
 				_logger.LogError(e.Message);
-				return new OperationDataResult<List<CommonTagModel>>(false, _localizationService.GetString("ErrorWhileObtainingFileTags"));
+				return new OperationDataResult<List<CommonTagModel>>(false,
+					_localizationService.GetString("ErrorWhileObtainingFileTags"));
 			}
 		}
 
@@ -109,7 +111,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 			}
 		}
 
-        public async Task<OperationResult> DeleteTag(int id)
+		public async Task<OperationResult> DeleteTag(int id)
 		{
 			try
 			{
@@ -131,6 +133,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 				{
 					await fileTags.Delete(_dbContext);
 				}
+
 				await tag.Delete(_dbContext);
 
 				return new OperationResult(true, _localizationService.GetString("FileTagRemovedSuccessfully"));
@@ -143,7 +146,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 			}
 		}
 
-        public async Task<OperationResult> CreateTag(CommonTagModel requestModel)
+		public async Task<OperationResult> CreateTag(CommonTagModel requestModel)
 		{
 			try
 			{
@@ -166,7 +169,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 			}
 		}
 
-        public async Task<OperationDataResult<CommonTagModel>> GetById(int id)
+		public async Task<OperationDataResult<CommonTagModel>> GetById(int id)
 		{
 			try
 			{
@@ -181,7 +184,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 
 				if (tag == null)
 				{
-					return new OperationDataResult<CommonTagModel>(false, _localizationService.GetString("FileTagNotFound"));
+					return new OperationDataResult<CommonTagModel>(false,
+						_localizationService.GetString("FileTagNotFound"));
 				}
 
 				return new OperationDataResult<CommonTagModel>(true, tag);
@@ -190,8 +194,46 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 			{
 				Console.WriteLine(e);
 				_logger.LogError(e.Message);
-				return new OperationDataResult<CommonTagModel>(false, _localizationService.GetString("ErrorWhileObtainingFileTag"));
+				return new OperationDataResult<CommonTagModel>(false,
+					_localizationService.GetString("ErrorWhileObtainingFileTag"));
 			}
 		}
+
+		public async Task<OperationResult> BulkFileTags(BackendConfigurationFileBulkTags requestModel)
+		{
+			try
+			{
+				foreach (var tagName in requestModel.TagNames)
+				{
+					if (await _dbContext.FileTags.AnyAsync(x =>
+						    x.Name == tagName && x.WorkflowState != Constants.WorkflowStates.Removed))
+					{
+						continue; // skip replies
+					}
+
+					var itemsPlanningTag = new FileTag
+					{
+						Name = tagName,
+						CreatedByUserId = _userService.UserId,
+						UpdatedByUserId = _userService.UserId,
+					};
+
+					await itemsPlanningTag.Create(_dbContext);
+				}
+
+				return new OperationResult(
+					true,
+					_localizationService.GetString("FileTagsCreatedSuccessfully"));
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e);
+				_logger.LogError(e.Message);
+				return new OperationResult(
+					false,
+					_localizationService.GetString("ErrorWhileCreatingFileTags"));
+			}
+		}
+
 	}
 }

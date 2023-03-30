@@ -1,7 +1,7 @@
 ﻿/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2021 Microting A/S
+Copyright (c) 2007 - 2023 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,27 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
+namespace BackendConfiguration.Pn.Infrastructure.Models.Files;
+
+using System.Collections.Generic;
+
+public class BackendConfigurationFileBulkTags
 {
-	using System.Collections.Generic;
-	using System.Threading.Tasks;
-	using BackendConfiguration.Pn.Infrastructure.Models.Files;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-
-	public interface IBackendConfigurationTagsService
-    {
-        Task<OperationDataResult<List<CommonTagModel>>> GetTags();
-
-        Task<OperationResult> UpdateTag(CommonTagModel requestModel);
-
-        Task<OperationResult> DeleteTag(int id);
-
-        Task<OperationResult> CreateTag(CommonTagModel requestModel);
-
-        Task<OperationDataResult<CommonTagModel>> GetById(int id);
-
-        public Task<OperationResult> BulkFileTags(BackendConfigurationFileBulkTags requestModel);
-
-    }
+	public List<string> TagNames { set; get; }
+		= new();
 }
