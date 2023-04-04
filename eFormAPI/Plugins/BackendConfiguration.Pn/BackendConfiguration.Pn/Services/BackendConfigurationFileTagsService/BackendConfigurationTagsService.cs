@@ -215,7 +215,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 					{
 						Name = tagName,
 						CreatedByUserId = _userService.UserId,
-						UpdatedByUserId = _userService.UserId,
+						UpdatedByUserId = _userService.UserId
 					};
 
 					await itemsPlanningTag.Create(_dbContext);

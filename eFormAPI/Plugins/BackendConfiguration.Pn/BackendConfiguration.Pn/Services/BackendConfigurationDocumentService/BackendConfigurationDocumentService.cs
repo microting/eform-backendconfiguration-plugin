@@ -129,8 +129,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 					        Name = y.Name,
 					        Hash = y.Hash,
 					        FileName = y.File,
-					        Extension = y.Extension,
-				        }).ToList(),
+					        Extension = y.Extension
+                        }).ToList(),
 			        DocumentTranslations = x.DocumentTranslations
 				        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
 				        .Select(y => new BackendConfigurationDocumentTranslationModel
@@ -139,8 +139,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 					        Name = y.Name,
 					        Description = y.Description,
 					        LanguageId = y.LanguageId,
-					        ExtensionFile = y.ExtensionFile,
-				        }).ToList(),
+					        ExtensionFile = y.ExtensionFile
+                        }).ToList(),
 			        DocumentProperties = x.DocumentProperties
 				        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
 				        .Select(y => new BackendConfigurationDocumentProperty
@@ -205,7 +205,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     Name = x.Name,
                     Hash = x.Hash,
                     FileName = x.File,
-                    Extension = x.Extension,
+                    Extension = x.Extension
                 }).ToList(),
             DocumentTranslations = document.DocumentTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -215,7 +215,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     Name = x.Name,
                     Description = x.Description,
                     LanguageId = x.LanguageId,
-                    ExtensionFile = x.ExtensionFile,
+                    ExtensionFile = x.ExtensionFile
                 }).ToList(),
             DocumentProperties = document.DocumentProperties
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -355,7 +355,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     DocumentId = document.Id,
                     LanguageId = documentUploadedData.LanguageId,
                     Name = documentUploadedData.Name,
-                    Extension = documentUploadedData.Extension,
+                    Extension = documentUploadedData.Extension
                 };
 
                 await documentUploadedDataDb.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
@@ -416,8 +416,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 							Extension = "pdf",
 							File = fileNameConvertedFile,
 							Hash = checkSumConvertedFile,
-							CreatedByUserId = _userService.UserId,
-						};
+							CreatedByUserId = _userService.UserId
+                        };
 						await documentUploadedDataConvertedFileModel.Create(_caseTemplatePnDbContext);
 					}
 				}
@@ -549,7 +549,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             FolderId = model.FolderId,
             Status = model.Status,
             IsLocked = model.Status,
-            CreatedByUserId = _userService.UserId,
+            CreatedByUserId = _userService.UserId
         };
 
         await document.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
