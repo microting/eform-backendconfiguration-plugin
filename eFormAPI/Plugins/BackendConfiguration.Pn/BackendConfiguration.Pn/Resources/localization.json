@@ -2069,5 +2069,24 @@
       "pt-PT": "Erro ao criar tags",
       "fi-FI": "Virhe luotaessa tunnisteita"
     }
+  },
+  {
+    "Key": "Task tracker",
+    "LocalizedValue": {
+      "da": "Opgave tracker",
+      "de": "Aufgabenverfolgung",
+      "en-US": "Task tracker",
+      "uk-UA": "Відстежувач завдань",
+      "pl-PL": "Śledzenie zadań",
+      "no-NO": "Oppgave sporingsverktøy",
+      "sv-SE": "Uppgiftsspårare",
+      "es-ES": "Seguimiento de tareas",
+      "fr-FR": "Suivi des tâches",
+      "it-IT": "Tracker di attività",
+      "nl-NL": "Taaktracker",
+      "pt-BR": "Rastreador de tarefas",
+      "pt-PT": "Rastreador de tarefas",
+      "fi-FI": "Tehtäväseuranta"
+    }
   }
 ]

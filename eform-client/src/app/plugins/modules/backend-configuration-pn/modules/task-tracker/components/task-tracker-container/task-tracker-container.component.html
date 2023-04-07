@@ -1,0 +1,19 @@
+<eform-new-subheader [title]="'Task tracker' | translate">
+  <button
+    mat-icon-button
+    id="createNewTaskBtn"
+    color="accent"
+    matTooltip="{{ 'Create new task' | translate }}"
+    (click)="openCreateModal()"
+  >
+    <mat-icon>add_task</mat-icon>
+  </button>
+</eform-new-subheader>
+
+<div class="d-flex flex-column">
+  <app-task-tracker-filters (updateTable)="updateTable()"></app-task-tracker-filters>
+  <app-task-tracker-table
+  [tasks]="tasks"
+  (updateTable)="updateTable()">
+  </app-task-tracker-table>
+</div>
