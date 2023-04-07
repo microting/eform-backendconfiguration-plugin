@@ -72,28 +72,30 @@
         />
         <div>{{getFileNameByLanguage(translation.id, 'docx') || 'No file uploaded yet.' | translate}}
           <button
-            mat-raised-button
+            mat-icon-button
             color="accent"
             (click)="fileDocUpload.click()"
+            [matTooltip]="'Select DOCX' | translate"
           >
-            {{ 'Select DOCX' | translate }}
+            <mat-icon>upload_file</mat-icon>
           </button>
           <ng-container *ngIf="getFileNameByLanguage(translation.id, 'docx')">
             <button
               mat-icon-button
-              color="warn"
-              (click)="removeFile(translation.id, 'docx')"
-              [matTooltip]="'Remove file' | translate"
+              color="accent"
+              (click)="getFile(translation.id, 'docx')"
+              matTooltip="{{ 'Download DOCX' | translate }}"
             >
-              <mat-icon>delete</mat-icon>
+              <mat-icon>download</mat-icon>
+<!--              <mat-icon svgIcon="file-word"></mat-icon>-->
             </button>
             <button
               mat-icon-button
-              color="accent"
-              (click)="getFile(translation.id, 'docx')"
-              matTooltip="{{ 'Show DOC' | translate }}"
+              color="warn"
+              (click)="removeFile(translation.id, 'docx')"
+              matTooltip="{{ 'Delete file' | translate }}"
             >
-              <mat-icon svgIcon="file-word"></mat-icon>
+              <mat-icon>delete</mat-icon>
             </button>
           </ng-container>
         </div>
@@ -127,28 +129,30 @@
         />
         <div>{{getFileNameByLanguage(translation.id, 'pdf') || 'No file uploaded yet.' | translate}}
           <button
-            mat-raised-button
+            mat-icon-button
             color="accent"
             (click)="filePdfUpload.click()"
+            [matTooltip]=" 'Select PDF' | translate "
           >
-            {{ 'Select PDF' | translate }}
+            <mat-icon>upload_file</mat-icon>
           </button>
           <ng-container *ngIf="getFileNameByLanguage(translation.id)">
             <button
               mat-icon-button
-              color="warn"
-              (click)="removeFile(translation.id, 'pdf')"
-              [matTooltip]="'Remove file' | translate"
+              color="accent"
+              (click)="getFile(translation.id, 'pdf')"
+              matTooltip="{{ 'Download PDF' | translate }}"
             >
-              <mat-icon>delete</mat-icon>
+              <mat-icon>download</mat-icon>
+<!--              <mat-icon svgIcon="file-pdf"></mat-icon>-->
             </button>
             <button
               mat-icon-button
-              color="accent"
-              (click)="getFile(translation.id, 'pdf')"
-              matTooltip="{{ 'Show PDF' | translate }}"
+              color="warn"
+              (click)="removeFile(translation.id, 'pdf')"
+              matTooltip="{{ 'Delete file' | translate }}"
             >
-              <mat-icon svgIcon="file-pdf"></mat-icon>
+              <mat-icon>delete</mat-icon>
             </button>
           </ng-container>
         </div>

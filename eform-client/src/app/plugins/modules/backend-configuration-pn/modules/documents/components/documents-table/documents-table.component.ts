@@ -41,10 +41,10 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
       formatter: (document: DocumentModel) => this.getDocumentTranslationDescription(document)
     },
     {field: 'endDate', header: this.translateService.stream('End date'), type: 'date', typeParameter: {format: 'dd.MM.y'}},
-    {
-      field: 'downloadButton',
-      header: this.translateService.stream('Files'),
-    },
+    // {
+    //   field: 'downloadButton',
+    //   header: this.translateService.stream('Files'),
+    // },
     {
       field: 'status',
       header: this.translateService.stream('Status'),
