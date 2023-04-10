@@ -1,5 +1,8 @@
-const path = require("path");
-exports.config = {
+//const path = require("path");
+import type { Options } from '@wdio/types'
+
+export const config: Options.Testrunner = {
+
   runner: 'local',
   path: '/',
   //
@@ -155,7 +158,7 @@ exports.config = {
   // See the full list at http://mochajs.org/
   mochaOpts: {
     ui: 'bdd',
-    compilers: ['tsconfig-paths/register'],
+    //compilers: ['tsconfig-paths/register'],
     timeout: 1200000
   },
   //

@@ -2,7 +2,7 @@ import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
-import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule, OwlMomentDateTimeModule} from '@danielmoncada/angular-datetime-picker';
+import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
@@ -60,7 +60,6 @@ import {MtxProgressModule} from '@ng-matero/extensions/progress';
         OwlDateTimeModule,
         FilesRouting,
         OwlDateTimeModule,
-        OwlMomentDateTimeModule,
         EformSharedModule,
         ReactiveFormsModule,
         EformImportedModule,

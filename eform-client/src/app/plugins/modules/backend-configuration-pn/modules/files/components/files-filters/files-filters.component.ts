@@ -17,7 +17,7 @@ import {FilesFiltrationModel, FilesStateService} from '../../store';
 import {Moment} from 'moment';
 import {format} from 'date-fns';
 import {debounceTime} from 'rxjs/operators';
-import * as moment from 'moment';
+import moment from 'moment';
 import * as R from 'ramda';
 
 @AutoUnsubscribe()

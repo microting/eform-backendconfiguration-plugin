@@ -22,7 +22,6 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import moment = require('moment');
 
 @AutoUnsubscribe()
 @Component({
@@ -145,7 +144,10 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
               }
               // @ts-ignore
               if (record.caseFields[i].key === 'date') {
-                return moment(record.caseFields[i].value).format('DD.MM.YYYY');
+                // format date with javascript
+                // @ts-ignore
+                return new Date(record.caseFields[i].value).toLocaleDateString('da-DK');
+                //return moment(record.caseFields[i].value).format('DD.MM.YYYY');
                 // return record.caseFields[i].value;
               }
               // @ts-ignore
