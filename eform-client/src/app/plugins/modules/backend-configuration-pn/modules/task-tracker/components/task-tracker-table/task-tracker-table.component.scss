@@ -1,0 +1,28 @@
+@import "src/../node_modules/@ng-matero/extensions/grid/grid.component";
+@import "src/../node_modules/@ng-matero/extensions/grid/cell.component";
+tr.mat-header-row {
+  height: unset;
+  .weeks {
+    border-left: 1px solid;
+    text-align: center;
+    min-width: 10px !important;
+    min-height: 20px !important;
+  }
+  .days-of-week, .days {
+    min-width: 10px !important;
+    border-left: 1px solid;
+  }
+}
+.tasks {
+  min-width: 10px !important;
+  border-left: 1px solid;
+  text-align: center;
+}
+th.mat-header-cell, td.mat-cell, td.mat-footer-cell {
+  //padding: 0;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  &:not(:only-of-type) {
+    padding-right: 10px !important;
+  }
+}

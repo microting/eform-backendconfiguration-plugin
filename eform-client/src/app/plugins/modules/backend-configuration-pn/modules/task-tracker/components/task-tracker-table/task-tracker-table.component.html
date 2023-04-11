@@ -45,6 +45,7 @@
               <td role="cell" class="mat-cell cdk-cell">{{(task.startTask | date:'dd.MM.yyyy') || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell">{{task.repeat || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell">{{(task.deadlineTask | date:'dd.MM.yyyy') || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell tasks" *ngFor="let day of daysInTable">{{'--'}}</td>
             </tr>
           </ng-container>
           </tbody>
