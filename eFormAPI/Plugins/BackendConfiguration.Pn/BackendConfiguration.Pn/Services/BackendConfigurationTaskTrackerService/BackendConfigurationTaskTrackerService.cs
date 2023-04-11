@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskTrackerService;
 
 using System;
@@ -161,6 +163,74 @@ public class BackendConfigurationTaskTrackerService: IBackendConfigurationTaskTr
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationDataResult<TaskTrackerModel>(false,
+				$"{_localizationService.GetString("ErrorWhileUpdateTask")}: {e.Message}");
+		}
+	}
+
+	public async Task<OperationDataResult<List<TaskTrackerColumn>>> GetColumns()
+	{
+		var userId = _userService.UserId;
+		try
+		{
+			var columns = await _backendConfigurationPnDbContext.TaskTrackerColumns.Where(p => p.UserId == userId ).Select(p => new TaskTrackerColumn { ColumnName = p.ColumnName, isColumnEnabled = p.isColumnEnabled, UserId = p.UserId}).ToListAsync();
+			return new OperationDataResult<List<TaskTrackerColumn>> (true, columns);
+			
+			
+			/*var taskTrackerColumns = columns.Select(c => new TaskTrackerColumns()
+			{
+				ColumnName = c.ColumnName,
+				IsColumnEnabled = c.IsColumnEnabled
+			}).ToList();*/
+		}
+		catch (Exception e)
+		{
+			Log.LogException(e.Message);
+			Log.LogException(e.StackTrace);
+			return new OperationDataResult<List<TaskTrackerColumn>>(false,
+				$"{_localizationService.GetString("ErrorWhileUpdateTask")}: {e.Message}");
+		}
+	}
+	
+	public async Task<OperationResult> UpdateColumns(List<TaskTrackerColumns> updatedColumns)
+	{
+		try
+		{
+
+			var userId = _userService.UserId;
+			
+			foreach (var updatedColumn in updatedColumns)
+			{
+				// var column = taskTrackerColumns.FirstOrDefault(c => c.ColumnName == updatedColumn.ColumnName);
+				var columnFromDb = await _backendConfigurationPnDbContext.TaskTrackerColumns
+					.Where(p => p.UserId == userId)
+					.Where(p => p.ColumnName == updatedColumn.ColumnName).FirstOrDefaultAsync();
+				if (columnFromDb is null)
+				{
+					columnFromDb = new TaskTrackerColumn();
+					columnFromDb.isColumnEnabled = updatedColumn.IsColumnEnabled;
+					columnFromDb.ColumnName = updatedColumn.ColumnName;
+					columnFromDb.UserId = userId;
+					columnFromDb.CreatedByUserId = userId;
+					columnFromDb.UpdatedByUserId = userId;
+					await columnFromDb.Create(_backendConfigurationPnDbContext);
+					
+					continue;
+				} 
+				if (columnFromDb.isColumnEnabled != updatedColumn.IsColumnEnabled)
+				{
+					columnFromDb.isColumnEnabled = updatedColumn.IsColumnEnabled;
+					columnFromDb.UpdatedByUserId = userId;
+					await columnFromDb.Update(_backendConfigurationPnDbContext);
+				}
+			}
+			await _backendConfigurationPnDbContext.SaveChangesAsync();
+			return new OperationDataResult<List<TaskTrackerColumns>>(true,$"{_localizationService.GetString("ColumnsUpdated")}");
+		}
+		catch (Exception e)
+		{
+			Log.LogException(e.Message);
+			Log.LogException(e.StackTrace);
+			return new OperationResult(false,
 				$"{_localizationService.GetString("ErrorWhileUpdateTask")}: {e.Message}");
 		}
 	}

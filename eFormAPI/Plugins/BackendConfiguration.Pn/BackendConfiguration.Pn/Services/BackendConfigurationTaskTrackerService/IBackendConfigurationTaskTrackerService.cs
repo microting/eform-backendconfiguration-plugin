@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskTrackerService;
 
 using Infrastructure.Models.TaskTracker;
@@ -40,4 +42,6 @@ public interface IBackendConfigurationTaskTrackerService
 	Task<OperationResult> CreateTask(TaskTrackerCreateModel createModel);
 
 	Task<OperationResult> UpdateTask(TaskTrackerUpdateModel createModel);
+	Task<OperationDataResult<List<TaskTrackerColumn>>> GetColumns();
+	Task<OperationResult> UpdateColumns(List<TaskTrackerColumns> updatedColumns);
 }

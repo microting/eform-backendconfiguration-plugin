@@ -18,6 +18,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+
 namespace BackendConfiguration.Pn.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
@@ -70,5 +72,17 @@ public class TaskTrackerController : Controller
 	public async Task<OperationDataResult<TaskTrackerModel>> GetTaskById([FromQuery] int taskId)
 	{
 		return await _backendConfigurationTaskTrackerService.GetTaskById(taskId);
+	}
+
+	[HttpGet("columns-get")]
+	public async Task<OperationDataResult<List<TaskTrackerColumn>>> GetColumns()
+	{
+		return await _backendConfigurationTaskTrackerService.GetColumns();
+	}
+	
+	[HttpPost("columns-update")]
+	public async Task<OperationResult> UpdateColumns([FromBody] List<TaskTrackerColumns> updatedColumns)
+	{
+		return await _backendConfigurationTaskTrackerService.UpdateColumns(updatedColumns);
 	}
 }
