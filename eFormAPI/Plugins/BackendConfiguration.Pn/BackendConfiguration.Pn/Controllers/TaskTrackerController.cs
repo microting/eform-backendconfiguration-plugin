@@ -74,13 +74,13 @@ public class TaskTrackerController : Controller
 		return await _backendConfigurationTaskTrackerService.GetTaskById(taskId);
 	}
 
-	[HttpGet("columns-get")]
+	[HttpGet("columns")]
 	public async Task<OperationDataResult<List<TaskTrackerColumn>>> GetColumns()
 	{
 		return await _backendConfigurationTaskTrackerService.GetColumns();
 	}
 	
-	[HttpPost("columns-update")]
+	[HttpPost("columns")]
 	public async Task<OperationResult> UpdateColumns([FromBody] List<TaskTrackerColumns> updatedColumns)
 	{
 		return await _backendConfigurationTaskTrackerService.UpdateColumns(updatedColumns);

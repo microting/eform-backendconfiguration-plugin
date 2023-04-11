@@ -22,19 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System;
-using System.Collections.Generic;
-
 namespace BackendConfiguration.Pn.Infrastructure.Models.TaskTracker;
 
 public class TaskTrackerModel
 {
-	public int Id { get; set; }
-	public string Property { get; set; }
-	public string Task { get; set; }
-	public List<string> Tag { get; set; }
-	public List<string> Workers { get; set; }
-	public DateTime Start { get; set; }
-	public string Repeat { get; set; }
-	public DateTime Deadline { get; set; }
 }
