@@ -1,11 +1,11 @@
 import {SharedTagModel} from 'src/app/common/models';
 
 export interface TaskModel {
-  propertyName: string,
+  property: string,
   taskName: string,
   tags: SharedTagModel[],
-  workers: string,
+  workers: string[],
   startTask: Date,
-  repeatTypeTask: string,
+  repeat: string,
   deadlineTask: Date,
 }

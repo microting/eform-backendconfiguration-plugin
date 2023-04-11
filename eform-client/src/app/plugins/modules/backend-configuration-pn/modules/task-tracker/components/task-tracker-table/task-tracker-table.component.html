@@ -1,4 +1,4 @@
-<mtx-grid
+<!--<mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
   [showPaginator]="false"
@@ -6,4 +6,50 @@
   [rowStriped]="true"
   [showToolbar]="false"
   [showColumnMenuButton]="false">
-</mtx-grid>
+</mtx-grid>-->
+
+
+
+<div class="mtx-grid">
+  <div class="mtx-grid-main mtx-grid-layout">
+    <div class="mtx-grid-content mtx-grid-layout">
+      <div class="mat-table-container mat-table-with-data">
+        <table class="mat-table cdk-table mat-table-striped" style="width: 100%">
+          <thead>
+            <tr role="rowgroup" class="mat-header-row cdk-header-row">
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top" [attr.colspan]="tableHeaders.length"></th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top weeks" *ngFor="let week of weeks" [attr.colspan]="week.length">Week {{week.weekNumber}}</th>
+            </tr>
+            <tr role="rowgroup" class="mat-header-row cdk-header-row">
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top" [attr.colspan]="tableHeaders.length"></th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days" *ngFor="let day of daysInTable" [attr.colspan]="1">{{day}}</th>
+            </tr>
+            <tr role="rowgroup" class="mat-header-row cdk-header-row">
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Property' | translate}}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Task' | translate }}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Tags' | translate }}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Workers' | translate }}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Start' | translate }}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Repeat' | translate }}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Deadline' | translate }}</th>
+              <th role="columnheader" class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week" *ngFor="let day of daysInTable" [attr.colspan]="1">{{getDayOfWeekByDay(day)}}</th>
+            </tr>
+          </thead>
+          <tbody id="" role="rowgroup">
+          <ng-container *ngFor="let task of tasks; let i = index">
+            <tr class="mat-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
+              <td role="cell" class="mat-cell cdk-cell">{{task.property || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell">{{task.taskName || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell">{{task.tags || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell">{{task.workers.join(', ') || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell">{{(task.startTask | date:'dd.MM.yyyy') || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell">{{task.repeat || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell">{{(task.deadlineTask | date:'dd.MM.yyyy') || '--'}}</td>
+            </tr>
+          </ng-container>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

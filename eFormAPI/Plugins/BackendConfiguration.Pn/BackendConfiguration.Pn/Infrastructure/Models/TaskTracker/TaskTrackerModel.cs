@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2023 Microting A/S
@@ -24,6 +24,25 @@ SOFTWARE.
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.TaskTracker;
 
+using System;
+using System.Collections.Generic;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
 public class TaskTrackerModel
 {
+	public string Property { get; set; }
+
+	public string TaskName { get; set; }
+
+	public List<CommonTagModel> Tags { get; set; } 
+		= new ();
+
+	public List<string> Workers { get; set; }
+		= new ();
+
+	public DateTime StartTask { get; set; }
+
+	public string Repeat { get; set; }
+
+	public DateTime DeadlineTask { get; set; }
 }

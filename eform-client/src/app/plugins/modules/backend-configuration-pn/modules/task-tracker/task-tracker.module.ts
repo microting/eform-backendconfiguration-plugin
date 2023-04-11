@@ -27,6 +27,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatCardModule} from '@angular/material/card';
+import {MatTableModule} from '@angular/material/table';
 
 @NgModule({
   declarations: [
@@ -35,33 +36,34 @@ import {MatCardModule} from '@angular/material/card';
     TaskTrackerFiltersComponent,
     TaskTrackerCreateShowModalComponent
   ],
-  imports: [
-    CommonModule,
-    TranslateModule,
-    RouterModule,
-    OwlDateTimeModule,
-    TaskTrackerRouting,
-    OwlDateTimeModule,
-    OwlMomentDateTimeModule,
-    EformSharedModule,
-    ReactiveFormsModule,
-    EformImportedModule,
-    FormsModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MtxSelectModule,
-    MatInputModule,
-    MtxGridModule,
-    MatDialogModule,
-    MatCardModule,
-  ],
+    imports: [
+        CommonModule,
+        TranslateModule,
+        RouterModule,
+        OwlDateTimeModule,
+        TaskTrackerRouting,
+        OwlDateTimeModule,
+        OwlMomentDateTimeModule,
+        EformSharedModule,
+        ReactiveFormsModule,
+        EformImportedModule,
+        FormsModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MtxSelectModule,
+        MatInputModule,
+        MtxGridModule,
+        MatDialogModule,
+        MatCardModule,
+        MatTableModule,
+    ],
   providers: [
     {
       provide: OWL_DATE_TIME_FORMATS,
       useValue: MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT,
-    },
+    }
   ],
 })
 export class TaskTrackerModule {}

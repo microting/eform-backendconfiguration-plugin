@@ -39,25 +39,36 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Microting.ItemsPlanningBase.Infrastructure.Data;
+using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
+using Microting.eForm.Infrastructure.Data.Entities;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using static Microting.EformAngularFrontendBase.Infrastructure.Const.AuthConsts.EformPolicies;
+using System.Security.Policy;
 
-public class BackendConfigurationTaskTrackerService: IBackendConfigurationTaskTrackerService
+public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskTrackerService
 {
 	private readonly IBackendConfigurationLocalizationService _localizationService;
 	private readonly IUserService _userService;
 	private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 	private readonly IEFormCoreService _coreHelper;
+	private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
 
 	public BackendConfigurationTaskTrackerService(
 		IBackendConfigurationLocalizationService localizationService,
 		IUserService userService,
 		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-		IEFormCoreService coreHelper
-		)
+		IEFormCoreService coreHelper,
+		ItemsPlanningPnDbContext itemsPlanningPnDbContext
+	)
 	{
 		_localizationService = localizationService;
 		_userService = userService;
 		_backendConfigurationPnDbContext = backendConfigurationPnDbContext;
 		_coreHelper = coreHelper;
+		_itemsPlanningPnDbContext = itemsPlanningPnDbContext;
 	}
 
 
@@ -65,7 +76,97 @@ public class BackendConfigurationTaskTrackerService: IBackendConfigurationTaskTr
 	{
 		try
 		{
-			return new OperationDataResult<List<TaskTrackerModel>>(true, new List<TaskTrackerModel>());
+			var language = await _userService.GetCurrentUserLanguage();
+			var result = new List<TaskTrackerModel>();
+
+			var core = await _coreHelper.GetCore();
+			var sdkDbContext = core.DbContextHelper.GetDbContext();
+			var query = _backendConfigurationPnDbContext.Compliances
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+			if (filtersModel.PropertyIds.Any() && !filtersModel.PropertyIds.Contains(-1))
+			{
+					query = query.Where(x => filtersModel.PropertyIds.Contains(x.PropertyId));
+			}
+
+			var complianceList = await query
+				.AsNoTracking()
+				.OrderBy(x => x.Deadline)
+				.ToListAsync();
+
+			foreach (var compliance in complianceList)
+			{
+				var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation
+					.SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
+
+				if (planningNameTranslation == null)
+				{
+					continue;
+				}
+				var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations
+					.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);
+
+				var propertyName = await _backendConfigurationPnDbContext.Properties
+					.Where(x => x.Id == compliance.PropertyId)
+					.Select(x => x.Name)
+					.FirstOrDefaultAsync();
+
+				var planning = await _itemsPlanningPnDbContext.Plannings
+					.Where(x => x.Id == compliance.PlanningId)
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+					.FirstOrDefaultAsync();
+
+				if (areaTranslation == null || planning == null)
+				{
+					continue;
+				}
+
+				var planningSitesQuery = _itemsPlanningPnDbContext.PlanningSites
+					.Where(x => x.PlanningId == compliance.PlanningId)
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+				//if (filtersModel.WorkerIds.Any() && !filtersModel.WorkerIds.Contains(-1))
+				//{
+				//	foreach (var workerId in filtersModel.WorkerIds)
+				//	{
+				//		planningSitesQuery = planningSitesQuery.Where(x => x.SiteId == workerId);
+				//	}
+				//}
+				var planningSiteIds = await planningSitesQuery
+					.Select(x => x.SiteId)
+					.Distinct()
+					.ToListAsync();
+
+				var sitesWithNames = await sdkDbContext.Sites.Where(x => planningSiteIds.Contains(x.Id)).Select(site => new KeyValuePair<int, string>(site.Id, site.Name)).ToListAsync();
+
+				var workerNames = planningSiteIds
+					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
+					.ToList();
+
+				var complianceModel = new TaskTrackerModel
+				{
+					Property = propertyName,
+					Tags = new (),
+					DeadlineTask = compliance.Deadline,
+					Workers = workerNames,
+					StartTask = compliance.StartDate,
+					Repeat = $"{planning.RepeatEvery} {planning.RepeatType}",
+					TaskName = ""
+				};
+
+				result.Add(complianceModel);
+			}
+
+			//if (filtersModel.TagIds.Any() && !filtersModel.TagIds.Contains(-1))
+			//{
+			//	foreach (var tagId in filtersModel.TagIds)
+			//	{
+			//		query = query.Where(x => x.PropertyWorker.Id == tagId);
+			//	}
+			//}
+
+
+			return new OperationDataResult<List<TaskTrackerModel>>(true, result);
 		}
 		catch (Exception e)
 		{
@@ -114,6 +215,7 @@ public class BackendConfigurationTaskTrackerService: IBackendConfigurationTaskTr
 				return new OperationDataResult<WorkOrderCaseReadModel>(false,
 					_localizationService.GetString("TaskNotFound"));
 			}
+
 			return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
 		}
 		catch (Exception e)
@@ -156,6 +258,7 @@ public class BackendConfigurationTaskTrackerService: IBackendConfigurationTaskTr
 				return new OperationDataResult<WorkOrderCaseReadModel>(false,
 					_localizationService.GetString("TaskNotFound"));
 			}
+
 			return new OperationResult(true, _localizationService.GetString("TaskUpdatedSuccessful"));
 		}
 		catch (Exception e)
