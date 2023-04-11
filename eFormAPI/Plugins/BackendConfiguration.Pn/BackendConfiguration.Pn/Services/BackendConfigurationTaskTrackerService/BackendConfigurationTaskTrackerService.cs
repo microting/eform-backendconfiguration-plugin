@@ -172,15 +172,12 @@ public class BackendConfigurationTaskTrackerService: IBackendConfigurationTaskTr
 		var userId = _userService.UserId;
 		try
 		{
-			var columns = await _backendConfigurationPnDbContext.TaskTrackerColumns.Where(p => p.UserId == userId ).Select(p => new TaskTrackerColumn { ColumnName = p.ColumnName, isColumnEnabled = p.isColumnEnabled, UserId = p.UserId}).ToListAsync();
+			var columns = await _backendConfigurationPnDbContext.TaskTrackerColumns
+				.Where(p => p.UserId == userId )
+				.Select(p => new TaskTrackerColumn { ColumnName = p.ColumnName, isColumnEnabled = p.isColumnEnabled, UserId = p.UserId})
+				.ToListAsync();
 			return new OperationDataResult<List<TaskTrackerColumn>> (true, columns);
 			
-			
-			/*var taskTrackerColumns = columns.Select(c => new TaskTrackerColumns()
-			{
-				ColumnName = c.ColumnName,
-				IsColumnEnabled = c.IsColumnEnabled
-			}).ToList();*/
 		}
 		catch (Exception e)
 		{
@@ -200,7 +197,6 @@ public class BackendConfigurationTaskTrackerService: IBackendConfigurationTaskTr
 			
 			foreach (var updatedColumn in updatedColumns)
 			{
-				// var column = taskTrackerColumns.FirstOrDefault(c => c.ColumnName == updatedColumn.ColumnName);
 				var columnFromDb = await _backendConfigurationPnDbContext.TaskTrackerColumns
 					.Where(p => p.UserId == userId)
 					.Where(p => p.ColumnName == updatedColumn.ColumnName).FirstOrDefaultAsync();
