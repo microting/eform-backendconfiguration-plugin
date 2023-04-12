@@ -18,7 +18,7 @@ public class TestBaseSetup
     #pragma warning disable CS0618
     private readonly MariaDbTestcontainer _mySqlTestcontainer = new ContainerBuilder<MariaDbTestcontainer>()
 #pragma warning restore CS0618
-        .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:10.8")
+        .WithDatabase(new MySqlTestcontainerConfiguration(image: "mariadb:latest")
         {
             Database = "myDb",
             Username = "root",
