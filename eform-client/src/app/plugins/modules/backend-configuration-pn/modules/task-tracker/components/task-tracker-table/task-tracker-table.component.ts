@@ -13,6 +13,7 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
 import {addDays, differenceInDays, differenceInWeeks, eachWeekOfInterval, getDay, getWeek} from 'date-fns';
+import {IColumns} from 'src/app/plugins/modules/backend-configuration-pn/models/task-tracker/columns.model';
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -41,11 +42,13 @@ export class TaskTrackerTableComponent implements OnInit {
   ];
 
   @Input() tasks: TaskModel[] = [];
+
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   days: Date[] = [];
   daysInTable: number[] = [];
   weeks: { weekNumber: number, length: number }[] = [];
 
+  hiddenStatus: true;
   constructor(
     private translateService: TranslateService,
   ) {

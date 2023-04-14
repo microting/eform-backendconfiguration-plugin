@@ -76,7 +76,7 @@ export const routes: Routes = [
       },
       {
         path: 'task-tracker',
-        canActivate: [PermissionGuard],
+        /*canActivate: [PermissionGuard],*/
         loadChildren: () =>
           import('./modules/task-tracker/task-tracker.module').then(
             (m) => m.TaskTrackerModule

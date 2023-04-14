@@ -12,6 +12,7 @@ import {
   TaskTrackerTableComponent,
   TaskTrackerFiltersComponent,
   TaskTrackerCreateShowModalComponent,
+  TaskTrackerShownColumnsComponent
 } from './components';
 import {TaskTrackerRouting} from './task-tracker.routing';
 import {MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT} from '../../consts';
@@ -28,37 +29,40 @@ import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatCardModule} from '@angular/material/card';
 import {MatTableModule} from '@angular/material/table';
+import {MatCheckboxModule} from "@angular/material/checkbox";
 
 @NgModule({
   declarations: [
     TaskTrackerContainerComponent,
     TaskTrackerTableComponent,
     TaskTrackerFiltersComponent,
-    TaskTrackerCreateShowModalComponent
+    TaskTrackerCreateShowModalComponent,
+    TaskTrackerShownColumnsComponent
   ],
-    imports: [
-        CommonModule,
-        TranslateModule,
-        RouterModule,
-        OwlDateTimeModule,
-        TaskTrackerRouting,
-        OwlDateTimeModule,
-        OwlMomentDateTimeModule,
-        EformSharedModule,
-        ReactiveFormsModule,
-        EformImportedModule,
-        FormsModule,
-        MatButtonModule,
-        MatTooltipModule,
-        MatIconModule,
-        MatFormFieldModule,
-        MtxSelectModule,
-        MatInputModule,
-        MtxGridModule,
-        MatDialogModule,
-        MatCardModule,
-        MatTableModule,
-    ],
+  imports: [
+    CommonModule,
+    TranslateModule,
+    RouterModule,
+    OwlDateTimeModule,
+    TaskTrackerRouting,
+    OwlDateTimeModule,
+    OwlMomentDateTimeModule,
+    EformSharedModule,
+    ReactiveFormsModule,
+    EformImportedModule,
+    FormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatTooltipModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MtxSelectModule,
+    MatInputModule,
+    MtxGridModule,
+    MatDialogModule,
+    MatCardModule,
+    MatTableModule,
+  ],
   providers: [
     {
       provide: OWL_DATE_TIME_FORMATS,
@@ -66,4 +70,5 @@ import {MatTableModule} from '@angular/material/table';
     }
   ],
 })
-export class TaskTrackerModule {}
+export class TaskTrackerModule {
+}

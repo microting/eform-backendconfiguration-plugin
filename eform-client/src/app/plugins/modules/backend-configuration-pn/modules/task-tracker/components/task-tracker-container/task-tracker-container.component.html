@@ -11,9 +11,13 @@
 </eform-new-subheader>
 
 <div class="d-flex flex-column">
-  <app-task-tracker-filters (updateTable)="updateTable()"></app-task-tracker-filters>
+  <app-task-tracker-filters  [columnsPostRequestSuccess]="columnsPostRequestSuccess" (updateTable)="updateTable()" [columns]="columns"></app-task-tracker-filters>
+  <div style="margin: 0px 0px 20px 0px;" class="d-flex flex-row justify-content-end">
+    <button (click)="openColumnsModal()" mat-raised-button>{{'Columns shown' | translate}}</button>
+  </div>
   <app-task-tracker-table
   [tasks]="tasks"
+
   (updateTable)="updateTable()">
   </app-task-tracker-table>
 </div>
