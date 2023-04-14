@@ -38,7 +38,7 @@ namespace BackendConfiguration.Pn.Infrastructure
 
     public static class PairItemWithSiteHelper
     {
-        public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext)
+        public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId, int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext, bool useStartDateAsStartOfPeriod)
         {
             var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
             foreach (var assignmentSiteId in assignmentSiteIds)
@@ -272,19 +272,28 @@ namespace BackendConfiguration.Pn.Infrastructure
                             await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
 
-                        var now = DateTime.UtcNow;
+                        //var now = DateTime.UtcNow;
                         var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id)
                             .ConfigureAwait(false);
+
+                        var now = DateTime.UtcNow;
+                        var startDate = dbPlanning.StartDate;
+                        if (!useStartDateAsStartOfPeriod)
+                        {
+                            startDate = new DateTime(now.Year, 1, 1, 0, 0, 0);
+
+                        }
+                        //now = DateTime.UtcNow;
                         switch (dbPlanning.RepeatType)
                         {
                             case RepeatType.Day:
                                 // dbPlanning.NextExecutionTime = now.AddDays(dbPlanning.RepeatEvery);
                                 if (dbPlanning.RepeatEvery > 1)
                                 {
-                                    var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
+                                    var diff = (now - startDate).TotalDays;
                                     var multiplier = (int) (diff / planning.RepeatEvery);
                                     var nextExecutionTime =
-                                        new DateTime(now.Year, 1, 1).AddDays(multiplier * planning.RepeatEvery);
+                                        startDate.AddDays(multiplier * planning.RepeatEvery);
                                     if (nextExecutionTime < now)
                                     {
                                         nextExecutionTime = nextExecutionTime.AddDays(planning.RepeatEvery);
@@ -295,7 +304,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 break;
                             case RepeatType.Week:
                             {
-                                var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
+                                var diff = (now - startDate).TotalDays;
                                 var multiplier = (int) (diff / (planning.RepeatEvery * 7));
                                 var dayOfWeek = (int) dbPlanning.DayOfWeek!;
                                 if (dayOfWeek == 0)
@@ -304,9 +313,9 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 }
 
                                 var startOfWeek =
-                                    new DateTime(now.Year, 1, 1, 0, 0, 0).StartOfWeek(
+                                    startDate.StartOfWeek(
                                         (DayOfWeek) dayOfWeek);
-                                if (startOfWeek.Year != now.Year)
+                                if (startOfWeek.Year != startDate.Year)
                                 {
                                     startOfWeek = startOfWeek.AddDays(7);
                                 }
@@ -331,7 +340,12 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 if (planning.RepeatEvery == 1)
                                 {
                                     dbPlanning.NextExecutionTime =
-                                        new DateTime(now.Year, now.Month + 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                        new DateTime(startDate.Year, startDate.Month + 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                    if (dbPlanning.NextExecutionTime < now)
+                                    {
+                                        dbPlanning.NextExecutionTime =
+                                            new DateTime(startDate.Year, now.Month + 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                    }
                                 }
                                 else
                                 {
@@ -341,68 +355,114 @@ namespace BackendConfiguration.Pn.Infrastructure
                                         {
                                             var months = new[] {1, 3, 5, 7, 9, 11};
 
-                                            if (months.Contains(now.Month))
+                                            if (startDate < now)
+                                            {
+                                                startDate = now;
+                                            }
+
+                                            if (months.Contains(startDate.Month))
                                             {
                                                 dbPlanning.NextExecutionTime =
-                                                    new DateTime(now.Year, now.Month + 2, (int) dbPlanning.DayOfMonth!,
+                                                    new DateTime(startDate.Year, startDate.Month + 2, (int) dbPlanning.DayOfMonth!,
                                                         0, 0, 0);
                                             }
                                             else
                                             {
                                                 dbPlanning.NextExecutionTime =
-                                                    new DateTime(now.Year, now.Month + 1, (int) dbPlanning.DayOfMonth!,
+                                                    new DateTime(startDate.Year, startDate.Month + 1, (int) dbPlanning.DayOfMonth!,
                                                         0, 0, 0);
                                             }
                                         }
                                             break;
                                         case 3:
                                         {
+                                            if (startDate < now)
+                                            {
+                                                startDate = now;
+                                            }
                                             var months = new[] {1, 4, 7, 10};
-                                            if (months.Contains(now.Month))
+                                            if (months.Contains(startDate.Month))
                                             {
                                                 dbPlanning.NextExecutionTime =
-                                                    new DateTime(now.Year, now.Month + 3, (int) dbPlanning.DayOfMonth!,
+                                                    new DateTime(startDate.Year, startDate.Month + 3, (int) dbPlanning.DayOfMonth!,
                                                         0, 0, 0);
                                             }
                                             else
                                             {
                                                 months = new[] {2, 5, 8, 11};
-                                                if (months.Contains(now.Month))
+                                                if (months.Contains(startDate.Month))
                                                 {
                                                     dbPlanning.NextExecutionTime =
-                                                        new DateTime(now.Year, now.Month + 2, (int) dbPlanning.DayOfMonth!,
+                                                        new DateTime(startDate.Year, startDate.Month + 2, (int) dbPlanning.DayOfMonth!,
                                                             0, 0, 0);
                                                 }
                                                 else
                                                 {
                                                     dbPlanning.NextExecutionTime =
-                                                        new DateTime(now.Year, now.Month + 1, (int) dbPlanning.DayOfMonth!,
+                                                        new DateTime(startDate.Year, startDate.Month + 1, (int) dbPlanning.DayOfMonth!,
                                                             0, 0, 0);
                                                 }
                                             }
                                         }
                                             break;
                                         case 6:
-                                            if (now.Month < 6)
+                                            if (startDate.Month < 6)
                                             {
                                                 dbPlanning.NextExecutionTime =
-                                                    new DateTime(now.Year, 7, (int)dbPlanning.DayOfMonth!,
+                                                    new DateTime(startDate.Year, startDate.Month, (int)dbPlanning.DayOfMonth!,
                                                         0, 0, 0);
                                             }
                                             else
                                             {
                                                 dbPlanning.NextExecutionTime =
-                                                    new DateTime(now.Year + 1, 1, (int)dbPlanning.DayOfMonth!,
+                                                    new DateTime(startDate.Year + 1, startDate.Month, (int)dbPlanning.DayOfMonth!,
                                                         0, 0, 0);
+                                            }
+
+                                            if (dbPlanning.NextExecutionTime < now)
+                                            {
+                                                dbPlanning.NextExecutionTime = ((DateTime)dbPlanning.NextExecutionTime).AddMonths(6);
                                             }
                                             break;
                                         case 12:
                                             dbPlanning.NextExecutionTime =
-                                                new DateTime(now.Year + 1, 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                                new DateTime(startDate.Year + 1, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
                                             break;
                                         case 24:
                                             dbPlanning.NextExecutionTime =
-                                                new DateTime(now.Year + 2, 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                                new DateTime(startDate.Year + 2, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 36:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 3, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 48:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 4, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 60:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 5, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 72:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 6, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 84:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 7, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 96:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 8, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 108:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 9, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            break;
+                                        case 120:
+                                            dbPlanning.NextExecutionTime =
+                                                new DateTime(startDate.Year + 10, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
                                             break;
                                     }
 

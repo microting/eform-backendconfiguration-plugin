@@ -42,6 +42,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public DateTime StartDate { get; set; }
 
+        // bool to check if start date is custom or not and default should be false
+        public bool UseStartDateAsStartOfPeriod { get; set; } = false;
+
         public int PropertyId { get; set; }
 
         public AreaRuleTypePlanningModel TypeSpecificFields { get; set; }
