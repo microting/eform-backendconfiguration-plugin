@@ -102,15 +102,6 @@ jobs:
         repository: microting/eform-angular-items-planning-plugin
         ref: stable
         path: eform-angular-items-planning-plugin
-    - name: Cache node_modules
-      id: cache
-      uses: actions/cache@v3
-      with:
-        path: eform-angular-frontend/eform-client/node_modules
-        key: ${{ runner.os }}-build-${{ hashFiles('eform-angular-frontend/eform-client/package.json') }}
-        restore-keys: |
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
     - name: Copy dependencies
       run: |
         cp -av eform-backendconfiguration-plugin/eform-client/src/app/plugins/modules/backend-configuration-pn eform-angular-frontend/eform-client/src/app/plugins/modules/backend-configuration-pn
@@ -123,7 +114,6 @@ jobs:
         cp -av eform-backendconfiguration-plugin/eform-client/wdio-plugin-step2.conf.js eform-angular-frontend/eform-client/wdio-plugin-step2.conf.js
     - name: NPM install
       run: cd eform-angular-frontend/eform-client && npm install
-      if: steps.cache.outputs.cache-hit != 'true'
     - name: Create errorShots directory
       run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
