@@ -1,5 +1,5 @@
 <h4 mat-dialog-title>{{'Select columns to be shown' | translate}}:</h4>
-<mat-dialog-content>
+<div mat-dialog-content>
   <section [formGroup]="columns">
     <p><mat-checkbox formControlName="property">{{'Property' | translate}}</mat-checkbox></p>
     <p><mat-checkbox formControlName="task">{{'Task' | translate}}</mat-checkbox></p>
@@ -9,12 +9,12 @@
     <p><mat-checkbox formControlName="repeat">{{'Repeat' | translate}}</mat-checkbox></p>
     <p><mat-checkbox formControlName="deadline">{{'Deadline' | translate}}</mat-checkbox></p>
   </section>
-</mat-dialog-content>
-<mat-dialog-actions class="d-flex flex-row justify-content-end">
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
     mat-raised-button
     color="accent"
-    (click)="handleSave(columns.value)"
+    (click)="save()"
   >
     {{'Save' | translate}}
   </button>
@@ -25,4 +25,4 @@
   >
     {{'Cancel' | translate}}
   </button>
-</mat-dialog-actions>
+</div>

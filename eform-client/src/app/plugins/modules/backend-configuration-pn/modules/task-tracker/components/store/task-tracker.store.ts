@@ -3,8 +3,8 @@ import { persistState, Store, StoreConfig } from '@datorama/akita';
 
 export interface TaskTrackerFiltrationModel {
   propertyIds: number[];
-  tags: number[];
-  workers: number[];
+  tagIds: number[];
+  workerIds: number[];
 }
 
 export interface TaskTrackerState {
@@ -15,8 +15,8 @@ function createInitialState(): TaskTrackerState {
   return <TaskTrackerState>{
     filters: {
       propertyIds: [-1], // -1 - it's All
-      tags: [-1],
-      workers: [-1]
+      tagIds: [-1],
+      workerIds: [-1]
     },
   };
 }

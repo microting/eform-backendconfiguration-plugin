@@ -2088,5 +2088,62 @@
       "pt-PT": "Rastreador de tarefas",
       "fi-FI": "Tehtäväseuranta"
     }
+  },
+  {
+    "Key": "ColumnsUpdatedSuccessful",
+    "LocalizedValue": {
+      "da": "Columns opdateret succesfuldt",
+      "de": "Spalten erfolgreich aktualisiert",
+      "en-US": "Columns updated successful",
+      "uk-UA": "Стовпці успішно оновлені",
+      "pl-PL": "Kolumny zaktualizowane pomyślnie",
+      "no-NO": "Kolonner oppdatert vellykket",
+      "sv-SE": "Kolumner uppdaterade framgångsrikt",
+      "es-ES": "Columnas actualizadas con éxito",
+      "fr-FR": "Colonnes mises à jour avec succès",
+      "it-IT": "Colonne aggiornate correttamente",
+      "nl-NL": "Kolommen succesvol bijgewerkt",
+      "pt-BR": "Colunas atualizadas com sucesso",
+      "pt-PT": "Colunas atualizadas com sucesso",
+      "fi-FI": "Sarakkeet päivitetty onnistuneesti"
+    }
+  },
+  {
+    "Key": "ErrorWhileGetColumns",
+    "LocalizedValue": {
+      "da": "Fejl under hentning af kolonner",
+      "de": "Fehler beim Abrufen von Spalten",
+      "en-US": "Error while getting columns",
+      "uk-UA": "Помилка при отриманні стовпців",
+      "pl-PL": "Błąd podczas pobierania kolumn",
+      "no-NO": "Feil ved henting av kolonner",
+      "sv-SE": "Fel vid hämtning av kolumner",
+      "es-ES": "Error al obtener columnas",
+      "fr-FR": "Erreur lors de la récupération des colonnes",
+      "it-IT": "Errore durante il recupero delle colonne",
+      "nl-NL": "Fout bij het ophalen van kolommen",
+      "pt-BR": "Erro ao obter colunas",
+      "pt-PT": "Erro ao obter colunas",
+      "fi-FI": "Virhe haettaessa sarakkeita"
+    }
+  },
+  {
+    "Key": "ErrorWhileUpdateColumns",
+    "LocalizedValue": {
+      "da": "Fejl under opdatering af kolonner",
+      "de": "Fehler bei der Aktualisierung von Spalten",
+      "en-US": "Error while updating columns",
+      "uk-UA": "Помилка під час оновлення стовпців",
+      "pl-PL": "Błąd podczas aktualizowania kolumn",
+      "no-NO": "Feil ved oppdatering av kolonner",
+      "sv-SE": "Fel vid uppdatering av kolumner",
+      "es-ES": "Error al actualizar columnas",
+      "fr-FR": "Erreur lors de la mise à jour des colonnes",
+      "it-IT": "Errore durante l'aggiornamento delle colonne",
+      "nl-NL": "Fout bij het bijwerken van kolommen",
+      "pt-BR": "Erro ao atualizar colunas",
+      "pt-PT": "Erro ao atualizar colunas",
+      "fi-FI": "Virhe päivitettäessä sarakkeita"
+    }
   }
 ]

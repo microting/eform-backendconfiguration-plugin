@@ -6,6 +6,8 @@ export interface TaskModel {
   tags: SharedTagModel[],
   workers: string[],
   startTask: Date,
-  repeat: string,
+  repeatEvery: number;
+  repeatType: number;
   deadlineTask: Date,
+  nextExecutionTime: string;
 }

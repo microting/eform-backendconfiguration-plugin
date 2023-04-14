@@ -37,8 +37,8 @@ export class TaskTrackerStateService {
       filters: {
         ...state.filters,
         propertyIds: taskManagementFiltrationModel.propertyIds,
-        tags: taskManagementFiltrationModel.tags,
-        workers: taskManagementFiltrationModel.workers,
+        tagIds: taskManagementFiltrationModel.tagIds,
+        workerIds: taskManagementFiltrationModel.workerIds,
       },
     }));
   }

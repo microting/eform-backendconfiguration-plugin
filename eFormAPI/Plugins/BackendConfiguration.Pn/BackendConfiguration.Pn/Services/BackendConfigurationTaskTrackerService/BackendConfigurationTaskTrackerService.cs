@@ -86,7 +86,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 
 			if (filtersModel.PropertyIds.Any() && !filtersModel.PropertyIds.Contains(-1))
 			{
-					query = query.Where(x => filtersModel.PropertyIds.Contains(x.PropertyId));
+				query = query.Where(x => filtersModel.PropertyIds.Contains(x.PropertyId));
 			}
 
 			var complianceList = await query
@@ -96,15 +96,8 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 
 			foreach (var compliance in complianceList)
 			{
-				var planningNameTranslation = await _itemsPlanningPnDbContext.PlanningNameTranslation
-					.SingleOrDefaultAsync(x => x.PlanningId == compliance.PlanningId && x.LanguageId == language.Id);
-
-				if (planningNameTranslation == null)
-				{
-					continue;
-				}
-				var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations
-					.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);
+				/*var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations
+					.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);*/
 
 				var propertyName = await _backendConfigurationPnDbContext.Properties
 					.Where(x => x.Id == compliance.PropertyId)
@@ -116,7 +109,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 					.FirstOrDefaultAsync();
 
-				if (areaTranslation == null || planning == null)
+				if (/*areaTranslation == null || */planning == null)
 				{
 					continue;
 				}
@@ -125,19 +118,23 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 					.Where(x => x.PlanningId == compliance.PlanningId)
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-				//if (filtersModel.WorkerIds.Any() && !filtersModel.WorkerIds.Contains(-1))
-				//{
-				//	foreach (var workerId in filtersModel.WorkerIds)
-				//	{
-				//		planningSitesQuery = planningSitesQuery.Where(x => x.SiteId == workerId);
-				//	}
-				//}
 				var planningSiteIds = await planningSitesQuery
 					.Select(x => x.SiteId)
 					.Distinct()
 					.ToListAsync();
 
-				var sitesWithNames = await sdkDbContext.Sites.Where(x => planningSiteIds.Contains(x.Id)).Select(site => new KeyValuePair<int, string>(site.Id, site.Name)).ToListAsync();
+				var sitesWithNames = await sdkDbContext.Sites
+					.Where(x => planningSiteIds.Contains(x.Id))
+					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
+					.ToListAsync();
+
+				if (filtersModel.WorkerIds.Any() && !filtersModel.WorkerIds.Contains(-1))
+				{
+					if (!sitesWithNames.Any(siteWithNames => filtersModel.WorkerIds.Contains(siteWithNames.Key)))
+					{
+						continue;
+					}
+				}
 
 				var workerNames = planningSiteIds
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
@@ -146,11 +143,13 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 				var complianceModel = new TaskTrackerModel
 				{
 					Property = propertyName,
-					Tags = new (),
+					Tags = new(),
 					DeadlineTask = compliance.Deadline,
 					Workers = workerNames,
 					StartTask = compliance.StartDate,
-					Repeat = $"{planning.RepeatEvery} {planning.RepeatType}",
+					RepeatEvery = planning.RepeatEvery,
+					RepeatType = planning.RepeatType,
+					NextExecutionTime = (DateTime)planning.NextExecutionTime,
 					TaskName = ""
 				};
 
@@ -276,45 +275,52 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 		try
 		{
 			var columns = await _backendConfigurationPnDbContext.TaskTrackerColumns
-				.Where(p => p.UserId == userId )
-				.Select(p => new TaskTrackerColumn { ColumnName = p.ColumnName, isColumnEnabled = p.isColumnEnabled, UserId = p.UserId})
+				.Where(p => p.UserId == userId)
+				.Select(p => new TaskTrackerColumn
+				{
+					ColumnName = p.ColumnName,
+					isColumnEnabled = p.isColumnEnabled,
+				})
 				.ToListAsync();
-			return new OperationDataResult<List<TaskTrackerColumn>> (true, columns);
-			
+			return new OperationDataResult<List<TaskTrackerColumn>>(true, columns);
 		}
 		catch (Exception e)
 		{
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationDataResult<List<TaskTrackerColumn>>(false,
-				$"{_localizationService.GetString("ErrorWhileUpdateTask")}: {e.Message}");
+				$"{_localizationService.GetString("ErrorWhileGetColumns")}: {e.Message}");
 		}
 	}
-	
+
 	public async Task<OperationResult> UpdateColumns(List<TaskTrackerColumns> updatedColumns)
 	{
 		try
 		{
-
 			var userId = _userService.UserId;
-			
+
 			foreach (var updatedColumn in updatedColumns)
 			{
 				var columnFromDb = await _backendConfigurationPnDbContext.TaskTrackerColumns
 					.Where(p => p.UserId == userId)
-					.Where(p => p.ColumnName == updatedColumn.ColumnName).FirstOrDefaultAsync();
+					.Where(p => p.ColumnName == updatedColumn.ColumnName)
+					.FirstOrDefaultAsync();
+
 				if (columnFromDb is null)
 				{
-					columnFromDb = new TaskTrackerColumn();
-					columnFromDb.isColumnEnabled = updatedColumn.IsColumnEnabled;
-					columnFromDb.ColumnName = updatedColumn.ColumnName;
-					columnFromDb.UserId = userId;
-					columnFromDb.CreatedByUserId = userId;
-					columnFromDb.UpdatedByUserId = userId;
+					columnFromDb = new TaskTrackerColumn
+					{
+						isColumnEnabled = updatedColumn.IsColumnEnabled,
+						ColumnName = updatedColumn.ColumnName,
+						UserId = userId,
+						CreatedByUserId = userId,
+						UpdatedByUserId = userId
+					};
 					await columnFromDb.Create(_backendConfigurationPnDbContext);
-					
+
 					continue;
-				} 
+				}
+
 				if (columnFromDb.isColumnEnabled != updatedColumn.IsColumnEnabled)
 				{
 					columnFromDb.isColumnEnabled = updatedColumn.IsColumnEnabled;
@@ -322,15 +328,16 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 					await columnFromDb.Update(_backendConfigurationPnDbContext);
 				}
 			}
-			await _backendConfigurationPnDbContext.SaveChangesAsync();
-			return new OperationDataResult<List<TaskTrackerColumns>>(true,$"{_localizationService.GetString("ColumnsUpdated")}");
+			
+			return new OperationDataResult<List<TaskTrackerColumns>>(true,
+				$"{_localizationService.GetString("ColumnsUpdatedSuccessful")}");
 		}
 		catch (Exception e)
 		{
 			Log.LogException(e.Message);
 			Log.LogException(e.StackTrace);
 			return new OperationResult(false,
-				$"{_localizationService.GetString("ErrorWhileUpdateTask")}: {e.Message}");
+				$"{_localizationService.GetString("ErrorWhileUpdateColumns")}: {e.Message}");
 		}
 	}
 }

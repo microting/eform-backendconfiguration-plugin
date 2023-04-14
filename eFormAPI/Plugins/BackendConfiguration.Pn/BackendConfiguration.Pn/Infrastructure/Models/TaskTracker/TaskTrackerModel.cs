@@ -27,6 +27,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.TaskTracker;
 using System;
 using System.Collections.Generic;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
 public class TaskTrackerModel
 {
@@ -42,7 +43,11 @@ public class TaskTrackerModel
 
 	public DateTime StartTask { get; set; }
 
-	public string Repeat { get; set; }
+	public RepeatType RepeatType { get; set; }
+
+	public int RepeatEvery { get; set; }
 
 	public DateTime DeadlineTask { get; set; }
+
+	public DateTime NextExecutionTime { get; set; }
 }

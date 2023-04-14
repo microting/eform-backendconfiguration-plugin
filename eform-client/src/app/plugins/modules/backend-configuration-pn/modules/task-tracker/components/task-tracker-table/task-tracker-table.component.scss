@@ -13,16 +13,27 @@ tr.mat-header-row {
     border-left: 1px solid;
   }
 }
+
 .tasks {
   min-width: 10px !important;
-  border-left: 1px solid;
+  border-right: 1px solid;
   text-align: center;
 }
+
 th.mat-header-cell, td.mat-cell, td.mat-footer-cell {
   //padding: 0;
   border-bottom-width: 1px;
   border-bottom-style: solid;
   &:not(:only-of-type) {
     padding-right: 10px !important;
+  }
+}
+
+td {
+  &.yellow {
+    background-color: #fff2cc;
+  }
+  &.white-yellow {
+    background-color: #fada22;
   }
 }

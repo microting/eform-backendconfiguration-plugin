@@ -15,15 +15,8 @@ import {
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {SitesService} from 'src/app/common/services';
 import {TranslateService} from '@ngx-translate/core';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
-import {AuthStateService} from 'src/app/common/store';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {map, skip, tap} from 'rxjs/operators';
-import {MatDialog} from '@angular/material/dialog';
-import {
-  TaskTrackerShownColumnsComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/task-tracker/components';
-import {IColumns} from 'src/app/plugins/modules/backend-configuration-pn/models/task-tracker/columns.model';
+import {skip, tap} from 'rxjs/operators';
 
 @AutoUnsubscribe()
 @Component({
@@ -32,8 +25,6 @@ import {IColumns} from 'src/app/plugins/modules/backend-configuration-pn/models/
   styleUrls: ['./task-tracker-filters.component.scss'],
 })
 export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
-  @Input() columnsPostRequestSuccess: boolean;
-  @Input() columns: IColumns;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   filtersForm: FormGroup = new FormGroup({
       propertyIds: new FormControl([-1]), // -1 - it's All
@@ -45,9 +36,14 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   sites: CommonDictionaryModel[] = [];
   tags: CommonDictionaryModel[] = [];
 
-  selectFiltersSub$: Subscription;
-  propertyIdValueChangesSub$: Subscription;
-  areaNameValueChangesSub$: Subscription;
+  getAllPropertiesDictionarySub$: Subscription;
+  getAllSitesDictionarySub$: Subscription;
+  getPlanningsTagsSub$: Subscription;
+  propertyIdsChangesSub$: Subscription;
+  tagsChangesSub$: Subscription;
+  workersChangesSub$: Subscription;
+  getFiltersAsyncSub$: Subscription;
+  filtersFormChangesSub$: Subscription;
 
   constructor(
     private translate: TranslateService,
@@ -55,10 +51,8 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
     private propertyService: BackendConfigurationPnPropertiesService,
     private sitesService: SitesService,
     private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
-
   ) {
   }
-
 
   ngOnInit(): void {
     this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}];
@@ -71,7 +65,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   getProperties() {
-    this.propertyService.getAllPropertiesDictionary(true).subscribe((data) => {
+    this.getAllPropertiesDictionarySub$ = this.propertyService.getAllPropertiesDictionary(true).subscribe((data) => {
       if (data && data.success && data.model) {
         this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model];
       }
@@ -79,7 +73,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   getSites() {
-    this.sitesService.getAllSitesDictionary().subscribe((result) => {
+    this.getAllSitesDictionarySub$ = this.sitesService.getAllSitesDictionary().subscribe((result) => {
       if (result && result.success && result.success) {
         this.sites = [{id: -1, name: this.translate.instant('All'), description: ''}, ...result.model];
       }
@@ -87,7 +81,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   getTags() {
-    this.itemsPlanningPnTagsService.getPlanningsTags().subscribe((result) => {
+    this.getPlanningsTagsSub$ = this.itemsPlanningPnTagsService.getPlanningsTags().subscribe((result) => {
       if (result && result.success && result.success) {
         this.tags = [{id: -1, name: this.translate.instant('All'), description: ''}, ...result.model];
       }
@@ -95,66 +89,60 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   subToFormChanges() {
-    this.filtersForm.get('propertyIds').valueChanges
-      .pipe(
-        tap((propertyIds: number[]) => {
-          if (propertyIds.length >= 2 && propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('propertyIds').patchValue(propertyIds.filter(x => x !== -1), {emitEvent: false});
-          }
-          if (propertyIds.length < 1 && !propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('propertyIds').patchValue([-1], {emitEvent: false});
-          }
-          if (propertyIds.length > 2 && propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('propertyIds').patchValue([-1], {emitEvent: false});
-          }
-        }),
-      ).subscribe();
+    this.propertyIdsChangesSub$ = this.filtersForm.get('propertyIds').valueChanges
+      .subscribe((propertyIds: number[]) => {
+        if (propertyIds.length >= 2 && propertyIds.some(x => x === -1)) {
+          this.filtersForm.get('propertyIds').patchValue(propertyIds.filter(x => x !== -1), {emitEvent: false});
+        }
+        if (propertyIds.length < 1 && !propertyIds.some(x => x === -1)) {
+          this.filtersForm.get('propertyIds').patchValue([-1], {emitEvent: false});
+        }
+        if (propertyIds.length > 2 && propertyIds.some(x => x === -1)) {
+          this.filtersForm.get('propertyIds').patchValue([-1], {emitEvent: false});
+        }
+      });
 
-    this.filtersForm.get('tags').valueChanges
-      .pipe(
-        tap((propertyIds: number[]) => {
-          if (propertyIds.length >= 2 && propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('tags').patchValue(propertyIds.filter(x => x !== -1), {emitEvent: false});
-          }
-          if (propertyIds.length < 1 && !propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('tags').patchValue([-1], {emitEvent: false});
-          }
-          if (propertyIds.length > 2 && propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('tags').patchValue([-1], {emitEvent: false});
-          }
-        }),
-      ).subscribe();
+    this.tagsChangesSub$ = this.filtersForm.get('tags').valueChanges
+      .subscribe((tagIds: number[]) => {
+        if (tagIds.length >= 2 && tagIds.some(x => x === -1)) {
+          this.filtersForm.get('tags').patchValue(tagIds.filter(x => x !== -1), {emitEvent: false});
+        }
+        if (tagIds.length < 1 && !tagIds.some(x => x === -1)) {
+          this.filtersForm.get('tags').patchValue([-1], {emitEvent: false});
+        }
+        if (tagIds.length > 2 && tagIds.some(x => x === -1)) {
+          this.filtersForm.get('tags').patchValue([-1], {emitEvent: false});
+        }
+      });
 
-    this.filtersForm.get('workers').valueChanges
-      .pipe(
-        tap((propertyIds: number[]) => {
-          if (propertyIds.length >= 2 && propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('workers').patchValue(propertyIds.filter(x => x !== -1), {emitEvent: false});
-          }
-          if (propertyIds.length < 1 && !propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('workers').patchValue([-1], {emitEvent: false});
-          }
-          if (propertyIds.length > 2 && propertyIds.some(x => x === -1)) {
-            this.filtersForm.get('workers').patchValue([-1], {emitEvent: false});
-          }
-        }),
-      ).subscribe();
+    this.workersChangesSub$ = this.filtersForm.get('workers').valueChanges
+      .subscribe((workerIds: number[]) => {
+        if (workerIds.length >= 2 && workerIds.some(x => x === -1)) {
+          this.filtersForm.get('workers').patchValue(workerIds.filter(x => x !== -1), {emitEvent: false});
+        }
+        if (workerIds.length < 1 && !workerIds.some(x => x === -1)) {
+          this.filtersForm.get('workers').patchValue([-1], {emitEvent: false});
+        }
+        if (workerIds.length > 2 && workerIds.some(x => x === -1)) {
+          this.filtersForm.get('workers').patchValue([-1], {emitEvent: false});
+        }
+      });
 
-    this.taskTrackerStateService.getFiltersAsync().pipe(take(1)) // get values FIRST time
+    this.getFiltersAsyncSub$ = this.taskTrackerStateService.getFiltersAsync().pipe(take(1)) // get values FIRST time
       .subscribe(filters => {
         this.filtersForm.patchValue({
-          propertyIds: filters.propertyIds,
-          tags: filters.tags,
-          workers: filters.workers,
+          propertyIds: filters.propertyIds ?? [-1],
+          tags: filters.tagIds ?? [-1],
+          workers: filters.workerIds ?? [-1],
         });
       });
 
-    this.filtersForm.valueChanges.pipe(skip(1)) // skip initial values
+    this.filtersFormChangesSub$ = this.filtersForm.valueChanges.pipe(skip(1)) // skip initial values
       .subscribe((filters) => {
         this.taskTrackerStateService.updateFilters({
           propertyIds: filters.propertyIds,
-          workers: filters.workers,
-          tags: filters.tags,
+          workerIds: filters.workers,
+          tagIds: filters.tags,
         })
         this.updateTable.emit();
       })
