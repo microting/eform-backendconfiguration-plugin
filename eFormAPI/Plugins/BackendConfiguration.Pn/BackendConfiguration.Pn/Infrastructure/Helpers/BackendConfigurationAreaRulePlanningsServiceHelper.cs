@@ -1593,6 +1593,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             areaRulePlanning.EndDate = areaRulePlanningModel.TypeSpecificFields.EndDate;
             areaRulePlanning.RepeatEvery = areaRulePlanningModel.TypeSpecificFields.RepeatEvery;
             areaRulePlanning.RepeatType = areaRulePlanningModel.TypeSpecificFields.RepeatType;
+            areaRulePlanning.UseStartDateAsStartOfPeriod = areaRulePlanningModel.UseStartDateAsStartOfPeriod;
         }
 
         if (areaRule.Type != null)

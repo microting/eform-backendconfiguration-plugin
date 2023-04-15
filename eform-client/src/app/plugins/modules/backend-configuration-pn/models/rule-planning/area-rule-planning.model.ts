@@ -7,6 +7,7 @@ export class AreaRulePlanningModel {
   serverStatus: boolean;
   sendNotifications: boolean;
   startDate: string;
+  useStartDateAsStartOfPeriod: boolean;
   assignedSites: AreaRuleAssignedSitesModel[] = [];
   propertyId: number;
   typeSpecificFields: TypeSpecificFieldsAreaRulePlanning;
