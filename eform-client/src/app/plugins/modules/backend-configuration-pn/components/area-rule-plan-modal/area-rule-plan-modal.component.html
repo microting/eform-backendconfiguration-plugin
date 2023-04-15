@@ -197,7 +197,15 @@
         </mat-form-field>
       </ng-container>
 <!--      <ng-container *ngIf="selectedArea.type === 4">-->
-        <mat-form-field [owlDateTimeTrigger]="dt2">
+      <ng-container *ngIf="selectedArea.type !== 2 && selectedArea.type !== 3">
+      <mat-slide-toggle
+        color="primary"
+        id="planAreaRuleuseStartDateAsStartOfPeriodToggle"
+        [checked]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod"
+        [(ngModel)]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod">
+        {{ "Delayed start" | translate }}
+      </mat-slide-toggle>
+        <mat-form-field [owlDateTimeTrigger]="dt2" *ngIf="selectedAreaRulePlanning.useStartDateAsStartOfPeriod">
           <mat-label>{{ 'Start date' | translate }}</mat-label>
           <input
             matInput
@@ -215,6 +223,7 @@
             #dt2
           ></owl-date-time>
         </mat-form-field>
+    </ng-container>
 <!--      </ng-container>-->
     </ng-container>
 <!--    <mtx-grid-->
