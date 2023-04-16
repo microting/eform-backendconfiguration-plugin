@@ -201,7 +201,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
         ).setValue(propertyWorker.language);
         await browser.pause(500);
         const value = await (
-          await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
+          await $('ng-dropdown-panel')
         ).$(`.ng-option=${propertyWorker.language}`);
         await value.waitForDisplayed({ timeout: 40000 });
         await value.click();
@@ -344,7 +344,7 @@ export class PropertyWorkerRowObject {
         ).setValue(propertyWorker.language);
         await browser.pause(500);
         const value = await (
-          await backendConfigurationPropertyWorkersPage.profileLanguageSelector()
+          await $('ng-dropdown-panel')
         ).$(`.ng-option=${propertyWorker.language}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();

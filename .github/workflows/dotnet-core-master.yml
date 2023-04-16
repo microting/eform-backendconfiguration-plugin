@@ -105,15 +105,6 @@ jobs:
         repository: microting/eform-angular-frontend
         ref: ${{ steps.extract_branch.outputs.BRANCH }}
         path: eform-angular-frontend
-    - name: Cache node_modules
-      id: cache
-      uses: actions/cache@v3
-      with:
-        path: eform-angular-frontend/eform-client/node_modules
-        key: ${{ runner.os }}-build-${{ hashFiles('eform-angular-frontend/eform-client/package.json') }}
-        restore-keys: |
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
     - name: 'Preparing ItemsPlanning checkout'
       uses: actions/checkout@v3
       with:
@@ -133,7 +124,6 @@ jobs:
         cp -av eform-backendconfiguration-plugin/eform-client/wdio-plugin-step2.conf.ts  eform-angular-frontend/eform-client/wdio-plugin-step2.conf.ts 
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
-      if: steps.cache.outputs.cache-hit != 'true'
     - name: Create errorShots directory
       run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
