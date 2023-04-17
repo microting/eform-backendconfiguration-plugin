@@ -72,6 +72,23 @@
           [disabled]="!selectedAreaRulePlanning.status">
           {{ "Notifications on/off" | translate }}
         </mat-slide-toggle>
+        <mat-form-field [owlDateTimeTrigger]="dt2">
+          <mat-label>{{ 'Start date' | translate }}</mat-label>
+          <input
+            matInput
+            [owlDateTime]="dt2"
+            [ngModel]="selectedAreaRulePlanning.startDate"
+            (ngModelChange)="updateStartDate($event)"
+            type="text"
+            id="planEndDate"
+            [disabled]="selectedAreaRulePlanning.serverStatus"
+          >
+          <owl-date-time
+            [pickerType]="'calendar'"
+            [firstDayOfWeek]="1"
+            #dt2
+          ></owl-date-time>
+        </mat-form-field>
         <br>
         <ng-container *ngIf="selectedArea.type !== 5 &&
                              selectedArea.type !== 2 &&
@@ -123,18 +140,18 @@
                 >
                 </mtx-select>
               </mat-form-field>
-              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 3">
-                <mat-label>{{'Day of month' | translate}}</mat-label>
-                <mtx-select
-                  [items]="daysOfMonth"
-                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfMonth"
-                  [disabled]="selectedAreaRulePlanning.serverStatus"
-                  id="createDayOfMonth"
-                  name="createDayOfMonth"
-                  [clearable]="false"
-                >
-                </mtx-select>
-              </mat-form-field>
+<!--              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 3">-->
+<!--                <mat-label>{{'Day of month' | translate}}</mat-label>-->
+<!--                <mtx-select-->
+<!--                  [items]="daysOfMonth"-->
+<!--                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfMonth"-->
+<!--                  [disabled]="selectedAreaRulePlanning.serverStatus"-->
+<!--                  id="createDayOfMonth"-->
+<!--                  name="createDayOfMonth"-->
+<!--                  [clearable]="false"-->
+<!--                >-->
+<!--                </mtx-select>-->
+<!--              </mat-form-field>-->
             </div>
           </ng-container>
 
@@ -197,33 +214,15 @@
         </mat-form-field>
       </ng-container>
 <!--      <ng-container *ngIf="selectedArea.type === 4">-->
-      <ng-container *ngIf="selectedArea.type !== 2 && selectedArea.type !== 3">
-      <mat-slide-toggle
-        color="primary"
-        id="planAreaRuleuseStartDateAsStartOfPeriodToggle"
-        [checked]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod"
-        [(ngModel)]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod">
-        {{ "Delayed start" | translate }}
-      </mat-slide-toggle>
-        <mat-form-field [owlDateTimeTrigger]="dt2" *ngIf="selectedAreaRulePlanning.useStartDateAsStartOfPeriod">
-          <mat-label>{{ 'Start date' | translate }}</mat-label>
-          <input
-            matInput
-            [owlDateTime]="dt2"
-            [min]="currentDate"
-            [ngModel]="selectedAreaRulePlanning.startDate"
-            (ngModelChange)="updateStartDate($event)"
-            type="text"
-            id="planEndDate"
-            [disabled]="!selectedAreaRulePlanning.status"
-          >
-          <owl-date-time
-            [pickerType]="'calendar'"
-            [firstDayOfWeek]="1"
-            #dt2
-          ></owl-date-time>
-        </mat-form-field>
-    </ng-container>
+<!--      <ng-container *ngIf="selectedArea.type !== 2 && selectedArea.type !== 3">-->
+<!--      <mat-slide-toggle-->
+<!--        color="primary"-->
+<!--        id="planAreaRuleuseStartDateAsStartOfPeriodToggle"-->
+<!--        [checked]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod"-->
+<!--        [(ngModel)]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod">-->
+<!--        {{ "Delayed start" | translate }}-->
+<!--      </mat-slide-toggle>-->
+<!--    </ng-container>-->
 <!--      </ng-container>-->
     </ng-container>
 <!--    <mtx-grid-->

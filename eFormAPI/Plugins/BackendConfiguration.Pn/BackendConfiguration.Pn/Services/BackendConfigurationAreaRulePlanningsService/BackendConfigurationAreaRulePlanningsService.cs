@@ -41,6 +41,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
         public async Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel)
         {
+            areaRulePlanningModel.UseStartDateAsStartOfPeriod = true;
             var core = await _coreHelper.GetCore();
 
             var result = await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel, core, _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext).ConfigureAwait(false);
