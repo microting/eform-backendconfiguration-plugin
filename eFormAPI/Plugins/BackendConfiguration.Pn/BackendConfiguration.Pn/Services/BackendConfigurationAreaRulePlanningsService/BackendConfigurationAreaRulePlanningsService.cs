@@ -81,6 +81,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         Id = x.Id,
                         RuleId = ruleId,
                         StartDate = (DateTime)x.StartDate,
+                        UseStartDateAsStartOfPeriod = x.UseStartDateAsStartOfPeriod,
                         ServerStatus = x.Status,
                         TypeSpecificFields = new AreaRuleTypePlanningModel
                         {

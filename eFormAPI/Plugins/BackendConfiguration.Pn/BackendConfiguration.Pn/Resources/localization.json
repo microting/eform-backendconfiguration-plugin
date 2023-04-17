@@ -2071,6 +2071,7 @@
     }
   },
   {
+
     "Key": "Task tracker",
     "LocalizedValue": {
       "da": "Opgave tracker",
@@ -2144,6 +2145,25 @@
       "pt-BR": "Erro ao atualizar colunas",
       "pt-PT": "Erro ao atualizar colunas",
       "fi-FI": "Virhe päivitettäessä sarakkeita"
+      }
+   },
+   {
+    "Key": "CaseHasBeenUpdated",
+    "LocalizedValue": {
+      "da": "Ændringer gemt",
+      "de": "Änderungen gespeichert",
+      "en-US": "Case has been updated",
+      "uk-UA": "Зміни збережено",
+      "pl-PL": "Zmiany zostały zapisane",
+      "no-NO": "Saken er oppdatert",
+      "sv-SE": "Ärendet har uppdaterats",
+      "es-ES": "El caso ha sido actualizado",
+      "fr-FR": "Le cas a été mis à jour",
+      "it-IT": "Caso aggiornato",
+      "nl-NL": "Zaak is bijgewerkt",
+      "pt-BR": "O caso foi atualizado",
+      "pt-PT": "O caso foi atualizado",
+      "fi-FI": "Tapaus on päivitetty"
     }
   }
 ]

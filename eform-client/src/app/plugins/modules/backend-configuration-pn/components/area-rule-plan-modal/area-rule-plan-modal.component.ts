@@ -127,9 +127,22 @@ export class AreaRulePlanModalComponent implements OnInit {
     this.repeatTypeWeek = R.map(x => {
       return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
     }, R.range(1, 51)); // 1, 2, ..., 49, 50.
-    this.repeatTypeMonth = R.map(x => {
-      return {name: x === 1 ? this.translate.instant('Every') : x.toString(), id: x};
-    }, [1,2,3,6,12,24]); // 1, 2, ..., 23, 24.
+    this.repeatTypeMonth = [
+      {id: 1, name: this.translate.instant('Every month')},
+      {id: 2, name: this.translate.instant('2nd months')},
+      {id: 3, name: this.translate.instant('3rd months')},
+      {id: 6, name: this.translate.instant('6th months')},
+      {id: 12, name: this.translate.instant('12 (1 year)')},
+      {id: 24, name: this.translate.instant('24 (2 years)')},
+      {id: 36, name: this.translate.instant('36 (3 years)')},
+      {id: 48, name: this.translate.instant('48 (4 years)')},
+      {id: 60, name: this.translate.instant('60 (5 years)')},
+      {id: 72, name: this.translate.instant('72 (6 years)')},
+      {id: 84, name: this.translate.instant('84 (7 years)')},
+      {id: 96, name: this.translate.instant('96 (8 years)')},
+      {id: 108, name: this.translate.instant('108 (9 years)')},
+      {id: 120, name: this.translate.instant('120 (10 years)')},
+    ]; // 1, 2, ..., 23, 24.
     // }, R.range(1, 25)); // 1, 2, ..., 23, 24.
     this.dayOfWeekArr = [
       {id: 1, name: this.translate.instant('Monday')},
