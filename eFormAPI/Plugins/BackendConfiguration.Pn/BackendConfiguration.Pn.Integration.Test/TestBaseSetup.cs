@@ -22,9 +22,9 @@ public class TestBaseSetup
         {
             Database = "myDb",
             Username = "root",
-            Password = "secretpassword"
+            Password = "Qq1234567$"
         })
-        .WithEnvironment("MYSQL_ROOT_PASSWORD", "secretpassword")
+        .WithEnvironment("MYSQL_ROOT_PASSWORD", "Qq1234567$")
         .Build();
 
     protected BackendConfigurationPnDbContext? BackendConfigurationPnDbContext;

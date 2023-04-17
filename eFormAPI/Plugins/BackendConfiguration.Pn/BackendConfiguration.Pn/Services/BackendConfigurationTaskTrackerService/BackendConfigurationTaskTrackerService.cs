@@ -29,7 +29,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskTrackerServic
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Infrastructure.Models.TaskManagement;
 using BackendConfigurationLocalizationService;
 using Infrastructure.Models.TaskTracker;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -38,15 +37,8 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Microting.eForm.Infrastructure.Constants;
-using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
-using BackendConfiguration.Pn.Infrastructure.Helpers;
-using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
-using Microting.eForm.Infrastructure.Data.Entities;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-using static Microting.EformAngularFrontendBase.Infrastructure.Const.AuthConsts.EformPolicies;
-using System.Security.Policy;
+using Infrastructure.Helpers;
 
 public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskTrackerService
 {
@@ -74,118 +66,20 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 
 	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index(TaskTrackerFiltrationModel filtersModel)
 	{
-		try
-		{
-			var language = await _userService.GetCurrentUserLanguage();
-			var result = new List<TaskTrackerModel>();
-
-			var core = await _coreHelper.GetCore();
-			var sdkDbContext = core.DbContextHelper.GetDbContext();
-			var query = _backendConfigurationPnDbContext.Compliances
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
-
-			if (filtersModel.PropertyIds.Any() && !filtersModel.PropertyIds.Contains(-1))
-			{
-				query = query.Where(x => filtersModel.PropertyIds.Contains(x.PropertyId));
-			}
-
-			var complianceList = await query
-				.AsNoTracking()
-				.OrderBy(x => x.Deadline)
-				.ToListAsync();
-
-			foreach (var compliance in complianceList)
-			{
-				/*var areaTranslation = await _backendConfigurationPnDbContext.AreaTranslations
-					.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);*/
-
-				var propertyName = await _backendConfigurationPnDbContext.Properties
-					.Where(x => x.Id == compliance.PropertyId)
-					.Select(x => x.Name)
-					.FirstOrDefaultAsync();
-
-				var planning = await _itemsPlanningPnDbContext.Plannings
-					.Where(x => x.Id == compliance.PlanningId)
-					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					.FirstOrDefaultAsync();
-
-				if (/*areaTranslation == null || */planning == null)
-				{
-					continue;
-				}
-
-				var planningSitesQuery = _itemsPlanningPnDbContext.PlanningSites
-					.Where(x => x.PlanningId == compliance.PlanningId)
-					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
-
-				var planningSiteIds = await planningSitesQuery
-					.Select(x => x.SiteId)
-					.Distinct()
-					.ToListAsync();
-
-				var sitesWithNames = await sdkDbContext.Sites
-					.Where(x => planningSiteIds.Contains(x.Id))
-					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
-					.ToListAsync();
-
-				if (filtersModel.WorkerIds.Any() && !filtersModel.WorkerIds.Contains(-1))
-				{
-					if (!sitesWithNames.Any(siteWithNames => filtersModel.WorkerIds.Contains(siteWithNames.Key)))
-					{
-						continue;
-					}
-				}
-
-				var workerNames = planningSiteIds
-					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
-					.ToList();
-
-				var complianceModel = new TaskTrackerModel
-				{
-					Property = propertyName,
-					Tags = new(),
-					DeadlineTask = compliance.Deadline,
-					Workers = workerNames,
-					StartTask = compliance.StartDate,
-					RepeatEvery = planning.RepeatEvery,
-					RepeatType = planning.RepeatType,
-					NextExecutionTime = (DateTime)planning.NextExecutionTime,
-					TaskName = ""
-				};
-
-				result.Add(complianceModel);
-			}
-
-			//if (filtersModel.TagIds.Any() && !filtersModel.TagIds.Contains(-1))
-			//{
-			//	foreach (var tagId in filtersModel.TagIds)
-			//	{
-			//		query = query.Where(x => x.PropertyWorker.Id == tagId);
-			//	}
-			//}
-
-
-			return new OperationDataResult<List<TaskTrackerModel>>(true, result);
-		}
-		catch (Exception e)
-		{
-			Log.LogException(e.Message);
-			Log.LogException(e.StackTrace);
-			return new OperationDataResult<List<TaskTrackerModel>>(false,
-				$"{_localizationService.GetString("ErrorWhileReadAllTasks")}: {e.Message}");
-		}
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, _backendConfigurationPnDbContext, await _coreHelper.GetCore(), _itemsPlanningPnDbContext);
+		return new OperationDataResult<List<TaskTrackerModel>>(result.Success, _localizationService.GetString(result.Message), result.Model ?? new List<TaskTrackerModel>());
 	}
 
 	public async Task<OperationDataResult<TaskTrackerModel>> GetTaskById(int taskId)
 	{
 		try
 		{
-			var core = await _coreHelper.GetCore().ConfigureAwait(false);
+			/*var core = await _coreHelper.GetCore().ConfigureAwait(false);
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
 			var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.Where(x => x.Id == taskId)
-				.FirstOrDefaultAsync();
+				.FirstOrDefaultAsync();*/
 
 			return new OperationDataResult<TaskTrackerModel>(true, new TaskTrackerModel());
 		}
@@ -202,7 +96,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 	{
 		try
 		{
-			var core = await _coreHelper.GetCore().ConfigureAwait(false);
+			/*var core = await _coreHelper.GetCore().ConfigureAwait(false);
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
 			var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -213,7 +107,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 			{
 				return new OperationDataResult<WorkOrderCaseReadModel>(false,
 					_localizationService.GetString("TaskNotFound"));
-			}
+			}*/
 
 			return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
 		}
@@ -245,7 +139,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 	{
 		try
 		{
-			var core = await _coreHelper.GetCore().ConfigureAwait(false);
+			/*var core = await _coreHelper.GetCore().ConfigureAwait(false);
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
 			var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -256,7 +150,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 			{
 				return new OperationDataResult<WorkOrderCaseReadModel>(false,
 					_localizationService.GetString("TaskNotFound"));
-			}
+			}*/
 
 			return new OperationResult(true, _localizationService.GetString("TaskUpdatedSuccessful"));
 		}
