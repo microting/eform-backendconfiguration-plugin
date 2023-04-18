@@ -249,4 +249,24 @@ export const fiFI = {
   'Name ZIP-folder': 'Nimeä ZIP-kansio',
   'Back': 'Takaisin',
   'Download Document': 'Lataa {{language}} {{extension}}',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Sunnuntai',
+      'Monday': 'Maanantai',
+      'Tuesday': 'Tiistai',
+      'Wednesday': 'Keskiviikko',
+      'Thursday': 'Torstai',
+      'Friday': 'Perjantai',
+      'Saturday': 'Lauantai'
+    },
+    short: {
+      'Sunday': 'Su',
+      'Monday': 'Ma',
+      'Tuesday': 'Ti',
+      'Wednesday': 'Ke',
+      'Thursday': 'To',
+      'Friday': 'Pe',
+      'Saturday': 'La'
+    }
+  }
 };

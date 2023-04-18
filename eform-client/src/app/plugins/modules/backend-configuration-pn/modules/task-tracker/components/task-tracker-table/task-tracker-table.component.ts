@@ -101,19 +101,19 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       const dateFnsDayOfWeek = getDay(this.days[index]);
       switch (dateFnsDayOfWeek) {
         case 0:
-          return 'Su';
+          return 'Sunday';
         case 1:
-          return 'Mo';
+          return 'Monday';
         case 2:
-          return 'Tu';
+          return 'Tuesday';
         case 3:
-          return 'We';
+          return 'Wednesday';
         case 4:
-          return 'Th';
+          return 'Thursday';
         case 5:
-          return 'Fr';
+          return 'Friday';
         case 6:
-          return 'Sa';
+          return 'Saturday';
       }
     }
     return '';

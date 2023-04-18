@@ -274,4 +274,24 @@ export const da = {
   '96 (8 years)': '96 (8 år)',
   '108 (9 years)': '108 (9 år)',
   '120 (10 years)': '120 (10 år)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Søndag',
+      'Monday': 'Mandag',
+      'Tuesday': 'Tirsdag',
+      'Wednesday': 'Onsdag',
+      'Thursday': 'Torsdag',
+      'Friday': 'Fredag',
+      'Saturday': 'Lørdag'
+    },
+    short: {
+      'Sunday': 'Sø',
+      'Monday': 'Ma',
+      'Tuesday': 'Ti',
+      'Wednesday': 'On',
+      'Thursday': 'To',
+      'Friday': 'Fr',
+      'Saturday': 'Lø'
+    }
+  }
 };

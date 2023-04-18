@@ -267,4 +267,24 @@ export const nlNL = {
   '96 (8 years)': '96 (8 jaar)',
   '108 (9 years)': '108 (9 jaar)',
   '120 (10 years)': '120 (10 jaar)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Zondag',
+      'Monday': 'Maandag',
+      'Tuesday': 'Dinsdag',
+      'Wednesday': 'Woensdag',
+      'Thursday': 'Donderdag',
+      'Friday': 'Vrijdag',
+      'Saturday': 'Zaterdag'
+    },
+    short: {
+      'Sunday': 'Zo',
+      'Monday': 'Ma',
+      'Tuesday': 'Di',
+      'Wednesday': 'Wo',
+      'Thursday': 'Do',
+      'Friday': 'Vr',
+      'Saturday': 'Za'
+    }
+  }
 };

@@ -267,4 +267,24 @@ export const ukUA = {
   '96 (8 years)': '96 (8 pоків)',
   '108 (9 years)': '108 (9 pоків)',
   '120 (10 years)': '120 (10 pоків)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Неділя',
+      'Monday': 'Понеділок',
+      'Tuesday': 'Вівторок',
+      'Wednesday': 'Середа',
+      'Thursday': 'Четвер',
+      'Friday': 'П\'ятниця',
+      'Saturday': 'Субота'
+    },
+    short: {
+      'Sunday': 'Нд',
+      'Monday': 'Пн',
+      'Tuesday': 'Вт',
+      'Wednesday': 'Ср',
+      'Thursday': 'Чт',
+      'Friday': 'Пт',
+      'Saturday': 'Сб'
+    }
+  }
 };

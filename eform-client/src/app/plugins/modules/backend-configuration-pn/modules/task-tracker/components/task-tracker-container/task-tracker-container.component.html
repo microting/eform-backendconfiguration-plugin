@@ -14,7 +14,13 @@
   <app-task-tracker-filters (updateTable)="updateTable()">
   </app-task-tracker-filters>
   <div class="d-flex flex-row justify-content-end mb-2">
-    <button mat-raised-button (click)="openColumnsModal()" color="primary">{{'Columns shown' | translate}}</button>
+    <button
+      mat-raised-button
+      id="changeColumnsBtn"
+      (click)="openColumnsModal()"
+      color="primary">
+      {{'Columns shown' | translate}}
+    </button>
   </div>
   <app-task-tracker-table
     [columnsFromDb]="columns"

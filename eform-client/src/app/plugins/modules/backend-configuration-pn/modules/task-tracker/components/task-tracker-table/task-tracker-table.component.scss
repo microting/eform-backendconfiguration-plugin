@@ -1,39 +1,81 @@
 @import "src/../node_modules/@ng-matero/extensions/grid/grid.component";
 @import "src/../node_modules/@ng-matero/extensions/grid/cell.component";
-tr.mat-header-row {
-  height: unset;
-  .weeks {
-    border-left: 1px solid;
-    text-align: center;
-    min-width: 10px !important;
-    min-height: 20px !important;
-  }
-  .days-of-week, .days {
-    min-width: 10px !important;
-    border-left: 1px solid;
-  }
-}
 
-.tasks {
+$border-size: 1px;
+$border-color: rgb(115, 115, 115);
+$border-style: solid;
+$default-style-border: $border-size $border-style $border-color;
+
+@mixin cell-values {
+  border-bottom: $default-style-border;
   min-width: 10px !important;
-  border-right: 1px solid;
-  text-align: center;
-}
-
-th.mat-header-cell, td.mat-cell, td.mat-footer-cell {
-  //padding: 0;
-  border-bottom-width: 1px;
-  border-bottom-style: solid;
   &:not(:only-of-type) {
     padding-right: 10px !important;
   }
 }
 
-td {
-  &.yellow {
-    background-color: #fff2cc;
+table.mat-table {
+  border-spacing: 0;
+
+  thead {
+    top: 0;
+    z-index: 100;
+    position: sticky !important;
+
+    tr {
+
+      &.mat-header-row {
+        height: unset;
+
+        th {
+          &.mat-header-cell {
+            @include cell-values;
+          }
+
+          &.weeks {
+            border-left: $default-style-border;
+            text-align: center;
+            min-width: 10px !important;
+            min-height: 20px !important;
+          }
+
+          &.days-of-week, &.days {
+            min-width: 10px !important;
+            border-left: $default-style-border;
+            text-align: center;
+          }
+        }
+      }
+    }
   }
-  &.white-yellow {
-    background-color: #fada22;
+
+  tbody {
+    tr {
+      height: unset;
+
+      td {
+        &.mat-cell, &.mat-footer-cell {
+          @include cell-values;
+        }
+
+        span.worker-name {
+          white-space: nowrap;
+        }
+
+        &.tasks {
+          min-width: 10px !important;
+          border-right: $default-style-border;
+          text-align: center;
+        }
+
+        &.yellow {
+          background-color: #fff2cc;
+        }
+
+        &.white-yellow {
+          background-color: #fada22;
+        }
+      }
+    }
   }
 }

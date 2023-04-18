@@ -155,4 +155,24 @@ export const enUS = {
   '96 (8 years)': '96 (8 years)',
   '108 (9 years)': '108 (9 years)',
   '120 (10 years)': '120 (10 years)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Sunday',
+      'Monday': 'Monday',
+      'Tuesday': 'Tuesday',
+      'Wednesday': 'Wednesday',
+      'Thursday': 'Thursday',
+      'Friday': 'Friday',
+      'Saturday': 'Saturday'
+    },
+    short: {
+      'Sunday': 'Su',
+      'Monday': 'Mo',
+      'Tuesday': 'Tu',
+      'Wednesday': 'We',
+      'Thursday': 'Th',
+      'Friday': 'Fr',
+      'Saturday': 'Sa'
+    }
+  }
 };
