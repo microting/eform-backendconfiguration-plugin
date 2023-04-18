@@ -86,19 +86,19 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (2 * 7 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-    let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (2 * 7 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
+    //
+    // if (startOfWeek.getFullYear() !== now.getFullYear()) {
+    //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // }
 
-    if (startOfWeek.getFullYear() !== now.getFullYear()) {
-      startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-
-    let nextExecutionTime = new Date(startOfWeek.getTime() + multiplier * 2 * 7 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 2 * 7 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(startOfWeek.getTime() + 2 * 7 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 2 * 7 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -159,19 +159,20 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (3 * 7 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-    let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (3 * 7 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    //
+    // if (startOfWeek.getFullYear() !== now.getFullYear()) {
+    //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // }
+    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    if (startOfWeek.getFullYear() !== now.getFullYear()) {
-      startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-
-    let nextExecutionTime = new Date(startOfWeek.getTime() + multiplier * 3 * 7 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 3 * 7 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(startOfWeek.getTime() + 3 * 7 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 3 * 7 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -232,19 +233,20 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (6 * 7 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-    let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (6 * 7 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    //
+    // if (startOfWeek.getFullYear() !== now.getFullYear()) {
+    //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // }
+    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    if (startOfWeek.getFullYear() !== now.getFullYear()) {
-      startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-
-    let nextExecutionTime = new Date(startOfWeek.getTime() + multiplier * 6 * 7 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 6 * 7 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(startOfWeek.getTime() + 6 * 7 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 6 * 7 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -305,19 +307,20 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (12 * 7 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-    let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (12 * 7 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    //
+    // if (startOfWeek.getFullYear() !== now.getFullYear()) {
+    //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // }
+    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    if (startOfWeek.getFullYear() !== now.getFullYear()) {
-      startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
-
-    let nextExecutionTime = new Date(startOfWeek.getTime() + multiplier * 12 * 7 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 12 * 7 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(startOfWeek.getTime() + 12 * 7 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 12 * 7 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -376,19 +379,20 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (24 * 7 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-    let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (24 * 7 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // let startOfWeek = new Date(now.getFullYear(), 0, startOfThisYear.getDate() - startOfThisYear.getDay() + 1)
 
-    if (startOfWeek.getFullYear() !== now.getFullYear()) {
-      startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
-    }
+    // if (startOfWeek.getFullYear() !== now.getFullYear()) {
+    //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+    // }
+    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    let nextExecutionTime = new Date(startOfWeek.getTime() + multiplier * 24 * 7 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 24 * 7 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(startOfWeek.getTime() + 24 * 7 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 24 * 7 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);

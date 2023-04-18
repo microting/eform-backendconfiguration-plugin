@@ -47,7 +47,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
       enableCompliance: true,
-      repeatEvery: '2',
+      repeatEvery: '2. måned',
       repeatType: 'Måned',
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
@@ -84,16 +84,16 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     // compare itemPlanning.lastExecution with today's date
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
-    const months = [1, 3, 5, 7, 9, 11];
-    if (months.includes(today.getMonth() + 1)) {
-      const newDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
-      const newDateDate = format(newDate, 'dd.MM.y');
-      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
-    } else {
-      const newDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-      const newDateDate = format(newDate, 'dd.MM.y');
-      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
-    }
+    //const months = [1, 3, 5, 7, 9, 11];
+    // if (months.includes(today.getMonth() + 1)) {
+    //   const newDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    //   const newDateDate = format(newDate, 'dd.MM.y');
+    //   expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    // } else {
+    const newDate = new Date(today.getFullYear(), today.getMonth() + 2, today.getDate());
+    const newDateDate = format(newDate, 'dd.MM.y');
+    expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    // }
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
 
@@ -115,7 +115,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
       enableCompliance: true,
-      repeatEvery: '3',
+      repeatEvery: '3. måned',
       repeatType: 'Måned',
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
@@ -152,22 +152,22 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     let months = [1, 4, 7, 10];
-    if (months.includes(today.getMonth() + 1)) {
-      const newDate = new Date(today.getFullYear(), today.getMonth() + 3, 1);
-      const newDateDate = format(newDate, 'dd.MM.y');
-      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
-    } else {
-      months = [2, 5, 8, 11];
-      if (months.includes(today.getMonth() + 1)) {
-        const newDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
-        const newDateDate = format(newDate, 'dd.MM.y');
-        expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
-      } else {
-        const newDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        const newDateDate = format(newDate, 'dd.MM.y');
-        expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
-      }
-    }
+    // if (months.includes(today.getMonth() + 1)) {
+    //   const newDate = new Date(today.getFullYear(), today.getMonth() + 3, 1);
+    //   const newDateDate = format(newDate, 'dd.MM.y');
+    //   expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    // } else {
+    //   months = [2, 5, 8, 11];
+    //   if (months.includes(today.getMonth() + 1)) {
+    //     const newDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    //     const newDateDate = format(newDate, 'dd.MM.y');
+    //     expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    //   } else {
+    const newDate = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
+    const newDateDate = format(newDate, 'dd.MM.y');
+    expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    //   }
+    // }
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
 
@@ -189,7 +189,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
       enableCompliance: true,
-      repeatEvery: '6',
+      repeatEvery: '6. måned',
       repeatType: 'Måned',
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
@@ -225,15 +225,15 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
 
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
-    if (today.getMonth() + 1 < 6) {
-      const newDate = new Date(today.getFullYear(), 6, 1);
-      const newDateDate = format(newDate, 'dd.MM.y');
-      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
-    } else {
-      const newDate = new Date(today.getFullYear() + 1, 0, 1);
-      const newDateDate = format(newDate, 'dd.MM.y');
-      expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
-    }
+    // if (today.getMonth() + 1 < 6) {
+    //   const newDate = new Date(today.getFullYear(), 6, 1);
+    //   const newDateDate = format(newDate, 'dd.MM.y');
+    //   expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    // } else {
+    const newDate = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
+    const newDateDate = format(newDate, 'dd.MM.y');
+    expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
+    //}
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
 
@@ -255,7 +255,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
       enableCompliance: true,
-      repeatEvery: '12',
+      repeatEvery: '12 (1 år)',
       repeatType: 'Måned',
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
@@ -291,7 +291,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
 
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
-    const newDate = new Date(today.getFullYear() + 1, 0, 1);
+    const newDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
     const newDateDate = format(newDate, 'dd.MM.y');
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
@@ -313,7 +313,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
       workers: [{ workerNumber: 0 }],
       enableCompliance: true,
-      repeatEvery: '24',
+      repeatEvery: '24 (2 år)',
       repeatType: 'Måned',
     };
     await areaRule.createUpdatePlanning(areaRulePlanning);
@@ -349,7 +349,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
 
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
-    const newDate = new Date(today.getFullYear() + 2, 0, 1);
+    const newDate = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
     const newDateDate = format(newDate, 'dd.MM.y');
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
