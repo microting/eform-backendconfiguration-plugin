@@ -3,7 +3,7 @@ import {NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {
   OwlDateTimeModule,
-  OwlMomentDateTimeModule,
+  // OwlMomentDateTimeModule,
   OWL_DATE_TIME_FORMATS,
 } from '@danielmoncada/angular-datetime-picker';
 import {TranslateModule} from '@ngx-translate/core';
@@ -28,7 +28,7 @@ import {MatDialogModule} from '@angular/material/dialog';
     OwlDateTimeModule,
     CompliancesRouting,
     OwlDateTimeModule,
-    OwlMomentDateTimeModule,
+    // OwlMomentDateTimeModule,
     EformSharedModule,
     MtxGridModule,
     MatButtonModule,

@@ -15,7 +15,7 @@ import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {FilesFiltrationModel, FilesStateService} from '../../store';
 import {Moment} from 'moment';
-import {format} from 'date-fns';
+import {format, parse} from 'date-fns';
 import {debounceTime} from 'rxjs/operators';
 import * as moment from 'moment';
 import * as R from 'ramda';
@@ -48,6 +48,7 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
 
   filtersForm: FormGroup;
   properties: CommonDictionaryModel[] = [];
+  dateFormat = 'yyyy-MM-dd';
 
   selectFiltersSub$: Subscription;
   filterChangesSub$: Subscription;
@@ -80,14 +81,14 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
         if (!this.filtersForm) {
           this.filtersForm = new FormGroup({
             propertyIds: new FormControl(filters.propertyIds),
-            dateRange: new FormControl(filters.dateRange.map(x => moment(x))),
+            dateRange: new FormControl(filters.dateRange.map(x => parse(x, this.dateFormat, new Date))),
             nameFilter: new FormControl(filters.nameFilter),
             tagIds: new FormControl(filters.tagIds),
           });
         } else {
           this.filtersForm.patchValue({
             propertyIds: filters.propertyIds,
-            dateRange: filters.dateRange.map(x => moment(x)),
+            dateRange: filters.dateRange.map(x => parse(x, this.dateFormat, new Date)),
             nameFilter: filters.nameFilter,
             tagIds: filters.tagIds,
           }, {emitEvent: false});
@@ -99,7 +100,7 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
       .subscribe((value: { propertyIds: number[], dateRange: string[], nameFilter: string, tagIds: number[] }) => {
         const filters: FilesFiltrationModel = {...this.filesStateService.store.getValue().filters};
         // @ts-ignore
-        value.dateRange = value.dateRange.filter(x => !R.isNil(x)).map((x: Moment) => format(x.toDate(), 'yyyy-MM-dd'));
+        value.dateRange = value.dateRange.filter(x => !R.isNil(x)).map((x: Date) => format(x, this.dateFormat));
         if (value && !R.equals(filters, value)) {
           if (!R.equals(filters.propertyIds, value.propertyIds)) {
             filters.propertyIds = value.propertyIds;

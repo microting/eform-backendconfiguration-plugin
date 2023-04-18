@@ -3,7 +3,7 @@ import {NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
 import {
   OwlDateTimeModule,
-  OwlMomentDateTimeModule,
+  // OwlMomentDateTimeModule,
   OWL_DATE_TIME_FORMATS,
 } from '@danielmoncada/angular-datetime-picker';
 import {TranslateModule} from '@ngx-translate/core';
@@ -46,7 +46,7 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     OwlDateTimeModule,
     TaskTrackerRouting,
     OwlDateTimeModule,
-    OwlMomentDateTimeModule,
+    // OwlMomentDateTimeModule,
     EformSharedModule,
     ReactiveFormsModule,
     EformImportedModule,
