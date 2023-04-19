@@ -198,16 +198,16 @@ public static class BackendConfigurationPropertiesServiceHelper
                 await planningTag.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
-            var planningTags = await itemsPlanningPnDbContext.PlanningTags
-                // ReSharper disable once AccessToModifiedClosure
-                .Where(x => x.Name.StartsWith(property.Name)).ToListAsync();
-
-            foreach (var tag in planningTags)
-            {
-                tag.Name = tag.Name.Replace(property.Name, updateModel.FullName());
-                tag.UpdatedByUserId = userId;
-                await tag.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
+            // var planningTags = await itemsPlanningPnDbContext.PlanningTags
+            //     // ReSharper disable once AccessToModifiedClosure
+            //     .Where(x => x.Name.StartsWith(property.Name)).ToListAsync();
+            //
+            // foreach (var tag in planningTags)
+            // {
+            //     tag.Name = tag.Name.Replace(property.Name, updateModel.FullName());
+            //     tag.UpdatedByUserId = userId;
+            //     await tag.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+            // }
 
             var translatesForFolder = await sdkDbContext.Languages
                 .Where(x => x.IsActive)
