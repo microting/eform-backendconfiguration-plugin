@@ -1,5 +1,7 @@
-const path = require("path");
-exports.config = {
+//const path = require("path");
+import type { Options } from '@wdio/types'
+
+export const config: Options.Testrunner = {
     runner: 'local',
     path: '/',
     //
@@ -13,10 +15,10 @@ exports.config = {
     //
     specs: [
       'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-      // 'e2e/Tests/backend-configuration-general/property-workers/backend-configuration-property-workers.create.spec.ts',
-      // 'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.create.spec.ts',
-      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.delete.spec.ts',
-      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.sort-filtering.spec.ts',
+      'e2e/Tests/backend-configuration-general/property-workers/backend-configuration-property-workers.create.spec.ts',
+      'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.create.spec.ts',
+      // 'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.delete.spec.ts',
+      // 'e2e/Tests/backend-configuration-general/task-management/backend-configuration-task-management.sort-filtering.spec.ts',
     ],
     suites: {
         settings: [
@@ -155,7 +157,7 @@ exports.config = {
     // See the full list at http://mochajs.org/
     mochaOpts: {
         ui: 'bdd',
-        compilers: ['tsconfig-paths/register'],
+        //compilers: ['tsconfig-paths/register'],
         timeout: 1200000
     },
     //
