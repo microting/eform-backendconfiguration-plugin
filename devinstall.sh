@@ -17,7 +17,8 @@ rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tes
 rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-general
 rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Page\ objects/BackendConfiguration
 rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Assets
-rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-plugin-step2.conf.ts 
+rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-plugin-step2.conf.ts
+mkdir -p Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/e2e/plugins
 
 # Test files cp
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-settings Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
@@ -34,3 +35,4 @@ cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-clie
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2h.conf.ts  Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2h.conf.ts 
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2i.conf.ts  Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2i.conf.ts 
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2j.conf.ts  Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2j.conf.ts 
+cp -a Documents/workspace/microting/eform-angular-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn

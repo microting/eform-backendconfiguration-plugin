@@ -122,6 +122,8 @@ jobs:
         cp -av eform-angular-items-planning-plugin/eform-client/e2e/Page\ objects/ItemsPlanning eform-angular-frontend/eform-client/e2e/Page\ objects/ItemsPlanning
         cp -av eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.ts  eform-angular-frontend/eform-client/wdio-headless-plugin-step2${{matrix.test}}.conf.ts 
         cp -av eform-backendconfiguration-plugin/eform-client/wdio-plugin-step2.conf.ts  eform-angular-frontend/eform-client/wdio-plugin-step2.conf.ts 
+        mkdir -p eform-angular-frontend/eform-client/cypress/e2e/plugins/
+        cp -av eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
     - name: Create errorShots directory
@@ -144,6 +146,18 @@ jobs:
         working-directory: eform-angular-frontend/eform-client
     - name: Change rabbitmq hostname
       run: docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
+    - name: ${{matrix.test}} test
+      continue-on-error: true
+      uses: cypress-io/github-action@v4
+      with:
+        start: echo 'hi'
+        wait-on: "http://localhost:4200"
+        wait-on-timeout: 120
+        browser: chrome
+        record: false
+        spec: cypress/e2e/plugins/backend-configuration-pn/${{matrix.test}}/*
+        config-file: cypress.config.ts
+        working-directory: eform-angular-frontend/eform-client
     - name: Plugin testing
       run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
     - name: Stop the newly build Docker container
