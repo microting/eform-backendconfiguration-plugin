@@ -115,7 +115,7 @@
                     <DisplayOrder>6</DisplayOrder>
                     <Source>5497</Source>
                     <KeyValuePairList/>
-                    <Mandatory>false</Mandatory>
+                    <Mandatory>true</Mandatory>
                     <Color>e8eaf6</Color>
                 </DataItem>
                 <DataItem type="SaveButton">
