@@ -97,7 +97,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         Assert.That(planningTags[25].Name, Is.EqualTo("00. Aflæsninger, målinger, forbrug og fækale uheld"));
         Assert.That(planningTags[26].Name, Is.EqualTo("26. Kornlager"));
         Assert.That(planningTags[27].Name, Is.EqualTo("00. Logbøger"));
-        Assert.That(planningTags[28].Name, Is.EqualTo($"00. {propertyCreateModel.Name} - {propertyCreateModel.Address}"));
+        Assert.That(planningTags[28].Name, Is.EqualTo($"0. {propertyCreateModel.Name} - {propertyCreateModel.Address}"));
 
         // Assert folder translations
         Assert.NotNull(folderTranslations);
@@ -589,7 +589,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         Assert.That(planningTags[25].Name, Is.EqualTo("00. Aflæsninger, målinger, forbrug og fækale uheld"));
         Assert.That(planningTags[26].Name, Is.EqualTo("26. Kornlager"));
         Assert.That(planningTags[27].Name, Is.EqualTo("00. Logbøger"));
-        Assert.That(planningTags[28].Name, Is.EqualTo($"00. {propertyUpdateModel.Name} - {propertyUpdateModel.Address}"));
+        Assert.That(planningTags[28].Name, Is.EqualTo($"0. {propertyUpdateModel.Name} - {propertyUpdateModel.Address}"));
 
         // Assert folder translations
         Assert.NotNull(folderTranslations);
