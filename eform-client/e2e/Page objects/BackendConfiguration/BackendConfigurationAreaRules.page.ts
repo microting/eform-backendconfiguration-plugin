@@ -501,7 +501,7 @@ export class AreaRuleRowObject {
         ).setValue(areaRule.type);
         await browser.pause(500);
         const value = await (
-          await backendConfigurationAreaRulesPage.editRuleType()
+          await $('ng-dropdown-panel')
         ).$(`.ng-option=${areaRule.type}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
@@ -515,7 +515,7 @@ export class AreaRuleRowObject {
         ).setValue(areaRule.alarm);
         await browser.pause(500);
         const value = await (
-          await backendConfigurationAreaRulesPage.editRuleAlarm()
+          await $('ng-dropdown-panel')
         ).$(`.ng-option=${areaRule.alarm}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
@@ -529,7 +529,7 @@ export class AreaRuleRowObject {
         ).setValue(areaRule.dayOfWeek);
         await browser.pause(500);
         const value = await (
-          await backendConfigurationAreaRulesPage.editAreaRuleDayOfWeek()
+          await $('ng-dropdown-panel')
         ).$(`.ng-option=${areaRule.dayOfWeek}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
@@ -543,7 +543,7 @@ export class AreaRuleRowObject {
         ).setValue(areaRule.eform);
         await browser.pause(500);
         const value = await (
-          await backendConfigurationAreaRulesPage.editRuleEformId()
+          await $('ng-dropdown-panel')
         ).$(`.ng-option=${areaRule.eform}`);
         value.waitForDisplayed({ timeout: 40000 });
         value.waitForClickable({ timeout: 40000 });
@@ -603,7 +603,7 @@ export class AreaRuleRowObject {
           )
         ).setValue(areaRulePlanningCreateUpdate.repeatType);
         const value = await (
-          await backendConfigurationAreaRulesPage.planRepeatType()
+          $('ng-dropdown-panel')
         ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatType}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();
@@ -615,7 +615,7 @@ export class AreaRuleRowObject {
           )
         ).setValue(areaRulePlanningCreateUpdate.repeatEvery);
         const value = await (
-          await backendConfigurationAreaRulesPage.planRepeatEvery()
+          $('ng-dropdown-panel')
         ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatEvery}`);
         value.waitForDisplayed({ timeout: 40000 });
         await value.click();

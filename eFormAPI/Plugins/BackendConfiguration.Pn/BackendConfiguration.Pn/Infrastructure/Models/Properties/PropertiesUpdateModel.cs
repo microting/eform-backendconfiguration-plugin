@@ -46,7 +46,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public string FullName()
         {
-            return $"00. {Name} - {Address}";
+            return $"0. {Name} - {Address}";
         }
     }
 }

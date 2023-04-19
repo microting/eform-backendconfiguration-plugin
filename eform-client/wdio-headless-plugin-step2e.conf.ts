@@ -1,5 +1,7 @@
-const path = require("path");
-exports.config = {
+//const path = require("path");
+import type { Options } from '@wdio/types'
+
+export const config: Options.Testrunner = {
   runner: 'local',
   path: '/',
   //
@@ -13,11 +15,10 @@ exports.config = {
   //
   specs: [
     'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-    // 'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1.spec.ts',
-    // 'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t2.spec.ts',
-    'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t3.spec.ts',
-    'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t4.spec.ts',
-    'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t5.spec.ts',
+    // 'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.create.spec.ts',
+    // 'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.edit.spec.ts',
+    'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.delete.spec.ts',
+    'e2e/Tests/backend-configuration-general/properties/backend-configuration-properties.areas.spec.ts',
   ],
   suites: {
     settings: [
@@ -156,7 +157,7 @@ exports.config = {
   // See the full list at http://mochajs.org/
   mochaOpts: {
     ui: 'bdd',
-    compilers: ['tsconfig-paths/register'],
+    //compilers: ['tsconfig-paths/register'],
     timeout: 1200000
   },
   //

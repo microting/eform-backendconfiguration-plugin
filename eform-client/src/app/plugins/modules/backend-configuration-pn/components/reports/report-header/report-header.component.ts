@@ -60,11 +60,10 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
       tagIds: [this.reportQuery.pageSetting.filters.tagIds],
     });
     this.valueChangesSub$ = this.generateForm.valueChanges.subscribe(
-      (value: { tagIds: number[]; dateRange: Date[] }) => {
+      (value: { tagIds: number[]; dateRange: string[] }) => {
         if (value.dateRange.length) {
-          const template = `yyyy-MM-dd'T00:00:00.000Z'`;
-          const dateFrom = format(value.dateRange[0], template);
-          const dateTo = format(value.dateRange[1], template);
+          const dateFrom = value.dateRange[0];
+          const dateTo = value.dateRange[1];
           this.reportStateService.updateDateRange([dateFrom, dateTo]);
         }
       }

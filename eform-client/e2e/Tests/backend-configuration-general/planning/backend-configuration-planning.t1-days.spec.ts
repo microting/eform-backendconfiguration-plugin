@@ -144,14 +144,14 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (2 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    //const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (2 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
 
-    let nextExecutionTime = new Date(startOfThisYear.getTime() + multiplier * 2 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 2 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 2 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -212,14 +212,14 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (3 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (3 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
 
-    let nextExecutionTime = new Date(startOfThisYear.getTime() + multiplier * 3 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 3 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 3 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -280,14 +280,14 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (6 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (6 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
 
-    let nextExecutionTime = new Date(startOfThisYear.getTime() + multiplier * 6 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 6 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 6 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -348,14 +348,14 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (12 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (12 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
 
-    let nextExecutionTime = new Date(startOfThisYear.getTime() + multiplier * 12 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 12 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(now.getTime() + 12 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 12 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
@@ -415,14 +415,14 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const today = new Date();
     const todayDate = format(today, 'dd.MM.y');
     const now = new Date();
-    const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
-    const multiplier = Math.floor(diff / (24 * 24 * 60 * 60 * 1000));
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
+    // const multiplier = Math.floor(diff / (24 * 24 * 60 * 60 * 1000));
+    // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
 
-    let nextExecutionTime = new Date(startOfThisYear.getTime() + multiplier * 24 * 24 * 60 * 60 * 1000);
-    if (nextExecutionTime < now) {
-      nextExecutionTime = new Date(nextExecutionTime.getTime() + 24 * 24 * 60 * 60 * 1000);
-    }
+    let nextExecutionTime = new Date(now.getTime() + 24 * 24 * 60 * 60 * 1000);
+    // if (nextExecutionTime < now) {
+    //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 24 * 24 * 60 * 60 * 1000);
+    // }
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(format(nextExecutionTime, 'dd.MM.y'));
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
