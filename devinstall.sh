@@ -19,6 +19,7 @@ rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Pag
 rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Assets
 rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-plugin-step2.conf.ts
 mkdir -p Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/e2e/plugins
+rm -fR Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn
 
 # Test files cp
 cp -a Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/e2e/Tests/backend-configuration-settings Documents/workspace/microting/eform-angular-frontend/eform-client/e2e/Tests/backend-configuration-settings
