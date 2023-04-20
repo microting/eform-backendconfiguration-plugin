@@ -1,0 +1,47 @@
+<div class="d-flex flex-column " [formGroup]="filtersForm">
+  <div class="d-flex flex-row need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Property' | translate}}</mat-label>
+      <mtx-select
+        [items]="properties"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="propertyIds"
+        id="propertyIdFilter"
+        [clearable]="true"
+        [multiple]="true"
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Tags' | translate}}</mat-label>
+      <mtx-select
+        [items]="tags"
+        formControlName="tags"
+        id="tagsFilter"
+        bindLabel="name"
+        bindValue="id"
+        [clearable]="true"
+        [multiple]="true"
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field >
+      <mat-label>{{'Worker' | translate}}</mat-label>
+      <mtx-select
+        bindLabel="name"
+        bindValue="id"
+        formControlName="workers"
+        [items]="sites"
+        id="workersFilter"
+        [clearable]="true"
+        [multiple]="true"
+      >
+      </mtx-select>
+    </mat-form-field>
+
+  </div>
+
+</div>
+
+

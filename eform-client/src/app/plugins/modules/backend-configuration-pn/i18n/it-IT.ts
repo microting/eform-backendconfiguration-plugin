@@ -267,4 +267,24 @@ export const itIT = {
   '96 (8 years)': '96 (8 anni)',
   '108 (9 years)': '108 (9 anni)',
   '120 (10 years)': '120 (10 anni)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Domenica',
+      'Monday': 'Lunedì',
+      'Tuesday': 'Martedì',
+      'Wednesday': 'Mercoledì',
+      'Thursday': 'Giovedì',
+      'Friday': 'Venerdì',
+      'Saturday': 'Sabato'
+    },
+    short: {
+      'Sunday': 'Do',
+      'Monday': 'Lu',
+      'Tuesday': 'Ma',
+      'Wednesday': 'Me',
+      'Thursday': 'Gi',
+      'Friday': 'Ve',
+      'Saturday': 'Sa'
+    }
+  }
 };

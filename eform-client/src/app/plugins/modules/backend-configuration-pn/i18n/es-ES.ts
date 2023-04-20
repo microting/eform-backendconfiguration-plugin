@@ -265,4 +265,24 @@ export const esES = {
   '96 (8 years)': '96 (8 años)',
   '108 (9 years)': '108 (9 años)',
   '120 (10 years)': '120 (10 años)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Domingo',
+      'Monday': 'Lunes',
+      'Tuesday': 'Martes',
+      'Wednesday': 'Miércoles',
+      'Thursday': 'Jueves',
+      'Friday': 'Viernes',
+      'Saturday': 'Sábado'
+    },
+    short: {
+      'Sunday': 'Do',
+      'Monday': 'Lu',
+      'Tuesday': 'Ma',
+      'Wednesday': 'Mi',
+      'Thursday': 'Ju',
+      'Friday': 'Vi',
+      'Saturday': 'Sá'
+    }
+  }
 };

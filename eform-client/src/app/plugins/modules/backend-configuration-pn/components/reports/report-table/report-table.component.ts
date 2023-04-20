@@ -22,6 +22,7 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {format, parseISO} from 'date-fns';
 
 @AutoUnsubscribe()
 @Component({
@@ -144,11 +145,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
               }
               // @ts-ignore
               if (record.caseFields[i].key === 'date') {
-                // format date with javascript
-                // @ts-ignore
-                return new Date(record.caseFields[i].value).toLocaleDateString('da-DK');
-                //return moment(record.caseFields[i].value).format('DD.MM.YYYY');
-                // return record.caseFields[i].value;
+                // return moment(record.caseFields[i].value).format('DD.MM.YYYY');
+                return format(parseISO(record.caseFields[i].value), 'dd.MM.yyyy');
               }
               // @ts-ignore
               if (record.caseFields[i].key !== 'number') {

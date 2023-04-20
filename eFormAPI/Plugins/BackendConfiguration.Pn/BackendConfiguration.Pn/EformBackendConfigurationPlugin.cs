@@ -79,6 +79,7 @@ namespace BackendConfiguration.Pn
 	using System.Reflection;
 	using Services.BackendConfigurationFilesService;
 	using Services.BackendConfigurationFileTagsService;
+	using Services.BackendConfigurationTaskTrackerService;
 	using FolderTranslation = Microting.eForm.Infrastructure.Data.Entities.FolderTranslation;
 
 	public class EformBackendConfigurationPlugin : IEformPlugin
@@ -111,6 +112,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
             services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
             services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
+            services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
 			services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
@@ -644,7 +646,7 @@ namespace BackendConfiguration.Pn
                             E2EId = "backend-configuration-pn-task-management",
                             Link = "/plugins/backend-configuration-pn/task-management",
                             Type = MenuItemTypeEnum.Link,
-                            Position = 1,
+                            Position = 2,
                             MenuTemplate = new PluginMenuTemplateModel
                             {
                                 Name = "Task management",
@@ -713,7 +715,7 @@ namespace BackendConfiguration.Pn
                                 E2EId = "backend-configuration-pn-reports",
                                 Link = "/plugins/backend-configuration-pn/reports",
                                 Type = MenuItemTypeEnum.Link,
-                                Position = 1,
+                                Position = 3,
                                 MenuTemplate = new PluginMenuTemplateModel
                                 {
                                     Name = "Reports",
@@ -782,7 +784,7 @@ namespace BackendConfiguration.Pn
                             E2EId = "backend-configuration-pn-documents",
                             Link = "/plugins/backend-configuration-pn/documents",
                             Type = MenuItemTypeEnum.Link,
-                            Position = 1,
+                            Position = 4,
                             MenuTemplate = new PluginMenuTemplateModel
                             {
                                 Name = "Documents",
@@ -851,7 +853,7 @@ namespace BackendConfiguration.Pn
 							E2EId = "backend-configuration-pn-files",
 							Link = "/plugins/backend-configuration-pn/files",
 							Type = MenuItemTypeEnum.Link,
-							Position = 1,
+							Position = 5,
 							MenuTemplate = new PluginMenuTemplateModel
 							{
 								Name = "Files",
@@ -913,8 +915,77 @@ namespace BackendConfiguration.Pn
 									Language = LanguageNames.Ukrainian
 								}
 							}
+						},
+						new()
+						{
+							Name = "Task tracker",
+							E2EId = "backend-configuration-pn-task-tracker",
+							Link = "/plugins/backend-configuration-pn/task-tracker",
+							Type = MenuItemTypeEnum.Link,
+							Position = 6,
+							MenuTemplate = new PluginMenuTemplateModel
+							{
+								Name = "Task tracker",
+								E2EId = "backend-configuration-pn-task-tracker",
+								DefaultLink = "/plugins/backend-configuration-pn/task-tracker",
+								Permissions = new List<PluginMenuTemplatePermissionModel>(),
+								Translations = new List<PluginMenuTranslationModel>
+								{
+									new()
+									{
+										LocaleName = LocaleNames.English,
+										Name = "Task tracker",
+										Language = LanguageNames.English
+									},
+									new()
+									{
+										LocaleName = LocaleNames.German,
+										Name = "Aufgabenverfolgung",
+										Language = LanguageNames.German
+									},
+									new()
+									{
+										LocaleName = LocaleNames.Danish,
+										Name = "Opgave tracker",
+										Language = LanguageNames.Danish
+									},
+									new()
+									{
+										LocaleName = LocaleNames.Ukrainian,
+										Name = "Відстежувач завдань",
+										Language = LanguageNames.Ukrainian
+									}
+								}
+							},
+							Translations = new List<PluginMenuTranslationModel>
+							{
+								new()
+								{
+									LocaleName = LocaleNames.English,
+									Name = "Task tracker",
+									Language = LanguageNames.English
+								},
+								new()
+								{
+									LocaleName = LocaleNames.German,
+									Name = "Aufgabenverfolgung",
+									Language = LanguageNames.German
+								},
+								new()
+								{
+									LocaleName = LocaleNames.Danish,
+									Name = "Opgave tracker",
+									Language = LanguageNames.Danish
+								},
+								new()
+								{
+									LocaleName = LocaleNames.Ukrainian,
+									Name = "Відстежувач завдань",
+									Language = LanguageNames.Ukrainian
+								}
+							}
 						}
-                    }
+					}
                 }
             };
 
@@ -974,8 +1045,16 @@ namespace BackendConfiguration.Pn
 	                    Link = "/plugins/backend-configuration/files",
 	                    Guards = new List<string>(),
 	                    Position = 4
+                    },
+                    new()
+                    {
+	                    Name = localizationService?.GetString("Task tracker"),
+	                    E2EId = "backend-configuration-task-tracker",
+	                    Link = "/plugins/backend-configuration/task-tracker",
+	                    Guards = new List<string>(),
+	                    Position = 5
                     }
-                }
+				}
             });
             return result;
         }

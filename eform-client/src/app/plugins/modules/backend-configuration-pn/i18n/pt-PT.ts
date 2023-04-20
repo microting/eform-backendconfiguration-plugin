@@ -252,4 +252,24 @@ export const ptPT = {
   'Download Document': 'Carregar {{language}} {{extension}}',
   'Select DOCX': '',
   'Select PDF': '',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Domingo',
+      'Monday': 'Segunda-feira',
+      'Tuesday': 'Terça-feira',
+      'Wednesday': 'Quarta-feira',
+      'Thursday': 'Quinta-feira',
+      'Friday': 'Sexta-feira',
+      'Saturday': 'Sábado'
+    },
+    short: {
+      'Sunday': 'Dom',
+      'Monday': 'Seg',
+      'Tuesday': 'Ter',
+      'Wednesday': 'Qua',
+      'Thursday': 'Qui',
+      'Friday': 'Sex',
+      'Saturday': 'Sáb'
+    }
+  }
 }

@@ -265,4 +265,24 @@ export const deDE = {
   '96 (8 years)': '96 (8 Jahre)',
   '108 (9 years)': '108 (9 Jahre)',
   '120 (10 years)': '120 (10 Jahre)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Sonntag',
+      'Monday': 'Montag',
+      'Tuesday': 'Dienstag',
+      'Wednesday': 'Mittwoch',
+      'Thursday': 'Donnerstag',
+      'Friday': 'Freitag',
+      'Saturday': 'Samstag'
+    },
+    short: {
+      'Sunday': 'So',
+      'Monday': 'Mo',
+      'Tuesday': 'Di',
+      'Wednesday': 'Mi',
+      'Thursday': 'Do',
+      'Friday': 'Fr',
+      'Saturday': 'Sa'
+    }
+  }
 };

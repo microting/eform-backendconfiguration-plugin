@@ -75,6 +75,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'task-tracker',
+        /*canActivate: [PermissionGuard],*/
+        loadChildren: () =>
+          import('./modules/task-tracker/task-tracker.module').then(
+            (m) => m.TaskTrackerModule
+          ),
+      },
+      {
         path: 'documents',canActivate: [PermissionGuard],
         data: {
           requiredPermission: BackendConfigurationPnClaims.enableDocumentManagement,

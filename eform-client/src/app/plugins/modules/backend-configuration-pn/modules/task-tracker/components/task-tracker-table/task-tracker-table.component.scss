@@ -1,0 +1,81 @@
+@import "src/../node_modules/@ng-matero/extensions/grid/grid.component";
+@import "src/../node_modules/@ng-matero/extensions/grid/cell.component";
+
+$border-size: 1px;
+$border-color: rgb(115, 115, 115);
+$border-style: solid;
+$default-style-border: $border-size $border-style $border-color;
+
+@mixin cell-values {
+  border-bottom: $default-style-border;
+  min-width: 10px !important;
+  &:not(:only-of-type) {
+    padding-right: 10px !important;
+  }
+}
+
+table.mat-table {
+  border-spacing: 0;
+
+  thead {
+    top: 0;
+    z-index: 100;
+    position: sticky !important;
+
+    tr {
+
+      &.mat-header-row {
+        height: unset;
+
+        th {
+          &.mat-header-cell {
+            @include cell-values;
+          }
+
+          &.weeks {
+            border-left: $default-style-border;
+            text-align: center;
+            min-width: 10px !important;
+            min-height: 20px !important;
+          }
+
+          &.days-of-week, &.days {
+            min-width: 10px !important;
+            border-left: $default-style-border;
+            text-align: center;
+          }
+        }
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      height: unset;
+
+      td {
+        &.mat-cell, &.mat-footer-cell {
+          @include cell-values;
+        }
+
+        span.worker-name {
+          white-space: nowrap;
+        }
+
+        &.tasks {
+          min-width: 10px !important;
+          border-right: $default-style-border;
+          text-align: center;
+        }
+
+        &.yellow {
+          background-color: #fff2cc;
+        }
+
+        &.white-yellow {
+          background-color: #fada22;
+        }
+      }
+    }
+  }
+}

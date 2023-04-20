@@ -1,0 +1,143 @@
+<h3 mat-dialog-title>{{(isCreate ? 'Create new task' : 'Edit task') | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column" [formGroup]="workOrderCaseForm">
+  <div class="d-flex flex-row need-wrapper special-width">
+    <mat-form-field>
+      <mat-label>{{'Property' | translate }}</mat-label>
+      <mtx-select
+        [items]="properties"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="propertyId"
+        id="propertyId"
+        [clearable]="false">
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Area' | translate }}</mat-label>
+      <mtx-select
+        [items]="propertyAreas"
+        formControlName="areaName"
+        id="areaName"
+        [clearable]="false">
+      </mtx-select>
+    </mat-form-field>
+  </div>
+  <div class="d-flex flex-row need-wrapper special-width">
+    <mat-form-field>
+      <mat-label>{{'Assigned to' | translate }}</mat-label>
+      <mtx-select
+        bindLabel="name"
+        bindValue="id"
+        formControlName="assignedTo"
+        id="assignedTo"
+        [items]="assignedSitesToProperty"
+        [clearable]="isCreate">
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Status' | translate}}</mat-label>
+      <mtx-select
+        [items]="[
+          {id: 1, name: ('Ongoing' | translate)},
+          {id: 2, name: ('Completed' | translate)},
+          {id: 3, name: ('Ordered' | translate)},
+          {id: 4, name: ('Awaiting' | translate)},
+        ]"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="caseStatusEnum"
+        id="caseStatusEnum"
+        [clearable]="false"
+        [placeholder]="('Select status' | translate)">
+        >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Priority' | translate}}</mat-label>
+      <mtx-select
+        [items]="[
+          {id: 1, name: ('Urgent' | translate)},
+          {id: 2, name: ('High' | translate)},
+          {id: 3, name: ('Medium' | translate)},
+          {id: 4, name: ('Low' | translate)},
+        ]"
+        bindLabel="name"
+        bindValue="id"
+        formControlName="priority"
+        id="priority"
+        [clearable]="false"
+        [placeholder]="('Select priority' | translate)">
+      >
+      </mtx-select>
+    </mat-form-field>
+  </div>
+  <div>
+    <button
+      mat-icon-button
+      color="primary"
+      *ngIf="isCreate"
+      matTooltip="{{'Add new image' | translate}}"
+      (click)="openAddImage()"
+      id="addNewImages"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
+  <div class="d-flex flex-row flex-wrap justify-content-between">
+    <mat-card
+      *ngFor="let image of images; let i = index"
+      style="width: 200px;"
+      class="d-flex flex-column justify-content-between m-1"
+    >
+      <mat-card-content>
+        <img
+          mat-card-image
+          (click)="openPicture(i)"
+          [src]="image.src | authImage | async"
+          alt="Card image cap"
+        >
+      </mat-card-content>
+      <mat-card-footer>
+        <div class="d-flex justify-content-center">
+          <button
+            mat-icon-button
+            color="warn"
+            matTooltip="{{'Delete picture' | translate}}"
+            *ngIf="isCreate"
+            (click)="deleteImageByName(image.fileName)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </mat-card-footer>
+    </mat-card>
+  </div>
+  <mat-form-field>
+    <mat-label>{{'Description of task' | translate}}</mat-label>
+    <textarea
+      matInput
+      type="text"
+      id="descriptionTask"
+      formControlName="descriptionTask"
+      rows="7"
+      cols="46"
+    ></textarea>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="taskManagementCreateShowSaveBtn"
+    [disabled]="!(workOrderCaseForm.valid)"
+    (click)="create()"
+  >
+    {{(!isCreate ? 'Save' : 'Create') | translate}}
+  </button>
+  <button
+    mat-raised-button
+    (click)="hide()"
+    id="taskManagementCreateShowSaveCancelBtn"
+  >
+    {{'Cancel' | translate}}
+  </button>
+</div>

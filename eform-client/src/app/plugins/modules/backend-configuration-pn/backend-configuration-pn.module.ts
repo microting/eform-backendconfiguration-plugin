@@ -1,15 +1,15 @@
-import { CommonModule } from '@angular/common';
-import { NgModule } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { OwlDateTimeModule, /*OWL_DATE_TIME_FORMATS*/ } from '@danielmoncada/angular-datetime-picker';
-import { NgSelectModule } from '@ng-select/ng-select';
-import { TranslateModule } from '@ngx-translate/core';
-import { FileUploadModule } from 'ng2-file-upload';
-import { EformCasesModule } from 'src/app/common/modules/eform-cases/eform-cases.module';
-import { EformSharedTagsModule } from 'src/app/common/modules/eform-shared-tags/eform-shared-tags.module';
-import { EformSharedModule } from 'src/app/common/modules/eform-shared/eform-shared.module';
-import { BackendConfigurationPnRouting } from './backend-configuration-pn.routing.module';
+import {CommonModule} from '@angular/common';
+import {NgModule} from '@angular/core';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {RouterModule} from '@angular/router';
+import {OwlDateTimeModule, /*OWL_DATE_TIME_FORMATS*/} from '@danielmoncada/angular-datetime-picker';
+import {NgSelectModule} from '@ng-select/ng-select';
+import {TranslateModule} from '@ngx-translate/core';
+import {FileUploadModule} from 'ng2-file-upload';
+import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
+import {EformSharedTagsModule} from 'src/app/common/modules/eform-shared-tags/eform-shared-tags.module';
+import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
+import {BackendConfigurationPnRouting} from './backend-configuration-pn.routing.module';
 import {
   PropertiesContainerComponent,
   PropertyCreateModalComponent,
@@ -24,13 +24,14 @@ import {
   ReportTableComponent,
   CaseDeleteComponent,
 } from './components';
-import { BackendConfigurationPnLayoutComponent } from './layouts';
+import {BackendConfigurationPnLayoutComponent} from './layouts';
 import {
   BackendConfigurationPnChemicalsService,
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnSettingsService,
+  BackendConfigurationPnTaskTrackerService,
 } from './services';
-import { backendConfigurationStoreProviders } from './store-providers.config';
+import {backendConfigurationStoreProviders} from './store-providers.config';
 import {AreaRulePlanModalModule} from './components/area-rule-plan-modal.module';
 import {MatCardModule} from '@angular/material/card';
 import {MatButtonModule} from '@angular/material/button';
@@ -44,35 +45,36 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 
 @NgModule({
-    imports: [
-        CommonModule,
-        TranslateModule,
-        FormsModule,
-        NgSelectModule,
-        EformSharedModule,
-        RouterModule,
-        BackendConfigurationPnRouting,
-        ReactiveFormsModule,
-        FileUploadModule,
-        OwlDateTimeModule,
-        EformCasesModule,
-        EformSharedTagsModule,
-        AreaRulePlanModalModule,
-        MatCardModule,
-        MatButtonModule,
-        MatTooltipModule,
-        MatIconModule,
-        MtxGridModule,
-        MatInputModule,
-        MatSortModule,
-        MatDialogModule,
-        MtxSelectModule,
-        MatSlideToggleModule,
-        MatExpansionModule,
-        MatCheckboxModule,
-    ],
+  imports: [
+    CommonModule,
+    TranslateModule,
+    FormsModule,
+    NgSelectModule,
+    EformSharedModule,
+    RouterModule,
+    BackendConfigurationPnRouting,
+    ReactiveFormsModule,
+    FileUploadModule,
+    OwlDateTimeModule,
+    EformCasesModule,
+    EformSharedTagsModule,
+    AreaRulePlanModalModule,
+    MatCardModule,
+    MatButtonModule,
+    MatTooltipModule,
+    MatIconModule,
+    MtxGridModule,
+    MatInputModule,
+    MatSortModule,
+    MatDialogModule,
+    MtxSelectModule,
+    MatSlideToggleModule,
+    MatExpansionModule,
+    MatCheckboxModule,
+  ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
     PropertiesContainerComponent,
@@ -92,8 +94,11 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     BackendConfigurationPnSettingsService,
     BackendConfigurationPnPropertiesService,
     BackendConfigurationPnChemicalsService,
+    BackendConfigurationPnTaskTrackerService,
+    ItemsPlanningPnTagsService,
     ...backendConfigurationStoreProviders,
     // { provide: OWL_DATE_TIME_FORMATS, useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN },
   ],
 })
-export class BackendConfigurationPnModule {}
+export class BackendConfigurationPnModule {
+}

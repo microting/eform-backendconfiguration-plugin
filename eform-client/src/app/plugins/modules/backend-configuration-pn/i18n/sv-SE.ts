@@ -266,4 +266,24 @@ export const svSE = {
   '96 (8 years)': '96 (8 år)',
   '108 (9 years)': '108 (9 år)',
   '120 (10 years)': '120 (10 år)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Söndag',
+      'Monday': 'Måndag',
+      'Tuesday': 'Tisdag',
+      'Wednesday': 'Onsdag',
+      'Thursday': 'Torsdag',
+      'Friday': 'Fredag',
+      'Saturday': 'Lördag'
+    },
+    short: {
+      'Sunday': 'Sö',
+      'Monday': 'Må',
+      'Tuesday': 'Ti',
+      'Wednesday': 'On',
+      'Thursday': 'To',
+      'Friday': 'Fr',
+      'Saturday': 'Lö'
+    }
+  }
 };

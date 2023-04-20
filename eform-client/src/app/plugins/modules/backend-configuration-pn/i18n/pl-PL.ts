@@ -268,4 +268,24 @@ export const plPl = {
   '96 (8 years)': '96 (8 lat)',
   '108 (9 years)': '108 (9 lat)',
   '120 (10 years)': '120 (10 lat)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Niedziela',
+      'Monday': 'Poniedziałek',
+      'Tuesday': 'Wtorek',
+      'Wednesday': 'Środa',
+      'Thursday': 'Czwartek',
+      'Friday': 'Piątek',
+      'Saturday': 'Sobota'
+    },
+    short: {
+      'Sunday': 'Nd',
+      'Monday': 'Pn',
+      'Tuesday': 'Wt',
+      'Wednesday': 'Śr',
+      'Thursday': 'Cz',
+      'Friday': 'Pt',
+      'Saturday': 'Sb'
+    }
+  }
 };

@@ -268,4 +268,24 @@ export const frFR = {
   '96 (8 years)': '96 (8 ans)',
   '108 (9 years)': '108 (9 ans)',
   '120 (10 years)': '120 (10 ans)',
+  dayOfWeeks: {
+    full: {
+      'Sunday': 'Dimanche',
+      'Monday': 'Lundi',
+      'Tuesday': 'Mardi',
+      'Wednesday': 'Mercredi',
+      'Thursday': 'Jeudi',
+      'Friday': 'Vendredi',
+      'Saturday': 'Samedi'
+    },
+    short: {
+      'Sunday': 'Di',
+      'Monday': 'Lu',
+      'Tuesday': 'Ma',
+      'Wednesday': 'Me',
+      'Thursday': 'Je',
+      'Friday': 'Ve',
+      'Saturday': 'Sa'
+    }
+  }
 };
