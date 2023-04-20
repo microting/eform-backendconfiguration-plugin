@@ -1,0 +1,653 @@
+{
+  "model": [
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2021-12-01T07:10:52.114842",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-01-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2021-12-01T07:10:52.605717",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-01-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-01-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-02-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-05-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-06-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-10-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-11-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-10-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-11-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-11-25T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-12-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-11-25T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-12-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen",
+        "Andrii L"
+      ],
+      "startTask": "2022-11-25T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2022-12-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-12-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-01-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-12-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-01-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-02-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-02-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Andrii L"
+      ],
+      "startTask": "2023-02-07T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen",
+        "Andrii L"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-02-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-03-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-03-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-04-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-04-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-05-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-04-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-05-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-04-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-05-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-04-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-05-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-04-01T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 1,
+      "deadlineTask": "2023-05-01T00:00:00",
+      "nextExecutionTime": "2023-05-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-10-05T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2023-10-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen",
+        "Sascha R",
+        "Biskopstorp (Sascha)"
+      ],
+      "startTask": "2022-11-25T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2023-11-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Andrii L",
+        "Kristian Poulsen"
+      ],
+      "startTask": "2022-11-30T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2023-11-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen",
+        "Andrii L"
+      ],
+      "startTask": "2023-02-07T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen",
+        "Andrii L"
+      ],
+      "startTask": "2023-02-07T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-31T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Tjørntved",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-31T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-31T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-31T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-31T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Biskopstorp",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Kristian Poulsen",
+        "Sascha R",
+        "Biskopstorp (Sascha)"
+      ],
+      "startTask": "2023-01-31T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    },
+    {
+      "property": "Skovsbo",
+      "taskName": "",
+      "tags": [],
+      "workers": [
+        "Andrii L",
+        "Kristian Poulsen"
+      ],
+      "startTask": "2023-01-31T00:00:00",
+      "repeatType": 3,
+      "repeatEvery": 12,
+      "deadlineTask": "2024-01-01T00:00:00",
+      "nextExecutionTime": "2024-01-01T00:00:00"
+    }
+  ],
+  "success": true,
+  "message": "Success"
+}
