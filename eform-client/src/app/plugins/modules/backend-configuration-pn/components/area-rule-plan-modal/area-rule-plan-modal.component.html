@@ -31,20 +31,20 @@
       </mat-slide-toggle>
       <ng-container *ngIf="selectedArea.type === 5">
         <div class="d-flex flex-row">
-          <mat-form-field class="mr-1">
-            <mat-label>{{'Day of week' | translate}}</mat-label>
-            <mtx-select
-              [items]="dayOfWeekArr"
-              bindLabel="name"
-              bindValue="id"
-              [ngModel]="selectedAreaRule.typeSpecificFields.dayOfWeek"
-              [disabled]="true"
-              id="planAreaDayOfWeek"
-              appendTo="body"
-              clearable="false"
-            >
-            </mtx-select>
-          </mat-form-field>
+<!--          <mat-form-field class="mr-1">-->
+<!--            <mat-label>{{'Day of week' | translate}}</mat-label>-->
+<!--            <mtx-select-->
+<!--              [items]="dayOfWeekArr"-->
+<!--              bindLabel="name"-->
+<!--              bindValue="id"-->
+<!--              [ngModel]="selectedAreaRule.typeSpecificFields.dayOfWeek"-->
+<!--              [disabled]="true"-->
+<!--              id="planAreaDayOfWeek"-->
+<!--              appendTo="body"-->
+<!--              clearable="false"-->
+<!--            >-->
+<!--            </mtx-select>-->
+<!--          </mat-form-field>-->
           <mat-form-field class="ml-1">
             <mat-label>{{'Repeat every' | translate}}</mat-label>
             <mtx-select
@@ -127,19 +127,19 @@
                   </mtx-select>
                 </mat-form-field>
               </div>
-              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 2">
-                <mat-label>{{'Day of week' | translate}}</mat-label>
-                <mtx-select
-                  [items]="dayOfWeekArr"
-                  bindLabel="name"
-                  bindValue="id"
-                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"
-                  [disabled]="selectedAreaRulePlanning.serverStatus"
-                  id="createDayOfWeek"
-                  [clearable]="false"
-                >
-                </mtx-select>
-              </mat-form-field>
+<!--              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 2">-->
+<!--                <mat-label>{{'Day of week' | translate}}</mat-label>-->
+<!--                <mtx-select-->
+<!--                  [items]="dayOfWeekArr"-->
+<!--                  bindLabel="name"-->
+<!--                  bindValue="id"-->
+<!--                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"-->
+<!--                  [disabled]="selectedAreaRulePlanning.serverStatus"-->
+<!--                  id="createDayOfWeek"-->
+<!--                  [clearable]="false"-->
+<!--                >-->
+<!--                </mtx-select>-->
+<!--              </mat-form-field>-->
 <!--              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 3">-->
 <!--                <mat-label>{{'Day of month' | translate}}</mat-label>-->
 <!--                <mtx-select-->

@@ -307,29 +307,42 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 break;
                             case RepeatType.Week:
                             {
-                                var diff = (now - startDate).TotalDays;
-                                var multiplier = (int) (diff / (planning.RepeatEvery * 7));
-                                var dayOfWeek = (int) dbPlanning.DayOfWeek!;
-                                if (dayOfWeek == 0)
+                                if (useStartDateAsStartOfPeriod)
                                 {
-                                    dayOfWeek = 7;
-                                }
+                                    var nextExecutionTime =
+                                        dbPlanning.StartDate.AddDays(planning.RepeatEvery * 7);
+                                    while (nextExecutionTime < now)
+                                    {
+                                        nextExecutionTime = nextExecutionTime.AddDays(planning.RepeatEvery * 7);
+                                    }
+                                    dbPlanning.NextExecutionTime = nextExecutionTime;
+                                } else
+                                {
+                                    var diff = (now - startDate).TotalDays;
+                                    var multiplier = (int)(diff / (planning.RepeatEvery * 7));
+                                    var dayOfWeek = (int)dbPlanning.DayOfWeek!;
+                                    if (dayOfWeek == 0)
+                                    {
+                                        dayOfWeek = 7;
+                                    }
 
-                                var startOfWeek =
-                                    startDate.StartOfWeek(
-                                        (DayOfWeek) dayOfWeek);
-                                if (startOfWeek.Year != startDate.Year)
-                                {
-                                    startOfWeek = startOfWeek.AddDays(7);
-                                }
+                                    var startOfWeek =
+                                        startDate.StartOfWeek(
+                                            (DayOfWeek)dayOfWeek);
+                                    if (startOfWeek.Year != startDate.Year)
+                                    {
+                                        startOfWeek = startOfWeek.AddDays(7);
+                                    }
 
-                                var nextExecutionTime =
-                                    startOfWeek.AddDays(multiplier * planning.RepeatEvery * 7);
-                                if (nextExecutionTime < now)
-                                {
-                                    nextExecutionTime = nextExecutionTime.AddDays(planning.RepeatEvery * 7);
+                                    var nextExecutionTime =
+                                        startOfWeek.AddDays(multiplier * planning.RepeatEvery * 7);
+                                    if (nextExecutionTime < now)
+                                    {
+                                        nextExecutionTime = nextExecutionTime.AddDays(planning.RepeatEvery * 7);
+                                    }
+
+                                    dbPlanning.NextExecutionTime = nextExecutionTime;
                                 }
-                                dbPlanning.NextExecutionTime = nextExecutionTime;
 
                             }
                                 // dbPlanning.NextExecutionTime = startOfWeek.AddDays(dbPlanning.RepeatEvery * 7);

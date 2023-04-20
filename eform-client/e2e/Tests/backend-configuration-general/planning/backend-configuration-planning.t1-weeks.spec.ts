@@ -89,13 +89,13 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     // const diff = now.getTime() - new Date(now.getFullYear(), 0, 1).getTime();
     // const multiplier = Math.floor(diff / (2 * 7 * 24 * 60 * 60 * 1000));
     // const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
+    //let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
     //
     // if (startOfWeek.getFullYear() !== now.getFullYear()) {
     //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
     // }
 
-    let nextExecutionTime = new Date(startOfWeek.getTime() + 2 * 7 * 24 * 60 * 60 * 1000);
+    let nextExecutionTime = new Date(now.getTime() + 2 * 7 * 24 * 60 * 60 * 1000);
     // if (nextExecutionTime < now) {
     //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 2 * 7 * 24 * 60 * 60 * 1000);
     // }
@@ -167,9 +167,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     // if (startOfWeek.getFullYear() !== now.getFullYear()) {
     //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
     // }
-    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
+    //let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    let nextExecutionTime = new Date(startOfWeek.getTime() + 3 * 7 * 24 * 60 * 60 * 1000);
+    let nextExecutionTime = new Date(now.getTime() + 3 * 7 * 24 * 60 * 60 * 1000);
     // if (nextExecutionTime < now) {
     //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 3 * 7 * 24 * 60 * 60 * 1000);
     // }
@@ -241,9 +241,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     // if (startOfWeek.getFullYear() !== now.getFullYear()) {
     //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
     // }
-    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
+    //let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    let nextExecutionTime = new Date(startOfWeek.getTime() + 6 * 7 * 24 * 60 * 60 * 1000);
+    let nextExecutionTime = new Date(now.getTime() + 6 * 7 * 24 * 60 * 60 * 1000);
     // if (nextExecutionTime < now) {
     //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 6 * 7 * 24 * 60 * 60 * 1000);
     // }
@@ -315,9 +315,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     // if (startOfWeek.getFullYear() !== now.getFullYear()) {
     //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
     // }
-    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
+    //let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    let nextExecutionTime = new Date(startOfWeek.getTime() + 12 * 7 * 24 * 60 * 60 * 1000);
+    let nextExecutionTime = new Date(now.getTime() + 12 * 7 * 24 * 60 * 60 * 1000);
     // if (nextExecutionTime < now) {
     //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 12 * 7 * 24 * 60 * 60 * 1000);
     // }
@@ -387,9 +387,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     // if (startOfWeek.getFullYear() !== now.getFullYear()) {
     //   startOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
     // }
-    let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
+    //let startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1);
 
-    let nextExecutionTime = new Date(startOfWeek.getTime() + 24 * 7 * 24 * 60 * 60 * 1000);
+    let nextExecutionTime = new Date(now.getTime() + 24 * 7 * 24 * 60 * 60 * 1000);
     // if (nextExecutionTime < now) {
     //   nextExecutionTime = new Date(nextExecutionTime.getTime() + 24 * 7 * 24 * 60 * 60 * 1000);
     // }

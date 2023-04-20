@@ -910,15 +910,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         var now = DateTime.UtcNow;
         var diff = (now - new DateTime(2023, 4, 12)).TotalDays;
         var multiplier = (int) (diff / 7);
-        var dayOfWeek = 1;
+        //var dayOfWeek = 1;
         // if (dayOfWeek == 0)
         // {
         //     dayOfWeek = 7;
         // }
 
-        var startOfWeek =
-            new DateTime(2023, 4, 12, 0, 0, 0).StartOfWeek(
-                (DayOfWeek) dayOfWeek);
+        var startOfWeek = new DateTime(2023, 4, 12, 0, 0, 0);
         if (startOfWeek.Year != now.Year)
         {
             startOfWeek = startOfWeek.AddDays(7);
@@ -1407,25 +1405,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(2023, 4, 12)).TotalDays;
-        var multiplier = (int) (diff / 14);
-        var dayOfWeek = 3;
-        // if (dayOfWeek == 0)
-        // {
-        //     dayOfWeek = 7;
-        // }
 
-        var startOfWeek =
-            new DateTime(2023, 4, 12, 0, 0, 0).StartOfWeek(
-                (DayOfWeek) dayOfWeek);
-        if (startOfWeek.Year != now.Year)
-        {
-            startOfWeek = startOfWeek.AddDays(7);
-        }
+        var startOfWeek = new DateTime(2023, 4, 12, 0, 0, 0);
 
         var nextExecutionTime =
-            startOfWeek.AddDays(multiplier * 14);
-        if (nextExecutionTime < now)
+            startOfWeek.AddDays(14);
+
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddDays(14);
         }
