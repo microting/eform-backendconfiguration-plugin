@@ -114,6 +114,7 @@ jobs:
         cp -av eform-backendconfiguration-plugin/eform-client/wdio-plugin-step2.conf.ts  eform-angular-frontend/eform-client/wdio-plugin-step2.conf.ts
         mkdir -p eform-angular-frontend/eform-client/cypress/e2e/plugins/
         cp -av eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn
+        cp -av eform-backendconfiguration-plugin/eform-client/cypress/fixtures eform-angular-frontend/eform-client/cypress/fixtures
     - name: yarn install
       run: cd eform-angular-frontend/eform-client && yarn install
     - name: Create errorShots directory
