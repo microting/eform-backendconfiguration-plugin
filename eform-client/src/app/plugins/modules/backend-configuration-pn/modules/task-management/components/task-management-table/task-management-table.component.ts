@@ -65,7 +65,7 @@ export class TaskManagementTableComponent implements OnInit {
       field: 'status',
       sortProp: {id: 'CaseStatusesEnum'},
       sortable: true,
-      formatter: (rowData: WorkOrderCaseModel) => `<p>${this.translateService.instant(rowData.status)}</p>`,
+      formatter: (rowData: WorkOrderCaseModel) => `<span>${this.translateService.instant(rowData.status)}</span>`,
       class: 'status'
     },
     {
