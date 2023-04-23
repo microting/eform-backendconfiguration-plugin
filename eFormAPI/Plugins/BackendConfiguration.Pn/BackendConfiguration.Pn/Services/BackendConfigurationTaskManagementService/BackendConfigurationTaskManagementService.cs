@@ -103,11 +103,11 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             {
                 query = filtersModel.Status switch
                 {
-                    -1 => query.Where(x =>
-                        x.CaseStatusesEnum == CaseStatusesEnum.Ongoing ||
-                        x.CaseStatusesEnum == CaseStatusesEnum.Completed),
+                    -1 => query,
                     1 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Ongoing),
                     2 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Completed),
+                    3 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Ordered),
+                    4 => query.Where(x => x.CaseStatusesEnum == CaseStatusesEnum.Awaiting),
                     _ => query
                 };
             }
