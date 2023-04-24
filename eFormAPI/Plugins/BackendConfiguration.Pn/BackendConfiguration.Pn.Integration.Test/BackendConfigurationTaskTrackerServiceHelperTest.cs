@@ -122,7 +122,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
 		Assert.NotNull(result);
@@ -222,7 +222,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
 		Assert.NotNull(result);
@@ -322,7 +322,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
 		Assert.NotNull(result);
@@ -422,7 +422,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		};
 
 		// Assert
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, ItemsPlanningPnDbContext);
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filters, BackendConfigurationPnDbContext, core, 1, ItemsPlanningPnDbContext);
 
 		// Assert result
 		Assert.NotNull(result);

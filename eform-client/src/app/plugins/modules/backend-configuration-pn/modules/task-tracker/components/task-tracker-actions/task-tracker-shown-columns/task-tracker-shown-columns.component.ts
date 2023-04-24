@@ -41,6 +41,18 @@ export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
     this.dialogRef.close();
   }
 
+  setColumns(columns: Columns) {
+    this.columns.patchValue({
+      property: columns['property'],
+      task: columns['task'],
+      tags: columns['tags'],
+      workers: columns['workers'],
+      start: columns['start'],
+      repeat: columns['repeat'],
+      deadline: columns['deadline']
+    })
+  }
+
   ngOnInit(): void {
   }
 

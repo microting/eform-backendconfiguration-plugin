@@ -32,6 +32,10 @@ table.mat-table {
             @include cell-values;
           }
 
+          &.property, &.task, &.tags, &.workers, &.start, &.repeat, &.deadline {
+            text-align: left;
+          }
+
           &.weeks {
             border-left: $default-style-border;
             text-align: center;

@@ -15,7 +15,7 @@ import {
 } from '../../../../services';
 import {ToastrService} from 'ngx-toastr';
 import {Subscription} from 'rxjs';
-import {MatDialog} from '@angular/material/dialog';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {LoaderService} from 'src/app/common/services';
@@ -65,6 +65,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
 
   openColumnsModal(): void {
     const dialogRef = this.dialog.open(TaskTrackerShownColumnsComponent, dialogConfigHelper(this.overlay, this.columns));
+    this.getColumns(dialogRef);
     this.columnsChangedSub$ = dialogRef.componentInstance.columnsChanged.subscribe((data: Columns) => {
       let updateModal = [];
       if (data) {
@@ -83,13 +84,16 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  getColumns() {
+  getColumns(dialogRef?: MatDialogRef<TaskTrackerShownColumnsComponent, any>) {
     this.getColumnsSub$ = this.taskTrackerService.getColumns().subscribe(data => {
       if (data && data.success && data.model && data.model.length) {
         this.columns = data.model.reduce((acc, {columnName, isColumnEnabled}) => {
           acc[columnName] = isColumnEnabled;
           return acc;
         }, {} as Columns);
+        if(dialogRef) {
+          dialogRef.componentInstance.setColumns(this.columns);
+        }
       }
     });
   }

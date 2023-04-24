@@ -43,6 +43,7 @@ public static class BackendConfigurationTaskTrackerHelper
 		TaskTrackerFiltrationModel filtersModel,
 		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
 		Core core,
+		int userLanguageId,
 		ItemsPlanningPnDbContext itemsPlanningPnDbContext)
 	{
 
@@ -66,9 +67,6 @@ public static class BackendConfigurationTaskTrackerHelper
 
 			foreach (var compliance in complianceList)
 			{
-				/*var areaTranslation = await backendConfigurationPnDbContext.AreaTranslations
-					.SingleOrDefaultAsync(x => x.AreaId == compliance.AreaId && x.LanguageId == language.Id);*/
-
 				var propertyName = await backendConfigurationPnDbContext.Properties
 					.Where(x => x.Id == compliance.PropertyId)
 					.Select(x => x.Name)
@@ -79,7 +77,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 				.FirstOrDefaultAsync();
 
-				if (/*areaTranslation == null || */planning == null)
+				if (planning == null)
 				{
 					continue;
 				}
@@ -97,6 +95,12 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Where(x => planningSiteIds.Contains(x.Id))
 					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
 					.ToListAsync();
+
+				var taskName = await itemsPlanningPnDbContext.PlanningNameTranslation
+					.Where(x => x.LanguageId == userLanguageId)
+					.Where(x => x.PlanningId == planning.Id)
+					.Select(x => x.Name)
+					.FirstOrDefaultAsync();
 
 				if (filtersModel.WorkerIds.Any() && !filtersModel.WorkerIds.Contains(-1))
 				{
@@ -120,7 +124,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					RepeatEvery = planning.RepeatEvery,
 					RepeatType = planning.RepeatType,
 					NextExecutionTime = (DateTime)planning.NextExecutionTime,
-					TaskName = ""
+					TaskName = taskName
 				};
 
 				result.Add(complianceModel);
