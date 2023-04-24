@@ -332,6 +332,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             }
                             else
                             {
+                                var areaRulePlanningVersion = await _backendConfigurationPnDbContext.AreaRulesPlanningVersions
+                                    .Where(x => x.ItemPlanningId == planningCase.PlanningId)
+                                    .OrderByDescending(x => x.Version)
+                                    .FirstOrDefaultAsync();
+
+                                if (areaRulePlanningVersion != null) {
+                                    propertyName = _backendConfigurationPnDbContext.Properties
+                                        .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
+                                }
                                 // if (model.TagIds.Count == 1)
                                 // {
                                 //     var planningTag = await _itemsPlanningPnDbContext.PlanningTags
