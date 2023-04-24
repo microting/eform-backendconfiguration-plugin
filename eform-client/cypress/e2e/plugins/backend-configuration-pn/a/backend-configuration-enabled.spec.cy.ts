@@ -9,7 +9,7 @@ describe('Enable Backend Config plugin', () => {
     pluginPage.Navbar.goToPluginsPage();
     pluginPage.rowNum()
       .should('not.eq', 0) // we have plugins list
-      .should('eq', 2); // we have only 2 plugins: items planning and backend config
+      .should('eq', 3); // we have only 3 plugins: items planning, time planning and backend config
   });
   it('should enabled Items Planning plugin', () => {
     const pluginName = 'Microting Items Planning Plugin';
