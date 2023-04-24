@@ -9,7 +9,7 @@ import {
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BehaviorSubject, forkJoin, Observable, Subscription, asyncScheduler} from 'rxjs';
 import {ActivatedRoute, Router} from '@angular/router';
-import {format, parseISO} from 'date-fns';
+import {format, parse, parseISO} from 'date-fns';
 import {
   CasePostsListModel,
   CommonDictionaryModel,
@@ -108,8 +108,8 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   }
 
   onGenerateReport(model: ReportPnGenerateModel) {
-    this.dateFrom = format(parseISO(model.dateFrom), `yyyy-MM-dd'T'HH:mm:ss`);
-    this.dateTo = format(parseISO(model.dateTo), `yyyy-MM-dd'T'HH:mm:ss`);
+    this.dateFrom = model.dateFrom;
+    this.dateTo = model.dateTo;
     this.generateReportSub$ = this.reportService
       .generateReport({
         dateFrom: model.dateFrom,
@@ -129,6 +129,10 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   }
 
   onDownloadReport(model: ReportPnGenerateModel) {
+    // @ts-ignore
+    model.dateFrom = format(model.dateFrom, 'yyyy-MM-dd');
+    // @ts-ignore
+    model.dateTo = format(model.dateTo, 'yyyy-MM-dd');
     this.downloadReportSub$ = this.reportService
       .downloadFileReport(model)
       .subscribe(
@@ -142,6 +146,10 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   }
 
   onDownloadExcelReport(model: ReportPnGenerateModel) {
+    // @ts-ignore
+    model.dateFrom = format(model.dateFrom, 'yyyy-MM-dd');
+    // @ts-ignore
+    model.dateTo = format(model.dateTo, 'yyyy-MM-dd');
     this.downloadReportSub$ = this.reportService
       .downloadFileReport(model)
       .subscribe(
