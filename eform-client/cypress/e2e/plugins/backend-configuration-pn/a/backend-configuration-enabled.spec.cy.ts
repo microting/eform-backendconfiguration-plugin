@@ -1,5 +1,5 @@
-import loginPage from '../Login.page';
-import pluginPage from '../Plugin.page';
+import loginPage from '../../../Login.page';
+import pluginPage from '../../../Plugin.page';
 import {beforeEach} from 'mocha';
 
 describe('Enable Backend Config plugin', () => {

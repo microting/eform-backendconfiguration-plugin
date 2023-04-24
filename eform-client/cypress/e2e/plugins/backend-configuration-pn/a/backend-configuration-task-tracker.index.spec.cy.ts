@@ -1,6 +1,6 @@
-import loginPage from '../Login.page';
-import backendConfigurationTaskTrackerPage from '../BackendConfiguration/BackendConfigurationTaskTracker.page';
-import pluginPage from '../Plugin.page';
+import loginPage from '../../../Login.page';
+import backendConfigurationTaskTrackerPage from '../../../BackendConfiguration/BackendConfigurationTaskTracker.page';
+import pluginPage from '../../../Plugin.page';
 
 describe('Task tracker', () => {
   before(() => {

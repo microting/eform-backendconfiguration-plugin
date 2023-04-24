@@ -1,4 +1,4 @@
-import {PageWithNavbarPage} from '../PageWithNavbar.page';
+import {PageWithNavbarPage} from '../../../PageWithNavbar.page';
 
 class BackendConfigurationTaskTrackerPage extends PageWithNavbarPage {
 
