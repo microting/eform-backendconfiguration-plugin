@@ -63,7 +63,7 @@
             <tr class="mat-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
               <td role="cell" class="mat-cell cdk-cell property"
                   *ngIf="columnsFromDb.property && propertyHeaderEnabled">{{task.property || '--'}}</td>
-              <td role="cell" class="mat-cell cdk-cell task" *ngIf="columnsFromDb.task">{{task.taskName || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell task text-nowrap" *ngIf="columnsFromDb.task">{{task.taskName || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell tags" *ngIf="columnsFromDb.tags">{{task.tags || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell worker" *ngIf="columnsFromDb.workers">
                 <span class="worker-name" *ngFor="let worker of task.workers; last as last">{{worker + (last ? '' : ', ') || '--'}}</span>

@@ -25,15 +25,7 @@ import {
   styleUrls: ['./task-tracker-table.component.scss'],
 })
 export class TaskTrackerTableComponent implements OnInit, OnChanges {
-  @Input() columnsFromDb: Columns = {
-    deadline: true,
-    property: true,
-    repeat: true,
-    start: true,
-    tags: true,
-    task: true,
-    workers: true,
-  };
+  @Input() columnsFromDb: Columns;
   @Input() tasks: TaskModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
 
@@ -146,19 +138,21 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   recalculateColumns() {
     let columns: ColumnsModel[] = [];
     if (this.columnsFromDb) {
-      this.columnsFromDb.property = this.propertyHeaderEnabled;
+      // this.columnsFromDb.property = this.propertyHeaderEnabled;
       for (let [key, value] of Object.entries(this.columnsFromDb)) {
         if (this.columnsFromDb.hasOwnProperty(key)) {
           columns = [...columns, {columnName: key, isColumnEnabled: value}];
         }
+      }
+      if(!this.propertyHeaderEnabled) {
+        columns.find(x => x.columnName === 'property').isColumnEnabled = this.propertyHeaderEnabled
       }
       this.enabledHeadersNumber = columns.filter(x => x.isColumnEnabled).length;
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes && changes.columns && !changes.columns.isFirstChange()) {
-      this.columnsFromDb = changes.columns.currentValue;
+    if (changes && changes.columnsFromDb && !changes.columnsFromDb.isFirstChange()) {
       this.recalculateColumns();
     }
   }
