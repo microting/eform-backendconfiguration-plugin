@@ -29,25 +29,80 @@ using System.Collections.Generic;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
+/// <summary>
+/// Represents a task tracker model.
+/// </summary>
 public class TaskTrackerModel
 {
+	/// <summary>
+	/// Gets or sets the property of the task tracker model.
+	/// </summary>
 	public string Property { get; set; }
 
+	/// <summary>
+	/// Gets or sets the task name of the task tracker model.
+	/// </summary>
 	public string TaskName { get; set; }
 
+	/// <summary>
+	/// Gets or sets the tags of the task tracker model.
+	/// </summary>
 	public List<CommonTagModel> Tags { get; set; } 
 		= new ();
 
+	/// <summary>
+	/// Gets or sets the workers of the task tracker model.
+	/// </summary>
 	public List<string> Workers { get; set; }
 		= new ();
 
+	/// <summary>
+	/// Gets or sets the start time of the task tracker model.
+	/// </summary>
 	public DateTime StartTask { get; set; }
 
+	/// <summary>
+	/// Gets or sets the repeat type of the task tracker model.
+	/// </summary>
 	public RepeatType RepeatType { get; set; }
 
+	/// <summary>
+	/// Gets or sets the repeat interval in minutes of the task tracker model.
+	/// </summary>
 	public int RepeatEvery { get; set; }
 
+	/// <summary>
+	/// Gets or sets the deadline of the task tracker model.
+	/// </summary>
 	public DateTime DeadlineTask { get; set; }
 
+	/// <summary>
+	/// Gets or sets the next execution time of the task tracker model.
+	/// </summary>
 	public DateTime NextExecutionTime { get; set; }
+
+	/// <summary>
+	/// Gets or sets a value indicating whether the task is expired or not.
+	/// </summary>
+	public bool TaskIsExpired { get; set; }
+
+	/// <summary>
+	/// Gets or sets the SDK case ID.
+	/// </summary>
+	public int SdkCaseId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the template ID.
+	/// </summary>
+	public int TemplateId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the property ID.
+	/// </summary>
+	public int PropertyId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the compliance ID.
+	/// </summary>
+	public int ComplianceId { get; set; }
 }

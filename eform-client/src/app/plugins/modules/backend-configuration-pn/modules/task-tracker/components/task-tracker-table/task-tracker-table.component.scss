@@ -57,6 +57,22 @@ table.mat-table {
     tr {
       height: unset;
 
+      &.task-is-expired {
+        td {
+          &.yellow {
+            background-color: unset;
+          }
+
+          &.white-yellow {
+            background-color: unset;
+          }
+
+          &.property, &.task, &.tags, &.worker, &.start-task, &.repeat, &.deadline-task {
+            background-color: red;
+          }
+        }
+      }
+
       td {
         &.mat-cell, &.mat-footer-cell {
           @include cell-values;
