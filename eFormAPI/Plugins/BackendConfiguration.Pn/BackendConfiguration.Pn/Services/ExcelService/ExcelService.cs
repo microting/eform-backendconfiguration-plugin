@@ -294,7 +294,8 @@ public class ExcelService: IExcelService
                                     switch (dataModelCaseField.Key)
                                     {
                                         case "date":
-                                            worksheet.Cell(x + 1, y + 1).SetValue(value);
+                                            var date = DateTime.Parse(value);
+                                            worksheet.Cell(x + 1, y + 1).SetValue(date);
                                             //worksheet.Cell(x + 1, y + 1).DataType = XLDataType.DateTime;
                                             break;
                                         case "number":
