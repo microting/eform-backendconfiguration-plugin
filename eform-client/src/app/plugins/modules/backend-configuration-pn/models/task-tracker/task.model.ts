@@ -10,4 +10,9 @@ export interface TaskModel {
   repeatType: number;
   deadlineTask: Date,
   nextExecutionTime: string;
+  taskIsExpired: boolean;
+  sdkCaseId?: number;
+  templateId?: number;
+  propertyId?: number;
+  complianceId?: number;
 }

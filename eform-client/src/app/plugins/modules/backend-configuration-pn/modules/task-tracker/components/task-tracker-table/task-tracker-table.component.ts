@@ -5,6 +5,7 @@ import {
   OnInit,
   Output, SimpleChanges,
 } from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
 import {Columns, ColumnsModel, TaskModel} from '../../../../models';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
@@ -38,6 +39,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   constructor(
     private translateService: TranslateService,
     private taskTrackerStateService: TaskTrackerStateService,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {
   }
 
@@ -69,7 +72,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       seconds: 0,
       milliseconds: 0,
     });
-    this.days = [...R.range(0, 30)].map((x: number): Date => addDays(currentDate, x));
+    this.days = [...R.range(0, 28)].map((x: number): Date => addDays(currentDate, x));
     this.daysInTable = this.days.map(x => x.getDate());
     let weeks = this.days.map((x, i) => {
       if (i === 0 && !isMonday(x)) {
@@ -148,6 +151,20 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
         columns.find(x => x.columnName === 'property').isColumnEnabled = this.propertyHeaderEnabled
       }
       this.enabledHeadersNumber = columns.filter(x => x.isColumnEnabled).length;
+    }
+  }
+
+  redirectToCompliance(task: TaskModel) {
+    if(task.taskIsExpired) {
+      this.router.navigate([
+        '/plugins/backend-configuration-pn/compliances/case/',
+        task.sdkCaseId,
+        task.templateId,
+        task.propertyId,
+        task.deadlineTask,
+        false, // thirtyDays
+        task.complianceId
+      ], {relativeTo: this.route}).then();
     }
   }
 

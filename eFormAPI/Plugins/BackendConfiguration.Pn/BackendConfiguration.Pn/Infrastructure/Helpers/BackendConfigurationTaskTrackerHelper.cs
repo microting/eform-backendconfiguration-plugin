@@ -50,6 +50,7 @@ public static class BackendConfigurationTaskTrackerHelper
 		try
 		{
 			var result = new List<TaskTrackerModel>();
+			var dateTimeNow = DateTime.Now;
 			
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
 			var query = backendConfigurationPnDbContext.Compliances
@@ -114,6 +115,8 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
 					.ToList();
 
+				var taskIsExpired = dateTimeNow > (DateTime)planning.NextExecutionTime;
+
 				var complianceModel = new TaskTrackerModel
 				{
 					Property = propertyName,
@@ -124,8 +127,17 @@ public static class BackendConfigurationTaskTrackerHelper
 					RepeatEvery = planning.RepeatEvery,
 					RepeatType = planning.RepeatType,
 					NextExecutionTime = (DateTime)planning.NextExecutionTime,
-					TaskName = taskName
+					TaskName = taskName,
+					TaskIsExpired = taskIsExpired
 				};
+
+				if (taskIsExpired)
+				{
+					complianceModel.PropertyId = compliance.PropertyId;
+					complianceModel.SdkCaseId = compliance.MicrotingSdkCaseId;
+					complianceModel.TemplateId = compliance.MicrotingSdkeFormId;
+					complianceModel.ComplianceId = compliance.Id;
+				}
 
 				result.Add(complianceModel);
 			}
