@@ -105,4 +105,14 @@ public class TaskTrackerModel
 	/// Gets or sets the compliance ID.
 	/// </summary>
 	public int ComplianceId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the area ID.
+	/// </summary>
+	public int AreaId { get; set; }
+
+	/// <summary>
+	/// Gets or sets the area rule ID.
+	/// </summary>
+	public int AreaRuleId { get; set; }
 }

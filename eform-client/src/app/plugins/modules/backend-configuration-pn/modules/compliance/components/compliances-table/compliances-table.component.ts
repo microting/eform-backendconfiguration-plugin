@@ -64,7 +64,7 @@ export class CompliancesTableComponent implements OnInit {
               record.deadline,
               (this.isComplianceThirtyDays === undefined ? 'false' : 'true'),
               record.id
-            ], {relativeTo: this.route}),
+            ], {relativeTo: this.route, queryParams: {reverseRoute: `/plugins/backend-configuration-pn/compliances/${this.propertyId}`}}),
         }
       ]
     },
@@ -112,7 +112,7 @@ export class CompliancesTableComponent implements OnInit {
               record.deadline,
               (this.isComplianceThirtyDays === undefined ? 'false' : 'true'),
               record.id
-            ], {relativeTo: this.route}),
+            ], {relativeTo: this.route, queryParams: {reverseRoute: `/plugins/backend-configuration-pn/compliances/${this.propertyId}`}}),
         },
         {
           type: 'icon',

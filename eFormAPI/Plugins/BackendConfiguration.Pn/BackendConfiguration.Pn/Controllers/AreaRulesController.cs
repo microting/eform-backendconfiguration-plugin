@@ -51,6 +51,13 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpGet]
+        [Route("index-by-propertyId-and-areaId")]
+        public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyId, int areaId)
+        {
+	        return await _backendConfigurationAreaRulesService.Index(propertyId, areaId);
+        }
+
+		[HttpGet]
         public async Task<OperationDataResult<AreaRuleModel>> Read(int ruleId, int propertyId)
         {
             return await _backendConfigurationAreaRulesService.Read(ruleId).ConfigureAwait(false);

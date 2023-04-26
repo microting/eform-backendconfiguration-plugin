@@ -83,11 +83,9 @@ public static class BackendConfigurationTaskTrackerHelper
 					continue;
 				}
 
-				var planningSitesQuery = itemsPlanningPnDbContext.PlanningSites
+				var planningSiteIds = await itemsPlanningPnDbContext.PlanningSites
 					.Where(x => x.PlanningId == compliance.PlanningId)
-					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
-
-				var planningSiteIds = await planningSitesQuery
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 					.Select(x => x.SiteId)
 					.Distinct()
 					.ToListAsync();
@@ -97,12 +95,6 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
 					.ToListAsync();
 
-				var taskName = await itemsPlanningPnDbContext.PlanningNameTranslation
-					.Where(x => x.LanguageId == userLanguageId)
-					.Where(x => x.PlanningId == planning.Id)
-					.Select(x => x.Name)
-					.FirstOrDefaultAsync();
-
 				if (filtersModel.WorkerIds.Any() && !filtersModel.WorkerIds.Contains(-1))
 				{
 					if (!sitesWithNames.Any(siteWithNames => filtersModel.WorkerIds.Contains(siteWithNames.Key)))
@@ -111,11 +103,24 @@ public static class BackendConfigurationTaskTrackerHelper
 					}
 				}
 
+				var taskName = await itemsPlanningPnDbContext.PlanningNameTranslation
+					.Where(x => x.LanguageId == userLanguageId)
+					.Where(x => x.PlanningId == planning.Id)
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+					.Select(x => x.Name)
+					.FirstOrDefaultAsync();
+
 				var workerNames = planningSiteIds
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
 					.ToList();
 
-				var taskIsExpired = dateTimeNow > (DateTime)planning.NextExecutionTime;
+				var areaRuleId = await backendConfigurationPnDbContext.AreaRules
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+					.Where(x => x.PropertyId == compliance.PropertyId)
+					.Where(x => x.AreaId == compliance.AreaId)
+					.Select(x => x.Id)
+					.FirstOrDefaultAsync();
+					
 
 				var complianceModel = new TaskTrackerModel
 				{
@@ -128,16 +133,14 @@ public static class BackendConfigurationTaskTrackerHelper
 					RepeatType = planning.RepeatType,
 					NextExecutionTime = (DateTime)planning.NextExecutionTime,
 					TaskName = taskName,
-					TaskIsExpired = taskIsExpired
+					TaskIsExpired = dateTimeNow > (DateTime)planning.NextExecutionTime,
+					PropertyId = compliance.PropertyId,
+					SdkCaseId = compliance.MicrotingSdkCaseId,
+					TemplateId = compliance.MicrotingSdkeFormId,
+					ComplianceId = compliance.Id,
+					AreaId = compliance.AreaId,
+					AreaRuleId = areaRuleId
 				};
-
-				if (taskIsExpired)
-				{
-					complianceModel.PropertyId = compliance.PropertyId;
-					complianceModel.SdkCaseId = compliance.MicrotingSdkCaseId;
-					complianceModel.TemplateId = compliance.MicrotingSdkeFormId;
-					complianceModel.ComplianceId = compliance.Id;
-				}
 
 				result.Add(complianceModel);
 			}
