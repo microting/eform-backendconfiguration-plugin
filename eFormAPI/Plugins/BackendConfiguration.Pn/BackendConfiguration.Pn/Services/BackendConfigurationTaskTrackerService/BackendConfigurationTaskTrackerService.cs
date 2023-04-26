@@ -66,7 +66,9 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 
 	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index(TaskTrackerFiltrationModel filtersModel)
 	{
-		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, _backendConfigurationPnDbContext, await _coreHelper.GetCore(), _itemsPlanningPnDbContext);
+
+		var userLanguageId = (await _userService.GetCurrentUserLanguage()).Id;
+		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, _backendConfigurationPnDbContext, await _coreHelper.GetCore(), userLanguageId, _itemsPlanningPnDbContext);
 		return new OperationDataResult<List<TaskTrackerModel>>(result.Success, _localizationService.GetString(result.Message), result.Model ?? new List<TaskTrackerModel>());
 	}
 

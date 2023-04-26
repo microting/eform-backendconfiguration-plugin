@@ -32,6 +32,10 @@ table.mat-table {
             @include cell-values;
           }
 
+          &.property, &.task, &.tags, &.workers, &.start, &.repeat, &.deadline {
+            text-align: left;
+          }
+
           &.weeks {
             border-left: $default-style-border;
             text-align: center;
@@ -52,6 +56,22 @@ table.mat-table {
   tbody {
     tr {
       height: unset;
+
+      &.task-is-expired {
+        td {
+          &.yellow {
+            background-color: unset;
+          }
+
+          &.white-yellow {
+            background-color: unset;
+          }
+
+          &.property, &.task, &.tags, &.worker, &.start-task, &.repeat, &.deadline-task {
+            background-color: red;
+          }
+        }
+      }
 
       td {
         &.mat-cell, &.mat-footer-cell {

@@ -55,26 +55,34 @@
                 *ngIf="columnsFromDb.deadline">{{ 'Deadline' | translate }}</th>
             <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week 'task-day-{{day}}'"
-                *ngFor="let day of daysInTable" [attr.colspan]="1">{{'dayOfWeeks.short.'+getDayOfWeekByDay(day)|translate}}</th>
+                *ngFor="let day of daysInTable"
+                [attr.colspan]="1">{{'dayOfWeeks.short.' + getDayOfWeekByDay(day)|translate}}</th>
           </tr>
           </thead>
           <tbody id="" role="rowgroup">
           <ng-container *ngFor="let task of tasks; let i = index">
-            <tr class="mat-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
+            <tr
+              class="mat-row cdk-row"
+              [ngClass]="{'mat-row-odd' : i%2, 'task-is-expired cursor-pointer' : task.taskIsExpired}"
+              (click)="redirectToCompliance(task)"
+            >
               <td role="cell" class="mat-cell cdk-cell property"
                   *ngIf="columnsFromDb.property && propertyHeaderEnabled">{{task.property || '--'}}</td>
-              <td role="cell" class="mat-cell cdk-cell task" *ngIf="columnsFromDb.task">{{task.taskName || '--'}}</td>
+              <td role="cell" class="mat-cell cdk-cell task text-nowrap"
+                  *ngIf="columnsFromDb.task">{{task.taskName || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell tags" *ngIf="columnsFromDb.tags">{{task.tags || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell worker" *ngIf="columnsFromDb.workers">
-                <span class="worker-name" *ngFor="let worker of task.workers; last as last">{{worker + (last ? '' : ', ') || '--'}}</span>
+                <span class="worker-name"
+                      *ngFor="let worker of task.workers; last as last">{{worker + (last ? '' : ', ') || '--'}}</span>
               </td>
-              <td role="cell" class="mat-cell cdk-cell startTask"
+              <td role="cell" class="mat-cell cdk-cell start-task"
                   *ngIf="columnsFromDb.start">{{(task.startTask | date:'dd.MM.yyyy') || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell text-nowrap repeat"
                   *ngIf="columnsFromDb.repeat">{{getRepeatEveryAndRepeatTypeByTask(task) || '--'}}</td>
-              <td role="cell" class="mat-cell cdk-cell deadlineTask"
+              <td role="cell" class="mat-cell cdk-cell deadline-task"
                   *ngIf="columnsFromDb.deadline">{{(task.deadlineTask | date:'dd.MM.yyyy') || '--'}}</td>
-              <td role="cell" class="mat-cell cdk-cell tasks" [ngClass]="[getColorByDayAndTask(day, task), 'task-day-' + day]"
+              <td role="cell" class="mat-cell cdk-cell tasks"
+                  [ngClass]="[getColorByDayAndTask(day, task), 'task-day-' + day]"
                   *ngFor="let day of daysInTable"></td>
             </tr>
           </ng-container>

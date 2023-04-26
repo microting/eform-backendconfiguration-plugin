@@ -7,13 +7,12 @@ import {Sort} from '@angular/material/sort';
 import {TranslateService} from '@ngx-translate/core';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {ActivatedRoute, Router} from '@angular/router';
-import {CaseDeleteComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {
   ComplianceDeleteComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components/compliance-delete/compliance-delete.component';
+} from '../compliance-delete/compliance-delete.component';
 import {Subscription} from 'rxjs';
 
 @Component({

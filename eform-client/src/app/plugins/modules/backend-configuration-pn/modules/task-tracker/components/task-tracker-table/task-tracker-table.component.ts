@@ -5,6 +5,7 @@ import {
   OnInit,
   Output, SimpleChanges,
 } from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
 import {Columns, ColumnsModel, TaskModel} from '../../../../models';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
@@ -25,15 +26,7 @@ import {
   styleUrls: ['./task-tracker-table.component.scss'],
 })
 export class TaskTrackerTableComponent implements OnInit, OnChanges {
-  @Input() columnsFromDb: Columns = {
-    deadline: true,
-    property: true,
-    repeat: true,
-    start: true,
-    tags: true,
-    task: true,
-    workers: true,
-  };
+  @Input() columnsFromDb: Columns;
   @Input() tasks: TaskModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
 
@@ -46,6 +39,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   constructor(
     private translateService: TranslateService,
     private taskTrackerStateService: TaskTrackerStateService,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {
   }
 
@@ -77,7 +72,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       seconds: 0,
       milliseconds: 0,
     });
-    this.days = [...R.range(0, 30)].map((x: number): Date => addDays(currentDate, x));
+    this.days = [...R.range(0, 28)].map((x: number): Date => addDays(currentDate, x));
     this.daysInTable = this.days.map(x => x.getDate());
     let weeks = this.days.map((x, i) => {
       if (i === 0 && !isMonday(x)) {
@@ -146,19 +141,35 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   recalculateColumns() {
     let columns: ColumnsModel[] = [];
     if (this.columnsFromDb) {
-      this.columnsFromDb.property = this.propertyHeaderEnabled;
+      // this.columnsFromDb.property = this.propertyHeaderEnabled;
       for (let [key, value] of Object.entries(this.columnsFromDb)) {
         if (this.columnsFromDb.hasOwnProperty(key)) {
           columns = [...columns, {columnName: key, isColumnEnabled: value}];
         }
       }
+      if(!this.propertyHeaderEnabled) {
+        columns.find(x => x.columnName === 'property').isColumnEnabled = this.propertyHeaderEnabled
+      }
       this.enabledHeadersNumber = columns.filter(x => x.isColumnEnabled).length;
     }
   }
 
+  redirectToCompliance(task: TaskModel) {
+    if(task.taskIsExpired) {
+      this.router.navigate([
+        '/plugins/backend-configuration-pn/compliances/case/',
+        task.sdkCaseId,
+        task.templateId,
+        task.propertyId,
+        task.deadlineTask,
+        false, // thirtyDays
+        task.complianceId
+      ], {relativeTo: this.route}).then();
+    }
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes && changes.columns && !changes.columns.isFirstChange()) {
-      this.columnsFromDb = changes.columns.currentValue;
+    if (changes && changes.columnsFromDb && !changes.columnsFromDb.isFirstChange()) {
       this.recalculateColumns();
     }
   }
