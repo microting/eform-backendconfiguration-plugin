@@ -19,8 +19,8 @@ function createInitialState(): ReportState {
 }
 
 const persistState1 = persistState({
-  include: ['planningsReport'],
-  key: 'itemsPlanningPn',
+  include: ['backendConfigurationReport'],
+  key: 'backendConfigurationPn',
   preStorageUpdate(
     storeName,
     state: ReportState
@@ -34,7 +34,7 @@ const persistState1 = persistState({
 });
 
 @Injectable({ providedIn: 'root' })
-@StoreConfig({ name: 'planningsReport', resettable: true })
+@StoreConfig({ name: 'backendConfigurationReport', resettable: true })
 export class ReportStore extends Store<ReportState> {
   constructor() {
     super(createInitialState());

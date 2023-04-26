@@ -147,6 +147,15 @@ jobs:
         working-directory: eform-angular-frontend/eform-client
     - name: Change rabbitmq hostname
       run: docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
+    - name: Plugin testing
+      run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
+    - name: Load DB dump
+      if: matrix.test == 'a'
+      run: |
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_SDK.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-backend-configuration-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-backend-configuration-plugin.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-angular-items-planning-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-angular-items-planning-plugin.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
     - name: ${{matrix.test}} test
       continue-on-error: true
       uses: cypress-io/github-action@v4
@@ -159,8 +168,6 @@ jobs:
         spec: cypress/e2e/plugins/backend-configuration-pn/${{matrix.test}}/*
         config-file: cypress.config.ts
         working-directory: eform-angular-frontend/eform-client
-    - name: Plugin testing
-      run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
     - name: Stop the newly build Docker container
       run: docker stop my-container
     - name: Get standard output
