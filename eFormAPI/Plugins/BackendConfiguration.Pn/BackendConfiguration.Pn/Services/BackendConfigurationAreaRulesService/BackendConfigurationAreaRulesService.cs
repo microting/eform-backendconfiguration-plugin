@@ -80,7 +80,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
             _bus = rebusService.GetBus();
         }
 
-        public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId)
+		public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId)
         {
             try
             {
@@ -280,9 +280,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
                     }
                 }
 
-
-
-
                 return new OperationDataResult<List<AreaRuleSimpleModel>>(true, areaRules);
             }
             catch (Exception ex)
@@ -294,7 +291,33 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
             }
         }
 
-        public async Task<OperationResult> Create(AreaRulesCreateModel createModel)
+		public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyId, int areaId)
+		{
+			try
+			{
+				var propertyAreaId = await _backendConfigurationPnDbContext.AreaProperties
+					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+					.Where(x => x.AreaId == areaId)
+					.Where(x => x.PropertyId == propertyId)
+					.Select(x => x.Id)
+					.FirstOrDefaultAsync();
+				if (propertyAreaId != 0)
+				{
+					return await this.Index(propertyAreaId);
+				}
+                return new OperationDataResult<List<AreaRuleSimpleModel>>(false,
+	                $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAreaRules")}: propertyArea not found");
+			}
+			catch (Exception ex)
+			{
+				Log.LogException(ex.Message);
+				Log.LogException(ex.StackTrace);
+				return new OperationDataResult<List<AreaRuleSimpleModel>>(false,
+					$"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAreaRules")}: {ex.Message}");
+			}
+		}
+
+		public async Task<OperationResult> Create(AreaRulesCreateModel createModel)
         {
             var core = await _coreHelper.GetCore();
             var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);

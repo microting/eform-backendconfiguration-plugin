@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import {Injectable} from '@angular/core';
+import {Observable} from 'rxjs';
 import {CommonPaginationState, OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
-import { ApiBaseService } from 'src/app/common/services';
+import {ApiBaseService} from 'src/app/common/services';
 import {
   AreaRuleSimpleModel,
   AreaRulePlanningModel,
@@ -19,6 +19,7 @@ export let BackendConfigurationPnAreasMethods = {
   AreaRulesForType7: 'api/backend-configuration-pn/area-rules/type-7',
   AreaRulesForType8: 'api/backend-configuration-pn/area-rules/type-8',
   AreaRulesIndex: 'api/backend-configuration-pn/area-rules/index',
+  AreaRulesIndexByPropertyIdAndAreaId: 'api/backend-configuration-pn/area-rules/index-by-propertyId-and-areaId',
   AreaRulePlanning: 'api/backend-configuration-pn/area-rules/planning',
   AreaRulePlanningById: 'api/backend-configuration-pn/area-rules/planning-by-id',
   WorkerPlannings: 'api/backend-configuration-pn/area-rules/worker-plannings',
@@ -27,8 +28,9 @@ export let BackendConfigurationPnAreasMethods = {
 @Injectable({
   providedIn: 'root',
 })
-  export class BackendConfigurationPnAreasService {
-  constructor(private apiBaseService: ApiBaseService) {}
+export class BackendConfigurationPnAreasService {
+  constructor(private apiBaseService: ApiBaseService) {
+  }
 
   getAreaByPropertyAreaId(propertyAreaId: number): Observable<OperationDataResult<AreaModel>> {
     return this.apiBaseService.get(BackendConfigurationPnAreasMethods.Area, {
@@ -41,7 +43,14 @@ export let BackendConfigurationPnAreasMethods = {
   ): Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRulesIndex,
-      { propertyAreaId }
+      {propertyAreaId}
+    );
+  }
+
+  getAreaRulesByPropertyIdAndAreaId(propertyId: number, areaId: number): Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnAreasMethods.AreaRulesIndexByPropertyIdAndAreaId,
+      {propertyId, areaId}
     );
   }
 
@@ -50,7 +59,7 @@ export let BackendConfigurationPnAreasMethods = {
   ): Observable<OperationDataResult<AreaRulePlanningModel>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRulePlanning,
-      { ruleId }
+      {ruleId}
     );
   }
 
@@ -60,7 +69,7 @@ export let BackendConfigurationPnAreasMethods = {
   ): Observable<OperationDataResult<AreaRuleModel>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRules,
-      { ruleId, propertyId }
+      {ruleId, propertyId}
     );
   }
 
@@ -90,7 +99,7 @@ export let BackendConfigurationPnAreasMethods = {
   deleteAreaRule(areaId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(
       BackendConfigurationPnAreasMethods.AreaRules,
-      { areaId }
+      {areaId}
     );
   }
 
@@ -118,15 +127,16 @@ export let BackendConfigurationPnAreasMethods = {
   ): Observable<OperationDataResult<AreaRulePlanningModel>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRulePlanningById,
-      { planningId }
+      {planningId}
     );
   }
 
-  getTaskWorkerAssignments(siteId: number, pagination: CommonPaginationState): Observable<OperationDataResult<Paged<TaskWorkerModel>>>{
+  getTaskWorkerAssignments(siteId: number, pagination: CommonPaginationState): Observable<OperationDataResult<Paged<TaskWorkerModel>>> {
     return this.apiBaseService.get(
-    BackendConfigurationPnAreasMethods.WorkerPlannings,
-    { siteId: siteId, ...pagination }
-  );}
+      BackendConfigurationPnAreasMethods.WorkerPlannings,
+      {siteId: siteId, ...pagination}
+    );
+  }
 
   getAreaByRuleId(areaRuleId: number): Observable<OperationDataResult<AreaModel>> {
     return this.apiBaseService.get(BackendConfigurationPnAreasMethods.AreaByRuleId, {

@@ -10,15 +10,17 @@ import {
   TaskTrackerShownColumnsComponent
 } from '../';
 import {
+  BackendConfigurationPnAreasService,
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskTrackerService
 } from '../../../../services';
 import {ToastrService} from 'ngx-toastr';
-import {Subscription} from 'rxjs';
+import {Subscription, zip} from 'rxjs';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {LoaderService} from 'src/app/common/services';
+import {AreaRulePlanModalComponent} from '../../../../components';
 
 @AutoUnsubscribe()
 @Component({
@@ -43,6 +45,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   columnsChangedSub$: Subscription;
   updateColumnsSub$: Subscription;
   getColumnsSub$: Subscription;
+  getDataForAreaRulePlanningModalSub$: Subscription;
 
   constructor(
     private loaderService: LoaderService,
@@ -52,6 +55,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     private propertyService: BackendConfigurationPnPropertiesService,
     public dialog: MatDialog,
     private overlay: Overlay,
+    private areasService: BackendConfigurationPnAreasService,
   ) {
   }
 
@@ -84,14 +88,14 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  getColumns(dialogRef?: MatDialogRef<TaskTrackerShownColumnsComponent, any>) {
+  getColumns(dialogRef?: MatDialogRef<TaskTrackerShownColumnsComponent>) {
     this.getColumnsSub$ = this.taskTrackerService.getColumns().subscribe(data => {
       if (data && data.success && data.model && data.model.length) {
         this.columns = data.model.reduce((acc, {columnName, isColumnEnabled}) => {
           acc[columnName] = isColumnEnabled;
           return acc;
         }, {} as Columns);
-        if(dialogRef) {
+        if (dialogRef) {
           dialogRef.componentInstance.setColumns(this.columns);
         }
       }
@@ -111,5 +115,29 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   openCreateModal() {
     const createModal = this.dialog.open(TaskTrackerCreateShowModalComponent, dialogConfigHelper(this.overlay));
     this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable());
+  }
+
+  openAreaRulePlanningModal(task: TaskModel) {
+    this.getDataForAreaRulePlanningModalSub$ = zip(
+      this.areasService.getAreaRulePlanningByRuleId(task.areaRuleId),
+      this.areasService.getAreaByRuleId(task.areaRuleId),
+      this.areasService.getAreaRulesByPropertyIdAndAreaId(task.propertyId, task.areaId))
+      .subscribe(([areaRulePlanning, area, areaRule]) => {
+        if (
+          areaRulePlanning && areaRulePlanning.success && areaRulePlanning.model &&
+          area             && area.success             && area.model             &&
+          areaRule         && areaRule.success         && areaRule.model
+        ) {
+          this.dialog.open(AreaRulePlanModalComponent, {
+            ...dialogConfigHelper(this.overlay, {
+              areaRule: areaRule.model.find(x => x.id === task.areaRuleId),
+              propertyId: task.propertyId,
+              area: area.model,
+              areaRulePlan: areaRulePlanning.model,
+            }),
+            minWidth: 500,
+          });
+        }
+      });
   }
 }

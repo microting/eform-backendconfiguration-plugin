@@ -62,8 +62,8 @@
           <tbody id="" role="rowgroup">
           <ng-container *ngFor="let task of tasks; let i = index">
             <tr
-              class="mat-row cdk-row"
-              [ngClass]="{'mat-row-odd' : i%2, 'task-is-expired cursor-pointer' : task.taskIsExpired}"
+              class="mat-row cdk-row cursor-pointer"
+              [ngClass]="{'mat-row-odd' : i%2, 'task-is-expired' : task.taskIsExpired}"
               (click)="redirectToCompliance(task)"
             >
               <td role="cell" class="mat-cell cdk-cell property"
