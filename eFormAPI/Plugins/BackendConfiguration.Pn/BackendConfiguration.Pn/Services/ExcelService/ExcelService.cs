@@ -275,7 +275,8 @@ public class ExcelService: IExcelService
                             y++;
                             worksheet.Cell(x + 1, y + 1).Value = dataModel.PropertyName;
                             y++;
-                            worksheet.Cell(x + 1, y + 1).Value = $"{dataModel.MicrotingSdkCaseDoneAt:dd.MM.yyyy HH:mm:ss}";
+                            worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseDoneAt;
+                            worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy HH:mm:ss";
                             y++;
                             worksheet.Cell(x + 1, y + 1).Value = dataModel.DoneBy;
                             y++;
@@ -296,7 +297,7 @@ public class ExcelService: IExcelService
                                         case "date":
                                             var date = DateTime.Parse(value);
                                             worksheet.Cell(x + 1, y + 1).SetValue(date);
-                                            //worksheet.Cell(x + 1, y + 1).DataType = XLDataType.DateTime;
+                                            worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy";
                                             break;
                                         case "number":
                                             try
