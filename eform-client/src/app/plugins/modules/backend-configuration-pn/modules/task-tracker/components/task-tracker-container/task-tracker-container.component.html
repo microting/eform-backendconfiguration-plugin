@@ -25,6 +25,8 @@
   <app-task-tracker-table
     [columnsFromDb]="columns"
     [tasks]="tasks"
-    (updateTable)="updateTable()">
+    (updateTable)="updateTable()"
+    (openAreaRulePlanningModal)="openAreaRulePlanningModal($event)"
+  >
   </app-task-tracker-table>
 </div>

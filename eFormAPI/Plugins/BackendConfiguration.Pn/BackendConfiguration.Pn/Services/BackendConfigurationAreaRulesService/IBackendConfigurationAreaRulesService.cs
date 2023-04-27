@@ -30,8 +30,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 
     public interface IBackendConfigurationAreaRulesService
-    {
-        Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId);
+	{
+		Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId);
+
+		Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyId, int areaId);
 
         Task<OperationDataResult<AreaRuleModel>> Read(int ruleId);
 

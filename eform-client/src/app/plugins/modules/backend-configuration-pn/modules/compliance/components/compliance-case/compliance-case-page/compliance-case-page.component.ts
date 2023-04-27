@@ -5,20 +5,17 @@ import {
   ViewChild,
   ViewChildren,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { EFormService, CasesService } from 'src/app/common/services';
+import {ActivatedRoute, Router} from '@angular/router';
+import {EFormService} from 'src/app/common/services';
 import {
   TemplateDto,
   CaseEditRequest,
   ReplyElementDto,
   ReplyRequest, ElementDto, DataItemDto,
 } from 'src/app/common/models';
-import { AuthStateService } from 'src/app/common/store';
-import { CaseEditElementComponent } from 'src/app/common/modules/eform-cases/components';
-import {
-  ComplianceCaseModule
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components/compliance-case/compliance-case.module';
-import {BackendConfigurationPnCompliancesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {AuthStateService} from 'src/app/common/store';
+import {CaseEditElementComponent} from 'src/app/common/modules/eform-cases/components';
+import {BackendConfigurationPnCompliancesService} from '../../../../../services';
 import {parseISO} from 'date-fns';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import * as R from 'ramda';
@@ -31,7 +28,7 @@ import * as R from 'ramda';
 export class ComplianceCasePageComponent implements OnInit {
   @ViewChildren(CaseEditElementComponent)
   editElements: QueryList<CaseEditElementComponent>;
-  @ViewChild('caseConfirmation', { static: false }) caseConfirmation;
+  @ViewChild('caseConfirmation', {static: false}) caseConfirmation;
   id: number;
   propertyId: number;
   eFormId: number;
@@ -66,6 +63,9 @@ export class ComplianceCasePageComponent implements OnInit {
       this.complianceId = +params['complianceId'];
       dateTimeAdapter.setLocale(authStateService.currentUserLocale);
     });
+    activateRoute.queryParams.subscribe((params) => {
+      this.reverseRoute = params['reverseRoute'];
+    });
   }
 
   ngOnInit() {
@@ -98,7 +98,7 @@ export class ComplianceCasePageComponent implements OnInit {
     }
   }
 
-  saveCase(navigateToPosts?: boolean) {
+  saveCase() {
     this.requestModels = [];
     this.editElements.forEach((x) => {
       x.extractData();
@@ -114,12 +114,7 @@ export class ComplianceCasePageComponent implements OnInit {
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();
-          this.router
-            .navigate([
-              '/plugins/backend-configuration-pn/compliances/' +
-                this.propertyId
-            ])
-            .then();
+          this.router.navigate([this.reverseRoute]).then();
         }
       });
   }
@@ -146,18 +141,18 @@ export class ComplianceCasePageComponent implements OnInit {
             if (dataItem.elementList !== undefined || dataItem.dataItemList !== undefined) {
               dataItem = dataItem as ElementDto;
               // R.set(R.lensPath([...pathForLens, 'extraPictures']), dataItem.extraPictures, this.replyElement);
-              if(dataItem.elementList) {
+              if (dataItem.elementList) {
                 for (let i = 0; i < dataItem.elementList.length; i++) {
                   fn([...pathForLens, 'elementList', i]);
                 }
               }
-              if(dataItem.dataItemList) {
+              if (dataItem.dataItemList) {
                 for (let i = 0; i < dataItem.dataItemList.length; i++) {
                   fn([...pathForLens, 'dataItemList', i]);
                 }
               }
             } else { // @ts-ignore
-              if(dataItem.fieldType !== undefined){
+              if (dataItem.fieldType !== undefined) {
                 dataItem = dataItem as DataItemDto;
                 if (dataItem.fieldType === 'FieldContainer') {
                   for (let i = 0; i < dataItem.dataItemList.length; i++) {
@@ -171,8 +166,8 @@ export class ComplianceCasePageComponent implements OnInit {
                 }
               }
             }
-          }
-          for (let i = 0; i < operation.model.elementList.length; i++){
+          };
+          for (let i = 0; i < operation.model.elementList.length; i++) {
             fn(['elementList', i]);
           }
         }

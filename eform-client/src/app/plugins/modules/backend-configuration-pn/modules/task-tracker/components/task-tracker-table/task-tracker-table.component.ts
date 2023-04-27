@@ -29,6 +29,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   @Input() columnsFromDb: Columns;
   @Input() tasks: TaskModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
+  @Output() openAreaRulePlanningModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
 
   days: Date[] = [];
   daysInTable: number[] = [];
@@ -155,7 +156,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   }
 
   redirectToCompliance(task: TaskModel) {
-    if(task.taskIsExpired) {
+    if(task.taskIsExpired) { // When clicking on a task that is overdue, the ones marked with red background, the user should navigate to plugins/backend-configuration-pn/compliances/case/121/21/1/2023-01-31T00:00:00/false/34
       this.router.navigate([
         '/plugins/backend-configuration-pn/compliances/case/',
         task.sdkCaseId,
@@ -164,7 +165,9 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
         task.deadlineTask,
         false, // thirtyDays
         task.complianceId
-      ], {relativeTo: this.route}).then();
+      ], {relativeTo: this.route, queryParams: {reverseRoute: '/plugins/backend-configuration-pn/task-tracker/'}}).then();
+    } else { // When clicking on a task that is not overdue, the user should be presented with the area rule planning modal for assigning workers
+      this.openAreaRulePlanningModal.emit(task);
     }
   }
 

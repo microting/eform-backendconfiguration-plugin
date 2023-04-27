@@ -11,8 +11,10 @@ export interface TaskModel {
   deadlineTask: Date,
   nextExecutionTime: string;
   taskIsExpired: boolean;
-  sdkCaseId?: number;
-  templateId?: number;
-  propertyId?: number;
-  complianceId?: number;
+  sdkCaseId: number;
+  templateId: number;
+  propertyId: number;
+  complianceId: number;
+  areaId: number;
+  areaRuleId: number;
 }
