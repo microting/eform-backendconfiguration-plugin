@@ -51,7 +51,7 @@ public static class BackendConfigurationTaskTrackerHelper
 		{
 			var result = new List<TaskTrackerModel>();
 			var dateTimeNow = DateTime.Now;
-			
+
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
 			var query = backendConfigurationPnDbContext.Compliances
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
@@ -120,7 +120,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Where(x => x.AreaId == compliance.AreaId)
 					.Select(x => x.Id)
 					.FirstOrDefaultAsync();
-					
+
 
 				var complianceModel = new TaskTrackerModel
 				{
@@ -133,7 +133,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					RepeatType = planning.RepeatType,
 					NextExecutionTime = (DateTime)planning.NextExecutionTime,
 					TaskName = taskName,
-					TaskIsExpired = dateTimeNow > (DateTime)planning.NextExecutionTime,
+					TaskIsExpired = dateTimeNow > compliance.Deadline,
 					PropertyId = compliance.PropertyId,
 					SdkCaseId = compliance.MicrotingSdkCaseId,
 					TemplateId = compliance.MicrotingSdkeFormId,
