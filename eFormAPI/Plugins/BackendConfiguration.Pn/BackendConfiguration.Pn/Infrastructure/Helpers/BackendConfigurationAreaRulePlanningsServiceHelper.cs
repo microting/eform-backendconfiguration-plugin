@@ -1797,8 +1797,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         // create folder with name tank
         var folderId = await core.FolderCreate(translatesForFolder, areaRule.FolderId).ConfigureAwait(false);
         var planningForType2TypeTankOpenId = 0;
-        if (areaRule.Type == AreaRuleT2TypesEnum.Open)
-        {
+        // if (areaRule.Type == AreaRuleT2TypesEnum.Open)
+        // {
             const string eformName = "03. Kontrol flydelag";
             var eformId = await sdkDbContext.CheckListTranslations
                 .Where(x => x.Text == eformName)
@@ -1870,7 +1870,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
                 planningForType2TypeTankOpenId = planningForType2TypeTankOpen.Id;
             }
-        }
+        //}
 
         await CreateAreaRulePlanningObject(areaRulePlanningModel,
             areaRule, planningForType2TypeTankOpenId,

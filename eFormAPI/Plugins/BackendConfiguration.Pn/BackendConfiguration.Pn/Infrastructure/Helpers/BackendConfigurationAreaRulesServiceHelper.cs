@@ -94,11 +94,11 @@ public static class BackendConfigurationAreaRulesServiceHelper
 
                     if (areaRuleCreateModel.TypeSpecificFields != null)
                     {
-                        //areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
-                        areaRule.Type = AreaRuleT2TypesEnum.Open;
+                        areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
+                        //areaRule.Type = AreaRuleT2TypesEnum.Open;
                         areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek ?? 0;
-                        //areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
-                        areaRule.Alarm = AreaRuleT2AlarmsEnum.No;
+                        areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
+                        //areaRule.Alarm = AreaRuleT2AlarmsEnum.No;
                         areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery ?? 0;
                     }
                     areaRule.ComplianceEnabled = true;

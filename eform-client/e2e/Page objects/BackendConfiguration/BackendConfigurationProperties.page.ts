@@ -206,6 +206,7 @@ export class BackendConfigurationPropertiesPage extends Page {
     if (!await ele.isDisplayed()) {
       await (await this.backendConfigurationPnButton()).click();
     }
+    await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.backendConfigurationPnPropertiesButton()).click();
     await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.propertyCreateBtn()).waitForClickable({ timeout: 90000 });
