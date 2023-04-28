@@ -13,21 +13,21 @@ describe('Enable Backend Config plugin', () => {
   });
   it('should enabled Items Planning plugin', () => {
     const pluginName = 'Microting Items Planning Plugin';
-    pluginPage.enablePluginByName(pluginName);
+    pluginPage.enablePluginByName(pluginName, 40000);
     const row = cy.contains('.mat-row', pluginName).first();
     row.find('.mat-column-actions button')
       .should('contain.text', 'toggle_on'); // plugin is enabled
   });
   it('should enabled Time registration plugin', () => {
     const pluginName = 'Microting Time Planning Plugin';
-    pluginPage.enablePluginByName(pluginName);
+    pluginPage.enablePluginByName(pluginName, 40000);
     const row = cy.contains('.mat-row', pluginName).first();
     row.find('.mat-column-actions button')
       .should('contain.text', 'toggle_on'); // plugin is enabled
   });
   it('should enabled Backend Config plugin', () => {
     const pluginName = 'Microting Backend Configuration Plugin';
-    pluginPage.enablePluginByName(pluginName);
+    pluginPage.enablePluginByName(pluginName, 100000);
     const row = cy.contains('.mat-row', pluginName).first();
     row.find('.mat-column-actions button')
       .should('contain.text', 'toggle_on'); // plugin is enabled

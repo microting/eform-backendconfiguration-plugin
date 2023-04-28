@@ -665,205 +665,205 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                 }
                                             }
 
-                                            if (areaRule.Type is AreaRuleT2TypesEnum.Open
-                                                    or AreaRuleT2TypesEnum.Closed
-                                                && areaRule.Alarm is AreaRuleT2AlarmsEnum.Yes)
-                                            {
-                                                const string eformName = "03. Kontrol alarmanlæg gyllebeholder";
-                                                var eformId = await sdkDbContext.CheckListTranslations
-                                                    .Where(x => x.Text == eformName)
-                                                    .Select(x => x.CheckListId)
-                                                    .FirstAsync().ConfigureAwait(false);
-                                                var planningForType2AlarmYes = await CreateItemPlanningObject(
-                                                        eformId,
-                                                        eformName, areaRule.AreaRulesPlannings[1].FolderId,
-                                                        areaRulePlanningModel, areaRule, userId,
-                                                        backendConfigurationPnDbContext, itemsPlanningPnDbContext)
-                                                    .ConfigureAwait(false);
-                                                planningForType2AlarmYes.NameTranslations =
-                                                    new List<PlanningNameTranslation>
-                                                    {
-                                                        new()
-                                                        {
-                                                            LanguageId = 1, // da
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 1)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Alarm"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 2, // en
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 2)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Alarm"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 3, // ge
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 3)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Alarm"
-                                                        }
-                                                        // new ()
-                                                        // {
-                                                        //     LanguageId = 4,// uk-ua
-                                                        //     Name = areaRule.AreaRuleTranslations
-                                                        //        .Where(x => x.LanguageId == 4)
-                                                        //        .Select(x => x.Name)
-                                                        //        .FirstOrDefault() + "Перевірте сигналізацію",
-                                                        // },
-                                                    };
-                                                planningForType2AlarmYes.RepeatEvery = 1;
-                                                planningForType2AlarmYes.RepeatType =
-                                                    (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)
-                                                    RepeatType.Month;
-                                                if (areaRulePlanningModel.TypeSpecificFields is not null)
-                                                {
-                                                    planningForType2AlarmYes.RepeatUntil =
-                                                        areaRulePlanningModel.TypeSpecificFields.EndDate;
-                                                    planningForType2AlarmYes.DayOfWeek =
-                                                        (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
-                                                            .DayOfWeek ==
-                                                        0
-                                                            ? DayOfWeek.Monday
-                                                            : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
-                                                                .DayOfWeek;
-                                                    planningForType2AlarmYes.DayOfMonth =
-                                                        areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
-                                                            ? 1
-                                                            : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                                                }
-
-                                                await planningForType2AlarmYes.Update(itemsPlanningPnDbContext)
-                                                    .ConfigureAwait(false);
-                                                foreach (var planningSite in areaRule.AreaRulesPlannings[1]
-                                                             .PlanningSites)
-                                                {
-                                                    planningSite.Status = 33;
-                                                    await planningSite.Update(backendConfigurationPnDbContext)
-                                                        .ConfigureAwait(false);
-                                                }
-
-                                                await PairItemWithSiteHelper.Pair(
-                                                    rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
-                                                    eformId,
-                                                    planningForType2AlarmYes.Id,
-                                                    areaRule.AreaRulesPlannings[1].FolderId, core,
-                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
-                                                areaRule.AreaRulesPlannings[1].DayOfMonth =
-                                                    (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
-                                                        ? 1
-                                                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                                                areaRule.AreaRulesPlannings[1].ItemPlanningId =
-                                                    planningForType2AlarmYes.Id;
-                                                areaRule.AreaRulesPlannings[1].Status = true;
-                                                await areaRule.AreaRulesPlannings[1]
-                                                    .Update(backendConfigurationPnDbContext).ConfigureAwait(false);
-                                            }
-                                            else
-                                            {
-                                                if (areaRule.AreaRulesPlannings[1].ItemPlanningId != 0)
-                                                {
-                                                    await DeleteItemPlanning(areaRule.AreaRulesPlannings[1]
-                                                            .ItemPlanningId, core, userId,
-                                                        backendConfigurationPnDbContext,
-                                                        itemsPlanningPnDbContext).ConfigureAwait(false);
-                                                    areaRule.AreaRulesPlannings[1].ItemPlanningId = 0;
-                                                    await areaRule.AreaRulesPlannings[1]
-                                                        .Update(backendConfigurationPnDbContext).ConfigureAwait(false);
-                                                }
-                                            }
+                                            // if (areaRule.Type is AreaRuleT2TypesEnum.Open
+                                            //         or AreaRuleT2TypesEnum.Closed
+                                            //     && areaRule.Alarm is AreaRuleT2AlarmsEnum.Yes)
+                                            // {
+                                            //     const string eformName = "03. Kontrol alarmanlæg gyllebeholder";
+                                            //     var eformId = await sdkDbContext.CheckListTranslations
+                                            //         .Where(x => x.Text == eformName)
+                                            //         .Select(x => x.CheckListId)
+                                            //         .FirstAsync().ConfigureAwait(false);
+                                            //     var planningForType2AlarmYes = await CreateItemPlanningObject(
+                                            //             eformId,
+                                            //             eformName, areaRule.AreaRulesPlannings[1].FolderId,
+                                            //             areaRulePlanningModel, areaRule, userId,
+                                            //             backendConfigurationPnDbContext, itemsPlanningPnDbContext)
+                                            //         .ConfigureAwait(false);
+                                            //     planningForType2AlarmYes.NameTranslations =
+                                            //         new List<PlanningNameTranslation>
+                                            //         {
+                                            //             new()
+                                            //             {
+                                            //                 LanguageId = 1, // da
+                                            //                 Name = areaRule.AreaRuleTranslations
+                                            //                     .Where(x => x.LanguageId == 1)
+                                            //                     .Select(x => x.Name)
+                                            //                     .FirstOrDefault() + ": Alarm"
+                                            //             },
+                                            //             new()
+                                            //             {
+                                            //                 LanguageId = 2, // en
+                                            //                 Name = areaRule.AreaRuleTranslations
+                                            //                     .Where(x => x.LanguageId == 2)
+                                            //                     .Select(x => x.Name)
+                                            //                     .FirstOrDefault() + ": Alarm"
+                                            //             },
+                                            //             new()
+                                            //             {
+                                            //                 LanguageId = 3, // ge
+                                            //                 Name = areaRule.AreaRuleTranslations
+                                            //                     .Where(x => x.LanguageId == 3)
+                                            //                     .Select(x => x.Name)
+                                            //                     .FirstOrDefault() + ": Alarm"
+                                            //             }
+                                            //             // new ()
+                                            //             // {
+                                            //             //     LanguageId = 4,// uk-ua
+                                            //             //     Name = areaRule.AreaRuleTranslations
+                                            //             //        .Where(x => x.LanguageId == 4)
+                                            //             //        .Select(x => x.Name)
+                                            //             //        .FirstOrDefault() + "Перевірте сигналізацію",
+                                            //             // },
+                                            //         };
+                                            //     planningForType2AlarmYes.RepeatEvery = 1;
+                                            //     planningForType2AlarmYes.RepeatType =
+                                            //         (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)
+                                            //         RepeatType.Month;
+                                            //     if (areaRulePlanningModel.TypeSpecificFields is not null)
+                                            //     {
+                                            //         planningForType2AlarmYes.RepeatUntil =
+                                            //             areaRulePlanningModel.TypeSpecificFields.EndDate;
+                                            //         planningForType2AlarmYes.DayOfWeek =
+                                            //             (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
+                                            //                 .DayOfWeek ==
+                                            //             0
+                                            //                 ? DayOfWeek.Monday
+                                            //                 : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
+                                            //                     .DayOfWeek;
+                                            //         planningForType2AlarmYes.DayOfMonth =
+                                            //             areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                            //                 ? 1
+                                            //                 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                            //     }
+                                            //
+                                            //     await planningForType2AlarmYes.Update(itemsPlanningPnDbContext)
+                                            //         .ConfigureAwait(false);
+                                            //     foreach (var planningSite in areaRule.AreaRulesPlannings[1]
+                                            //                  .PlanningSites)
+                                            //     {
+                                            //         planningSite.Status = 33;
+                                            //         await planningSite.Update(backendConfigurationPnDbContext)
+                                            //             .ConfigureAwait(false);
+                                            //     }
+                                            //
+                                            //     await PairItemWithSiteHelper.Pair(
+                                            //         rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
+                                            //         eformId,
+                                            //         planningForType2AlarmYes.Id,
+                                            //         areaRule.AreaRulesPlannings[1].FolderId, core,
+                                            //         itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                                            //     areaRule.AreaRulesPlannings[1].DayOfMonth =
+                                            //         (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                            //             ? 1
+                                            //             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                            //     areaRule.AreaRulesPlannings[1].ItemPlanningId =
+                                            //         planningForType2AlarmYes.Id;
+                                            //     areaRule.AreaRulesPlannings[1].Status = true;
+                                            //     await areaRule.AreaRulesPlannings[1]
+                                            //         .Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                            // }
+                                            // else
+                                            // {
+                                            //     if (areaRule.AreaRulesPlannings[1].ItemPlanningId != 0)
+                                            //     {
+                                            //         await DeleteItemPlanning(areaRule.AreaRulesPlannings[1]
+                                            //                 .ItemPlanningId, core, userId,
+                                            //             backendConfigurationPnDbContext,
+                                            //             itemsPlanningPnDbContext).ConfigureAwait(false);
+                                            //         areaRule.AreaRulesPlannings[1].ItemPlanningId = 0;
+                                            //         await areaRule.AreaRulesPlannings[1]
+                                            //             .Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                            //     }
+                                            // }
 
                                             /*areaRule.EformName must be "03. Kontrol konstruktion"*/
-                                            var planningForType2 = await CreateItemPlanningObject(
-                                                    (int)areaRule.EformId,
-                                                    areaRule.EformName, areaRule.AreaRulesPlannings[2].FolderId,
-                                                    areaRulePlanningModel, areaRule, userId,
-                                                    backendConfigurationPnDbContext, itemsPlanningPnDbContext)
-                                                .ConfigureAwait(false);
-                                            planningForType2.NameTranslations = new List<PlanningNameTranslation>
-                                            {
-                                                new()
-                                                {
-                                                    LanguageId = 1, // da
-                                                    Name = areaRule.AreaRuleTranslations
-                                                        .Where(x => x.LanguageId == 1)
-                                                        .Select(x => x.Name)
-                                                        .FirstOrDefault() + ": Konstruktion"
-                                                },
-                                                new()
-                                                {
-                                                    LanguageId = 2, // en
-                                                    Name = areaRule.AreaRuleTranslations
-                                                        .Where(x => x.LanguageId == 2)
-                                                        .Select(x => x.Name)
-                                                        .FirstOrDefault() + ": Construction"
-                                                },
-                                                new()
-                                                {
-                                                    LanguageId = 3, // ge
-                                                    Name = areaRule.AreaRuleTranslations
-                                                        .Where(x => x.LanguageId == 3)
-                                                        .Select(x => x.Name)
-                                                        .FirstOrDefault() + ": Konstruktion"
-                                                }
-                                                // new PlanningNameTranslation
-                                                // {
-                                                //     LanguageId = 4,// uk-ua
-                                                //     Name = areaRule.AreaRuleTranslations
-                                                //      .Where(x => x.LanguageId == 4)
-                                                //      .Select(x => x.Name)
-                                                //      .FirstOrDefault() + "Перевірте конструкцію",
-                                                // },
-                                            };
-                                            planningForType2.RepeatEvery = 12;
-                                            planningForType2.RepeatType =
-                                                (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType
-                                                    .Month;
-                                            if (areaRulePlanningModel.TypeSpecificFields is not null)
-                                            {
-                                                planningForType2.RepeatUntil =
-                                                    areaRulePlanningModel.TypeSpecificFields.EndDate;
-                                                planningForType2.DayOfWeek =
-                                                    (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
-                                                        .DayOfWeek == 0
-                                                        ? DayOfWeek.Monday
-                                                        : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
-                                                            .DayOfWeek;
-                                                planningForType2.DayOfMonth =
-                                                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
-                                                        ? 1
-                                                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                                            }
+                                            // var planningForType2 = await CreateItemPlanningObject(
+                                            //         (int)areaRule.EformId,
+                                            //         areaRule.EformName, areaRule.AreaRulesPlannings[2].FolderId,
+                                            //         areaRulePlanningModel, areaRule, userId,
+                                            //         backendConfigurationPnDbContext, itemsPlanningPnDbContext)
+                                            //     .ConfigureAwait(false);
+                                            // planningForType2.NameTranslations = new List<PlanningNameTranslation>
+                                            // {
+                                            //     new()
+                                            //     {
+                                            //         LanguageId = 1, // da
+                                            //         Name = areaRule.AreaRuleTranslations
+                                            //             .Where(x => x.LanguageId == 1)
+                                            //             .Select(x => x.Name)
+                                            //             .FirstOrDefault() + ": Konstruktion"
+                                            //     },
+                                            //     new()
+                                            //     {
+                                            //         LanguageId = 2, // en
+                                            //         Name = areaRule.AreaRuleTranslations
+                                            //             .Where(x => x.LanguageId == 2)
+                                            //             .Select(x => x.Name)
+                                            //             .FirstOrDefault() + ": Construction"
+                                            //     },
+                                            //     new()
+                                            //     {
+                                            //         LanguageId = 3, // ge
+                                            //         Name = areaRule.AreaRuleTranslations
+                                            //             .Where(x => x.LanguageId == 3)
+                                            //             .Select(x => x.Name)
+                                            //             .FirstOrDefault() + ": Konstruktion"
+                                            //     }
+                                            //     // new PlanningNameTranslation
+                                            //     // {
+                                            //     //     LanguageId = 4,// uk-ua
+                                            //     //     Name = areaRule.AreaRuleTranslations
+                                            //     //      .Where(x => x.LanguageId == 4)
+                                            //     //      .Select(x => x.Name)
+                                            //     //      .FirstOrDefault() + "Перевірте конструкцію",
+                                            //     // },
+                                            // };
+                                            // planningForType2.RepeatEvery = 12;
+                                            // planningForType2.RepeatType =
+                                            //     (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType
+                                            //         .Month;
+                                            // if (areaRulePlanningModel.TypeSpecificFields is not null)
+                                            // {
+                                            //     planningForType2.RepeatUntil =
+                                            //         areaRulePlanningModel.TypeSpecificFields.EndDate;
+                                            //     planningForType2.DayOfWeek =
+                                            //         (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
+                                            //             .DayOfWeek == 0
+                                            //             ? DayOfWeek.Monday
+                                            //             : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields
+                                            //                 .DayOfWeek;
+                                            //     planningForType2.DayOfMonth =
+                                            //         areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+                                            //             ? 1
+                                            //             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                            // }
+                                            //
+                                            // await planningForType2.Update(itemsPlanningPnDbContext)
+                                            //     .ConfigureAwait(false);
+                                            // foreach (var planningSite in areaRule.AreaRulesPlannings[2].PlanningSites)
+                                            // {
+                                            //     planningSite.Status = 33;
+                                            //     await planningSite.Update(backendConfigurationPnDbContext)
+                                            //         .ConfigureAwait(false);
+                                            // }
 
-                                            await planningForType2.Update(itemsPlanningPnDbContext)
-                                                .ConfigureAwait(false);
-                                            foreach (var planningSite in areaRule.AreaRulesPlannings[2].PlanningSites)
-                                            {
-                                                planningSite.Status = 33;
-                                                await planningSite.Update(backendConfigurationPnDbContext)
-                                                    .ConfigureAwait(false);
-                                            }
-
-                                            await PairItemWithSiteHelper.Pair(
-                                                    rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
-                                                    (int)areaRule.EformId,
-                                                    planningForType2.Id,
-                                                    areaRule.AreaRulesPlannings[2].FolderId, core,
-                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod)
-                                                .ConfigureAwait(false);
-                                            areaRule.AreaRulesPlannings[2].ItemPlanningId = planningForType2.Id;
-                                            areaRule.AreaRulesPlannings[2].DayOfMonth =
-                                                (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
-                                                    ? 1
-                                                    : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                                            areaRule.AreaRulesPlannings[2].Status = true;
-                                            await areaRule.AreaRulesPlannings[2]
-                                                .Update(backendConfigurationPnDbContext).ConfigureAwait(false);
-                                            i = areaRule.AreaRulesPlannings.Count;
+                                            // await PairItemWithSiteHelper.Pair(
+                                            //         rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
+                                            //         (int)areaRule.EformId,
+                                            //         planningForType2.Id,
+                                            //         areaRule.AreaRulesPlannings[2].FolderId, core,
+                                            //         itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod)
+                                            //     .ConfigureAwait(false);
+                                            // areaRule.AreaRulesPlannings[2].ItemPlanningId = planningForType2.Id;
+                                            // areaRule.AreaRulesPlannings[2].DayOfMonth =
+                                            //     (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
+                                            //         ? 1
+                                            //         : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+                                            // areaRule.AreaRulesPlannings[2].Status = true;
+                                            // await areaRule.AreaRulesPlannings[2]
+                                            //     .Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                            // i = areaRule.AreaRulesPlannings.Count;
                                             break;
                                         }
                                         case AreaTypesEnum.Type6: // heat pumps
@@ -1876,157 +1876,157 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             areaRule, planningForType2TypeTankOpenId,
             folderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
 
-        var planningForType2AlarmYesId = 0;
-        if (areaRule.Type is AreaRuleT2TypesEnum.Open or AreaRuleT2TypesEnum.Closed
-            && areaRule.Alarm is AreaRuleT2AlarmsEnum.Yes)
-        {
-            const string eformName = "03. Kontrol alarmanlæg gyllebeholder";
-            var eformId = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text == eformName)
-                .Select(x => x.CheckListId)
-                .FirstAsync().ConfigureAwait(false);
-
-            if (areaRulePlanningModel.Status)
-            {
-                var planningForType2AlarmYes = await CreateItemPlanningObject(eformId, eformName, folderId,
-                    areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
-                planningForType2AlarmYes.NameTranslations =
-                    new List<PlanningNameTranslation>
-                    {
-                        new()
-                        {
-                            LanguageId = danishLanguage.Id, // da
-                            Name = areaRule.AreaRuleTranslations
-                                .Where(x => x.LanguageId == 1)
-                                .Select(x => x.Name)
-                                .FirstOrDefault() + ": Alarm"
-                        },
-                        new()
-                        {
-                            LanguageId = englishLanguage.Id, // en
-                            Name = areaRule.AreaRuleTranslations
-                                .Where(x => x.LanguageId == 2)
-                                .Select(x => x.Name)
-                                .FirstOrDefault() + ": Alarm"
-                        },
-                        new()
-                        {
-                            LanguageId = germanLanguage.Id, // ge
-                            Name = areaRule.AreaRuleTranslations
-                                .Where(x => x.LanguageId == 3)
-                                .Select(x => x.Name)
-                                .FirstOrDefault() + ": Alarm"
-                        }
-                        // new ()
-                        // {
-                        //     LanguageId = 4,// uk-ua
-                        //     Name = areaRule.AreaRuleTranslations
-                        //        .Where(x => x.LanguageId == 4)
-                        //        .Select(x => x.Name)
-                        //        .FirstOrDefault() + "Перевірте сигналізацію",
-                        // },
-                    };
-                planningForType2AlarmYes.RepeatEvery = 1;
-                planningForType2AlarmYes.RepeatType =
-                    (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
-                if (areaRulePlanningModel.TypeSpecificFields != null)
-                {
-                    planningForType2AlarmYes.RepeatUntil =
-                        areaRulePlanningModel.TypeSpecificFields.EndDate;
-                    planningForType2AlarmYes.DayOfWeek =
-                        (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
-                            ? DayOfWeek.Monday
-                            : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
-                    planningForType2AlarmYes.DayOfMonth =
-                        areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
-                            ? 1
-                            : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-                }
-
-                await planningForType2AlarmYes.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
-                await PairItemWithSiteHelper.Pair(
-                    areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
-                    planningForType2AlarmYes.Id,
-                    folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
-                planningForType2AlarmYesId = planningForType2AlarmYes.Id;
-            }
-        }
-
-        await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
-            planningForType2AlarmYesId,
-            folderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
+        // var planningForType2AlarmYesId = 0;
+        // if (areaRule.Type is AreaRuleT2TypesEnum.Open or AreaRuleT2TypesEnum.Closed
+        //     && areaRule.Alarm is AreaRuleT2AlarmsEnum.Yes)
+        // {
+        //     const string eformName = "03. Kontrol alarmanlæg gyllebeholder";
+        //     var eformId = await sdkDbContext.CheckListTranslations
+        //         .Where(x => x.Text == eformName)
+        //         .Select(x => x.CheckListId)
+        //         .FirstAsync().ConfigureAwait(false);
+        //
+        //     if (areaRulePlanningModel.Status)
+        //     {
+        //         var planningForType2AlarmYes = await CreateItemPlanningObject(eformId, eformName, folderId,
+        //             areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+        //         planningForType2AlarmYes.NameTranslations =
+        //             new List<PlanningNameTranslation>
+        //             {
+        //                 new()
+        //                 {
+        //                     LanguageId = danishLanguage.Id, // da
+        //                     Name = areaRule.AreaRuleTranslations
+        //                         .Where(x => x.LanguageId == 1)
+        //                         .Select(x => x.Name)
+        //                         .FirstOrDefault() + ": Alarm"
+        //                 },
+        //                 new()
+        //                 {
+        //                     LanguageId = englishLanguage.Id, // en
+        //                     Name = areaRule.AreaRuleTranslations
+        //                         .Where(x => x.LanguageId == 2)
+        //                         .Select(x => x.Name)
+        //                         .FirstOrDefault() + ": Alarm"
+        //                 },
+        //                 new()
+        //                 {
+        //                     LanguageId = germanLanguage.Id, // ge
+        //                     Name = areaRule.AreaRuleTranslations
+        //                         .Where(x => x.LanguageId == 3)
+        //                         .Select(x => x.Name)
+        //                         .FirstOrDefault() + ": Alarm"
+        //                 }
+        //                 // new ()
+        //                 // {
+        //                 //     LanguageId = 4,// uk-ua
+        //                 //     Name = areaRule.AreaRuleTranslations
+        //                 //        .Where(x => x.LanguageId == 4)
+        //                 //        .Select(x => x.Name)
+        //                 //        .FirstOrDefault() + "Перевірте сигналізацію",
+        //                 // },
+        //             };
+        //         planningForType2AlarmYes.RepeatEvery = 1;
+        //         planningForType2AlarmYes.RepeatType =
+        //             (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
+        //         if (areaRulePlanningModel.TypeSpecificFields != null)
+        //         {
+        //             planningForType2AlarmYes.RepeatUntil =
+        //                 areaRulePlanningModel.TypeSpecificFields.EndDate;
+        //             planningForType2AlarmYes.DayOfWeek =
+        //                 (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+        //                     ? DayOfWeek.Monday
+        //                     : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+        //             planningForType2AlarmYes.DayOfMonth =
+        //                 areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+        //                     ? 1
+        //                     : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+        //         }
+        //
+        //         await planningForType2AlarmYes.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+        //         await PairItemWithSiteHelper.Pair(
+        //             areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
+        //             planningForType2AlarmYes.Id,
+        //             folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+        //         planningForType2AlarmYesId = planningForType2AlarmYes.Id;
+        //     }
+        // }
+        //
+        // await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+        //     planningForType2AlarmYesId,
+        //     folderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
         // await areaRulePlanningForType2AlarmYes.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-        var planningForType2Id = 0;
-        if (areaRulePlanningModel.Status)
-        {
-            //areaRule.EformName must be "03. Kontrol konstruktion"
-            var planningForType2 = await CreateItemPlanningObject((int)areaRule.EformId!,
-                    areaRule.EformName, folderId, areaRulePlanningModel, areaRule, userId,
-                    backendConfigurationPnDbContext, itemsPlanningPnDbContext)
-                .ConfigureAwait(false);
-            planningForType2.NameTranslations = new List<PlanningNameTranslation>
-            {
-                new()
-                {
-                    LanguageId = danishLanguage.Id, // da
-                    Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 1)
-                        .Select(x => x.Name)
-                        .FirstOrDefault() + ": Konstruktion"
-                },
-                new()
-                {
-                    LanguageId = englishLanguage.Id, // en
-                    Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 2)
-                        .Select(x => x.Name)
-                        .FirstOrDefault() + ": Construction"
-                },
-                new()
-                {
-                    LanguageId = germanLanguage.Id, // ge
-                    Name = areaRule.AreaRuleTranslations
-                        .Where(x => x.LanguageId == 3)
-                        .Select(x => x.Name)
-                        .FirstOrDefault() + ": Konstruktion"
-                }
-                // new PlanningNameTranslation
-                // {
-                //     LanguageId = 4,// uk-ua
-                //     Name = areaRule.AreaRuleTranslations
-                //      .Where(x => x.LanguageId == 4)
-                //      .Select(x => x.Name)
-                //      .FirstOrDefault() + "Перевірте конструкцію",
-                // },
-            };
-            planningForType2.RepeatEvery = 12;
-            planningForType2.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
-            if (areaRulePlanningModel.TypeSpecificFields != null)
-            {
-                planningForType2.RepeatUntil =
-                    areaRulePlanningModel.TypeSpecificFields.EndDate;
-                planningForType2.DayOfWeek =
-                    (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
-                        ? DayOfWeek.Monday
-                        : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
-                planningForType2.DayOfMonth =
-                    areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
-                        ? 1
-                        : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
-            }
-
-            await planningForType2.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
-            await PairItemWithSiteHelper.Pair(
-                areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
-                planningForType2.Id,
-                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
-            planningForType2Id = planningForType2.Id;
-        }
-
-        await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
-            planningForType2Id,
-            folderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
+        //var planningForType2Id = 0;
+        // if (areaRulePlanningModel.Status)
+        // {
+        //     //areaRule.EformName must be "03. Kontrol konstruktion"
+        //     var planningForType2 = await CreateItemPlanningObject((int)areaRule.EformId!,
+        //             areaRule.EformName, folderId, areaRulePlanningModel, areaRule, userId,
+        //             backendConfigurationPnDbContext, itemsPlanningPnDbContext)
+        //         .ConfigureAwait(false);
+        //     planningForType2.NameTranslations = new List<PlanningNameTranslation>
+        //     {
+        //         new()
+        //         {
+        //             LanguageId = danishLanguage.Id, // da
+        //             Name = areaRule.AreaRuleTranslations
+        //                 .Where(x => x.LanguageId == 1)
+        //                 .Select(x => x.Name)
+        //                 .FirstOrDefault() + ": Konstruktion"
+        //         },
+        //         new()
+        //         {
+        //             LanguageId = englishLanguage.Id, // en
+        //             Name = areaRule.AreaRuleTranslations
+        //                 .Where(x => x.LanguageId == 2)
+        //                 .Select(x => x.Name)
+        //                 .FirstOrDefault() + ": Construction"
+        //         },
+        //         new()
+        //         {
+        //             LanguageId = germanLanguage.Id, // ge
+        //             Name = areaRule.AreaRuleTranslations
+        //                 .Where(x => x.LanguageId == 3)
+        //                 .Select(x => x.Name)
+        //                 .FirstOrDefault() + ": Konstruktion"
+        //         }
+        //         // new PlanningNameTranslation
+        //         // {
+        //         //     LanguageId = 4,// uk-ua
+        //         //     Name = areaRule.AreaRuleTranslations
+        //         //      .Where(x => x.LanguageId == 4)
+        //         //      .Select(x => x.Name)
+        //         //      .FirstOrDefault() + "Перевірте конструкцію",
+        //         // },
+        //     };
+        //     planningForType2.RepeatEvery = 12;
+        //     planningForType2.RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
+        //     if (areaRulePlanningModel.TypeSpecificFields != null)
+        //     {
+        //         planningForType2.RepeatUntil =
+        //             areaRulePlanningModel.TypeSpecificFields.EndDate;
+        //         planningForType2.DayOfWeek =
+        //             (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek == 0
+        //                 ? DayOfWeek.Monday
+        //                 : (DayOfWeek)areaRulePlanningModel.TypeSpecificFields.DayOfWeek;
+        //         planningForType2.DayOfMonth =
+        //             areaRulePlanningModel.TypeSpecificFields.DayOfMonth == 0
+        //                 ? 1
+        //                 : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
+        //     }
+        //
+        //     await planningForType2.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+        //     await PairItemWithSiteHelper.Pair(
+        //         areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
+        //         planningForType2.Id,
+        //         folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+        //     planningForType2Id = planningForType2.Id;
+        // }
+        //
+        // await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
+        //     planningForType2Id,
+        //     folderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
     }
 
     public static async Task CreatePlanningType3(AreaRule areaRule, MicrotingDbContext sdkDbContext,
