@@ -26,7 +26,7 @@
   >
   </mtx-grid>
 </ng-container>
-<ng-container *ngIf="selectedArea.type === 3">
+<ng-container *ngIf="selectedArea.type === 3 && areaRules.length > 0">
   <br>
   <h3>{{'Klargøring af stalde' | translate}}</h3>
 </ng-container>
@@ -38,18 +38,20 @@
   <br>
   <h3>{{'Pools' | translate}}</h3>
 </ng-container>
-<mtx-grid
-  id="mainTable"
-  [data]="areaRules"
-  [columns]="getColumns()"
-  [cellTemplate]="{translatedName: ruleNameTpl, eformName: eFormNameTpl, actions: actionsTpl}"
-  [showPaginator]="false"
-  [pageOnFront]="false"
-  [rowStriped]="true"
-  [showToolbar]="false"
-  [showColumnMenuButton]="false"
->
-</mtx-grid>
+<ng-container *ngIf="areaRules.length > 0">
+  <mtx-grid
+    id="mainTable"
+    [data]="areaRules"
+    [columns]="getColumns()"
+    [cellTemplate]="{translatedName: ruleNameTpl, eformName: eFormNameTpl, actions: actionsTpl}"
+    [showPaginator]="false"
+    [pageOnFront]="false"
+    [rowStriped]="true"
+    [showToolbar]="false"
+    [showColumnMenuButton]="false"
+  >
+  </mtx-grid>
+</ng-container>
 <ng-template #ruleNameTpl let-row let-i="index">
   <div class="ruleName" id="ruleName-{{i}}">{{row.translatedName}}</div>
 </ng-template>

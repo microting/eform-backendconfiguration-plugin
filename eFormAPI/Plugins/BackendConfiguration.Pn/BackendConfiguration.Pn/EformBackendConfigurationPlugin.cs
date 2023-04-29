@@ -1228,6 +1228,62 @@ namespace BackendConfiguration.Pn
 					}
 				}
 			);
+
+			await CreateFolderTranslations(core, sdkDbContext,
+				await sdkDbContext.FolderTranslations
+					.Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+					.Where(x => x.Name == "03. Gyllebeholdere")
+					.ToListAsync(),
+				new List<CommonTranslationsModel>
+				{
+					new()
+					{
+						LanguageId = 1, // da
+						Name = "03. Flydelag",
+						Description = ""
+					},
+					new()
+					{
+						LanguageId = 2, // en
+						Name = "03. Floating layer",
+						Description = ""
+					},
+					new()
+					{
+						LanguageId = 3, // ge
+						Name = "03. Schwimmende Ebene",
+						Description = ""
+					}
+				}
+			);
+
+			await CreateFolderTranslations(core, sdkDbContext,
+				await sdkDbContext.FolderTranslations
+					.Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+					.Where(x => x.Name == "05. Stalde: Halebid og klargøring")
+					.ToListAsync(),
+				new List<CommonTranslationsModel>
+				{
+					new()
+					{
+						LanguageId = 1, // da
+						Name = "05. Halebid",
+						Description = ""
+					},
+					new()
+					{
+						LanguageId = 2, // en
+						Name = "05. Tail bite",
+						Description = ""
+					},
+					new()
+					{
+						LanguageId = 3, // ge
+						Name = "05. Schwanzbiss",
+						Description = ""
+					}
+				}
+			);
 		}
 
         private static async Task UpdateAreaTranslations(BackendConfigurationPnDbContext context)
@@ -1239,7 +1295,13 @@ namespace BackendConfiguration.Pn
                 new("25. Chemisches APV", "25. Chemische Kontrolle"),
                 new("01. Fokusområder Miljøledelse", "01. Logbøger Miljøledelse"),
                 new("01. Focus areas Environmental management", "01. Log books Environmental management"),
-                new("01. Schwerpunkte Umweltverwaltung", "01. Logbücher Umweltmanagement")
+                new("01. Schwerpunkte Umweltverwaltung", "01. Logbücher Umweltmanagement"),
+                new("03. Gyllebeholdere", "03. Flydelag"),
+                new("03. Slurry tanks", "03. Floating layers"),
+                new("03. Gülletanks", "03. Schwimmende Ebenen"),
+                new("05. Stalde: Halebid og klargøring", "05. Halebid"),
+                new("05. Stables: Tail bite and preparation", "05. Tail bite"),
+                new("05. Ställe: Schwanzbiss und Vorbereitung", "05. Schwanzbiss")
             };
 
             foreach (var (oldValue, newValue) in listWithOldAndNewTranslates)
@@ -1249,7 +1311,22 @@ namespace BackendConfiguration.Pn
 				areaTranslation.Name = newValue;
 				await areaTranslation.Update(context);
 			}
-		}
+
+            var listWithdOldNewItemTranslations = new List<KeyValuePair<string, string>>
+            {
+	            new("Ny Gyllebeholder", "Ny Flydelag"),
+	            new("New Slurry tank", "New Floating layer"),
+	            new("Neuer Gülletank", "Neue Schwimmende Ebene"),
+            };
+
+            foreach (var (oldValue, newValue) in listWithdOldNewItemTranslations)
+			{
+	            var areaTranslation = await context.AreaTranslations.FirstOrDefaultAsync(x => x.NewItemName == oldValue);
+	            if (areaTranslation == null) continue;
+	            areaTranslation.NewItemName = newValue;
+	            await areaTranslation.Update(context);
+			}
+        }
 
 		private static async Task UpdateCheckLists(MicrotingDbContext sdkDbContext)
 		{

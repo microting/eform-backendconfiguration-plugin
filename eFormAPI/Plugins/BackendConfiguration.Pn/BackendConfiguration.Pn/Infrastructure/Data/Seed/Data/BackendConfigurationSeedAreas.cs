@@ -129,30 +129,30 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     new()
                     {
-                        Name = "03. Gyllebeholdere",
+                        Name = "03. Flydelag",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 1,
                         InfoBox = "En gyllebeholder pr. linje",
                         Placeholder = "Gyllebeholder",
-                        NewItemName = "Ny gyllebeholder"
+                        NewItemName = "Ny flydelag"
                     },
                     new()
                     {
-                        Name = "03. Slurry tanks",
+                        Name = "03. Floating layer",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 2,
                         InfoBox = "One slurry tank per line",
                         Placeholder = "Slurry tank",
-                        NewItemName = "New slurry tank"
+                        NewItemName = "New floating layer"
                     },
                     new()
                     {
-                        Name = "03. Gülletanks",
+                        Name = "03. Schwimmende Ebene",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.f8xu36lz5589",
                         LanguageId = 3,
                         InfoBox = "Nur eine Gülle-Tank pro Zeile",
                         Placeholder = "Gülle-Tank",
-                        NewItemName = "Neue Gülle-Tank"
+                        NewItemName = "Neue Schwimmende Ebene"
                     }
                 },
                 AreaInitialField = new AreaInitialField
@@ -219,7 +219,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         // Name = "05. Klargøring af stalde og dokumentation af halebid",
-                        Name = "05. Stalde: Halebid og klargøring",
+                        Name = "05. Halebid",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 1,
                         InfoBox = "En stald pr. linje",
@@ -229,7 +229,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         // Name = "05. Barn preparations and tail bite documentation",
-                        Name = "05. Stables: Tail bite and preparation",
+                        Name = "05. Tail bite",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 2,
                         InfoBox = "One stable per line",
@@ -239,7 +239,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     new()
                     {
                         // Name = "05. Stallvorbereitungen und Schwanzbissdokumentation",
-                        Name = "05. Ställe: Schwanzbiss und Vorbereitung",
+                        Name = "05. Schwanzbiss",
                         Description = @"https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.2ganay44a9yy",
                         LanguageId = 3,
                         InfoBox = "Nur eine Ställe pro Zeile",

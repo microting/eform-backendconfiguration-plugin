@@ -76,7 +76,7 @@ describe('Backend Configuration Area Rules Planning Type2', function () {
     expect(itemPlannings[0].eFormName).eq('03. Kontrol flydelag');
     expect(itemPlannings[0].name).eq(areaRule.name + ': Flydelag');
     expect(itemPlannings[0].folderName).eq(
-      `${property.name} - 03. Gyllebeholdere - ${areaRule.name}`
+      `${property.name} - 03. Flydelag - ${areaRule.name}`
     );
     expect(itemPlannings[0].repeatEvery).eq(1);
     expect(itemPlannings[0].repeatType).eq('Måned');
