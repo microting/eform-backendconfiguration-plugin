@@ -29,6 +29,7 @@ using BackendConfiguration.Pn.Services.RebusService;
 using eFormCore;
 using Microting.eForm.Infrastructure;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
@@ -341,6 +342,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                     var numberOfWorkOrderCases = await _backendConfigurationPnDbContext.WorkorderCases
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
                         .Where(x => x.LastAssignedToName == siteName)
                         .CountAsync();
 
