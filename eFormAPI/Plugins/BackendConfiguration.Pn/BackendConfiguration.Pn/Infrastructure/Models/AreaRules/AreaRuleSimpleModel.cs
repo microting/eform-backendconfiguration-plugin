@@ -42,6 +42,10 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public string SecondaryeFormName { get; set; }
 
+        public int? RepeatType { get; set; }
+
+        public int? RepeatEvery { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public DateTime? UpdatedAt { get; set; }

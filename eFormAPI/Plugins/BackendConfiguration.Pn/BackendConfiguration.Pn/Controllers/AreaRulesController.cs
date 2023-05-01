@@ -45,9 +45,9 @@ namespace BackendConfiguration.Pn.Controllers
 
         [HttpGet]
         [Route("index")]
-        public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId)
+        public async Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId, string sort, bool isSortDsc)
         {
-            return await _backendConfigurationAreaRulesService.Index(propertyAreaId).ConfigureAwait(false);
+            return await _backendConfigurationAreaRulesService.Index(propertyAreaId, sort, isSortDsc).ConfigureAwait(false);
         }
 
         [HttpGet]
