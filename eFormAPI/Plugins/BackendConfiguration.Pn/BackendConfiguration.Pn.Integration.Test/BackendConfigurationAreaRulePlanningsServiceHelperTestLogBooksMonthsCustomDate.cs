@@ -421,11 +421,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
+        Assert.That(plannings[0].StartDate, Is.EqualTo(new DateTime(2023, 4, 12, 0,0,0)));
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, now.Month + 1, 12);
-        if (nextExecutionTime < now)
+            new DateTime(now.Year, 4, 12);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddMonths(1);
         }
