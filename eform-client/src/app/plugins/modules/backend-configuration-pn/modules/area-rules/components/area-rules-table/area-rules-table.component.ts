@@ -3,7 +3,7 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnChanges,
+  OnChanges, OnInit,
   Output,
   SimpleChanges,
 } from '@angular/core';
@@ -12,15 +12,17 @@ import {
   AreaRuleT2AlarmsEnum,
   AreaRuleT2TypesEnum,
 } from '../../../../enums';
-import {AreaModel,ChemicalModel, AreaRuleSimpleModel} from '../../../../models';
+import {AreaModel, ChemicalModel, AreaRuleSimpleModel} from '../../../../models';
 import {Subscription} from 'rxjs';
 import {TemplateFilesService} from 'src/app/common/services';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
-import { PdfIcon } from 'src/app/common/const';
+import {PdfIcon} from 'src/app/common/const';
 import {AuthStateService} from 'src/app/common/store';
+import {AreaRulesStateService} from '../store';
+import {Sort} from '@angular/material/sort';
 
 @Component({
   selector: 'app-area-rules-table',
@@ -28,7 +30,7 @@ import {AuthStateService} from 'src/app/common/store';
   styleUrls: ['./area-rules-table.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AreaRulesTableComponent implements OnChanges {
+export class AreaRulesTableComponent implements OnChanges, OnInit {
   @Input() areaRules: AreaRuleSimpleModel[] = [];
   @Input() chemicalsModel: Paged<ChemicalModel> = new Paged<ChemicalModel>();
   @Input() selectedArea: AreaModel = new AreaModel();
@@ -40,7 +42,7 @@ export class AreaRulesTableComponent implements OnChanges {
   showDeleteRuleModal: EventEmitter<AreaRuleSimpleModel> = new EventEmitter();
   @Output()
   showEditEntityListModal: EventEmitter<number> = new EventEmitter();
-  @Output() sortTable: EventEmitter<string> = new EventEmitter<string>();
+  @Output() sortTable: EventEmitter<Sort> = new EventEmitter<Sort>();
 
   tableItemsForAreaRulesDefaultT3: AreaRuleSimpleModel[] = [];
   tableItemsForAreaRulesDefaultT10b: AreaRuleSimpleModel[] = [];
@@ -51,20 +53,56 @@ export class AreaRulesTableComponent implements OnChanges {
     {
       field: 'id',
       header: this.translateService.stream('ID'),
+      sortable: true,
+      sortProp: {id: 'Id'},
     },
     {
       field: 'translatedName',
       header: this.translateService.stream('Name'),
+      sortable: true,
+      sortProp: {id: 'TranslatedName'},
     },
     {
       field: 'eformName',
       header: this.translateService.stream('eForm'),
+      sortable: true,
+      sortProp: {id: 'EformName'},
+    },
+    {
+      field: 'repeatType',
+      header: this.translateService.stream('Repeat type'),
+      sortable: true,
+      sortProp: {id: 'RepeatType'},
+      formatter: (row: AreaRuleSimpleModel) => {
+        const callback = (x: {id: number, name: string}) => x.id === row.repeatType;
+        if(row.repeatType && this.repeatTypeArr.some(callback)) {
+          const retValue = this.translateService.instant(this.repeatTypeArr.find(callback).name);
+          return `<span title="${retValue}">${retValue}</span>`
+        }
+        return '--'
+      }
+    },
+    {
+      field: 'repeatEvery',
+      header: this.translateService.stream('Repeat Every'),
+      sortable: true,
+      sortProp: {id: 'RepeatEvery'},
+      formatter: (row: AreaRuleSimpleModel) => {
+        const callback = (x: {id: number, name: string}) => x.id === row.repeatEvery;
+        if(row.repeatEvery && this.repeatEveryArr.some(callback)) {
+          const retValue = this.translateService.instant(this.repeatEveryArr.find(callback).name);
+          return `<span title="${retValue}">${retValue}</span>`
+        }
+        return '--'
+      }
     },
     {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),
       formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(rowData.planningStatus ? 'ON' : 'OFF'),
-      class: 'rulePlanningStatus'
+      class: 'rulePlanningStatus',
+      sortable: true,
+      sortProp: {id: 'PlanningStatus'},
     },
     {
       field: 'actions',
@@ -369,12 +407,18 @@ export class AreaRulesTableComponent implements OnChanges {
     {
       field: 'createdAt',
       header: this.translateService.stream('Creation Date'),
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y HH:mm:ss'},
     },
     {
       field: 'updatedAt',
       header: this.translateService.stream('Updated At'),
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y HH:mm:ss'},
     }
   ];
+  repeatTypeArr: { id: number; name: string; }[] = [];
+  repeatEveryArr: { id: number; name: string; }[] = [];
 
   getColumns(): MtxGridColumn[] {
     if (!this.authStateService.isAdmin) {
@@ -411,6 +455,7 @@ export class AreaRulesTableComponent implements OnChanges {
     private authStateService: AuthStateService,
     private templateFilesService: TemplateFilesService,
     private translateService: TranslateService,
+    public areaRulesStateService: AreaRulesStateService,
     iconRegistry: MatIconRegistry,
     sanitizer: DomSanitizer,
   ) {
@@ -429,7 +474,7 @@ export class AreaRulesTableComponent implements OnChanges {
     ) {
       this.tableItemsForAreaRulesDefaultT3 = this.areaRules.filter(x => x.isDefault);
       this.tableItemsForAreaRulesDefaultT10b = this.areaRules
-        .filter(rule => rule.secondaryeFormId !== 0 || rule.translatedName === 'Morgenrundtur' || rule.translatedName === 'Morning tour')
+        .filter(rule => rule.secondaryeFormId !== 0 || rule.translatedName === 'Morgenrundtur' || rule.translatedName === 'Morning tour');
       this.areaRules = this.areaRules
         .filter(x => !x.isDefault)
         .filter(rule => rule.secondaryeFormId === 0 && rule.secondaryeFormName !== 'Morgenrundtur');
@@ -466,7 +511,7 @@ export class AreaRulesTableComponent implements OnChanges {
     this.showEditEntityListModal.emit(groupId);
   }
 
-  onSortTable(sort: string) {
+  onSortTable(sort: Sort) {
     this.sortTable.emit(sort);
   }
 
@@ -501,5 +546,67 @@ export class AreaRulesTableComponent implements OnChanges {
       default:
         return '';
     }
+  }
+
+  ngOnInit(): void {
+    this.repeatEveryArr = [
+      {id: 1, name: 'Weekly'},
+      {id: 2, name: '2nd week'},
+      {id: 3, name: '3rd week'},
+      {id: 4, name: '4th week'},
+      {id: 5, name: '5th week'},
+      {id: 6, name: '6th week'},
+      {id: 7, name: '7th week'},
+      {id: 8, name: '8th week'},
+      {id: 9, name: '9th week'},
+      {id: 10, name: '10th week'},
+      {id: 11, name: '11st week'},
+      {id: 12, name: '12nd week'},
+      {id: 13, name: '13rd week'},
+      {id: 14, name: '14th week'},
+      {id: 15, name: '15th week'},
+      {id: 16, name: '16th week'},
+      {id: 17, name: '17th week'},
+      {id: 18, name: '18th week'},
+      {id: 19, name: '19th week'},
+      {id: 20, name: '20th week'},
+      {id: 21, name: '21st week'},
+      {id: 22, name: '22nd week'},
+      {id: 23, name: '23rd week'},
+      {id: 24, name: '24th week'},
+      {id: 25, name: '25th week'},
+      {id: 26, name: '26th week'},
+      {id: 27, name: '27th week'},
+      {id: 28, name: '28th week'},
+      {id: 29, name: '29th week'},
+      {id: 30, name: '30th week'},
+      {id: 31, name: '31st week'},
+      {id: 32, name: '32nd week'},
+      {id: 33, name: '33rd week'},
+      {id: 34, name: '34th week'},
+      {id: 35, name: '35th week'},
+      {id: 36, name: '36th week'},
+      {id: 37, name: '37th week'},
+      {id: 38, name: '38th week'},
+      {id: 39, name: '39th week'},
+      {id: 40, name: '40th week'},
+      {id: 41, name: '41st week'},
+      {id: 42, name: '42nd week'},
+      {id: 43, name: '43rd week'},
+      {id: 44, name: '44th week'},
+      {id: 45, name: '45th week'},
+      {id: 46, name: '46th week'},
+      {id: 47, name: '47th week'},
+      {id: 48, name: '48th week'},
+      {id: 49, name: '49th week'},
+      {id: 50, name: '50th week'},
+      {id: 51, name: '51st week'},
+      {id: 52, name: '52nd week'},
+    ];
+    this.repeatTypeArr = [
+      {id: 1, name: 'Day'},
+      {id: 2, name: 'Week'},
+      {id: 3, name: 'Month'},
+    ];
   }
 }

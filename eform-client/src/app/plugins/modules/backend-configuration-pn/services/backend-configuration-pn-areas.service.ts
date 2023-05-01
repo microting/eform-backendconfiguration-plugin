@@ -38,12 +38,11 @@ export class BackendConfigurationPnAreasService {
     });
   }
 
-  getAreaRules(
-    propertyAreaId: number
+  getAreaRules(model: { propertyAreaId: number, sort: string, isSortDsc: boolean, }
   ): Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
     return this.apiBaseService.get(
       BackendConfigurationPnAreasMethods.AreaRulesIndex,
-      {propertyAreaId}
+      {propertyAreaId: model.propertyAreaId, sort: model.sort, isSortDsc: model.isSortDsc}
     );
   }
 

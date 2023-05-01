@@ -31,7 +31,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 
     public interface IBackendConfigurationAreaRulesService
 	{
-		Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId);
+		Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId, string sort, bool isSortDsc);
 
 		Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyId, int areaId);
 
