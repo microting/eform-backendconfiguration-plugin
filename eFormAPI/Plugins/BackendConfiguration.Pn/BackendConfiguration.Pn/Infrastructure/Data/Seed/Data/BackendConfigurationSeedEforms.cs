@@ -99,7 +99,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             // theList.Add(item);
             headers = new List<string>
              {
-                 "05.Stalde: Halebid og klargøring","05.01Halebid"
+                 "05.Halebid",""
              };
             item = new KeyValuePair<string, List<string>>("05. Halebid og risikovurdering", headers);
             theList.Add(item);
