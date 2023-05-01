@@ -114,11 +114,10 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
 					.ToList();
 
-				var areaRuleId = await backendConfigurationPnDbContext.AreaRules
+				var areaRuleId = await backendConfigurationPnDbContext.AreaRulePlannings
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					.Where(x => x.PropertyId == compliance.PropertyId)
-					.Where(x => x.AreaId == compliance.AreaId)
-					.Select(x => x.Id)
+					.Where(x => x.ItemPlanningId == compliance.PlanningId)
+					.Select(x => x.AreaRuleId)
 					.FirstOrDefaultAsync();
 
 
