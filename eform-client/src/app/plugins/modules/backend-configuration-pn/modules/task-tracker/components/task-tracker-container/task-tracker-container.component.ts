@@ -124,7 +124,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
       this.areasService.getAreaRulesByPropertyIdAndAreaId(task.propertyId, task.areaId))
       .subscribe(([areaRulePlanning, area, areaRule]) => {
         if (
-          areaRulePlanning && areaRulePlanning.success && areaRulePlanning.model &&
+          areaRulePlanning && areaRulePlanning.success && //areaRulePlanning.model &&
           area             && area.success             && area.model             &&
           areaRule         && areaRule.success         && areaRule.model
         ) {
