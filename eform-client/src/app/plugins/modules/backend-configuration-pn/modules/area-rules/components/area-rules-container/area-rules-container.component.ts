@@ -29,6 +29,8 @@ import {ChemicalsStateService} from '../../../../components/chemicals/store';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
+import {AreaRulesStateService} from 'src/app/plugins/modules/backend-configuration-pn/modules/area-rules/components/store';
+import { Sort } from '@angular/material/sort';
 
 @AutoUnsubscribe()
 @Component({
@@ -82,6 +84,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
     public chemicalsStateService: ChemicalsStateService,
     private dialog: MatDialog,
     private overlay: Overlay,
+    private areaRulesStateService: AreaRulesStateService,
   ) {
   }
 
@@ -93,7 +96,8 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       this.propertyAreaId = +params['propertyAreaId'];
       this.selectedPropertyId = +params['propertyId'];
       this.getProperty(this.selectedPropertyId);
-      this.getAreaRules(this.propertyAreaId);
+      this.areaRulesStateService.setPropertyAreaId(this.propertyAreaId);
+      this.getAreaRules();
       this.getArea(this.propertyAreaId);
     });
   }
@@ -133,9 +137,9 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       });
   }
 
-  getAreaRules(propertyAreaId: number) {
-    this.getAreaRulesSub$ = this.areasService
-      .getAreaRules(propertyAreaId)
+  getAreaRules() {
+    this.getAreaRulesSub$ = this.areaRulesStateService
+      .getAllAreaRules()
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.areaRules = operation.model;
@@ -215,7 +219,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .createAreaRules({...model, propertyAreaId: this.propertyAreaId})
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.propertyAreaId);
+          this.getAreaRules();
           modal.close();
         }
       });
@@ -226,7 +230,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .updateAreaRule(model)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.propertyAreaId);
+          this.getAreaRules();
           modal.close();
         }
       });
@@ -237,7 +241,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .deleteAreaRule(areaRuleId)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.propertyAreaId);
+          this.getAreaRules();
           modal.close();
         }
       });
@@ -248,7 +252,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .updateAreaRulePlanning(rulePlanning)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.propertyAreaId);
+          this.getAreaRules();
           modal.close();
         }
       });
@@ -273,7 +277,7 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
       .deleteAreaRules(areaRuleIds)
       .subscribe((data) => {
         if (data && data.success) {
-          this.getAreaRules(this.propertyAreaId);
+          this.getAreaRules();
           modal.close();
         }
       });
@@ -313,5 +317,10 @@ export class AreaRulesContainerComponent implements OnInit, OnDestroy {
     const modal = this.dialog
       .open(AreaRuleEntityListModalComponent, {...dialogConfigHelper(this.overlay, $event)});
     this.propertyUpdateSub$ = modal.componentInstance.entityListChanged.subscribe(x => this.updateEntityList(x, modal));
+  }
+
+  sortTable(sort: Sort) {
+    this.areaRulesStateService.onSortTable(sort.active);
+    this.getAreaRules();
   }
 }

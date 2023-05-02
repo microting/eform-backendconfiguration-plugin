@@ -233,6 +233,8 @@ export class AreaRulePlanModalComponent implements OnInit {
         isDefault: false,
         planningStatus: false,
         secondaryeFormId: 0,
+        repeatType: 0,
+        repeatEvery: 0,
         ...rule
       }, selectedPropertyId);
     }
