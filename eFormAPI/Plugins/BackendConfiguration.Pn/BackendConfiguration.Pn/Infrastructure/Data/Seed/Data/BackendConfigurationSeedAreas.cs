@@ -82,6 +82,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 2,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -170,6 +171,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 4,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -259,6 +261,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 6,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -302,6 +305,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 7,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -345,6 +349,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 8,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -388,6 +393,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 9,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -431,6 +437,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 10,
                 Type = AreaTypesEnum.Type6,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -474,6 +481,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 11,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -517,6 +525,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 12,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -731,6 +740,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 17,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -774,6 +784,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 18,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -817,6 +828,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 19,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -860,6 +872,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 20,
                 Type = AreaTypesEnum.Type5,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -906,6 +919,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 21,
                 Type = AreaTypesEnum.Type4,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -941,6 +955,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 22,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -984,6 +999,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 26,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -1829,174 +1845,174 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 AreaId = 5,
                 IsDefault = true
             },
-            new()
-            {
-                EformName = "01. Gyllekøling",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "01. Gyllekøling" }, // Danish
-                    new() { LanguageId = 2, Name = "01. Slurry cooling" }, // English
-                    new() { LanguageId = 3, Name = "01. Schlammkühlung" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "02. Forsuring",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "02. Forsuring" }, // Danish
-                    new() { LanguageId = 2, Name = "02. Acidification" }, // English
-                    new() { LanguageId = 3, Name = "02. Ansäuerung" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "03. Luftrensning",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "03. Luftrensning" }, // Danish
-                    new() { LanguageId = 2, Name = "03. Air purification" }, // English
-                    new() { LanguageId = 3, Name = "03. Luftreinigung" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "04. Beholderkontrol gennemført",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "04. Beholderkontrol gennemført" }, // Danish
-                    new() { LanguageId = 2, Name = "04. Container control completed" }, // English
-                    new() { LanguageId = 3, Name = "04. Behälterkontrolle abgeschlossen" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "05. Gyllebeholdere",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "05. Gyllebeholdere" }, // Danish
-                    new() { LanguageId = 2, Name = "05. Slurry containers" }, // English
-                    new() { LanguageId = 3, Name = "05. Güllebehälter" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "06. Gyllepumper, - miksere, - seperatorer og spredere",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "06. Gyllepumper, - miksere, - seperatorer og spredere" }, // Danish
-                    new() { LanguageId = 2, Name = "06. Slurry pumps, - mixers, - separators and spreaders" }, // English
-                    new() { LanguageId = 3, Name = "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "07. Forsyningssystemer til vand og foder",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "07. Forsyningssystemer til vand og foder" }, // Danish
-                    new() { LanguageId = 2, Name = "07. Supply systems for water and feed" }, // English
-                    new() { LanguageId = 3, Name = "07. Versorgungssysteme für Wasser und Futter" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "08. Varme-, køle- og ventilationssystemer samt temperaturfølere",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "08. Varme-, køle- og ventilationssystemer samt temperaturfølere" }, // Danish
-                    new() { LanguageId = 2, Name = "08. Heating, cooling and ventilation systems and temperature sensors" }, // English
-                    new() { LanguageId = 3, Name = "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "09. Siloer og transportudstyr",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "09. Siloer og transportudstyr" }, // Danish
-                    new() { LanguageId = 2, Name = "09. Silos and transport equipment" }, // English
-                    new() { LanguageId = 3, Name = "09. Silos und Transportgeräte" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "10. Luftrensningssystemer",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "10. Luftrensningssystemer" }, // Danish
-                    new() { LanguageId = 2, Name = "10. Air purification systems" }, // English
-                    new() { LanguageId = 3, Name = "10. Luftreinigungssysteme" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "11. Udstyr til drikkevand",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "11. Udstyr til drikkevand" }, // Danish
-                    new() { LanguageId = 2, Name = "11. Equipment for drinking water" }, // English
-                    new() { LanguageId = 3, Name = "11. Ausrüstung für Trinkwasser" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse" }, // Danish
-                    new() { LanguageId = 2, Name = "12. Machines for spreading livestock manure and dosing mechanisms or nozzles" }, // English
-                    new() { LanguageId = 3, Name = "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "13. Miljøledelse",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "13. Miljøledelse gennemgået og revideret" }, // Danish
-                    new() { LanguageId = 2, Name = "13. Environmental management reviewed and revised" }, // English
-                    new() { LanguageId = 3, Name = "13. Umweltmanagement überprüft und überarbeitet" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            },
-            new()
-            {
-                EformName = "14. Beredskabsplan",
-                AreaRuleTranslations = new List<AreaRuleTranslation>
-                {
-                    new() { LanguageId = 1, Name = "14. Beredskabsplan gennemgået og revideret" }, // Danish
-                    new() { LanguageId = 2, Name = "14. Contingency plan reviewed and revised" }, // English
-                    new() { LanguageId = 3, Name = "14. Notfallplan überprüft und überarbeitet" } // German
-                },
-                AreaId = 31,
-                IsDefault = true
-            }
+            // new()
+            // {
+            //     EformName = "01. Gyllekøling",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "01. Gyllekøling" }, // Danish
+            //         new() { LanguageId = 2, Name = "01. Slurry cooling" }, // English
+            //         new() { LanguageId = 3, Name = "01. Schlammkühlung" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "02. Forsuring",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "02. Forsuring" }, // Danish
+            //         new() { LanguageId = 2, Name = "02. Acidification" }, // English
+            //         new() { LanguageId = 3, Name = "02. Ansäuerung" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "03. Luftrensning",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "03. Luftrensning" }, // Danish
+            //         new() { LanguageId = 2, Name = "03. Air purification" }, // English
+            //         new() { LanguageId = 3, Name = "03. Luftreinigung" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "04. Beholderkontrol gennemført",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "04. Beholderkontrol gennemført" }, // Danish
+            //         new() { LanguageId = 2, Name = "04. Container control completed" }, // English
+            //         new() { LanguageId = 3, Name = "04. Behälterkontrolle abgeschlossen" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "05. Gyllebeholdere",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "05. Gyllebeholdere" }, // Danish
+            //         new() { LanguageId = 2, Name = "05. Slurry containers" }, // English
+            //         new() { LanguageId = 3, Name = "05. Güllebehälter" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "06. Gyllepumper, - miksere, - seperatorer og spredere",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "06. Gyllepumper, - miksere, - seperatorer og spredere" }, // Danish
+            //         new() { LanguageId = 2, Name = "06. Slurry pumps, - mixers, - separators and spreaders" }, // English
+            //         new() { LanguageId = 3, Name = "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "07. Forsyningssystemer til vand og foder",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "07. Forsyningssystemer til vand og foder" }, // Danish
+            //         new() { LanguageId = 2, Name = "07. Supply systems for water and feed" }, // English
+            //         new() { LanguageId = 3, Name = "07. Versorgungssysteme für Wasser und Futter" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "08. Varme-, køle- og ventilationssystemer samt temperaturfølere",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "08. Varme-, køle- og ventilationssystemer samt temperaturfølere" }, // Danish
+            //         new() { LanguageId = 2, Name = "08. Heating, cooling and ventilation systems and temperature sensors" }, // English
+            //         new() { LanguageId = 3, Name = "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "09. Siloer og transportudstyr",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "09. Siloer og transportudstyr" }, // Danish
+            //         new() { LanguageId = 2, Name = "09. Silos and transport equipment" }, // English
+            //         new() { LanguageId = 3, Name = "09. Silos und Transportgeräte" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "10. Luftrensningssystemer",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "10. Luftrensningssystemer" }, // Danish
+            //         new() { LanguageId = 2, Name = "10. Air purification systems" }, // English
+            //         new() { LanguageId = 3, Name = "10. Luftreinigungssysteme" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "11. Udstyr til drikkevand",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "11. Udstyr til drikkevand" }, // Danish
+            //         new() { LanguageId = 2, Name = "11. Equipment for drinking water" }, // English
+            //         new() { LanguageId = 3, Name = "11. Ausrüstung für Trinkwasser" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse" }, // Danish
+            //         new() { LanguageId = 2, Name = "12. Machines for spreading livestock manure and dosing mechanisms or nozzles" }, // English
+            //         new() { LanguageId = 3, Name = "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "13. Miljøledelse",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "13. Miljøledelse gennemgået og revideret" }, // Danish
+            //         new() { LanguageId = 2, Name = "13. Environmental management reviewed and revised" }, // English
+            //         new() { LanguageId = 3, Name = "13. Umweltmanagement überprüft und überarbeitet" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // },
+            // new()
+            // {
+            //     EformName = "14. Beredskabsplan",
+            //     AreaRuleTranslations = new List<AreaRuleTranslation>
+            //     {
+            //         new() { LanguageId = 1, Name = "14. Beredskabsplan gennemgået og revideret" }, // Danish
+            //         new() { LanguageId = 2, Name = "14. Contingency plan reviewed and revised" }, // English
+            //         new() { LanguageId = 3, Name = "14. Notfallplan überprüft und überarbeitet" } // German
+            //     },
+            //     AreaId = 31,
+            //     IsDefault = true
+            // }
         };
 
         public static List<AreaRule> AreaRulesForType8 => new()
