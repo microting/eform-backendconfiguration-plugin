@@ -1,6 +1,6 @@
 import {Component, EventEmitter, OnInit,} from '@angular/core';
-import {applicationLanguages2, PdfIcon} from 'src/app/common/const';
-import {CommonDictionaryModel, } from 'src/app/common/models';
+import {applicationLanguages2} from 'src/app/common/const';
+import {CommonDictionaryModel,} from 'src/app/common/models';
 import {
   DocumentModel,
   DocumentSimpleFolderModel,
@@ -15,8 +15,7 @@ import {format, set} from 'date-fns';
 import * as R from 'ramda';
 import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 import {MatDialogRef} from '@angular/material/dialog';
-import { DomSanitizer } from '@angular/platform-browser';
-import { MatIconRegistry } from '@angular/material/icon';
+import {saveAs} from 'file-saver';
 
 @Component({
   selector: 'app-documents-document-create',
@@ -33,6 +32,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   availableProperties: CommonDictionaryModel[];
   selectedLanguage: number;
   getSimpleFoldersSub$: Subscription;
+
   // assignments: DocumentPropertyModel[] = [];
 
   get languages() {
@@ -45,7 +45,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
 
   getLanguageByLanguageId(languageId: number) {
     const languages = this.languages.filter(x => x.id === languageId);
-    if(languages && languages.length > 0) {
+    if (languages && languages.length > 0) {
       return languages[0];
     }
     return this.languages[0];
@@ -55,7 +55,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     const index = this.newDocumentModel.documentTranslations.findIndex(
       x => x.languageId === languageId && x.extensionFile === extension
     );
-    if(index !== -1) {
+    if (index !== -1) {
       return this.newDocumentModel.documentTranslations[index];
     }
   }
@@ -66,13 +66,10 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     localeService: LocaleService,
     public dialogRef: MatDialogRef<DocumentsDocumentCreateComponent>,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-    ) {
+  ) {
     this.selectedLanguage = applicationLanguages2.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
-    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
   }
 
   ngOnInit(): void {
@@ -88,11 +85,11 @@ export class DocumentsDocumentCreateComponent implements OnInit {
         ...this.newDocumentModel,
         documentUploadedDatas: [
           ...this.newDocumentModel.documentUploadedDatas,
-          ...(['pdf', 'docx'].map((extension) => ({ languageId: language.id, name: '', file: null, extension: extension }))),
+          ...(['pdf', 'docx'].map((extension) => ({languageId: language.id, name: '', file: null, extension: extension}))),
         ],
         documentTranslations: [
           ...this.newDocumentModel.documentTranslations,
-          ...(['pdf', 'docx'].map((extension) => ({ languageId: language.id, description: '', name: '', extensionFile: extension }))),
+          ...(['pdf', 'docx'].map((extension) => ({languageId: language.id, description: '', name: '', extensionFile: extension}))),
         ],
       };
     }
@@ -120,11 +117,11 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     this.newDocumentModel.folderId = this.selectedFolder;
     this.backendConfigurationPnDocumentsService.createDocument(this.newDocumentModel)
       .subscribe((data) => {
-      if (data && data.success) {
-        this.documentCreated.emit();
-        this.hide();
-      }
-    });
+        if (data && data.success) {
+          this.documentCreated.emit();
+          this.hide();
+        }
+      });
   }
 
   getFolders() {
@@ -238,12 +235,12 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     if (index !== -1) {
       const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {
-        this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName).subscribe((blob) => {
-          const fileURL = URL.createObjectURL(blob);
-          window.open(fileURL, '_blank');
-        });
+        this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName)
+          .subscribe((blob) => {
+            saveAs(blob, documentUploadedData.name);
+          });
       } else {
-        window.open(URL.createObjectURL(documentUploadedData.file), '_blank');
+        saveAs(documentUploadedData.file, documentUploadedData.name);
       }
     }
   }

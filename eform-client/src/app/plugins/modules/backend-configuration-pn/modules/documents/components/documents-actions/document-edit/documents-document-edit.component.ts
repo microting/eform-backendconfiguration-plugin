@@ -1,13 +1,12 @@
 import {Component, EventEmitter, Inject, OnInit} from '@angular/core';
 import {
-  DocumentFolderRequestModel,
   DocumentModel,
   DocumentPropertyModel,
   DocumentSimpleFolderModel
 } from '../../../../../models';
 import {CommonDictionaryModel,} from 'src/app/common/models';
 import {Subscription} from 'rxjs';
-import {applicationLanguages2, PdfIcon, WordIcon} from 'src/app/common/const';
+import {applicationLanguages2} from 'src/app/common/const';
 import {
   BackendConfigurationPnDocumentsService,
   BackendConfigurationPnPropertiesService
@@ -16,8 +15,7 @@ import {format, set} from 'date-fns';
 import * as R from 'ramda';
 import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {MatIconRegistry} from '@angular/material/icon';
-import {DomSanitizer} from '@angular/platform-browser';
+import {saveAs} from 'file-saver';
 
 @Component({
   selector: 'app-documents-document-edit',
@@ -46,7 +44,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
 
   getLanguageByLanguageId(languageId: number) {
     const languages = this.languages.filter(x => x.id === languageId);
-    if(languages && languages.length > 0) {
+    if (languages && languages.length > 0) {
       return languages[0];
     }
     return this.languages[0];
@@ -56,10 +54,10 @@ export class DocumentsDocumentEditComponent implements OnInit {
     const index = this.newDocumentModel.documentTranslations.findIndex(
       x => x.languageId === languageId && x.extensionFile === extension
     );
-    if(index !== -1) {
+    if (index !== -1) {
       return this.newDocumentModel.documentTranslations[index];
     }
-    return {name: '', description: '', extensionFile: extension, languageId: languageId}
+    return {name: '', description: '', extensionFile: extension, languageId: languageId};
   }
 
   constructor(
@@ -69,18 +67,15 @@ export class DocumentsDocumentEditComponent implements OnInit {
     localeService: LocaleService,
     public dialogRef: MatDialogRef<DocumentsDocumentEditComponent>,
     @Inject(MAT_DIALOG_DATA) documentModel: DocumentModel,
-    iconRegistry: MatIconRegistry,
-    sanitizer: DomSanitizer,
-    ) {
+  ) {
     this.getDocument(documentModel.id);
     this.selectedLanguage = applicationLanguages2.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
-    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-    iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+  }
 
   updateStartDate(e: any) {
     let date = new Date(e);
@@ -109,7 +104,6 @@ export class DocumentsDocumentEditComponent implements OnInit {
       }
     });
   }
-
 
   updateDocument() {
     this.newDocumentModel.folderId = this.selectedFolder;
@@ -165,7 +159,6 @@ export class DocumentsDocumentEditComponent implements OnInit {
     }
   }
 
-
   getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
     const assignment = this.newDocumentModel.documentProperties.find(
       (x) => x.propertyId === propertyId
@@ -181,7 +174,6 @@ export class DocumentsDocumentEditComponent implements OnInit {
       }
     );
   }
-
 
   onFileSelected(event: Event, selectedLanguage: number, extension: string) {
     // @ts-ignore
@@ -264,11 +256,10 @@ export class DocumentsDocumentEditComponent implements OnInit {
       if (documentUploadedData.id) {
         this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName)
           .subscribe((blob) => {
-          const fileURL = URL.createObjectURL(blob);
-          window.open(fileURL, '_blank');
-        });
+            saveAs(blob, documentUploadedData.name);
+          });
       } else {
-        window.open(URL.createObjectURL(documentUploadedData.file), '_blank');
+        saveAs(documentUploadedData.file, documentUploadedData.name);
       }
     }
   }

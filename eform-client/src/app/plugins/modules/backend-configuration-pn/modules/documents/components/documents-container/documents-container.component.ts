@@ -5,7 +5,8 @@ import {
   DocumentsDocumentEditComponent,
   DocumentsFoldersComponent
 } from '../';
-import {DocumentModel, DocumentSimpleFolderModel, DocumentSimpleModel,
+import {
+  DocumentModel, DocumentSimpleFolderModel, DocumentSimpleModel,
 } from '../../../../models';
 import {CommonDictionaryModel, Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
@@ -73,7 +74,8 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   showEditDocumentModal(documentModel: DocumentModel) {
-    const editDocumentModal = this.dialog.open(DocumentsDocumentEditComponent, {...dialogConfigHelper(this.overlay, documentModel), minWidth: 800});
+    const editDocumentModal = this.dialog
+      .open(DocumentsDocumentEditComponent, {...dialogConfigHelper(this.overlay, documentModel), minWidth: 800});
     this.documentUpdatedSub$ = editDocumentModal.componentInstance.documentUpdated.subscribe(() => {
       this.updateTable();
     });

@@ -6,12 +6,11 @@ import {
   Output,
 } from '@angular/core';
 import {DocumentModel, DocumentTranslationModel,} from '../../../../models';
-import {BackendConfigurationPnDocumentsService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {applicationLanguages2, PdfIcon, WordIcon} from 'src/app/common/const';
-import { MatIconRegistry } from '@angular/material/icon';
-import { DomSanitizer } from '@angular/platform-browser';
+import {MatIconRegistry} from '@angular/material/icon';
+import {DomSanitizer} from '@angular/platform-browser';
 import {TemplateFilesService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
@@ -97,7 +96,7 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
 
   getLanguageById(languageId: number) {
     const index = applicationLanguages2.findIndex(x => x.id === languageId);
-    if(index !== -1) {
+    if (index !== -1) {
       return applicationLanguages2[index];
     }
     return applicationLanguages2[0];
