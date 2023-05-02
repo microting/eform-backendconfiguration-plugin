@@ -6,6 +6,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
@@ -17,24 +18,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 {
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "1"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths1_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths1_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -105,6 +98,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -118,7 +153,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -157,9 +192,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -167,178 +199,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -407,7 +284,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -417,9 +294,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].StartDate, Is.EqualTo(new DateTime(2023, 4, 12, 0,0,0)));
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
@@ -438,13 +315,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -492,7 +369,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -500,24 +377,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths2_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths2_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -588,6 +457,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -601,7 +512,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -640,9 +551,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -650,178 +558,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -890,7 +643,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -900,9 +653,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -934,13 +687,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -988,7 +741,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -996,24 +749,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths3_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths3_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -1084,6 +829,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -1097,7 +884,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -1136,9 +923,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -1146,178 +930,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -1386,7 +1015,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -1396,9 +1025,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -1440,13 +1069,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -1494,7 +1123,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -1502,24 +1131,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths6_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths6_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -1590,6 +1211,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -1603,7 +1266,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -1642,9 +1305,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -1652,178 +1312,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -1892,7 +1397,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -1902,9 +1407,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -1926,13 +1431,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -1980,7 +1485,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -1988,24 +1493,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths12_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths12_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -2076,6 +1573,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -2089,7 +1628,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -2128,9 +1667,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -2138,178 +1674,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -2378,7 +1759,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -2388,9 +1769,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -2404,13 +1785,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -2458,7 +1839,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -2466,24 +1847,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths24_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths24_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -2554,6 +1927,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -2567,7 +1982,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -2606,9 +2021,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -2616,178 +2028,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -2856,7 +2113,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -2866,9 +2123,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -2882,13 +2139,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -2936,7 +2193,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -2944,24 +2201,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths36_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths36_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -3032,6 +2281,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -3045,7 +2336,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -3084,9 +2375,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -3094,178 +2382,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -3334,7 +2467,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -3344,9 +2477,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -3360,13 +2493,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -3414,7 +2547,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -3422,24 +2555,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths48_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths48_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -3510,6 +2635,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -3523,7 +2690,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -3562,9 +2729,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -3572,178 +2736,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -3812,7 +2821,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -3822,9 +2831,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -3838,13 +2847,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -3892,7 +2901,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -3900,24 +2909,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths60_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths60_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -3988,6 +2989,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -4001,7 +3044,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -4040,9 +3083,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -4050,178 +3090,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -4290,7 +3175,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -4300,9 +3185,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -4316,13 +3201,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -4370,7 +3255,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -4378,24 +3263,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths72_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths72_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -4466,6 +3343,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -4479,7 +3398,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -4518,9 +3437,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -4528,178 +3444,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -4768,7 +3529,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -4778,9 +3539,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -4794,13 +3555,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -4848,7 +3609,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -4856,24 +3617,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths84_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths84_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -4944,6 +3697,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -4957,7 +3752,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -4996,9 +3791,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -5006,178 +3798,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -5246,7 +3883,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -5256,9 +3893,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -5272,13 +3909,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -5326,7 +3963,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -5334,24 +3971,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths96_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths96_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -5422,6 +4051,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -5435,7 +4106,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -5474,9 +4145,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -5484,178 +4152,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -5724,7 +4237,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -5734,9 +4247,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -5750,13 +4263,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -5804,7 +4317,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -5812,24 +4325,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths108_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths108_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -5900,6 +4405,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -5913,7 +4460,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -5952,9 +4499,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -5962,178 +4506,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -6202,7 +4591,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -6212,9 +4601,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -6228,13 +4617,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -6282,7 +4671,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
@@ -6290,24 +4679,16 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
     // Should test the UpdatePlanning method for area rule "00. Logbøger" with repeat type "months" and repeat every "2"
     [Test]
-    [TestCase(0, "01. Gyllekøling", "01. Slurry cooling", "01. Schlammkühlung")]
-    [TestCase(1, "02. Forsuring", "02. Acidification", "02. Ansäuerung")]
-    [TestCase(2, "03. Luftrensning", "03. Air purification", "03. Luftreinigung")]
-    [TestCase(3, "04. Beholderkontrol gennemført", "04. Container control completed", "04. Behälterkontrolle abgeschlossen")]
-    [TestCase(4, "05. Gyllebeholdere", "05. Slurry containers", "05. Güllebehälter")]
-    [TestCase(5, "06. Gyllepumper, - miksere, - seperatorer og spredere", "06. Slurry pumps, - mixers, - separators and spreaders", "06. Schlammpumpen, - Mischer, - Separatoren und Verteiler")]
-    [TestCase(6, "07. Forsyningssystemer til vand og foder", "07. Supply systems for water and feed", "07. Versorgungssysteme für Wasser und Futter")]
-    [TestCase(7, "08. Varme-, køle- og ventilationssystemer samt temperaturfølere", "08. Heating, cooling and ventilation systems and temperature sensors", "08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren")]
-    [TestCase(8, "09. Siloer og transportudstyr", "09. Silos and transport equipment", "09. Silos und Transportgeräte")]
-    [TestCase(9, "10. Luftrensningssystemer", "10. Air purification systems", "10. Luftreinigungssysteme")]
-    [TestCase(10, "11. Udstyr til drikkevand", "11. Equipment for drinking water", "11. Ausrüstung für Trinkwasser")]
-    [TestCase(11, "12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse", "12. Machines for spreading livestock manure and dosing mechanisms or nozzles", "12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen")]
-    [TestCase(12, "13. Miljøledelse gennemgået og revideret", "13. Environmental management reviewed and revised", "13. Umweltmanagement überprüft und überarbeitet")]
-    [TestCase(13, "14. Beredskabsplan gennemgået og revideret", "14. Contingency plan reviewed and revised", "14. Notfallplan überprüft und überarbeitet")]
-    public async Task UpdatePlanning_AreaRuleMonths120_ReturnsSuccess(int areaRuleNo, string danishTranslation, string englishTranslation, string germanTranslation)
+    public async Task UpdatePlanning_AreaRuleMonths120_ReturnsSuccess()
     {
         // Arrange
         var core = await GetCore();
+        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
+        var danishName = new Guid().ToString();
+        var englishName = new Guid().ToString();
+        var germanName = new Guid().ToString();
         var propertyCreateModel = new PropertyCreateModel
         {
             Address = Guid.NewGuid().ToString(),
@@ -6378,6 +4759,48 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         };
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
+
+        var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == "01. Gyllekøling");
+
+        AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
+        {
+            AreaRules = new List<AreaRuleCreateModel>
+            {
+                new()
+                {
+                    TranslatedNames = new List<CommonDictionaryModel>
+                    {
+                        new()
+                        {
+                            Name = danishName, Description = "00. Logbøger",
+                            Id = danishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = englishName, Description = "00. Logbooks",
+                            Id = englishLanguage.Id
+                        },
+                        new()
+                        {
+                            Name = germanName, Description = "00. Logbücher",
+                            Id = germanLanguage.Id
+                        }
+                    },
+                    TypeSpecificFields = new TypeSpecificFields
+                    {
+                        Alarm = AreaRuleT2AlarmsEnum.Yes,
+                        DayOfWeek = 1,
+                        EformId = checkListTranslation.CheckListId,
+                        Type = AreaRuleT2TypesEnum.Open
+                    }
+                }
+            },
+            PropertyAreaId = properties[0].Id
+        };
+
+        await BackendConfigurationAreaRulesServiceHelper.Create(areaRulesCreateModel, core, 1, BackendConfigurationPnDbContext, danishLanguage);
+
+
         var areaRules = await BackendConfigurationPnDbContext!.AreaRules.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
 
         // should create AreaRulePlanningModel for areaId
@@ -6391,7 +4814,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                     SiteId = currentSite.Id
                 }
             },
-            RuleId = areaRules[areaRuleNo].Id,
+            RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
             Status = true,
@@ -6430,9 +4853,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var compliances = await BackendConfigurationPnDbContext!.Compliances.ToListAsync();
         var checkListSites = await MicrotingDbContext!.CheckListSites.ToListAsync();
         var cases = await MicrotingDbContext!.Cases.ToListAsync();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
-        var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
 
         // Assert result
         Assert.NotNull(result);
@@ -6440,178 +4860,23 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Assert areaRules
         Assert.NotNull(areaRules);
-        Assert.That(areaRules.Count, Is.EqualTo(14));
+        Assert.That(areaRules.Count, Is.EqualTo(1));
         Assert.That(areaRules[0].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[1].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[2].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[3].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[4].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[5].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[6].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[7].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[8].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[9].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[10].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[11].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[12].PropertyId, Is.EqualTo(properties[0].Id));
-        Assert.That(areaRules[13].PropertyId, Is.EqualTo(properties[0].Id));
         Assert.That(areaRules[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[1].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[2].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[3].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[4].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[5].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[6].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[7].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[8].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[9].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[10].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[11].AreaId, Is.EqualTo(areaTranslation.AreaId));
-        Assert.That(areaRules[12].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRules[0].EformName, Is.EqualTo("01. Gyllekøling"));
-        Assert.That(areaRules[1].EformName, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRules[2].EformName, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRules[3].EformName, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRules[4].EformName, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRules[5].EformName, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRules[6].EformName, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRules[7].EformName, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRules[8].EformName, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRules[9].EformName, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRules[10].EformName, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRules[11].EformName, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRules[12].EformName, Is.EqualTo("13. Miljøledelse"));
-        Assert.That(areaRules[13].EformName, Is.EqualTo("14. Beredskabsplan"));
 
         // Assert areaRuleTranslations
         Assert.NotNull(areaRuleTranslations);
-        Assert.That(areaRuleTranslations.Count, Is.EqualTo(42));
+        Assert.That(areaRuleTranslations.Count, Is.EqualTo(3));
         Assert.That(areaRuleTranslations[0].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[0].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo("01. Gyllekøling"));
+        Assert.That(areaRuleTranslations[0].atr.Name, Is.EqualTo(danishName));
         Assert.That(areaRuleTranslations[1].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[1].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo("01. Slurry cooling"));
+        Assert.That(areaRuleTranslations[1].atr.Name, Is.EqualTo(englishName));
         Assert.That(areaRuleTranslations[2].atr.AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRuleTranslations[2].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo("01. Schlammkühlung"));
-        Assert.That(areaRuleTranslations[3].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[3].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[3].atr.Name, Is.EqualTo("02. Forsuring"));
-        Assert.That(areaRuleTranslations[4].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[4].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[4].atr.Name, Is.EqualTo("02. Acidification"));
-        Assert.That(areaRuleTranslations[5].atr.AreaRuleId, Is.EqualTo(areaRules[1].Id));
-        Assert.That(areaRuleTranslations[5].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[5].atr.Name, Is.EqualTo("02. Ansäuerung"));
-        Assert.That(areaRuleTranslations[6].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[6].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[6].atr.Name, Is.EqualTo("03. Luftrensning"));
-        Assert.That(areaRuleTranslations[7].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[7].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[7].atr.Name, Is.EqualTo("03. Air purification"));
-        Assert.That(areaRuleTranslations[8].atr.AreaRuleId, Is.EqualTo(areaRules[2].Id));
-        Assert.That(areaRuleTranslations[8].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[8].atr.Name, Is.EqualTo("03. Luftreinigung"));
-        Assert.That(areaRuleTranslations[9].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[9].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[9].atr.Name, Is.EqualTo("04. Beholderkontrol gennemført"));
-        Assert.That(areaRuleTranslations[10].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[10].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[10].atr.Name, Is.EqualTo("04. Container control completed"));
-        Assert.That(areaRuleTranslations[11].atr.AreaRuleId, Is.EqualTo(areaRules[3].Id));
-        Assert.That(areaRuleTranslations[11].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[11].atr.Name, Is.EqualTo("04. Behälterkontrolle abgeschlossen"));
-        Assert.That(areaRuleTranslations[12].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[12].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[12].atr.Name, Is.EqualTo("05. Gyllebeholdere"));
-        Assert.That(areaRuleTranslations[13].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[13].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[13].atr.Name, Is.EqualTo("05. Slurry containers"));
-        Assert.That(areaRuleTranslations[14].atr.AreaRuleId, Is.EqualTo(areaRules[4].Id));
-        Assert.That(areaRuleTranslations[14].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[14].atr.Name, Is.EqualTo("05. Güllebehälter"));
-        Assert.That(areaRuleTranslations[15].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[15].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[15].atr.Name, Is.EqualTo("06. Gyllepumper, - miksere, - seperatorer og spredere"));
-        Assert.That(areaRuleTranslations[16].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[16].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[16].atr.Name, Is.EqualTo("06. Slurry pumps, - mixers, - separators and spreaders"));
-        Assert.That(areaRuleTranslations[17].atr.AreaRuleId, Is.EqualTo(areaRules[5].Id));
-        Assert.That(areaRuleTranslations[17].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[17].atr.Name, Is.EqualTo("06. Schlammpumpen, - Mischer, - Separatoren und Verteiler"));
-        Assert.That(areaRuleTranslations[18].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[18].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[18].atr.Name, Is.EqualTo("07. Forsyningssystemer til vand og foder"));
-        Assert.That(areaRuleTranslations[19].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[19].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[19].atr.Name, Is.EqualTo("07. Supply systems for water and feed"));
-        Assert.That(areaRuleTranslations[20].atr.AreaRuleId, Is.EqualTo(areaRules[6].Id));
-        Assert.That(areaRuleTranslations[20].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[20].atr.Name, Is.EqualTo("07. Versorgungssysteme für Wasser und Futter"));
-        Assert.That(areaRuleTranslations[21].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[21].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[21].atr.Name, Is.EqualTo("08. Varme-, køle- og ventilationssystemer samt temperaturfølere"));
-        Assert.That(areaRuleTranslations[22].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[22].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[22].atr.Name, Is.EqualTo("08. Heating, cooling and ventilation systems and temperature sensors"));
-        Assert.That(areaRuleTranslations[23].atr.AreaRuleId, Is.EqualTo(areaRules[7].Id));
-        Assert.That(areaRuleTranslations[23].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[23].atr.Name, Is.EqualTo("08. Heizungs-, Kühl- und Lüftungssysteme und Temperatursensoren"));
-        Assert.That(areaRuleTranslations[24].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[24].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[24].atr.Name, Is.EqualTo("09. Siloer og transportudstyr"));
-        Assert.That(areaRuleTranslations[25].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[25].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[25].atr.Name, Is.EqualTo("09. Silos and transport equipment"));
-        Assert.That(areaRuleTranslations[26].atr.AreaRuleId, Is.EqualTo(areaRules[8].Id));
-        Assert.That(areaRuleTranslations[26].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[26].atr.Name, Is.EqualTo("09. Silos und Transportgeräte"));
-        Assert.That(areaRuleTranslations[27].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[27].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[27].atr.Name, Is.EqualTo("10. Luftrensningssystemer"));
-        Assert.That(areaRuleTranslations[28].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[28].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[28].atr.Name, Is.EqualTo("10. Air purification systems"));
-        Assert.That(areaRuleTranslations[29].atr.AreaRuleId, Is.EqualTo(areaRules[9].Id));
-        Assert.That(areaRuleTranslations[29].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[29].atr.Name, Is.EqualTo("10. Luftreinigungssysteme"));
-        Assert.That(areaRuleTranslations[30].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[30].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[30].atr.Name, Is.EqualTo("11. Udstyr til drikkevand"));
-        Assert.That(areaRuleTranslations[31].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[31].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[31].atr.Name, Is.EqualTo("11. Equipment for drinking water"));
-        Assert.That(areaRuleTranslations[32].atr.AreaRuleId, Is.EqualTo(areaRules[10].Id));
-        Assert.That(areaRuleTranslations[32].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[32].atr.Name, Is.EqualTo("11. Ausrüstung für Trinkwasser"));
-        Assert.That(areaRuleTranslations[33].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[33].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[33].atr.Name, Is.EqualTo("12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse"));
-        Assert.That(areaRuleTranslations[34].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[34].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[34].atr.Name, Is.EqualTo("12. Machines for spreading livestock manure and dosing mechanisms or nozzles"));
-        Assert.That(areaRuleTranslations[35].atr.AreaRuleId, Is.EqualTo(areaRules[11].Id));
-        Assert.That(areaRuleTranslations[35].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[35].atr.Name, Is.EqualTo("12. Maschinen zum Ausbringen von Viehmist und Dosiervorrichtungen oder Düsen"));
-        Assert.That(areaRuleTranslations[36].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[36].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[36].atr.Name, Is.EqualTo("13. Miljøledelse gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[37].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[37].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[37].atr.Name, Is.EqualTo("13. Environmental management reviewed and revised"));
-        Assert.That(areaRuleTranslations[38].atr.AreaRuleId, Is.EqualTo(areaRules[12].Id));
-        Assert.That(areaRuleTranslations[38].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[38].atr.Name, Is.EqualTo("13. Umweltmanagement überprüft und überarbeitet"));
-        Assert.That(areaRuleTranslations[39].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[39].atr.LanguageId, Is.EqualTo(1));
-        Assert.That(areaRuleTranslations[39].atr.Name, Is.EqualTo("14. Beredskabsplan gennemgået og revideret"));
-        Assert.That(areaRuleTranslations[40].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[40].atr.LanguageId, Is.EqualTo(2));
-        Assert.That(areaRuleTranslations[40].atr.Name, Is.EqualTo("14. Contingency plan reviewed and revised"));
-        Assert.That(areaRuleTranslations[41].atr.AreaRuleId, Is.EqualTo(areaRules[13].Id));
-        Assert.That(areaRuleTranslations[41].atr.LanguageId, Is.EqualTo(3));
-        Assert.That(areaRuleTranslations[41].atr.Name, Is.EqualTo("14. Notfallplan überprüft und überarbeitet"));
+        Assert.That(areaRuleTranslations[2].atr.Name, Is.EqualTo(germanName));
 
         // Assert areaProperties
         Assert.NotNull(areaProperties);
@@ -6680,7 +4945,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert AreaRulePlannings
         Assert.That(areaRulePlannings, Is.Not.Null);
         Assert.That(areaRulePlannings.Count, Is.EqualTo(1));
-        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[areaRuleNo].Id));
+        Assert.That(areaRulePlannings[0].AreaRuleId, Is.EqualTo(areaRules[0].Id));
         Assert.That(areaRulePlannings[0].ItemPlanningId, Is.EqualTo(plannings[0].Id));
         Assert.That(areaRulePlannings[0].AreaId, Is.EqualTo(areaTranslation.AreaId));
         Assert.That(areaRulePlannings[0].PropertyId, Is.EqualTo(properties[0].Id));
@@ -6690,9 +4955,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert plannings
         Assert.That(plannings, Is.Not.Null);
         Assert.That(plannings.Count, Is.EqualTo(1));
-        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(plannings[0].RelatedEFormId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(plannings[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
-        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[areaRuleNo].FolderId));
+        Assert.That(plannings[0].SdkFolderId, Is.EqualTo(areaRules[0].FolderId));
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
@@ -6706,13 +4971,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // Assert planningNameTranslations
         Assert.That(planningNameTranslations, Is.Not.Null);
         Assert.That(planningNameTranslations.Count, Is.EqualTo(3));
-        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishTranslation));
+        Assert.That(planningNameTranslations[0].Name, Is.EqualTo(danishName));
         Assert.That(planningNameTranslations[0].LanguageId, Is.EqualTo(danishLanguage.Id));
         Assert.That(planningNameTranslations[0].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishTranslation));
+        Assert.That(planningNameTranslations[1].Name, Is.EqualTo(englishName));
         Assert.That(planningNameTranslations[1].LanguageId, Is.EqualTo(englishLanguage.Id));
         Assert.That(planningNameTranslations[1].PlanningId, Is.EqualTo(plannings[0].Id));
-        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanTranslation));
+        Assert.That(planningNameTranslations[2].Name, Is.EqualTo(germanName));
         Assert.That(planningNameTranslations[2].LanguageId, Is.EqualTo(germanLanguage.Id));
         Assert.That(planningNameTranslations[2].PlanningId, Is.EqualTo(plannings[0].Id));
 
@@ -6760,7 +5025,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(cases, Is.Not.Null);
         Assert.That(cases.Count, Is.EqualTo(1));
         Assert.That(cases[0].SiteId, Is.EqualTo(sites[2].Id));
-        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[areaRuleNo].EformId));
+        Assert.That(cases[0].CheckListId, Is.EqualTo(areaRules[0].EformId));
         Assert.That(cases[0].FolderId, Is.Null);
         Assert.That(cases[0].Status, Is.EqualTo(66));
         Assert.That(cases[0].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));

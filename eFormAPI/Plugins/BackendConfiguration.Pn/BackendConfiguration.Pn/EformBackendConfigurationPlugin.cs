@@ -280,8 +280,9 @@ namespace BackendConfiguration.Pn
             }
 
             // Seed areas
-            foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed.Where(newArea =>
-                         !context.Areas.Any(x => x.Id == newArea.Id)))
+            foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed
+	                     .Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id))
+	                     .Where(x => x.IsDisabled == false))
             {
                 // create tag for area
                 var planningTag = new PlanningTag
