@@ -84,6 +84,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             try
             {
                 var core = await _coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
                 var assignWorkersModels = new List<PropertyAssignWorkersModel>();
                 var query = _backendConfigurationPnDbContext.PropertyWorkers.AsQueryable();
                 query = query
@@ -121,6 +122,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                             //     .Select(x => x.Name)
                             //     .SingleOrDefaultAsync().ConfigureAwait(false);
 
+                            var siteName = await sdkDbContext.Sites
+                                .Where(x => x.Id == workerId.WorkerId)
+                                .Select(x => x.Name)
+                                .SingleOrDefaultAsync().ConfigureAwait(false);
+
 
                             var numberOfWorkOrderCases = await _backendConfigurationPnDbContext.WorkorderCases
                                 .Join(_backendConfigurationPnDbContext.PropertyWorkers,
@@ -129,11 +135,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     (workorderCase, propertyWorker) => new
                                     {
                                         workorderCase.WorkflowState,
-                                        propertyWorker.PropertyId,
-                                        propertyWorker.WorkerId
+                                        workorderCase.LastAssignedToName,
+                                        workorderCase.CaseStatusesEnum,
+                                        propertyWorker.PropertyId
                                     })
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Where(x => x.WorkerId == workerId.WorkerId)
+                                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                                .Where(x => x.LastAssignedToName == siteName)
                                 .Where(x => x.PropertyId == assignmentWorkerModel.PropertyId)
                                 //.Where(x => x.LastAssignedToName == siteName)
                                 .CountAsync();
