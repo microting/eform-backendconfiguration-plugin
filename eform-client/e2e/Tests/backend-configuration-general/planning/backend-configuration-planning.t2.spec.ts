@@ -35,7 +35,7 @@ describe('Backend Configuration Area Rules Planning Type2', function () {
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
     await backendConfigurationPropertiesPage.goToProperties();
     const lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
-    await lastProperty.editBindWithAreas([2]); // bind specific type2
+    await lastProperty.editBindWithAreas([1]); // bind specific type2
     await lastProperty.openAreasViewModal(0); // go to area rule page
   });
   it('should create new planning from default area rule', async () => {

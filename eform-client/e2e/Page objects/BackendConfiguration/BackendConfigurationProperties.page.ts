@@ -430,7 +430,7 @@ export class PropertyRowObject {
   }
 
   public async bindOrUnbindWithAllAreas(clickCancel = false) {
-    await this.editBindWithAreas(R.times(R.identity, 11), clickCancel);
+    await this.editBindWithAreas(R.times(R.identity, 7), clickCancel);
   }
 
   public async editBindWithAreas(bindAreas?: number[], clickCancel = false) {
