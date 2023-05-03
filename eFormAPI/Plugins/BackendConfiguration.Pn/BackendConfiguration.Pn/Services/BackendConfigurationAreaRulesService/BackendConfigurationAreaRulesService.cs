@@ -105,7 +105,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 					.AsQueryable();
 
 				// this sort only for type1
-				var excludeSort = new List<string> { "TranslatedName", "RepeatType", "RepeatEvery", "PlanningStatus" };
+				var excludeSort = new List<string> { "TranslatedName", "RepeatType", "RepeatEvery", "PlanningStatus", "StartDate" };
 				if (!string.IsNullOrEmpty(sort))
 				{
 					query = QueryHelper.AddSortToQuery(query, sort, isSortDsc, excludeSort);
@@ -136,6 +136,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 							//.Where(arp => arp.PropertyId == x.PropertyId)
 							//.Where(arp => arp.AreaId == x.AreaId)
 							.Select(y => y.RepeatType)
+							.FirstOrDefault(),
+						StartDate = x.AreaRulesPlannings
+							//.Where(arp => arp.AreaRuleId == x.Id)
+							//.Where(arp => arp.PropertyId == x.PropertyId)
+							//.Where(arp => arp.AreaId == x.AreaId)
+							.Select(y => y.StartDate)
 							.FirstOrDefault(),
 						TypeSpecificFields = new TypeSpecificField
 						{

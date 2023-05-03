@@ -16,8 +16,9 @@ export class AreaRuleSimpleModel extends AreaRuleNameAndTypeSpecificFields {
   initialFields?: AreaRuleInitialFieldsModel;
   secondaryeFormId?: number;
   secondaryeFormName?: string;
-  repeatEvery: number;
-  repeatType: number;
+  repeatEvery?: number;
+  repeatType?: number;
+  startDate?: Date;
 }
 
 export class AreaRuleModel {

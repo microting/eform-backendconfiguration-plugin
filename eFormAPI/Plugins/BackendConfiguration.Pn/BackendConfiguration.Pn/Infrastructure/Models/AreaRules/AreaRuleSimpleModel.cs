@@ -46,7 +46,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 
         public int? RepeatEvery { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime? StartDate { get; set; }
+
+		public DateTime CreatedAt { get; set; }
 
         public DateTime? UpdatedAt { get; set; }
     }
