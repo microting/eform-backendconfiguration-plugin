@@ -24,6 +24,7 @@ const workerForCreate = {
 };
 const areaRuleForCreate: AreaRuleCreateUpdate = {
   name: generateRandmString(),
+  eform: '1.1 Aflæsning vand',
 };
 
 describe('Backend Configuration Area Rules Type1', function () {
@@ -46,7 +47,7 @@ describe('Backend Configuration Area Rules Type1', function () {
     expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areRule.name).eq(areaRuleForCreate.name);
-    expect(areRule.eform).eq('');
+    expect(areRule.eform).eq('1.1 Aflæsning vand');
     expect(areRule.rulePlanningStatus).eq(false);
   });
   it('should not edit created area rule type 1', async () => {
@@ -60,7 +61,7 @@ describe('Backend Configuration Area Rules Type1', function () {
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areRule.name).eq(areaRuleForCreate.name);
-    expect(areRule.eform).eq('');
+    expect(areRule.eform).eq('1.1 Aflæsning vand');
     expect(areRule.rulePlanningStatus).eq(false);
   });
   it('should edit created area rule type 1', async () => {

@@ -1494,9 +1494,9 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             return await CreatePlanning(areaRulePlanningModel, core, userId, backendConfigurationPnDbContext,
                 itemsPlanningPnDbContext).ConfigureAwait(false); // create planning
         }
-        catch (Exception)
+        catch (Exception e)
         {
-            // Log.LogException(e.Message);
+            Console.WriteLine(e.Message);
             // Log.LogException(e.StackTrace);
             return new OperationDataResult<AreaRuleModel>(false, "ErrorWhileUpdatePlanning");
         }
