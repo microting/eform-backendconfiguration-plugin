@@ -41,12 +41,23 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
         public async Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel)
         {
-            areaRulePlanningModel.UseStartDateAsStartOfPeriod = true;
-            var core = await _coreHelper.GetCore();
+            try
+            {
+                areaRulePlanningModel.UseStartDateAsStartOfPeriod = true;
+                var core = await _coreHelper.GetCore();
 
-            var result = await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel, core, _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext).ConfigureAwait(false);
+                var result = await BackendConfigurationAreaRulePlanningsServiceHelper
+                    .UpdatePlanning(areaRulePlanningModel, core, _userService.UserId, _backendConfigurationPnDbContext,
+                        _itemsPlanningPnDbContext).ConfigureAwait(false);
 
-            return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
+                return new OperationResult(result.Success,
+                    _backendConfigurationLocalizationService.GetString(result.Message));
+            } catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return new OperationResult(false,
+                    _backendConfigurationLocalizationService.GetString("ErrorWhileUpdatingPlanning"));
+            }
         }
 
         public async Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId)

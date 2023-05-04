@@ -6,6 +6,7 @@ import { expect } from 'chai';
 import { generateRandmString } from '../../../Helpers/helper-functions';
 import backendConfigurationPropertyWorkersPage from '../../../Page objects/BackendConfiguration/BackendConfigurationPropertyWorkers.page';
 import backendConfigurationAreaRulesPage, {
+  AreaRuleCreateUpdate,
   AreaRulePlanningCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
 import { format } from 'date-fns';
@@ -25,6 +26,10 @@ const workerForCreate = {
   language: 'Dansk',
   properties: [0],
 };
+const areaRuleForCreate: AreaRuleCreateUpdate = {
+  name: generateRandmString(),
+  eform: '1.1 Aflæsning vand',
+};
 
 describe('Backend Configuration Area Rules Planning Type1', function () {
   beforeEach(async () => {
@@ -36,12 +41,18 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
     await backendConfigurationPropertiesPage.goToProperties();
     const lastProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
-    await lastProperty.editBindWithAreas([1]); // bind specific type1
+    await lastProperty.editBindWithAreas([0]); // bind specific type1
     await lastProperty.openAreasViewModal(0); // go to area rule page
   });
   it('should create new planning from default area rule at 2 weeks', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(8);
+    expect(rowNum, 'have some non-default area rules').eq(0);
+    await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
+    expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
+    const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
+    expect(areRule.name).eq(areaRuleForCreate.name);
+    expect(areRule.eform).eq('1.1 Aflæsning vand');
+    expect(areRule.rulePlanningStatus).eq(false);
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
     //   startDate: format(new Date(), 'yyyy/MM/dd'),
@@ -76,7 +87,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.eFormName).eq('1.1 Aflæsning vand');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 01. Logbøger Miljøledelse`
+      `${property.name} - 00. Logbøger`
     );
     expect(itemPlanning.repeatEvery).eq(2);
     expect(itemPlanning.repeatType).eq('Uge');
@@ -150,7 +161,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.eFormName).eq('1.1 Aflæsning vand');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 01. Logbøger Miljøledelse`
+      `${property.name} - 00. Logbøger`
     );
     expect(itemPlanning.repeatEvery).eq(3);
     expect(itemPlanning.repeatType).eq('Uge');
@@ -224,7 +235,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.eFormName).eq('1.1 Aflæsning vand');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 01. Logbøger Miljøledelse`
+      `${property.name} - 00. Logbøger`
     );
     expect(itemPlanning.repeatEvery).eq(6);
     expect(itemPlanning.repeatType).eq('Uge');
@@ -298,7 +309,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.eFormName).eq('1.1 Aflæsning vand');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 01. Logbøger Miljøledelse`
+      `${property.name} - 00. Logbøger`
     );
     expect(itemPlanning.repeatEvery).eq(12);
     expect(itemPlanning.repeatType).eq('Uge');
@@ -370,7 +381,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.eFormName).eq('1.1 Aflæsning vand');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
-      `${property.name} - 01. Logbøger Miljøledelse`
+      `${property.name} - 00. Logbøger`
     );
     expect(itemPlanning.repeatEvery).eq(24);
     expect(itemPlanning.repeatType).eq('Uge');
