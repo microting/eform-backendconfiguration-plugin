@@ -23,6 +23,7 @@ import {PdfIcon} from 'src/app/common/const';
 import {AuthStateService} from 'src/app/common/store';
 import {AreaRulesStateService} from '../store';
 import {Sort} from '@angular/material/sort';
+import * as R from 'ramda';
 
 @Component({
   selector: 'app-area-rules-table',
@@ -69,17 +70,25 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
       sortProp: {id: 'EformName'},
     },
     {
+      field: 'startDate',
+      header: this.translateService.stream('Start date'),
+      sortable: true,
+      sortProp: {id: 'StartDate'},
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y HH:mm:ss'},
+    },
+    {
       field: 'repeatType',
       header: this.translateService.stream('Repeat type'),
       sortable: true,
       sortProp: {id: 'RepeatType'},
       formatter: (row: AreaRuleSimpleModel) => {
-        const callback = (x: {id: number, name: string}) => x.id === row.repeatType;
-        if(row.repeatType && this.repeatTypeArr.some(callback)) {
+        const callback = (x: { id: number, name: string }) => x.id === row.repeatType;
+        if (row.repeatType && this.repeatTypeArr.some(callback)) {
           const retValue = this.translateService.instant(this.repeatTypeArr.find(callback).name);
-          return `<span title="${retValue}">${retValue}</span>`
+          return `<span title="${retValue}">${retValue}</span>`;
         }
-        return '--'
+        return '--';
       }
     },
     {
@@ -88,12 +97,30 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
       sortable: true,
       sortProp: {id: 'RepeatEvery'},
       formatter: (row: AreaRuleSimpleModel) => {
-        const callback = (x: {id: number, name: string}) => x.id === row.repeatEvery;
-        if(row.repeatEvery && this.repeatEveryArr.some(callback)) {
-          const retValue = this.translateService.instant(this.repeatEveryArr.find(callback).name);
-          return `<span title="${retValue}">${retValue}</span>`
+        let masForFind = [];
+        switch (row.repeatType){
+          case 1: {
+            masForFind = this.repeatEveryTypeDay;
+            break;
+          }
+          case 2: {
+            masForFind = this.repeatEveryTypeWeek;
+            break;
+          }
+          case 3: {
+            masForFind = this.repeatEveryTypeMonth;
+            break;
+          }
+          default: {
+            masForFind = [];
+          }
         }
-        return '--'
+        const callback = (x: { id: number, name: string }) => x.id === row.repeatEvery;
+        if (row.repeatEvery && masForFind.some(callback)) {
+          const retValue = this.translateService.instant(masForFind.find(callback).name);
+          return `<span title="${retValue}">${retValue}</span>`;
+        }
+        return '--';
       }
     },
     {
@@ -418,7 +445,9 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
     }
   ];
   repeatTypeArr: { id: number; name: string; }[] = [];
-  repeatEveryArr: { id: number; name: string; }[] = [];
+  repeatEveryTypeWeek: { id: number; name: string; }[] = [];
+  repeatEveryTypeMonth: { id: number; name: string; }[] = [];
+  repeatEveryTypeDay: { id: number; name: string; }[] = [];
 
   getColumns(): MtxGridColumn[] {
     if (!this.authStateService.isAdmin) {
@@ -549,7 +578,15 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
   }
 
   ngOnInit(): void {
-    this.repeatEveryArr = [
+    this.repeatTypeArr = [
+      {id: 1, name: 'Day'},
+      {id: 2, name: 'Week'},
+      {id: 3, name: 'Month'},
+    ];
+    this.repeatEveryTypeDay = R.map(x => {
+      return {name: x === 1 ? this.translateService.instant('Every') : x.toString(), id: x};
+    }, R.range(1, 31)); //1, 2, ..., 29, 30.
+    this.repeatEveryTypeWeek = [
       {id: 1, name: 'Weekly'},
       {id: 2, name: '2nd week'},
       {id: 3, name: '3rd week'},
@@ -603,10 +640,21 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
       {id: 51, name: '51st week'},
       {id: 52, name: '52nd week'},
     ];
-    this.repeatTypeArr = [
-      {id: 1, name: 'Day'},
-      {id: 2, name: 'Week'},
-      {id: 3, name: 'Month'},
+    this.repeatEveryTypeMonth = [
+      {id: 1, name: this.translateService.instant('Every month')},
+      {id: 2, name: this.translateService.instant('2nd months')},
+      {id: 3, name: this.translateService.instant('3rd months')},
+      {id: 6, name: this.translateService.instant('6th months')},
+      {id: 12, name: this.translateService.instant('12 (1 year)')},
+      {id: 24, name: this.translateService.instant('24 (2 years)')},
+      {id: 36, name: this.translateService.instant('36 (3 years)')},
+      {id: 48, name: this.translateService.instant('48 (4 years)')},
+      {id: 60, name: this.translateService.instant('60 (5 years)')},
+      {id: 72, name: this.translateService.instant('72 (6 years)')},
+      {id: 84, name: this.translateService.instant('84 (7 years)')},
+      {id: 96, name: this.translateService.instant('96 (8 years)')},
+      {id: 108, name: this.translateService.instant('108 (9 years)')},
+      {id: 120, name: this.translateService.instant('120 (10 years)')},
     ];
   }
 }
