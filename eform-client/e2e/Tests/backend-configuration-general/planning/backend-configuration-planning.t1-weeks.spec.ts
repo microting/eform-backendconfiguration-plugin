@@ -126,7 +126,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
   });
   it('should create new planning from default area rule at 3 weeks', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(8);
+    expect(rowNum, 'have some non-default area rules').eq(0);
+    await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
+    expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
@@ -200,7 +202,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
   });
   it('should create new planning from default area rule at 6 weeks', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(8);
+    expect(rowNum, 'have some non-default area rules').eq(0);
+    await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
+    expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
@@ -274,7 +278,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
   });
   it('should create new planning from default area rule at 12 weeks', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(8);
+    expect(rowNum, 'have some non-default area rules').eq(0);
+    await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
+    expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
@@ -346,7 +352,9 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     // await areaRule.createUpdatePlanning({status: false});
   });it('should create new planning from default area rule at 24 weeks', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    expect(rowNum, 'have some non-default area rules').eq(8);
+    expect(rowNum, 'have some non-default area rules').eq(0);
+    await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
+    expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areaRule = await backendConfigurationAreaRulesPage.getFirstAreaRuleRowObject();
     const areaRulePlanning: AreaRulePlanningCreateUpdate = {
       //   startDate: format(new Date(), 'yyyy/MM/dd'),
