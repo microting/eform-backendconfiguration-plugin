@@ -15,21 +15,26 @@
       <div class="mat-table-container mat-table-with-data">
         <table class="mat-table cdk-table mat-table-striped" style="width: 100%">
           <thead role="rowgroup">
-          <tr class="mat-header-row cdk-header-row">
+          <tr class="mat-header-row cdk-header-row" *ngIf="columnsFromDb.calendar">
             <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top"
-                [attr.colspan]="enabledHeadersNumber"></th>
+                [attr.colspan]="enabledHeadersNumber">
+            </th>
             <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top weeks"
-                *ngFor="let week of weeks" [attr.colspan]="week.length">{{ 'Week' | translate}} {{week.weekNumber}}</th>
+                *ngFor="let week of weeks"
+                [attr.colspan]="week.length">{{ 'Week' | translate}} {{week.weekNumber}}
+            </th>
           </tr>
-          <tr role="rowgroup" class="mat-header-row cdk-header-row">
+          <tr role="rowgroup" class="mat-header-row cdk-header-row" *ngIf="columnsFromDb.calendar">
             <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top"
-                [attr.colspan]="enabledHeadersNumber"></th>
+                [attr.colspan]="enabledHeadersNumber">
+            </th>
             <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days"
-                *ngFor="let day of daysInTable" [attr.colspan]="1">{{day}}</th>
+                *ngFor="let day of daysInTable" [attr.colspan]="1">{{day}}
+            </th>
           </tr>
           <tr role="rowgroup" class="mat-header-row cdk-header-row">
             <th role="columnheader"
@@ -53,10 +58,12 @@
             <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top deadline"
                 *ngIf="columnsFromDb.deadline">{{ 'Deadline' | translate }}</th>
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week 'task-day-{{day}}'"
-                *ngFor="let day of daysInTable"
-                [attr.colspan]="1">{{'dayOfWeeks.short.' + getDayOfWeekByDay(day)|translate}}</th>
+            <ng-container *ngIf="columnsFromDb.calendar">
+              <th role="columnheader"
+                  class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week 'task-day-{{day}}'"
+                  *ngFor="let day of daysInTable"
+                  [attr.colspan]="1">{{'dayOfWeeks.short.' + getDayOfWeekByDay(day)|translate}}</th>
+            </ng-container>
           </tr>
           </thead>
           <tbody id="" role="rowgroup">
@@ -81,9 +88,11 @@
                   *ngIf="columnsFromDb.repeat">{{getRepeatEveryAndRepeatTypeByTask(task) || '--'}}</td>
               <td role="cell" class="mat-cell cdk-cell deadline-task"
                   *ngIf="columnsFromDb.deadline">{{(task.deadlineTask | date:'dd.MM.yyyy') || '--'}}</td>
-              <td role="cell" class="mat-cell cdk-cell tasks"
-                  [ngClass]="[getColorByDayAndTask(day, task), 'task-day-' + day]"
-                  *ngFor="let day of daysInTable"></td>
+              <ng-container *ngIf="columnsFromDb.calendar">
+                <td role="cell" class="mat-cell cdk-cell tasks"
+                    [ngClass]="[getColorByDayAndTask(day, task), 'task-day-' + day]"
+                    *ngFor="let day of daysInTable"></td>
+              </ng-container>
             </tr>
           </ng-container>
           </tbody>

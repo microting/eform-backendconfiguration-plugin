@@ -25,6 +25,15 @@
         >
           <mat-icon>edit</mat-icon>
         </button>
+        <button
+          color="warn"
+          mat-icon-button
+          (click)="showDeleteFolderModal(folder)"
+          id="deleteFolderBtn"
+          matTooltip="{{'Delete folder' | translate}}"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
       </div>
     </div>
   </div>
