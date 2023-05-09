@@ -151,7 +151,10 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       if(!this.propertyHeaderEnabled) {
         columns.find(x => x.columnName === 'property').isColumnEnabled = this.propertyHeaderEnabled
       }
-      this.enabledHeadersNumber = columns.filter(x => x.isColumnEnabled).length;
+      this.enabledHeadersNumber = columns
+        .filter(x => x.columnName !== 'calendar')
+        .filter(x => x.isColumnEnabled)
+        .length;
     }
   }
 

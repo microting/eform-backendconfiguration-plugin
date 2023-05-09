@@ -38,6 +38,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     tags: true,
     task: true,
     workers: true,
+    calendar: true,
   };
 
   getAllTasksSub$: Subscription;

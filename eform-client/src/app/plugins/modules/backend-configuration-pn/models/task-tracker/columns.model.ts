@@ -6,6 +6,7 @@ export interface Columns {
   start: boolean;
   repeat: boolean;
   deadline: boolean;
+  calendar: boolean;
 }
 
 export interface ColumnsModel {

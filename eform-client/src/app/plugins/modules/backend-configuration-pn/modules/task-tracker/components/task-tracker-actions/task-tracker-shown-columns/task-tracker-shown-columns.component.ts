@@ -29,7 +29,8 @@ export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
       workers: new FormControl(data['workers']),
       start: new FormControl(data['start']),
       repeat: new FormControl(data['repeat']),
-      deadline: new FormControl(data['deadline'])
+      deadline: new FormControl(data['deadline']),
+      calendar: new FormControl(data['calendar']),
     });
   }
 
@@ -49,8 +50,9 @@ export class TaskTrackerShownColumnsComponent implements OnInit, OnDestroy {
       workers: columns['workers'],
       start: columns['start'],
       repeat: columns['repeat'],
-      deadline: columns['deadline']
-    })
+      deadline: columns['deadline'],
+      calendar: columns['calendar'],
+    });
   }
 
   ngOnInit(): void {
