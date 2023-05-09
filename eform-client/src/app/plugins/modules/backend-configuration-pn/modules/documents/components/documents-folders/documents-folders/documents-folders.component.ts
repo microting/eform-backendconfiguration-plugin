@@ -10,8 +10,9 @@ import {
 } from 'src/app/common/models';
 import {
   DocumentsFolderCreateComponent,
-  DocumentsFolderEditComponent
-} from '../../';
+  DocumentsFolderEditComponent,
+  DocumentsFolderDeleteComponent
+} from '../';
 import {DocumentFolderModel, DocumentFolderRequestModel} from '../../../../../models';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
@@ -34,7 +35,8 @@ export class DocumentsFoldersComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<DocumentsFoldersComponent>,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     public dialog: MatDialog,
-    private overlay: Overlay,) {}
+    private overlay: Overlay,) {
+  }
 
   ngOnDestroy(): void {
   }
@@ -64,16 +66,28 @@ export class DocumentsFoldersComponent implements OnInit, OnDestroy {
     });
   }
 
+  showDeleteFolderModal(model: DocumentFolderModel) {
+    const deleteFolderModal = this.dialog
+      .open(DocumentsFolderDeleteComponent, {...dialogConfigHelper(this.overlay, model), minWidth: 500});
+    deleteFolderModal.componentInstance.folderDelete.subscribe(_ => {
+      deleteFolderModal.close();
+      this.onFolderDelete();
+    });
+  }
+
   onFolderUpdate() {
     this.foldersChanged.emit();
     this.getFolders();
-    // this.frame.show();
   }
 
   onFolderCreate() {
     this.foldersChanged.emit();
     this.getFolders();
-    // this.frame.show();
+  }
+
+  onFolderDelete() {
+    this.foldersChanged.emit();
+    this.getFolders();
   }
 
   getFolders() {
@@ -87,10 +101,10 @@ export class DocumentsFoldersComponent implements OnInit, OnDestroy {
   }
 
   getFolderTranslation(folder: DocumentFolderModel) {
-    if(folder.documentFolderTranslations[0].name) {
+    if (folder.documentFolderTranslations[0].name) {
       return folder.documentFolderTranslations[0].name;
-    } else if(folder.documentFolderTranslations.some(x => x.name)) {
-      return folder.documentFolderTranslations.filter(x => x.name)[0].name
+    } else if (folder.documentFolderTranslations.some(x => x.name)) {
+      return folder.documentFolderTranslations.filter(x => x.name)[0].name;
     }
     return '';
   }

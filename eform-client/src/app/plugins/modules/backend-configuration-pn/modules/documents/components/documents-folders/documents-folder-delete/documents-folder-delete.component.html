@@ -1,0 +1,44 @@
+<h3 mat-dialog-title>{{'Are you sure you want to delete the folder' | translate}}?</h3>
+<div mat-dialog-content>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>ID</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{folder.id}}</strong>
+    </div>
+  </div>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>{{'Name' | translate}}</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{nameFolder}}</strong>
+    </div>
+  </div>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>{{'Description' | translate}}</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong [innerHTML]="descriptionFolder"></strong>
+    </div>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="warn"
+    id="saveDeleteBtn"
+    (click)="deleteFolder()"
+  >
+    {{'Delete' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelDeleteBtn"
+    (click)="hide()"
+  >
+    {{'Cancel' | translate}}
+  </button>
+</div>

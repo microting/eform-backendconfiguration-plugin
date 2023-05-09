@@ -16,6 +16,7 @@ import {
   DocumentsFiltersComponent,
   DocumentsFolderCreateComponent,
   DocumentsFolderEditComponent,
+  DocumentsFolderDeleteComponent,
   DocumentsTableComponent,
   DocumentsFoldersComponent,
 } from './components';
@@ -40,6 +41,7 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     DocumentsFoldersComponent,
     DocumentsFolderCreateComponent,
     DocumentsFolderEditComponent,
+    DocumentsFolderDeleteComponent,
     DocumentsDocumentCreateComponent,
     DocumentsDocumentEditComponent,
     DocumentsDocumentDeleteComponent

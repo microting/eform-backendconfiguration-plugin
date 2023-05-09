@@ -1,4 +1,4 @@
-import {DocumentFolderTranslationModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {DocumentFolderTranslationModel} from '../../models';
 
 export class DocumentFolderModel {
   id?: number;
