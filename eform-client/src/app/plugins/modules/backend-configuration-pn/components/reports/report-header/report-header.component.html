@@ -37,13 +37,15 @@
         color="accent"
         [disabled]="generateForm.invalid"
         (click)="onSubmit()"
+        id="generateTableBtn"
       >
         {{ 'Generate' | translate }}
       </button>
       <button
         mat-icon-button
         [disabled]="generateForm.invalid"
-        (click)="onSave()"
+        (click)="onWordSave()"
+        id="generateWordBtn"
       >
         <mat-icon svgIcon="file-word"></mat-icon>
       </button>
@@ -51,6 +53,7 @@
         mat-icon-button
         [disabled]="generateForm.invalid"
         (click)="onExcelSave()"
+        id="generateExcelBtn"
       >
         <mat-icon svgIcon="file-excel"></mat-icon>
       </button>
