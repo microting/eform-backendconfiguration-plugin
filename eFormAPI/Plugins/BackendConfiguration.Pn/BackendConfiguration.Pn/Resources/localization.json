@@ -2144,9 +2144,9 @@
       "pt-BR": "Erro ao atualizar colunas",
       "pt-PT": "Erro ao atualizar colunas",
       "fi-FI": "Virhe päivitettäessä sarakkeita"
-      }
-   },
-   {
+    }
+  },
+  {
     "Key": "CaseHasBeenUpdated",
     "LocalizedValue": {
       "da": "Ændringer gemt",
@@ -2163,6 +2163,25 @@
       "pt-BR": "O caso foi atualizado",
       "pt-PT": "O caso foi atualizado",
       "fi-FI": "Tapaus on päivitetty"
+    }
+  },
+  {
+    "Key": "FolderIsNotDeletable",
+    "LocalizedValue": {
+      "da": "Mappen kan ikke slettes",
+      "de": "Ordner kann nicht gelöscht werden",
+      "en-US": "Folder is not deletable",
+      "uk-UA": "Папка не може бути видалена",
+      "pl-PL": "Folder nie może zostać usunięty",
+      "no-NO": "Mappen kan ikke slettes",
+      "sv-SE": "Mappen kan inte raderas",
+      "es-ES": "La carpeta no se puede eliminar",
+      "fr-FR": "Le dossier n'est pas supprimable",
+      "it-IT": "La cartella non è eliminabile",
+      "nl-NL": "Map is niet verwijderbaar",
+      "pt-BR": "A pasta não pode ser excluída",
+      "pt-PT": "A pasta não é eliminável",
+      "fi-FI": "Kansiota ei voi poistaa"
     }
   }
 ]

@@ -68,7 +68,8 @@ export class DocumentsFolderCreateComponent implements OnInit {
     if (this.newFolderModel.translations.some(x => x.name)) {
       this.backendConfigurationPnDocumentsService
         .createFolder({
-          documentFolderTranslations: this.newFolderModel.translations
+          documentFolderTranslations: this.newFolderModel.translations,
+          isDeletable: true,
         })
         .subscribe((data) => {
           if (data && data.success) {

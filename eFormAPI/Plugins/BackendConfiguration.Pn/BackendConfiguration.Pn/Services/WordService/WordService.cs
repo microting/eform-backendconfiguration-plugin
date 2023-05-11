@@ -787,48 +787,49 @@ namespace BackendConfiguration.Pn.Services.WordService
             }
         }
 
-        private async Task<StringBuilder> InsertImage(string imageName, StringBuilder itemsHtml, int imageSize, int imageWidth, Core core, string basePicturePath)
-        {
-            var filePath = Path.Combine(basePicturePath, imageName);
-            Stream stream;
-            if (_s3Enabled)
-            {
-                Console.WriteLine("Getting file from S3 " +imageName);
-                var storageResult = await core.GetFileFromS3Storage(imageName);
-                stream = storageResult.ResponseStream;
-            } else if (!System.IO.File.Exists(filePath))
-            {
-                return null;
-                // return new OperationDataResult<Stream>(
-                //     false,
-                //     _localizationService.GetString($"{imagesName} not found"));
-            }
-            else
-            {
-                stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            }
+		private async Task<StringBuilder> InsertImage(string imageName, StringBuilder itemsHtml, int imageSize, int imageWidth, Core core, string basePicturePath)
+		{
+			var filePath = Path.Combine(basePicturePath, imageName);
+			Stream stream;
+			if (_s3Enabled)
+			{
+				Console.WriteLine("Getting file from S3 " + imageName);
+				var storageResult = await core.GetFileFromS3Storage(imageName);
+				stream = storageResult.ResponseStream;
+			}
+			else if (!System.IO.File.Exists(filePath))
+			{
+				return itemsHtml;
+				// return new OperationDataResult<Stream>(
+				//     false,
+				//     _localizationService.GetString($"{imagesName} not found"));
+			}
+			else
+			{
+				stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+			}
 
-            using (var image = new MagickImage(stream))
-            {
-                Console.WriteLine("Opening file from stream " +imageName);
-                decimal currentRation = image.Height / (decimal)image.Width;
-                int newWidth = imageSize;
-                int newHeight = (int)Math.Round((currentRation * newWidth));
+			using (var image = new MagickImage(stream))
+			{
+				Console.WriteLine("Opening file from stream " + imageName);
+				decimal currentRation = image.Height / (decimal)image.Width;
+				int newWidth = imageSize;
+				int newHeight = (int)Math.Round((currentRation * newWidth));
 
-                Console.WriteLine("Resizing file from stream " +imageName);
-                image.Resize(newWidth, newHeight);
-                Console.WriteLine("Cropping file from stream " +imageName);
-                image.Crop(newWidth, newHeight);
+				Console.WriteLine("Resizing file from stream " + imageName);
+				image.Resize(newWidth, newHeight);
+				Console.WriteLine("Cropping file from stream " + imageName);
+				image.Crop(newWidth, newHeight);
 
-                Console.WriteLine("converting to base64 " +imageName);
-                var base64String = image.ToBase64();
-                Console.WriteLine("Appending to itemsHtml file from stream " +imageName);
-                itemsHtml.Append($@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>");
-            }
+				Console.WriteLine("converting to base64 " + imageName);
+				var base64String = image.ToBase64();
+				Console.WriteLine("Appending to itemsHtml file from stream " + imageName);
+				itemsHtml.Append($@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>");
+			}
 
-            await stream.DisposeAsync();
+			await stream.DisposeAsync();
 
-            return itemsHtml;
-        }
-    }
+			return itemsHtml;
+		}
+	}
 }

@@ -79,7 +79,7 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
     this.generateReport.emit(model);
   }
 
-  onSave() {
+  onWordSave() {
     const model = this.extractData();
     model.type = 'docx';
     this.downloadReport.emit(model);

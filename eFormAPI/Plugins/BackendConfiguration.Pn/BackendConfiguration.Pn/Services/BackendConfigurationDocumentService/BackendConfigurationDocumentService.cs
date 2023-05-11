@@ -773,6 +773,9 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 .Select(x => new BackendConfigurationDocumentFolderModel
                 {
                     Id = x.Id,
+                    IsDeletable = !_caseTemplatePnDbContext.Documents
+	                    .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+	                    .Any(y => y.FolderId == x.Id), // if folder empty(no have documents) - folder is deletable
                     DocumentFolderTranslations = x.FolderTranslations
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => new BackendConfigurationDocumentFolderTranslationModel
@@ -812,7 +815,10 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         var result = new BackendConfigurationDocumentFolderModel
         {
             Id = folder.Id,
-            DocumentFolderTranslations = folder.FolderTranslations
+            IsDeletable = !_caseTemplatePnDbContext.Documents
+	            .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+	            .Any(y => y.FolderId == folder.Id), // if folder empty(no have documents) - folder is deletable
+			DocumentFolderTranslations = folder.FolderTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => new BackendConfigurationDocumentFolderTranslationModel
                 {
@@ -1003,17 +1009,27 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
     public async Task<OperationResult> DeleteFolder(int id)
     {
-        var descriptionFolder = await _caseTemplatePnDbContext.Folders
+        var folder = await _caseTemplatePnDbContext.Folders
             .FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
 
-        if (descriptionFolder == null)
+        if (folder == null)
         {
             return new OperationResult(false,
                 _backendConfigurationLocalizationService.GetString("DescriptionFolderNotFound"));
         }
 
-        descriptionFolder.UpdatedByUserId = _userService.UserId;
-		await descriptionFolder.Delete(_caseTemplatePnDbContext);
+        var isDeletable = !_caseTemplatePnDbContext.Documents
+	        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+	        .Any(y => y.FolderId == id); // if folder empty(no have documents) - folder is deletable
+
+        if (!isDeletable)
+		{
+			return new OperationResult(false,
+				_backendConfigurationLocalizationService.GetString("FolderIsNotDeletable"));
+		}
+
+        folder.UpdatedByUserId = _userService.UserId;
+		await folder.Delete(_caseTemplatePnDbContext);
 
         return new OperationResult(true,
             _backendConfigurationLocalizationService.GetString("DescriptionFolderDeletedSuccessfully"));

@@ -13,7 +13,6 @@ describe('Task tracker', () => {
     ).as('taskTrackerIndex'); // and assign an alias
     cy.visit('http://localhost:4200');
     loginPage.login();
-    pluginPage.Navbar.goToPluginsPage();
     backendConfigurationTaskTrackerPage.goToTaskTracker('@taskTrackerIndex');
   });
   it('should go to task tracker', () => {

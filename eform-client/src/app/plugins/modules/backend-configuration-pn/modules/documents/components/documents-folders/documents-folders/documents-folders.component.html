@@ -26,6 +26,7 @@
           <mat-icon>edit</mat-icon>
         </button>
         <button
+          [disabled]="!folder.isDeletable"
           color="warn"
           mat-icon-button
           (click)="showDeleteFolderModal(folder)"

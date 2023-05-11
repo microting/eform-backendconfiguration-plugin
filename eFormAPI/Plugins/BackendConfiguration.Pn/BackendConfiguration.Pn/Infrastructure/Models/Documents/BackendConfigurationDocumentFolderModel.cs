@@ -9,4 +9,6 @@ public class BackendConfigurationDocumentFolderModel
     public List<BackendConfigurationDocumentFolderTranslationModel> DocumentFolderTranslations { get; set; }
 
     public List<BackendConfigurationDocumentFolderPropertyModel> Properties { get; set; }
+
+    public bool IsDeletable { get; set; }
 }
