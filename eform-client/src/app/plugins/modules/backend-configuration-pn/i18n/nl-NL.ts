@@ -286,5 +286,8 @@ export const nlNL = {
       'Friday': 'Vr',
       'Saturday': 'Za'
     }
-  }
+  },
+  'Repeat': 'Herhalen',
+  'Deadline': 'Deadline',
+  'Show/hide columns': 'Toon/verberg kolommen',
 };

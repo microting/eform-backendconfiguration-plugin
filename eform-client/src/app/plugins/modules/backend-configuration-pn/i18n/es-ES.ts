@@ -284,5 +284,8 @@ export const esES = {
       'Friday': 'Vi',
       'Saturday': 'Sá'
     }
-  }
+  },
+  'Repeat': 'Repetir',
+  'Deadline': 'Fecha límite',
+  'Show/hide columns': 'Mostrar/ocultar columnas',
 };

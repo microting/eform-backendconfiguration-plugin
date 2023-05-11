@@ -284,5 +284,8 @@ export const deDE = {
       'Friday': 'Fr',
       'Saturday': 'Sa'
     }
-  }
+  },
+  'Repeat': 'Wiederholen',
+  'Deadline': 'Frist',
+  'Show/hide columns': 'Spalten ein-/ausblenden',
 };

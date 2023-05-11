@@ -286,5 +286,8 @@ export const noNO = {
       'Friday': 'Fr',
       'Saturday': 'Lø'
     }
-  }
+  },
+  'Repeat': 'Gjenta',
+  'Deadline': 'Frist',
+  'Show/hide columns': 'Vis/skjul kolonner',
 };

@@ -174,5 +174,8 @@ export const enUS = {
       'Friday': 'Fr',
       'Saturday': 'Sa'
     }
-  }
+  },
+  'Repeat': 'Repeat',
+  'Deadline': 'Deadline',
+  'Show/hide columns': 'Show/hide columns',
 };

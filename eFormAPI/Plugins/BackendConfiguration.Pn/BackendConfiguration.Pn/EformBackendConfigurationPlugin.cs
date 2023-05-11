@@ -947,7 +947,7 @@ namespace BackendConfiguration.Pn
 									new()
 									{
 										LocaleName = LocaleNames.Danish,
-										Name = "Opgave tracker",
+										Name = "Medarbejder",
 										Language = LanguageNames.Danish
 									},
 									new()
@@ -975,7 +975,7 @@ namespace BackendConfiguration.Pn
 								new()
 								{
 									LocaleName = LocaleNames.Danish,
-									Name = "Opgave tracker",
+									Name = "Medarbejder",
 									Language = LanguageNames.Danish
 								},
 								new()

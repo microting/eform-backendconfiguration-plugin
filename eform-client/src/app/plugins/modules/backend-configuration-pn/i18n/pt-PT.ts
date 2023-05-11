@@ -271,5 +271,8 @@ export const ptPT = {
       'Friday': 'Sex',
       'Saturday': 'Sáb'
     }
-  }
+  },
+  'Repeat': 'Repetir',
+  'Deadline': 'Prazo',
+  'Show/hide columns': 'Mostrar/ocultar colunas',
 }
