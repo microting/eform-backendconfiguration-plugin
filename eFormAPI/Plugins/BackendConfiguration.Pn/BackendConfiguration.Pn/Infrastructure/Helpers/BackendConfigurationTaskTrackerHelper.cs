@@ -56,7 +56,7 @@ public static class BackendConfigurationTaskTrackerHelper
 			var query = backendConfigurationPnDbContext.Compliances
 				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-			if (filtersModel.PropertyIds.Any() && !filtersModel.PropertyIds.Contains(-1))
+			if (filtersModel.PropertyIds.Any()/* && !filtersModel.PropertyIds.Contains(-1)*/)
 			{
 				query = query.Where(x => filtersModel.PropertyIds.Contains(x.PropertyId));
 			}
@@ -95,7 +95,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
 					.ToListAsync();
 
-				if (filtersModel.WorkerIds.Any() && !filtersModel.WorkerIds.Contains(-1))
+				if (filtersModel.WorkerIds.Any()/* && !filtersModel.WorkerIds.Contains(-1)*/)
 				{
 					if (!sitesWithNames.Any(siteWithNames => filtersModel.WorkerIds.Contains(siteWithNames.Key)))
 					{

@@ -66,7 +66,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {
-      this.propertyHeaderEnabled = filters.propertyIds.some(x => x === -1);
+      this.propertyHeaderEnabled = !(filters.propertyIds.length === 1);
       this.recalculateColumns();
     })
     this.initTable();
