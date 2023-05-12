@@ -188,7 +188,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     const files: File[] = event.target.files;
     const file: File = R.last(files);
     debugger;
-    if (file.name.indexOf(extension) === -1) {
+    if (file.name.toLowerCase().indexOf(extension) === -1) {
       return;
     }
     const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
