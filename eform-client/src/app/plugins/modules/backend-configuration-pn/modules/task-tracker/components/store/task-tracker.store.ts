@@ -32,7 +32,7 @@ const taskTrackerPersistStorage = persistState({
 });
 
 @Injectable({ providedIn: 'root' })
-@StoreConfig({ name: 'task-tracker', resettable: true })
+@StoreConfig({ name: 'task-tracker', resettable: false })
 export class TaskTrackerStore extends Store<TaskTrackerState> {
   constructor() {
     super(createInitialState());
