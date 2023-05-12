@@ -36,6 +36,12 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   weeks: { weekNumber: number, length: number }[] = [];
   enabledHeadersNumber: number = 7;
   propertyHeaderEnabled: boolean = false;
+  currentDate: Date = set(new Date(), {
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    milliseconds: 0,
+  });
 
   constructor(
     private translateService: TranslateService,
@@ -60,20 +66,20 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {
-      this.propertyHeaderEnabled = filters.propertyIds.some(x => x === -1);
+      this.propertyHeaderEnabled = !(filters.propertyIds.length === 1);
       this.recalculateColumns();
     })
     this.initTable();
   }
 
   initTable() {
-    const currentDate = set(new Date(), {
+    this.currentDate = set(new Date(), {
       hours: 0,
       minutes: 0,
       seconds: 0,
       milliseconds: 0,
     });
-    this.days = [...R.range(0, 28)].map((x: number): Date => addDays(currentDate, x));
+    this.days = [...R.range(0, 28)].map((x: number): Date => addDays(this.currentDate, x));
     this.daysInTable = this.days.map(x => x.getDate());
     let weeks = this.days.map((x, i) => {
       if (i === 0 && !isMonday(x)) {

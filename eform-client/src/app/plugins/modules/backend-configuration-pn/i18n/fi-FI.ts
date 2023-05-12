@@ -268,5 +268,8 @@ export const fiFI = {
       'Friday': 'Pe',
       'Saturday': 'La'
     }
-  }
+  },
+  'Repeat': 'Toista',
+  'Deadline': 'Määräaika',
+  'Show/hide columns': 'Näytä/piilota sarakkeet',
 };

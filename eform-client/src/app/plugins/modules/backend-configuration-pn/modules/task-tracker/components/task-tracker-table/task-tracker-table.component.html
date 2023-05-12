@@ -33,6 +33,7 @@
             </th>
             <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days"
+                [ngClass]="{'today': day === currentDate.getDate()}"
                 *ngFor="let day of daysInTable" [attr.colspan]="1">{{day}}
             </th>
           </tr>
@@ -60,7 +61,8 @@
                 *ngIf="columnsFromDb.deadline">{{ 'Deadline' | translate }}</th>
             <ng-container *ngIf="columnsFromDb.calendar">
               <th role="columnheader"
-                  class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week 'task-day-{{day}}'"
+                  class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week task-day-{{day}}"
+                  [ngClass]="{'today': day === currentDate.getDate()}"
                   *ngFor="let day of daysInTable"
                   [attr.colspan]="1">{{'dayOfWeeks.short.' + getDayOfWeekByDay(day)|translate}}</th>
             </ng-container>
@@ -90,7 +92,11 @@
                   *ngIf="columnsFromDb.deadline">{{(task.deadlineTask | date:'dd.MM.yyyy') || '--'}}</td>
               <ng-container *ngIf="columnsFromDb.calendar">
                 <td role="cell" class="mat-cell cdk-cell tasks"
-                    [ngClass]="[getColorByDayAndTask(day, task), 'task-day-' + day]"
+                    [ngClass]="[
+                    getColorByDayAndTask(day, task),
+                    'task-day-' + day,
+                    day === currentDate.getDate() ? 'today': '',
+                    ]"
                     *ngFor="let day of daysInTable"></td>
               </ng-container>
             </tr>

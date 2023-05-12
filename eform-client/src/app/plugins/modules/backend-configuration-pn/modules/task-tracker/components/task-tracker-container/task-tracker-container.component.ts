@@ -2,7 +2,7 @@ import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {
   TaskModel,
-  Columns,
+  Columns, AreaRulePlanningModel,
 } from '../../../../models';
 import {TaskTrackerStateService} from '../store';
 import {
@@ -47,6 +47,8 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   updateColumnsSub$: Subscription;
   getColumnsSub$: Subscription;
   getDataForAreaRulePlanningModalSub$: Subscription;
+  updateAreaRulePlanSub$: Subscription;
+  planAreaRuleSub$: Subscription;
 
   constructor(
     private loaderService: LoaderService,
@@ -129,7 +131,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
           area             && area.success             && area.model             &&
           areaRule         && areaRule.success         && areaRule.model
         ) {
-          this.dialog.open(AreaRulePlanModalComponent, {
+          const modal = this.dialog.open(AreaRulePlanModalComponent, {
             ...dialogConfigHelper(this.overlay, {
               areaRule: areaRule.model.find(x => x.id === task.areaRuleId),
               propertyId: task.propertyId,
@@ -138,6 +140,20 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
             }),
             minWidth: 500,
           });
+
+          this.updateAreaRulePlanSub$ = modal.componentInstance.updateAreaRulePlan
+            .subscribe(x => this.onUpdateAreaRulePlan(x, modal));
+        }
+      });
+  }
+
+  onUpdateAreaRulePlan(rulePlanning: AreaRulePlanningModel, modal: MatDialogRef<AreaRulePlanModalComponent>) {
+    this.planAreaRuleSub$ = this.areasService
+      .updateAreaRulePlanning(rulePlanning)
+      .subscribe((data) => {
+        if (data && data.success) {
+          this.updateTable();
+          modal.close();
         }
       });
   }

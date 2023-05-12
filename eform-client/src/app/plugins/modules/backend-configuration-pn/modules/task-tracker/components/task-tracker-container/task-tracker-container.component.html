@@ -1,5 +1,5 @@
-<eform-new-subheader [title]="'Task tracker' | translate">
-  <button
+<eform-new-subheader>
+<!--  <button
     mat-icon-button
     id="createNewTaskBtn"
     color="accent"
@@ -7,19 +7,19 @@
     (click)="openCreateModal()"
   >
     <mat-icon>add_task</mat-icon>
-  </button>
+  </button>-->
 </eform-new-subheader>
 
 <div class="d-flex flex-column">
   <app-task-tracker-filters (updateTable)="updateTable()">
   </app-task-tracker-filters>
-  <div class="d-flex flex-row justify-content-end mb-2">
+  <div class="d-flex flex-row justify-content-start mb-2">
     <button
       mat-raised-button
       id="changeColumnsBtn"
       (click)="openColumnsModal()"
       color="primary">
-      {{'Columns shown' | translate}}
+      {{'Show/hide columns' | translate}}
     </button>
   </div>
   <app-task-tracker-table

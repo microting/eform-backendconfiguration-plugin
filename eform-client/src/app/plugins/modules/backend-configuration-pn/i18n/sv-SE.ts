@@ -285,5 +285,8 @@ export const svSE = {
       'Friday': 'Fr',
       'Saturday': 'Lö'
     }
-  }
+  },
+  'Repeat': 'Upprepa',
+  'Deadline': 'Deadline',
+  'Show/hide columns': 'Visa/dölj kolumner',
 };

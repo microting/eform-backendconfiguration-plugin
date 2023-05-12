@@ -293,5 +293,8 @@ export const da = {
       'Friday': 'Fr',
       'Saturday': 'Lø'
     }
-  }
+  },
+  'Repeat': 'Gentages',
+  'Deadline': 'Udfør senest',
+  'Show/hide columns': 'Skjul/vis kolonner',
 };

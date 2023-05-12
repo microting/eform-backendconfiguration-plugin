@@ -286,5 +286,8 @@ export const ukUA = {
       'Friday': 'Пт',
       'Saturday': 'Сб'
     }
-  }
+  },
+  'Repeat': 'Повтор',
+  'Deadline': 'Крайній термін',
+  'Show/hide columns': 'Показати/приховати стовпці',
 };

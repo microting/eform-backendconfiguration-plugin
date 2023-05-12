@@ -1,6 +1,6 @@
 import {
   Component,
-  EventEmitter, Input,
+  EventEmitter,
   OnDestroy,
   OnInit,
   Output,
@@ -15,8 +15,7 @@ import {
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {SitesService} from 'src/app/common/services';
 import {TranslateService} from '@ngx-translate/core';
-import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {skip, tap} from 'rxjs/operators';
+import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
 
 @AutoUnsubscribe()
 @Component({
@@ -27,9 +26,9 @@ import {skip, tap} from 'rxjs/operators';
 export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   filtersForm: FormGroup = new FormGroup({
-      propertyIds: new FormControl([-1]), // -1 - it's All
-      tags: new FormControl([-1]),
-      workers: new FormControl([-1]),
+      propertyIds: new FormControl([]),
+      tags: new FormControl([]),
+      workers: new FormControl([]),
     }
   );
   properties: CommonDictionaryModel[] = [];
@@ -39,9 +38,6 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getAllPropertiesDictionarySub$: Subscription;
   getAllSitesDictionarySub$: Subscription;
   getPlanningsTagsSub$: Subscription;
-  propertyIdsChangesSub$: Subscription;
-  tagsChangesSub$: Subscription;
-  workersChangesSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   filtersFormChangesSub$: Subscription;
 
@@ -55,9 +51,6 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}];
-    this.sites = [{id: -1, name: this.translate.instant('All'), description: ''}];
-    this.tags = [{id: -1, name: this.translate.instant('All'), description: ''}];
     this.getProperties();
     this.getSites();
     this.getTags();
@@ -67,7 +60,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getProperties() {
     this.getAllPropertiesDictionarySub$ = this.propertyService.getAllPropertiesDictionary(true).subscribe((data) => {
       if (data && data.success && data.model) {
-        this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model];
+        this.properties = [...data.model];
       }
     });
   }
@@ -75,7 +68,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getSites() {
     this.getAllSitesDictionarySub$ = this.sitesService.getAllSitesDictionary().subscribe((result) => {
       if (result && result.success && result.success) {
-        this.sites = [{id: -1, name: this.translate.instant('All'), description: ''}, ...result.model];
+        this.sites = [...result.model];
       }
     });
   }
@@ -83,69 +76,30 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getTags() {
     this.getPlanningsTagsSub$ = this.itemsPlanningPnTagsService.getPlanningsTags().subscribe((result) => {
       if (result && result.success && result.success) {
-        this.tags = [{id: -1, name: this.translate.instant('All'), description: ''}, ...result.model];
+        this.tags = [...result.model];
       }
     });
   }
 
   subToFormChanges() {
-    this.propertyIdsChangesSub$ = this.filtersForm.get('propertyIds').valueChanges
-      .subscribe((propertyIds: number[]) => {
-        if (propertyIds.length >= 2 && propertyIds.some(x => x === -1)) {
-          this.filtersForm.get('propertyIds').patchValue(propertyIds.filter(x => x !== -1), {emitEvent: false});
-        }
-        if (propertyIds.length < 1 && !propertyIds.some(x => x === -1)) {
-          this.filtersForm.get('propertyIds').patchValue([-1], {emitEvent: false});
-        }
-        if (propertyIds.length > 2 && propertyIds.some(x => x === -1)) {
-          this.filtersForm.get('propertyIds').patchValue([-1], {emitEvent: false});
-        }
-      });
-
-    this.tagsChangesSub$ = this.filtersForm.get('tags').valueChanges
-      .subscribe((tagIds: number[]) => {
-        if (tagIds.length >= 2 && tagIds.some(x => x === -1)) {
-          this.filtersForm.get('tags').patchValue(tagIds.filter(x => x !== -1), {emitEvent: false});
-        }
-        if (tagIds.length < 1 && !tagIds.some(x => x === -1)) {
-          this.filtersForm.get('tags').patchValue([-1], {emitEvent: false});
-        }
-        if (tagIds.length > 2 && tagIds.some(x => x === -1)) {
-          this.filtersForm.get('tags').patchValue([-1], {emitEvent: false});
-        }
-      });
-
-    this.workersChangesSub$ = this.filtersForm.get('workers').valueChanges
-      .subscribe((workerIds: number[]) => {
-        if (workerIds.length >= 2 && workerIds.some(x => x === -1)) {
-          this.filtersForm.get('workers').patchValue(workerIds.filter(x => x !== -1), {emitEvent: false});
-        }
-        if (workerIds.length < 1 && !workerIds.some(x => x === -1)) {
-          this.filtersForm.get('workers').patchValue([-1], {emitEvent: false});
-        }
-        if (workerIds.length > 2 && workerIds.some(x => x === -1)) {
-          this.filtersForm.get('workers').patchValue([-1], {emitEvent: false});
-        }
-      });
-
     this.getFiltersAsyncSub$ = this.taskTrackerStateService.getFiltersAsync().pipe(take(1)) // get values FIRST time
       .subscribe(filters => {
         this.filtersForm.patchValue({
-          propertyIds: filters.propertyIds ?? [-1],
-          tags: filters.tagIds ?? [-1],
-          workers: filters.workerIds ?? [-1],
+          propertyIds: filters.propertyIds ?? [],
+          tags: filters.tagIds ?? [],
+          workers: filters.workerIds ?? [],
         });
       });
 
-    this.filtersFormChangesSub$ = this.filtersForm.valueChanges.pipe(skip(1)) // skip initial values
+    this.filtersFormChangesSub$ = this.filtersForm.valueChanges
       .subscribe((filters) => {
         this.taskTrackerStateService.updateFilters({
           propertyIds: filters.propertyIds,
           workerIds: filters.workers,
           tagIds: filters.tags,
-        })
+        });
         this.updateTable.emit();
-      })
+      });
   }
 
   ngOnDestroy(): void {

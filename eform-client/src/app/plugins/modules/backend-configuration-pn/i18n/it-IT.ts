@@ -286,5 +286,8 @@ export const itIT = {
       'Friday': 'Ve',
       'Saturday': 'Sa'
     }
-  }
+  },
+  'Repeat': 'Ripeti',
+  'Deadline': 'Scadenza',
+  'Show/hide columns': 'Mostra/nascondi colonne',
 };

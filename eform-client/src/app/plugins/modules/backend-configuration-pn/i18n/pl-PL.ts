@@ -287,5 +287,8 @@ export const plPl = {
       'Friday': 'Pt',
       'Saturday': 'Sb'
     }
-  }
+  },
+  'Repeat': 'Powtarzaj',
+  'Deadline': 'Termin',
+  'Show/hide columns': 'Pokaż/ukryj kolumny',
 };

@@ -287,5 +287,8 @@ export const frFR = {
       'Friday': 'Ve',
       'Saturday': 'Sa'
     }
-  }
+  },
+  'Repeat': 'Répéter',
+  'Deadline': 'Date limite',
+  'Show/hide columns': 'Afficher/masquer les colonnes',
 };

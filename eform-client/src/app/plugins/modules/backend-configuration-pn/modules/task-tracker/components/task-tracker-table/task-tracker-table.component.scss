@@ -6,6 +6,10 @@ $border-color: rgb(115, 115, 115);
 $border-style: solid;
 $default-style-border: $border-size $border-style $border-color;
 
+@mixin today-cell {
+  font-weight: bold;
+}
+
 @mixin cell-values {
   border-bottom: $default-style-border;
   min-width: 10px !important;
@@ -47,6 +51,10 @@ table.mat-table {
             min-width: 10px !important;
             border-left: $default-style-border;
             text-align: center;
+
+            &.today {
+              @include today-cell;
+            }
           }
         }
       }
@@ -69,6 +77,7 @@ table.mat-table {
 
           &.property, &.task, &.tags, &.worker, &.start-task, &.repeat, &.deadline-task {
             background-color: red;
+            color: white;
           }
         }
       }
@@ -84,7 +93,7 @@ table.mat-table {
 
         &.tasks {
           min-width: 10px !important;
-          border-right: $default-style-border;
+          border-left: $default-style-border;
           text-align: center;
         }
 
@@ -94,6 +103,10 @@ table.mat-table {
 
         &.white-yellow {
           background-color: #fada22;
+        }
+
+        &.today {
+          @include today-cell;
         }
       }
     }
