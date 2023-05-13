@@ -951,6 +951,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			item = new KeyValuePair<string, List<string>>("14. Beredskabsplan", headers);
 			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("Kvittering", headers);
+			theList.Add(item);
 
 			return theList;
 		}

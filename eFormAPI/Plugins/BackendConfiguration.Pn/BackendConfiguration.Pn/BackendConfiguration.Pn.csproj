@@ -541,6 +541,10 @@
       <EmbeddedResource Include="Resources\eForms\2.4 Forsuring pH-værdi.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Resources\eForms\Kvittering.xml" />
+      <EmbeddedResource Include="Resources\eForms\Kvittering.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
