@@ -116,9 +116,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		var filters = new TaskTrackerFiltrationModel
 		{
-			PropertyIds = new List<int> { -1, },
-			TagIds = new List<int> { -1, },
-			WorkerIds = new List<int> { -1, }
+			PropertyIds = new List<int>(),
+			TagIds = new List<int>(),
+			WorkerIds = new List<int>()
 		};
 
 		// Assert
@@ -216,8 +216,8 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		var filters = new TaskTrackerFiltrationModel
 		{
-			PropertyIds = new List<int> { -1, },
-			TagIds = new List<int> { -1, },
+			PropertyIds = new List<int> (),
+			TagIds = new List<int> (),
 			WorkerIds = new List<int> { sites.Last().Id, }
 		};
 
@@ -317,8 +317,8 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		var filters = new TaskTrackerFiltrationModel
 		{
 			PropertyIds = new List<int> { property.Id, },
-			TagIds = new List<int> { -1, },
-			WorkerIds = new List<int> { -1, }
+			TagIds = new List<int>(),
+			WorkerIds = new List<int>()
 		};
 
 		// Assert
@@ -417,7 +417,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		var filters = new TaskTrackerFiltrationModel
 		{
 			PropertyIds = new List<int> { property.Id, },
-			TagIds = new List<int> { -1, },
+			TagIds = new List<int> (),
 			WorkerIds = new List<int> { sites.Last().Id, }
 		};
 
