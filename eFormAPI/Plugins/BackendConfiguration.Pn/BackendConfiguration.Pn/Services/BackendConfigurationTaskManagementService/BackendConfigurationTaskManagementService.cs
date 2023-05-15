@@ -40,19 +40,15 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BackendConfigurationLocalizationService;
-using Infrastructure.Helpers;
 using Infrastructure.Models.TaskManagement;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
-using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
-using File = System.IO.File;
-using KeyValuePair = Microting.eForm.Dto.KeyValuePair;
 
 public class BackendConfigurationTaskManagementService : IBackendConfigurationTaskManagementService
 {

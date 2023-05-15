@@ -440,7 +440,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             UserLastName = Guid.NewGuid().ToString()
         };
 
-        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+        /*var result = */await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
             TimePlanningPnDbContext);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();
@@ -536,7 +536,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             UserLastName = Guid.NewGuid().ToString()
         };
 
-        var result = await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
+        /*var result = */await BackendConfigurationAssignmentWorkerServiceHelper.CreateDeviceUser(deviceUserModel, core, 1,
             TimePlanningPnDbContext);
 
         var properties = await BackendConfigurationPnDbContext!.Properties.ToListAsync();

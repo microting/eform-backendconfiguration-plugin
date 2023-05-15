@@ -24,16 +24,12 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models;
-using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.RebusService;
-using eFormCore;
-using Microting.eForm.Infrastructure;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.eFormCaseTemplateBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.TimePlanningBase.Infrastructure.Data;
-using Microting.TimePlanningBase.Infrastructure.Data.Entities;
 using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService

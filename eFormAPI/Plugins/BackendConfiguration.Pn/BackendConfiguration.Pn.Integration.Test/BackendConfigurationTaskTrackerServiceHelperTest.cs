@@ -98,7 +98,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			RepeatUntil = timeNow.AddMonths(6),
 		};
 
-		await ItemsPlanningPnDbContext.Plannings.AddAsync(planning);
+		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
 
 		//create compliance
@@ -198,7 +198,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			RepeatUntil = timeNow.AddMonths(6),
 		};
 
-		await ItemsPlanningPnDbContext.Plannings.AddAsync(planning);
+		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
 
 		//create compliance
@@ -298,7 +298,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			RepeatUntil = timeNow.AddMonths(6),
 		};
 
-		await ItemsPlanningPnDbContext.Plannings.AddAsync(planning);
+		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
 
 		//create compliance
@@ -398,7 +398,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			RepeatUntil = timeNow.AddMonths(6),
 		};
 
-		await ItemsPlanningPnDbContext.Plannings.AddAsync(planning);
+		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
 
 		//create compliance

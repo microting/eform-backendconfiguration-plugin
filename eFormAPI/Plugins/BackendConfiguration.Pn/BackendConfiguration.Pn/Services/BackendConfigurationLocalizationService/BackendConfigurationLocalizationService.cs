@@ -22,13 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Linq;
-
 namespace BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService
 {
     using Microsoft.Extensions.Localization;
     using System.Linq;
-    using Castle.Core.Internal;
     using Microting.eFormApi.BasePn.Localization.Abstractions;
 
     public class BackendConfigurationLocalizationService : IBackendConfigurationLocalizationService

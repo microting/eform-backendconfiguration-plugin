@@ -21,7 +21,6 @@ using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTran
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationDocumentService;
 
-using DocumentFormat.OpenXml.InkML;
 using Microting.eForm.Helpers;
 
 public class BackendConfigurationDocumentService : IBackendConfigurationDocumentService

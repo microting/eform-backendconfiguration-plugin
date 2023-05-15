@@ -22,23 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
-using System.Text.Json.Serialization;
-
 namespace BackendConfiguration.Pn.Controllers
 {
-    using Infrastructure.Models.Compliances.Index;
-    using Services.BackendConfigurationCompliancesService;
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Mvc;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-    using System.Threading.Tasks;
+	using Infrastructure.Models.Compliances.Index;
+	using Microsoft.AspNetCore.Authorization;
+	using Microsoft.AspNetCore.Mvc;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+	using Services.BackendConfigurationCompliancesService;
+	using System.Net.Http;
+	using System.Threading.Tasks;
 
-    [Authorize]
+	[Authorize]
     [Route("api/backend-configuration-pn/compliances")]
     public class CompliancesController : Controller
     {

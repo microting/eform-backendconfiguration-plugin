@@ -89,12 +89,12 @@ public class ReportController : Controller
         return await _reportService.GenerateReport(requestModel, false);
     }
 
-    /// <summary>
-    /// Download records export word
-    /// </summary>
-    /// <param name="requestModel">The request model.</param>
-    /// <param name="type">docx or xlsx</param>
-    [HttpGet]
+	/// <summary>Download records export word</summary>
+	/// <param name="dateFrom">The date from.</param>
+	/// <param name="dateTo">The date to.</param>
+	/// <param name="tagIds">The tag ids.</param>
+	/// <param name="type">docx or xlsx</param>
+	[HttpGet]
     [Route("reports/file")]
 
     [ProducesResponseType(typeof(string), 400)]

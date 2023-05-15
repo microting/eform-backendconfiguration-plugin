@@ -22,40 +22,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using BackendConfiguration.Pn.Infrastructure.Models.Chemical;
+using Chemicals.Pn.Infrastructure.Models.Chemical;
+using ChemicalsBase.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using BackendConfiguration.Pn.Infrastructure.Models.Chemical;
-using Chemicals.Pn.Infrastructure.Models.Chemical;
-using Chemicals.Pn.Infrastructure.Models.Planning;
-using ChemicalsBase.Infrastructure;
-using Microsoft.EntityFrameworkCore;
-using Microting.eForm.Infrastructure.Constants;
-using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.ChemicalService
 {
-    public class ChemicalService : IChemicalService
+	public class ChemicalService : IChemicalService
     {
         private readonly ChemicalsDbContext _chemicalsDb;
-        private readonly IUserService _userService;
-        private readonly IEFormCoreService _coreService;
+        //private readonly IUserService _userService;
+        //private readonly IEFormCoreService _coreService;
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDb;
 
         public ChemicalService(
-            ChemicalsDbContext dbContext,
-            IUserService userService,
-            IEFormCoreService coreService, ChemicalsDbContext chemicalsDb, BackendConfigurationPnDbContext backendConfigurationPnDb)
+            //ChemicalsDbContext dbContext,
+            //IUserService userService,
+            //IEFormCoreService coreService,
+            ChemicalsDbContext chemicalsDb,
+            BackendConfigurationPnDbContext backendConfigurationPnDb
+            )
         {
-            _coreService = coreService;
+            //_coreService = coreService;
             _chemicalsDb = chemicalsDb;
             _backendConfigurationPnDb = backendConfigurationPnDb;
-            _userService = userService;
+            //_userService = userService;
         }
 
         public async Task<OperationDataResult<Paged<ChemicalPnModel>>> Index(ChemicalsRequestModel pnRequestModel)

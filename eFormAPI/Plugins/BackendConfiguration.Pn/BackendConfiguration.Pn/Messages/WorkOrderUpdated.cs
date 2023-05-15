@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn.Messages;

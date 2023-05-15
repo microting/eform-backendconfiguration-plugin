@@ -6,7 +6,6 @@ using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
-using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
 namespace BackendConfiguration.Pn.Integration.Test;

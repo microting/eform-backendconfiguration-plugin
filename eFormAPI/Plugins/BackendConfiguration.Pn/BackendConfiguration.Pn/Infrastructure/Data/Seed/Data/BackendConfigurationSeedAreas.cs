@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Infrastructure.Enums;
-
 namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 {
     using System.Collections.Generic;

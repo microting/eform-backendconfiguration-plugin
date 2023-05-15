@@ -24,8 +24,6 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
-using eFormCore;
-using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
 
@@ -36,21 +34,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
     using System.Linq;
     using System.Threading.Tasks;
     using BackendConfigurationLocalizationService;
-    using Infrastructure;
     using Infrastructure.Models.Properties;
     using Microsoft.EntityFrameworkCore;
     using Microting.eForm.Infrastructure.Constants;
-    using Microting.eForm.Infrastructure.Models;
     using Microting.eFormApi.BasePn.Abstractions;
     using Microting.eFormApi.BasePn.Infrastructure.Helpers;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
     using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
     using Microting.ItemsPlanningBase.Infrastructure.Data;
     using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
-    using CommonTranslationsModel = Microting.eForm.Infrastructure.Models.CommonTranslationsModel;
 
     public class BackendConfigurationPropertiesService : IBackendConfigurationPropertiesService
     {
