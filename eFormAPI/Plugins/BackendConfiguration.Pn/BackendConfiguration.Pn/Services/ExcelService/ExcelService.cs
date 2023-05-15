@@ -92,7 +92,7 @@ public class ExcelService: IExcelService
             worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Font.Bold = true;
             // worksheet.Range(currentRow, currentColumn, currentRow, currentColumn).Cells().Style.Alignment
             //     .Horizontal = XLAlignmentHorizontalValues.Center;
-            SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 5));
+            SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 6));
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
             worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy");

@@ -110,8 +110,6 @@ public class TaskManagementController : Controller
     {
         try
         {
-            filtersModel.Sort = "";
-
             var report = await _backendConfigurationTaskManagementService.Index(filtersModel).ConfigureAwait(false);
 
             var fileReport = await _wordService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
@@ -150,8 +148,6 @@ public class TaskManagementController : Controller
     {
         try
         {
-            filtersModel.Sort = "";
-
             var report = await _backendConfigurationTaskManagementService.Index(filtersModel).ConfigureAwait(false);
 
             var fileReport = await _excelService.GenerateWorkOrderCaseReport(filtersModel, report).ConfigureAwait(false);
