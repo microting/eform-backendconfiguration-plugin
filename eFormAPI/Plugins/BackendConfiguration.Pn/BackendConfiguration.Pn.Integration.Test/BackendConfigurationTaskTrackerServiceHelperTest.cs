@@ -101,6 +101,38 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
 
+		//create area
+		var area = new Area
+		{
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.Areas.AddAsync(area);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearule
+		var areaRule = new AreaRule
+		{
+			AreaId = area.Id,
+			WorkflowState = Constants.WorkflowStates.Created,
+			PropertyId = property.Id
+		};
+
+		await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearuleplanning
+		var areaRulePlanning = new AreaRulePlanning
+		{
+			AreaRuleId = areaRule.Id,
+			AreaId = area.Id,
+			ItemPlanningId = planning.Id,
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
 		//create compliance
 		var compliance = new Compliance()
 		{
@@ -200,6 +232,38 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+		//create area
+		var area = new Area
+		{
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.Areas.AddAsync(area);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearule
+		var areaRule = new AreaRule
+		{
+			AreaId = area.Id,
+			WorkflowState = Constants.WorkflowStates.Created,
+			PropertyId = property.Id
+		};
+
+		await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearuleplanning
+		var areaRulePlanning = new AreaRulePlanning
+		{
+			AreaRuleId = areaRule.Id,
+			AreaId = area.Id,
+			ItemPlanningId = planning.Id,
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
 
 		//create compliance
 		var compliance = new Compliance()
@@ -301,6 +365,38 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
 
+		//create area
+		var area = new Area
+		{
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.Areas.AddAsync(area);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearule
+		var areaRule = new AreaRule
+		{
+			AreaId = area.Id,
+			WorkflowState = Constants.WorkflowStates.Created,
+			PropertyId = property.Id
+		};
+
+		await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearuleplanning
+		var areaRulePlanning = new AreaRulePlanning
+		{
+			AreaRuleId = areaRule.Id,
+			AreaId = area.Id,
+			ItemPlanningId = planning.Id,
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
 		//create compliance
 		var compliance = new Compliance()
 		{
@@ -400,6 +496,38 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		await ItemsPlanningPnDbContext!.Plannings.AddAsync(planning);
 		await ItemsPlanningPnDbContext.SaveChangesAsync();
+
+		//create area
+		var area = new Area
+		{
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.Areas.AddAsync(area);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearule
+		var areaRule = new AreaRule
+		{
+			AreaId = area.Id,
+			WorkflowState = Constants.WorkflowStates.Created,
+			PropertyId = property.Id
+		};
+
+		await BackendConfigurationPnDbContext.AreaRules.AddAsync(areaRule);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
+
+		//create arearuleplanning
+		var areaRulePlanning = new AreaRulePlanning
+		{
+			AreaRuleId = areaRule.Id,
+			AreaId = area.Id,
+			ItemPlanningId = planning.Id,
+			WorkflowState = Constants.WorkflowStates.Created
+		};
+
+		await BackendConfigurationPnDbContext.AreaRulePlannings.AddAsync(areaRulePlanning);
+		await BackendConfigurationPnDbContext.SaveChangesAsync();
 
 		//create compliance
 		var compliance = new Compliance()
