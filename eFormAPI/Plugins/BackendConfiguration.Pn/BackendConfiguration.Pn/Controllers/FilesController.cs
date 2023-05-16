@@ -18,22 +18,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microting.eFormApi.BasePn.Abstractions;
-
 namespace BackendConfiguration.Pn.Controllers;
 
-using System.IO;
-using System.IO.Compression;
-using System.Threading.Tasks;
-using Services.BackendConfigurationLocalizationService;
+using Infrastructure.Helpers;
 using Infrastructure.Models.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Services.BackendConfigurationFilesService;
-using Microsoft.Extensions.Logging;
-using Infrastructure.Helpers;
+using Services.BackendConfigurationLocalizationService;
+using System.IO;
+using System.IO.Compression;
+using System.Threading.Tasks;
 
 [Authorize]
 [Route("api/backend-configuration-pn/files")]
@@ -41,17 +39,18 @@ public class FilesController : Controller
 {
 	private readonly IBackendConfigurationFilesService _backendConfigurationFilesService;
 	private readonly IBackendConfigurationLocalizationService _localizationService;
-	private ILogger<FilesController> logger;
+	//private ILogger<FilesController> logger;
 	private readonly IEFormCoreService _coreHelper;
 
 	public FilesController(
 		IBackendConfigurationFilesService backendConfigurationFilesService,
 		IBackendConfigurationLocalizationService localizationService,
-		ILogger<FilesController> logger, IEFormCoreService coreHelper)
+		/*ILogger<FilesController> logger,*/
+		IEFormCoreService coreHelper)
 	{
 		_backendConfigurationFilesService = backendConfigurationFilesService;
 		_localizationService = localizationService;
-		this.logger = logger;
+		//this.logger = logger;
 		_coreHelper = coreHelper;
 	}
 

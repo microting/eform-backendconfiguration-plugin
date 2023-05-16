@@ -22,39 +22,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Text.RegularExpressions;
-using BackendConfiguration.Pn.Infrastructure.Models.Report;
-using eFormCore;
-using ImageMagick;
-using Microting.eForm.Dto;
-using Microting.ItemsPlanningBase.Infrastructure.Data;
-
 namespace BackendConfiguration.Pn.Services.WordService
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Linq;
-    using System.Reflection;
-    using System.Text;
-    using System.Threading.Tasks;
-    using BackendConfigurationLocalizationService;
-    using Infrastructure.Data.Seed.Data;
-    using Infrastructure.Models.AreaRules;
-    using Infrastructure.Models.TaskManagement;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.Extensions.Logging;
-    using Microting.eForm.Infrastructure.Constants;
-    using Microting.eFormApi.BasePn.Abstractions;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
-    using Microting.ItemsPlanningBase.Infrastructure.Enums;
-    using File = System.IO.File;
+	using Infrastructure.Models.Report;
+	using BackendConfigurationLocalizationService;
+	using eFormCore;
+	using ImageMagick;
+	using Infrastructure.Data.Seed.Data;
+	using Infrastructure.Models.AreaRules;
+	using Infrastructure.Models.TaskManagement;
+	using Microsoft.EntityFrameworkCore;
+	using Microsoft.Extensions.Logging;
+	using Microting.eForm.Dto;
+	using Microting.eForm.Infrastructure.Constants;
+	using Microting.eFormApi.BasePn.Abstractions;
+	using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+	using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+	using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+	using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+	using Microting.ItemsPlanningBase.Infrastructure.Data;
+	using Microting.ItemsPlanningBase.Infrastructure.Enums;
+	using System;
+	using System.Collections.Generic;
+	using System.Diagnostics;
+	using System.IO;
+	using System.Linq;
+	using System.Reflection;
+	using System.Text;
+	using System.Text.RegularExpressions;
+	using System.Threading.Tasks;
 
-    public class WordService : IWordService
+	public class WordService : IWordService
     {
         private readonly ILogger<WordService> _logger;
         private readonly IBackendConfigurationLocalizationService  _localizationService;
@@ -576,7 +574,7 @@ namespace BackendConfiguration.Pn.Services.WordService
 
                 var word = new WordProcessor(docxFileStream);
 
-                var itemsHtml = new StringBuilder();;
+                var itemsHtml = new StringBuilder();
                 var header = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportHeaderName").Value;
                 var subHeader = _itemsPlanningPnDbContext.PluginConfigurationValues.Single(x => x.Name == "ItemsPlanningBaseSettings:ReportSubHeaderName").Value;
                 itemsHtml.Append("<body>");

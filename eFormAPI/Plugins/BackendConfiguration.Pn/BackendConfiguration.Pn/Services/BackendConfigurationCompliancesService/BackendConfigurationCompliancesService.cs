@@ -27,8 +27,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using Ical.Net;
-using Ical.Net.CalendarComponents;
-using Ical.Net.DataTypes;
 using Ical.Net.Serialization;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService

@@ -22,7 +22,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
     {
         // Arrange
         var core = await GetCore();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var englishLanguage = await MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
         var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
         var danishName = new Guid().ToString();
@@ -380,7 +380,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
     {
         // Arrange
         var core = await GetCore();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var englishLanguage = await MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
         var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
         var danishName = new Guid().ToString();
@@ -753,7 +753,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
     {
         // Arrange
         var core = await GetCore();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var englishLanguage = await MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
         var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
         var danishName = new Guid().ToString();
@@ -1126,7 +1126,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
     {
         // Arrange
         var core = await GetCore();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var englishLanguage = await MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
         var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
         var danishName = new Guid().ToString();
@@ -1475,7 +1475,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
     {
         // Arrange
         var core = await GetCore();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var englishLanguage = await MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
         var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
         var danishName = new Guid().ToString();
@@ -1900,7 +1900,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
     {
         // Arrange
         var core = await GetCore();
-        var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
+        var englishLanguage = await MicrotingDbContext!.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
         var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "da");
         var danishName = new Guid().ToString();

@@ -922,7 +922,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);
@@ -1419,7 +1419,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);
@@ -2019,7 +2019,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);
@@ -2620,7 +2620,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var englishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "en-US");
         var germanLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.LanguageCode == "de-DE");
-        var alarmeFormid = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
+        /*var alarmeFormid = */await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol alarmanlæg gyllebeholder").Select(x => x.CheckListId).FirstAsync();
         var floatingLayerEformId = await MicrotingDbContext.CheckListTranslations.Where(x => x.Text == "03. Kontrol flydelag").Select(x => x.CheckListId).FirstAsync();
 
         Assert.NotNull(result);

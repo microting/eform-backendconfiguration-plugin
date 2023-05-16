@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 
 namespace BackendConfiguration.Pn.Infrastructure.Models.Documents;
 

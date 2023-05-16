@@ -1,7 +1,4 @@
 using BackendConfiguration.Pn.Services.RebusService;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
@@ -22,7 +19,7 @@ public class TestBaseSetup
         .WithEnvironment("MYSQL_ROOT_PASSWORD", "Qq1234567$")
         .Build();
 
-    protected MicrotingDbContext DbContext;
+    protected MicrotingDbContext? DbContext;
 
     protected BackendConfigurationPnDbContext? BackendConfigurationPnDbContext;
     protected ItemsPlanningPnDbContext? ItemsPlanningPnDbContext;
@@ -39,8 +36,8 @@ public class TestBaseSetup
             new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new BackendConfigurationPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-backend-configuration-plugin.sql");
-        string rawSql = File.ReadAllText(file);
+        var file = Path.Combine("SQL", "420_eform-backend-configuration-plugin.sql");
+        var rawSql = File.ReadAllText(file);
 
         try
         {
@@ -62,8 +59,8 @@ public class TestBaseSetup
             new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
-        string rawSql = File.ReadAllText(file);
+        var file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
+        var rawSql = File.ReadAllText(file);
 
         backendConfigurationPnDbContext.Database.EnsureCreated();
         backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
@@ -79,8 +76,8 @@ public class TestBaseSetup
             new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
-        string rawSql = File.ReadAllText(file);
+        var file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
+        var rawSql = File.ReadAllText(file);
 
         backendConfigurationPnDbContext.Database.EnsureCreated();
         backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
@@ -96,8 +93,8 @@ public class TestBaseSetup
             new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
-        string rawSql = File.ReadAllText(file);
+        var file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
+        var rawSql = File.ReadAllText(file);
 
         backendConfigurationPnDbContext.Database.EnsureCreated();
         backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
@@ -107,13 +104,13 @@ public class TestBaseSetup
 
     private MicrotingDbContext GetContext(string connectionStr)
     {
-        DbContextOptionsBuilder dbContextOptionsBuilder = new DbContextOptionsBuilder();
+        var dbContextOptionsBuilder = new DbContextOptionsBuilder();
 
         dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK").Replace("bla", "root"), new MariaDbServerVersion(
             new Version(10, 8)));
         var microtingDbContext =  new MicrotingDbContext(dbContextOptionsBuilder.Options);
-        string file = Path.Combine("SQL", "420_SDK.sql");
-        string rawSql = File.ReadAllText(file);
+        var file = Path.Combine("SQL", "420_SDK.sql");
+        var rawSql = File.ReadAllText(file);
 
         microtingDbContext.Database.EnsureCreated();
         microtingDbContext.Database.ExecuteSqlRaw(rawSql);

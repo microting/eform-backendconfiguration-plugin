@@ -22,16 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Net.Http;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Pools;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.RebusService;
 using ChemicalsBase.Infrastructure;
-using ChemicalsBase.Infrastructure.Data.Entities;
 using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService

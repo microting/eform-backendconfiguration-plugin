@@ -26,7 +26,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
 {
     using System;
     using System.Collections.Generic;
-    using Microting.eForm.Infrastructure.Models;
 
     public class AreaRulePlanningModel
     {

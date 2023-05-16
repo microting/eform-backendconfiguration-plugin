@@ -23,14 +23,13 @@ SOFTWARE.
 */
 namespace BackendConfiguration.Pn.Services.WordService
 {
-    using System;
-    using System.IO;
-    using DocumentFormat.OpenXml;
-    using DocumentFormat.OpenXml.Packaging;
-    using DocumentFormat.OpenXml.Wordprocessing;
-    using HtmlToOpenXml;
+	using DocumentFormat.OpenXml.Packaging;
+	using DocumentFormat.OpenXml.Wordprocessing;
+	using HtmlToOpenXml;
+	using System;
+	using System.IO;
 
-    public class WordProcessor : IDisposable
+	public class WordProcessor : IDisposable
     {
         // Document
         private readonly WordprocessingDocument _wordProcessingDocument;
@@ -75,7 +74,7 @@ namespace BackendConfiguration.Pn.Services.WordService
         public void Dispose()
         {
             _wordProcessingDocument.Save();
-            _wordProcessingDocument.Close();
+            //_wordProcessingDocument.Close();
             _wordProcessingDocument.Dispose();
         }
     }

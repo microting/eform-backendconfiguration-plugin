@@ -2,8 +2,6 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Chemical;
 using BackendConfiguration.Pn.Services.ChemicalService;
 using Chemicals.Pn.Infrastructure.Models.Chemical;
-using Chemicals.Pn.Infrastructure.Models.Planning;
-using ChemicalsBase.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -15,12 +13,12 @@ namespace BackendConfiguration.Pn.Controllers;
 public class ChemicalController : Controller
 {
     private readonly IChemicalService _chemicalService;
-    private readonly ChemicalsDbContext _dbContext;
+    //private readonly ChemicalsDbContext _dbContext;
 
-    public ChemicalController(IChemicalService chemicalService, ChemicalsDbContext dbContext)
+    public ChemicalController(IChemicalService chemicalService/*, ChemicalsDbContext dbContext*/)
     {
         _chemicalService = chemicalService;
-        _dbContext = dbContext;
+        //_dbContext = dbContext;
     }
     
     [HttpPost]

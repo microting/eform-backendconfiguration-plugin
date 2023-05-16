@@ -22,16 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Chemical;
 using Chemicals.Pn.Infrastructure.Models.Chemical;
-using Chemicals.Pn.Infrastructure.Models.Planning;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using System.Threading.Tasks;
 
 namespace BackendConfiguration.Pn.Services.ChemicalService
 {
-    public interface IChemicalService
+	public interface IChemicalService
     {
         Task<OperationDataResult<Paged<ChemicalPnModel>>> Index(ChemicalsRequestModel requestModel);
     }
