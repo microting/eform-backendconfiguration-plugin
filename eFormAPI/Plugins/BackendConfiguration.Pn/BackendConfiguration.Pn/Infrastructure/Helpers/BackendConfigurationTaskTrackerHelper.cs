@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using eFormCore;
+using Enums;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
@@ -129,7 +130,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					Workers = workerNames,
 					StartTask = compliance.StartDate,
 					RepeatEvery = planning.RepeatEvery,
-					RepeatType = planning.RepeatType,
+					RepeatType = (RepeatType)planning.RepeatType,
 					NextExecutionTime = (DateTime)planning.NextExecutionTime,
 					TaskName = taskName,
 					TaskIsExpired = dateTimeNow > compliance.Deadline,

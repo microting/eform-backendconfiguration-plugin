@@ -21,6 +21,15 @@
       color="primary">
       {{'Show/hide columns' | translate}}
     </button>
+
+    <button
+      mat-icon-button
+      id="excelReportBtn"
+      (click)="onDownloadExcelReport()"
+      matTooltip="{{ 'Excel report' | translate }}"
+    >
+      <mat-icon svgIcon="file-excel"></mat-icon>
+    </button>
   </div>
   <app-task-tracker-table
     [columnsFromDb]="columns"

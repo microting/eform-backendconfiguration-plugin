@@ -31,10 +31,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Infrastructure.Models.TaskManagement;
+using Infrastructure.Models.TaskTracker;
 
 public interface IExcelService
 {
     Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
 
     Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel);
+
+    Task<Stream> GenerateTaskTracker(List<TaskTrackerModel> model);
 }

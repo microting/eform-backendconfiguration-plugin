@@ -18,6 +18,7 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {LoaderService} from 'src/app/common/services';
+import {catchError, tap} from 'rxjs/operators';
 
 @AutoUnsubscribe()
 @Component({
@@ -119,27 +120,31 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     const filters = this.taskManagementStateService.store.getValue().filters;
     this.downloadWordReportSub$ = this.taskManagementStateService
       .downloadWordReport()
-      .subscribe(
-        (data) => {
+      .pipe(
+        tap((data) => {
           saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${ filters.areaName ? '_' + filters.areaName : ''}_report.docx`);
-        },
-        (_) => {
+        }),
+        catchError((err, caught) => {
           this.toasterService.error('Error downloading report');
-        }
-      );
+          return caught;
+        })
+        )
+      .subscribe();
   }
 
   onDownloadExcelReport() {
     const filters = this.taskManagementStateService.store.getValue().filters;
     this.downloadExcelReportSub$ = this.taskManagementStateService
       .downloadExcelReport()
-      .subscribe(
-        (data) => {
+      .pipe(
+        tap((data) => {
           saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${ filters.areaName ? '_' + filters.areaName : ''}_report.xlsx`);
-        },
-        (_) => {
+        }),
+        catchError((_, caught) => {
           this.toasterService.error('Error downloading report');
-        }
-      );
+          return caught;
+        }),
+      )
+      .subscribe();
   }
 }

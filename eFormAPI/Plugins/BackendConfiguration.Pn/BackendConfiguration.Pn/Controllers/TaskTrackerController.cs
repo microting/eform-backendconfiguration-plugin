@@ -18,16 +18,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
-
 namespace BackendConfiguration.Pn.Controllers;
 
+using Infrastructure.Models.TaskTracker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Services.BackendConfigurationTaskTrackerService;
-using Infrastructure.Models.TaskTracker;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
+using Services.BackendConfigurationTaskTrackerService;
 using System.Collections.Generic;
+using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 
 [Authorize]
@@ -45,33 +46,9 @@ public class TaskTrackerController : Controller
 
 
 	[HttpPost("index")]
-	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index([FromBody]TaskTrackerFiltrationModel filtersModel)
+	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index([FromBody] TaskTrackerFiltrationModel filtersModel)
 	{
-			return await _backendConfigurationTaskTrackerService.Index(filtersModel);
-	}
-
-	[HttpPost]
-	public async Task<OperationResult> CreateTask([FromBody] TaskTrackerCreateModel filtersModel)
-	{
-		return await _backendConfigurationTaskTrackerService.CreateTask(filtersModel);
-	}
-
-	[HttpDelete]
-	public async Task<OperationResult> DeleteTaskById([FromQuery] int taskId)
-	{
-		return await _backendConfigurationTaskTrackerService.DeleteTaskById(taskId);
-	}
-
-	[HttpPut]
-	public async Task<OperationResult> UpdateTask([FromBody] TaskTrackerUpdateModel filtersModel)
-	{
-		return await _backendConfigurationTaskTrackerService.UpdateTask(filtersModel);
-	}
-
-	[HttpGet]
-	public async Task<OperationDataResult<TaskTrackerModel>> GetTaskById([FromQuery] int taskId)
-	{
-		return await _backendConfigurationTaskTrackerService.GetTaskById(taskId);
+		return await _backendConfigurationTaskTrackerService.Index(filtersModel);
 	}
 
 	[HttpGet("columns")]
@@ -79,10 +56,45 @@ public class TaskTrackerController : Controller
 	{
 		return await _backendConfigurationTaskTrackerService.GetColumns();
 	}
-	
+
 	[HttpPost("columns")]
 	public async Task<OperationResult> UpdateColumns([FromBody] List<TaskTrackerColumns> updatedColumns)
 	{
 		return await _backendConfigurationTaskTrackerService.UpdateColumns(updatedColumns);
+	}
+
+	[HttpPost("excel")]
+	public async Task GenerateExcelReport([FromBody] TaskTrackerFiltrationModel filtersModel)
+	{
+		var result = await _backendConfigurationTaskTrackerService.GenerateExcelReport(filtersModel);
+		const int bufferSize = 4086;
+		byte[] buffer = new byte[bufferSize];
+		Response.OnStarting(async () =>
+		{
+			if (!result.Success)
+			{
+				Response.ContentLength = result.Message.Length;
+				Response.ContentType = "text/plain";
+				Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+				byte[] bytes = Encoding.UTF8.GetBytes(result.Message);
+				await Response.Body.WriteAsync(bytes, 0, result.Message.Length);
+				await Response.Body.FlushAsync();
+			}
+			else
+			{
+				await using var excelReportStream = result.Model;
+				int bytesRead;
+				Response.StatusCode = (int)HttpStatusCode.OK;
+				Response.ContentLength = excelReportStream.Length;
+				Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+				while ((bytesRead = excelReportStream.Read(buffer, 0, buffer.Length)) > 0 &&
+				       !HttpContext.RequestAborted.IsCancellationRequested)
+				{
+					await Response.Body.WriteAsync(buffer, 0, bytesRead);
+					await Response.Body.FlushAsync();
+				}
+			}
+		});
 	}
 }

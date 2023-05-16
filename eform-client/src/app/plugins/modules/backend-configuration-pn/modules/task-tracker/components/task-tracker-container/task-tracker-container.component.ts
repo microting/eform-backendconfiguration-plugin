@@ -21,6 +21,12 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {LoaderService} from 'src/app/common/services';
 import {AreaRulePlanModalComponent} from '../../../../components';
+import {MatIconRegistry} from '@angular/material/icon';
+import {DomSanitizer} from '@angular/platform-browser';
+import {ExcelIcon} from 'src/app/common/const';
+import {catchError, tap} from 'rxjs/operators';
+import {saveAs} from 'file-saver';
+import {format} from 'date-fns';
 
 @AutoUnsubscribe()
 @Component({
@@ -49,6 +55,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   getDataForAreaRulePlanningModalSub$: Subscription;
   updateAreaRulePlanSub$: Subscription;
   planAreaRuleSub$: Subscription;
+  downloadExcelReportSub$: Subscription;
 
   constructor(
     private loaderService: LoaderService,
@@ -59,7 +66,10 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     public dialog: MatDialog,
     private overlay: Overlay,
     private areasService: BackendConfigurationPnAreasService,
+    iconRegistry: MatIconRegistry,
+    sanitizer: DomSanitizer,
   ) {
+    iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
   }
 
   ngOnInit() {
@@ -128,8 +138,8 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
       .subscribe(([areaRulePlanning, area, areaRule]) => {
         if (
           areaRulePlanning && areaRulePlanning.success && //areaRulePlanning.model &&
-          area             && area.success             && area.model             &&
-          areaRule         && areaRule.success         && areaRule.model
+          area && area.success && area.model &&
+          areaRule && areaRule.success && areaRule.model
         ) {
           const modal = this.dialog.open(AreaRulePlanModalComponent, {
             ...dialogConfigHelper(this.overlay, {
@@ -156,5 +166,21 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
           modal.close();
         }
       });
+  }
+
+  onDownloadExcelReport() {
+    const filters = this.taskTrackerStateService.store.getValue().filters;
+    this.downloadExcelReportSub$ = this.taskTrackerService
+      .downloadExcelReport(filters)
+      .pipe(
+        tap((data) => {
+          saveAs(data, `TT_${format(new Date(), 'yyyy/MM/dd')}_report.xlsx`);
+        }),
+        catchError((_, caught) => {
+          this.toasterService.error('Error downloading report');
+          return caught;
+        }),
+      )
+      .subscribe();
   }
 }

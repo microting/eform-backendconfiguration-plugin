@@ -14,7 +14,7 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {
   TaskManagementPrioritiesEnum
-} from "src/app/plugins/modules/backend-configuration-pn/enums/task-management-priorities.enum";
+} from '../../../../enums';
 
 @Component({
   selector: 'app-task-management-table',
