@@ -64,6 +64,7 @@ public static class BackendConfigurationTaskTrackerHelper
 			var complianceList = await query
 				.AsNoTracking()
 				.OrderBy(x => x.Deadline)
+				.Select(x => new {x.PropertyId, x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.MicrotingSdkeFormId, x.Id, x.AreaId})
 				.ToListAsync();
 
 			foreach (var compliance in complianceList)
@@ -114,12 +115,15 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
 					.ToList();
 
-				var areaRuleId = await backendConfigurationPnDbContext.AreaRulePlannings
+				var areaRulePlanning = await backendConfigurationPnDbContext.AreaRulePlannings
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 					.Where(x => x.ItemPlanningId == compliance.PlanningId)
-					.Select(x => x.AreaRuleId)
+					.Select(x => new {x.AreaRuleId, x.StartDate})
 					.FirstOrDefaultAsync();
 
+				if (areaRulePlanning == null) continue;
+
+				var startDate = areaRulePlanning.StartDate ?? planning.StartDate;
 
 				var complianceModel = new TaskTrackerModel
 				{
@@ -127,7 +131,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					Tags = new(),
 					DeadlineTask = compliance.Deadline,
 					Workers = workerNames,
-					StartTask = compliance.StartDate,
+					StartTask = startDate,
 					RepeatEvery = planning.RepeatEvery,
 					RepeatType = planning.RepeatType,
 					NextExecutionTime = (DateTime)planning.NextExecutionTime,
@@ -138,7 +142,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					TemplateId = compliance.MicrotingSdkeFormId,
 					ComplianceId = compliance.Id,
 					AreaId = compliance.AreaId,
-					AreaRuleId = areaRuleId
+					AreaRuleId = areaRulePlanning!.AreaRuleId
 				};
 
 				result.Add(complianceModel);
