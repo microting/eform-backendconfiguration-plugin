@@ -547,7 +547,7 @@
       <PackageReference Include="ChemicalsBase" Version="7.0.1" />
       <PackageReference Include="Ical.Net" Version="4.2.0" />
       <PackageReference Include="Magick.NET-Q16-x64" Version="13.1.2" />
-      <PackageReference Include="Microting.eForm" Version="7.0.38" />
+      <PackageReference Include="Microting.eForm" Version="7.0.39" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="7.0.31" />
       <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.31" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
