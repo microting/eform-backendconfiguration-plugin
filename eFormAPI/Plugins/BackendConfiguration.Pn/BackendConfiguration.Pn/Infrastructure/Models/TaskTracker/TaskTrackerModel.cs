@@ -26,8 +26,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.TaskTracker;
 
 using System;
 using System.Collections.Generic;
+using Enums;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-using Microting.ItemsPlanningBase.Infrastructure.Enums;
 
 /// <summary>
 /// Represents a task tracker model.

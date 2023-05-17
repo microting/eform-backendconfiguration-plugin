@@ -22,26 +22,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
-
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskTrackerService;
 
 using Infrastructure.Models.TaskTracker;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 public interface IBackendConfigurationTaskTrackerService
 {
 	Task<OperationDataResult<List<TaskTrackerModel>>> Index(TaskTrackerFiltrationModel filtersModel);
-
-	Task<OperationDataResult<TaskTrackerModel>> GetTaskById(int taskId);
-
-	Task<OperationResult> DeleteTaskById(int taskId);
-
-	Task<OperationResult> CreateTask(TaskTrackerCreateModel createModel);
-
-	Task<OperationResult> UpdateTask(TaskTrackerUpdateModel createModel);
+	
 	Task<OperationDataResult<List<TaskTrackerColumn>>> GetColumns();
+
 	Task<OperationResult> UpdateColumns(List<TaskTrackerColumns> updatedColumns);
+
+	Task<OperationDataResult<Stream>> GenerateExcelReport(TaskTrackerFiltrationModel filtersModel);
 }

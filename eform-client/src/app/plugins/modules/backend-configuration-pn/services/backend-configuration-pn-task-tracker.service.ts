@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
+import {Observable, take} from 'rxjs';
 import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {
@@ -13,6 +13,7 @@ export let BackendConfigurationPnTaskTrackerMethods = {
   TaskTracker: 'api/backend-configuration-pn/task-tracker',
   Index: 'api/backend-configuration-pn/task-tracker/index',
   Columns: 'api/backend-configuration-pn/task-tracker/columns',
+  Excel: 'api/backend-configuration-pn/task-tracker/excel'
 };
 
 @Injectable({
@@ -34,10 +35,7 @@ export class BackendConfigurationPnTaskTrackerService {
     return this.apiBaseService.post(BackendConfigurationPnTaskTrackerMethods.Index, model);
   }
 
-  createTask(task: WorkOrderCaseCreateModel): Observable<OperationResult> {
-    return this.apiBaseService.post(
-      BackendConfigurationPnTaskTrackerMethods.TaskTracker,
-      task
-    );
+  downloadExcelReport(model: TaskTrackerFiltrationModel): Observable<any> {
+    return this.apiBaseService.postBlobData(BackendConfigurationPnTaskTrackerMethods.Excel, model).pipe(take(1));
   }
 }

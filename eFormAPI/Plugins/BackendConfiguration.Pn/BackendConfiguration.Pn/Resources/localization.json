@@ -2183,5 +2183,138 @@
       "pt-PT": "A pasta não é eliminável",
       "fi-FI": "Kansiota ei voi poistaa"
     }
+  },
+  {
+    "Key": "ShortSunday",
+    "LocalizedValue": {
+      "da": "Sø",
+      "de": "So",
+      "en-US": "Su",
+      "uk-UA": "Нд",
+      "pl-PL": "Nd",
+      "no-NO": "Sø",
+      "sv-SE": "Sö",
+      "es-ES": "Do",
+      "fr-FR": "Di",
+      "it-IT": "Do",
+      "nl-NL": "Zo",
+      "pt-BR": "Dom",
+      "pt-PT": "Dom",
+      "fi-FI": "Su"
+    }
+  },
+  {
+    "Key": "ShortMonday",
+    "LocalizedValue": {
+      "da": "Ma",
+      "de": "Mo",
+      "en-US": "Mo",
+      "uk-UA": "Пн",
+      "pl-PL": "Pn",
+      "no-NO": "Ma",
+      "sv-SE": "Må",
+      "es-ES": "Lu",
+      "fr-FR": "Lu",
+      "it-IT": "Lu",
+      "nl-NL": "Ma",
+      "pt-BR": "Seg",
+      "pt-PT": "Seg",
+      "fi-FI": "Ma"
+    }
+  },
+  {
+    "Key": "ShortTuesday",
+    "LocalizedValue": {
+      "da": "Ti",
+      "de": "Di",
+      "en-US": "Tu",
+      "uk-UA": "Вт",
+      "pl-PL": "Wt",
+      "no-NO": "Ti",
+      "sv-SE": "Ti",
+      "es-ES": "Ma",
+      "fr-FR": "Ma",
+      "it-IT": "Ma",
+      "nl-NL": "Di",
+      "pt-BR": "Ter",
+      "pt-PT": "Ter",
+      "fi-FI": "Ti"
+    }
+  },
+  {
+    "Key": "ShortWednesday",
+    "LocalizedValue": {
+      "da": "On",
+      "de": "Mi",
+      "en-US": "We",
+      "uk-UA": "Ср",
+      "pl-PL": "Śr",
+      "no-NO": "On",
+      "sv-SE": "On",
+      "es-ES": "Mi",
+      "fr-FR": "Me",
+      "it-IT": "Me",
+      "nl-NL": "Wo",
+      "pt-BR": "Qua",
+      "pt-PT": "Qua",
+      "fi-FI": "Ke"
+    }
+  },
+  {
+    "Key": "ShortThursday",
+    "LocalizedValue": {
+      "da": "To",
+      "de": "Do",
+      "en-US": "Th",
+      "uk-UA": "Чт",
+      "pl-PL": "Cz",
+      "no-NO": "To",
+      "sv-SE": "To",
+      "es-ES": "Ju",
+      "fr-FR": "Je",
+      "it-IT": "Gi",
+      "nl-NL": "Do",
+      "pt-BR": "Qui",
+      "pt-PT": "Qui",
+      "fi-FI": "To"
+    }
+  },
+  {
+    "Key": "ShortFriday",
+    "LocalizedValue": {
+      "da": "Fr",
+      "de": "Fr",
+      "en-US": "Fr",
+      "uk-UA": "Пт",
+      "pl-PL": "Pt",
+      "no-NO": "Fr",
+      "sv-SE": "Fr",
+      "es-ES": "Vi",
+      "fr-FR": "Ve",
+      "it-IT": "Ve",
+      "nl-NL": "Vr",
+      "pt-BR": "Sex",
+      "pt-PT": "Sex",
+      "fi-FI": "Pe"
+    }
+  },
+  {
+    "Key": "ShortSaturday",
+    "LocalizedValue": {
+      "da": "Lø",
+      "de": "Sa",
+      "en-US": "Sa",
+      "uk-UA": "Сб",
+      "pl-PL": "So",
+      "no-NO": "Lø",
+      "sv-SE": "Lö",
+      "es-ES": "Sá",
+      "fr-FR": "Sa",
+      "it-IT": "Sa",
+      "nl-NL": "Za",
+      "pt-BR": "Sáb",
+      "pt-PT": "Sáb",
+      "fi-FI": "La"
+    }
   }
 ]

@@ -39,6 +39,8 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Infrastructure.Helpers;
+using System.IO;
+using ExcelService;
 
 public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskTrackerService
 {
@@ -47,124 +49,32 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 	private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 	private readonly IEFormCoreService _coreHelper;
 	private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
+	private readonly IExcelService _excelService;
 
 	public BackendConfigurationTaskTrackerService(
 		IBackendConfigurationLocalizationService localizationService,
 		IUserService userService,
 		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
 		IEFormCoreService coreHelper,
-		ItemsPlanningPnDbContext itemsPlanningPnDbContext
-	)
+		ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+		IExcelService excelService)
 	{
 		_localizationService = localizationService;
 		_userService = userService;
 		_backendConfigurationPnDbContext = backendConfigurationPnDbContext;
 		_coreHelper = coreHelper;
 		_itemsPlanningPnDbContext = itemsPlanningPnDbContext;
+		_excelService = excelService;
 	}
 
 
 	public async Task<OperationDataResult<List<TaskTrackerModel>>> Index(TaskTrackerFiltrationModel filtersModel)
 	{
-
 		var userLanguageId = (await _userService.GetCurrentUserLanguage()).Id;
 		var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, _backendConfigurationPnDbContext, await _coreHelper.GetCore(), userLanguageId, _itemsPlanningPnDbContext);
 		return new OperationDataResult<List<TaskTrackerModel>>(result.Success, _localizationService.GetString(result.Message), result.Model ?? new List<TaskTrackerModel>());
 	}
-
-	public async Task<OperationDataResult<TaskTrackerModel>> GetTaskById(int taskId)
-	{
-		try
-		{
-			/*var core = await _coreHelper.GetCore().ConfigureAwait(false);
-			var sdkDbContext = core.DbContextHelper.GetDbContext();
-			var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Where(x => x.Id == taskId)
-				.FirstOrDefaultAsync();*/
-
-			return new OperationDataResult<TaskTrackerModel>(true, new TaskTrackerModel());
-		}
-		catch (Exception e)
-		{
-			Log.LogException(e.Message);
-			Log.LogException(e.StackTrace);
-			return new OperationDataResult<TaskTrackerModel>(false,
-				$"{_localizationService.GetString("ErrorWhileReadTask")}: {e.Message}");
-		}
-	}
-
-	public async Task<OperationResult> DeleteTaskById(int taskId)
-	{
-		try
-		{
-			/*var core = await _coreHelper.GetCore().ConfigureAwait(false);
-			var sdkDbContext = core.DbContextHelper.GetDbContext();
-			var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Where(x => x.Id == taskId)
-				.FirstOrDefaultAsync();
-
-			if (workOrderCase == null)
-			{
-				return new OperationDataResult<WorkOrderCaseReadModel>(false,
-					_localizationService.GetString("TaskNotFound"));
-			}*/
-
-			return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
-		}
-		catch (Exception e)
-		{
-			Log.LogException(e.Message);
-			Log.LogException(e.StackTrace);
-			return new OperationDataResult<TaskTrackerModel>(false,
-				$"{_localizationService.GetString("ErrorWhileDeleteTask")}: {e.Message}");
-		}
-	}
-
-	public async Task<OperationResult> CreateTask(TaskTrackerCreateModel createModel)
-	{
-		try
-		{
-			return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
-		}
-		catch (Exception e)
-		{
-			Log.LogException(e.Message);
-			Log.LogException(e.StackTrace);
-			return new OperationDataResult<TaskTrackerModel>(false,
-				$"{_localizationService.GetString("ErrorWhileCreateTask")}: {e.Message}");
-		}
-	}
-
-	public async Task<OperationResult> UpdateTask(TaskTrackerUpdateModel updateModel)
-	{
-		try
-		{
-			/*var core = await _coreHelper.GetCore().ConfigureAwait(false);
-			var sdkDbContext = core.DbContextHelper.GetDbContext();
-			var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
-				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-				.Where(x => x.Id == updateModel.Id)
-				.FirstOrDefaultAsync();
-
-			if (workOrderCase == null)
-			{
-				return new OperationDataResult<WorkOrderCaseReadModel>(false,
-					_localizationService.GetString("TaskNotFound"));
-			}*/
-
-			return new OperationResult(true, _localizationService.GetString("TaskUpdatedSuccessful"));
-		}
-		catch (Exception e)
-		{
-			Log.LogException(e.Message);
-			Log.LogException(e.StackTrace);
-			return new OperationDataResult<TaskTrackerModel>(false,
-				$"{_localizationService.GetString("ErrorWhileUpdateTask")}: {e.Message}");
-		}
-	}
-
+	
 	public async Task<OperationDataResult<List<TaskTrackerColumn>>> GetColumns()
 	{
 		var userId = _userService.UserId;
@@ -234,6 +144,34 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 			Log.LogException(e.StackTrace);
 			return new OperationResult(false,
 				$"{_localizationService.GetString("ErrorWhileUpdateColumns")}: {e.Message}");
+		}
+	}
+
+	public async Task<OperationDataResult<Stream>> GenerateExcelReport(TaskTrackerFiltrationModel filtersModel)
+	{
+		try
+		{
+			var userLanguageId = (await _userService.GetCurrentUserLanguage()).Id;
+			var result = await BackendConfigurationTaskTrackerHelper.Index(filtersModel, _backendConfigurationPnDbContext, await _coreHelper.GetCore(), userLanguageId, _itemsPlanningPnDbContext);
+			if (!result.Success)
+			{
+				return new OperationDataResult<Stream>(false, _localizationService.GetString(result.Message));
+			}
+
+			var report = await _excelService.GenerateTaskTracker(result.Model);
+
+			if (report == null)
+			{
+				return new OperationDataResult<Stream>(false, _localizationService.GetString("ErrorWhileGeneratingReport"));
+			}
+
+			return new OperationDataResult<Stream>(true, report);
+		}
+		catch (Exception e)
+		{
+			Log.LogException(e.Message);
+			Log.LogException(e.StackTrace);
+			return new OperationDataResult<Stream>(false, $"{_localizationService.GetString("ErrorWhileGeneratingReport")}: {e.Message}");
 		}
 	}
 }
