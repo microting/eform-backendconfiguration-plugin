@@ -34,6 +34,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   properties: CommonDictionaryModel[] = [];
   sites: CommonDictionaryModel[] = [];
   tags: CommonDictionaryModel[] = [];
+  propertyIdValueChangesSub$: Subscription;
 
   getAllPropertiesDictionarySub$: Subscription;
   getAllSitesDictionarySub$: Subscription;
@@ -52,7 +53,18 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.getProperties();
-    this.getSites();
+    //this.getSites();
+
+    this.propertyIdValueChangesSub$ = this.filtersForm
+      .get('propertyIds')
+      .valueChanges.subscribe((value: any) => {
+          if(value.length !== 0) {
+            this.getSites(value);
+          } else {
+            this.sites = [];
+          }
+        }
+      );
     this.getTags();
     this.subToFormChanges();
   }
@@ -65,12 +77,44 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
     });
   }
 
-  getSites() {
-    this.getAllSitesDictionarySub$ = this.sitesService.getAllSitesDictionary().subscribe((result) => {
-      if (result && result.success && result.success) {
-        this.sites = [...result.model];
-      }
-    });
+  getSites(propertyIds: any) {
+    this.sites = [];
+    for (let i = 0; i < propertyIds.length; i++) {
+      this.sitesService.getAllSitesDictionary().subscribe((result) => {
+        if (result && result.success && result.success) {
+          const sites = result.model;
+          this.propertyService.getPropertiesAssignments().subscribe((data) => {
+            if (data && data.success && data.model) {
+              data.model.forEach(
+                (x) =>
+                  (x.assignments = x.assignments.filter(
+                    (x) => x.isChecked && x.propertyId === propertyIds[i]
+                  ))
+              );
+              data.model = data.model.filter((x) => x.assignments.length > 0);
+              this.sites = this.sites.concat(data.model.map((x) => {
+                const site = sites.find((y) => y.id === x.siteId);
+                return {
+                  id: x.siteId,
+                  name: site !== undefined ? site.name : 'Contact Microting : '+x.siteId+'',
+                  description: '',
+                };
+              }));
+              this.sites = this.sites.sort((a, b) => {
+                if (a.name > b.name) {
+                  return 1;
+                }
+                if (a.name < b.name) {
+                  return -1;
+                }
+                return 0;
+              });
+              this.sites = this.sites.filter((v, i, a) => a.findIndex(t => (t.id === v.id)) === i);
+            }
+          });
+        }
+      });
+    }
   }
 
   getTags() {
