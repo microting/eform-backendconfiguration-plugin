@@ -35,7 +35,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
             .Include(x => x.DocumentProperties)
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentUploadedDatas)
-            .Include(x => x.DocumentSites)
+            //.Include(x => x.DocumentSites)
             .FirstOrDefaultAsync(x => x.Id == message.DocumentId && x.Status == true);
 
         if (document == null)
@@ -54,20 +54,21 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
 
             foreach (var propertyWorker in propertySites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
             {
-                var documentSite = document.DocumentSites
-                    .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed
-                                         && x.SdkSiteId == propertyWorker.WorkerId);
-
-                if (documentSite == null)
+                // var documentSite = documentDbContext.DocumentSites
+                //     .Where(x => x.DocumentId == document.Id)
+                //     .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed
+                //                          && x.SdkSiteId == propertyWorker.WorkerId);
+                //
+                // if (documentSite == null)
+                // {
+                var documentSite = new DocumentSite
                 {
-                    documentSite = new DocumentSite
-                    {
-                        DocumentId = document.Id,
-                        SdkSiteId = propertyWorker.WorkerId,
-                        PropertyId = documentProperty.PropertyId
-                    };
-                    await documentSite.Create(documentDbContext);
-                }
+                    DocumentId = document.Id,
+                    SdkSiteId = propertyWorker.WorkerId,
+                    PropertyId = documentProperty.PropertyId
+                };
+                await documentSite.Create(documentDbContext);
+                //}
 
                 var clt = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "00. Info boks");
                 var folderProperty = await documentDbContext.FolderProperties.FirstOrDefaultAsync(x => x.FolderId == document.FolderId && x.PropertyId == documentProperty.PropertyId);
@@ -183,10 +184,10 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                     var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, sdkFolder.Id);
 
                     documentSite.SdkCaseId = (int)caseId!;
+                    await documentSite.Update(documentDbContext);
                 }
                 document.IsLocked = false;
                 await document.Update(documentDbContext);
-                await documentSite.Update(documentDbContext);
             }
         }
     }

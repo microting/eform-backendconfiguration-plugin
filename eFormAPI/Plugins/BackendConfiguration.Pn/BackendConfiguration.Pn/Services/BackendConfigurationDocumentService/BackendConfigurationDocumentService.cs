@@ -309,8 +309,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             await documentProperty.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
 
-        // var documentSites = document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToList();
-        var documentSites = document.DocumentSites.ToList();
+        var documentSites = _caseTemplatePnDbContext.DocumentSites.Where(x => x.DocumentId == model.Id).ToList();
+        //var documentSites = document.DocumentSites.ToList();
 
         foreach (var documentSite in documentSites)
         {
