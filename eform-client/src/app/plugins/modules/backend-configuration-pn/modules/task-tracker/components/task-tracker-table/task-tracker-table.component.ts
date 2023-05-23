@@ -13,10 +13,13 @@ import {TaskTrackerStateService} from '../store';
 import {
   addDays,
   differenceInDays,
+  eachDayOfInterval,
+  eachMonthOfInterval,
+  eachWeekOfInterval,
   getDay,
   getWeek,
-  isMonday, nextMonday,
-  parseISO,
+  isMonday,
+  nextMonday,
   set
 } from 'date-fns';
 
@@ -36,12 +39,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   weeks: { weekNumber: number, length: number }[] = [];
   enabledHeadersNumber: number = 7;
   propertyHeaderEnabled: boolean = false;
-  currentDate: Date = set(new Date(), {
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
-    milliseconds: 0,
-  });
+  currentDate: Date = this.setDate(new Date());
 
   constructor(
     private translateService: TranslateService,
@@ -68,17 +66,12 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {
       this.propertyHeaderEnabled = !(filters.propertyIds.length === 1);
       this.recalculateColumns();
-    })
+    });
     this.initTable();
   }
 
   initTable() {
-    this.currentDate = set(new Date(), {
-      hours: 0,
-      minutes: 0,
-      seconds: 0,
-      milliseconds: 0,
-    });
+    this.currentDate = this.setDate(new Date());
     this.days = [...R.range(0, 28)].map((x: number): Date => addDays(this.currentDate, x));
     this.daysInTable = this.days.map(x => x.getDate());
     let weeks = this.days.map((x, i) => {
@@ -124,15 +117,21 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   getColorByDayAndTask(day: number, task: TaskModel): string {
     const index = this.days.findIndex(x => x.getDate() === day);
     if (index !== -1) {
-      const setDate = (date: Date) => set(date, {
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
-      const fullDay = setDate(this.days[index]);
-      const nextExecutionTime = setDate(parseISO(task.nextExecutionTime));
-      if (fullDay.toISOString() === nextExecutionTime.toISOString()) {
+      let arrayWithTaskDay: Date[] = [];
+      switch (task.repeatType) {
+        case 1:
+          arrayWithTaskDay = this.getArrayWithTaskDays(eachDayOfInterval, task);
+          break;
+        case 2:
+          arrayWithTaskDay = this.getArrayWithTaskDays(eachWeekOfInterval, task);
+          break;
+        case 3:
+          arrayWithTaskDay = this.getArrayWithTaskDays(eachMonthOfInterval, task);
+          break;
+      }
+
+      const fullDay = this.setDate(this.days[index]).toISOString();
+      if (arrayWithTaskDay.some(x => x.toISOString() === fullDay)) {
         return 'white-yellow';
       } else {
         return 'yellow';
@@ -154,8 +153,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
           columns = [...columns, {columnName: key, isColumnEnabled: value}];
         }
       }
-      if(!this.propertyHeaderEnabled) {
-        columns.find(x => x.columnName === 'property').isColumnEnabled = this.propertyHeaderEnabled
+      if (!this.propertyHeaderEnabled) {
+        columns.find(x => x.columnName === 'property').isColumnEnabled = this.propertyHeaderEnabled;
       }
       this.enabledHeadersNumber = columns
         .filter(x => x.columnName !== 'calendar')
@@ -165,7 +164,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   }
 
   redirectToCompliance(task: TaskModel) {
-    if(task.taskIsExpired) { // When clicking on a task that is overdue, the ones marked with red background, the user should navigate to plugins/backend-configuration-pn/compliances/case/121/21/1/2023-01-31T00:00:00/false/34
+    if (task.taskIsExpired) { // When clicking on a task that is overdue, the ones marked with red background, the user should navigate to plugins/backend-configuration-pn/compliances/case/121/21/1/2023-01-31T00:00:00/false/34
       this.router.navigate([
         '/plugins/backend-configuration-pn/compliances/case/',
         task.sdkCaseId,
@@ -184,5 +183,33 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     if (changes && changes.columnsFromDb && !changes.columnsFromDb.isFirstChange()) {
       this.recalculateColumns();
     }
+  }
+
+  /**
+   * Sets the time components of a given date object to zero.
+   * @param date The input date object.
+   * @returns A new Date object with the time components set to zero.
+   */
+  private setDate(date: Date): Date {
+    return set(date, {
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
+  }
+
+  getArrayWithTaskDays(func: typeof eachDayOfInterval | typeof eachWeekOfInterval | typeof eachMonthOfInterval, task: TaskModel) {
+    let arrayWithTaskDay: Date[] = [];
+    const datesInInterval = func({start: this.setDate(task.startTask), end: this.setDate(task.deadlineTask)}) // call calculate interval
+      .filter(x => x >= this.currentDate && x <= this.days[this.days.length - 1]) // cut array, for skip some dates
+      .map(date => this.setDate(date)); // map to normal date(without time)
+    for (const date of datesInInterval) {
+      // Adding every date to the arrayWithTaskDay array if it falls within the specified range
+      if (differenceInDays(date, this.setDate(task.startTask)) % task.repeatEvery === 0) {
+        arrayWithTaskDay = [...arrayWithTaskDay, date];
+      }
+    }
+    return arrayWithTaskDay;
   }
 }
