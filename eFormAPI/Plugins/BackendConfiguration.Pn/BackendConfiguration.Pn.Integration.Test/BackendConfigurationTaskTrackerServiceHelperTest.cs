@@ -160,7 +160,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.NotNull(result);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
-		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.ToString(CultureInfo.InvariantCulture)));
+		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
 			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
@@ -292,7 +292,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.NotNull(result);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
-		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.ToString(CultureInfo.InvariantCulture)));
+		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
 			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
@@ -424,7 +424,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.NotNull(result);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
-		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.ToString(CultureInfo.InvariantCulture)));
+		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
 			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
@@ -556,7 +556,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.NotNull(result);
 		Assert.That(result.Success, Is.EqualTo(true));
 		Assert.That(result.Model.Count, Is.EqualTo(1));
-		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.ToString(CultureInfo.InvariantCulture)));
+		Assert.That(result.Model[0].DeadlineTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.Deadline.AddDays(-1).ToString(CultureInfo.InvariantCulture)));
 		Assert.That(
 			result.Model[0].NextExecutionTime.ToString(CultureInfo.InvariantCulture),
 			Is.EqualTo(planning.NextExecutionTime?.ToString(CultureInfo.InvariantCulture)
