@@ -37,11 +37,11 @@ using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Infrastructure.Enums;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 
@@ -412,7 +412,7 @@ public class ExcelService : IExcelService
 
 			var weeks = new List<(int WeekNumber, List<DateTime> DateList, int WeekRange)>();
 			var localCurrentDate = currentDate;
-			while (localCurrentDate <= endDate) // get week numbers
+			while (localCurrentDate < endDate) // get week numbers
 			{
 				var weekNumber = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(localCurrentDate, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 				var weekRange = 8 - (int)localCurrentDate.DayOfWeek;
@@ -548,10 +548,17 @@ public class ExcelService : IExcelService
 						break;
 					}
 
-					foreach (var color in dateList
-								 .Select(date => date.ToString("d") == taskTrackerModel.NextExecutionTime.ToString("d") ? XLColor.Yellow : XLColor.FromArgb(255, 242, 204))
-							 )
+					var listWithDateTasks = taskTrackerModel.RepeatType switch
 					{
+						RepeatType.Day   => GetDaysBetween(taskTrackerModel.StartTask, taskTrackerModel.DeadlineTask, taskTrackerModel.RepeatEvery),
+						RepeatType.Week  => GetWeeksBetween(taskTrackerModel.StartTask, taskTrackerModel.DeadlineTask, taskTrackerModel.RepeatEvery),
+						RepeatType.Month => GetMonthsBetween(taskTrackerModel.StartTask, taskTrackerModel.DeadlineTask, taskTrackerModel.RepeatEvery),
+						_                => throw new ArgumentOutOfRangeException($"{taskTrackerModel.RepeatType} is not support")
+					};
+
+					foreach (var date in dateList)
+					{
+						var color = listWithDateTasks.Select(q => q.ToString("d")).Contains(date.ToString("d")) ? XLColor.Yellow : XLColor.FromArgb(255, 242, 204);
 						ws.Cell(x, y).Style.Fill.BackgroundColor = color;
 						y++;
 					}
@@ -573,5 +580,48 @@ public class ExcelService : IExcelService
 			Console.WriteLine(ex.Message);
 			throw;
 		}
+	}
+
+
+	private static List<DateTime> GetDaysBetween(DateTime startDate, DateTime endDate, int interval)
+	{
+		var days = new List<DateTime>();
+		var currentDate = startDate;
+
+		while (currentDate <= endDate)
+		{
+			days.Add(currentDate);
+			currentDate = currentDate.AddDays(interval);
+		}
+
+		return days;
+	}
+
+	private static List<DateTime> GetWeeksBetween(DateTime startDate, DateTime endDate, int interval)
+	{
+		var weeks = new List<DateTime>();
+		var currentWeek = startDate.AddDays(-(int)startDate.DayOfWeek);
+
+		while (currentWeek <= endDate)
+		{
+			weeks.Add(currentWeek);
+			currentWeek = currentWeek.AddDays(7 * interval);
+		}
+
+		return weeks;
+	}
+
+	private static List<DateTime> GetMonthsBetween(DateTime startDate, DateTime endDate, int interval)
+	{
+		var months = new List<DateTime>();
+		var currentMonth = new DateTime(startDate.Year, startDate.Month, 1);
+
+		while (currentMonth <= endDate)
+		{
+			months.Add(currentMonth);
+			currentMonth = currentMonth.AddMonths(interval);
+		}
+
+		return months;
 	}
 }
