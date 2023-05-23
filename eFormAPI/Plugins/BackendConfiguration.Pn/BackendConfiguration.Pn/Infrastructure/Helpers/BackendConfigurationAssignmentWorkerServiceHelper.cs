@@ -94,6 +94,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             {
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 updateModel.Assignments = updateModel.Assignments.Where(x => x.IsChecked).ToList();
+                List<int> documentIds = new List<int>();
 
                 var assignments = await backendConfigurationPnDbContext.PropertyWorkers
                     .Where(x => x.WorkerId == updateModel.SiteId)
@@ -104,6 +105,17 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     propertyWorker.TaskManagementEnabled = updateModel.TaskManagementEnabled;
                     await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                    var documents = await caseTemplatePnDbContext.DocumentProperties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.PropertyId == propertyWorker.PropertyId)
+                        .ToListAsync();
+                    foreach (var document in documents)
+                    {
+                        if (!documentIds.Contains(document.DocumentId))
+                        {
+                            documentIds.Add(document.DocumentId);
+                        }
+                    }
                 }
 
                 var assignmentsForCreate = updateModel.Assignments
@@ -111,7 +123,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     .Where(x => !assignments.Select(y => y.PropertyId).Contains(x))
                     .ToList();
                 List<PropertyWorker> propertyWorkers = new List<PropertyWorker>();
-                List<int> documentIds = new List<int>();
 
                 foreach (var propertyAssignment in assignmentsForCreate
                              .Select(propertyAssignmentWorkerModel => new PropertyWorker
@@ -125,17 +136,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     await propertyAssignment.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    var documents = await caseTemplatePnDbContext.DocumentProperties
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.PropertyId == propertyAssignment.PropertyId)
-                        .ToListAsync();
-                    foreach (var document in documents)
-                    {
-                        if (!documentIds.Contains(document.DocumentId))
-                        {
-                            documentIds.Add(document.DocumentId);
-                        }
-                    }
+
                     propertyWorkers.Add(propertyAssignment);
                 }
 
@@ -179,18 +180,18 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     await WorkOrderHelper.RetractEform(assignmentsForDelete, true, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
                     await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
 
-                    foreach (var propertyWorker in assignmentsForDelete)
-                    {
-                        var documentSites = await caseTemplatePnDbContext.DocumentSites.Where(x => x.PropertyId == propertyWorker.PropertyId
-                        && x.SdkSiteId == propertyWorker.WorkerId).ToListAsync();
-                        foreach (var documentSite in documentSites)
-                        {
-                            if (documentSite.SdkCaseId != 0)
-                            {
-                                await core.CaseDelete(documentSite.SdkCaseId);
-                            }
-                        }
-                    }
+                    // foreach (var propertyWorker in assignmentsForDelete)
+                    // {
+                    //     var documentSites = await caseTemplatePnDbContext.DocumentSites.Where(x => x.PropertyId == propertyWorker.PropertyId
+                    //     && x.SdkSiteId == propertyWorker.WorkerId).ToListAsync();
+                    //     foreach (var documentSite in documentSites)
+                    //     {
+                    //         if (documentSite.SdkCaseId != 0)
+                    //         {
+                    //             await core.CaseDelete(documentSite.SdkCaseId);
+                    //         }
+                    //     }
+                    // }
 
                 }
 
