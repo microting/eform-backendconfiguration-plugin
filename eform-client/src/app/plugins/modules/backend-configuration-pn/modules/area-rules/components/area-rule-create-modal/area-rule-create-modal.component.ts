@@ -24,8 +24,7 @@ import {
 import {BackendConfigurationPnAreasService} from '../../../../services';
 import {TranslateService} from '@ngx-translate/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {MtxGridCellTemplate} from '@ng-matero/extensions/grid/grid.interface';
+import {MtxGridColumn, MtxGridCellTemplate} from '@ng-matero/extensions/grid';
 
 @Component({
   selector: 'app-area-rule-create-modal',

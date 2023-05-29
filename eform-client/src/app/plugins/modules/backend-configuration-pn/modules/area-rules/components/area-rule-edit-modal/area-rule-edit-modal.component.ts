@@ -18,8 +18,7 @@ import {
 } from '../../../../models';
 import * as R from 'ramda';
 import {TranslateService} from '@ngx-translate/core';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {MtxGridCellTemplate} from '@ng-matero/extensions/grid/grid.interface';
+import {MtxGridCellTemplate, MtxGridColumn} from '@ng-matero/extensions/grid';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 
 @Component({

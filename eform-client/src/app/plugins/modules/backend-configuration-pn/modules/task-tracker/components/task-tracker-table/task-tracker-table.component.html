@@ -15,56 +15,57 @@
       <div class="mat-table-container mat-table-with-data">
         <table class="mat-table cdk-table mat-table-striped" style="width: 100%">
           <thead role="rowgroup">
-          <tr class="mat-header-row cdk-header-row" *ngIf="columnsFromDb.calendar">
+          <tr class="mat-header-row cdk-header-row">
             <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top"
-                [attr.colspan]="enabledHeadersNumber">
-            </th>
+                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top property"
+                *ngIf="propertyHeaderEnabled && columnsFromDb.property"
+                [attr.rowspan]="columnsFromDb.calendar ? 3 : 1">{{ 'Property' | translate}}</th>
             <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top weeks"
-                *ngFor="let week of weeks"
-                [attr.colspan]="week.length">{{ 'Week' | translate}} {{week.weekNumber}}
-            </th>
+                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top task"
+                *ngIf="columnsFromDb.task"
+                [attr.rowspan]="columnsFromDb.calendar ? 3 : 1">{{ 'Task' | translate }}</th>
+            <th role="columnheader"
+                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top tags"
+                *ngIf="columnsFromDb.tags"
+                [attr.rowspan]="columnsFromDb.calendar ? 3 : 1">{{ 'Tags' | translate }}</th>
+            <th role="columnheader"
+                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top workers"
+                *ngIf="columnsFromDb.workers"
+                [attr.rowspan]="columnsFromDb.calendar ? 3 : 1">{{ 'Workers' | translate }}</th>
+            <th role="columnheader"
+                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top start"
+                *ngIf="columnsFromDb.start"
+                [attr.rowspan]="columnsFromDb.calendar ? 3 : 1">{{ 'Start' | translate }}</th>
+            <th role="columnheader"
+                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top repeat"
+                *ngIf="columnsFromDb.repeat"
+                [attr.rowspan]="columnsFromDb.calendar ? 3 : 1">{{ 'Repeat' | translate }}</th>
+            <th role="columnheader"
+                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top deadline"
+                *ngIf="columnsFromDb.deadline"
+                [attr.rowspan]="columnsFromDb.calendar ? 3 : 1">{{ 'Deadline' | translate }}</th>
+            <ng-container  *ngIf="columnsFromDb.calendar">
+              <th role="columnheader"
+                  class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top weeks"
+                  *ngFor="let week of weeks"
+                  [attr.colspan]="week.length">{{ 'Week' | translate}} {{week.weekNumber}}
+              </th>
+            </ng-container>
           </tr>
           <tr role="rowgroup" class="mat-header-row cdk-header-row" *ngIf="columnsFromDb.calendar">
             <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top"
-                [attr.colspan]="enabledHeadersNumber">
-            </th>
-            <th role="columnheader"
                 class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days"
-                [ngClass]="{'today': day === currentDate.getDate()}"
-                *ngFor="let day of daysInTable" [attr.colspan]="1">{{day}}
+                [ngClass]="{'today': (day|date:'shortDate') === (currentDate|date:'shortDate')}"
+                *ngFor="let day of daysInTable" [attr.colspan]="1">{{day|date:'dd'}}
             </th>
           </tr>
           <tr role="rowgroup" class="mat-header-row cdk-header-row">
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top property"
-                *ngIf="propertyHeaderEnabled && columnsFromDb.property">{{ 'Property' | translate}}</th>
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top task"
-                *ngIf="columnsFromDb.task">{{ 'Task' | translate }}</th>
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top tags"
-                *ngIf="columnsFromDb.tags">{{ 'Tags' | translate }}</th>
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top workers"
-                *ngIf="columnsFromDb.workers">{{ 'Workers' | translate }}</th>
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top start"
-                *ngIf="columnsFromDb.start">{{ 'Start' | translate }}</th>
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top repeat"
-                *ngIf="columnsFromDb.repeat">{{ 'Repeat' | translate }}</th>
-            <th role="columnheader"
-                class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top deadline"
-                *ngIf="columnsFromDb.deadline">{{ 'Deadline' | translate }}</th>
             <ng-container *ngIf="columnsFromDb.calendar">
               <th role="columnheader"
-                  class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week task-day-{{day}}"
-                  [ngClass]="{'today': day === currentDate.getDate()}"
+                  class="mat-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top days-of-week task-day-{{day|date:'dd'}}"
+                  [ngClass]="{'today': (day|date:'shortDate') === (currentDate|date:'shortDate')}"
                   *ngFor="let day of daysInTable"
-                  [attr.colspan]="1">{{'dayOfWeeks.short.' + getDayOfWeekByDay(day)|translate}}</th>
+                  [attr.colspan]="1">{{'dayOfWeeks.short.' + (day|date:'EEEE')|translate}}</th>
             </ng-container>
           </tr>
           </thead>
@@ -94,8 +95,8 @@
                 <td role="cell" class="mat-cell cdk-cell tasks"
                     [ngClass]="[
                     getColorByDayAndTask(day, task),
-                    'task-day-' + day,
-                    day === currentDate.getDate() ? 'today': '',
+                    'task-day-' + (day|date:'dd'),
+                    (day|date:'shortDate') === (currentDate|date:'shortDate') ? 'today': '',
                     ]"
                     *ngFor="let day of daysInTable"></td>
               </ng-container>
