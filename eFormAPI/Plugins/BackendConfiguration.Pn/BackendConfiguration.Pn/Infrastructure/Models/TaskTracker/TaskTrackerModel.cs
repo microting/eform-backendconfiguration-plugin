@@ -115,4 +115,7 @@ public class TaskTrackerModel
 	/// Gets or sets the area rule ID.
 	/// </summary>
 	public int AreaRuleId { get; set; }
+
+	public List<TaskTrackerWeeksListModel> Weeks { get; set; }
+		= new();
 }

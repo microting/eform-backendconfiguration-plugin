@@ -410,35 +410,6 @@ public class ExcelService : IExcelService
 			var startCell = ws.Cell(x, y);
 			var skipCols = columns.Count + startY;
 
-			var weeks = new List<(int WeekNumber, List<DateTime> DateList, int WeekRange)>();
-			var localCurrentDate = currentDate;
-			while (localCurrentDate < endDate) // get week numbers
-			{
-				var weekNumber = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(localCurrentDate, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-				var weekRange = 8 - (int)localCurrentDate.DayOfWeek;
-				if (weekRange == 8) // if current day of week - sunday
-				{
-					weekRange = 1;
-				}
-				var dateList = new List<DateTime>();
-
-				for (var i = 0; i < weekRange; i++)
-				{
-					var date = localCurrentDate.AddDays(i);
-					if (date < endDate)
-					{
-						dateList.Add(date);
-					}
-					else
-					{
-						break;
-					}
-				}
-
-				weeks.Add(new() { WeekNumber = weekNumber, DateList = dateList, WeekRange = dateList.Count });
-				localCurrentDate = localCurrentDate.AddDays(weekRange);
-			}
-
 			/* table headers */
 			foreach (var column in columns)
 			{
@@ -451,28 +422,28 @@ public class ExcelService : IExcelService
 				y++;
 			}
 			y = skipCols;
-			foreach (var (weekNumber, dateList, weekRange) in weeks) // render weeks
+			foreach (var week in model[^1].Weeks) // render weeks
 			{
 				if (!GetEnabledColumn("calendar"))
 				{
 					break;
 				}
 				var rangeStart = ws.Cell(x, y);
-				var rangeEnd = ws.Cell(x, y + weekRange - 1);
+				var rangeEnd = ws.Cell(x, y + week.WeekRange - 1);
 				var range = ws.Range(rangeStart, rangeEnd).Merge();
-				range.Value = $"{_localizationService.GetString("Week")} {weekNumber}";
+				range.Value = $"{_localizationService.GetString("Week")} {week.WeekNumber}";
 				range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 				range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-				ws.Columns(y, y + weekRange - 1).Width = 2.29D;
+				ws.Columns(y, y + week.WeekRange - 1).Width = 2.29D;
 				x++;
-				for (var i = 0; i < dateList.Count; i++) // render days in week
+				for (var i = 0; i < week.DateList.Count; i++) // render days in week
 				{
-					var date = dateList[i];
+					var date = week.DateList[i];
 					var cell = ws.Cell(x, y + i);
-					cell.Value = date.Day;
+					cell.Value = date.Date.Day;
 					cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 					cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-					if (date == currentDate) // make current day bold
+					if (date.Date == currentDate) // make current day bold
 					{
 						cell.Style.Font.Bold = true;
 					}
@@ -480,10 +451,10 @@ public class ExcelService : IExcelService
 					// render days of week
 					x++;
 					cell = ws.Cell(x, y + i);
-					cell.Value = _localizationService.GetString($"Short{date.DayOfWeek}");
+					cell.Value = _localizationService.GetString($"Short{date.Date.DayOfWeek}");
 					cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 					cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-					if (date == currentDate) // make current day bold
+					if (date.Date == currentDate) // make current day bold
 					{
 						cell.Style.Font.Bold = true;
 					}
@@ -491,7 +462,7 @@ public class ExcelService : IExcelService
 					x--;
 				}
 				x--;
-				y += weekRange;
+				y += week.WeekRange;
 			}
 			var endCell = ws.Cell(startX + 2 + model.Count, y - 1); // after render all head table current value in y - last column
 
@@ -541,24 +512,16 @@ public class ExcelService : IExcelService
 				}
 
 				y = skipCols;
-				foreach (var (_, dateList, _) in weeks)
+				foreach (var week in taskTrackerModel.Weeks)
 				{
 					if (taskTrackerModel.TaskIsExpired || !GetEnabledColumn("calendar"))
 					{
 						break;
 					}
 
-					var listWithDateTasks = taskTrackerModel.RepeatType switch
+					foreach (var date in week.DateList)
 					{
-						RepeatType.Day   => GetDaysBetween(taskTrackerModel.StartTask, taskTrackerModel.DeadlineTask, taskTrackerModel.RepeatEvery),
-						RepeatType.Week  => GetWeeksBetween(taskTrackerModel.StartTask, taskTrackerModel.DeadlineTask, taskTrackerModel.RepeatEvery),
-						RepeatType.Month => GetMonthsBetween(taskTrackerModel.StartTask, taskTrackerModel.DeadlineTask, taskTrackerModel.RepeatEvery),
-						_                => throw new ArgumentOutOfRangeException($"{taskTrackerModel.RepeatType} is not support")
-					};
-
-					foreach (var date in dateList)
-					{
-						var color = listWithDateTasks.Select(q => q.ToString("d")).Contains(date.ToString("d")) ? XLColor.Yellow : XLColor.FromArgb(255, 242, 204);
+						var color = date.IsTask ? XLColor.Yellow : XLColor.FromArgb(255, 242, 204);
 						ws.Cell(x, y).Style.Fill.BackgroundColor = color;
 						y++;
 					}
@@ -580,48 +543,5 @@ public class ExcelService : IExcelService
 			Console.WriteLine(ex.Message);
 			throw;
 		}
-	}
-
-
-	private static List<DateTime> GetDaysBetween(DateTime startDate, DateTime endDate, int interval)
-	{
-		var days = new List<DateTime>();
-		var currentDate = startDate;
-
-		while (currentDate <= endDate)
-		{
-			days.Add(currentDate);
-			currentDate = currentDate.AddDays(interval);
-		}
-
-		return days;
-	}
-
-	private static List<DateTime> GetWeeksBetween(DateTime startDate, DateTime endDate, int interval)
-	{
-		var weeks = new List<DateTime>();
-		var currentWeek = startDate.AddDays(-(int)startDate.DayOfWeek);
-
-		while (currentWeek <= endDate)
-		{
-			weeks.Add(currentWeek);
-			currentWeek = currentWeek.AddDays(7 * interval);
-		}
-
-		return weeks;
-	}
-
-	private static List<DateTime> GetMonthsBetween(DateTime startDate, DateTime endDate, int interval)
-	{
-		var months = new List<DateTime>();
-		var currentMonth = new DateTime(startDate.Year, startDate.Month, 1);
-
-		while (currentMonth <= endDate)
-		{
-			months.Add(currentMonth);
-			currentMonth = currentMonth.AddMonths(interval);
-		}
-
-		return months;
 	}
 }

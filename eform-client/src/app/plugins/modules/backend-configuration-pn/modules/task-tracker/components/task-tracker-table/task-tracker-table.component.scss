@@ -38,6 +38,8 @@ table.mat-table {
 
           &.property, &.task, &.tags, &.workers, &.start, &.repeat, &.deadline {
             text-align: left !important;
+            border-left: $default-style-border;
+            border-bottom: $default-style-border;
           }
 
           &.weeks {

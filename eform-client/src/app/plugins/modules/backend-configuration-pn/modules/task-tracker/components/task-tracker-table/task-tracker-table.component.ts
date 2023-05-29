@@ -6,22 +6,12 @@ import {
   Output, SimpleChanges,
 } from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {Columns, ColumnsModel, TaskModel} from '../../../../models';
+import {Columns, ColumnsModel, DateListModel, TaskModel} from '../../../../models';
+import {RepeatTypeEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
 import {TaskTrackerStateService} from '../store';
-import {
-  addDays,
-  differenceInDays,
-  eachDayOfInterval,
-  eachMonthOfInterval,
-  eachWeekOfInterval,
-  getDay,
-  getWeek,
-  isMonday,
-  nextMonday,
-  set
-} from 'date-fns';
+import {set} from 'date-fns';
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -35,7 +25,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   @Output() openAreaRulePlanningModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
 
   days: Date[] = [];
-  daysInTable: number[] = [];
+  daysInTable: Date[] = [];
   weeks: { weekNumber: number, length: number }[] = [];
   enabledHeadersNumber: number = 7;
   propertyHeaderEnabled: boolean = false;
@@ -49,124 +39,28 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   ) {
   }
 
-  getRepeatType(repeatType: number) {
-    switch (repeatType) {
-      case 1:
-        return this.translateService.instant('Day');
-      case 2:
-        return this.translateService.instant('Week');
-      case 3:
-        return this.translateService.instant('Month');
-      default:
-        return `--`;
-    }
-  }
-
   ngOnInit(): void {
     this.taskTrackerStateService.getFiltersAsync().subscribe(filters => {
       this.propertyHeaderEnabled = !(filters.propertyIds.length === 1);
       this.recalculateColumns();
     });
-    this.initTable();
   }
 
   initTable() {
     this.currentDate = this.setDate(new Date());
-    this.days = [...R.range(0, 28)].map((x: number): Date => addDays(this.currentDate, x));
-    this.daysInTable = this.days.map(x => x.getDate());
-    let weeks = this.days.map((x, i) => {
-      if (i === 0 && !isMonday(x)) {
-        return {startDay: x, endDay: nextMonday(x)};
-      }
-      if (isMonday(x)) {
-        return {startDay: x, endDay: nextMonday(x)};
-      }
-      return undefined;
-    }).filter(x => x);
-
-    for (let i = 0; i < weeks.length; i++) {
-      const difference = differenceInDays(weeks[i].endDay, weeks[i].startDay);
-      this.weeks = [...this.weeks, {weekNumber: getWeek(weeks[i].startDay), length: difference}];
+    if (this.tasks) {
+      this.daysInTable = R.flatten(this.tasks[this.tasks.length - 1].weeks.map(x => x.dateList.map(y => y.date)));
+      this.weeks = this.tasks[this.tasks.length - 1].weeks.map(x => {
+        return {weekNumber: x.weekNumber, length: x.weekRange};
+      });
     }
   }
 
-  getDayOfWeekByDay(day: number): string {
-    const index = this.days.findIndex(x => x.getDate() === day);
+  getColorByDayAndTask(day: Date, task: TaskModel): string {
+    const dateList: DateListModel[] = R.flatten(task.weeks.map(x => x.dateList));
+    const index = dateList.findIndex(x => x.date.toISOString() === day.toISOString());
     if (index !== -1) {
-      const dateFnsDayOfWeek = getDay(this.days[index]);
-      switch (dateFnsDayOfWeek) {
-        case 0:
-          return 'Sunday';
-        case 1:
-          return 'Monday';
-        case 2:
-          return 'Tuesday';
-        case 3:
-          return 'Wednesday';
-        case 4:
-          return 'Thursday';
-        case 5:
-          return 'Friday';
-        case 6:
-          return 'Saturday';
-      }
-    }
-    return '';
-  }
-
-  getColorByDayAndTask(day: number, task: TaskModel): string {
-    const index = this.days.findIndex(x => x.getDate() === day);
-    if (index !== -1) {
-      let arrayWithTaskDay: Date[] = [];
-      switch (task.repeatType) {
-        case 1:
-          // check if the task.deadline.date is equal to this.days[index]
-          // if yes return 'white-yellow'
-          // else return 'yellow'
-          if (task.deadlineTask) {
-            const fullDay = this.setDate(this.days[index]);
-            const checkDay = this.setDate(task.deadlineTask);
-            if (checkDay.toISOString() === fullDay.toISOString()) {
-              return 'white-yellow';
-            } else {
-              return 'yellow';
-            }
-          }
-          break;
-        case 2:
-          if (task.deadlineTask) {
-            const fullDay = this.setDate(this.days[index]);
-            const checkDay = this.setDate(task.deadlineTask);
-            if (checkDay.toISOString() === fullDay.toISOString()) {
-              return 'white-yellow';
-            } else {
-              const difference = differenceInDays(fullDay, this.setDate(task.deadlineTask));
-              const repeater = task.repeatEvery * 7;
-              if (difference % repeater === 0) {
-                return 'white-yellow';
-              } else {
-                return 'yellow';
-              }
-            }
-          }
-          //arrayWithTaskDay = this.getArrayWithTaskDays(eachWeekOfInterval, task);
-          break;
-        case 3:
-          if (task.deadlineTask) {
-            const fullDay = this.setDate(this.days[index]);
-            const checkDay = this.setDate(task.deadlineTask);
-            if (checkDay.toISOString() === fullDay.toISOString()) {
-              return 'white-yellow';
-            } else {
-              return 'yellow';
-            }
-          }
-          //arrayWithTaskDay = this.getArrayWithTaskDays(eachMonthOfInterval, task);
-          break;
-      }
-
-      const fullDay = this.setDate(this.days[index]).toISOString();
-      if (arrayWithTaskDay.some(x => x.toISOString() === fullDay)) {
+      if (dateList[index].isTask) {
         return 'white-yellow';
       } else {
         return 'yellow';
@@ -176,7 +70,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   }
 
   getRepeatEveryAndRepeatTypeByTask(task: TaskModel): string {
-    return `${task.repeatEvery} ${this.getRepeatType(task.repeatType)}`;
+    return `${task.repeatEvery} ${this.translateService.instant(RepeatTypeEnum[task.repeatType])}`;
   }
 
   recalculateColumns() {
@@ -217,6 +111,9 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes && changes.columnsFromDb && !changes.columnsFromDb.isFirstChange()) {
       this.recalculateColumns();
+    }
+    if (changes && changes.tasks && !changes.tasks.isFirstChange()) {
+      this.initTable();
     }
   }
 
