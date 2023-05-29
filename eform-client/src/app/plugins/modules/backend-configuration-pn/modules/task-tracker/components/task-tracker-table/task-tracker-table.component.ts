@@ -120,13 +120,48 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       let arrayWithTaskDay: Date[] = [];
       switch (task.repeatType) {
         case 1:
-          arrayWithTaskDay = this.getArrayWithTaskDays(eachDayOfInterval, task);
+          // check if the task.deadline.date is equal to this.days[index]
+          // if yes return 'white-yellow'
+          // else return 'yellow'
+          if (task.deadlineTask) {
+            const fullDay = this.setDate(this.days[index]);
+            const checkDay = this.setDate(task.deadlineTask);
+            if (checkDay.toISOString() === fullDay.toISOString()) {
+              return 'white-yellow';
+            } else {
+              return 'yellow';
+            }
+          }
           break;
         case 2:
-          arrayWithTaskDay = this.getArrayWithTaskDays(eachWeekOfInterval, task);
+          if (task.deadlineTask) {
+            const fullDay = this.setDate(this.days[index]);
+            const checkDay = this.setDate(task.deadlineTask);
+            if (checkDay.toISOString() === fullDay.toISOString()) {
+              return 'white-yellow';
+            } else {
+              const difference = differenceInDays(fullDay, this.setDate(task.deadlineTask));
+              const repeater = task.repeatEvery * 7;
+              if (difference % repeater === 0) {
+                return 'white-yellow';
+              } else {
+                return 'yellow';
+              }
+            }
+          }
+          //arrayWithTaskDay = this.getArrayWithTaskDays(eachWeekOfInterval, task);
           break;
         case 3:
-          arrayWithTaskDay = this.getArrayWithTaskDays(eachMonthOfInterval, task);
+          if (task.deadlineTask) {
+            const fullDay = this.setDate(this.days[index]);
+            const checkDay = this.setDate(task.deadlineTask);
+            if (checkDay.toISOString() === fullDay.toISOString()) {
+              return 'white-yellow';
+            } else {
+              return 'yellow';
+            }
+          }
+          //arrayWithTaskDay = this.getArrayWithTaskDays(eachMonthOfInterval, task);
           break;
       }
 
@@ -197,19 +232,5 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       seconds: 0,
       milliseconds: 0,
     });
-  }
-
-  getArrayWithTaskDays(func: typeof eachDayOfInterval | typeof eachWeekOfInterval | typeof eachMonthOfInterval, task: TaskModel) {
-    let arrayWithTaskDay: Date[] = [];
-    const datesInInterval = func({start: this.setDate(task.startTask), end: this.setDate(task.deadlineTask)}) // call calculate interval
-      .filter(x => x >= this.currentDate && x <= this.days[this.days.length - 1]) // cut array, for skip some dates
-      .map(date => this.setDate(date)); // map to normal date(without time)
-    for (const date of datesInInterval) {
-      // Adding every date to the arrayWithTaskDay array if it falls within the specified range
-      if (differenceInDays(date, this.setDate(task.startTask)) % task.repeatEvery === 0) {
-        arrayWithTaskDay = [...arrayWithTaskDay, date];
-      }
-    }
-    return arrayWithTaskDay;
   }
 }
