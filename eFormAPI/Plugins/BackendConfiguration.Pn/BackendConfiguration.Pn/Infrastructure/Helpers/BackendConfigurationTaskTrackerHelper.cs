@@ -38,7 +38,6 @@ using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
 using System.Globalization;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
 public static class BackendConfigurationTaskTrackerHelper
 {
@@ -218,7 +217,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					ComplianceId = compliance.Id,
 					AreaId = compliance.AreaId,
 					AreaRuleId = areaRulePlanning!.AreaRuleId,
-					Weeks = weeksThisCompliance,
+					Weeks = weeksThisCompliance
 				};
 
 				result.Add(complianceModel);

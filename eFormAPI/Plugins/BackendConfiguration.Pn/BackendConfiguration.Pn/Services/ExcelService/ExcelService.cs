@@ -378,29 +378,23 @@ public class ExcelService : IExcelService
 			var columns = new List<string>
 			{
 				GetEnabledColumn("property") ? _localizationService.GetString("Property") : "",
-				GetEnabledColumn("task") ? _localizationService.GetString("TaskName") : "",
+				GetEnabledColumn("task") ? _localizationService.GetString("Task") : "",
 				GetEnabledColumn("tags") ? _localizationService.GetString("Tags") : "",
 				GetEnabledColumn("workers") ? _localizationService.GetString("Workers") : "",
 				GetEnabledColumn("start") ? _localizationService.GetString("Start") : "",
 				GetEnabledColumn("repeat") ? _localizationService.GetString("Repeat") : "",
-				GetEnabledColumn("deadline") ? _localizationService.GetString("Deadline") : "",
+				GetEnabledColumn("deadline") ? _localizationService.GetString("Deadline") : ""
 			}.Where(q => !string.IsNullOrEmpty(q)).ToList();
 			var newDate = DateTime.Now;
 			var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
 			var endDate = currentDate.AddDays(28);
 			var timeStamp = $"{currentDate:yyyyMMdd}";
 
-			var resultDocument = Path.Combine(Path.GetTempPath(), "results", $"Task_tracker{timeStamp}.xlsx");
+			var resultDocument = Path.Combine(Path.GetTempPath(), "results", $"{_localizationService.GetString("Task calendar")}.xlsx");
 			IXLWorkbook wb = new XLWorkbook();
 
 			var invalidChars = new[] { ":", "\\", "/", "?", "*", "[", "]" };
-			var sheetName = string.Join("", newDate.ToString("yy-MMM-dd HH-mm-ss zzz")
-				.Select(c => invalidChars.Contains(c.ToString()) ? "" : c.ToString()));
-
-			if (sheetName.Length > 31)
-			{
-				sheetName = sheetName[..31];
-			}
+			var sheetName = _localizationService.GetString("Task calendar");
 			var ws = wb.Worksheets.Add(sheetName);
 			// cell(x, y) => cell(1, 2) => cell 1B
 			const int startY = 2;

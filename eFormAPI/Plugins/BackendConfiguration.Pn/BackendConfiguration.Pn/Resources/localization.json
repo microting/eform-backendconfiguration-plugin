@@ -2316,5 +2316,100 @@
       "pt-PT": "Sáb",
       "fi-FI": "La"
     }
+  },
+  {
+    "Key": "Task calendar",
+    "LocalizedValue": {
+      "da": "Opgavekalender",
+      "de": "Aufgabenkalender",
+      "en-US": "Task calendar",
+      "uk-UA": "Календар завдань",
+      "pl-PL": "Kalendarz zadań",
+      "no-NO": "Oppgavekalender",
+      "sv-SE": "Uppgiftskalender",
+      "es-ES": "Calendario de tareas",
+      "fr-FR": "Calendrier des tâches",
+      "it-IT": "Calendario attività",
+      "nl-NL": "Taakkalender",
+      "pt-BR": "Calendário de tarefas",
+      "pt-PT": "Calendário de tarefas",
+      "fi-FI": "Tehtäväkalenteri"
+    }
+  },
+  {
+    "Key": "Task",
+    "LocalizedValue": {
+      "da": "Opgave",
+      "de": "Aufgabe",
+      "en-US": "Task",
+      "uk-UA": "Завдання",
+      "pl-PL": "Zadanie",
+      "no-NO": "Oppgave",
+      "sv-SE": "Uppgift",
+      "es-ES": "Tarea",
+      "fr-FR": "Tâche",
+      "it-IT": "Attività",
+      "nl-NL": "Taak",
+      "pt-BR": "Tarefa",
+      "pt-PT": "Tarefa",
+      "fi-FI": "Tehtävä"
+    }
+  },
+  {
+    "Key": "Workers",
+    "LocalizedValue": {
+      "da": "Medarbejdere",
+      "de": "Mitarbeiter",
+      "en-US": "Workers",
+      "uk-UA": "Працівники",
+      "pl-PL": "Pracownicy",
+      "no-NO": "Arbeidere",
+      "sv-SE": "Arbetare",
+      "es-ES": "Trabajadores",
+      "fr-FR": "Travailleurs",
+      "it-IT": "Lavoratori",
+      "nl-NL": "Medewerkers",
+      "pt-BR": "Trabalhadores",
+      "pt-PT": "Trabalhadores",
+      "fi-FI": "Työntekijät"
+    }
+  },
+  {
+    "Key": "Repeat",
+    "LocalizedValue": {
+      "da": "Gentags",
+      "de": "Wiederholen",
+      "en-US": "Repeat",
+      "uk-UA": "Повторити",
+      "pl-PL": "Powtórz",
+      "no-NO": "Gjenta",
+      "sv-SE": "Upprepa",
+      "es-ES": "Repetir",
+      "fr-FR": "Répéter",
+      "it-IT": "Ripeti",
+      "nl-NL": "Herhalen",
+      "pt-BR": "Repetir",
+      "pt-PT": "Repetir",
+      "fi-FI": "Toista"
+    }
+  },
+  {
+    "Key": "Deadline",
+    "LocalizedValue": {
+      "da": "Udfør senest",
+      "de": "Frist",
+      "en-US": "Deadline",
+      "uk-UA": "Крайній термін",
+      "pl-PL": "Termin",
+      "no-NO": "Frist",
+      "sv-SE": "Deadline",
+      "es-ES": "Fecha límite",
+      "fr-FR": "Date limite",
+      "it-IT": "Scadenza",
+      "nl-NL": "Deadline",
+      "pt-BR": "Prazo",
+      "pt-PT": "Prazo",
+      "fi-FI": "Määräaika"
+    }
   }
 ]
