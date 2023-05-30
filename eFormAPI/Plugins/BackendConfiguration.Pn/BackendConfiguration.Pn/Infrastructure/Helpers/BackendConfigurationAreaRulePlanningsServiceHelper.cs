@@ -176,8 +176,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
                             foreach (var i in forDelete)
                             {
-                                var planningSiteId = areaRulePlannings.Single(y => y.SiteId == i).PlanningSiteId;
-                                var itemsPlanningId = areaRulePlannings.Single(x => x.SiteId == i).ItemPlanningId;
+                                var planningSiteId = areaRulePlannings.Single(y => y.SiteId == i && y.ItemPlanningId != 0).PlanningSiteId;
+                                var itemsPlanningId = areaRulePlannings.Single(x => x.SiteId == i && x.ItemPlanningId != 0).ItemPlanningId;
                                 var backendPlanningSite = await backendConfigurationPnDbContext.PlanningSites
                                     .SingleAsync(x => x.Id == planningSiteId).ConfigureAwait(false);
                                 await backendPlanningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
