@@ -180,12 +180,9 @@ public static class BackendConfigurationTaskTrackerHelper
 
 				var listWithDateTasks = planning.RepeatType switch
 				{
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day => GetDaysBetween(startDate,
-						deadlineDate, planning.RepeatEvery),
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week => GetWeeksBetween(startDate,
-						deadlineDate, planning.RepeatEvery),
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month => GetMonthsBetween(startDate,
-						deadlineDate, planning.RepeatEvery),
+					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day => GetDaysBetween(deadlineDate, planning.RepeatEvery),
+					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week => GetWeeksBetween(deadlineDate, planning.RepeatEvery),
+					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month => GetMonthsBetween(deadlineDate, planning.RepeatEvery),
 					_ => throw new ArgumentOutOfRangeException($"{planning.RepeatType} is not support")
 				};
 
@@ -206,7 +203,7 @@ public static class BackendConfigurationTaskTrackerHelper
 				var complianceModel = new TaskTrackerModel
 				{
 					Property = propertyName,
-					Tags = new(), //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(), 
+					Tags = new(), //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
 					DeadlineTask = deadlineDate,
 					Workers = workerNames,
 					StartTask = startDate,
@@ -247,45 +244,45 @@ public static class BackendConfigurationTaskTrackerHelper
 		}
 	}
 
-	private static List<DateTime> GetDaysBetween(DateTime startDate, DateTime endDate, int interval)
+	private static List<DateTime> GetDaysBetween(DateTime endDate, int interval)
 	{
-		var days = new List<DateTime>();
-		var currentDate = new DateTime(startDate.Year, startDate.Month, startDate.Day);
+		// Generate a list of dates, which starts from the endDate and increment with the interva in days up to 4 weeks ahead of Todays date
+		var days = new List<DateTime> { endDate };
 
-		while (currentDate <= endDate)
+		var maxDays = DateTime.Now.AddDays(31);
+
+		while (endDate < maxDays)
 		{
-			days.Add(currentDate);
-			currentDate = currentDate.AddDays(interval);
+			endDate = endDate.AddDays(interval);
+			days.Add(endDate);
 		}
 
 		return days;
 	}
 
-	private static List<DateTime> GetWeeksBetween(DateTime startDate, DateTime endDate, int interval)
+	private static List<DateTime> GetWeeksBetween(DateTime endDate, int interval)
 	{
-		var weeks = new List<DateTime>();
-		var currentWeek = new DateTime(startDate.Year, startDate.Month, startDate.Day);
+		// Generate a list of dates, which starts from the endDate and increment with the interva * 7 days up to 4 weeks ahead of Todays date
+		var weeks = new List<DateTime> { endDate };
 
-		while (currentWeek <= endDate)
+		while (weeks.Count < 4)
 		{
-			weeks.Add(currentWeek);
-			currentWeek = currentWeek.AddDays(7 * interval);
+			endDate = endDate.AddDays(7 * interval);
+			weeks.Add(endDate);
 		}
 
 		return weeks;
 	}
 
-	private static List<DateTime> GetMonthsBetween(DateTime startDate, DateTime endDate, int interval)
+	private static List<DateTime> GetMonthsBetween(DateTime endDate, int interval)
 	{
-		var months = new List<DateTime>();
-		var currentMonth = new DateTime(startDate.Year, startDate.Month, startDate.Day);
+		var months = new List<DateTime> { endDate };
 
-		while (currentMonth <= endDate)
+		while (months.Count < 2)
 		{
-			months.Add(currentMonth);
-			currentMonth = currentMonth.AddMonths(interval);
+			endDate = endDate.AddMonths(interval);
+			months.Add(endDate);
 		}
-
 		return months;
 	}
 }
