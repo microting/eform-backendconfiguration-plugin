@@ -380,7 +380,7 @@ public class ExcelService : IExcelService
 				GetEnabledColumn("property") ? _localizationService.GetString("Property") : "",
 				GetEnabledColumn("task") ? _localizationService.GetString("Task") : "",
 				GetEnabledColumn("tags") ? _localizationService.GetString("Tags") : "",
-				GetEnabledColumn("workers") ? _localizationService.GetString("Workers") : "",
+				GetEnabledColumn("workers") ? _localizationService.GetString("Worker") : "",
 				GetEnabledColumn("start") ? _localizationService.GetString("Start") : "",
 				GetEnabledColumn("repeat") ? _localizationService.GetString("Repeat") : "",
 				GetEnabledColumn("deadline") ? _localizationService.GetString("Deadline") : ""

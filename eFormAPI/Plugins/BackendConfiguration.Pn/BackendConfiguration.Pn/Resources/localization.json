@@ -2356,22 +2356,22 @@
     }
   },
   {
-    "Key": "Workers",
+    "Key": "Worker",
     "LocalizedValue": {
-      "da": "Medarbejdere",
+      "da": "Medarbejder",
       "de": "Mitarbeiter",
-      "en-US": "Workers",
-      "uk-UA": "Працівники",
-      "pl-PL": "Pracownicy",
-      "no-NO": "Arbeidere",
+      "en-US": "Worker",
+      "uk-UA": "Працівник",
+      "pl-PL": "Pracownik",
+      "no-NO": "Medarbeider",
       "sv-SE": "Arbetare",
-      "es-ES": "Trabajadores",
-      "fr-FR": "Travailleurs",
-      "it-IT": "Lavoratori",
-      "nl-NL": "Medewerkers",
-      "pt-BR": "Trabalhadores",
-      "pt-PT": "Trabalhadores",
-      "fi-FI": "Työntekijät"
+      "es-ES": "Trabajador",
+      "fr-FR": "Travailleur",
+      "it-IT": "Lavoratore",
+      "nl-NL": "Medewerker",
+      "pt-BR": "Trabalhador",
+      "pt-PT": "Trabalhador",
+      "fi-FI": "Työntekijä"
     }
   },
   {
