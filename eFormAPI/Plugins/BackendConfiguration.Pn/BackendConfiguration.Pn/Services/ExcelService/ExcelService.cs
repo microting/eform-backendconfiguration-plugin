@@ -488,7 +488,7 @@ public class ExcelService : IExcelService
 				}
 				if (GetEnabledColumn("start"))
 				{
-					ws.Cell(x, y).Value = taskTrackerModel.StartTask.ToString("MM.dd.yy");
+					ws.Cell(x, y).Value = taskTrackerModel.StartTask.ToString("MM.dd.yyyy");
 					y++;
 				}
 				if (GetEnabledColumn("repeat"))
@@ -498,7 +498,7 @@ public class ExcelService : IExcelService
 				}
 				if (GetEnabledColumn("deadline"))
 				{
-					ws.Cell(x, y).Value = taskTrackerModel.DeadlineTask.ToString("MM.dd.yy");
+					ws.Cell(x, y).Value = taskTrackerModel.DeadlineTask.ToString("MM.dd.yyyy");
 				}
 				if (taskTrackerModel.TaskIsExpired) // make red expired task (calendar part not need)
 				{
