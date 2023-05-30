@@ -52,7 +52,7 @@ public static class BackendConfigurationTaskTrackerHelper
 		try
 		{
 			var result = new List<TaskTrackerModel>();
-			var dateTimeNow = DateTime.Now;
+			var dateTimeNow = DateTime.UtcNow;
 
 			var sdkDbContext = core.DbContextHelper.GetDbContext();
 			var query = backendConfigurationPnDbContext.Compliances
@@ -211,7 +211,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					RepeatType = (RepeatType)planning.RepeatType,
 					NextExecutionTime = (DateTime)planning.NextExecutionTime,
 					TaskName = taskName,
-					TaskIsExpired = dateTimeNow > compliance.Deadline.AddDays(-1),
+					TaskIsExpired = dateTimeNow > compliance.Deadline,
 					PropertyId = compliance.PropertyId,
 					SdkCaseId = compliance.MicrotingSdkCaseId,
 					TemplateId = compliance.MicrotingSdkeFormId,
