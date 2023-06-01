@@ -148,7 +148,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     if (areaRule.Area.Type == AreaTypesEnum.Type10)
                     {
                         var oldStatus = areaRule.AreaRulesPlannings
-                            .Last(x => x.WorkflowState != Constants.WorkflowStates.Removed).Status;
+                            .LastOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed)?.Status ?? false;
                         var currentPlanningSites = await backendConfigurationPnDbContext.PlanningSites
                             .Where(x => x.AreaRuleId == areaRulePlanningModel.RuleId)
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -2529,7 +2529,9 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
             if (lookupName == "Morgenrundtur" || lookupName == "Morning tour")
             {
-                var globalPlanningTag = await itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                var globalPlanningTag = await itemsPlanningPnDbContext.PlanningTags
+                    .OrderBy(x=> x.CreatedAt)
+                    .LastOrDefaultAsync(x =>
                         x.Name == $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}")
                     .ConfigureAwait(false);
 

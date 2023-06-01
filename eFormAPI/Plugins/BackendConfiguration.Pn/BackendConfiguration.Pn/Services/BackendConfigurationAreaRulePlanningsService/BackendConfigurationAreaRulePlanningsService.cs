@@ -76,7 +76,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
                         _backendConfigurationLocalizationService.GetString("ErrorWhileReadPlanning"));
                 }
 
-                if (!areaRule.AreaRulesPlannings.Any())
+                if (areaRule.AreaRulesPlannings.Count(x => x.WorkflowState != Constants.WorkflowStates.Removed) == 0)
                 {
                     return new OperationDataResult<AreaRulePlanningModel>(true); // it's okay
                 }
