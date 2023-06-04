@@ -67,7 +67,8 @@ public static class BackendConfigurationTaskTrackerHelper
 				.OrderBy(x => x.Deadline)
 				.Select(x => new
 				{
-					x.PropertyId, x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.MicrotingSdkeFormId, x.Id, x.AreaId
+					x.PropertyId, x.PlanningId, x.Deadline, x.MicrotingSdkCaseId, x.MicrotingSdkeFormId, x.Id, x.AreaId,
+					x.PlanningCaseSiteId
 				})
 				.ToListAsync();
 
@@ -219,6 +220,27 @@ public static class BackendConfigurationTaskTrackerHelper
 					AreaRuleId = areaRulePlanning!.AreaRuleId,
 					Weeks = weeksThisCompliance
 				};
+
+				if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)
+				{
+					Console.WriteLine("complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow");
+					var dbCompliance = backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
+					if (dbCompliance.MicrotingSdkeFormId == 0)
+					{
+						var thePlanning = await itemsPlanningPnDbContext.Plannings
+							.SingleAsync(x => x.Id == compliance.PlanningId).ConfigureAwait(false);
+						dbCompliance.MicrotingSdkeFormId = thePlanning.RelatedEFormId;
+					}
+
+					var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
+						.FirstOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+					if (planningCaseSite != null)
+					{
+						complianceModel.SdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+						dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+						await dbCompliance.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+					}
+				}
 
 				result.Add(complianceModel);
 			}

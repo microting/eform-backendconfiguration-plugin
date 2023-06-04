@@ -97,14 +97,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       // eslint-disable-next-line max-len
       // that is overdue, the ones marked with red background, the user should navigate to plugins/backend-configuration-pn/compliances/case/121/21/1/2023-01-31T00:00:00/false/34
       this.router.navigate([
-        '/plugins/backend-configuration-pn/compliances/case/',
+        '/plugins/backend-configuration-pn/compliances/case/'+task.sdkCaseId +'/'+ task.templateId+'/'+ task.propertyId+'/'+ task.deadlineTask.toISOString()+'/'+false+'/'+ task.complianceId,
       ], {relativeTo: this.route, queryParams: {
-          sdkCaseId: task.sdkCaseId,
-          templateId: task.templateId,
-          propertyId: task.propertyId,
-          deadline: task.deadlineTask,
-          thirtyDays: false, // thirtyDays
-          complianceId: task.complianceId,
           reverseRoute: '/plugins/backend-configuration-pn/task-tracker/'}}).then();
     } else { // When clicking on a task that is not overdue, the user should be presented with the area rule planning modal for assigning workers
       this.openAreaRulePlanningModal.emit(task);

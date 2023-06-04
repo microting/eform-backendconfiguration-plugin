@@ -109,13 +109,7 @@ export class CompliancesTableComponent implements OnInit {
           iif: (record: ComplianceModel) => this.canEdit(record.deadline),
           click: (record: ComplianceModel) =>
             this.router.navigate([
-              '/plugins/backend-configuration-pn/compliances/case/',
-              record.caseId,
-              record.eformId,
-              this.propertyId,
-              record.deadline,
-              (this.isComplianceThirtyDays === undefined ? 'false' : 'true'),
-              record.id
+              '/plugins/backend-configuration-pn/compliances/case/'+record.caseId +'/'+ record.eformId+'/'+ this.propertyId+'/'+ record.deadline.toISOString()+'/'+false+'/'+ record.id,
             ], {relativeTo: this.route, queryParams: {reverseRoute: `/plugins/backend-configuration-pn/compliances/${this.propertyId}`}}),
         },
         {
