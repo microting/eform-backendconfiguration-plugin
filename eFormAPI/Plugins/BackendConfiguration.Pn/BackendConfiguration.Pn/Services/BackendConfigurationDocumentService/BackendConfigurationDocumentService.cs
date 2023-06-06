@@ -732,6 +732,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         }
 
         document.UpdatedByUserId = _userService.UserId;
+        document.Status = false;
+        await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 		await document.Delete(_caseTemplatePnDbContext).ConfigureAwait(false);
 
         return new OperationResult(true,
