@@ -549,7 +549,7 @@
       <PackageReference Include="Magick.NET-Q16-x64" Version="13.1.3" />
       <PackageReference Include="Microting.eForm" Version="7.0.45" />
       <PackageReference Include="Microting.EformAngularFrontendBase" Version="7.0.35" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.35" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.38" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="7.0.39" />
       <PackageReference Include="Microting.eFormCaseTemplateBase" Version="7.0.36" />
