@@ -356,11 +356,11 @@ namespace BackendConfiguration.Pn.Infrastructure
                                 if (planning.RepeatEvery == 1)
                                 {
                                     dbPlanning.NextExecutionTime =
-                                        new DateTime(startDate.Year, startDate.Month + 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                        new DateTime(startDate.Year, startDate.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0).AddMonths(1);
                                     if (dbPlanning.NextExecutionTime < now)
                                     {
                                         dbPlanning.NextExecutionTime =
-                                            new DateTime(startDate.Year, now.Month + 1, (int)dbPlanning.DayOfMonth!, 0, 0, 0);
+                                            new DateTime(startDate.Year, now.Month, (int)dbPlanning.DayOfMonth!, 0, 0, 0).AddMonths(1);
                                     }
                                 }
                                 else
@@ -394,16 +394,16 @@ namespace BackendConfiguration.Pn.Infrastructure
                                                 if (months.Contains(startDate.Month))
                                                 {
                                                     dbPlanning.NextExecutionTime =
-                                                        new DateTime(startDate.Year, startDate.Month + 2,
+                                                        new DateTime(startDate.Year, startDate.Month,
                                                             (int)dbPlanning.DayOfMonth!,
-                                                            0, 0, 0);
+                                                            0, 0, 0).AddMonths(2);
                                                 }
                                                 else
                                                 {
                                                     dbPlanning.NextExecutionTime =
-                                                        new DateTime(startDate.Year, startDate.Month + 1,
+                                                        new DateTime(startDate.Year, startDate.Month,
                                                             (int)dbPlanning.DayOfMonth!,
-                                                            0, 0, 0);
+                                                            0, 0, 0).AddMonths(1);
                                                 }
                                             }
                                                 break;
@@ -418,9 +418,9 @@ namespace BackendConfiguration.Pn.Infrastructure
                                                 if (months.Contains(startDate.Month))
                                                 {
                                                     dbPlanning.NextExecutionTime =
-                                                        new DateTime(startDate.Year, startDate.Month + 3,
+                                                        new DateTime(startDate.Year, startDate.Month,
                                                             (int)dbPlanning.DayOfMonth!,
-                                                            0, 0, 0);
+                                                            0, 0, 0).AddMonths(3);
                                                 }
                                                 else
                                                 {
@@ -428,16 +428,16 @@ namespace BackendConfiguration.Pn.Infrastructure
                                                     if (months.Contains(startDate.Month))
                                                     {
                                                         dbPlanning.NextExecutionTime =
-                                                            new DateTime(startDate.Year, startDate.Month + 2,
+                                                            new DateTime(startDate.Year, startDate.Month,
                                                                 (int)dbPlanning.DayOfMonth!,
-                                                                0, 0, 0);
+                                                                0, 0, 0).AddMonths(2);
                                                     }
                                                     else
                                                     {
                                                         dbPlanning.NextExecutionTime =
-                                                            new DateTime(startDate.Year, startDate.Month + 1,
+                                                            new DateTime(startDate.Year, startDate.Month,
                                                                 (int)dbPlanning.DayOfMonth!,
-                                                                0, 0, 0);
+                                                                0, 0, 0).AddMonths(1);
                                                     }
                                                 }
                                             }

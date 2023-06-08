@@ -1407,7 +1407,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var nextExecutionTime =
             new DateTime(now.Year, 1, 1);
 
-        nextExecutionTime = now.Month < 6 ? nextExecutionTime.AddMonths(6) : nextExecutionTime.AddYears(1);
+        nextExecutionTime = now.Month <= 6 ? nextExecutionTime.AddMonths(6) : nextExecutionTime.AddYears(1);
         //
         // if (nextExecutionTime < now)
         // {

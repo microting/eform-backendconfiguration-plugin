@@ -355,28 +355,51 @@ namespace BackendConfiguration.Pn
                 await planningSite.Update(context);
             }
 
+            // var documents = await caseTemplateContext.Documents
+            //     .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            //     .Where(x => x.UpdatedAt < new DateTime(2022, 12, 22, 14, 0, 0))
+            //     .ToListAsync();
+            //
+            // foreach (var document in documents)
+            // {
+            //     var documentSites = await caseTemplateContext.DocumentSites
+            //         .Where(x => x.DocumentId == document.Id)
+            //         .ToListAsync();
+            //
+            //     foreach (var documentSite in documentSites)
+            //     {
+            //         if (documentSite.SdkCaseId != 0)
+            //         {
+            //             await core.CaseDelete(documentSite.SdkCaseId);
+            //         }
+            //
+            //         await documentSite.Delete(caseTemplateContext);
+            //     }
+            //
+            //     await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+            // }
+
             var documents = await caseTemplateContext.Documents
-                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .Where(x => x.UpdatedAt < new DateTime(2022, 12, 22, 14, 0, 0))
+                .Where(x => x.WorkflowState == Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+                .Where(x => x.Status == true)
                 .ToListAsync();
 
             foreach (var document in documents)
             {
-                var documentSites = await caseTemplateContext.DocumentSites
-                    .Where(x => x.DocumentId == document.Id)
-                    .ToListAsync();
+	            document.Status = false;
+	            await document.Update(caseTemplateContext);
 
-                foreach (var documentSite in documentSites)
-                {
-                    if (documentSite.SdkCaseId != 0)
-                    {
-                        await core.CaseDelete(documentSite.SdkCaseId);
-                    }
+	            var documentSites = await caseTemplateContext.DocumentSites
+		            .Where(x => x.DocumentId == document.Id)
+		            .ToListAsync();
 
-                    await documentSite.Delete(caseTemplateContext);
-                }
-
-                await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
+	            foreach (var documentSite in documentSites)
+	            {
+		            if (documentSite.SdkCaseId != 0)
+		            {
+		                await core.CaseDelete(documentSite.SdkCaseId);
+		            }
+	            }
             }
         }
 

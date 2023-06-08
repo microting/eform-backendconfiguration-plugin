@@ -1035,47 +1035,48 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                     ComplianceEnabled = true
                 }
             },
-            // new Area
-            // {
-            //     Id = 23,
-            //     Type = AreaTypesEnum.Type7,
-            //     AreaTranslations = new List<AreaTranslation>
-            //     {
-            //         new()
-            //         {
-            //             Name = "23. IE-indberetning (Gammel)", // todo need beter translate
-            //             Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-            //             LanguageId = 1,// da
-            //             InfoBox = "Se krav i Miljøgodkendelse",
-            //             Placeholder = "",
-            //             NewItemName = "Vælg indberetningsområder"
-            //         },
-            //         new()
-            //         {
-            //             Name = "23. IE Reporting (Old)",
-            //             Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-            //             LanguageId = 2,// en
-            //             InfoBox = "See requirements in Environment Approval",
-            //             Placeholder = "",
-            //             NewItemName = "Choose reporting areas"
-            //         },
-            //         new()
-            //         {
-            //             Name = "23. IE-Berichterstattung (Alt)", // todo need beter translate
-            //             Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
-            //             LanguageId = 3,// ge
-            //             InfoBox = "Siehe Anforderungen in Umweltzulassung",
-            //             Placeholder = "",
-            //             NewItemName = "Berichtsgebiete auswählen"
-            //         }
-            //     },
-            //     AreaInitialField = new AreaInitialField
-            //     {
-            //         Notifications = true,
-            //         RepeatType = 1, // days
-            //         ComplianceEnabled = true,
-            //     },
-            // },
+            new Area
+            {
+                Id = 23,
+                Type = AreaTypesEnum.Type7,
+                IsDisabled = true,
+                AreaTranslations = new List<AreaTranslation>
+                {
+                    new()
+                    {
+                        Name = "23. IE-indberetning (Gammel)", // todo need beter translate
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 1,// da
+                        InfoBox = "Se krav i Miljøgodkendelse",
+                        Placeholder = "",
+                        NewItemName = "Vælg indberetningsområder"
+                    },
+                    new()
+                    {
+                        Name = "23. IE Reporting (Old)",
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 2,// en
+                        InfoBox = "See requirements in Environment Approval",
+                        Placeholder = "",
+                        NewItemName = "Choose reporting areas"
+                    },
+                    new()
+                    {
+                        Name = "23. IE-Berichterstattung (Alt)", // todo need beter translate
+                        Description = "https://www.microting.dk/eform/landbrug/omr%C3%A5der#h.8kzwebwrj4gz", // todo add link
+                        LanguageId = 3,// ge
+                        InfoBox = "Siehe Anforderungen in Umweltzulassung",
+                        Placeholder = "",
+                        NewItemName = "Berichtsgebiete auswählen"
+                    }
+                },
+                AreaInitialField = new AreaInitialField
+                {
+                    Notifications = true,
+                    RepeatType = 1, // days
+                    ComplianceEnabled = true,
+                },
+            },
             new Area
             {
                 Id = 27,

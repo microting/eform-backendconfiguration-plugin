@@ -148,7 +148,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     if (areaRule.Area.Type == AreaTypesEnum.Type10)
                     {
                         var oldStatus = areaRule.AreaRulesPlannings
-                            .Last(x => x.WorkflowState != Constants.WorkflowStates.Removed).Status;
+                            .LastOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed)?.Status ?? false;
                         var currentPlanningSites = await backendConfigurationPnDbContext.PlanningSites
                             .Where(x => x.AreaRuleId == areaRulePlanningModel.RuleId)
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -176,8 +176,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
                             foreach (var i in forDelete)
                             {
-                                var planningSiteId = areaRulePlannings.Single(y => y.SiteId == i).PlanningSiteId;
-                                var itemsPlanningId = areaRulePlannings.Single(x => x.SiteId == i).ItemPlanningId;
+                                var planningSiteId = areaRulePlannings.Single(y => y.SiteId == i && y.ItemPlanningId != 0).PlanningSiteId;
+                                var itemsPlanningId = areaRulePlannings.Single(x => x.SiteId == i && x.ItemPlanningId != 0).ItemPlanningId;
                                 var backendPlanningSite = await backendConfigurationPnDbContext.PlanningSites
                                     .SingleAsync(x => x.Id == planningSiteId).ConfigureAwait(false);
                                 await backendPlanningSite.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
@@ -2529,7 +2529,9 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
             if (lookupName == "Morgenrundtur" || lookupName == "Morning tour")
             {
-                var globalPlanningTag = await itemsPlanningPnDbContext.PlanningTags.SingleOrDefaultAsync(x =>
+                var globalPlanningTag = await itemsPlanningPnDbContext.PlanningTags
+                    .OrderBy(x=> x.CreatedAt)
+                    .LastOrDefaultAsync(x =>
                         x.Name == $"{property.Name} - {areaRule.AreaRuleTranslations.First().Name}")
                     .ConfigureAwait(false);
 
