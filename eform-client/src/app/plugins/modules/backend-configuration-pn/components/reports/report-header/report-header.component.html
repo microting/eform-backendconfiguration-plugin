@@ -46,6 +46,7 @@
         [disabled]="generateForm.invalid"
         (click)="onWordSave()"
         id="generateWordBtn"
+        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Word'}"
       >
         <mat-icon svgIcon="file-word"></mat-icon>
       </button>
@@ -54,8 +55,18 @@
         [disabled]="generateForm.invalid"
         (click)="onExcelSave()"
         id="generateExcelBtn"
+        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Excel'}"
       >
         <mat-icon svgIcon="file-excel"></mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        [disabled]="generateForm.invalid"
+        (click)="onPdfSave()"
+        id="generatePdfBtn"
+        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'PDF'}"
+      >
+        <mat-icon svgIcon="file-pdf"></mat-icon>
       </button>
     </div>
   </div>

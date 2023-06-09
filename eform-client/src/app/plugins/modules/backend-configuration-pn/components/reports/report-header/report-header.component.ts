@@ -16,7 +16,7 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
-import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon} from 'src/app/common/const';
+import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
 
 @AutoUnsubscribe()
@@ -30,8 +30,6 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   generateReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
   @Output()
   downloadReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
-  @Output()
-  downloadExcelReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
   @Input() range: Date[];
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
@@ -48,6 +46,7 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   ) {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
+    iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
     dateTimeAdapter.setLocale(authStateService.currentUserLocale);
   }
 
@@ -88,7 +87,7 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   onExcelSave() {
     const model = this.extractData();
     model.type = 'xlsx';
-    this.downloadExcelReport.emit(model);
+    this.downloadReport.emit(model);
   }
 
   private extractData(): ReportPnGenerateModel {
@@ -104,5 +103,11 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  onPdfSave() {
+    const model = this.extractData();
+    model.type = 'pdf';
+    this.downloadReport.emit(model);
   }
 }

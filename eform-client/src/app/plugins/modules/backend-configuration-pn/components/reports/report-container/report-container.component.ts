@@ -1,19 +1,15 @@
-import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
-// import {CasePostNewComponent} from 'src/app/common/modules/eform-cases/components';
 import {
   ReportEformPnModel,
   ReportPnGenerateModel,
-} from '../../../models/report';
+} from '../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {BehaviorSubject, forkJoin, Observable, Subscription, asyncScheduler} from 'rxjs';
+import {BehaviorSubject, forkJoin, Observable, Subscription, asyncScheduler, of} from 'rxjs';
 import {ActivatedRoute, Router} from '@angular/router';
-import {format, parse, parseISO} from 'date-fns';
+import {parseISO} from 'date-fns';
 import {
-  CasePostsListModel,
-  CommonDictionaryModel,
-  EmailRecipientTagCommonModel,
   SharedTagModel,
 } from 'src/app/common/models';
 import {EmailRecipientsService, TemplateFilesService} from 'src/app/common/services';
@@ -22,7 +18,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {Gallery, GalleryItem, ImageItem} from '@ngx-gallery/core';
 import {Lightbox} from '@ngx-gallery/lightbox';
 import {ViewportScroller} from '@angular/common';
-import {BackendConfigurationPnReportService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {BackendConfigurationPnReportService} from '../../../services';
+import {catchError, tap} from 'rxjs/operators';
 
 @AutoUnsubscribe()
 @Component({
@@ -31,16 +28,10 @@ import {BackendConfigurationPnReportService} from 'src/app/plugins/modules/backe
   styleUrls: ['./report-container.component.scss'],
 })
 export class ReportContainerComponent implements OnInit, OnDestroy {
-  // @ViewChild('newPostModal') newPostModal: CasePostNewComponent;
   reportsModel: ReportEformPnModel[] = [];
   range: Date[] = [];
-  casePostsListModel: CasePostsListModel = new CasePostsListModel();
-  availableEmailRecipientsAndTags: EmailRecipientTagCommonModel[] = [];
-  availableEmailRecipients: CommonDictionaryModel[] = [];
   availableTags: SharedTagModel[] = [];
   currentUserFullName: string;
-  selectedEformId: number;
-  selectedCaseId: number;
   images: { key: number, value: any }[] = [];
   galleryImages: GalleryItem[] = [];
   isDescriptionBlockCollapsed = new Array<boolean>();
@@ -50,8 +41,6 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   private observableReportsModel = new BehaviorSubject<ReportEformPnModel[]>([]);
 
   getTagsSub$: Subscription;
-  // getEmailsTagsSub$: Subscription;
-  // getRecipientsSub$: Subscription;
   generateReportSub$: Subscription;
   downloadReportSub$: Subscription;
   imageSub$: Subscription[] = [];
@@ -131,40 +120,14 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   onDownloadReport(model: ReportPnGenerateModel) {
     this.downloadReportSub$ = this.reportService
       .downloadFileReport(model)
-      .subscribe(
-        (data) => {
-          saveAs(data, model.dateFrom + '_' + model.dateTo + '_report.docx');
-        },
-        (_) => {
+      .pipe(
+        tap((data) => saveAs(data, `${model.dateFrom}_${model.dateTo}_report.${model.type}`)),
+        catchError((_) => {
           this.toastrService.error('Error downloading report');
-        }
-      );
-  }
-
-  onDownloadExcelReport(model: ReportPnGenerateModel) {
-    this.downloadReportSub$ = this.reportService
-      .downloadFileReport(model)
-      .subscribe(
-        (data: string | Blob) => {
-          saveAs(data, model.dateFrom + '_' + model.dateTo + '_report.xlsx');
-        },
-        (_) => {
-          this.toastrService.error('Error downloading report');
-        }
-      );
-  }
-
-  postDoneRedirect() {
-    this.router
-      .navigateByUrl('/', {skipLocationChange: true})
-      .then(() =>
-        this.router.navigate([
-          '/plugins/items-planning-pn/reports/' +
-          this.dateFrom +
-          '/' +
-          this.dateTo,
-        ])
-      );
+          return of(null);
+        })
+      )
+      .subscribe();
   }
 
   onPlanningCaseDeleted() {
