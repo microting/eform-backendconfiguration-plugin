@@ -131,9 +131,13 @@ public class ReportController : Controller
                 await using var wordStream = result.Model;
                 int bytesRead;
                 Response.ContentLength = wordStream.Length;
-                Response.ContentType = requestModel.Type == "docx"
-                    ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                Response.ContentType = requestModel.Type switch
+                {
+                    "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "pdf" => "application/pdf",
+                    _ => "text/plain"
+                };
 
                 while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
                        !HttpContext.RequestAborted.IsCancellationRequested)
