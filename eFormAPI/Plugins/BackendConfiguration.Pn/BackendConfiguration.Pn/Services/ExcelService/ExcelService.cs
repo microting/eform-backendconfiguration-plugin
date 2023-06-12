@@ -303,9 +303,17 @@ public class ExcelService : IExcelService
 								switch (dataModelCaseField.Key)
 								{
 									case "date":
-										var date = DateTime.Parse(value);
-										worksheet.Cell(x + 1, y + 1).SetValue(date);
-										worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy";
+										try
+										{
+											var date = DateTime.Parse(value);
+											worksheet.Cell(x + 1, y + 1).SetValue(date);
+											worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy";
+										}
+										catch (Exception e)
+										{
+											Console.WriteLine(e);
+											worksheet.Cell(x + 1, y + 1).SetValue(value);
+										}
 										break;
 									case "number":
 										try
@@ -319,7 +327,7 @@ public class ExcelService : IExcelService
 										catch (Exception e)
 										{
 											Console.WriteLine(e);
-											throw;
+											worksheet.Cell(x + 1, y + 1).SetValue(value);
 										}
 
 										//worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
