@@ -154,7 +154,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
 			foreach (var backendConfigurationDocumentModel in results)
             {
-                string propertyNames = "";
+                var propertyNames = "";
                 foreach (var backendConfigurationDocumentProperty in backendConfigurationDocumentModel.DocumentProperties)
                 {
                     if (propertyNames != "")
@@ -360,7 +360,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 };
 
                 await documentUploadedDataDb.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
-                MemoryStream memoryStream = new MemoryStream();
+                var memoryStream = new MemoryStream();
 
                 if (documentUploadedData.File != null)
                 {
@@ -368,7 +368,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     string checkSum;
                     using (var md5 = MD5.Create())
                     {
-                        byte[] grr = md5.ComputeHash(memoryStream.ToArray());
+                        var grr = md5.ComputeHash(memoryStream.ToArray());
                         checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
 
@@ -393,13 +393,13 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 					{
 						ReportHelper.ConvertToPdf(fileName, Path.Combine(Path.GetTempPath(), "results"));
                         await using FileStream fileStream = new(Path.Combine(Path.GetTempPath(), "results", $"{fileName.Split(".")[^1]}.pdf"), FileMode.Open, FileAccess.Read);
-						using MemoryStream memoryStreamConvertedFile = new MemoryStream();
+						using var memoryStreamConvertedFile = new MemoryStream();
 						await fileStream.CopyToAsync(memoryStreamConvertedFile);
 
 						string checkSumConvertedFile;
 						using (var md5 = MD5.Create())
 						{
-							byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
+							var grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
 							checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
 						}
 						// fileName = checkSum.extension
@@ -431,8 +431,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                                  && x.Extension == documentUploadedData.Extension)
                 .ConfigureAwait(false);
                 documentUploadedDataModel.Name = documentUploadedData.Name;
-                MemoryStream memoryStream = new MemoryStream();
-                MemoryStream memoryStream2 = new MemoryStream();
+                var memoryStream = new MemoryStream();
+                var memoryStream2 = new MemoryStream();
 
                 if (documentUploadedData.File != null)
                 {
@@ -440,7 +440,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     string checkSum;
                     using (var md5 = MD5.Create())
                     {
-                        byte[] grr = md5.ComputeHash(memoryStream.ToArray());
+                        var grr = md5.ComputeHash(memoryStream.ToArray());
                         checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
                     }
 				    // fileName = checkSum.extension
@@ -465,7 +465,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 	                    && !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
 				    {
                         memoryStream2.Seek(0, SeekOrigin.Begin);
-                        string downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
+                        var downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
                         Directory.CreateDirectory(downloadPath);
                         FileStream writeFileStream = new(Path.Combine(downloadPath, fileName), FileMode.Create, FileAccess.Write);
                         await memoryStream2.CopyToAsync(writeFileStream);
@@ -473,13 +473,13 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 					    ReportHelper.ConvertToPdf(Path.Combine(Path.GetTempPath(), "reports", "results", fileName), downloadPath);
                         var pdfFileName = fileName.Replace(".docx", ".pdf").Replace(".doc", ".pdf");
                         await using FileStream fileStream = new(Path.Combine(downloadPath, pdfFileName), FileMode.Open, FileAccess.Read);
-					    using MemoryStream memoryStreamConvertedFile = new MemoryStream();
+					    using var memoryStreamConvertedFile = new MemoryStream();
 					    await fileStream.CopyToAsync(memoryStreamConvertedFile);
 
 					    string checkSumConvertedFile;
 					    using (var md5 = MD5.Create())
 					    {
-						    byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
+						    var grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
 						    checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
 					    }
 					    // fileName = checkSum.extension
@@ -566,6 +566,15 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 ExtensionFile = translation.ExtensionFile,
                 CreatedByUserId = _userService.UserId
             };
+            // if we have only docx file (without pdf) and pdf translate empty(maybe not need?) - get translation from docx for pdf
+            if (documentTranslation.ExtensionFile == "pdf" && string.IsNullOrEmpty(documentTranslation.Name) && model.DocumentTranslations
+                    .Exists(x => x.ExtensionFile == "docx" && x.LanguageId == documentTranslation.LanguageId && !string.IsNullOrEmpty(x.Name)))
+            {
+                documentTranslation.Name = model.DocumentUploadedDatas
+                    .Where(x => x.Extension == "docx" && x.LanguageId == documentTranslation.LanguageId)
+                    .Select(x => x.Name)
+                    .FirstOrDefault();
+            }
 
             await documentTranslation.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
@@ -580,6 +589,15 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 Extension = documentUploadedData.Extension,
                 CreatedByUserId = _userService.UserId
             };
+            // if we have only docx file (without pdf) - get name from docx for pdf
+            if (documentUploadedData.Extension == "pdf" && string.IsNullOrEmpty(documentUploadedData.Name) && model.DocumentUploadedDatas
+                    .Exists(x => x.Extension == "docx" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
+            {
+                documentUploadedDataModel.Name = model.DocumentUploadedDatas
+                    .Where(x => x.Extension == "docx" && x.LanguageId == documentUploadedData.LanguageId)
+                    .Select(x => x.Name.Replace(".docx", ".pdf").Replace(".doc", ".pdf"))
+                    .FirstOrDefault();
+            }
 
             await documentUploadedDataModel.Create(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
@@ -591,8 +609,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                                  && x.LanguageId == documentUploadedData.LanguageId
                                  && x.Extension == documentUploadedData.Extension)
                 .ConfigureAwait(false);
-            MemoryStream memoryStream = new MemoryStream();
-            MemoryStream memoryStream2 = new MemoryStream();
+            var memoryStream = new MemoryStream();
+            var memoryStream2 = new MemoryStream();
 
             if (documentUploadedData.File != null)
             {
@@ -600,7 +618,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                 string checkSum;
                 using (var md5 = MD5.Create())
                 {
-                    byte[] grr = md5.ComputeHash(memoryStream.ToArray());
+                    var grr = md5.ComputeHash(memoryStream.ToArray());
                     checkSum = BitConverter.ToString(grr).Replace("-", "").ToLower();
                 }
 				// fileName = checkSum.extension
@@ -621,11 +639,11 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 				// user uploaded pdf and doc - save pdf and doc.
 				// the user uploaded the doc - convert the doc to pdf and save them both
 				if (
-	                (documentUploadedDataModel.Name.Split(".")[^1] is "docx" or "docx")
+	                (documentUploadedDataModel.Name.Split(".")[^1] is "docx")
 	                && !model.DocumentUploadedDatas.Exists(x => x.Extension == "pdf" && x.LanguageId == documentUploadedData.LanguageId && !string.IsNullOrEmpty(x.Name)))
 				{
                     memoryStream2.Seek(0, SeekOrigin.Begin);
-                    string downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
+                    var downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
                     Directory.CreateDirectory(downloadPath);
                     FileStream writeFileStream = new(Path.Combine(downloadPath, fileName), FileMode.Create, FileAccess.Write);
                     await memoryStream2.CopyToAsync(writeFileStream);
@@ -633,13 +651,13 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 					ReportHelper.ConvertToPdf(Path.Combine(Path.GetTempPath(), "reports", "results", fileName), downloadPath);
                     var pdfFileName = fileName.Replace(".docx", ".pdf").Replace(".doc", ".pdf");
                     await using FileStream fileStream = new(Path.Combine(downloadPath, pdfFileName), FileMode.Open, FileAccess.Read);
-					using MemoryStream memoryStreamConvertedFile = new MemoryStream();
+					using var memoryStreamConvertedFile = new MemoryStream();
 					await fileStream.CopyToAsync(memoryStreamConvertedFile);
 
 					string checkSumConvertedFile;
 					using (var md5 = MD5.Create())
 					{
-						byte[] grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
+						var grr = md5.ComputeHash(memoryStreamConvertedFile.ToArray());
 						checkSumConvertedFile = BitConverter.ToString(grr).Replace("-", "").ToLower();
 					}
 					// fileName = checkSum.extension
@@ -851,7 +869,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             .Include(x => x.FolderProperties)
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync();
 
-        List<BackendConfigurationDocumentSimpleFolderModel> result = new List<BackendConfigurationDocumentSimpleFolderModel>();
+        var result = new List<BackendConfigurationDocumentSimpleFolderModel>();
         foreach (var folder in folders)
         {
             result.Add(new BackendConfigurationDocumentSimpleFolderModel
