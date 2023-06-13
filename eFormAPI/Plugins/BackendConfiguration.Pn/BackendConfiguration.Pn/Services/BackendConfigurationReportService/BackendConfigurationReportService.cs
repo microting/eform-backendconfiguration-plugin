@@ -34,6 +34,7 @@ using BackendConfiguration.Pn.Services.ExcelService;
 using BackendConfiguration.Pn.Services.WordService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microting.eForm.Helpers;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
@@ -297,7 +298,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                         $"https://www.google.com/maps/place/{imageField.Latitude},{imageField.Longitude}";
                                 }
 
-                                var keyList = new List<string> {imageField.CaseId.ToString(), label};
+                                var keyList = new List<string> { imageField.CaseId.ToString(), label };
                                 var list = new List<string>();
                                 if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
                                 {
@@ -335,7 +336,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                     .OrderByDescending(x => x.Version)
                                     .FirstOrDefaultAsync();
 
-                                if (areaRulePlanningVersion != null) {
+                                if (areaRulePlanningVersion != null)
+                                {
                                     propertyName = _backendConfigurationPnDbContext.Properties
                                         .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
                                 }
@@ -542,28 +544,66 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     return new OperationDataResult<Stream>(false, reportDataResult.Message);
                 }
 
-                if (model.Type == "docx")
+                switch (model.Type)
                 {
-                    var wordDataResult = await _wordService
-                        .GenerateWordDashboard(reportDataResult.Model);
-                    if (!wordDataResult.Success)
-                    {
-                        return new OperationDataResult<Stream>(false, wordDataResult.Message);
-                    }
+                    case "docx":
+                        {
+                            var wordDataResult = await _wordService
+                            .GenerateWordDashboard(reportDataResult.Model);
+                            if (!wordDataResult.Success)
+                            {
+                                return new OperationDataResult<Stream>(false, wordDataResult.Message);
+                            }
 
-                    return new OperationDataResult<Stream>(true, wordDataResult.Model);
-                }
-                else
-                {
-                    var wordDataResult = await _excelService
-                        .GenerateExcelDashboard(reportDataResult.Model);
-                    if (!wordDataResult.Success)
-                    {
-                        return new OperationDataResult<Stream>(false, wordDataResult.Message);
-                    }
+                            return new OperationDataResult<Stream>(true, wordDataResult.Model);
+                        }
+                    case "xlsx":
+                        {
+                            var wordDataResult = await _excelService
+                                .GenerateExcelDashboard(reportDataResult.Model);
+                            if (!wordDataResult.Success)
+                            {
+                                return new OperationDataResult<Stream>(false, wordDataResult.Message);
+                            }
 
-                    return new OperationDataResult<Stream>(true, wordDataResult.Model);
+                            return new OperationDataResult<Stream>(true, wordDataResult.Model);
+                        }
+                    case "pdf":
+                        {
+                            // get word report and save him
+                            var wordDataResult = await _wordService
+                            .GenerateWordDashboard(reportDataResult.Model);
+                            if (!wordDataResult.Success)
+                            {
+                                return new OperationDataResult<Stream>(false, wordDataResult.Message);
+                            }
+
+                            var directoryPath = Path.Combine(Path.GetTempPath(), "results");
+                            Directory.CreateDirectory(directoryPath);
+                            var resultDocumentDocx = Path.Combine(directoryPath, $"{DateTime.Now.Ticks}.docx");
+                            var resultDocumentPdf = resultDocumentDocx.Replace("docx", "pdf");
+
+                            using (var fileStream = File.Create(resultDocumentDocx))
+                            {
+                                wordDataResult.Model.Seek(0, SeekOrigin.Begin);
+                                wordDataResult.Model.CopyTo(fileStream);
+                            }
+                            // convert file to pdf
+                            ReportHelper.ConvertToPdf(resultDocumentDocx, directoryPath);
+                            // read converted file and return
+                            using (FileStream fileStream = File.OpenRead(resultDocumentPdf))
+                            {
+                                MemoryStream memoryStream = new MemoryStream();
+                                fileStream.CopyTo(memoryStream);
+                                return new OperationDataResult<Stream>(true, memoryStream);
+                            }
+                        }
+                    default:
+                        {
+                            throw new NotImplementedException($"Type {reportDataResult.Model} not implemented");
+                        }
                 }
+
             }
             catch (Exception e)
             {
@@ -607,7 +647,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 && x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync();
 
-                if(foundCase != null) {
+                if (foundCase != null)
+                {
 
                     if (foundCase.DoneAt != null)
                     {
