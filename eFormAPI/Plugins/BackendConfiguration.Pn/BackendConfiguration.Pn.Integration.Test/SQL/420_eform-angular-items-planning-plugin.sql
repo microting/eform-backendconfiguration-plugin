@@ -502,6 +502,8 @@ CREATE TABLE `PlanningVersions` (
   `IsEditable` tinyint(1) NOT NULL DEFAULT 1,
   `IsHidden` tinyint(1) NOT NULL DEFAULT 0,
   `IsLocked` tinyint(1) NOT NULL DEFAULT 0,
+  `ExpireInYears` int(11) NOT NULL DEFAULT 0,
+  `ShowExpireDate` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -568,6 +570,8 @@ CREATE TABLE `Plannings` (
   `IsEditable` tinyint(1) NOT NULL DEFAULT 1,
   `IsHidden` tinyint(1) NOT NULL DEFAULT 0,
   `IsLocked` tinyint(1) NOT NULL DEFAULT 0,
+  `ExpireInYears` int(11) NOT NULL DEFAULT 0,
+  `ShowExpireDate` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
