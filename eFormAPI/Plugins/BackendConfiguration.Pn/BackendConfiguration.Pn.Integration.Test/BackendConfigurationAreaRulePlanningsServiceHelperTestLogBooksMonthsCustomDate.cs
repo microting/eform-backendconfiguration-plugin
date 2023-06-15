@@ -660,7 +660,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12);
+            new DateTime(now.Year, now.Month, 12);
         // var months = new[] {1, 3, 5, 7, 9, 11};
         //
         // if (months.Contains(now.Month))
