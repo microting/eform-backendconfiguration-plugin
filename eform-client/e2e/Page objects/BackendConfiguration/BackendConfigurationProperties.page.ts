@@ -201,14 +201,11 @@ export class BackendConfigurationPropertiesPage extends Page {
   }
 
   public async goToProperties() {
-    const spinnerAnimation = await $('#spinner-animation');
     const ele = await $('#backend-configuration-pn-properties');
     if (!await ele.isDisplayed()) {
       await (await this.backendConfigurationPnButton()).click();
     }
-    await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.backendConfigurationPnPropertiesButton()).click();
-    await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.propertyCreateBtn()).waitForClickable({ timeout: 90000 });
   }
 
@@ -269,7 +266,6 @@ export class BackendConfigurationPropertiesPage extends Page {
       await (await this.propertyCreateSaveBtn()).click();
     }
     await browser.pause(500);
-    await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.propertyCreateBtn()).waitForClickable({ timeout: 90000 });
   }
 
@@ -486,7 +482,6 @@ export class PropertyRowObject {
   public async openAreasViewModal(indexAreaForClick: number) {
     await this.editPropertyAreasBtn.waitForClickable({ timeout: 40000 });
     await this.editPropertyAreasBtn.click();
-    await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
     await (
       await backendConfigurationPropertiesPage.configurePropertyAreasBtn()
     );
@@ -497,7 +492,6 @@ export class PropertyRowObject {
       )
     ).click();
 
-    await (await $('#spinner-animation')).waitForDisplayed({ timeout: 90000, reverse: true });
     await browser.pause(500);
   }
 
