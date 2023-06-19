@@ -388,7 +388,8 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     ]).deep.eq(workers);
     // browser.back();
     // await areaRule.createUpdatePlanning({status: false});
-  });it('should create new planning from default area rule at 24 days', async () => {
+  });
+  it('should create new planning from default area rule at 24 days', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
     expect(rowNum, 'have some non-default area rules').eq(0);
     await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);

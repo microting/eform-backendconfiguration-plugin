@@ -20,14 +20,12 @@ export class BackendConfigurationTaskManagementPage extends Page {
   }
 
   public async goToTaskManagement() {
-    const spinnerAnimation = await $('#spinner-animation');
     if (!$('#backend-configuration-pn-task-management').isDisplayed()) {
       await (
         await backendConfigurationPropertiesPage.backendConfigurationPnButton()
       ).click();
     }
     await (await this.backendConfigurationPnTaskManagement()).click();
-    await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.createNewTaskBtn()).waitForClickable({ timeout: 90000 });
   }
 
@@ -294,42 +292,38 @@ export class BackendConfigurationTaskManagementPage extends Page {
     } else {
       await (await this.taskManagementCreateShowSaveBtn()).click();
     }
-    const spinnerAnimation = await $('#spinner-animation');
-    await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.createNewTaskBtn()).waitForClickable({ timeout: 90000 });
     await browser.pause(500);
   }
 
-  public async changeFilters(filerts: TaskManagementFilters) {
-    const spinnerAnimation = await $('#spinner-animation');
-    if(filerts) {
-      if(filerts.propertyName){
-        await selectValueInNgSelector(await this.propertyIdFilter(), filerts.propertyName);
+  public async changeFilters(filters: TaskManagementFilters) {
+    if(filters) {
+      if(filters.propertyName){
+        await selectValueInNgSelector(await this.propertyIdFilter(), filters.propertyName);
       }
-      if(filerts.areaName){
-        await selectValueInNgSelector(await this.areaNameFilter(), filerts.areaName);
+      if(filters.areaName){
+        await selectValueInNgSelector(await this.areaNameFilter(), filters.areaName);
       }
-      if(filerts.createdBy){
-        await selectValueInNgSelector(await this.createdByFilter(), filerts.createdBy);
+      if(filters.createdBy){
+        await selectValueInNgSelector(await this.createdByFilter(), filters.createdBy);
       }
-      if(filerts.lastAssignedTo){
-        await selectValueInNgSelector(await this.lastAssignedToFilter(), filerts.lastAssignedTo);
+      if(filters.lastAssignedTo){
+        await selectValueInNgSelector(await this.lastAssignedToFilter(), filters.lastAssignedTo);
       }
-      if(filerts.status){
-        await selectValueInNgSelector(await this.statusFilter(), filerts.status);
+      if(filters.status){
+        await selectValueInNgSelector(await this.statusFilter(), filters.status);
       }
-      if(filerts.date){
+      if(filters.date){
         await (await this.dateFilter()).click();
         await selectDateRangeOnDatePicker(
-          filerts.date.yearFrom,
-          filerts.date.monthFrom,
-          filerts.date.dayFrom,
-          filerts.date.yearTo,
-          filerts.date.monthTo,
-          filerts.date.dayTo);
+          filters.date.yearFrom,
+          filters.date.monthFrom,
+          filters.date.dayFrom,
+          filters.date.yearTo,
+          filters.date.monthTo,
+          filters.date.dayTo);
       }
       await (await this.showReportBtn()).click();
-      await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
       await (await this.createNewTaskBtn()).waitForClickable({ timeout: 40000});
       await browser.pause(500);
     }

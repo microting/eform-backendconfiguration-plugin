@@ -674,10 +674,6 @@ export class AreaRuleRowObject {
     } else {
       await browser.pause(500);
     }
-    await (await $('#spinner-animation')).waitForDisplayed({
-      timeout: 120000,
-      reverse: true,
-    });
   }
 
   public async readPlanning(
