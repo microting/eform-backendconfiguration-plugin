@@ -5,7 +5,7 @@ import {
   OnInit,
   Output,
 } from '@angular/core';
-import {DocumentModel, DocumentTranslationModel,} from '../../../../models';
+import {DocumentModel, DocumentSimpleFolderModel, DocumentTranslationModel,} from '../../../../models';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {applicationLanguages2, PdfIcon, WordIcon} from 'src/app/common/const';
@@ -14,6 +14,8 @@ import {DomSanitizer} from '@angular/platform-browser';
 import {TemplateFilesService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {DocumentsStateService} from '../../store';
+import {Sort} from '@angular/material/sort';
 
 @AutoUnsubscribe()
 @Component({
@@ -23,23 +25,35 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 })
 export class DocumentsTableComponent implements OnInit, OnDestroy {
   tableHeaders: MtxGridColumn[] = [
-    {field: 'id', header: this.translateService.stream('Id')},
+    {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'}},
     {
       field: 'propertyNames',
       header: this.translateService.stream('Properties'),
       formatter: (document: DocumentModel) => document.propertyNames
     },
     {
+      field: 'propertyFolder',
+      header: this.translateService.stream('Folder name'),
+      formatter: (document: DocumentModel) => this.folders.filter(x => x.id === document.folderId).map(x => x.name)[0] || '--',
+      sortable: true, sortProp: {id: 'FolderId'}
+    },
+    {
       field: 'documentTranslations[0].name',
       header: this.translateService.stream('Document name'),
-      formatter: (document: DocumentModel) => this.getDocumentTranslationName(document)
+      formatter: (document: DocumentModel) => this.getDocumentTranslationName(document),
     },
     {
       field: 'documentTranslations[0].description',
       header: this.translateService.stream('Document description'),
       formatter: (document: DocumentModel) => this.getDocumentTranslationDescription(document)
     },
-    {field: 'endDate', header: this.translateService.stream('End date'), type: 'date', typeParameter: {format: 'dd.MM.y'}},
+    {
+      field: 'endDate',
+      header: this.translateService.stream('End date'),
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y'},
+      sortable: true, sortProp: {id: 'EndAt'}
+    },
     // {
     //   field: 'downloadButton',
     //   header: this.translateService.stream('Files'),
@@ -47,7 +61,8 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
     {
       field: 'status',
       header: this.translateService.stream('Status'),
-      formatter: (document: DocumentModel) => this.translateService.instant(document.status ? 'ON' : 'OFF')
+      formatter: (document: DocumentModel) => this.translateService.instant(document.status ? 'ON' : 'OFF'),
+      sortable: true, sortProp: {id: 'Status'}
     },
     {
       field: 'actions',
@@ -78,6 +93,7 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
     },
   ];
   @Input() documents: DocumentModel[] = [];
+  @Input() folders: DocumentSimpleFolderModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();
   @Output() openDeleteModal: EventEmitter<DocumentModel> = new EventEmitter<DocumentModel>();
@@ -89,6 +105,7 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
     private translateService: TranslateService,
     iconRegistry: MatIconRegistry,
     sanitizer: DomSanitizer,
+    public documentsStateService: DocumentsStateService,
   ) {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
@@ -155,5 +172,9 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  onSortChange(sort: Sort) {
+    this.documentsStateService.onSortTable(sort.active);
   }
 }

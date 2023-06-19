@@ -5,7 +5,6 @@ import {RouterModule} from '@angular/router';
 import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {NgSelectModule} from '@ng-select/ng-select';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT} from '../../consts';
 import {
@@ -32,6 +31,7 @@ import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatCardModule} from '@angular/material/card';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MtxCheckboxGroupModule} from '@ng-matero/extensions/checkbox-group';
 
 @NgModule({
   declarations: [
@@ -46,30 +46,30 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     DocumentsDocumentEditComponent,
     DocumentsDocumentDeleteComponent
   ],
-  imports: [
-    CommonModule,
-    TranslateModule,
-    RouterModule,
-    OwlDateTimeModule,
-    DocumentsRouting,
-    OwlDateTimeModule,
-    EformSharedModule,
-    ReactiveFormsModule,
-    NgSelectModule,
-    EformImportedModule,
-    FormsModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MtxSelectModule,
-    MatInputModule,
-    MtxGridModule,
-    MatDialogModule,
-    MatCardModule,
-    MatSlideToggleModule,
-    MatCheckboxModule,
-  ],
+    imports: [
+      CommonModule,
+      TranslateModule,
+      RouterModule,
+      OwlDateTimeModule,
+      DocumentsRouting,
+      OwlDateTimeModule,
+      EformSharedModule,
+      ReactiveFormsModule,
+      EformImportedModule,
+      FormsModule,
+      MatButtonModule,
+      MatTooltipModule,
+      MatIconModule,
+      MatFormFieldModule,
+      MtxSelectModule,
+      MatInputModule,
+      MtxGridModule,
+      MatDialogModule,
+      MatCardModule,
+      MatSlideToggleModule,
+      MatCheckboxModule,
+      MtxCheckboxGroupModule,
+    ],
   providers: [
     {
       provide: OWL_DATE_TIME_FORMATS,

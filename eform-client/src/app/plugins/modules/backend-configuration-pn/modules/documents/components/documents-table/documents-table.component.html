@@ -5,11 +5,13 @@
   [pageOnFront]="false"
   [rowStriped]="true"
   [showToolbar]="false"
-  [showColumnMenuButton]="false">
+  [showColumnMenuButton]="false"
+  (sortChange)="onSortChange($event)"
+  [sortDirection]="documentsStateService.getActiveSortDirection() | async"
+  [sortActive]="documentsStateService.getActiveSort() | async">
 </mtx-grid>
 
-
-<ng-template #downloadButton let-row let-i="index">
+<!--<ng-template #downloadButton let-row let-i="index">
   <div class="d-flex">
     <div *ngFor="let documentUploadedData of row.documentUploadedDatas">
       <button
@@ -24,4 +26,4 @@
       </button>
     </div>
   </div>
-</ng-template>
+</ng-template>-->
