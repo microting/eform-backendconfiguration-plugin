@@ -24,16 +24,16 @@ import {saveAs} from 'file-saver';
 })
 export class DocumentsDocumentCreateComponent implements OnInit {
   newDocumentModel: DocumentModel = new DocumentModel();
-  pdfSub$: Subscription;
   selectedFolder: number;
   documentCreated: EventEmitter<void> = new EventEmitter<void>();
-  folders: DocumentSimpleFolderModel[];
-  getPropertiesDictionary$: Subscription;
-  availableProperties: CommonDictionaryModel[];
+  folders: DocumentSimpleFolderModel[] = [];
+  availableProperties: CommonDictionaryModel[] = [];
   selectedLanguage: number;
-  getSimpleFoldersSub$: Subscription;
+  documentProperties: number[] = [];
 
-  // assignments: DocumentPropertyModel[] = [];
+  getSimpleFoldersSub$: Subscription;
+  getPropertiesDictionary$: Subscription;
+  pdfSub$: Subscription;
 
   get languages() {
     return applicationLanguages2;
@@ -143,16 +143,16 @@ export class DocumentsDocumentCreateComponent implements OnInit {
       });
   }
 
-  addToArray(checked: boolean, propertyId: number) {
-    const assignmentObject = new DocumentPropertyModel();
-    if (checked) {
-      assignmentObject.propertyId = propertyId;
-      this.newDocumentModel.documentProperties = [...this.newDocumentModel.documentProperties, assignmentObject];
-    } else {
-      this.newDocumentModel.documentProperties = this.newDocumentModel.documentProperties.filter(
-        (x) => x.propertyId !== propertyId
-      );
-    }
+  addToArray(documentProperties: number[]) {
+    const originalArray = this.newDocumentModel.documentProperties;
+    this.newDocumentModel.documentProperties = [...documentProperties].map(propertyId => {
+      const assignmentObject = originalArray.find(x => x.propertyId === propertyId);
+      if(assignmentObject){
+        return assignmentObject;
+      }
+      return {propertyId: propertyId, documentId: this.newDocumentModel.id}
+    });
+    this.documentProperties = this.newDocumentModel.documentProperties.map(x => x.propertyId);
   }
 
   getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
@@ -187,7 +187,6 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     // @ts-ignore
     const files: File[] = event.target.files;
     const file: File = R.last(files);
-    debugger;
     if (file.name.toLowerCase().indexOf(extension) === -1) {
       return;
     }
@@ -243,5 +242,33 @@ export class DocumentsDocumentCreateComponent implements OnInit {
         saveAs(documentUploadedData.file, documentUploadedData.name);
       }
     }
+  }
+
+  copyValues(fromLanguageId: number, toLanguageId: number) {
+    const documentTranslationFrom = this.newDocumentModel.documentTranslations.filter(x => x.languageId === fromLanguageId);
+    const documentUploadedDataFrom = this.newDocumentModel.documentUploadedDatas.filter(x => x.languageId === fromLanguageId);
+    const documentTranslationTo = this.newDocumentModel.documentTranslations.filter(x => x.languageId === toLanguageId);
+    const documentUploadedDataTo = this.newDocumentModel.documentUploadedDatas.filter(x => x.languageId === toLanguageId);
+    this.newDocumentModel.documentTranslations = [
+      ...this.newDocumentModel.documentTranslations.filter(x => x.languageId !== toLanguageId),
+      ...documentTranslationTo.map(x => {
+          const documentTranslationModel = documentTranslationFrom.find(y => y.extensionFile === x.extensionFile);
+          return {...x, name: documentTranslationModel.name, description: documentTranslationModel.description};
+        }
+      )
+    ];
+    this.newDocumentModel.documentUploadedDatas = [
+      ...this.newDocumentModel.documentUploadedDatas.filter(x => x.languageId !== toLanguageId),
+      ...documentUploadedDataTo.map(x => {
+          const documentUploadedDataModel = documentUploadedDataFrom.find(y => y.extension === x.extension);
+          return {
+            ...x,
+            name: documentUploadedDataModel.name,
+            file: documentUploadedDataModel.file,
+            fileName: documentUploadedDataModel.fileName,
+          };
+        }
+      )
+    ];
   }
 }

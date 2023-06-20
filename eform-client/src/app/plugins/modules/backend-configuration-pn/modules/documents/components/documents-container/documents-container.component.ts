@@ -10,7 +10,7 @@ import {
 } from '../../../../models';
 import {CommonDictionaryModel, Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
-import {Subscription} from 'rxjs';
+import {Subscription, zip} from 'rxjs';
 import {DocumentsStateService} from '../../../documents/store';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -19,8 +19,9 @@ import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {
   BackendConfigurationPnDocumentsService,
   BackendConfigurationPnPropertiesService
-} from 'src/app/plugins/modules/backend-configuration-pn/services';
+} from '../../../../services';
 import {TranslateService} from '@ngx-translate/core';
+import {skip, tap} from 'rxjs/operators';
 
 @Component({
   selector: 'app-documents-container',
@@ -31,12 +32,14 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   folders: DocumentSimpleFolderModel[];
   documents: Paged<DocumentModel> = new Paged<DocumentModel>();
   simpleDocuments: DocumentSimpleModel[];
+  selectedLanguage: number;
+  properties: CommonDictionaryModel[] = [];
+
   documentDeletedSub$: Subscription;
   documentUpdatedSub$: Subscription;
   documentCreatedSub$: Subscription;
   folderManageModalClosedSub$: Subscription;
-  selectedLanguage: number;
-  properties: CommonDictionaryModel[] = [];
+  getActiveSortDirectionSub$: Subscription;
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -53,7 +56,14 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.getProperties();
-    //this.getFolders();
+    this.getActiveSortDirectionSub$ = this.documentsStateService.getActiveSortDirection()
+      .pipe(
+        skip(1), // skip initial value
+        tap(() => {
+          this.updateTable();
+        }),
+      )
+      .subscribe();
   }
 
   ngOnDestroy(): void {
@@ -69,7 +79,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   openManageFoldersModal() {
     const manageFoldersModal = this.dialog.open(DocumentsFoldersComponent, {...dialogConfigHelper(this.overlay)});
     this.folderManageModalClosedSub$ = manageFoldersModal.componentInstance.foldersChanged.subscribe(() => {
-      this.getFolders();
+      this.getFoldersAndDocuments();
     });
   }
 
@@ -88,25 +98,22 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  getFolders() {
-    this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage).subscribe((data) => {
-      if (data && data.success) {
-        this.folders = data.model;
-        this.documentsStateService.getDocuments().subscribe((data) => {
-          if (data && data.success && data.model) {
-            this.documents = data.model;
-          }
-        });
+  getFoldersAndDocuments() {
+    zip(
+      this.backendConfigurationPnDocumentsService.getSimpleFolders(this.selectedLanguage),
+      this.documentsStateService.getDocuments(),
+    ).subscribe(([folders, documents]) => {
+      if (folders && folders.success && folders.model) {
+        this.folders = folders.model;
+      }
+      if (documents && documents.success && documents.model) {
+        this.documents = documents.model;
       }
     });
   }
 
   updateTable() {
     this.getProperties();
-  }
-
-  getDocumentsByFolderId(folderId: number) {
-    return this.documents.entities.filter(x => x.folderId === folderId);
   }
 
   getProperties() {
@@ -123,13 +130,13 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
           .map((x) => {
             return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
           })];
-        this.getFolders();
-        this.getDocuments();
+        this.getFoldersAndDocuments();
+        this.getSimpleDocuments();
       }
     });
   }
 
-  getDocuments(selectedPropertyId?: number) {
+  getSimpleDocuments(selectedPropertyId?: number) {
     this.backendConfigurationPnDocumentsService.getSimpleDocuments(this.selectedLanguage, selectedPropertyId).subscribe((data) => {
       if (data && data.success) {
         this.simpleDocuments = data.model;

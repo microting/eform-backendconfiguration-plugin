@@ -1,7 +1,6 @@
 import {Component, EventEmitter, Inject, OnInit} from '@angular/core';
 import {
   DocumentModel,
-  DocumentPropertyModel,
   DocumentSimpleFolderModel
 } from '../../../../../models';
 import {CommonDictionaryModel,} from 'src/app/common/models';
@@ -23,12 +22,13 @@ import {saveAs} from 'file-saver';
   styleUrls: ['./documents-document-edit.component.scss']
 })
 export class DocumentsDocumentEditComponent implements OnInit {
-  newDocumentModel: DocumentModel = new DocumentModel();
+  documentModel: DocumentModel = new DocumentModel();
   selectedFolder: number;
   documentUpdated: EventEmitter<void> = new EventEmitter<void>();
   folders: DocumentSimpleFolderModel[];
   availableProperties: CommonDictionaryModel[];
   selectedLanguage: number;
+  documentProperties: number[] = [];
 
   pdfSub$: Subscription;
   documentSub$: Subscription;
@@ -39,7 +39,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   get disabledSaveBtn() {
-    return !this.newDocumentModel.documentTranslations.some(x => x.name);
+    return !this.documentModel.documentTranslations.some(x => x.name);
   }
 
   getLanguageByLanguageId(languageId: number) {
@@ -51,11 +51,11 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   getTranslateByLanguageId(languageId: number, extension: string) {
-    const index = this.newDocumentModel.documentTranslations.findIndex(
+    const index = this.documentModel.documentTranslations.findIndex(
       x => x.languageId === languageId && x.extensionFile === extension
     );
     if (index !== -1) {
-      return this.newDocumentModel.documentTranslations[index];
+      return this.documentModel.documentTranslations[index];
     }
     return {name: '', description: '', extensionFile: extension, languageId: languageId};
   }
@@ -85,7 +85,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
       seconds: 0,
       milliseconds: 0,
     });
-    this.newDocumentModel.endDate = format(
+    this.documentModel.endDate = format(
       date,
       `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
     );
@@ -98,16 +98,17 @@ export class DocumentsDocumentEditComponent implements OnInit {
   getDocument(documentId: number) {
     this.documentSub$ = this.backendConfigurationPnDocumentsService.getSingleDocument(documentId).subscribe((data) => {
       if (data && data.success) {
-        this.newDocumentModel = data.model;
-        this.selectedFolder = this.newDocumentModel.folderId;
+        this.documentModel = data.model;
+        this.documentProperties = this.documentModel.documentProperties.map(x => x.propertyId);
+        this.selectedFolder = this.documentModel.folderId;
         this.getFolders();
       }
     });
   }
 
   updateDocument() {
-    this.newDocumentModel.folderId = this.selectedFolder;
-    this.backendConfigurationPnDocumentsService.updateDocument(this.newDocumentModel)
+    this.documentModel.folderId = this.selectedFolder;
+    this.backendConfigurationPnDocumentsService.updateDocument(this.documentModel)
       .subscribe((data) => {
         if (data && data.success) {
           this.documentUpdated.emit();
@@ -117,14 +118,14 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   removeFile(selectedLanguage: number, extension: string) {
-    const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
+    const filesIndexByLanguage = this.documentModel.documentUploadedDatas.findIndex(
       (x) => (x.languageId === selectedLanguage || x.id === selectedLanguage)
         && x.extension === extension
     );
 
     if (filesIndexByLanguage !== -1) {
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = null;
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = '';
+      this.documentModel.documentUploadedDatas[filesIndexByLanguage].file = null;
+      this.documentModel.documentUploadedDatas[filesIndexByLanguage].name = '';
     }
   }
 
@@ -147,32 +148,16 @@ export class DocumentsDocumentEditComponent implements OnInit {
       });
   }
 
-  addToArray(checked: boolean, propertyId: number) {
-    const assignmentObject = new DocumentPropertyModel();
-    if (checked) {
-      assignmentObject.propertyId = propertyId;
-      this.newDocumentModel.documentProperties = [...this.newDocumentModel.documentProperties, assignmentObject];
-    } else {
-      this.newDocumentModel.documentProperties = this.newDocumentModel.documentProperties.filter(
-        (x) => x.propertyId !== propertyId
-      );
-    }
-  }
-
-  getAssignmentIsCheckedByPropertyId(propertyId: number): boolean {
-    const assignment = this.newDocumentModel.documentProperties.find(
-      (x) => x.propertyId === propertyId
-    );
-    return assignment !== undefined;
-  }
-
-  getAssignmentByPropertyId(propertyId: number): DocumentPropertyModel {
-    return (
-      this.newDocumentModel.documentProperties.find((x) => x.propertyId === propertyId) ?? {
-        propertyId: propertyId,
-        documentId: this.newDocumentModel.id,
+  addToArray(documentProperties: number[]) {
+    const originalArray = this.documentModel.documentProperties;
+    this.documentModel.documentProperties = [...documentProperties].map(propertyId => {
+      const assignmentObject = originalArray.find(x => x.propertyId === propertyId);
+      if (assignmentObject) {
+        return assignmentObject;
       }
-    );
+      return {propertyId: propertyId, documentId: this.documentModel.id};
+    });
+    this.documentProperties = this.documentModel.documentProperties.map(x => x.propertyId);
   }
 
   onFileSelected(event: Event, selectedLanguage: number, extension: string) {
@@ -182,27 +167,27 @@ export class DocumentsDocumentEditComponent implements OnInit {
     if (file.name.indexOf(extension) === -1) {
       return;
     }
-    const filesIndexByLanguage = this.newDocumentModel.documentUploadedDatas.findIndex(
+    const filesIndexByLanguage = this.documentModel.documentUploadedDatas.findIndex(
       (x) => (x.languageId === selectedLanguage || x.id === selectedLanguage)
         && x.extension === extension
     );
     if (filesIndexByLanguage !== -1) {
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].file = file;
+      this.documentModel.documentUploadedDatas[filesIndexByLanguage].file = file;
       const filename = file ? file.name : '';
-      this.newDocumentModel.documentUploadedDatas[filesIndexByLanguage].name = file ? file.name : '';
-      const fileTranslationsIndexByLanguage = this.newDocumentModel.documentTranslations.findIndex(
+      this.documentModel.documentUploadedDatas[filesIndexByLanguage].name = file ? file.name : '';
+      const fileTranslationsIndexByLanguage = this.documentModel.documentTranslations.findIndex(
         (x) => (x.languageId === selectedLanguage/* || x.id === selectedLanguage*/)
           && x.extensionFile === extension
       );
       if (fileTranslationsIndexByLanguage !== -1) {
-        const translation = this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name;
-        this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name = translation ?
+        const translation = this.documentModel.documentTranslations[fileTranslationsIndexByLanguage].name;
+        this.documentModel.documentTranslations[fileTranslationsIndexByLanguage].name = translation ?
           translation :
           filename.replace(/\.(pdf|doc|docx|dot)$/, ''); // Remove the extension if it is pdf, doc, docx, or dot.
       }
     } else {
       const filename = file ? file.name : '';
-      this.newDocumentModel.documentUploadedDatas = [...this.newDocumentModel.documentUploadedDatas,
+      this.documentModel.documentUploadedDatas = [...this.documentModel.documentUploadedDatas,
         {
           file: file,
           fileName: (file ? file.name : ''),
@@ -210,17 +195,17 @@ export class DocumentsDocumentEditComponent implements OnInit {
           extension: extension,
           languageId: selectedLanguage,
         }];
-      const fileTranslationsIndexByLanguage = this.newDocumentModel.documentTranslations.findIndex(
+      const fileTranslationsIndexByLanguage = this.documentModel.documentTranslations.findIndex(
         (x) => (x.languageId === selectedLanguage/* || x.id === selectedLanguage*/)
           && x.extensionFile === extension
       );
       if (fileTranslationsIndexByLanguage !== -1) {
-        const translation = this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name;
-        this.newDocumentModel.documentTranslations[fileTranslationsIndexByLanguage].name = translation ?
+        const translation = this.documentModel.documentTranslations[fileTranslationsIndexByLanguage].name;
+        this.documentModel.documentTranslations[fileTranslationsIndexByLanguage].name = translation ?
           translation :
           filename.replace(/\.(pdf|doc|docx|dot)$/, ''); // Remove the extension if it is pdf, doc, docx, or dot.
       } else {
-        this.newDocumentModel.documentTranslations = [...this.newDocumentModel.documentTranslations,
+        this.documentModel.documentTranslations = [...this.documentModel.documentTranslations,
           {
             extensionFile: extension,
             languageId: selectedLanguage,
@@ -232,10 +217,10 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   getFileNameByLanguage(languageId: number, extension: string = 'pdf'): string {
-    const index = this.newDocumentModel.documentUploadedDatas
+    const index = this.documentModel.documentUploadedDatas
       .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
-      const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
+      const documentUploadedData = this.documentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {
         return documentUploadedData.name;
       } else {
@@ -249,10 +234,10 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   getFile(languageId: number, extension: string = 'pdf') {
-    const index = this.newDocumentModel.documentUploadedDatas
+    const index = this.documentModel.documentUploadedDatas
       .findIndex((x) => x.languageId === languageId && x.extension === extension);
     if (index !== -1) {
-      const documentUploadedData = this.newDocumentModel.documentUploadedDatas[index];
+      const documentUploadedData = this.documentModel.documentUploadedDatas[index];
       if (documentUploadedData.id) {
         this.pdfSub$ = this.templateFilesService.getImage(documentUploadedData.fileName)
           .subscribe((blob) => {
@@ -262,5 +247,34 @@ export class DocumentsDocumentEditComponent implements OnInit {
         saveAs(documentUploadedData.file, documentUploadedData.name);
       }
     }
+  }
+
+  copyValues(fromLanguageId: number, toLanguageId: number) {
+    const documentTranslationFrom = this.documentModel.documentTranslations.filter(x => x.languageId === fromLanguageId);
+    const documentUploadedDataFrom = this.documentModel.documentUploadedDatas.filter(x => x.languageId === fromLanguageId);
+    const documentTranslationTo = this.documentModel.documentTranslations.filter(x => x.languageId === toLanguageId);
+    const documentUploadedDataTo = this.documentModel.documentUploadedDatas.filter(x => x.languageId === toLanguageId);
+    this.documentModel.documentTranslations = [
+      ...this.documentModel.documentTranslations.filter(x => x.languageId !== toLanguageId),
+      ...documentTranslationTo.map(x => {
+          const documentTranslationModel = documentTranslationFrom.find(y => y.extensionFile === x.extensionFile);
+          return {...x, name: documentTranslationModel.name, description: documentTranslationModel.description};
+        }
+      )
+    ];
+    this.documentModel.documentUploadedDatas = [
+      ...this.documentModel.documentUploadedDatas.filter(x => x.languageId !== toLanguageId),
+      ...documentUploadedDataTo.map(x => {
+          const documentUploadedDataModel = documentUploadedDataFrom.find(y => y.extension === x.extension);
+          return {
+            ...x,
+            name: documentUploadedDataModel.name,
+            file: documentUploadedDataModel.file,
+            uploadedDataId: documentUploadedDataModel.id,
+            fileName: documentUploadedDataModel.fileName,
+          };
+        }
+      )
+    ];
   }
 }
