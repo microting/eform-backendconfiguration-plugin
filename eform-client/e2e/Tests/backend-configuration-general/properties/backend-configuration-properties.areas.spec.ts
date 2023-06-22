@@ -34,8 +34,9 @@ describe('Backend Configuration Property - Bind Areas', function () {
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
     await backendConfigurationPropertiesPage.goToProperties();
-    const createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
+    let createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     await createdProperty.bindOrUnbindWithAllAreas();
+    createdProperty = await backendConfigurationPropertiesPage.getLastPropertyRowObject();
     const binds = await createdProperty.getBindAreas();
     for (let i = 0; i < binds.length; i++) {
       expect(await binds[i], `area ${i} is not bind`).eq(true);
