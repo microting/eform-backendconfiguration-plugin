@@ -1,5 +1,5 @@
 import {Component, EventEmitter, OnInit,} from '@angular/core';
-import {applicationLanguages2} from 'src/app/common/const';
+import {applicationLanguages2, PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {CommonDictionaryModel,} from 'src/app/common/models';
 import {
   DocumentModel,
@@ -16,6 +16,7 @@ import * as R from 'ramda';
 import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 import {MatDialogRef} from '@angular/material/dialog';
 import {saveAs} from 'file-saver';
+import {MatDatepickerInputEvent} from '@angular/material/datepicker';
 
 @Component({
   selector: 'app-documents-document-create',
@@ -95,18 +96,18 @@ export class DocumentsDocumentCreateComponent implements OnInit {
     }
   }
 
-  updateStartDate(e: any) {
-    let date = new Date(e);
+  updateEndDate(e: MatDatepickerInputEvent<any, any>) {
+    let date = e.value;
     date = set(date, {
       hours: 0,
       minutes: 0,
       seconds: 0,
       milliseconds: 0,
+      date: date.getDate(),
+      year: date.getFullYear(),
+      month: date.getMonth(),
     });
-    this.newDocumentModel.endDate = format(
-      date,
-      `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
-    );
+    this.newDocumentModel.endDate = date;
   }
 
   hide() {
@@ -115,6 +116,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
 
   createDocument() {
     this.newDocumentModel.folderId = this.selectedFolder;
+    this.newDocumentModel.endDate = format(this.newDocumentModel.endDate as Date, PARSING_DATE_FORMAT);
     this.backendConfigurationPnDocumentsService.createDocument(this.newDocumentModel)
       .subscribe((data) => {
         if (data && data.success) {

@@ -1,16 +1,17 @@
-import { Injectable } from '@angular/core';
-import { ReportStore, ReportQuery } from './';
-import { Observable } from 'rxjs';
+import {Injectable} from '@angular/core';
+import {ReportStore, ReportQuery} from './';
+import {Observable} from 'rxjs';
 // import { ItemsPlanningPnPlanningsService } from '../../../services';
-import { arrayToggle } from '@datorama/akita';
+import {arrayToggle} from '@datorama/akita';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class ReportStateService {
   constructor(
     private store: ReportStore,
     // private service: ItemsPlanningPnPlanningsService,
     private query: ReportQuery
-  ) {}
+  ) {
+  }
 
   getTagIds(): Observable<number[]> {
     return this.query.selectTagIds$;
@@ -29,9 +30,15 @@ export class ReportStateService {
     }));
   }
 
-  updateDateRange(dateRange: string[]) {
-    this.store.update((_) => ({
-      dateRange: dateRange,
+
+  updateDateRange(dateRange: { startDate?: string, endDate?: string, }) {
+    this.store.update((state) => ({
+      dateRange: {
+        ...{
+          startDate: dateRange.startDate ? dateRange.startDate : state.dateRange.startDate,
+          endDate: dateRange.endDate ? dateRange.endDate : state.dateRange.endDate,
+        }
+      },
     }));
   }
 

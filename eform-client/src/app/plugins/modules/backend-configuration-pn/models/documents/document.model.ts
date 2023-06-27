@@ -6,7 +6,7 @@ export class DocumentModel {
   id?: number;
   documentTranslations: DocumentTranslationModel[] = [];
   folderId?: number;
-  endDate?: string;
+  endDate?: string | Date;
   status: boolean;
   propertyNames: string;
   documentProperties: DocumentPropertyModel[] = [];

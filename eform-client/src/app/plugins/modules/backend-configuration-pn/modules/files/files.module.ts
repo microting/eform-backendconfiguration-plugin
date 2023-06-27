@@ -2,11 +2,9 @@ import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {TranslateModule} from '@ngx-translate/core';
 import {RouterModule} from '@angular/router';
-import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
-import {MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN} from '../../consts';
 import {
   FilesContainerComponent,
   FileCreateComponent,
@@ -38,6 +36,7 @@ import {MatChipsModule} from '@angular/material/chips';
 import {PdfViewerModule} from 'ng2-pdf-viewer';
 import {DragulaModule} from 'ng2-dragula';
 import {MtxProgressModule} from '@ng-matero/extensions/progress';
+import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @NgModule({
   declarations: [
@@ -57,9 +56,7 @@ import {MtxProgressModule} from '@ng-matero/extensions/progress';
         CommonModule,
         TranslateModule,
         RouterModule,
-        OwlDateTimeModule,
         FilesRouting,
-        OwlDateTimeModule,
         EformSharedModule,
         ReactiveFormsModule,
         EformImportedModule,
@@ -80,12 +77,9 @@ import {MtxProgressModule} from '@ng-matero/extensions/progress';
         PdfViewerModule,
         DragulaModule,
         MtxProgressModule,
+        MatDatepickerModule,
     ],
   providers: [
-    {
-      provide: OWL_DATE_TIME_FORMATS,
-      useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN,
-    },
     filesPersistProvider,
   ],
 })

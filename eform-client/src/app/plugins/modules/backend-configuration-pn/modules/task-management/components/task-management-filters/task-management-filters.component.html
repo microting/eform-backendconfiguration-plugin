@@ -78,23 +78,13 @@
       >
       </mtx-select>
     </mat-form-field>
-    <mat-form-field [owlDateTimeTrigger]="dt1">
+    <mat-form-field formGroupName="date">
       <mat-label>{{'Date' | translate}}</mat-label>
-      <input
-        matInput
-        [owlDateTime]="dt1"
-        formControlName="date"
-        type="text"
-        [selectMode]="'range'"
-        id="dateFilter"
-        name="dateFilter"
-      >
+      <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+        <input formControlName="dateFrom" matStartDate class="dateFilter">
+        <input formControlName="dateTo" matEndDate class="dateFilter">
+      </mat-date-range-input>
+      <mat-date-range-picker #picker></mat-date-range-picker>
     </mat-form-field>
   </div>
 </div>
-
-<owl-date-time
-  [pickerType]="'calendar'"
-  [firstDayOfWeek]="1"
-  #dt1
-></owl-date-time>

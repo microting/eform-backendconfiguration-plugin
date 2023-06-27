@@ -5,7 +5,7 @@ import {
 } from '../../../../../models';
 import {CommonDictionaryModel,} from 'src/app/common/models';
 import {Subscription} from 'rxjs';
-import {applicationLanguages2} from 'src/app/common/const';
+import {applicationLanguages2, PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {
   BackendConfigurationPnDocumentsService,
   BackendConfigurationPnPropertiesService
@@ -15,6 +15,7 @@ import * as R from 'ramda';
 import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {saveAs} from 'file-saver';
+import {MatDatepickerInputEvent} from '@angular/material/datepicker';
 
 @Component({
   selector: 'app-documents-document-edit',
@@ -77,18 +78,18 @@ export class DocumentsDocumentEditComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  updateStartDate(e: any) {
-    let date = new Date(e);
+  updateEndDate(e: MatDatepickerInputEvent<any, any>) {
+    let date = e.value;
     date = set(date, {
       hours: 0,
       minutes: 0,
       seconds: 0,
       milliseconds: 0,
+      date: date.getDate(),
+      year: date.getFullYear(),
+      month: date.getMonth(),
     });
-    this.documentModel.endDate = format(
-      date,
-      `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`
-    );
+    this.documentModel.endDate = date;
   }
 
   hide() {
@@ -108,6 +109,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
 
   updateDocument() {
     this.documentModel.folderId = this.selectedFolder;
+    this.documentModel.endDate = format(this.documentModel.endDate as Date, PARSING_DATE_FORMAT);
     this.backendConfigurationPnDocumentsService.updateDocument(this.documentModel)
       .subscribe((data) => {
         if (data && data.success) {

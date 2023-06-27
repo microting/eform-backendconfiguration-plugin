@@ -26,7 +26,6 @@ import {MatDialogModule} from '@angular/material/dialog';
     RouterModule,
     OwlDateTimeModule,
     CompliancesRouting,
-    OwlDateTimeModule,
     EformSharedModule,
     MtxGridModule,
     MatButtonModule,

@@ -8,17 +8,18 @@ import {
 import {TaskManagementStateService} from '../store';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription} from 'rxjs';
+import {Subscription, take} from 'rxjs';
 import {
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskManagementService,
 } from '../../../../services';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {SitesService} from 'src/app/common/services';
-import {format, set} from 'date-fns';
+import {format, parse, set} from 'date-fns';
 import {TranslateService} from '@ngx-translate/core';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {AuthStateService} from 'src/app/common/store';
+import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 
 @AutoUnsubscribe()
 @Component({
@@ -39,21 +40,19 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   areaNameValueChangesSub$: Subscription;
 
   constructor(
-    dateTimeAdapter: DateTimeAdapter<any>,
     private translate: TranslateService,
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
     private sitesService: SitesService,
     private taskManagementService: BackendConfigurationPnTaskManagementService,
-    authStateService: AuthStateService
   ) {
-    dateTimeAdapter.setLocale(authStateService.currentUserLocale);
   }
 
   ngOnInit(): void {
     this.getProperties();
     this.selectFiltersSub$ = this.taskManagementStateService
       .getFiltersAsync()
+      .pipe(take(1)) // get only one time
       .subscribe((filters) => {
         if (!this.filtersForm) {
           this.filtersForm = new FormGroup({
@@ -74,9 +73,15 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
               value: filters.status,
               disabled: !filters.propertyId,
             }),
-            date: new FormControl({
-              value: [filters.dateFrom, filters.dateTo],
-              disabled: !filters.propertyId,
+            date: new FormGroup({
+              dateFrom: new FormControl({
+                value: parse(filters.dateFrom as string, PARSING_DATE_FORMAT, new Date),
+                disabled: !filters.propertyId,
+              }),
+              dateTo: new FormControl({
+                value: parse(filters.dateTo as string, PARSING_DATE_FORMAT, new Date),
+                disabled: !filters.propertyId,
+              }),
             }),
             priority: new FormControl({
               value: filters.priority,
@@ -124,7 +129,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           this.filtersForm
             .get('status')
             .setValue(undefined, {emitEvent: false});
-          this.filtersForm.get('date').setValue([], {emitEvent: false});
+          this.filtersForm.get('date.dateFrom').setValue(null, {emitEvent: false});
+          this.filtersForm.get('date.dateTo').setValue(null, {emitEvent: false});
           if(value !== -1) {
             this.filtersForm.get('areaName').enable({emitEvent: false});
           } else {
@@ -197,17 +203,9 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         },
       }));
     });
-    this.filtersForm.get('date').valueChanges.subscribe((value: any[]) => {
-      if (value && value[0] && value[1]) {
-        let dateFrom = new Date(value[0]._d);
-        let dateTo = new Date(value[1]._d);
-        dateFrom = set(dateFrom, {
-          hours: 0,
-          minutes: 0,
-          seconds: 0,
-          milliseconds: 0,
-        });
-        dateTo = set(dateTo, {
+    this.filtersForm.get('date.dateFrom').valueChanges.subscribe((value: Date) => {
+      if (value) {
+        const dateFrom = set(value, {
           hours: 0,
           minutes: 0,
           seconds: 0,
@@ -216,8 +214,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         this.taskManagementStateService.store.update((state) => ({
           filters: {
             ...state.filters,
-            dateFrom: format(dateFrom, this.standartDateTimeFormat),
-            dateTo: format(dateTo, this.standartDateTimeFormat),
+            dateFrom: format(dateFrom, PARSING_DATE_FORMAT),
           },
         }));
       } else {
@@ -225,6 +222,28 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           filters: {
             ...state.filters,
             dateFrom: null,
+          },
+        }));
+      }
+    });
+    this.filtersForm.get('date.dateTo').valueChanges.subscribe((value: Date) => {
+      if (value) {
+        const dateTo = set(value, {
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          milliseconds: 0,
+        });
+        this.taskManagementStateService.store.update((state) => ({
+          filters: {
+            ...state.filters,
+            dateTo: format(dateTo, PARSING_DATE_FORMAT),
+          },
+        }));
+      } else {
+        this.taskManagementStateService.store.update((state) => ({
+          filters: {
+            ...state.filters,
             dateTo: null,
           },
         }));

@@ -72,22 +72,19 @@
           [disabled]="!selectedAreaRulePlanning.status">
           {{ "Notifications on/off" | translate }}
         </mat-slide-toggle>
-        <mat-form-field [owlDateTimeTrigger]="dt2">
+        <mat-form-field>
           <mat-label>{{ 'Start date' | translate }}</mat-label>
           <input
             matInput
-            [owlDateTime]="dt2"
-            [ngModel]="selectedAreaRulePlanning.startDate"
-            (ngModelChange)="updateStartDate($event)"
-            type="text"
+            [matDatepicker]="picker"
+            [value]="selectedAreaRulePlanning.startDate"
+            (dateChange)="updateStartDate($event)"
+            (dateInput)="updateStartDate($event)"
+            (click)="picker.open()"
             id="planEndDate"
             [disabled]="selectedAreaRulePlanning.serverStatus"
           >
-          <owl-date-time
-            [pickerType]="'calendar'"
-            [firstDayOfWeek]="1"
-            #dt2
-          ></owl-date-time>
+          <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
         <br>
         <ng-container *ngIf="selectedArea.type !== 5 &&
@@ -127,59 +124,59 @@
                   </mtx-select>
                 </mat-form-field>
               </div>
-<!--              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 2">-->
-<!--                <mat-label>{{'Day of week' | translate}}</mat-label>-->
-<!--                <mtx-select-->
-<!--                  [items]="dayOfWeekArr"-->
-<!--                  bindLabel="name"-->
-<!--                  bindValue="id"-->
-<!--                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"-->
-<!--                  [disabled]="selectedAreaRulePlanning.serverStatus"-->
-<!--                  id="createDayOfWeek"-->
-<!--                  [clearable]="false"-->
-<!--                >-->
-<!--                </mtx-select>-->
-<!--              </mat-form-field>-->
-<!--              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 3">-->
-<!--                <mat-label>{{'Day of month' | translate}}</mat-label>-->
-<!--                <mtx-select-->
-<!--                  [items]="daysOfMonth"-->
-<!--                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfMonth"-->
-<!--                  [disabled]="selectedAreaRulePlanning.serverStatus"-->
-<!--                  id="createDayOfMonth"-->
-<!--                  name="createDayOfMonth"-->
-<!--                  [clearable]="false"-->
-<!--                >-->
-<!--                </mtx-select>-->
-<!--              </mat-form-field>-->
+<!--              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 2">
+                <mat-label>{{'Day of week' | translate}}</mat-label>
+                <mtx-select
+                  [items]="dayOfWeekArr"
+                  bindLabel="name"
+                  bindValue="id"
+                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfWeek"
+                  [disabled]="selectedAreaRulePlanning.serverStatus"
+                  id="createDayOfWeek"
+                  [clearable]="false"
+                >
+                </mtx-select>
+              </mat-form-field>
+              <mat-form-field *ngIf="selectedAreaRulePlanning.typeSpecificFields.repeatType == 3">
+                <mat-label>{{'Day of month' | translate}}</mat-label>
+                <mtx-select
+                  [items]="daysOfMonth"
+                  [(ngModel)]="selectedAreaRulePlanning.typeSpecificFields.dayOfMonth"
+                  [disabled]="selectedAreaRulePlanning.serverStatus"
+                  id="createDayOfMonth"
+                  name="createDayOfMonth"
+                  [clearable]="false"
+                >
+                </mtx-select>
+              </mat-form-field>-->
             </div>
           </ng-container>
 
         </ng-container>
-<!--        <mat-form-field-->
-<!--          *ngIf="-->
-<!--          selectedAreaRule.translatedName !== '01. Registrer halebid' &&-->
-<!--          selectedArea.type !== 10 &&-->
-<!--          selectedArea.type !== 9"-->
-<!--          [owlDateTimeTrigger]="dt1">-->
-<!--          <mat-label>{{ 'Start date' | translate }}</mat-label>-->
-<!--          <input-->
-<!--            matInput-->
-<!--            [owlDateTime]="dt1"-->
-<!--            [min]="currentDate"-->
-<!--            [ngModel]="selectedAreaRulePlanning.startDate"-->
-<!--            (ngModelChange)="updateStartDate($event)"-->
-<!--            type="text"-->
-<!--            id="planStartFrom"-->
-<!--            name="createStartFrom"-->
-<!--            [disabled]="!selectedAreaRulePlanning.status"-->
-<!--          >-->
-<!--          <owl-date-time-->
-<!--            [pickerType]="'calendar'"-->
-<!--            [firstDayOfWeek]="1"-->
-<!--            #dt1-->
-<!--          ></owl-date-time>-->
-<!--        </mat-form-field>-->
+<!--        <mat-form-field
+          *ngIf="
+          selectedAreaRule.translatedName !== '01. Registrer halebid' &&
+          selectedArea.type !== 10 &&
+          selectedArea.type !== 9"
+          [owlDateTimeTrigger]="dt1">
+          <mat-label>{{ 'Start date' | translate }}</mat-label>
+          <input
+            matInput
+            [owlDateTime]="dt1"
+            [min]="currentDate"
+            [ngModel]="selectedAreaRulePlanning.startDate"
+            (ngModelChange)="updateStartDate($event)"
+            type="text"
+            id="planStartFrom"
+            name="createStartFrom"
+            [disabled]="!selectedAreaRulePlanning.status"
+          >
+          <owl-date-time
+            [pickerType]="'calendar'"
+            [firstDayOfWeek]="1"
+            #dt1
+          ></owl-date-time>
+        </mat-form-field>-->
       </ng-container>
       <ng-container *ngIf="selectedArea.type === 2">
         <mat-form-field>
@@ -213,31 +210,31 @@
           </mtx-select>
         </mat-form-field>
       </ng-container>
-<!--      <ng-container *ngIf="selectedArea.type === 4">-->
-<!--      <ng-container *ngIf="selectedArea.type !== 2 && selectedArea.type !== 3">-->
-<!--      <mat-slide-toggle-->
-<!--        color="primary"-->
-<!--        id="planAreaRuleuseStartDateAsStartOfPeriodToggle"-->
-<!--        [checked]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod"-->
-<!--        [(ngModel)]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod">-->
-<!--        {{ "Delayed start" | translate }}-->
-<!--      </mat-slide-toggle>-->
-<!--    </ng-container>-->
-<!--      </ng-container>-->
+<!--      <ng-container *ngIf="selectedArea.type === 4">
+      <ng-container *ngIf="selectedArea.type !== 2 && selectedArea.type !== 3">
+      <mat-slide-toggle
+        color="primary"
+        id="planAreaRuleuseStartDateAsStartOfPeriodToggle"
+        [checked]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod"
+        [(ngModel)]="selectedAreaRulePlanning.useStartDateAsStartOfPeriod">
+        {{ "Delayed start" | translate }}
+      </mat-slide-toggle>
     </ng-container>
-<!--    <mtx-grid-->
-<!--      [data]="selectedArea.availableWorkers"-->
-<!--      [columns]="tableHeaders"-->
-<!--      [pageOnFront]="false"-->
-<!--      [rowStriped]="true"-->
-<!--      [rowSelectable]="true"-->
-<!--      [showPaginator]="false"-->
-<!--      [rowSelected]="selectedWorkers"-->
-<!--      (rowSelectionChange)="changeArray($event)"-->
-<!--      [rowSelectionFormatter]="rowSelectionFormatter"-->
-<!--      *ngIf="selectedArea.type !== 9"-->
-<!--    >-->
-<!--    </mtx-grid>-->
+      </ng-container>-->
+    </ng-container>
+<!--    <mtx-grid
+      [data]="selectedArea.availableWorkers"
+      [columns]="tableHeaders"
+      [pageOnFront]="false"
+      [rowStriped]="true"
+      [rowSelectable]="true"
+      [showPaginator]="false"
+      [rowSelected]="selectedWorkers"
+      (rowSelectionChange)="changeArray($event)"
+      [rowSelectionFormatter]="rowSelectionFormatter"
+      *ngIf="selectedArea.type !== 9"
+    >
+    </mtx-grid>-->
     <mat-card *ngIf="selectedArea.type !== 9">
       <mat-card-title>
         <h4>{{ 'Select worker' | translate}}</h4>

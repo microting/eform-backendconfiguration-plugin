@@ -13,19 +13,20 @@
       >
       </mtx-select>
     </mat-form-field>
-    <mat-form-field [owlDateTimeTrigger]="dateRangePicker">
+    <mat-form-field formGroupName="dateRange">
       <mat-label>{{ 'Select date range' | translate }}</mat-label>
-      <mat-icon matPrefix>calendar_today</mat-icon>
-      <input
-        matInput
-        formControlName="dateRange"
-        name="dateRange"
-        type="text"
-        [owlDateTime]="dateRangePicker"
-        [selectMode]="'range'"
-        id="dateFormInput"
+      <mat-datepicker-toggle matPrefix [for]="picker"></mat-datepicker-toggle>
+      <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+        <input formControlName="dateFrom" matStartDate class="dateFormInput">
+        <input formControlName="dateTo" matEndDate class="dateFormInput">
+      </mat-date-range-input>
+      <mat-date-range-picker #picker></mat-date-range-picker>
+      <button
+        *ngIf="displayClearButtonOnDateRangeFilter"
+        matSuffix mat-icon-button
+        aria-label="Clear"
+        (click)="clearDateRangeFilter()"
       >
-      <button *ngIf="dateRangeFilterControl.value.length" matSuffix mat-icon-button aria-label="Clear" (click)="dateRangeFilterControl.patchValue([])">
         <mat-icon>close</mat-icon>
       </button>
     </mat-form-field>
@@ -39,7 +40,8 @@
         id="nameFilter"
         type="text"
       >
-      <button *ngIf="nameFilterControl.value.length" matSuffix mat-icon-button aria-label="Clear" (click)="nameFilterControl.patchValue('')">
+      <button *ngIf="nameFilterControl.value.length" matSuffix mat-icon-button aria-label="Clear"
+              (click)="nameFilterControl.patchValue('')">
         <mat-icon>close</mat-icon>
       </button>
     </mat-form-field>
@@ -58,9 +60,3 @@
     </mat-form-field>
   </div>
 </div>
-
-<owl-date-time
-  [pickerType]="'calendar'"
-  [firstDayOfWeek]="1"
-  #dateRangePicker
-></owl-date-time>

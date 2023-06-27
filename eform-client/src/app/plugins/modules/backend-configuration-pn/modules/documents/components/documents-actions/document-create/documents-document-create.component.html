@@ -173,18 +173,19 @@
 
   <mat-card class="mb-3">
     <mat-card-content>
-      <mat-form-field [owlDateTimeTrigger]="dt1">
+      <mat-form-field>
         <mat-label>{{'End date' | translate}}</mat-label>
         <input
           matInput
-          [owlDateTime]="dt1"
-          [ngModel]="newDocumentModel.endDate"
-          (ngModelChange)="updateStartDate($event)"
-          type="text"
+          [matDatepicker]="picker"
+          [value]="newDocumentModel.endDate"
+          (dateChange)="updateEndDate($event)"
+          (dateInput)="updateEndDate($event)"
+          (click)="picker.open()"
           id="createStartFrom"
           name="createStartFrom"
-        />
-        <owl-date-time [pickerType]="'calendar'" #dt1></owl-date-time>
+        >
+        <mat-datepicker #picker></mat-datepicker>
       </mat-form-field>
     </mat-card-content>
   </mat-card>

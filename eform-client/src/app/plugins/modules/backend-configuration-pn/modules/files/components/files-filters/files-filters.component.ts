@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Subscription} from 'rxjs';
+import {Subscription, take} from 'rxjs';
 import {
   BackendConfigurationPnPropertiesService,
 } from '../../../../services';
@@ -16,7 +16,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {FilesFiltrationModel, FilesStateService} from '../../store';
 import {Moment} from 'moment';
 import {format, parse} from 'date-fns';
-import {debounceTime} from 'rxjs/operators';
+import {debounceTime, skip} from 'rxjs/operators';
 import moment from 'moment';
 import * as R from 'ramda';
 
@@ -32,9 +32,10 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
   get availableTags(): SharedTagModel[] {
     return this._availableTags;
   }
+
   set availableTags(val: SharedTagModel[]) {
     this._availableTags = val ?? [];
-    if(this.filtersForm && this.filtersForm.controls) {
+    if (this.filtersForm && this.filtersForm.controls) {
       // delete from filter deleted tags
       const newTagIdsWithoutDeletedTags = this.filtersForm.value.tagIds.filter((x: number) => this._availableTags.some(y => y.id === x));
       if (newTagIdsWithoutDeletedTags.length !== this.filesStateService.store.getValue().filters.tagIds.length) {
@@ -44,7 +45,8 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
       }
     }
   }
-  private _availableTags: SharedTagModel[] = []
+
+  private _availableTags: SharedTagModel[] = [];
 
   filtersForm: FormGroup;
   properties: CommonDictionaryModel[] = [];
@@ -55,13 +57,19 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
   getAllPropertiesSub$: Subscription;
 
   get dateRangeFilterControl() {
-    if(this.filtersForm && this.filtersForm.controls) {
+    if (this.filtersForm && this.filtersForm.controls) {
       return this.filtersForm.controls.dateRange;
     }
   }
 
+  get displayClearButtonOnDateRangeFilter(): boolean {
+    if (this.filtersForm && this.filtersForm.controls) {
+      return this.filtersForm.get('dateRange.dateFrom').value !== null || this.filtersForm.get('dateRange.dateTo').value !== null;
+    }
+  }
+
   get nameFilterControl() {
-    if(this.filtersForm && this.filtersForm.controls) {
+    if (this.filtersForm && this.filtersForm.controls) {
       return this.filtersForm.controls.nameFilter;
     }
   }
@@ -77,63 +85,54 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     this.getProperties();
     this.selectFiltersSub$ = this.filesStateService
       .getFiltersAsync()
+      .pipe(take(1))
       .subscribe((filters) => {
-        if (!this.filtersForm) {
-          this.filtersForm = new FormGroup({
-            propertyIds: new FormControl(filters.propertyIds),
-            dateRange: new FormControl(filters.dateRange.map(x => parse(x, this.dateFormat, new Date))),
-            nameFilter: new FormControl(filters.nameFilter),
-            tagIds: new FormControl(filters.tagIds),
-          });
-        } else {
-          this.filtersForm.patchValue({
-            propertyIds: filters.propertyIds,
-            dateRange: filters.dateRange.map(x => parse(x, this.dateFormat, new Date)),
-            nameFilter: filters.nameFilter,
-            tagIds: filters.tagIds,
-          }, {emitEvent: false});
-        }
+        this.filtersForm = new FormGroup({
+          propertyIds: new FormControl(filters.propertyIds),
+          dateRange: new FormGroup({
+            dateFrom: new FormControl(filters.dateRange.dateFrom ? parse(filters.dateRange.dateFrom, this.dateFormat, new Date) : null),
+            dateTo: new FormControl(filters.dateRange.dateTo ? parse(filters.dateRange.dateTo, this.dateFormat, new Date) : null),
+          }),
+          nameFilter: new FormControl(filters.nameFilter),
+          tagIds: new FormControl(filters.tagIds),
+        });
       });
 
     this.filterChangesSub$ = this.filtersForm.valueChanges
-      .pipe(debounceTime(500))
-      .subscribe((value: { propertyIds: number[], dateRange: string[], nameFilter: string, tagIds: number[] }) => {
-        const filters: FilesFiltrationModel = {...this.filesStateService.store.getValue().filters};
-        // @ts-ignore
-        value.dateRange = value.dateRange.filter(x => !R.isNil(x)).map((x: Date) => format(x, this.dateFormat));
-        if (value && !R.equals(filters, value)) {
-          if (!R.equals(filters.propertyIds, value.propertyIds)) {
-            filters.propertyIds = value.propertyIds;
-          }
-          if (!R.isNil(value.dateRange)) {
-            // delete null from range
-            if (!R.equals(filters.dateRange, value.dateRange)) {
-              filters.dateRange = value.dateRange;
-            }
-          }
-          if (!R.equals(filters.nameFilter, value.nameFilter)) {
-            filters.nameFilter = value.nameFilter;
-          }
-          if (!R.equals(filters.tagIds, value.tagIds)) {
-            filters.tagIds = value.tagIds;
-          }
-          this.filesStateService.updateFilters(filters);
-          this.updateTable.emit();
+      .pipe(debounceTime(500), skip(1))
+      .subscribe((value: { propertyIds: number[], dateRange: { dateFrom: Date, dateTo: Date }, nameFilter: string, tagIds: number[] }) => {
+        const filters: FilesFiltrationModel = {
+          ...this.filesStateService.store.getValue().filters,
+          ...value,
+          dateRange: {
+            dateFrom: value.dateRange.dateFrom && format(value.dateRange.dateFrom, this.dateFormat),
+            dateTo: value.dateRange.dateTo && format(value.dateRange.dateTo, this.dateFormat)
+          },
+        };
+
+        if (filters.dateRange.dateFrom && !filters.dateRange.dateTo) {
+          return; // no update store and table if date range not fulfilled
         }
+        this.filesStateService.updateFilters(filters);
+        this.updateTable.emit();
       });
   }
 
   getProperties() {
     this.getAllPropertiesSub$ = this.propertyService.getAllPropertiesDictionary()
       .subscribe((data) => {
-      if (data && data.success && data.model) {
-        this.properties = data.model;
-        // delete from filter deleted properties
-        this.filtersForm.patchValue({
-          propertyIds: this.filtersForm.value.propertyIds.filter((x: number) => this.properties.some(y => y.id === x)),
-        });
-      }
-    });
+        if (data && data.success && data.model) {
+          this.properties = data.model;
+          // delete from filter deleted properties
+          this.filtersForm.patchValue({
+            propertyIds: this.filtersForm.value.propertyIds.filter((x: number) => this.properties.some(y => y.id === x)),
+          });
+        }
+      });
+  }
+
+  clearDateRangeFilter() {
+    this.filtersForm.get('dateRange').patchValue({dateFrom: null, dateTo: null});
   }
 
   ngOnDestroy(): void {

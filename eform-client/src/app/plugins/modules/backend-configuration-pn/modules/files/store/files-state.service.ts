@@ -30,13 +30,9 @@ export class FilesStateService {
       nameFilter: this.query.pageSetting.filters.nameFilter ?? '',
       propertyIds: this.query.pageSetting.filters.propertyIds ?? null,
       tagIds: this.query.pageSetting.filters.tagIds ?? null,
-      dateFrom: null,
-      dateTo: null,
+      dateFrom: this.query.pageSetting.filters.dateRange.dateFrom,
+      dateTo: this.query.pageSetting.filters.dateRange.dateTo,
     };
-    if(this.query.pageSetting.filters.dateRange.length === 2) {
-      filters.dateFrom = this.query.pageSetting.filters.dateRange[0];
-      filters.dateTo = this.query.pageSetting.filters.dateRange[1];
-    }
 
     return this.service.getAllFiles(filters)
       .pipe(tap(model => {

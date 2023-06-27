@@ -2,7 +2,6 @@ import {CommonModule} from '@angular/common';
 import {NgModule} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {RouterModule} from '@angular/router';
-import {OwlDateTimeModule, /*OWL_DATE_TIME_FORMATS*/} from '@danielmoncada/angular-datetime-picker';
 import {NgSelectModule} from '@ng-select/ng-select';
 import {TranslateModule} from '@ngx-translate/core';
 import {FileUploadModule} from 'ng2-file-upload';
@@ -46,35 +45,36 @@ import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
+import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @NgModule({
-  imports: [
-    CommonModule,
-    TranslateModule,
-    FormsModule,
-    NgSelectModule,
-    EformSharedModule,
-    RouterModule,
-    BackendConfigurationPnRouting,
-    ReactiveFormsModule,
-    FileUploadModule,
-    OwlDateTimeModule,
-    EformCasesModule,
-    EformSharedTagsModule,
-    AreaRulePlanModalModule,
-    MatCardModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatIconModule,
-    MtxGridModule,
-    MatInputModule,
-    MatSortModule,
-    MatDialogModule,
-    MtxSelectModule,
-    MatSlideToggleModule,
-    MatExpansionModule,
-    MatCheckboxModule,
-  ],
+    imports: [
+        CommonModule,
+        TranslateModule,
+        FormsModule,
+        NgSelectModule,
+        EformSharedModule,
+        RouterModule,
+        BackendConfigurationPnRouting,
+        ReactiveFormsModule,
+        FileUploadModule,
+        EformCasesModule,
+        EformSharedTagsModule,
+        AreaRulePlanModalModule,
+        MatCardModule,
+        MatButtonModule,
+        MatTooltipModule,
+        MatIconModule,
+        MtxGridModule,
+        MatInputModule,
+        MatSortModule,
+        MatDialogModule,
+        MtxSelectModule,
+        MatSlideToggleModule,
+        MatExpansionModule,
+        MatCheckboxModule,
+        MatDatepickerModule,
+    ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
     PropertiesContainerComponent,
@@ -97,7 +97,6 @@ import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning
     BackendConfigurationPnTaskTrackerService,
     ItemsPlanningPnTagsService,
     ...backendConfigurationStoreProviders,
-    // { provide: OWL_DATE_TIME_FORMATS, useValue: MY_MOMENT_FORMATS_FOR_BACKEND_CONFIGURATIONS_PLUGIN },
   ],
 })
 export class BackendConfigurationPnModule {

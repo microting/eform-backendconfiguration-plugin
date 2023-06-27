@@ -23,6 +23,8 @@ import {TranslateService} from '@ngx-translate/core';
 import {SiteDto} from 'src/app/common/models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn, MtxGridRowSelectionFormatter} from '@ng-matero/extensions/grid';
+import {MatDatepickerInputEvent} from '@angular/material/datepicker';
+import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -35,7 +37,6 @@ export class AreaRulePlanModalComponent implements OnInit {
   selectedAreaRulePlanning: AreaRulePlanningModel = new AreaRulePlanningModel();
   selectedAreaRule: AreaRuleNameAndTypeSpecificFields = new AreaRuleNameAndTypeSpecificFields();
   daysOfMonth: number[] = R.range(1, 29);
-  private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
   /**
    * 1, 2, ..., 29, 30.
    */
@@ -279,10 +280,13 @@ export class AreaRulePlanModalComponent implements OnInit {
     if (!this.selectedAreaRulePlanning.startDate) {
       this.selectedAreaRulePlanning.startDate = format(
         this.currentDate,
-        this.standartDateTimeFormat
+        PARSING_DATE_FORMAT
       );
     }
-    this.updateAreaRulePlan.emit({...this.selectedAreaRulePlanning});
+    this.updateAreaRulePlan.emit({
+      ...this.selectedAreaRulePlanning,
+      startDate: format(this.selectedAreaRulePlanning.startDate as Date, PARSING_DATE_FORMAT)
+    });
   }
 
   addToArray(e: any, siteId: number) {
@@ -379,14 +383,14 @@ export class AreaRulePlanModalComponent implements OnInit {
         return {
           repeatEvery: 1,
           repeatType: 1,
-          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
         };
       }
       case 3: {
         return {
           endDate: format(
             this.currentDatePlusTwoWeeks,
-            this.standartDateTimeFormat
+            PARSING_DATE_FORMAT
           ),
           repeatEvery: 1,
           repeatType: 1,
@@ -394,7 +398,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       }
       case 4: {
         return {
-          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
           repeatEvery: 12,
           repeatType: 3,
         };
@@ -415,14 +419,14 @@ export class AreaRulePlanModalComponent implements OnInit {
       }
       case 7: {
         return {
-          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
         };
       }
       case 8: {
         this.selectedAreaRulePlanning.sendNotifications = this.selectedAreaRule.typeSpecificFields.notifications;
         this.selectedAreaRulePlanning.complianceEnabled = this.selectedAreaRule.typeSpecificFields.complianceEnabled;
         return {
-          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
           dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
           repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
           repeatType: this.selectedAreaRule.typeSpecificFields.repeatType,
@@ -434,12 +438,12 @@ export class AreaRulePlanModalComponent implements OnInit {
       }
       case 9: {
         return {
-          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
         };
       }
       case 10: {
         return {
-          startDate: format(this.currentDate, this.standartDateTimeFormat),
+          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
           repeatEvery: 0,
           repeatType: 0,
         };
@@ -450,18 +454,18 @@ export class AreaRulePlanModalComponent implements OnInit {
     }
   }
 
-  updateStartDate(e: any) {
-    let date = new Date(e/*._d*/);
+  updateStartDate(e: MatDatepickerInputEvent<any, any>) {
+    let date = new Date(e.value);
     date = set(date, {
       hours: 0,
       minutes: 0,
       seconds: 0,
       milliseconds: 0,
+      date: date.getDate(),
+      year: date.getFullYear(),
+      month: date.getMonth(),
     });
-    this.selectedAreaRulePlanning.startDate = format(
-      date,
-      this.standartDateTimeFormat
-    );
+    this.selectedAreaRulePlanning.startDate = date;
   }
 
   isDisabledSaveBtn() {

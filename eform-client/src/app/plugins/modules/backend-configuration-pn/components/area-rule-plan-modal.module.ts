@@ -2,8 +2,6 @@ import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {TranslateModule} from '@ngx-translate/core';
-import {OWL_DATE_TIME_FORMATS, OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
-import {MY_MOMENT_FORMATS_FOR_AREA_RULES_PLAN} from '../consts';
 import {
   AreaRulePlanModalComponent,
   AreaRuleEntityListModalComponent,
@@ -18,24 +16,25 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatCardModule} from '@angular/material/card';
+import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @NgModule({
-  imports: [
-    OwlDateTimeModule,
-    CommonModule,
-    FormsModule,
-    TranslateModule,
-    EformSharedModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatIconModule,
-    MatInputModule,
-    MatSlideToggleModule,
-    MtxSelectModule,
-    MtxGridModule,
-    MatCheckboxModule,
-    MatCardModule,
-  ],
+    imports: [
+        CommonModule,
+        FormsModule,
+        TranslateModule,
+        EformSharedModule,
+        MatDialogModule,
+        MatButtonModule,
+        MatIconModule,
+        MatInputModule,
+        MatSlideToggleModule,
+        MtxSelectModule,
+        MtxGridModule,
+        MatCheckboxModule,
+        MatCardModule,
+        MatDatepickerModule,
+    ],
   declarations: [
     AreaRulePlanModalComponent,
     AreaRuleEntityListModalComponent,
@@ -45,10 +44,6 @@ import {MatCardModule} from '@angular/material/card';
     AreaRuleEntityListModalComponent,
   ],
   providers: [
-    {
-      provide: OWL_DATE_TIME_FORMATS,
-      useValue: MY_MOMENT_FORMATS_FOR_AREA_RULES_PLAN,
-    },
   ],
 })
 export class AreaRulePlanModalModule {
