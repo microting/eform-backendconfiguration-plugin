@@ -380,7 +380,7 @@ export class AreaRulePlanModalComponent implements OnInit {
         return {
           repeatEvery: 1,
           repeatType: 1,
-          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
+          startDate: this.currentDate,
         };
       }
       case 3: {
@@ -395,7 +395,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       }
       case 4: {
         return {
-          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
+          startDate: this.currentDate,
           repeatEvery: 12,
           repeatType: 3,
         };
@@ -416,14 +416,14 @@ export class AreaRulePlanModalComponent implements OnInit {
       }
       case 7: {
         return {
-          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
+          startDate: this.currentDate,
         };
       }
       case 8: {
         this.selectedAreaRulePlanning.sendNotifications = this.selectedAreaRule.typeSpecificFields.notifications;
         this.selectedAreaRulePlanning.complianceEnabled = this.selectedAreaRule.typeSpecificFields.complianceEnabled;
         return {
-          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
+          startDate: this.currentDate,
           dayOfWeek: this.selectedAreaRule.typeSpecificFields.dayOfWeek,
           repeatEvery: this.selectedAreaRule.typeSpecificFields.repeatEvery,
           repeatType: this.selectedAreaRule.typeSpecificFields.repeatType,
@@ -435,12 +435,12 @@ export class AreaRulePlanModalComponent implements OnInit {
       }
       case 9: {
         return {
-          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
+          startDate: this.currentDate,
         };
       }
       case 10: {
         return {
-          startDate: format(this.currentDate, PARSING_DATE_FORMAT),
+          startDate: this.currentDate,
           repeatEvery: 0,
           repeatType: 0,
         };

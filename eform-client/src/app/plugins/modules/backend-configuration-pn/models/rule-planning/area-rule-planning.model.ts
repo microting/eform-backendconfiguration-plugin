@@ -28,7 +28,7 @@ export class TypeSpecificFieldsAreaRulePlanning {
   dayOfWeek?: number;
   type?: AreaRuleT2TypesEnum;
   alarm?: AreaRuleT2AlarmsEnum;
-  startDate?: string;
+  startDate?: string | Date;
   endDate?: string;
   hoursAndEnergyEnabled?: boolean;
   complianceEnabled?: boolean;
