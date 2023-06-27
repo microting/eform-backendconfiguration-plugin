@@ -290,4 +290,6 @@ export const nlNL = {
   'Repeat': 'Herhalen',
   'Deadline': 'Deadline',
   'Show/hide columns': 'Toon/verberg kolommen',
+  'GenerateWithTypeDoc': 'Genereer {{type}}',
+  'copyFromTo': 'Kopieer van {{from}} naar {{to}}',
 };

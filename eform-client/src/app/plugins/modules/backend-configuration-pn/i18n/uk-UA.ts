@@ -290,4 +290,6 @@ export const ukUA = {
   'Repeat': 'Повтор',
   'Deadline': 'Крайній термін',
   'Show/hide columns': 'Показати/приховати стовпці',
+  'GenerateWithTypeDoc': 'Згенерувати {{type}}ий документ',
+  'copyFromTo': 'Копіювати з {{from}} в {{to}}',
 };

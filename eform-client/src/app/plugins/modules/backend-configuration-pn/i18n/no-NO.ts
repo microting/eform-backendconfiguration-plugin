@@ -290,4 +290,6 @@ export const noNO = {
   'Repeat': 'Gjenta',
   'Deadline': 'Frist',
   'Show/hide columns': 'Vis/skjul kolonner',
+  'GenerateWithTypeDoc': 'Generer {{type}}',
+  'copyFromTo': 'Kopier fra {{from}} til {{to}}',
 };
