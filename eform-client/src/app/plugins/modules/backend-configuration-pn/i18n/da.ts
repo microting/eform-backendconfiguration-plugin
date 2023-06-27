@@ -297,4 +297,6 @@ export const da = {
   'Repeat': 'Gentages',
   'Deadline': 'Udfør senest',
   'Show/hide columns': 'Skjul/vis kolonner',
+  'GenerateWithTypeDoc': 'Download {{type}}',
+  'copyFromTo': 'Kopiér fra {{from}} til {{to}}',
 };

@@ -291,4 +291,6 @@ export const frFR = {
   'Repeat': 'Répéter',
   'Deadline': 'Date limite',
   'Show/hide columns': 'Afficher/masquer les colonnes',
+  'GenerateWithTypeDoc': 'Générer avec type de document {{type}}',
+  'copyFromTo': 'Copier de {{from}} à {{to}}',
 };

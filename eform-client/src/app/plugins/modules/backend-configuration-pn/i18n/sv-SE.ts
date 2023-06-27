@@ -289,4 +289,6 @@ export const svSE = {
   'Repeat': 'Upprepa',
   'Deadline': 'Deadline',
   'Show/hide columns': 'Visa/dölj kolumner',
+  'GenerateWithTypeDoc': 'Generera {{type}}',
+  'copyFromTo': 'Kopiera från {{from}} till {{to}}',
 };

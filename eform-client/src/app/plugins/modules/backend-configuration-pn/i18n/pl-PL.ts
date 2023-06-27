@@ -291,4 +291,6 @@ export const plPl = {
   'Repeat': 'Powtarzaj',
   'Deadline': 'Termin',
   'Show/hide columns': 'Pokaż/ukryj kolumny',
+  'GenerateWithTypeDoc': 'Generuj z typem dokumentu {{type}}',
+  'copyFromTo': 'Kopiuj z {{from}} do {{to}}',
 };
