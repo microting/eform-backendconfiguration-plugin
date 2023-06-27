@@ -278,10 +278,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       // }
     }
     if (!this.selectedAreaRulePlanning.startDate) {
-      this.selectedAreaRulePlanning.startDate = format(
-        this.currentDate,
-        PARSING_DATE_FORMAT
-      );
+      this.selectedAreaRulePlanning.startDate = this.currentDate;
     }
     this.updateAreaRulePlan.emit({
       ...this.selectedAreaRulePlanning,
