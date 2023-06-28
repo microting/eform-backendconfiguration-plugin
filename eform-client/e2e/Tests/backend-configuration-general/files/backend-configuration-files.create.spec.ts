@@ -10,21 +10,21 @@ import
 
 const properties: PropertyCreateUpdate[] = [
   {
-    name: generateRandmString(),
-    chrNumber: generateRandmString(),
-    address: generateRandmString(),
+    name: generateRandmString(5),
+    chrNumber: generateRandmString(5),
+    address: generateRandmString(5),
     cvrNumber: '1111111',
   },
   {
-    name: generateRandmString(),
-    chrNumber: generateRandmString(),
-    address: generateRandmString(),
+    name: generateRandmString(5),
+    chrNumber: generateRandmString(5),
+    address: generateRandmString(5),
     cvrNumber: '1111111',
   },
 ];
 const tags: string[] = [
-  generateRandmString(),
-  generateRandmString(),
+  generateRandmString(5),
+  generateRandmString(5),
 ]
 
 describe('Backend Configuration Files Create', function () {
