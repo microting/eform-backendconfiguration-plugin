@@ -9,7 +9,14 @@ export class BackendConfigurationFilesPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    return (await $$('tbody > tr')).length;
+    return (await $$('.cdk-row')).length;
+  }
+
+  public async refreshTableButton() {
+    const ele = await $(`.cdk-header-cell.cdk-column-actions button`);
+    await ele.waitForDisplayed({timeout: 40000});
+    await ele.waitForClickable({timeout: 40000});
+    return ele;
   }
 
   public async backendConfigurationPnButton() {
