@@ -8,7 +8,10 @@ import {
 
 export interface FilesFiltrationModel extends FiltrationStateModel{
   propertyIds: number[],
-  dateRange: string[],
+  dateRange: {
+    dateFrom: string,
+    dateTo: string,
+  },
 }
 
 export interface FilesState {
@@ -27,7 +30,10 @@ function createInitialState(): FilesState {
     },
     filters: {
       propertyIds: [],
-      dateRange: [],
+      dateRange: {
+        dateFrom: null,
+        dateTo: null
+      },
       nameFilter: '',
       tagIds: [],
     }

@@ -1,10 +1,6 @@
 import {CommonModule} from '@angular/common';
 import {NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
-import {
-  OwlDateTimeModule,
-  OWL_DATE_TIME_FORMATS,
-} from '@danielmoncada/angular-datetime-picker';
 import {TranslateModule} from '@ngx-translate/core';
 import {
   TaskManagementContainerComponent,
@@ -14,7 +10,6 @@ import {
   TaskManagementDeleteModalComponent,
 } from './components';
 import {TaskManagementRouting} from './task-management.routing';
-import {MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT} from '../../consts';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
@@ -27,6 +22,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatCardModule} from '@angular/material/card';
+import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @NgModule({
   declarations: [
@@ -40,9 +36,7 @@ import {MatCardModule} from '@angular/material/card';
     CommonModule,
     TranslateModule,
     RouterModule,
-    OwlDateTimeModule,
     TaskManagementRouting,
-    OwlDateTimeModule,
     EformSharedModule,
     ReactiveFormsModule,
     EformImportedModule,
@@ -56,12 +50,9 @@ import {MatCardModule} from '@angular/material/card';
     MtxGridModule,
     MatDialogModule,
     MatCardModule,
+    MatDatepickerModule,
   ],
   providers: [
-    {
-      provide: OWL_DATE_TIME_FORMATS,
-      useValue: MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT,
-    },
   ],
 })
 export class TaskManagementModule {}

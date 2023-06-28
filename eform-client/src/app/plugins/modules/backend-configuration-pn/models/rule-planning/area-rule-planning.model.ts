@@ -1,4 +1,4 @@
-import {AreaRuleT2AlarmsEnum, AreaRuleT2TypesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {AreaRuleT2AlarmsEnum, AreaRuleT2TypesEnum} from '../../enums';
 import {EntityItemModel} from 'src/app/common/models';
 
 export class AreaRulePlanningModel {
@@ -6,7 +6,7 @@ export class AreaRulePlanningModel {
   status: boolean;
   serverStatus: boolean;
   sendNotifications: boolean;
-  startDate: string;
+  startDate: string | Date;
   useStartDateAsStartOfPeriod: boolean;
   assignedSites: AreaRuleAssignedSitesModel[] = [];
   propertyId: number;
@@ -28,7 +28,7 @@ export class TypeSpecificFieldsAreaRulePlanning {
   dayOfWeek?: number;
   type?: AreaRuleT2TypesEnum;
   alarm?: AreaRuleT2AlarmsEnum;
-  startDate?: string;
+  startDate?: string | Date;
   endDate?: string;
   hoursAndEnergyEnabled?: boolean;
   complianceEnabled?: boolean;

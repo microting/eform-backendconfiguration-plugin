@@ -2,9 +2,6 @@ import {CommonModule} from '@angular/common';
 import {NgModule} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {RouterModule} from '@angular/router';
-import {
-  OwlDateTimeModule
-} from '@danielmoncada/angular-datetime-picker';
 import {TranslateModule} from '@ngx-translate/core';
 import {FileUploadModule} from 'ng2-file-upload';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
@@ -46,7 +43,6 @@ import {areaRulesPersistProvider} from './components/store';
     RouterModule,
     ReactiveFormsModule,
     FileUploadModule,
-    OwlDateTimeModule,
     AreaRulesRouting,
     AreaRulePlanModalModule,
     MatTooltipModule,

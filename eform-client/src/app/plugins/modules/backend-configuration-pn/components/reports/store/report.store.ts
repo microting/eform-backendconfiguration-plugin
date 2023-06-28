@@ -1,10 +1,13 @@
-import { Injectable } from '@angular/core';
-import { persistState, Store, StoreConfig } from '@datorama/akita';
-import { FiltrationStateModel } from 'src/app/common/models';
+import {Injectable} from '@angular/core';
+import {persistState, Store, StoreConfig} from '@datorama/akita';
+import {FiltrationStateModel} from 'src/app/common/models';
 
 export interface ReportState {
   filters: FiltrationStateModel;
-  dateRange: string[];
+  dateRange: {
+    startDate: string,
+    endDate: string,
+  };
   scrollPosition: [number, number];
 }
 
@@ -13,7 +16,10 @@ function createInitialState(): ReportState {
     filters: {
       tagIds: [],
     },
-    dateRange: [],
+    dateRange: {
+      startDate: null,
+      endDate: null,
+    },
     scrollPosition: [0, 0],
   };
 }
@@ -33,8 +39,8 @@ const persistState1 = persistState({
   },
 });
 
-@Injectable({ providedIn: 'root' })
-@StoreConfig({ name: 'backendConfigurationReport', resettable: true })
+@Injectable({providedIn: 'root'})
+@StoreConfig({name: 'backendConfigurationReport', resettable: true})
 export class ReportStore extends Store<ReportState> {
   constructor() {
     super(createInitialState());
