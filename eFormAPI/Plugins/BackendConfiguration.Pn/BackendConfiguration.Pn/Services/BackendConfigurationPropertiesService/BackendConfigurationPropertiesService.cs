@@ -187,7 +187,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
         public async Task<OperationResult> Update(PropertiesUpdateModel updateModel)
         {
-            var result =  await BackendConfigurationPropertiesServiceHelper.Update(updateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, _backendConfigurationLocalizationService.GetString("Location")).ConfigureAwait(false);
+            var result =  await BackendConfigurationPropertiesServiceHelper.Update(updateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, _backendConfigurationLocalizationService).ConfigureAwait(false);
 
             return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
         }

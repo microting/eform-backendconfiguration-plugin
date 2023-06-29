@@ -73,7 +73,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -518,7 +518,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -1017,7 +1017,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -1513,7 +1513,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -1959,7 +1959,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -1975,7 +1975,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -2523,7 +2523,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -2539,7 +2539,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -3124,7 +3124,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -3140,7 +3140,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
