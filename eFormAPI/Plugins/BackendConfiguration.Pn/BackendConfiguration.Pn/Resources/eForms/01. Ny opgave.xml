@@ -32,7 +32,7 @@
                 </DataItem>
                 <DataItem type="SingleSelect">
                     <Id>376935</Id>
-                    <Label>Prioritet</Label>
+                    <Label>Prioritet|Priority|Priorität</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>1</DisplayOrder>
                     <Mandatory>false</Mandatory>

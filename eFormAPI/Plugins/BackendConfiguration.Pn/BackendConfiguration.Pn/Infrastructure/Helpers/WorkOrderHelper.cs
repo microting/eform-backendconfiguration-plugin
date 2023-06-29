@@ -143,7 +143,7 @@ public static class WorkOrderHelper
         if (localizationService != null)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
-            description = localizationService.GetString("Location") + ": " + property.Name;
+            description = "<strong>"+localizationService.GetString("Location") + "</strong>: " + property.Name;
             newTask = localizationService.GetString("New task");
         }
 
