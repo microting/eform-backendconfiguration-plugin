@@ -475,7 +475,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                             var rulePlanning = areaRule.AreaRulesPlannings[i];
                             var oldStatus = rulePlanning.Status;
                             rulePlanning.UpdatedByUserId = userId;
-                            rulePlanning.StartDate = areaRulePlanningModel.StartDate;
+                            rulePlanning.StartDate = new DateTime(areaRulePlanningModel.StartDate.Year, areaRulePlanningModel.StartDate.Month, areaRulePlanningModel.StartDate.Day, 0, 0, 0);
                             rulePlanning.Status = areaRulePlanningModel.Status;
                             rulePlanning.ComplianceEnabled = areaRulePlanningModel.ComplianceEnabled;
                             rulePlanning.SendNotifications = areaRulePlanningModel.SendNotifications;
@@ -1353,7 +1353,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             .FirstAsync().ConfigureAwait(false);
                                         planning.Enabled = areaRulePlanningModel.Status;
                                         planning.PushMessageOnDeployment = areaRulePlanningModel.SendNotifications;
-                                        planning.StartDate = areaRulePlanningModel.StartDate;
+                                        planning.StartDate = new DateTime(areaRulePlanningModel.StartDate.Year, areaRulePlanningModel.StartDate.Month, areaRulePlanningModel.StartDate.Day, 0, 0, 0);
                                         planning.DayOfMonth =
                                             (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
                                                 ? 1
@@ -1572,7 +1572,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             AreaId = areaRule.AreaId,
             CreatedByUserId = userId,
             UpdatedByUserId = userId,
-            StartDate = areaRulePlanningModel.StartDate,
+            StartDate = new DateTime(areaRulePlanningModel.StartDate.Year, areaRulePlanningModel.StartDate.Month, areaRulePlanningModel.StartDate.Day, 0, 0, 0),
             Status = areaRulePlanningModel.Status,
             SendNotifications = areaRulePlanningModel.SendNotifications,
             AreaRuleId = areaRulePlanningModel.RuleId,
@@ -1644,7 +1644,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             DaysBeforeRedeploymentPushMessageRepeat = false,
             DaysBeforeRedeploymentPushMessage = 5,
             PushMessageOnDeployment = areaRulePlanningModel.SendNotifications,
-            StartDate = areaRulePlanningModel.StartDate,
+            StartDate = new DateTime(areaRulePlanningModel.StartDate.Year, areaRulePlanningModel.StartDate.Month, areaRulePlanningModel.StartDate.Day, 0, 0, 0),
             IsLocked = true,
             IsEditable = false,
             IsHidden = true
