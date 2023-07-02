@@ -339,6 +339,12 @@ namespace BackendConfiguration.Pn.Infrastructure
                                                     ((DateTime) dbPlanning.NextExecutionTime).AddMonths(6);
                                             }
 
+                                            if (dbPlanning.NextExecutionTime < now)
+                                            {
+                                                dbPlanning.NextExecutionTime =
+                                                    ((DateTime) dbPlanning.NextExecutionTime).AddMonths(6);
+                                            }
+
                                             break;
                                         case 12:
                                             dbPlanning.NextExecutionTime =
@@ -431,20 +437,25 @@ namespace BackendConfiguration.Pn.Infrastructure
                         mainElement.ElementList[0].Label = mainElement.Label;
                     }
 
-                    if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
+                    if (dbPlanning.NextExecutionTime != null)
                     {
-                        mainElement.ElementList[0].Description.InderValue = $"<strong style='text-align:right;'>{((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
-                    }
-                    else
-                    {
-                        mainElement.ElementList[0].Description.InderValue += $"<br><strong style='text-align:right;'>{((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                        DateTime beginningOfTime = new DateTime(2020, 1, 1);
+                        mainElement.DisplayOrder = ((DateTime)dbPlanning.NextExecutionTime - beginningOfTime).Days;
+                        if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
+                        {
+                            mainElement.ElementList[0].Description.InderValue =
+                                $"<strong style='text-align:right;'>{((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                        }
+                        else
+                        {
+                            mainElement.ElementList[0].Description.InderValue +=
+                                $"<br><strong style='text-align:right;'>{((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                        }
                     }
 
                     mainElement.CheckListFolderName = folderMicrotingId;
                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
                     mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
-                    DateTime beginningOfTime = new DateTime(2020, 1, 1);
-                    mainElement.DisplayOrder = ((DateTime)dbPlanning.NextExecutionTime - beginningOfTime).Days;
 
                     // mainElement.PushMessageBody = mainElement.Label;
                     // mainElement.PushMessageTitle = folder.Name;

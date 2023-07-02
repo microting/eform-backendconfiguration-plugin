@@ -1274,7 +1274,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
                 (atr, ar) => new { atr, ar }).Where(x => x.ar.PropertyId == properties[0].Id).ToListAsync();
         var areaProperties = await BackendConfigurationPnDbContext!.AreaProperties.Where(x => x.PropertyId == properties[0].Id).ToListAsync();
         var folderTranslations = await MicrotingDbContext!.FolderTranslations.ToListAsync();
-        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
+        var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.AsNoTracking().ToListAsync();
         var planningSites = await BackendConfigurationPnDbContext.PlanningSites.ToListAsync();
         var plannings = await ItemsPlanningPnDbContext!.Plannings.ToListAsync();
         var planningNameTranslations = await ItemsPlanningPnDbContext.PlanningNameTranslation.ToListAsync();
