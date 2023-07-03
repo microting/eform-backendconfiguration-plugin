@@ -29,7 +29,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService = null)
     {
         try
         {
