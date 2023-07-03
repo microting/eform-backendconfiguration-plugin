@@ -9,7 +9,6 @@ import {CasesModule} from 'src/app/modules';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
-import {OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {
   BackendConfigurationCaseRoutingModule
 } from './backend-configuration-case-routing.module';
@@ -42,7 +41,6 @@ import {MatButtonModule} from '@angular/material/button';
     FormsModule,
     CasesModule,
     EformCasesModule,
-    OwlDateTimeModule,
     MatCardModule,
     MatFormFieldModule,
     MatIconModule,

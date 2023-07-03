@@ -1,5 +1,5 @@
 import Page from '../Page';
-import {selectValueInNgSelector} from '../../Helpers/helper-functions';
+import {selectDateOnDatePicker, selectValueInNgSelector} from '../../Helpers/helper-functions';
 
 export class BackendConfigurationAreaRulesPage extends Page {
   constructor() {
@@ -597,28 +597,10 @@ export class AreaRuleRowObject {
         ).click();
       }
       if (areaRulePlanningCreateUpdate.repeatType) {
-        await (
-          await (await backendConfigurationAreaRulesPage.planRepeatType()).$(
-            'input'
-          )
-        ).setValue(areaRulePlanningCreateUpdate.repeatType);
-        const value = await (
-          $('ng-dropdown-panel')
-        ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatType}`);
-        value.waitForDisplayed({ timeout: 40000 });
-        await value.click();
+        await selectValueInNgSelector(await backendConfigurationAreaRulesPage.planRepeatType(), areaRulePlanningCreateUpdate.repeatType);
       }
       if (areaRulePlanningCreateUpdate.repeatEvery) {
-        await (
-          await (await backendConfigurationAreaRulesPage.planRepeatEvery()).$(
-            'input'
-          )
-        ).setValue(areaRulePlanningCreateUpdate.repeatEvery);
-        const value = await (
-          $('ng-dropdown-panel')
-        ).$(`.ng-option=${areaRulePlanningCreateUpdate.repeatEvery}`);
-        value.waitForDisplayed({ timeout: 40000 });
-        await value.click();
+        await selectValueInNgSelector(await backendConfigurationAreaRulesPage.planRepeatEvery(), areaRulePlanningCreateUpdate.repeatEvery);
       }
 
       if (areaRulePlanningCreateUpdate.notification !== undefined) {
@@ -636,9 +618,11 @@ export class AreaRuleRowObject {
         }
       }
       if (areaRulePlanningCreateUpdate.startDate) {
-        await (
-          await backendConfigurationAreaRulesPage.planStartFrom()
-        ).setValue(areaRulePlanningCreateUpdate.startDate);
+        await (await backendConfigurationAreaRulesPage.planStartFrom()).click();
+        await selectDateOnDatePicker(
+          areaRulePlanningCreateUpdate.startDate.year,
+          areaRulePlanningCreateUpdate.startDate.month,
+          areaRulePlanningCreateUpdate.startDate.day);
       }
       if (areaRulePlanningCreateUpdate.workers) {
         for (let i = 0; i < areaRulePlanningCreateUpdate.workers.length; i++) {
@@ -674,10 +658,6 @@ export class AreaRuleRowObject {
     } else {
       await browser.pause(500);
     }
-    await (await $('#spinner-animation')).waitForDisplayed({
-      timeout: 120000,
-      reverse: true,
-    });
   }
 
   public async readPlanning(
@@ -773,6 +753,10 @@ export class AreaRulePlanningCreateUpdate {
   notification?: boolean;
   repeatEvery?: string;
   repeatType?: string;
-  startDate?: string;
+  startDate?: {
+    year: number,
+    month: number,
+    day: number,
+  };
   workers?: { workerNumber?: number; name?: string; checked?: boolean, status?: string }[];
 }

@@ -73,7 +73,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -157,7 +157,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -218,7 +218,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -518,7 +518,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -602,7 +602,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -663,7 +663,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1017,7 +1017,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -1101,7 +1101,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -1164,7 +1164,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1513,7 +1513,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -1598,7 +1598,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1959,7 +1959,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -1975,7 +1975,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -2057,7 +2057,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
@@ -2097,7 +2097,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -2523,7 +2523,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -2539,7 +2539,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -2621,7 +2621,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
         // Act
@@ -2661,7 +2661,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlanningModel3 = new AreaRulePlanningModel
         {
@@ -2698,7 +2698,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -3124,7 +3124,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -3140,7 +3140,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "03. Gyllebeholdere");
         var area = await BackendConfigurationPnDbContext.Areas.FirstAsync(x => x.Id == areaTranslation.AreaId);
@@ -3223,7 +3223,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
@@ -3262,7 +3262,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Act
         var areaRulePlanningModel3 = new AreaRulePlanningModel
@@ -3300,7 +3300,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations

@@ -14,7 +14,6 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async goToPropertyWorkers() {
-    const spinnerAnimation = await $('#spinner-animation');
     const ele = await $('#backend-configuration-pn-property-workers');
     if (!await ele.isDisplayed()) {
       await (
@@ -22,7 +21,6 @@ class BackendConfigurationPropertyWorkersPage extends Page {
       ).click();
     }
     await (await this.backendConfigurationPnPropertyWorkers()).click();
-    await spinnerAnimation.waitForDisplayed({ timeout: 90000, reverse: true });
     await (await this.newDeviceUserBtn()).waitForClickable({ timeout: 90000 });
   }
 

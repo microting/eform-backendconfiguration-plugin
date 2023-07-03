@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models;
 using BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
 using BackendConfiguration.Pn.Messages;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
@@ -27,7 +29,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         CaseTemplatePnDbContext caseTemplatePnDbContext,
-        string locationString,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService,
         IBus bus)
         {
             try
@@ -74,7 +76,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     await bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userId, backendConfigurationPnDbContext, $"<strong>{locationString}:</strong>").ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userId, backendConfigurationPnDbContext, localizationService).ConfigureAwait(false);
 
                 return new OperationResult(true,"SuccessfullyAssignmentsCreatingProperties");
             }
@@ -88,7 +90,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
         public static async Task<OperationResult> Update(PropertyAssignWorkersModel updateModel, Core core,
             int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            CaseTemplatePnDbContext caseTemplatePnDbContext, string locationString, IBus bus, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+            CaseTemplatePnDbContext caseTemplatePnDbContext, [CanBeNull] IBackendConfigurationLocalizationService localizationService, IBus bus, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             try
             {
@@ -241,7 +243,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     }
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userId, backendConfigurationPnDbContext, $"<strong>{locationString}:</strong>").ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userId, backendConfigurationPnDbContext, localizationService).ConfigureAwait(false);
                 return new OperationResult(true,"SuccessfullyUpdateAssignmentsProperties");
             }
             catch (Exception)

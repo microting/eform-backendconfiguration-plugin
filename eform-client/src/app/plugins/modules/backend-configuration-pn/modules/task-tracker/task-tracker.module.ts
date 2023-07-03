@@ -1,11 +1,6 @@
 import {CommonModule} from '@angular/common';
 import {NgModule} from '@angular/core';
 import {RouterModule} from '@angular/router';
-import {
-  OwlDateTimeModule,
-  // OwlMomentDateTimeModule,
-  OWL_DATE_TIME_FORMATS,
-} from '@danielmoncada/angular-datetime-picker';
 import {TranslateModule} from '@ngx-translate/core';
 import {
   TaskTrackerContainerComponent,
@@ -15,7 +10,6 @@ import {
   TaskTrackerShownColumnsComponent
 } from './components';
 import {TaskTrackerRouting} from './task-tracker.routing';
-import {MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT} from '../../consts';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
@@ -43,10 +37,7 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     CommonModule,
     TranslateModule,
     RouterModule,
-    OwlDateTimeModule,
     TaskTrackerRouting,
-    OwlDateTimeModule,
-    // OwlMomentDateTimeModule,
     EformSharedModule,
     ReactiveFormsModule,
     EformImportedModule,
@@ -64,10 +55,6 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
     MatTableModule,
   ],
   providers: [
-    {
-      provide: OWL_DATE_TIME_FORMATS,
-      useValue: MY_MOMENT_FORMATS_FOR_TASK_MANAGEMENT,
-    }
   ],
 })
 export class TaskTrackerModule {

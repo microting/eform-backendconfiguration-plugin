@@ -51,25 +51,33 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.generateForm = new FormGroup<any>(
+    this.generateForm = new FormGroup(
       {
-        dateRange: new FormControl(
-          this.reportQuery.pageSetting.dateRange
-            .map(date => parse(date, PARSING_DATE_FORMAT, new Date())),
-          [Validators.required]),
-        tagIds: new FormControl(this.reportQuery.pageSetting.filters.tagIds)
+        tagIds: new FormControl(this.reportQuery.pageSetting.filters.tagIds),
+        dateRange: new FormGroup({
+          dateFrom: new FormControl(
+            this.reportQuery.pageSetting.dateRange.startDate &&
+            parse(this.reportQuery.pageSetting.dateRange.startDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
+          dateTo: new FormControl(
+            this.reportQuery.pageSetting.dateRange.endDate &&
+            parse(this.reportQuery.pageSetting.dateRange.endDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
+        },),
       });
     this.valueChangesSub$ = this.generateForm.valueChanges.subscribe(
-      (value: { tagIds: number[]; dateRange: Date[] }) => {
-        if (value.dateRange.length) {
-          const dateFrom = format(value.dateRange[0], `yyyy-MM-dd'T00:00:00.000Z'`);
-          const dateTo = format(value.dateRange[1], `yyyy-MM-dd'T00:00:00.000Z'`);
-          this.reportStateService.updateDateRange([dateFrom, dateTo]);
+      (value: { tagIds: number[]; dateRange: {dateFrom: Date, dateTo: Date} }) => {
+        if(value.dateRange.dateFrom) {
+          const dateFrom = format(value.dateRange.dateFrom, PARSING_DATE_FORMAT);
+          this.reportStateService.updateDateRange({startDate: dateFrom});
+        }
+        if(value.dateRange.dateTo) {
+          const dateTo = format(value.dateRange.dateTo, PARSING_DATE_FORMAT);
+          this.reportStateService.updateDateRange({endDate: dateTo});
         }
       }
     );
     if (!!this.range[0].getDate()) {
-      this.generateForm.get('dateRange').setValue(this.range);
+      this.generateForm.get('dateRange.dateFrom').setValue(this.range[0]);
+      this.generateForm.get('dateRange.dateTo').setValue(this.range[1]);
     }
   }
 
@@ -92,8 +100,8 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
 
   private extractData(): ReportPnGenerateModel {
     return new ReportPnGenerateModel({
-      dateFrom: this.reportQuery.pageSetting.dateRange[0],
-      dateTo: this.reportQuery.pageSetting.dateRange[1],
+      dateFrom: this.reportQuery.pageSetting.dateRange.startDate,
+      dateTo: this.reportQuery.pageSetting.dateRange.endDate,
       tagIds: [...this.reportQuery.pageSetting.filters.tagIds],
     });
   }

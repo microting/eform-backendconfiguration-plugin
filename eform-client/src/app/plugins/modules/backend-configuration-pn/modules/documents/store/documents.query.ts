@@ -29,9 +29,8 @@ export class DocumentsQuery extends Query<DocumentsState> {
 //   selectSort$ = this.select(
 //     (state) => new SortModel(state.pagination.sort, state.pagination.isSortDsc)
 //   );
-  selectSort$ = this.select(
-    (state) => new SortModel(state.pagination.sort, state.pagination.isSortDsc)
-  );
+  selectActiveSort$ = this.select((state) => state.pagination.sort);
+  selectActiveSortDirection$ = this.select((state) => state.pagination.isSortDsc ? 'desc' : 'asc');
   selectFilters$ = this.select((state) => state.filters);
   selectDisableButtons$ = this.select((state) => !state.filters.propertyId);
 }

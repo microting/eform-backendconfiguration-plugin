@@ -78,7 +78,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -172,7 +172,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -436,7 +436,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -530,7 +530,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -809,7 +809,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -903,7 +903,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1182,7 +1182,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -1276,7 +1276,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1531,7 +1531,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -1622,7 +1622,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var deviceUserModel2 = new DeviceUserModel
         {
@@ -1682,7 +1682,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1956,7 +1956,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
         var areaId = areaTranslation.AreaId;
@@ -2049,7 +2049,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
@@ -2083,7 +2083,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlanningModel3 = new AreaRulePlanningModel
         {
@@ -2115,7 +2115,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         };
 
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations

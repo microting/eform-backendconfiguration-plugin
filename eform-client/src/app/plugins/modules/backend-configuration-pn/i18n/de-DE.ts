@@ -288,4 +288,6 @@ export const deDE = {
   'Repeat': 'Wiederholen',
   'Deadline': 'Frist',
   'Show/hide columns': 'Spalten ein-/ausblenden',
+  'GenerateWithTypeDoc': 'Generieren mit Typ {{type}}',
+  'copyFromTo': 'Kopieren von {{from}} nach {{to}}',
 };

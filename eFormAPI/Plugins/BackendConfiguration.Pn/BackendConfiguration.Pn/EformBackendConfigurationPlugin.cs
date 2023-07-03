@@ -147,6 +147,46 @@ namespace BackendConfiguration.Pn
             var eforms = BackendConfigurationSeedEforms.GetForms();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
+            var orgFields = await sdkDbContext.Fields.Where(x => x.OriginalId == "376935").ToListAsync();
+
+            var englishLanguage = await sdkDbContext.Languages.FirstOrDefaultAsync(x => x.LanguageCode == "en-US");
+            var germanLanguage = await sdkDbContext.Languages.FirstOrDefaultAsync(x => x.LanguageCode == "de-DE");
+
+            foreach (var orgField in orgFields)
+            {
+	            var englishFt = await sdkDbContext.FieldTranslations.FirstOrDefaultAsync(x =>
+		            x.FieldId == orgField.Id && x.LanguageId == englishLanguage.Id);
+
+	            if (englishFt == null)
+	            {
+		            var fieldTranslation = new FieldTranslation
+		            {
+			            FieldId = orgField.Id,
+			            LanguageId = englishLanguage.Id,
+			            Text = "Priority",
+			            Description = ""
+		            };
+		            await fieldTranslation.Create(sdkDbContext);
+	            }
+
+	            var germanFt = await sdkDbContext.FieldTranslations.FirstOrDefaultAsync(x =>
+		            x.FieldId == orgField.Id && x.LanguageId == germanLanguage.Id);
+
+	            if (germanFt == null)
+	            {
+		            var fieldTranslation = new FieldTranslation
+		            {
+			            FieldId = orgField.Id,
+			            LanguageId = germanLanguage.Id,
+			            Text = "Priorität",
+			            Description = ""
+		            };
+		            await fieldTranslation.Create(sdkDbContext);
+	            }
+
+            }
+
+
             var context = serviceProvider.GetRequiredService<BackendConfigurationPnDbContext>();
             var itemsPlanningContext = serviceProvider.GetRequiredService<ItemsPlanningPnDbContext>();
             var caseTemplateContext = serviceProvider.GetRequiredService<CaseTemplatePnDbContext>();

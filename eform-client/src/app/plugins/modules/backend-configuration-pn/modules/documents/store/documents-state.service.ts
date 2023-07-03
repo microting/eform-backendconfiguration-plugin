@@ -37,8 +37,12 @@ export class DocumentsStateService {
   //   return this.query.selectPageSize$;
   // }
 
-  getSort(): Observable<SortModel> {
-    return this.query.selectSort$;
+  getActiveSort(): Observable<string> {
+    return this.query.selectActiveSort$;
+  }
+
+  getActiveSortDirection(): Observable<'asc' | 'desc'> {
+    return this.query.selectActiveSortDirection$;
   }
 
   getFolders() : Observable<OperationDataResult<Paged<DocumentFolderModel>>> {
@@ -56,6 +60,7 @@ export class DocumentsStateService {
     // const requestModel = new DocumentsRequestModel();
     return this.backendConfigurationPnDocumentsService.getAllDocuments({
       ...this.query.pageSetting.filters,
+      ...this.query.pageSetting.pagination
     });
   }
 

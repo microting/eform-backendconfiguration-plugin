@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
@@ -129,7 +131,7 @@ public static class BackendConfigurationPropertiesServiceHelper
     public static async Task<OperationResult> Update(PropertiesUpdateModel updateModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        string locationName)
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         try
         {
@@ -316,7 +318,7 @@ public static class BackendConfigurationPropertiesServiceHelper
 
                             // todo need change language to site language for correct translates and change back after end translate
                             await WorkOrderHelper.DeployEform(propertyWorker, eformId, property,
-                                $"<strong>{locationName}:</strong> {property.Name}",
+                                localizationService,
                                 int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid), core,
                                 userId, backendConfigurationPnDbContext).ConfigureAwait(false);
                         }

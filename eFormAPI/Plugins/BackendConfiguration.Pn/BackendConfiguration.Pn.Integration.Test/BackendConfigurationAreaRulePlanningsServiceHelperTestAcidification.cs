@@ -71,7 +71,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "09. Forsuring");
         var areaId = areaTranslation.AreaId;
@@ -125,7 +125,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations

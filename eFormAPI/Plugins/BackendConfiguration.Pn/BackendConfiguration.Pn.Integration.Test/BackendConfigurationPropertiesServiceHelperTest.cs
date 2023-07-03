@@ -517,7 +517,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
 
         // Act
         var result = await BackendConfigurationPropertiesServiceHelper.Update(propertyUpdateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, "Location");
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         properties = await BackendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
         var entityGroups = await MicrotingDbContext!.EntityGroups.ToListAsync();

@@ -9,8 +9,14 @@ export class BackendConfigurationFilesPage extends Page {
 
   public async rowNum(): Promise<number> {
     await browser.pause(500);
-    await this.waitForSpinnerHide();
-    return (await $$('tbody > tr')).length;
+    return (await $$('.cdk-row')).length;
+  }
+
+  public async refreshTableButton() {
+    const ele = await $(`.cdk-header-cell.cdk-column-actions button`);
+    await ele.waitForDisplayed({timeout: 40000});
+    await ele.waitForClickable({timeout: 40000});
+    return ele;
   }
 
   public async backendConfigurationPnButton() {
@@ -39,7 +45,6 @@ export class BackendConfigurationFilesPage extends Page {
       await (await this.backendConfigurationPnButton()).click();
     }
     await (await this.backendConfigurationPnFilesButton()).click();
-    await this.waitForSpinnerHide();
     await (await this.filesCreateBtn()).waitForClickable({timeout: 90000});
   }
 
@@ -383,7 +388,6 @@ export class FileRowObject {
 
   public async openEditTags(tags: string[]) {
     await this.editTagsBtn.click();
-    await backendConfigurationFilesPage.waitForSpinnerHide();
     await (await backendConfigurationFilesPage.tagSelector()).waitForDisplayed();
     if (tags) {
       const clearBtn = await $('.ng-clear-wrapper')
@@ -401,7 +405,6 @@ export class FileRowObject {
     } else {
       await (await backendConfigurationFilesPage.fileTagsSaveBtn()).click();
     }
-    await backendConfigurationFilesPage.waitForSpinnerHide();
     await (await backendConfigurationFilesPage.filesCreateBtn()).waitForClickable();
   }
 }

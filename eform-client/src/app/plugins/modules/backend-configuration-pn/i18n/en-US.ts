@@ -178,5 +178,6 @@ export const enUS = {
   'Repeat': 'Repeat',
   'Deadline': 'Deadline',
   'Show/hide columns': 'Show/hide columns',
-  'GenerateWithTypeDoc': 'Generate {{type}}'
+  'GenerateWithTypeDoc': 'Generate {{type}}',
+  'copyFromTo': 'Copy values from {{from}} to {{to}}',
 };
