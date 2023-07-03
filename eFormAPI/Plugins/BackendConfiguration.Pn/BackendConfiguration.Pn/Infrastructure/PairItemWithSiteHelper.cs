@@ -562,6 +562,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                             await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                         }
 
+                        dbPlanning.ShowExpireDate = true;
                         dbPlanning.LastExecutedTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
                         await dbPlanning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }

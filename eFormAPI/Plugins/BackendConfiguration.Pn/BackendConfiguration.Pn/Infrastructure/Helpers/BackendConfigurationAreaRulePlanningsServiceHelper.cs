@@ -29,7 +29,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService = null)
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         try
         {
@@ -1495,7 +1495,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             }
 
             return await CreatePlanning(areaRulePlanningModel, core, userId, backendConfigurationPnDbContext,
-                itemsPlanningPnDbContext).ConfigureAwait(false); // create planning
+                itemsPlanningPnDbContext, localizationService).ConfigureAwait(false); // create planning
         }
         catch (Exception e)
         {
@@ -1507,7 +1507,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
     private static async Task<OperationDataResult<AreaRuleModel>> CreatePlanning(
             AreaRulePlanningModel areaRulePlanningModel, Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext, ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-            [CanBeNull] IBackendConfigurationLocalizationService localizationService = null)
+            [CanBeNull] IBackendConfigurationLocalizationService localizationService)
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 

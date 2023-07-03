@@ -172,7 +172,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -528,7 +528,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -898,7 +898,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1278,7 +1278,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1637,7 +1637,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1989,7 +1989,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -2341,7 +2341,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -2693,7 +2693,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -3045,7 +3045,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -3397,7 +3397,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -3749,7 +3749,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -4101,7 +4101,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -4453,7 +4453,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -4805,7 +4805,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations

@@ -157,7 +157,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -504,7 +504,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -901,7 +901,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1359,7 +1359,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
@@ -1399,7 +1399,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -1922,7 +1922,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
         // Act
@@ -1962,7 +1962,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlanningModel3 = new AreaRulePlanningModel
         {
@@ -1999,7 +1999,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
@@ -2523,7 +2523,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         var areaRulePlannings = await BackendConfigurationPnDbContext!.AreaRulePlannings.ToListAsync();
 
@@ -2562,7 +2562,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel2,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Act
         var areaRulePlanningModel3 = new AreaRulePlanningModel
@@ -2600,7 +2600,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         };
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel3,
-            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext);
+            core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
 
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
