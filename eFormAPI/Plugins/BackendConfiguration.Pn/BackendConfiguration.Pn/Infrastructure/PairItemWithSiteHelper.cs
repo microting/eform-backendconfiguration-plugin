@@ -22,6 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using System.Globalization;
+using System.Threading;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using JetBrains.Annotations;
+
 namespace BackendConfiguration.Pn.Infrastructure
 {
     using System;
@@ -40,7 +45,8 @@ namespace BackendConfiguration.Pn.Infrastructure
     {
         public static async Task Pair(List<int> assignmentSiteIds, int relatedEFormId, int planningId,
             int planningFolderId, eFormCore.Core sdkCore, ItemsPlanningPnDbContext _itemsPlanningPnDbContext,
-            bool useStartDateAsStartOfPeriod)
+            bool useStartDateAsStartOfPeriod,
+            [CanBeNull] IBackendConfigurationLocalizationService localizationService)
         {
             var sdkDbContext = sdkCore.DbContextHelper.GetDbContext();
             foreach (var assignmentSiteId in assignmentSiteIds)
@@ -437,19 +443,21 @@ namespace BackendConfiguration.Pn.Infrastructure
                         mainElement.ElementList[0].Label = mainElement.Label;
                     }
 
-                    if (dbPlanning.NextExecutionTime != null)
+                    if (dbPlanning.NextExecutionTime != null && localizationService != null)
                     {
                         DateTime beginningOfTime = new DateTime(2020, 1, 1);
                         mainElement.DisplayOrder = ((DateTime)dbPlanning.NextExecutionTime - beginningOfTime).Days;
+                        Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
+
                         if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
                         {
                             mainElement.ElementList[0].Description.InderValue =
-                                $"<strong style='text-align:right;'>{((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                                $"<strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
                         }
                         else
                         {
                             mainElement.ElementList[0].Description.InderValue +=
-                                $"<br><strong style='text-align:right;'>{((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                                $"<br><strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
                         }
                     }
 

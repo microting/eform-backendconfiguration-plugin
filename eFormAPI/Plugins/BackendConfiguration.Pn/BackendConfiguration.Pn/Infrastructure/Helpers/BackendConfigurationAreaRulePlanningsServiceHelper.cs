@@ -5,7 +5,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Enums;
 using BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
@@ -26,7 +28,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         Core core,
         int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         try
         {
@@ -377,7 +380,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                 }
 
                                 await CreatePlanningType10(areaRule, sdkDbContext, areaRulePlanningModel, core, userId,
-                                    backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                                    backendConfigurationPnDbContext, itemsPlanningPnDbContext, localizationService).ConfigureAwait(false);
                             }
 
                             if (!areaRulePlanningModel.Status && oldStatus)
@@ -640,7 +643,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     eformId,
                                                     planningForType2TypeTankOpen.Id,
                                                     areaRule.AreaRulesPlannings[0].FolderId, core,
-                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
                                                 areaRule.AreaRulesPlannings[0].DayOfMonth =
                                                     (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
                                                         ? 1
@@ -1129,13 +1132,13 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     eformIdOne,
                                                     planningForType6One.Id,
                                                     areaRule.AreaRulesPlannings[1].FolderId, core,
-                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
                                                 await PairItemWithSiteHelper.Pair(
                                                     rulePlanning.PlanningSites.Select(x => x.SiteId).ToList(),
                                                     eformIdTwo,
                                                     planningForType6Two.Id,
                                                     areaRule.AreaRulesPlannings[2].FolderId, core,
-                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
                                                 areaRule.AreaRulesPlannings[1].ItemPlanningId =
                                                     planningForType6One.Id;
                                                 areaRule.AreaRulesPlannings[2].ItemPlanningId =
@@ -1269,7 +1272,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         .Select(x => x.SiteId).ToList(),
                                                     (int)areaRule.EformId,
                                                     planning.Id,
-                                                    areaRule.FolderId, core, itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod)
+                                                    areaRule.FolderId, core, itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService)
                                                 .ConfigureAwait(false);
                                             rulePlanning.ItemPlanningId = planning.Id;
                                             await rulePlanning.Update(backendConfigurationPnDbContext)
@@ -1432,7 +1435,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     sitesForCreate.Select(x => x.SiteId).ToList(),
                                                     planning.RelatedEFormId,
                                                     planning.Id,
-                                                    (int)planning.SdkFolderId, core, itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod)
+                                                    (int)planning.SdkFolderId, core, itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService)
                                                 .ConfigureAwait(false);
                                         }
 
@@ -1503,7 +1506,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     }
 
     private static async Task<OperationDataResult<AreaRuleModel>> CreatePlanning(
-            AreaRulePlanningModel areaRulePlanningModel, Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+            AreaRulePlanningModel areaRulePlanningModel, Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext, ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+            [CanBeNull] IBackendConfigurationLocalizationService localizationService = null)
         {
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
@@ -1524,22 +1528,22 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             {
                 case AreaTypesEnum.Type2: // tanks
                     {
-                        await CreatePlanningType2(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType2(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext, localizationService).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type3: // stables and tail bite
                     {
-                        await CreatePlanningType3(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType3(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext, localizationService).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type5: // recuring tasks(mon-sun)
                     {
-                        await CreatePlanningType5(areaRule, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType5(areaRule, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext, localizationService).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type6: // heat pumps
                     {
-                        await CreatePlanningType6(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                        await CreatePlanningType6(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext, localizationService).ConfigureAwait(false);
                         break;
                     }
                 case AreaTypesEnum.Type9: // chemical APV
@@ -1549,12 +1553,12 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     }
                 case AreaTypesEnum.Type10:
                 {
-                    await CreatePlanningType10(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
+                    await CreatePlanningType10(areaRule, sdkDbContext, areaRulePlanningModel, core, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext, localizationService).ConfigureAwait(false);
                     break;
                 }
                 default:
                     {
-                        await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core, backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId).ConfigureAwait(false);
+                        await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core, backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId, localizationService).ConfigureAwait(false);
                         break;
                     }
             }
@@ -1701,7 +1705,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     public static async Task CreatePlanningDefaultType(AreaRule areaRule, MicrotingDbContext sdkDbContext,
         AreaRulePlanningModel areaRulePlanningModel, Core core,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext, int userId,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         if (areaRule.FolderId == 0)
         {
@@ -1769,7 +1774,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
                 planning.Id,
-                areaRule.FolderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                areaRule.FolderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
             planningId = planning.Id;
         }
 
@@ -1782,7 +1787,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     public static async Task CreatePlanningType2(AreaRule areaRule, MicrotingDbContext sdkDbContext,
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         var translatesForFolder = areaRule.AreaRuleTranslations
             .Select(x => new CommonTranslationsModel
@@ -1867,7 +1873,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 await PairItemWithSiteHelper.Pair(
                     areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
                     planningForType2TypeTankOpen.Id,
-                    folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                    folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
                 planningForType2TypeTankOpenId = planningForType2TypeTankOpen.Id;
             }
         //}
@@ -2032,10 +2038,11 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     public static async Task CreatePlanningType3(AreaRule areaRule, MicrotingDbContext sdkDbContext,
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         await CreatePlanningDefaultType(areaRule, sdkDbContext, areaRulePlanningModel, core,
-            backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId).ConfigureAwait(false);
+            backendConfigurationPnDbContext, itemsPlanningPnDbContext, userId, localizationService).ConfigureAwait(false);
 
         var sites = areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList();
         if (areaRulePlanningModel.Status)
@@ -2077,7 +2084,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
 
     public static async Task CreatePlanningType5(AreaRule areaRule, AreaRulePlanningModel areaRulePlanningModel,
         Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
 
         var folderIds = await backendConfigurationPnDbContext.ProperyAreaFolders
@@ -2136,7 +2144,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
                 planning.Id,
-                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
             planningId = planning.Id;
 
         }
@@ -2148,7 +2156,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     public static async Task CreatePlanningType6(AreaRule areaRule, MicrotingDbContext sdkDbContext,
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         // create folder with name heat pump
         var translatesForFolder = areaRule.AreaRuleTranslations
@@ -2224,7 +2233,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
                 planningForType6HoursAndEnergyEnabled.Id,
-                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
             planningForType6HoursAndEnergyEnabledId = planningForType6HoursAndEnergyEnabled.Id;
         }
 
@@ -2333,13 +2342,13 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformIdOne,
                 planningForType6One.Id,
-                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
             planningForType6IdOne = planningForType6One.Id;
             await planningForType6Two.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             await PairItemWithSiteHelper.Pair(
                 areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformIdTwo,
                 planningForType6Two.Id,
-                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
             planningForType6IdTwo = planningForType6Two.Id;
         }
 
@@ -2514,7 +2523,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
     public static async Task CreatePlanningType10(AreaRule areaRule, MicrotingDbContext sdkDbContext,
         AreaRulePlanningModel areaRulePlanningModel, Core core, int userId,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        ItemsPlanningPnDbContext itemsPlanningPnDbContext)
+        ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         if (areaRulePlanningModel.Status)
         {
@@ -2565,7 +2575,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 await PairItemWithSiteHelper.Pair(
                     areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), (int)areaRule.EformId,
                     planning.Id,
-                    areaRule.FolderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                    areaRule.FolderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
 
                 await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule, planning.Id,
                     areaRule.FolderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
@@ -2665,7 +2675,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     await planningStatic.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
                     await PairItemWithSiteHelper.Pair(
                         areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), clId, planningStatic.Id,
-                        poolDayFolder.Id, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod).ConfigureAwait(false);
+                        poolDayFolder.Id, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
                     var areaRulePlanningStatic = await CreateAreaRulePlanningObject(areaRulePlanningModel, areaRule,
                         planningStatic.Id,
                         areaRule.FolderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
