@@ -120,6 +120,14 @@ export const routes: Routes = [
             (m) => m.FilesModule
           ),
       },
+      {
+        path: 'task-wizard',
+        /*canActivate: [PermissionGuard],*/
+        loadChildren: () =>
+          import('./modules/task-wizard/task-wizard.module').then(
+            (m) => m.TaskWizardModule
+          ),
+      },
     ],
   },
 ];

@@ -2411,5 +2411,24 @@
       "pt-PT": "Prazo",
       "fi-FI": "Määräaika"
     }
+  },
+  {
+    "Key": "Task wizard",
+    "LocalizedValue": {
+      "da": "Opgaveguide",
+      "de": "Aufgaben-Assistent",
+      "en-US": "Task wizard",
+      "uk-UA": "Майстер завдань",
+      "pl-PL": "Kreator zadań",
+      "no-NO": "Oppgaveveiviser",
+      "sv-SE": "Uppgiftsguide",
+      "es-ES": "Asistente de tareas",
+      "fr-FR": "Assistant de tâches",
+      "it-IT": "Assistente di compiti",
+      "nl-NL": "Taakwizard",
+      "pt-BR": "Assistente de tarefas",
+      "pt-PT": "Assistente de tarefas",
+      "fi-FI": "Tehtävän avustaja"
+    }
   }
 ]

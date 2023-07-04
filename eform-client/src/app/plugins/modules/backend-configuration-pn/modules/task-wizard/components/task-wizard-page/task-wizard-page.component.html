@@ -1,0 +1,15 @@
+<eform-new-subheader>
+  <button
+    mat-icon-button
+    color="accent"
+    [matTooltip]="'Add new task' | translate"
+  >
+    <mat-icon>add</mat-icon>
+  </button>
+</eform-new-subheader>
+
+<app-task-wizard-filters
+  [properties]="properties"
+  [folders]="folders"
+  [sites]="sites"
+/>
