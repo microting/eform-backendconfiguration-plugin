@@ -303,22 +303,6 @@ namespace BackendConfiguration.Pn
                 }
             }
 
-            // Fix old machines to use new eform
-            cls = await sdkDbContext.CheckLists.Where(x =>
-	            x.OriginalId == "142401" && x.WorkflowState != Microting.eForm.Infrastructure.Constants
-		            .Constants.WorkflowStates.Removed).ToListAsync();
-            foreach (var checkList in cls)
-            {
-	            var clts = await sdkDbContext.CheckListTranslations.Where(x =>
-		            x.CheckListId == checkList.Id).ToListAsync();
-
-	            foreach (var clt in clts)
-	            {
-		            clt.Text += " (old)";
-		            await clt.Update(sdkDbContext);
-	            }
-            }
-
             // Seed areas
             foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed
 	                     .Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id))
