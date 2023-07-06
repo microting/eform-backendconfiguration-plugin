@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
@@ -15,7 +19,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 public static class WorkOrderHelper
 {
     public static async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers, Core core, int userId,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext, string locationTranslation)
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext, [CanBeNull] IBackendConfigurationLocalizationService localizationService)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         foreach (var propertyWorker in propertyWorkers.Where(x => x.TaskManagementEnabled == true))
@@ -111,7 +115,7 @@ public static class WorkOrderHelper
             {
                 if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
                 {
-                    await DeployEform(propertyWorker, eformIdForNewTasks, property, $"{locationTranslation} {property.Name}",
+                    await DeployEform(propertyWorker, eformIdForNewTasks, property, localizationService,
                         int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
             }
@@ -119,7 +123,7 @@ public static class WorkOrderHelper
     }
 
     public static  async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
-        string description, int? areasGroupUid, int? deviceUsersGroupId, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService, int? areasGroupUid, int? deviceUsersGroupId, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
@@ -132,11 +136,22 @@ public static class WorkOrderHelper
         var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId).ConfigureAwait(false);
         var language = await sdkDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId).ConfigureAwait(false);
         var mainElement = await core.ReadeForm(eformId, language).ConfigureAwait(false);
+
+        string description = $"<strong>Location:</strong> {property.Name}";
+        string newTask = "New task";
+
+        if (localizationService != null)
+        {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
+            description = "<strong>"+localizationService.GetString("Location") + "</strong>: " + property.Name;
+            newTask = localizationService.GetString("New task");
+        }
+
         mainElement.Repeated = 0;
         mainElement.ElementList[0].QuickSyncEnabled = true;
         mainElement.ElementList[0].Description.InderValue = description;
-        mainElement.ElementList[0].Label = "Ny opgave";
-        mainElement.Label = "Ny opgave";
+        mainElement.ElementList[0].Label = newTask;
+        mainElement.Label = newTask;
         mainElement.EnableQuickSync = true;
         if (property.FolderIdForNewTasks != null)
         {

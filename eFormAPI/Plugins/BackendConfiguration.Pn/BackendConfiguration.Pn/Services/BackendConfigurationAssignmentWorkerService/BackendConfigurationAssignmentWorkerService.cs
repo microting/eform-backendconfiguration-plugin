@@ -182,7 +182,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
             var result = await BackendConfigurationAssignmentWorkerServiceHelper
                 .Create(createModel, core, _userService.UserId, _backendConfigurationPnDbContext,
-                    _caseTemplatePnDbContext, _backendConfigurationLocalizationService.GetString("Location"), _bus)
+                    _caseTemplatePnDbContext, _backendConfigurationLocalizationService, _bus)
                 .ConfigureAwait(false);
 
             return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
@@ -193,7 +193,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var result = await BackendConfigurationAssignmentWorkerServiceHelper
                 .Update(updateModel, core, _userService.UserId, _backendConfigurationPnDbContext, _caseTemplatePnDbContext,
-                    _backendConfigurationLocalizationService.GetString("Location"), _bus, _itemsPlanningPnDbContext)
+                    _backendConfigurationLocalizationService, _bus, _itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
 
             return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));

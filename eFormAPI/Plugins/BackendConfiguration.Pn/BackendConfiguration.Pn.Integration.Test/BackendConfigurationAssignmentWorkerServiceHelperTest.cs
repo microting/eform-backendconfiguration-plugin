@@ -461,7 +461,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         // Act
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -556,7 +556,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -575,7 +575,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
 
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus, ItemsPlanningPnDbContext);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -672,7 +672,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
@@ -692,7 +692,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         // Act
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus, ItemsPlanningPnDbContext);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();
@@ -826,7 +826,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         };
 
         await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var workOrders = await BackendConfigurationPnDbContext!.WorkorderCases.AsNoTracking().ToListAsync();
         Assert.That(workOrders.Count, Is.EqualTo(1)); // TODO: fix this
@@ -854,7 +854,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
         // Act
         var result2 = await BackendConfigurationAssignmentWorkerServiceHelper.Update(propertyAssignWorkersModel2, core,
             1,
-            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, "location", Bus, ItemsPlanningPnDbContext);
+            BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus, ItemsPlanningPnDbContext);
 
         // Assert
         var workers = await MicrotingDbContext.Workers.AsNoTracking().ToListAsync();

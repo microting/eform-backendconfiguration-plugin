@@ -48,7 +48,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlannings
 
                 var result = await BackendConfigurationAreaRulePlanningsServiceHelper
                     .UpdatePlanning(areaRulePlanningModel, core, _userService.UserId, _backendConfigurationPnDbContext,
-                        _itemsPlanningPnDbContext).ConfigureAwait(false);
+                        _itemsPlanningPnDbContext, _backendConfigurationLocalizationService).ConfigureAwait(false);
 
                 return new OperationResult(result.Success,
                     _backendConfigurationLocalizationService.GetString(result.Message));

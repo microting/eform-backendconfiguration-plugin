@@ -67,14 +67,6 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
-        [Route("compliance-calender")]
-        public Task<HttpResponseMessage> GetEventCalendar(int propertyId)
-        {
-            return _backendConfigurationCompliancesService.GetEventCalendar(propertyId);
-        }
-
-        [HttpGet]
         // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseRead)]
         [Route("cases")]
         public async Task<IActionResult> Read(int id, int templateId)
