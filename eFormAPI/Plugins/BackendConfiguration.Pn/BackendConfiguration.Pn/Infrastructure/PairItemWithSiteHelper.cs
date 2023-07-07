@@ -178,6 +178,10 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                                 dbPlanning.NextExecutionTime = nextExecutionTime;
                             }
+                            else
+                            {
+                                mainElement.Repeated = dbPlanning.RepeatEvery;
+                            }
 
                             break;
                         case RepeatType.Week:
