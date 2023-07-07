@@ -543,11 +543,6 @@ namespace BackendConfiguration.Pn.Infrastructure
                             mainElement.Repeated = 0;
                         }
 
-                        if (mainElement.Label == "Morgenrundtur")
-                        {
-                            mainElement.Repeated = 1;
-                        }
-
                         var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null)
                             .ConfigureAwait(false);
                         if (caseId != null)
