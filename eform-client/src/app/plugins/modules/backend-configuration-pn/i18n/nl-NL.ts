@@ -292,4 +292,13 @@ export const nlNL = {
   'Show/hide columns': 'Toon/verberg kolommen',
   'GenerateWithTypeDoc': 'Genereer {{type}}',
   'copyFromTo': 'Kopieer van {{from}} naar {{to}}',
+  'Add new task': 'Nieuwe taak toevoegen',
+  Folders: 'Mappen',
+  Tags: 'Tags',
+  'Assign to': 'Toewijzen aan',
+  Active: 'Actief',
+  NotActive: 'Niet actief',
+  'Task name': 'Taaknaam',
+  Folder: 'Map',
+  Notification: 'Melding',
 };

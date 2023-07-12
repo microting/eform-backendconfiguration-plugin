@@ -1,12 +1,13 @@
 import {Injectable} from '@angular/core';
 import {ApiBaseService} from 'src/app/common/services';
-import {TaskWizardFiltrationModel} from '../modules/task-wizard/components/store';
 import {Observable} from 'rxjs';
-import {OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
+import {CommonDictionaryModel, OperationDataResult, OperationResult} from 'src/app/common/models';
+import {TaskWizardCreateModel, TaskWizardEditModel, TaskWizardModel, TaskWizardRequestModel, TaskWizardTaskModel} from '../models';
 
 export let BackendConfigurationPnTaskWizardMethods = {
   TaskWizard: 'api/backend-configuration-pn/task-wizard',
   Index: 'api/backend-configuration-pn/task-wizard/index',
+  Properties: 'api/backend-configuration-pn/task-wizard/properties',
 };
 
 @Injectable({
@@ -16,23 +17,32 @@ export class BackendConfigurationPnTaskWizardService {
   constructor(private apiBaseService: ApiBaseService) {
   }
 
-  getTasks(model: TaskWizardFiltrationModel): Observable<OperationDataResult<Paged<any>>> { // todo change any to normal class
+  getTasks(model: TaskWizardRequestModel): Observable<OperationDataResult<TaskWizardModel[]>> {
     return this.apiBaseService.post(BackendConfigurationPnTaskWizardMethods.Index, model);
   }
 
-  getTaskById(id: number): Observable<OperationDataResult<any>> { // todo change any to normal class
+  getTaskById(id: number): Observable<OperationDataResult<TaskWizardTaskModel>> {
     return this.apiBaseService.get(`${BackendConfigurationPnTaskWizardMethods.TaskWizard}/${id}`);
   }
 
-  createTask(createModel: any): Observable<OperationResult> { // todo change any to normal class
+  createTask(createModel: TaskWizardCreateModel): Observable<OperationResult> {
     return this.apiBaseService.post(BackendConfigurationPnTaskWizardMethods.TaskWizard, createModel);
   }
 
-  updateTask(updateModel: any): Observable<OperationResult> { // todo change any to normal class
-    return this.apiBaseService.put(BackendConfigurationPnTaskWizardMethods.Index, updateModel);
+  updateTask(updateModel: TaskWizardEditModel): Observable<OperationResult> {
+    return this.apiBaseService.put(BackendConfigurationPnTaskWizardMethods.TaskWizard, updateModel);
   }
 
-  deleteTaskById(id: number): Observable<OperationResult> { // todo change any to normal class
+  deleteTaskById(id: number): Observable<OperationResult> {
     return this.apiBaseService.delete(`${BackendConfigurationPnTaskWizardMethods.TaskWizard}/${id}`);
+  }
+
+  getAllPropertiesDictionary(fullNames: boolean = true): Observable<
+    OperationDataResult<CommonDictionaryModel[]>
+  > {
+    return this.apiBaseService.get(
+      BackendConfigurationPnTaskWizardMethods.Properties,
+      {fullNames: fullNames}
+    );
   }
 }

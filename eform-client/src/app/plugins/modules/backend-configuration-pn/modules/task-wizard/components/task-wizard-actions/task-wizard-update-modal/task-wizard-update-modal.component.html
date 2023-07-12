@@ -1,0 +1,159 @@
+<h3 mat-dialog-title>{{'Edit task' | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column">
+  <mat-slide-toggle
+    color="accent"
+    id="updateTaskStatusToggle"
+    [checked]="model.status === TaskWizardStatusesEnum.Active"
+    [ngModel]="model.status === TaskWizardStatusesEnum.Active"
+    (ngModelChange)="changeStatus($event)">
+    {{ 'Status' | translate }}
+  </mat-slide-toggle>
+  <mat-form-field>
+    <mat-label>{{ 'Property' | translate }}</mat-label>
+    <mtx-select
+      [items]="properties"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="updateProperty"
+      [value]="model.propertyId"
+      (change)="changePropertyId($event)"
+      [clearable]="false"
+    />
+  </mat-form-field>
+  <mat-form-field (click)="openFoldersModal()">
+    <mat-label>{{ 'Folder' | translate }}</mat-label>
+    <input
+      matInput
+      id="updateFolder"
+      [ngModel]="selectedFolderName"
+      [disabled]="true"
+    >
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Tags' | translate }}</mat-label>
+    <mtx-select
+      [items]="tags"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="updateTags"
+      [value]="model.tagIds"
+      (change)="changeTagIds($event)"
+      [clearable]="true"
+      [multiple]="true"
+    />
+  </mat-form-field>
+  <ng-container *ngFor="let languageModel of model.translates; let i = index; first as isFirst; last as isLast">
+    <mat-card
+      [class.mt-2]="!isFirst"
+      [class.mb-2]="isLast">
+      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>
+      <mat-card-content>
+        <mat-form-field>
+          <mat-label>{{'Name' | translate}}</mat-label>
+          <input
+            type="text"
+            id="updateName{{i}}"
+            matInput
+            [ngModel]="languageModel.name"
+            (ngModelChange)="updateName($event, i)"
+          >
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <!--<app-eform-translation
+          [class.mt-2]="!isFirst"
+          [class.mb-2]="isLast"
+          [model]="languageModel"
+          (modelChange)="updateLanguageModel($event, i)"
+          [title]="getLanguageName(languageModel.languageId)"/>-->
+  </ng-container>
+  <mat-form-field>
+    <mat-label>{{'eForm template' | translate}}</mat-label>
+    <mtx-select
+      [items]="templatesModel.templates"
+      [bindLabel]="'label'"
+      [bindValue]="'id'"
+      [typeahead]="typeahead"
+      [value]="model.eformId"
+      (change)="updateEformId($event)"
+      id="updateTemplateSelector"
+      [clearable]="false"
+      [multiple]="false"
+    ></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Start from' | translate}}</mat-label>
+    <input
+      matInput
+      [matDatepicker]="picker"
+      [value]="model.startDate"
+      (dateChange)="updateStartDate($event)"
+      (dateInput)="updateStartDate($event)"
+      (click)="picker.open()"
+      id="updateStartFrom"
+    >
+    <mat-datepicker #picker></mat-datepicker>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Repeat type' | translate }}</mat-label>
+    <mtx-select
+      [items]="repeatTypeArr"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="updateRepeatType"
+      [value]="model.repeatType"
+      (change)="changeRepeatType($event)"
+      [clearable]="false"
+      [multiple]="false"
+    />
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Repeat every' | translate }}</mat-label>
+    <mtx-select
+      [items]="repeatTypeMass()"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="updateRepeatEvery"
+      [value]="model.repeatEvery"
+      (change)="changeRepeatEvery($event)"
+      [clearable]="false"
+      [multiple]="false"
+    />
+  </mat-form-field>
+  <mtx-grid
+    class="mb-2"
+    [data]="sites"
+    [columns]="tableHeaders"
+    [cellTemplate]="{select: selectTpl}"
+    [showPaginator]="false"
+    [pageOnFront]="false"
+    [rowStriped]="true"
+    [showToolbar]="false"
+    [showColumnMenuButton]="false"
+  />
+  <ng-template #selectTpl let-row let-i="index">
+    <mat-checkbox class="mat-checkbox"
+                  id="checkboxUpdateAssignment{{ i }}"
+                  (change)="addToArray($event, row.id)"
+                  [checked]="getAssignmentBySiteId(row.id)"
+                  [value]="getAssignmentBySiteId(row.id).toString()"/>
+  </ng-template>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="updateTaskBtn"
+    (click)="update()"
+  >
+    {{ 'Save' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelUpdateTaskBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
+</div>

@@ -3,7 +3,12 @@ import {CommonModule} from '@angular/common';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {
-  TaskWizardFiltersComponent, TaskWizardPageComponent,
+  TaskWizardCreateModalComponent,
+  TaskWizardFiltersComponent,
+  TaskWizardFoldersModalComponent,
+  TaskWizardPageComponent,
+  TaskWizardTableComponent,
+  TaskWizardUpdateModalComponent,
 } from './components';
 import {TaskWizardRouting} from './task-wizard.routing';
 import {TranslateModule} from '@ngx-translate/core';
@@ -12,6 +17,15 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
+import {MtxGridModule} from '@ng-matero/extensions/grid';
+import {MatChipsModule} from '@angular/material/chips';
+import {MatDialogModule} from '@angular/material/dialog';
+import {MatDatepickerModule} from '@angular/material/datepicker';
+import {MatInputModule} from '@angular/material/input';
+import {MatSlideToggleModule} from '@angular/material/slide-toggle';
+import {MatCheckboxModule} from '@angular/material/checkbox';
+import {FormattingTextEditorModule} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.module';
+import {MatCardModule} from '@angular/material/card';
 
 @NgModule({
   imports: [
@@ -26,10 +40,23 @@ import {MatTooltipModule} from '@angular/material/tooltip';
     MatIconModule,
     MatTooltipModule,
     ReactiveFormsModule,
+    MtxGridModule,
+    MatChipsModule,
+    MatDialogModule,
+    MatDatepickerModule,
+    MatInputModule,
+    MatSlideToggleModule,
+    MatCheckboxModule,
+    FormattingTextEditorModule,
+    MatCardModule,
   ],
   declarations: [
     TaskWizardFiltersComponent,
     TaskWizardPageComponent,
+    TaskWizardTableComponent,
+    TaskWizardCreateModalComponent,
+    TaskWizardUpdateModalComponent,
+    TaskWizardFoldersModalComponent,
   ],
 })
 export class TaskWizardModule {

@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
+using BackendConfiguration.Pn.Infrastructure.Models.TaskWizard;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
 namespace BackendConfiguration.Pn.Controllers;
 
@@ -19,26 +22,33 @@ public class TaskWizardController : Controller
 
     [HttpPost]
     [Route("index")]
-    public async Task<OperationDataResult<object>> Index([FromBody] object requestModel)
+    public async Task<OperationDataResult<List<TaskWizardModel>>> Index([FromBody] TaskWizardRequestModel requestModel)
     {
         return await _backendConfigurationTaskWizardService.Index(requestModel);
     }
 
     [HttpGet]
+    [Route("properties")]
+    public Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary([FromQuery] bool fullNames)
+    {
+        return _backendConfigurationTaskWizardService.GetProperties(fullNames);
+    }
+
+    [HttpGet]
     [Route("{id:int}")]
-    public async Task<OperationDataResult<object>> GetTaskById(int id)
+    public async Task<OperationDataResult<TaskWizardTaskModel>> GetTaskById(int id)
     {
         return await _backendConfigurationTaskWizardService.GetTaskById(id);
     }
 
     [HttpPost]
-    public async Task<OperationResult> CreateTask([FromBody] object createModel)
+    public async Task<OperationResult> CreateTask([FromBody] TaskWizardCreateModel createModel)
     {
         return await _backendConfigurationTaskWizardService.CreateTask(createModel);
     }
 
     [HttpPut]
-    public async Task<OperationResult> UpdateTask([FromBody] object updateModel)
+    public async Task<OperationResult> UpdateTask([FromBody] TaskWizardCreateModel updateModel)
     {
         return await _backendConfigurationTaskWizardService.UpdateTask(updateModel);
     }

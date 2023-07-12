@@ -299,4 +299,13 @@ export const da = {
   'Show/hide columns': 'Skjul/vis kolonner',
   'GenerateWithTypeDoc': 'Download {{type}}',
   'copyFromTo': 'Kopiér fra {{from}} til {{to}}',
+  'Add new task': 'Tilføj ny opgave',
+  Folders: 'Mapper',
+  Tags: 'Tags',
+  'Assign to': 'Tildel til',
+  Active: 'Aktiv',
+  NotActive: 'Ikke aktiv',
+  'Task name': 'Opgavenavn',
+  Folder: 'Mappe',
+  Notification: 'Notifikation',
 };

@@ -293,4 +293,13 @@ export const plPl = {
   'Show/hide columns': 'Pokaż/ukryj kolumny',
   'GenerateWithTypeDoc': 'Generuj z typem dokumentu {{type}}',
   'copyFromTo': 'Kopiuj z {{from}} do {{to}}',
+  'Add new task': 'Dodaj nowe zadanie',
+  Folders: 'Foldery',
+  Tags: 'Tagi',
+  'Assign to': 'Przypisz do',
+  Active: 'Aktywne',
+  NotActive: 'Nieaktywne',
+  'Task name': 'Nazwa zadania',
+  Folder: 'Folder',
+  Notification: 'Powiadomienie',
 };

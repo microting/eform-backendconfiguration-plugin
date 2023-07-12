@@ -290,4 +290,13 @@ export const deDE = {
   'Show/hide columns': 'Spalten ein-/ausblenden',
   'GenerateWithTypeDoc': 'Generieren mit Typ {{type}}',
   'copyFromTo': 'Kopieren von {{from}} nach {{to}}',
+  'Add new task': 'Neue Aufgabe hinzufügen',
+  Folders: 'Ordner',
+  Tags: 'Tags',
+  'Assign to': 'Zuweisen an',
+  Active: 'Aktiv',
+  NotActive: 'Nicht aktiv',
+  'Task name': 'Aufgabenname',
+  Folder: 'Ordner',
+  Notification: 'Benachrichtigung',
 };

@@ -292,4 +292,13 @@ export const noNO = {
   'Show/hide columns': 'Vis/skjul kolonner',
   'GenerateWithTypeDoc': 'Generer {{type}}',
   'copyFromTo': 'Kopier fra {{from}} til {{to}}',
+  'Add new task': 'Legg til ny oppgave',
+  Folders: 'Mapper',
+  Tags: 'Tags',
+  'Assign to': 'Tilordne til',
+  Active: 'Aktiv',
+  NotActive: 'Ikke aktiv',
+  'Task name': 'Oppgavenavn',
+  Folder: 'Mappe',
+  Notification: 'Varsel',
 };

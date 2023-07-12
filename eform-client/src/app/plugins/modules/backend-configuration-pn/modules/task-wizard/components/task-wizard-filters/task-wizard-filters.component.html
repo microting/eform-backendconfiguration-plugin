@@ -30,18 +30,18 @@
         formControlName="tagIds"
         multiple="true"
         clearable="true"
+        [items]="tags"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
       />
     </mat-form-field>
     <mat-form-field>
       <mat-label>{{'Status' | translate}}</mat-label>
       <mtx-select
-        multiple="true"
-        clearable="true"
-        formControlName="statuses"
-        [items]="[
-          {label: 'Active'| translate, value: 1},
-          {label: 'Not active'| translate, value: 2},
-        ]"
+        [multiple]="false"
+        [clearable]="true"
+        formControlName="status"
+        [items]="statuses"
         [bindValue]="'value'"
         [bindLabel]="'label'"
       />

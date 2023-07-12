@@ -3,6 +3,7 @@
     mat-icon-button
     color="accent"
     [matTooltip]="'Add new task' | translate"
+    (click)="onCreateTask()"
   >
     <mat-icon>add</mat-icon>
   </button>
@@ -12,4 +13,14 @@
   [properties]="properties"
   [folders]="folders"
   [sites]="sites"
+  [tags]="tags"
+  (updateTable)="updateTable()"
+/>
+
+<app-task-wizard-table
+  [tasks]="tasks"
+  (updateTable)="updateTable()"
+  (editTask)="onEditTask($event)"
+  (copyTask)="onCopyTask($event)"
+  (deleteTask)="onDeleteTask($event)"
 />

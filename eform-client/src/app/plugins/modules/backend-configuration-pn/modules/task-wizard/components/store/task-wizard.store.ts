@@ -1,19 +1,22 @@
 import {Injectable} from '@angular/core';
 import {persistState, Store, StoreConfig} from '@datorama/akita';
-import {CommonPaginationState} from 'src/app/common/models';
+import {SortState} from 'src/app/common/models';
+import {TaskWizardStatusesEnum} from '../../../../enums';
 
 export interface TaskWizardFiltrationModel {
   propertyIds: number[];
   tagIds: number[];
   folderIds: number[];
   assignToIds: number[];
-  statuses: number[];
+  status: TaskWizardStatusesEnum | null;
+}
+
+export interface TaskWizardPaginationModel extends SortState {
 }
 
 export interface TaskWizardState {
   filters: TaskWizardFiltrationModel;
-  pagination: CommonPaginationState;
-  total: number;
+  pagination: TaskWizardPaginationModel;
 }
 
 function createInitialState(): TaskWizardState {
@@ -23,16 +26,12 @@ function createInitialState(): TaskWizardState {
       tagIds: [],
       folderIds: [],
       assignToIds: [],
-      statuses: [],
+      status: null,
     },
     pagination: {
-      pageSize: 10,
       sort: 'Id',
       isSortDsc: false,
-      offset: 0,
-      pageIndex: 0,
     },
-    total: 0,
   };
 }
 

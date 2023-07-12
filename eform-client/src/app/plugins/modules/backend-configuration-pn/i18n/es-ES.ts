@@ -288,4 +288,13 @@ export const esES = {
   'Repeat': 'Repetir',
   'Deadline': 'Fecha límite',
   'Show/hide columns': 'Mostrar/ocultar columnas',
+  'Add new task': 'Agregar nueva tarea',
+  Folders: 'Carpetas',
+  Tags: 'Etiquetas',
+  'Assign to': 'Asignar a',
+  Active: 'Activo',
+  NotActive: 'No activo',
+  'Task name': 'Nombre de la tarea',
+  Folder: 'Carpeta',
+  Notification: 'Notificación',
 };
