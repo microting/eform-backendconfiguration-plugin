@@ -25,6 +25,7 @@ import {TaskWizardFoldersModalComponent} from '../';
 import {findFullNameById, dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
+import {PlanningTagsComponent} from 'src/app/plugins/modules/items-planning-pn/modules/plannings/components';
 
 @AutoUnsubscribe()
 @Component({
@@ -33,6 +34,7 @@ import {Overlay} from '@angular/cdk/overlay';
   styleUrls: ['./task-wizard-create-modal.component.scss'],
 })
 export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
+  planningTagsModal: PlanningTagsComponent
   createTask: EventEmitter<TaskWizardCreateModel> = new EventEmitter<TaskWizardCreateModel>();
   typeahead = new EventEmitter<string>();
   properties: CommonDictionaryModel[] = [];
@@ -252,6 +254,10 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
 
   create() {
     this.createTask.emit(this.model);
+  }
+
+  openTagsModal() {
+    this.planningTagsModal.show();
   }
 
   hide() {

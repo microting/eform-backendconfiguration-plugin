@@ -26,6 +26,7 @@ import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {FormattingTextEditorModule} from 'src/app/common/modules/eform-imported/formatting-text-editor/formatting-text-editor.module';
 import {MatCardModule} from '@angular/material/card';
+import {PlanningsModule} from 'src/app/plugins/modules/items-planning-pn/modules/plannings/plannings.module';
 
 @NgModule({
   imports: [
@@ -49,6 +50,7 @@ import {MatCardModule} from '@angular/material/card';
     MatCheckboxModule,
     FormattingTextEditorModule,
     MatCardModule,
+    PlanningsModule,
   ],
   declarations: [
     TaskWizardFiltersComponent,

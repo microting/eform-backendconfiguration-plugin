@@ -1,13 +1,9 @@
-import {
-  Component,
-  OnDestroy,
-  OnInit,
-} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild,} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnTaskWizardService} from '../../../../services';
-import {tap} from 'rxjs/operators';
-import {Subscription, zip} from 'rxjs';
-import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel} from 'src/app/common/models';
+import {filter, tap} from 'rxjs/operators';
+import {Observable, Subscription, zip} from 'rxjs';
+import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel, OperationDataResult} from 'src/app/common/models';
 import {FoldersService, SitesService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
 import {TaskWizardCreateModel, TaskWizardEditModel, TaskWizardModel} from '../../../../models';
@@ -15,13 +11,11 @@ import {TaskWizardStateService} from '../store';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {dialogConfigHelper, findFullNameById} from 'src/app/common/helpers';
 import {TranslateService} from '@ngx-translate/core';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {MatDialog, MatDialogRef, MatDialogState} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
-import {
-  TaskWizardCreateModalComponent,
-  TaskWizardUpdateModalComponent
-} from '../../components';
+import {TaskWizardCreateModalComponent, TaskWizardUpdateModalComponent} from '../../components';
+import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
 
 @AutoUnsubscribe()
 @Component({
@@ -29,7 +23,8 @@ import {
   templateUrl: './task-wizard-page.component.html',
   styleUrls: ['./task-wizard-page.component.scss'],
 })
-export class TaskWizardPageComponent implements OnInit, OnDestroy {
+export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('planningTagsModal') planningTagsModal: PlanningTagsComponent;
   properties: CommonDictionaryModel[] = [];
   folders: FolderDto[] = [];
   sites: CommonDictionaryModel[] = [];
@@ -37,6 +32,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
   tasks: TaskWizardModel[] = [];
   appLanguages: LanguagesModel = new LanguagesModel();
   foldersTreeDto: FolderDto[];
+  createModal: MatDialogRef<TaskWizardCreateModalComponent, any>;
+  updateModal: MatDialogRef<TaskWizardUpdateModalComponent, any>;
 
   getPropertiesSub$: Subscription;
   getFoldersSub$: Subscription;
@@ -50,6 +47,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
   createTaskSub$: Subscription;
   updateTaskSub$: Subscription;
   updateTaskInModalSub$: Subscription;
+  tagsChangedSub$: Subscription;
+  getPlanningsTagsObservable$: Observable<OperationDataResult<CommonDictionaryModel[]>>;
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -107,11 +106,20 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
 
   getTags() {
     this.getPlanningsTagsSub$ = this.itemsPlanningPnTagsService.getPlanningsTags()
-      .pipe(tap(result => {
-        if (result && result.success && result.success) {
+      .pipe(
+        filter(result => !!(result && result.success && result.success)),
+        tap(result => {
           this.tags = result.model;
-        }
-      }))
+      }),
+        tap(() => {
+          if(this.createModal && this.createModal.getState() === MatDialogState.OPEN) {
+            this.createModal.componentInstance.tags = this.tags;
+          }
+          if(this.updateModal && this.updateModal.getState() === MatDialogState.OPEN) {
+            this.updateModal.componentInstance.tags = this.tags;
+          }
+        })
+        )
       .subscribe();
   }
 
@@ -139,9 +147,6 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
       .subscribe();
   }
 
-  ngOnDestroy(): void {
-  }
-
   updateTable() {
     this.getTasks();
   }
@@ -150,8 +155,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          const updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
-          updateModal.componentInstance.model = {
+          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+          this.updateModal.componentInstance.model = {
             eformId: data.model.eformId,
             folderId: data.model.folderId,
             propertyId: data.model.propertyId,
@@ -163,21 +168,22 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
             tagIds: data.model.tags,
             translates: data.model.translations,
           };
-          updateModal.componentInstance.typeahead.emit(model.eform);
-          updateModal.componentInstance.folders = this.folders;
-          updateModal.componentInstance.properties = this.properties;
-          updateModal.componentInstance.sites = this.sites;
-          updateModal.componentInstance.tags = this.tags;
-          updateModal.componentInstance.appLanguages = this.appLanguages;
-          updateModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
-          updateModal.componentInstance.selectedFolderName  = findFullNameById(
+          this.updateModal.componentInstance.typeahead.emit(model.eform);
+          this.updateModal.componentInstance.planningTagsModal = this.planningTagsModal;
+          this.updateModal.componentInstance.folders = this.folders;
+          this.updateModal.componentInstance.properties = this.properties;
+          this.updateModal.componentInstance.sites = this.sites;
+          this.updateModal.componentInstance.tags = this.tags;
+          this.updateModal.componentInstance.appLanguages = this.appLanguages;
+          this.updateModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
+          this.updateModal.componentInstance.selectedFolderName  = findFullNameById(
             data.model.folderId,
             this.foldersTreeDto
           );
           if (this.updateTaskInModalSub$) {
             this.updateTaskInModalSub$.unsubscribe();
           }
-          this.updateTaskInModalSub$ = updateModal.componentInstance.updateTask.subscribe(updateModel => {
+          this.updateTaskInModalSub$ = this.updateModal.componentInstance.updateTask.subscribe(updateModel => {
             this.updateTask({
               id: model.id,
               eformId: updateModel.eformId,
@@ -190,7 +196,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
               status: updateModel.status,
               tagIds: updateModel.tagIds,
               translates: data.model.translations,
-            }, updateModal);
+            }, this.updateModal);
           });
         }
       })
@@ -201,8 +207,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          const createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
-          createModal.componentInstance.model = {
+          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+          this.createModal.componentInstance.model = {
             eformId: data.model.eformId,
             folderId: data.model.folderId,
             propertyId: data.model.propertyId,
@@ -214,22 +220,23 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
             tagIds: data.model.tags,
             translates: data.model.translations,
           };
-          createModal.componentInstance.typeahead.emit(model.eform);
-          createModal.componentInstance.folders = this.folders;
-          createModal.componentInstance.properties = this.properties;
-          createModal.componentInstance.sites = this.sites;
-          createModal.componentInstance.tags = this.tags;
-          createModal.componentInstance.appLanguages = this.appLanguages;
-          createModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
-          createModal.componentInstance.selectedFolderName  = findFullNameById(
+          this.createModal.componentInstance.typeahead.emit(model.eform);
+          this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
+          this.createModal.componentInstance.folders = this.folders;
+          this.createModal.componentInstance.properties = this.properties;
+          this.createModal.componentInstance.sites = this.sites;
+          this.createModal.componentInstance.tags = this.tags;
+          this.createModal.componentInstance.appLanguages = this.appLanguages;
+          this.createModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
+          this.createModal.componentInstance.selectedFolderName  = findFullNameById(
             data.model.folderId,
             this.foldersTreeDto
           );
           if (this.createTaskInModalSub$) {
             this.createTaskInModalSub$.unsubscribe();
           }
-          this.createTaskInModalSub$ = createModal.componentInstance.createTask.subscribe(createModel => {
-            this.createTask(createModel, createModal);
+          this.createTaskInModalSub$ = this.createModal.componentInstance.createTask.subscribe(createModel => {
+            this.createTask(createModel, this.createModal);
           });
         }
       })
@@ -237,18 +244,19 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
   }
 
   onCreateTask() {
-    const createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
-    createModal.componentInstance.folders = this.folders;
-    createModal.componentInstance.properties = this.properties;
-    createModal.componentInstance.sites = this.sites;
-    createModal.componentInstance.tags = this.tags;
-    createModal.componentInstance.appLanguages = this.appLanguages;
-    createModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
+    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+    this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
+    this.createModal.componentInstance.folders = this.folders;
+    this.createModal.componentInstance.properties = this.properties;
+    this.createModal.componentInstance.sites = this.sites;
+    this.createModal.componentInstance.tags = this.tags;
+    this.createModal.componentInstance.appLanguages = this.appLanguages;
+    this.createModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
     if (this.createTaskInModalSub$) {
       this.createTaskInModalSub$.unsubscribe();
     }
-    this.createTaskInModalSub$ = createModal.componentInstance.createTask.subscribe(createModel => {
-      this.createTask(createModel, createModal);
+    this.createTaskInModalSub$ = this.createModal.componentInstance.createTask.subscribe(createModel => {
+      this.createTask(createModel, this.createModal);
     });
   }
 
@@ -312,5 +320,21 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy {
           this.updateTable();
         }
       });
+  }
+
+  openTagsModal() {
+    this.planningTagsModal.show();
+  }
+
+  ngAfterViewInit() {
+    this.tagsChangedSub$ = this.planningTagsModal.tagsChanged.subscribe(() => this.onUpdateTags());
+  }
+
+  onUpdateTags() {
+    this.getTags();
+    this.updateTable();
+  }
+
+  ngOnDestroy(): void {
   }
 }

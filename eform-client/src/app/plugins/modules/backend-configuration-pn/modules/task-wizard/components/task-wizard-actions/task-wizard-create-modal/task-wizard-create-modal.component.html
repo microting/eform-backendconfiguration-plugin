@@ -42,6 +42,16 @@
       [clearable]="true"
       [multiple]="true"
     />
+    <button
+      matSuffix
+      mat-icon-button
+      color="primary"
+      id="planningManageTagsBtn"
+      (click)="openTagsModal()"
+      matTooltip="{{ 'Manage tags' | translate }}"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
   </mat-form-field>
   <ng-container *ngFor="let languageModel of model.translates; let i = index; first as isFirst; last as isLast">
     <mat-card

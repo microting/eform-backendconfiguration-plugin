@@ -1,6 +1,15 @@
 <eform-new-subheader>
   <button
     mat-icon-button
+    color="primary"
+    id="planningManageTagsBtn"
+    (click)="openTagsModal()"
+    matTooltip="{{ 'Manage tags' | translate }}"
+  >
+    <mat-icon>discount</mat-icon>
+  </button>
+  <button
+    mat-icon-button
     color="accent"
     [matTooltip]="'Add new task' | translate"
     (click)="onCreateTask()"
@@ -24,3 +33,8 @@
   (copyTask)="onCopyTask($event)"
   (deleteTask)="onDeleteTask($event)"
 />
+
+<app-planning-tags
+  #planningTagsModal
+  [availableTags]="tags"
+></app-planning-tags>

@@ -25,6 +25,7 @@ import {dialogConfigHelper, findFullNameById, fixTranslationsByLanguages} from '
 import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
 import {TaskWizardFoldersModalComponent} from '../';
+import {PlanningTagsComponent} from '../../../../../../items-planning-pn/modules/plannings/components';
 
 @AutoUnsubscribe()
 @Component({
@@ -33,6 +34,7 @@ import {TaskWizardFoldersModalComponent} from '../';
   styleUrls: ['./task-wizard-update-modal.component.scss'],
 })
 export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
+  planningTagsModal: PlanningTagsComponent
   updateTask: EventEmitter<TaskWizardCreateModel> = new EventEmitter<TaskWizardCreateModel>();
   typeahead = new EventEmitter<string>();
   properties: CommonDictionaryModel[] = [];
@@ -250,6 +252,10 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
 
   update() {
     this.updateTask.emit(this.model);
+  }
+
+  openTagsModal() {
+    this.planningTagsModal.show();
   }
 
   hide() {
