@@ -156,6 +156,7 @@
     color="accent"
     id="updateTaskBtn"
     (click)="update()"
+    [disabled]="disabledSaveButton"
   >
     {{ 'Save' | translate }}
   </button>

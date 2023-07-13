@@ -26,6 +26,7 @@ import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
 import {TaskWizardFoldersModalComponent} from '../';
 import {PlanningTagsComponent} from '../../../../../../items-planning-pn/modules/plannings/components';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -58,6 +59,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     {field: 'name', header: this.translateService.stream('Name'),},
     {field: 'select', header: this.translateService.stream('Select'),},
   ];
+  private copyModel: TaskWizardCreateModel;
   public model: TaskWizardCreateModel = {
     eformId: null,
     folderId: null,
@@ -77,6 +79,10 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     return TaskWizardStatusesEnum;
   }
 
+  get disabledSaveButton(): boolean {
+    return R.equals(this.model, this.copyModel);
+  }
+
   constructor(
     private translateService: TranslateService,
     public dialogRef: MatDialogRef<TaskWizardUpdateModalComponent>,
@@ -84,6 +90,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     private cd: ChangeDetectorRef,
     public dialog: MatDialog,
     private overlay: Overlay,
+    private authStateService: AuthStateService,
   ) {
     this.typeahead
       .pipe(
@@ -255,11 +262,16 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   openTagsModal() {
-    this.planningTagsModal.show();
+    this.planningTagsModal.show(this.authStateService.isAdmin);
   }
 
   hide() {
     this.dialogRef.close();
+  }
+
+  fillModelAndCopyModel(model: TaskWizardCreateModel) {
+    this.model = R.clone(model);
+    this.copyModel = R.clone(model);
   }
 
   ngOnDestroy(): void {

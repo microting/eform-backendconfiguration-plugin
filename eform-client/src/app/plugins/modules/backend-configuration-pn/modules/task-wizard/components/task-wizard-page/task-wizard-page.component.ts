@@ -2,8 +2,8 @@ import {AfterViewInit, Component, OnDestroy, OnInit, ViewChild,} from '@angular/
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {BackendConfigurationPnPropertiesService, BackendConfigurationPnTaskWizardService} from '../../../../services';
 import {filter, tap} from 'rxjs/operators';
-import {Observable, Subscription, zip} from 'rxjs';
-import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel, OperationDataResult} from 'src/app/common/models';
+import {Subscription, zip} from 'rxjs';
+import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel} from 'src/app/common/models';
 import {FoldersService, SitesService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
 import {TaskWizardCreateModel, TaskWizardEditModel, TaskWizardModel} from '../../../../models';
@@ -16,6 +16,7 @@ import {Overlay} from '@angular/cdk/overlay';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
 import {TaskWizardCreateModalComponent, TaskWizardUpdateModalComponent} from '../../components';
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -48,7 +49,6 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   updateTaskSub$: Subscription;
   updateTaskInModalSub$: Subscription;
   tagsChangedSub$: Subscription;
-  getPlanningsTagsObservable$: Observable<OperationDataResult<CommonDictionaryModel[]>>;
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -61,6 +61,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     private overlay: Overlay,
     private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
     private appSettingsStateService: AppSettingsStateService,
+    private authStateService: AuthStateService,
   ) {
   }
 
@@ -156,7 +157,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       tap(data => {
         if (data && data.success && data.model) {
           this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
-          this.updateModal.componentInstance.model = {
+          this.updateModal.componentInstance.fillModelAndCopyModel({
             eformId: data.model.eformId,
             folderId: data.model.folderId,
             propertyId: data.model.propertyId,
@@ -167,7 +168,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             status: data.model.status,
             tagIds: data.model.tags,
             translates: data.model.translations,
-          };
+          });
           this.updateModal.componentInstance.typeahead.emit(model.eform);
           this.updateModal.componentInstance.planningTagsModal = this.planningTagsModal;
           this.updateModal.componentInstance.folders = this.folders;
@@ -323,7 +324,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   openTagsModal() {
-    this.planningTagsModal.show();
+    this.planningTagsModal.show(this.authStateService.isAdmin);
   }
 
   ngAfterViewInit() {

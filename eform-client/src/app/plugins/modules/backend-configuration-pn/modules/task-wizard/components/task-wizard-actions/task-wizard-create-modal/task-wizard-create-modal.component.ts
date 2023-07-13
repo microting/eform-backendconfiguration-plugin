@@ -26,6 +26,7 @@ import {findFullNameById, dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
 import {PlanningTagsComponent} from 'src/app/plugins/modules/items-planning-pn/modules/plannings/components';
+import {AuthStateService} from 'src/app/common/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -84,6 +85,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     private cd: ChangeDetectorRef,
     public dialog: MatDialog,
     private overlay: Overlay,
+    private authStateService: AuthStateService,
   ) {
     this.typeahead
       .pipe(
@@ -257,7 +259,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   }
 
   openTagsModal() {
-    this.planningTagsModal.show();
+    this.planningTagsModal.show(this.authStateService.isAdmin);
   }
 
   hide() {

@@ -27,6 +27,7 @@ import {ExcelIcon} from 'src/app/common/const';
 import {catchError, tap} from 'rxjs/operators';
 import {saveAs} from 'file-saver';
 import {format} from 'date-fns';
+import {CommonDictionaryModel} from 'src/app/common/models';
 
 @AutoUnsubscribe()
 @Component({
@@ -46,6 +47,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     workers: true,
     calendar: true,
   };
+  properties: CommonDictionaryModel[] = [];
 
   getAllTasksSub$: Subscription;
   taskCreatedSub$: Subscription;
@@ -56,6 +58,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   updateAreaRulePlanSub$: Subscription;
   planAreaRuleSub$: Subscription;
   downloadExcelReportSub$: Subscription;
+  getAllPropertiesDictionarySub$: Subscription;
 
   constructor(
     private loaderService: LoaderService,
@@ -75,6 +78,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.updateTable();
     this.getColumns();
+    this.getProperties();
   }
 
   ngOnDestroy(): void {
@@ -182,5 +186,15 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
         }),
       )
       .subscribe();
+  }
+
+  getProperties() {
+    this.getAllPropertiesDictionarySub$ = this.propertyService
+      .getAllPropertiesDictionary(true)
+      .subscribe((data) => {
+        if (data && data.success && data.model) {
+          this.properties = [...data.model];
+        }
+      });
   }
 }
