@@ -17,8 +17,6 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 import {SitesService} from 'src/app/common/services';
 import {format, parse, set} from 'date-fns';
 import {TranslateService} from '@ngx-translate/core';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
-import {AuthStateService} from 'src/app/common/store';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 
 @AutoUnsubscribe()
@@ -29,7 +27,6 @@ import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 })
 export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
-  private standartDateTimeFormat = `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`;
   filtersForm: FormGroup;
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];

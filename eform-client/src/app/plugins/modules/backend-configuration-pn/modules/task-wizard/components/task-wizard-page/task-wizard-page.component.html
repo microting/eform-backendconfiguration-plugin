@@ -1,0 +1,40 @@
+<eform-new-subheader>
+  <button
+    mat-icon-button
+    color="primary"
+    id="planningManageTagsBtn"
+    (click)="openTagsModal()"
+    matTooltip="{{ 'Manage tags' | translate }}"
+  >
+    <mat-icon>discount</mat-icon>
+  </button>
+  <button
+    mat-icon-button
+    color="accent"
+    [matTooltip]="'Add new task' | translate"
+    (click)="onCreateTask()"
+  >
+    <mat-icon>add</mat-icon>
+  </button>
+</eform-new-subheader>
+
+<app-task-wizard-filters
+  [properties]="properties"
+  [folders]="folders"
+  [sites]="sites"
+  [tags]="tags"
+  (updateTable)="updateTable()"
+/>
+
+<app-task-wizard-table
+  [tasks]="tasks"
+  (updateTable)="updateTable()"
+  (editTask)="onEditTask($event)"
+  (copyTask)="onCopyTask($event)"
+  (deleteTask)="onDeleteTask($event)"
+/>
+
+<app-planning-tags
+  #planningTagsModal
+  [availableTags]="tags"
+></app-planning-tags>

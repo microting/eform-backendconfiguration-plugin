@@ -11,8 +11,10 @@
 </eform-new-subheader>
 
 <div class="d-flex flex-column">
-  <app-task-tracker-filters (updateTable)="updateTable()">
-  </app-task-tracker-filters>
+  <app-task-tracker-filters
+    (updateTable)="updateTable()"
+    [properties]="properties"
+  />
   <div class="d-flex flex-row justify-content-start mb-2">
     <button
       mat-raised-button

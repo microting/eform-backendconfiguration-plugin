@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 
 namespace BackendConfiguration.Pn
 {
@@ -113,7 +114,8 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
             services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
             services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
-			services.AddSingleton<IRebusService, RebusService>();
+            services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();
+            services.AddSingleton<IRebusService, RebusService>();
             services.AddTransient<IWordService, WordService>();
             services.AddTransient<IExcelService, ExcelService>();
             services.AddTransient<IChemicalService, ChemicalService>();
@@ -1032,8 +1034,77 @@ namespace BackendConfiguration.Pn
 									Language = LanguageNames.Ukrainian
 								}
 							}
-						}
-					}
+						},
+                        new()
+                        {
+                            Name = "Task wizard",
+                            E2EId = "backend-configuration-pn-task-wizard",
+                            Link = "/plugins/backend-configuration-pn/task-wizard",
+                            Type = MenuItemTypeEnum.Link,
+                            Position = 6,
+                            MenuTemplate = new PluginMenuTemplateModel
+                            {
+                                Name = "Task wizard",
+                                E2EId = "backend-configuration-pn-task-wizard",
+                                DefaultLink = "/plugins/backend-configuration-pn/task-wizard",
+                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                                Translations = new List<PluginMenuTranslationModel>
+                                {
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.English,
+                                        Name = "Task wizard",
+                                        Language = LanguageNames.English
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.German,
+                                        Name = "Aufgaben-Assistent",
+                                        Language = LanguageNames.German
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Danish,
+                                        Name = "Opgaveguide",
+                                        Language = LanguageNames.Danish
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Ukrainian,
+                                        Name = "Майстер завдань",
+                                        Language = LanguageNames.Ukrainian
+                                    }
+                                }
+                            },
+                            Translations = new List<PluginMenuTranslationModel>
+                            {
+                                new()
+                                {
+                                    LocaleName = LocaleNames.English,
+                                    Name = "Task wizard",
+                                    Language = LanguageNames.English
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.German,
+                                    Name = "Aufgaben-Assistent",
+                                    Language = LanguageNames.German
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Danish,
+                                    Name = "Opgaveguide",
+                                    Language = LanguageNames.Danish
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Ukrainian,
+                                    Name = "Майстер завдань",
+                                    Language = LanguageNames.Ukrainian
+                                }
+                            }
+                        }
+                    }
                 }
             };
 
@@ -1101,8 +1172,16 @@ namespace BackendConfiguration.Pn
 	                    Link = "/plugins/backend-configuration/task-tracker",
 	                    Guards = new List<string>(),
 	                    Position = 5
+                    },
+                    new()
+                    {
+                        Name = localizationService?.GetString("Task wizard"),
+                        E2EId = "backend-configuration-task-wizard",
+                        Link = "/plugins/backend-configuration/task-wizard",
+                        Guards = new List<string>(),
+                        Position = 6
                     }
-				}
+                }
             });
             return result;
         }

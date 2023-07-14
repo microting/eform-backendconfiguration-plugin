@@ -290,4 +290,13 @@ export const itIT = {
   'Repeat': 'Ripeti',
   'Deadline': 'Scadenza',
   'Show/hide columns': 'Mostra/nascondi colonne',
+  'Add new task': 'Aggiungi nuova attività',
+  Folders: 'Cartelle',
+  Tags: 'Tag',
+  'Assign to': 'Assegna a',
+  Active: 'Attivo',
+  NotActive: 'Non attivo',
+  'Task name': 'Nome attività',
+  Folder: 'Cartella',
+  Notification: 'Notifica',
 };

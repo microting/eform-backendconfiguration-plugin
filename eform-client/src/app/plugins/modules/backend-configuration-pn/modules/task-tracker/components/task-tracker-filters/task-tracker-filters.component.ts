@@ -1,6 +1,6 @@
 import {
   Component,
-  EventEmitter,
+  EventEmitter, Input,
   OnDestroy,
   OnInit,
   Output,
@@ -25,17 +25,17 @@ import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/servi
 })
 export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
+  @Input() properties: CommonDictionaryModel[] = [];
   filtersForm: FormGroup = new FormGroup({
       propertyIds: new FormControl([]),
       tags: new FormControl([]),
       workers: new FormControl([]),
     }
   );
-  properties: CommonDictionaryModel[] = [];
+
   sites: CommonDictionaryModel[] = [];
   tags: CommonDictionaryModel[] = [];
   propertyIdValueChangesSub$: Subscription;
-
   getAllPropertiesDictionarySub$: Subscription;
   getAllSitesDictionarySub$: Subscription;
   getPlanningsTagsSub$: Subscription;
@@ -52,7 +52,6 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.getProperties();
     //this.getSites();
 
     this.propertyIdValueChangesSub$ = this.filtersForm
@@ -67,14 +66,6 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
       );
     this.getTags();
     this.subToFormChanges();
-  }
-
-  getProperties() {
-    this.getAllPropertiesDictionarySub$ = this.propertyService.getAllPropertiesDictionary(true).subscribe((data) => {
-      if (data && data.success && data.model) {
-        this.properties = [...data.model];
-      }
-    });
   }
 
   getSites(propertyIds: any) {

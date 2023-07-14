@@ -13,3 +13,4 @@ export * from './chemicals';
 export * from './pools';
 export * from './files';
 export * from './task-tracker';
+export * from './task-wizard';
