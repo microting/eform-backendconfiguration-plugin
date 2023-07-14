@@ -22,18 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Infrastructure.Helpers;
-
 namespace BackendConfiguration.Pn.Controllers
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
+    using Infrastructure.Helpers;
     using Infrastructure.Models.Properties;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microting.eFormApi.BasePn.Infrastructure.Models.API;
     using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
     using Services.BackendConfigurationPropertiesService;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     [Authorize]
     [Route("api/backend-configuration-pn/properties")]
@@ -98,6 +97,48 @@ namespace BackendConfiguration.Pn.Controllers
         public async Task<OperationDataResult<ChrResult>> GetChrInformation(int cvrNumber)
         {
             return await _backendConfigurationPropertiesService.GetChrInformation(cvrNumber).ConfigureAwait(false);
+        }
+
+        [HttpGet]
+        [Route("get-folder-dtos")]
+        public async Task<OperationDataResult<List<PropertyFolderModel>>> GetFolderDtos(int propertyId)
+        {
+            return await _backendConfigurationPropertiesService.GetLinkedFolderDtos(propertyId);
+        }
+
+        [HttpPost]
+        [Route("get-folder-dtos")]
+        public async Task<OperationDataResult<List<PropertyFolderModel>>> GetFolderDtos([FromBody] List<int> propertyIds)
+        {
+            return await _backendConfigurationPropertiesService.GetLinkedFolderDtos(propertyIds);
+        }
+
+        [HttpGet]
+        [Route("get-folder-list")]
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetFolderList(int propertyId)
+        {
+            return await _backendConfigurationPropertiesService.GetLinkedFoldersList(propertyId);
+        }
+
+        [HttpPost]
+        [Route("get-folder-list")]
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetFolderList([FromBody] List<int> propertyIds)
+        {
+            return await _backendConfigurationPropertiesService.GetLinkedFoldersList(propertyIds);
+        }
+
+        [HttpGet]
+        [Route("get-linked-sites")]
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId)
+        {
+            return await _backendConfigurationPropertiesService.GetLinkedSites(propertyId);
+        }
+
+        [HttpPost]
+        [Route("get-linked-sites")]
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([FromBody] List<int> propertyIds)
+        {
+            return await _backendConfigurationPropertiesService.GetLinkedSites(propertyIds);
         }
     }
 }

@@ -137,9 +137,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             var maxCvrNumbers = _options.Value.MaxCvrNumbers;
             var maxChrNumbers = _options.Value.MaxChrNumbers;
 
-            var result = await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
+            var result = await BackendConfigurationPropertiesServiceHelper.Create(propertyCreateModel,
+                await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext,
+                _itemsPlanningPnDbContext, maxChrNumbers, maxCvrNumbers).ConfigureAwait(false);
 
-            return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
+            return new OperationResult(result.Success,
+                _backendConfigurationLocalizationService.GetString(result.Message));
         }
 
         public async Task<OperationDataResult<PropertiesModel>> Read(int id)
@@ -187,9 +190,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
         public async Task<OperationResult> Update(PropertiesUpdateModel updateModel)
         {
-            var result =  await BackendConfigurationPropertiesServiceHelper.Update(updateModel, await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext, _itemsPlanningPnDbContext, _backendConfigurationLocalizationService).ConfigureAwait(false);
+            var result = await BackendConfigurationPropertiesServiceHelper.Update(updateModel,
+                await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext,
+                _itemsPlanningPnDbContext, _backendConfigurationLocalizationService).ConfigureAwait(false);
 
-            return new OperationResult(result.Success, _backendConfigurationLocalizationService.GetString(result.Message));
+            return new OperationResult(result.Success,
+                _backendConfigurationLocalizationService.GetString(result.Message));
         }
 
         public async Task<OperationResult> Delete(int id)
@@ -201,9 +207,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .Where(x => x.Id == id)
                     .Include(x => x.SelectedLanguages)
                     .Include(x => x.SelectedLanguages)
-					.Include(x => x.PropertyWorkers)
+                    .Include(x => x.PropertyWorkers)
                     .Include(x => x.AreaProperties)
                     .ThenInclude(x => x.ProperyAreaFolders)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
 
                 if (property == null)
@@ -246,9 +253,12 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                         .Select(x => x.CheckListId)
                         .FirstAsync();*/
 
-                    await WorkOrderHelper.RetractEform(property.PropertyWorkers, true, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
-                    await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
-                    await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, _userService.UserId, _backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(property.PropertyWorkers, true, core, _userService.UserId,
+                        _backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, _userService.UserId,
+                        _backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(property.PropertyWorkers, false, core, _userService.UserId,
+                        _backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
                 // delete property workers
@@ -278,6 +288,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     {
                         await core.EntityGroupDelete(areaProperty.GroupMicrotingUuid.ToString()).ConfigureAwait(false);
                     }
+
                     // get areaRules and select all linked entity for delete
                     var areaRules = await _backendConfigurationPnDbContext.AreaRules
                         .Where(x => x.PropertyId == areaProperty.PropertyId)
@@ -320,7 +331,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                      x.WorkflowState != Constants.WorkflowStates.Removed))
                         {
                             areaRuleAreaRuleTranslation.UpdatedByUserId = _userService.UserId;
-                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await areaRuleAreaRuleTranslation.Delete(_backendConfigurationPnDbContext)
+                                .ConfigureAwait(false);
                         }
 
                         // delete plannings area rules and items planning
@@ -366,7 +378,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                                             var result =
                                                 await sdkDbContext.Cases.SingleOrDefaultAsync(x =>
                                                     x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
-                                            if (result is {MicrotingUid: { }})
+                                            if (result is { MicrotingUid: { } })
                                             {
                                                 await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
                                             }
@@ -402,7 +414,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     // delete entity search group. only for type 10 Pool inspections
                     if (property.EntitySearchListPoolWorkers != null)
                     {
-                        await core.EntityGroupDelete(property.EntitySearchListPoolWorkers.ToString()).ConfigureAwait(false);
+                        await core.EntityGroupDelete(property.EntitySearchListPoolWorkers.ToString())
+                            .ConfigureAwait(false);
                     }
 
                     areaProperty.UpdatedByUserId = _userService.UserId;
@@ -438,39 +451,42 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 
                 // delete linked files
                 var propertyFiles = await _backendConfigurationPnDbContext.PropertyFiles
-	                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-	                .Where(x => x.PropertyId == property.Id)
-	                .Include(x => x.File)
-	                .ThenInclude(x => x.FileTags)
-	                .ToListAsync();
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PropertyId == property.Id)
+                    .Include(x => x.File)
+                    .ThenInclude(x => x.FileTags)
+                    .ToListAsync();
                 foreach (var propertyFile in propertyFiles)
                 {
                     // delete tags linked to file
-	                foreach (var fileFileTag in propertyFile.File.FileTags)
-	                {
-		                fileFileTag.UpdatedByUserId = _userService.UserId;
-		                await fileFileTag.Delete(_backendConfigurationPnDbContext);
-					}
+                    foreach (var fileFileTag in propertyFile.File.FileTags)
+                    {
+                        fileFileTag.UpdatedByUserId = _userService.UserId;
+                        await fileFileTag.Delete(_backendConfigurationPnDbContext);
+                    }
 
-					propertyFile.File.UpdatedByUserId = _userService.UserId;
-					await propertyFile.File.Delete(_backendConfigurationPnDbContext);
+                    propertyFile.File.UpdatedByUserId = _userService.UserId;
+                    await propertyFile.File.Delete(_backendConfigurationPnDbContext);
 
-					propertyFile.UpdatedByUserId = _userService.UserId;
-					await propertyFile.Delete(_backendConfigurationPnDbContext);
+                    propertyFile.UpdatedByUserId = _userService.UserId;
+                    await propertyFile.Delete(_backendConfigurationPnDbContext);
                 }
 
-				// delete property
-				property.UpdatedByUserId = _userService.UserId;
+                // delete property
+                property.UpdatedByUserId = _userService.UserId;
                 await property.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
                 if (property.EntitySelectListAreas != null)
                 {
-                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListAreas).ConfigureAwait(false);
+                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListAreas)
+                        .ConfigureAwait(false);
                     await core.EntityGroupDelete(eg.MicrotingUid).ConfigureAwait(false);
                 }
 
-                if (property.EntitySelectListDeviceUsers != null) {
-                    var eg = await sdkDbContext.EntityGroups.SingleAsync(x => x.Id == property.EntitySelectListDeviceUsers).ConfigureAwait(false);
+                if (property.EntitySelectListDeviceUsers != null)
+                {
+                    var eg = await sdkDbContext.EntityGroups
+                        .SingleAsync(x => x.Id == property.EntitySelectListDeviceUsers).ConfigureAwait(false);
                     await core.EntityGroupDelete(eg.MicrotingUid).ConfigureAwait(false);
                 }
 
@@ -520,14 +536,286 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         public async Task<OperationDataResult<ChrResult>> GetChrInformation(int chrNumber)
         {
             var chrHelper = new ChrHelper();
-            try {
+            try
+            {
                 var chr = await chrHelper.GetCompanyInfo(chrNumber).ConfigureAwait(false);
 
                 return new OperationDataResult<ChrResult>(true, chr);
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 return new OperationDataResult<ChrResult>(false, e.Message);
             }
+        }
 
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedFoldersList(int propertyId)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var userLanguage = await _userService.GetCurrentUserLanguage();
+
+                var folderIds = await _backendConfigurationPnDbContext.ProperyAreaFolders
+                    .Where(x => x.AreaProperty.PropertyId == propertyId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.FolderId)
+                    .ToListAsync();
+                folderIds = folderIds.Distinct().ToList();
+
+
+                var folders = await sdkDbContext.Folders
+                    .Include(x => x.FolderTranslations)
+                    .ToListAsync();
+
+                var folderList = folders
+                    .Where(f => f.ParentId == null)
+                    .Select(f => MapFolder(f, folders, userLanguage))
+                    .Where(x => HaveFolderWithId(folderIds, x))
+                    .SelectMany(x => MapFolder(x))
+                    .ToList();
+
+                return new OperationDataResult<List<CommonDictionaryModel>>(true, folderList);
+            }
+            catch (Exception e)
+            {
+                return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
+            }
+        }
+
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedFoldersList(List<int> propertyIds)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var userLanguage = await _userService.GetCurrentUserLanguage();
+
+                var folderIds = await _backendConfigurationPnDbContext.ProperyAreaFolders
+                    .Where(x => propertyIds.Contains(x.AreaProperty.PropertyId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.FolderId)
+                    .ToListAsync();
+                folderIds = folderIds.Distinct().ToList();
+
+                var folders = await sdkDbContext.Folders
+                    .Include(x => x.FolderTranslations)
+                    .ToListAsync();
+
+                var folderList = folders
+                    .Where(f => f.ParentId == null)
+                    .Select(f => MapFolder(f, folders, userLanguage))
+                    .Where(x => HaveFolderWithId(folderIds, x))
+                    .SelectMany(x => MapFolder(x))
+                    .ToList();
+
+                return new OperationDataResult<List<CommonDictionaryModel>>(true, folderList);
+            }
+            catch (Exception e)
+            {
+                return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
+            }
+        }
+
+        public async Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(int propertyId)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var userLanguage = await _userService.GetCurrentUserLanguage();
+
+                var folderIds = await _backendConfigurationPnDbContext.Properties
+                    .Where(x => x.Id == propertyId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.FolderId.HasValue)
+                    .Select(x => x.FolderId.Value)
+                    .ToListAsync();
+
+                folderIds.AddRange(await _backendConfigurationPnDbContext.ProperyAreaFolders
+                    .Where(x => x.AreaProperty.PropertyId == propertyId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.FolderId)
+                    .ToListAsync());
+                folderIds = folderIds.Distinct().ToList();
+
+                var folders = await sdkDbContext.Folders
+                    .Include(x => x.FolderTranslations)
+                    .ToListAsync();
+
+                var folderModels = folders
+                    .Where(f => f.ParentId == null)
+                    .Select(f => MapFolder(f, folders, userLanguage))
+                    .Where(x => HaveFolderWithId(folderIds, x))
+                    .ToList();
+
+                return new OperationDataResult<List<PropertyFolderModel>>(true, folderModels);
+            }
+            catch (Exception e)
+            {
+                return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
+            }
+        }
+        
+        public async Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(List<int> propertyIds)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var userLanguage = await _userService.GetCurrentUserLanguage();
+
+                var folderIds = await _backendConfigurationPnDbContext.Properties
+                    .Where(x => propertyIds.Contains(x.Id))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.FolderId.HasValue)
+                    .Select(x => x.FolderId.Value)
+                    .ToListAsync();
+
+                folderIds.AddRange(await _backendConfigurationPnDbContext.ProperyAreaFolders
+                    .Where(x => propertyIds.Contains(x.AreaProperty.PropertyId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.FolderId)
+                    .ToListAsync());
+                folderIds = folderIds.Distinct().ToList();
+
+                var folders = await sdkDbContext.Folders
+                    .Include(x => x.FolderTranslations)
+                    .ToListAsync();
+                
+                var folderModels = folders
+                    .Where(f => f.ParentId == null)
+                    .Select(f => MapFolder(f, folders, userLanguage))
+                    .Where(x => HaveFolderWithId(folderIds, x))
+                    .ToList();
+
+                return new OperationDataResult<List<PropertyFolderModel>>(true, folderModels);
+            }
+            catch (Exception e)
+            {
+                return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
+            }
+        }
+
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+                var siteIds = await _backendConfigurationPnDbContext.PropertyWorkers
+                    .Where(x => x.PropertyId == propertyId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.WorkerId)
+                    .ToListAsync();
+
+                var sites = await sdkDbContext.Sites
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => siteIds.Contains(x.Id))
+                    .Select(x => new CommonDictionaryModel
+                    {
+                        Name = x.Name,
+                        Id = x.Id
+                    })
+                    .ToListAsync();
+
+                return new OperationDataResult<List<CommonDictionaryModel>>(true, sites);
+            }
+            catch (Exception e)
+            {
+                return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
+            }
+        }
+
+        public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(List<int> propertyIds)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+                var siteIds = await _backendConfigurationPnDbContext.PropertyWorkers
+                    .Where(x => propertyIds.Contains(x.PropertyId))
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(x => x.WorkerId)
+                    .ToListAsync();
+
+                var sites = await sdkDbContext.Sites
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => siteIds.Contains(x.Id))
+                    .Select(x => new CommonDictionaryModel
+                    {
+                        Name = x.Name,
+                        Id = x.Id
+                    })
+                    .ToListAsync();
+
+                return new OperationDataResult<List<CommonDictionaryModel>>(true, sites);
+            }
+            catch (Exception e)
+            {
+                return new OperationDataResult<List<CommonDictionaryModel>>(false, e.Message);
+            }
+        }
+
+        private static PropertyFolderModel MapFolder(Folder folder, List<Folder> allFolders, Language userLanguage)
+        {
+            var propertyFolderModel = new PropertyFolderModel
+            {
+                Id = folder.Id,
+                Name = folder.FolderTranslations
+                    .Where(x => x.LanguageId == userLanguage.Id)
+                    .Select(x => x.Name)
+                    .FirstOrDefault(),
+                Description = folder.FolderTranslations
+                    .Where(x => x.LanguageId == userLanguage.Id)
+                    .Select(x => x.Description)
+                    .FirstOrDefault(),
+                MicrotingUId = folder.MicrotingUid,
+                ParentId = folder.ParentId,
+                Children = new List<PropertyFolderModel>(),
+            };
+
+            foreach (var childFolder in allFolders.Where(f => f.ParentId == folder.Id))
+            {
+                propertyFolderModel.Children.Add(MapFolder(childFolder, allFolders, userLanguage));
+            }
+
+            return propertyFolderModel;
+        }
+        private static List<CommonDictionaryModel> MapFolder(PropertyFolderModel folder, string rootFolderName = "")
+        {
+            var result = new List<CommonDictionaryModel>();
+            var fullName = string.IsNullOrEmpty(rootFolderName) ? folder.Name : $"{rootFolderName} - {folder.Name}";
+            if (!folder.Children.Any())
+            {
+                result.Add(new CommonDictionaryModel
+                {
+                    Id = folder.Id,
+                    Description = folder.Description,
+                    Name = fullName
+                });
+            }
+            else
+            {
+                foreach (var childFolder in folder.Children)
+                {
+                    result.AddRange(MapFolder(childFolder, fullName));
+                }
+            }
+
+            return result;
+        }
+
+        private static bool HaveFolderWithId(int folderId, PropertyFolderModel folder)
+        {
+            return folder.Id == folderId || folder.Children.Any(f => HaveFolderWithId(folderId, f));
+        }
+
+        private static bool HaveFolderWithId(List<int> folderIds, PropertyFolderModel folder)
+        {
+            return folderIds.Contains(folder.Id) || folder.Children.Any(f => HaveFolderWithId(folderIds, f));
         }
     }
 }

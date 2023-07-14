@@ -8,6 +8,8 @@ import {Observable, filter} from 'rxjs';
 import {BackendConfigurationPnTaskWizardService} from '../../../../services';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {updateTableSort} from 'src/app/common/helpers';
+import * as R from 'ramda';
+import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 
 @Injectable({providedIn: 'root'})
 export class TaskWizardStateService {
@@ -32,13 +34,59 @@ export class TaskWizardStateService {
     return this.query.selectFilters$;
   }
 
-  updateFilters(taskManagementFiltrationModel: TaskWizardFiltrationModel) {
-    this.store.update((state) => ({
-      filters: {
-        ...state.filters,
-        ...taskManagementFiltrationModel
-      },
-    }));
+  updatePropertyIds(propertyIds: number[]) {
+    if(!R.equals(this.store.getValue().filters.propertyIds, propertyIds)) {
+      this.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          propertyIds: propertyIds,
+        },
+      }));
+    }
+  }
+
+  updateFolderIds(folderIds: number[]) {
+    if(!R.equals(this.store.getValue().filters.folderIds, folderIds)) {
+      this.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          folderIds: folderIds,
+        },
+      }));
+    }
+  }
+
+  updateTagIds(tagIds: number[]) {
+    if(!R.equals(this.store.getValue().filters.tagIds, tagIds)) {
+      this.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          tagIds: tagIds,
+        },
+      }));
+    }
+  }
+
+  updateStatus(status: TaskWizardStatusesEnum) {
+    if(!R.equals(this.store.getValue().filters.status, status)) {
+      this.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          status: status,
+        },
+      }));
+    }
+  }
+
+  updateAssignToIds(assignToIds: number[]) {
+    if(!R.equals(this.store.getValue().filters.assignToIds, assignToIds)) {
+      this.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          assignToIds: assignToIds,
+        },
+      }));
+    }
   }
 
   addTagToFilters(tag: CommonDictionaryModel) {

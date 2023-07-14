@@ -37,9 +37,9 @@ import {AuthStateService} from 'src/app/common/store';
 export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   planningTagsModal: PlanningTagsComponent
   createTask: EventEmitter<TaskWizardCreateModel> = new EventEmitter<TaskWizardCreateModel>();
+  changeProperty: EventEmitter<number> = new EventEmitter<number>();
   typeahead = new EventEmitter<string>();
   properties: CommonDictionaryModel[] = [];
-  folders: FolderDto[] = [];
   tags: CommonDictionaryModel[] = [];
   sites: CommonDictionaryModel[] = [];
   foldersTreeDto: FolderDto[] = [];
@@ -160,6 +160,10 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
 
   changePropertyId(property: CommonDictionaryModel) {
     this.model.propertyId = property.id;
+    this.changeProperty.emit(property.id);
+    this.model.folderId = null;
+    this.model.sites = [];
+    this.selectedFolderName = '';
   }
 
   changeTagIds(tags: SharedTagModel[]) {
@@ -244,7 +248,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     foldersModal.backdropClick().pipe(take(1)).subscribe(_ => foldersModal.close());
     foldersModal.componentInstance.folders = this.foldersTreeDto;
     foldersModal.componentInstance.eFormSdkFolderId =
-      this.model.folderId ? this.folders.filter(x => x.id === this.model.folderId)[0].id : null;
+      this.model.folderId ? this.model.folderId : null;
     this.folderSelectedSub$ = foldersModal.componentInstance.folderSelected.subscribe(x => {
       this.model.folderId = x.id;
       this.selectedFolderName = findFullNameById(

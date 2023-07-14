@@ -22,32 +22,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Infrastructure.Helpers;
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
+
+using Infrastructure.Helpers;
+using Infrastructure.Models.Properties;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+public interface IBackendConfigurationPropertiesService
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.Properties;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-
-    public interface IBackendConfigurationPropertiesService
-    {
-        Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request);
-
-        Task<OperationResult> Create(PropertyCreateModel createModel);
-
-        Task<OperationDataResult<PropertiesModel>> Read(int id);
-
-        Task<OperationResult> Update(PropertiesUpdateModel updateModel);
-
-        Task<OperationResult> Delete(int id);
-
-        Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary(bool fullNames);
-
-        Task<OperationDataResult<Result>> GetCompanyType(int number);
-
-        Task<OperationDataResult<ChrResult>> GetChrInformation(int number);
-    }
+    Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request);
+    Task<OperationResult> Create(PropertyCreateModel createModel);
+    Task<OperationDataResult<PropertiesModel>> Read(int id);
+    Task<OperationResult> Update(PropertiesUpdateModel updateModel);
+    Task<OperationResult> Delete(int id);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetCommonDictionary(bool fullNames);
+    Task<OperationDataResult<Result>> GetCompanyType(int number);
+    Task<OperationDataResult<ChrResult>> GetChrInformation(int number);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedFoldersList(int propertyId);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedFoldersList(List<int> propertyIds);
+    Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(int propertyId);
+    Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(List<int> propertyIds);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(List<int> propertyId);
 }
