@@ -35,11 +35,11 @@ import {AuthStateService} from 'src/app/common/store';
   styleUrls: ['./task-wizard-update-modal.component.scss'],
 })
 export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
-  planningTagsModal: PlanningTagsComponent
+  planningTagsModal: PlanningTagsComponent;
   updateTask: EventEmitter<TaskWizardCreateModel> = new EventEmitter<TaskWizardCreateModel>();
   typeahead = new EventEmitter<string>();
+  changeProperty: EventEmitter<number> = new EventEmitter<number>();
   properties: CommonDictionaryModel[] = [];
-  folders: FolderDto[] = [];
   tags: CommonDictionaryModel[] = [];
   sites: CommonDictionaryModel[] = [];
   repeatEveryArr: { id: number, name: string }[] = [];
@@ -118,7 +118,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     this.model.translates = fixTranslationsByLanguages(this.model.translates,
       this.appLanguages.languages
         .filter(x => x.isActive)
-        .map(x => ({languageId: x.id})))
+        .map(x => ({languageId: x.id})));
     this.repeatEveryArr = generateWeeksList(this.translateService, 52);
     this.repeatTypeArr = Object.keys(RepeatTypeEnum)
       .filter(key => isNaN(Number(key))) // Filter out numeric keys that TypeScript adds to enumerations
@@ -164,15 +164,19 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
 
   changePropertyId(property: CommonDictionaryModel) {
     this.model.propertyId = property.id;
+    this.changeProperty.emit(property.id);
+    this.model.folderId = null;
+    this.model.sites = [];
+    this.selectedFolderName = '';
   }
 
   changeTagIds(tags: SharedTagModel[]) {
     this.model.tagIds = tags.map(x => x.id);
   }
 
-/*  updateLanguageModel(translationsModel: CommonTranslationsModel, index: number) {
-    this.model.translates[index] = translationsModel;
-  }*/
+  /*updateLanguageModel(translationsModel: CommonTranslationsModel, index: number) {
+      this.model.translates[index] = translationsModel;
+    }*/
 
   updateName(name: string, index: number) {
     this.model.translates[index].name = name;
@@ -247,7 +251,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
       {...dialogConfigHelper(this.overlay), hasBackdrop: true});
     foldersModal.backdropClick().pipe(take(1)).subscribe(_ => foldersModal.close());
     foldersModal.componentInstance.folders = this.foldersTreeDto;
-    foldersModal.componentInstance.eFormSdkFolderId = this.folders.filter(x => x.id === this.model.folderId)[0].id;
+    foldersModal.componentInstance.eFormSdkFolderId = this.model.folderId;
     this.folderSelectedSub$ = foldersModal.componentInstance.folderSelected.subscribe(x => {
       this.model.folderId = x.id;
       this.selectedFolderName = findFullNameById(

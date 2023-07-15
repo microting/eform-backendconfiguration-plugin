@@ -4,7 +4,6 @@ import {BackendConfigurationPnPropertiesService, BackendConfigurationPnTaskWizar
 import {filter, tap} from 'rxjs/operators';
 import {Subscription, zip} from 'rxjs';
 import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel} from 'src/app/common/models';
-import {FoldersService, SitesService} from 'src/app/common/services';
 import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
 import {TaskWizardCreateModel, TaskWizardEditModel, TaskWizardModel} from '../../../../models';
 import {TaskWizardStateService} from '../store';
@@ -32,9 +31,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   tags: CommonDictionaryModel[] = [];
   tasks: TaskWizardModel[] = [];
   appLanguages: LanguagesModel = new LanguagesModel();
-  foldersTreeDto: FolderDto[];
-  createModal: MatDialogRef<TaskWizardCreateModalComponent, any>;
-  updateModal: MatDialogRef<TaskWizardUpdateModalComponent, any>;
+  createModal: MatDialogRef<TaskWizardCreateModalComponent>;
+  updateModal: MatDialogRef<TaskWizardUpdateModalComponent>;
 
   getPropertiesSub$: Subscription;
   getFoldersSub$: Subscription;
@@ -49,11 +47,11 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   updateTaskSub$: Subscription;
   updateTaskInModalSub$: Subscription;
   tagsChangedSub$: Subscription;
+  getFiltersAsyncSub$: Subscription;
+  changePropertySub$: Subscription;
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
-    private folderService: FoldersService,
-    private sitesService: SitesService,
     private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
     private taskWizardStateService: TaskWizardStateService,
     private translateService: TranslateService,
@@ -67,12 +65,19 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
 
   ngOnInit(): void {
     this.getProperties();
-    this.getFolders();
-    this.getFoldersTree();
-    this.getSites();
     this.getTags();
     this.getTasks();
     this.getEnabledLanguages();
+    this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
+      .pipe(
+        tap(filters => {
+          if(filters.propertyIds.length !== 0) {
+            this.getFolders();
+            this.getSites();
+          }
+        })
+      )
+      .subscribe()
   }
 
   getProperties() {
@@ -86,7 +91,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getFolders() {
-    this.getFoldersSub$ = this.folderService.getAllFoldersList()
+    this.getFoldersSub$ = this.propertyService
+      .getLinkedFolderListByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
       .pipe(tap(data => {
         if (data && data.success && data.model) {
           this.folders = data.model;
@@ -96,7 +102,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getSites() {
-    this.getSitesSub$ = this.sitesService.getAllSitesDictionary()
+    this.getSitesSub$ = this.propertyService
+      .getLinkedSitesByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
       .pipe(tap(result => {
         if (result && result.success && result.success) {
           this.sites = result.model;
@@ -111,17 +118,16 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
         filter(result => !!(result && result.success && result.success)),
         tap(result => {
           this.tags = result.model;
-      }),
+        }),
         tap(() => {
-          if(this.createModal && this.createModal.getState() === MatDialogState.OPEN) {
+          if (this.createModal && this.createModal.getState() === MatDialogState.OPEN) {
             this.createModal.componentInstance.tags = this.tags;
           }
-          if(this.updateModal && this.updateModal.getState() === MatDialogState.OPEN) {
+          if (this.updateModal && this.updateModal.getState() === MatDialogState.OPEN) {
             this.updateModal.componentInstance.tags = this.tags;
           }
         })
-        )
-      .subscribe();
+      ).subscribe();
   }
 
   getTasks() {
@@ -130,18 +136,6 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
         tap(data => {
           if (data && data.success && data.model) {
             this.tasks = data.model;
-          }
-        })
-      )
-      .subscribe();
-  }
-
-  getFoldersTree() {
-    this.folderService.getAllFolders()
-      .pipe(
-        tap((operation) => {
-          if (operation && operation.success) {
-            this.foldersTreeDto = operation.model;
           }
         })
       )
@@ -171,16 +165,28 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
           });
           this.updateModal.componentInstance.typeahead.emit(model.eform);
           this.updateModal.componentInstance.planningTagsModal = this.planningTagsModal;
-          this.updateModal.componentInstance.folders = this.folders;
           this.updateModal.componentInstance.properties = this.properties;
-          this.updateModal.componentInstance.sites = this.sites;
           this.updateModal.componentInstance.tags = this.tags;
           this.updateModal.componentInstance.appLanguages = this.appLanguages;
-          this.updateModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
-          this.updateModal.componentInstance.selectedFolderName  = findFullNameById(
-            data.model.folderId,
-            this.foldersTreeDto
-          );
+          if(this.changePropertySub$) {
+            this.changePropertySub$.unsubscribe()
+          }
+          this.changePropertySub$ = this.updateModal.componentInstance.changeProperty.subscribe(propertyId => {
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+              .subscribe(([folders, sites]) => {
+                if(folders && folders.success && folders.model) {
+                  this.updateModal.componentInstance.foldersTreeDto = folders.model;
+                }
+                if(sites && sites.success && sites.model) {
+                  this.updateModal.componentInstance.sites = sites.model;
+                }
+                this.updateModal.componentInstance.selectedFolderName  = findFullNameById(
+                  this.updateModal.componentInstance.model.folderId,
+                  folders.model
+                );
+              })
+          })
+          this.updateModal.componentInstance.changeProperty.emit(data.model.propertyId)
           if (this.updateTaskInModalSub$) {
             this.updateTaskInModalSub$.unsubscribe();
           }
@@ -223,16 +229,28 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
           };
           this.createModal.componentInstance.typeahead.emit(model.eform);
           this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
-          this.createModal.componentInstance.folders = this.folders;
           this.createModal.componentInstance.properties = this.properties;
-          this.createModal.componentInstance.sites = this.sites;
           this.createModal.componentInstance.tags = this.tags;
           this.createModal.componentInstance.appLanguages = this.appLanguages;
-          this.createModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
-          this.createModal.componentInstance.selectedFolderName  = findFullNameById(
-            data.model.folderId,
-            this.foldersTreeDto
-          );
+          if(this.changePropertySub$) {
+            this.changePropertySub$.unsubscribe()
+          }
+          this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+              .subscribe(([folders, sites]) => {
+                if(folders && folders.success && folders.model) {
+                  this.createModal.componentInstance.foldersTreeDto = folders.model;
+                }
+                if(sites && sites.success && sites.model) {
+                  this.createModal.componentInstance.sites = sites.model;
+                }
+                this.createModal.componentInstance.selectedFolderName = findFullNameById(
+                  this.createModal.componentInstance.model.folderId,
+                  folders.model
+                );
+              })
+          })
+          this.createModal.componentInstance.changeProperty.emit(data.model.propertyId)
           if (this.createTaskInModalSub$) {
             this.createTaskInModalSub$.unsubscribe();
           }
@@ -247,12 +265,27 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   onCreateTask() {
     this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
     this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
-    this.createModal.componentInstance.folders = this.folders;
     this.createModal.componentInstance.properties = this.properties;
-    this.createModal.componentInstance.sites = this.sites;
     this.createModal.componentInstance.tags = this.tags;
     this.createModal.componentInstance.appLanguages = this.appLanguages;
-    this.createModal.componentInstance.foldersTreeDto = this.foldersTreeDto;
+    if(this.changePropertySub$) {
+      this.changePropertySub$.unsubscribe()
+    }
+    this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
+      zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+        .subscribe(([folders, sites]) => {
+          if(folders && folders.success && folders.model) {
+            this.createModal.componentInstance.foldersTreeDto = folders.model;
+          }
+          if(sites && sites.success && sites.model) {
+            this.createModal.componentInstance.sites = sites.model;
+          }
+          this.createModal.componentInstance.selectedFolderName  = findFullNameById(
+            this.createModal.componentInstance.model.folderId,
+            folders.model
+          );
+        })
+    })
     if (this.createTaskInModalSub$) {
       this.createTaskInModalSub$.unsubscribe();
     }

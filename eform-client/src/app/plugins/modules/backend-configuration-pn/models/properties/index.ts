@@ -6,3 +6,5 @@ export * from './property-areas-update.model';
 export * from './property-area.model';
 export * from './property-workers-assignment.model';
 export * from './result.model';
+export * from './chr-result.model';
+export * from './property-folder.model';
