@@ -243,19 +243,21 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   }
 
   openFoldersModal() {
-    const foldersModal = this.dialog.open(TaskWizardFoldersModalComponent,
-      {...dialogConfigHelper(this.overlay), hasBackdrop: true});
-    foldersModal.backdropClick().pipe(take(1)).subscribe(_ => foldersModal.close());
-    foldersModal.componentInstance.folders = this.foldersTreeDto;
-    foldersModal.componentInstance.eFormSdkFolderId =
-      this.model.folderId ? this.model.folderId : null;
-    this.folderSelectedSub$ = foldersModal.componentInstance.folderSelected.subscribe(x => {
-      this.model.folderId = x.id;
-      this.selectedFolderName = findFullNameById(
-        x.id,
-        this.foldersTreeDto
-      );
-    });
+    if(this.model.propertyId) {
+      const foldersModal = this.dialog.open(TaskWizardFoldersModalComponent,
+        {...dialogConfigHelper(this.overlay), hasBackdrop: true});
+      foldersModal.backdropClick().pipe(take(1)).subscribe(_ => foldersModal.close());
+      foldersModal.componentInstance.folders = this.foldersTreeDto;
+      foldersModal.componentInstance.eFormSdkFolderId =
+        this.model.folderId ? this.model.folderId : null;
+      this.folderSelectedSub$ = foldersModal.componentInstance.folderSelected.subscribe(x => {
+        this.model.folderId = x.id;
+        this.selectedFolderName = findFullNameById(
+          x.id,
+          this.foldersTreeDto
+        );
+      });
+    }
   }
 
   create() {
