@@ -18,6 +18,7 @@ export interface TaskModel {
   complianceId: number;
   areaId: number;
   areaRuleId: number;
+  areaRulePlanningId: number;
   weeks: WeekListModel[];
 }
 

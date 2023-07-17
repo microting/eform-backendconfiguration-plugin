@@ -230,6 +230,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     {
         try
         {
+            var core = await _coreHelper.GetCore();
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var userLanguage = await _userService.GetCurrentUserLanguage();
             var query = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRule.AreaRuleTranslations)
@@ -271,6 +274,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .ThenInclude(x => x.PlanningTag)
                 .AsQueryable();
 
+            var eformNamesQuery = await sdkDbContext.CheckListTranslations
+                .Where(x => x.LanguageId == userLanguage.Id)
+                .Where(x => areaRulePlannings.Select(y => (int)y.EformId).Distinct().Contains(x.CheckListId))
+                .Select(x => new { x.CheckListId, x.Text })
+                .ToListAsync();
+
             // add items planning tags to list area rules
             var itemsPlanningAndAreaRules = areaRulePlannings.Join(await itemsPlanningQuery.ToListAsync(),
                 areaRule => areaRule.ItemPlanningId,
@@ -279,10 +288,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 {
                     FolderId = areaRule.FolderId,
                     EformId = (int)areaRule.EformId,
+                    EformName = eformNamesQuery
+                        .Where(y => y.CheckListId == areaRule.EformId)
+                        .Select(y => y.Text)
+                        .FirstOrDefault(),
                     Id = areaRule.Id,
                     AssignedTo = areaRule.PlanningSites
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => x.SiteId).ToList(),
+                        .Select(x => x.SiteId)
+                        .ToList(),
                     PropertyId = areaRule.PropertyId,
                     Translations = areaRule.TaskNames,
                     RepeatEvery = (int)areaRule.RepeatEvery,

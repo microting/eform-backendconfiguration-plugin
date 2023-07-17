@@ -8,6 +8,7 @@ export interface TaskWizardTaskModel {
   tags: number[];
   translations: CommonTranslationsModel[];
   eformId: number;
+  eformName: string;
   startDate: Date;
   repeatType: RepeatTypeEnum;
   repeatEvery: number;
