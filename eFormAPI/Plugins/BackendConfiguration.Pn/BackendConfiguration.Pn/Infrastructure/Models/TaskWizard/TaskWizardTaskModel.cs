@@ -13,6 +13,7 @@ public class TaskWizardTaskModel
     public List<int> Tags { get; set; } = new();
     public List<CommonTranslationsModel> Translations { get; set; } = new();
     public int EformId { get; set; }
+    public string EformName { get; set; }
     public DateTime StartDate { get; set; }
     public RepeatType RepeatType { get; set; }
     public int RepeatEvery { get; set; }

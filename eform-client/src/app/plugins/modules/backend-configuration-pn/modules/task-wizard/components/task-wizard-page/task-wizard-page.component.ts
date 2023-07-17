@@ -108,8 +108,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
         if (result && result.success && result.success) {
           this.sites = result.model;
         }
-      }))
-      .subscribe();
+      })).subscribe();
   }
 
   getTags() {

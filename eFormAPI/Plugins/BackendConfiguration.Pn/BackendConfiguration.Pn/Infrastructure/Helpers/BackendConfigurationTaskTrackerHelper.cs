@@ -170,7 +170,7 @@ public static class BackendConfigurationTaskTrackerHelper
 				var areaRulePlanning = await backendConfigurationPnDbContext.AreaRulePlannings
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
 					.Where(x => x.ItemPlanningId == compliance.PlanningId)
-					.Select(x => new { x.AreaRuleId, x.StartDate })
+					.Select(x => new { x.AreaRuleId, x.StartDate, x.Id })
 					.FirstOrDefaultAsync();
 
 				if (areaRulePlanning == null) continue;
@@ -218,7 +218,8 @@ public static class BackendConfigurationTaskTrackerHelper
 					ComplianceId = compliance.Id,
 					AreaId = compliance.AreaId,
 					AreaRuleId = areaRulePlanning!.AreaRuleId,
-					Weeks = weeksThisCompliance
+                    AreaRulePlanId = areaRulePlanning.Id,
+                    Weeks = weeksThisCompliance
 				};
 
 				if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)
