@@ -640,6 +640,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 folderIds = folderIds.Distinct().ToList();
 
                 var folders = await sdkDbContext.Folders
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Include(x => x.FolderTranslations)
                     .ToListAsync();
 
