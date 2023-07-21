@@ -32,6 +32,12 @@
       [(ngModel)]="selectedDeviceUser.languageCode"
       [disabled]="selectedDeviceUser.isLocked"
       [items]="activeLanguages">
+      <ng-template ng-label-tmp let-item="item">
+        {{item.name | translate}}
+      </ng-template>
+      <ng-template ng-option-tmp let-item="item">
+        {{item.name | translate}}
+      </ng-template>
     </mtx-select>
   </mat-form-field>
   <mat-slide-toggle
