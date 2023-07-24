@@ -133,6 +133,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         .subscribe((operation) => {
           if (operation && operation.success && this.assignments) {
             this.assignWorkerToPropertiesUpdate();
+          } else {
+            this.hide(true);
           }
         });
     } else {
@@ -147,8 +149,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {
             this.assignWorkerToProperties(operation.model);
+          } else {
+            this.hide(true);
           }
-          this.hide(true);
         }
       });
   }

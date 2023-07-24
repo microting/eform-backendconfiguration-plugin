@@ -201,7 +201,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
               startDate: updateModel.startDate,
               status: updateModel.status,
               tagIds: updateModel.tagIds,
-              translates: data.model.translations,
+              translates: updateModel.translates,
             }, this.updateModal);
           });
         }
