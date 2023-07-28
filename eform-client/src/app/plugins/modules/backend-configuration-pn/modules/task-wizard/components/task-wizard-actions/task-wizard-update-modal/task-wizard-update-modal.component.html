@@ -30,6 +30,29 @@
     >
   </mat-form-field>
   <mat-form-field>
+    <mat-label>{{ 'Table tag' | translate }}</mat-label>
+    <mtx-select
+      [items]="tags"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="updateTableTags"
+      [value]="model.itemPlanningTagId"
+      (change)="changePlanningTagId($event)"
+      [clearable]="true"
+      [multiple]="false"
+    />
+    <button
+      matSuffix
+      mat-icon-button
+      color="primary"
+      id="planningManageTagsBtn1"
+      (click)="openTagsModal()"
+      matTooltip="{{ 'Manage tags' | translate }}"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
+  </mat-form-field>
+  <mat-form-field>
     <mat-label>{{ 'Tags' | translate }}</mat-label>
     <mtx-select
       [items]="tags"
@@ -45,7 +68,7 @@
       matSuffix
       mat-icon-button
       color="primary"
-      id="planningManageTagsBtn"
+      id="planningManageTagsBtn2"
       (click)="openTagsModal()"
       matTooltip="{{ 'Manage tags' | translate }}"
     >

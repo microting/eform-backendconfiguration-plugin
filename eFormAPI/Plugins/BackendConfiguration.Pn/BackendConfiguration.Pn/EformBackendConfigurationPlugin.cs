@@ -657,7 +657,7 @@ namespace BackendConfiguration.Pn
                                     new()
                                     {
                                         LocaleName = LocaleNames.Ukrainian,
-                                        Name = "працівників",
+                                        Name = "Працівники",
                                         Language = LanguageNames.Ukrainian
                                     }
                                 }
@@ -685,7 +685,7 @@ namespace BackendConfiguration.Pn
                                 new()
                                 {
                                     LocaleName = LocaleNames.Ukrainian,
-                                    Name = "працівників",
+                                    Name = "Працівники",
                                     Language = LanguageNames.Ukrainian
                                 }
                             }

@@ -65,9 +65,10 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     propertyId: null,
     repeatEvery: null,
     repeatType: null,
-    sites: [],
+    itemPlanningTagId: null,
     startDate: null,
     status: TaskWizardStatusesEnum.Active,
+    sites: [],
     tagIds: [],
     translates: []
   };
@@ -168,6 +169,10 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
 
   changeTagIds(tags: SharedTagModel[]) {
     this.model.tagIds = tags.map(x => x.id);
+  }
+
+  changePlanningTagId(tag: SharedTagModel) {
+    this.model.itemPlanningTagId = tag.id;
   }
 
   /*updateLanguageModel(translationsModel: CommonTranslationsModel, index: number) {

@@ -174,6 +174,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
             status: data.model.status,
             tagIds: data.model.tags,
             translates: data.model.translations,
+            itemPlanningTagId: data.model.itemPlanningTagId,
           });
           this.updateModal.componentInstance.typeahead.emit(data.model.eformName);
           this.updateModal.componentInstance.planningTagsModal = this.planningTagsModal;
@@ -215,6 +216,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
               status: updateModel.status,
               tagIds: updateModel.tagIds,
               translates: data.model.translations,
+              itemPlanningTagId: data.model.itemPlanningTagId,
             }, this.updateModal);
           });
         }

@@ -5,6 +5,7 @@ export interface TaskWizardTaskModel {
   id: number;
   propertyId: number;
   folderId: number;
+  itemPlanningTagId: number,
   tags: number[];
   translations: CommonTranslationsModel[];
   eformId: number;
