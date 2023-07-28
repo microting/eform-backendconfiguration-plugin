@@ -4,6 +4,7 @@ import {RepeatTypeEnum, TaskWizardStatusesEnum} from '../../enums';
 export interface TaskWizardCreateModel {
   propertyId: number,
   folderId: number,
+  itemPlanningTagId: number,
   tagIds: number[],
   translates: CommonTranslationsModel[],
   eformId: number,

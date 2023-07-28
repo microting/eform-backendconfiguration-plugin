@@ -258,6 +258,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     x.RepeatType,
                     x.Status,
                     x.PropertyId,
+                    x.ItemPlanningTagId,
                     TaskNames = x.AreaRule.AreaRuleTranslations
                         .Select(y => new CommonTranslationsModel()
                             { Id = y.Id, LanguageId = y.LanguageId, Name = y.Name })
@@ -302,6 +303,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     RepeatEvery = (int)areaRule.RepeatEvery,
                     StartDate = (DateTime)areaRule.StartDate,
                     RepeatType = (RepeatType)areaRule.RepeatType,
+                    ItemPlanningTagId = areaRule.ItemPlanningTagId,
                     Status = areaRule.Status ? TaskWizardStatuses.Active : TaskWizardStatuses.NotActive,
                     Tags = planning.PlanningsTags
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -432,6 +434,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         RepeatEvery = createModel.RepeatEvery,
                         RepeatType = (int?)createModel.RepeatType,
                         PropertyId = createModel.PropertyId,
+                        ItemPlanningTagId = createModel.ItemPlanningTagId,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
                     }
@@ -496,6 +499,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             areaRulePlanning.RepeatEvery = updateModel.RepeatEvery;
             areaRulePlanning.RepeatType = (int?)updateModel.RepeatType;
             areaRulePlanning.PropertyId = updateModel.PropertyId;
+            areaRulePlanning.ItemPlanningTagId = updateModel.ItemPlanningTagId;
             areaRulePlanning.UpdatedByUserId = _userService.UserId;
             await areaRulePlanning.Update(_backendConfigurationPnDbContext);
 

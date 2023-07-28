@@ -10,6 +10,7 @@ public class TaskWizardCreateModel
     public int Id { get; set; }
     public int PropertyId { get; set; }
     public int FolderId { get; set; }
+    public int? ItemPlanningTagId { get; set; }
     public List<int> TagIds { get; set; } = new();
     public List<CommonTranslationsModel> Translates { get; set; } = new();
     public int EformId { get; set; }
