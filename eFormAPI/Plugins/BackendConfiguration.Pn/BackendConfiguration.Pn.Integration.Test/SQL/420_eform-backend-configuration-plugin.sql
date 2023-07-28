@@ -239,6 +239,7 @@ CREATE TABLE `AreaRulePlannings` (
   `AreaId` int(11) NOT NULL DEFAULT 0,
   `ComplianceEnabled` tinyint(1) NOT NULL DEFAULT 1,
   `UseStartDateAsStartOfPeriod` tinyint(1) NOT NULL DEFAULT 0,
+  `ItemPlanningTagId` int(11) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `IX_AreaRulePlannings_AreaRuleId` (`AreaRuleId`),
   CONSTRAINT `FK_AreaRulePlannings_AreaRules_AreaRuleId` FOREIGN KEY (`AreaRuleId`) REFERENCES `AreaRules` (`Id`)
@@ -456,6 +457,7 @@ CREATE TABLE `AreaRulesPlanningVersions` (
   `AreaId` int(11) NOT NULL DEFAULT 0,
   `ComplianceEnabled` tinyint(1) NOT NULL DEFAULT 1,
   `UseStartDateAsStartOfPeriod` tinyint(1) NOT NULL DEFAULT 0,
+  `ItemPlanningTagId` int(11) NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

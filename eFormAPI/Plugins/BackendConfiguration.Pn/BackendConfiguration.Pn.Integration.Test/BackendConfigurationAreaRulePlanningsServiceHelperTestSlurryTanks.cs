@@ -93,7 +93,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
         var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Dansk");
         var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
@@ -440,7 +440,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
         var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Dansk");
         var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
@@ -837,7 +837,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
         var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Dansk");
         var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
@@ -1297,7 +1297,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
         var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Dansk");
         var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
@@ -1860,7 +1860,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
         var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Dansk");
         var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
@@ -2460,7 +2460,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var result = await BackendConfigurationPropertyAreasServiceHelper.Update(propertyAreasUpdateModel, core, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, 1);
         var propertyArea = await BackendConfigurationPnDbContext!.AreaProperties.FirstAsync(x => x.PropertyId == properties[0].Id && x.AreaId == area.Id);
-        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Danish");
+        var danishLanguage = await MicrotingDbContext.Languages.FirstAsync(x => x.Name == "Dansk");
         var areaInitialFields = await BackendConfigurationPnDbContext.AreaInitialFields.Where(x => x.AreaId == area.Id)
             .ToListAsync();
         var checkListTranslation = await MicrotingDbContext.CheckListTranslations.FirstAsync(x => x.Text == areaInitialFields.First().EformName);
