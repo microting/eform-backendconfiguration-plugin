@@ -215,16 +215,18 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     });
                 }
 
-                var languages = await sdkDbContex.Languages.Where(x => x.IsActive == true).AsNoTracking().ToListAsync().ConfigureAwait(false);
-                var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
+                var languages = await sdkDbContex.Languages.Where(x => x.IsActive == true)
+                    .AsNoTracking().ToListAsync().ConfigureAwait(false);
+                var currentUserLanguage = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
 
                 var areaModel = new AreaModel
                 {
-                    Name = areaProperties.Area.AreaTranslations.Where(x => x.LanguageId == language.Id)
+                    Name = areaProperties.Area.AreaTranslations.Where(x => x.LanguageId == currentUserLanguage.Id)
                         .Select(x => x.Name).FirstOrDefault(),
                     Id = areaProperties.AreaId,
                     Languages = areaProperties.Property.SelectedLanguages
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => languages.Any(y => y.Id == x.LanguageId))
                         .Select(x => new CommonDictionaryModel
                         {
                             Id = x.LanguageId,
@@ -247,15 +249,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                         }
                         : null,
                     InfoBox = areaProperties.Area.AreaTranslations
-                        .Where(x => x.LanguageId == language.Id)
+                        .Where(x => x.LanguageId == currentUserLanguage.Id)
                         .Select(x => x.InfoBox)
                         .FirstOrDefault(),
                     Placeholder = areaProperties.Area.AreaTranslations
-                        .Where(x => x.LanguageId == language.Id)
+                        .Where(x => x.LanguageId == currentUserLanguage.Id)
                         .Select(x => x.Placeholder)
                         .FirstOrDefault(),
                     NewItemName = areaProperties.Area.AreaTranslations
-                        .Where(x => x.LanguageId == language.Id)
+                        .Where(x => x.LanguageId == currentUserLanguage.Id)
                         .Select(x => x.NewItemName)
                         .FirstOrDefault(),
                     GroupId = areaProperties.GroupMicrotingUuid
@@ -291,7 +293,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                 var core = await _coreHelper.GetCore().ConfigureAwait(false);
                 var sdkDbContex = core.DbContextHelper.GetDbContext();
 
-                var languages = await sdkDbContex.Languages.Select(x => new { x.Id, x.Name }).ToListAsync().ConfigureAwait(false);
+                var languages = await sdkDbContex.Languages.Where(x => x.IsActive == true)
+                    .Select(x => new { x.Id, x.Name }).ToListAsync().ConfigureAwait(false);
                 var language = await _userService.GetCurrentUserLanguage().ConfigureAwait(false);
 
                 var areaRule = await _backendConfigurationPnDbContext.AreaRules
@@ -335,6 +338,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                     Type = areaRule.Area.Type,
                     Languages = areaRule.Property.SelectedLanguages
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => languages.Any(y => y.Id == x.LanguageId))
                         .Select(x => new CommonDictionaryModel
                         {
                             Id = x.LanguageId,
