@@ -275,4 +275,13 @@ export const ptBR = {
   'Repeat': 'Repetir',
   'Deadline': 'Prazo',
   'Show/hide columns': 'Mostrar/ocultar colunas',
+  'Add new task': 'Adicionar nova tarefa',
+  Folders: 'Pastas',
+  Tags: 'Tags',
+  'Assign to': 'Atribuir a',
+  Active: 'Ativo',
+  NotActive: 'Não ativo',
+  'Task name': 'Nome da tarefa',
+  Folder: 'Pasta',
+  Notification: 'Notificação',
 };

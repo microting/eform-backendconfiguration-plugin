@@ -7,14 +7,15 @@ import {
 } from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
-import {CommonDictionaryModel} from 'src/app/common/models';
-import {applicationLanguages2} from 'src/app/common/const';
+import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';
 import {PropertyAssignmentWorkerModel, DeviceUserModel} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {AuthStateService} from 'src/app/common/store';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
+import {tap} from 'rxjs/operators';
+import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -48,12 +49,16 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   deviceUserCreate$: Subscription;
   deviceUserUpdate$: Subscription;
   deviceUserAssign$: Subscription;
+  getLanguagesSub$: Subscription;
+  appLanguages: LanguagesModel = new LanguagesModel();
+  activeLanguages: Array<any> = [];
 
   constructor(
     public propertiesService: BackendConfigurationPnPropertiesService,
     public authStateService: AuthStateService,
     private translateService: TranslateService,
     public dialogRef: MatDialogRef<PropertyWorkerCreateEditModalComponent>,
+    private appSettingsStateService: AppSettingsStateService,
     @Inject(MAT_DIALOG_DATA) model:
       {
         deviceUser: DeviceUserModel,
@@ -68,19 +73,11 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   get languages() {
-    return applicationLanguages2;
+    return this.appLanguages.languages.filter((x) => x.isActive);
   }
 
   ngOnInit() {
-    if (this.selectedDeviceUser.id) {
-      this.edit = true;
-    }
-    if (!this.edit) {
-      this.selectedDeviceUser.languageCode = this.languages[0].locale;
-      if (this.authStateService.checkClaim('task_management_enable')) {
-        this.selectedDeviceUser.taskManagementEnabled = false;
-      }
-    }
+    this.getEnabledLanguages();
   }
 
   hide(result = false) {
@@ -136,6 +133,8 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         .subscribe((operation) => {
           if (operation && operation.success && this.assignments) {
             this.assignWorkerToPropertiesUpdate();
+          } else {
+            this.hide(true);
           }
         });
     } else {
@@ -150,8 +149,9 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
         if (operation && operation.success) {
           if (this.assignments && this.assignments.length > 0) {
             this.assignWorkerToProperties(operation.model);
+          } else {
+            this.hide(true);
           }
-          this.hide(true);
         }
       });
   }
@@ -197,5 +197,25 @@ export class PropertyWorkerCreateEditModalComponent implements OnInit, OnDestroy
   }
 
   ngOnDestroy(): void {
+  }
+
+  getEnabledLanguages() {
+    this.getLanguagesSub$ = this.appSettingsStateService.getLanguages()
+      .pipe(tap(data => {
+        if (data && data.success && data.model) {
+          this.appLanguages = data.model;
+          this.activeLanguages = this.appLanguages.languages.filter((x) => x.isActive);
+          if (this.selectedDeviceUser.id) {
+            this.edit = true;
+          }
+          if (!this.edit) {
+            this.selectedDeviceUser.languageCode = this.languages[0].languageCode;
+            if (this.authStateService.checkClaim('task_management_enable')) {
+              this.selectedDeviceUser.taskManagementEnabled = false;
+            }
+          }
+        }
+      }))
+      .subscribe();
   }
 }

@@ -25,6 +25,7 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MtxGridColumn, MtxGridRowSelectionFormatter} from '@ng-matero/extensions/grid';
 import {MatDatepickerInputEvent} from '@angular/material/datepicker';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
+import {generateWeeksList} from '../../helpers';
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -54,8 +55,8 @@ export class AreaRulePlanModalComponent implements OnInit {
    */
   repeatTypeMonth: { name: string, id: number }[] = R.map(x => {
     return {name: x === 1 ? 'Every' : x.toString(), id: x};
-  // }, R.range(1, 25));
-  }, [1,2,3,6,12,24]);
+    // }, R.range(1, 25));
+  }, [1, 2, 3, 6, 12, 24]);
   dayOfWeekArr: { id: number, name: string }[];
   repeatEveryArr: { id: number, name: string }[];
   repeatTypeArr: { id: number, name: string }[];
@@ -64,11 +65,11 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   tableHeaders: MtxGridColumn[] = [
     {
-      header: this.translateService.stream('ID'),
+      header: this.translate.stream('ID'),
       field: 'siteId',
     },
     {
-      header: this.translateService.stream('Worker name'),
+      header: this.translate.stream('Worker name'),
       field: 'siteName',
     },
   ];
@@ -108,7 +109,6 @@ export class AreaRulePlanModalComponent implements OnInit {
     private translate: TranslateService,
     dateTimeAdapter: DateTimeAdapter<any>,
     private authStateService: AuthStateService,
-    private translateService: TranslateService,
     public dialogRef: MatDialogRef<AreaRulePlanModalComponent>,
     @Inject(MAT_DIALOG_DATA) model: {
       areaRule: AreaRuleSimpleModel | AreaRuleNameAndTypeSpecificFields,
@@ -154,60 +154,7 @@ export class AreaRulePlanModalComponent implements OnInit {
       {id: 6, name: this.translate.instant('Saturday')},
       {id: 0, name: this.translate.instant('Sunday')}
     ];
-    this.repeatEveryArr = [
-      {id: 1, name: this.translate.instant('Weekly')},
-      {id: 2, name: this.translate.instant('2nd week')},
-      {id: 3, name: this.translate.instant('3rd week')},
-      {id: 4, name: this.translate.instant('4th week')},
-      {id: 5, name: this.translate.instant('5th week')},
-      {id: 6, name: this.translate.instant('6th week')},
-      {id: 7, name: this.translate.instant('7th week')},
-      {id: 8, name: this.translate.instant('8th week')},
-      {id: 9, name: this.translate.instant('9th week')},
-      {id: 10, name: this.translate.instant('10th week')},
-      {id: 11, name: this.translate.instant('11st week')},
-      {id: 12, name: this.translate.instant('12nd week')},
-      {id: 13, name: this.translate.instant('13rd week')},
-      {id: 14, name: this.translate.instant('14th week')},
-      {id: 15, name: this.translate.instant('15th week')},
-      {id: 16, name: this.translate.instant('16th week')},
-      {id: 17, name: this.translate.instant('17th week')},
-      {id: 18, name: this.translate.instant('18th week')},
-      {id: 19, name: this.translate.instant('19th week')},
-      {id: 20, name: this.translate.instant('20th week')},
-      {id: 21, name: this.translate.instant('21st week')},
-      {id: 22, name: this.translate.instant('22nd week')},
-      {id: 23, name: this.translate.instant('23rd week')},
-      {id: 24, name: this.translate.instant('24th week')},
-      {id: 25, name: this.translate.instant('25th week')},
-      {id: 26, name: this.translate.instant('26th week')},
-      {id: 27, name: this.translate.instant('27th week')},
-      {id: 28, name: this.translate.instant('28th week')},
-      {id: 29, name: this.translate.instant('29th week')},
-      {id: 30, name: this.translate.instant('30th week')},
-      {id: 31, name: this.translate.instant('31st week')},
-      {id: 32, name: this.translate.instant('32nd week')},
-      {id: 33, name: this.translate.instant('33rd week')},
-      {id: 34, name: this.translate.instant('34th week')},
-      {id: 35, name: this.translate.instant('35th week')},
-      {id: 36, name: this.translate.instant('36th week')},
-      {id: 37, name: this.translate.instant('37th week')},
-      {id: 38, name: this.translate.instant('38th week')},
-      {id: 39, name: this.translate.instant('39th week')},
-      {id: 40, name: this.translate.instant('40th week')},
-      {id: 41, name: this.translate.instant('41st week')},
-      {id: 42, name: this.translate.instant('42nd week')},
-      {id: 43, name: this.translate.instant('43rd week')},
-      {id: 44, name: this.translate.instant('44th week')},
-      {id: 45, name: this.translate.instant('45th week')},
-      {id: 46, name: this.translate.instant('46th week')},
-      {id: 47, name: this.translate.instant('47th week')},
-      {id: 48, name: this.translate.instant('48th week')},
-      {id: 49, name: this.translate.instant('49th week')},
-      {id: 50, name: this.translate.instant('50th week')},
-      {id: 51, name: this.translate.instant('51st week')},
-      {id: 52, name: this.translate.instant('52nd week')},
-    ];
+    this.repeatEveryArr = generateWeeksList(this.translate, 52);
     this.repeatTypeArr = [
       {id: 1, name: this.translate.instant('Day')},
       {id: 2, name: this.translate.instant('Week')},

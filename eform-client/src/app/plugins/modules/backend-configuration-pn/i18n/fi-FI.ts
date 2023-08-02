@@ -272,4 +272,13 @@ export const fiFI = {
   'Repeat': 'Toista',
   'Deadline': 'Määräaika',
   'Show/hide columns': 'Näytä/piilota sarakkeet',
+  'Add new task': 'Lisää uusi tehtävä',
+  Folders: 'Kansiot',
+  Tags: 'Tunnisteet',
+  'Assign to': 'Määritä henkilölle',
+  Active: 'Aktiivinen',
+  NotActive: 'Ei aktiivinen',
+  'Task name': 'Tehtävän nimi',
+  Folder: 'Kansio',
+  Notification: 'Ilmoitus',
 };

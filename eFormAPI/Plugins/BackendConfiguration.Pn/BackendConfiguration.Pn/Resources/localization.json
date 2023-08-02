@@ -2411,5 +2411,195 @@
       "pt-PT": "Prazo",
       "fi-FI": "Määräaika"
     }
+  },
+  {
+    "Key": "Task wizard",
+    "LocalizedValue": {
+      "da": "Opgaveguide",
+      "de": "Aufgaben-Assistent",
+      "en-US": "Task wizard",
+      "uk-UA": "Майстер завдань",
+      "pl-PL": "Kreator zadań",
+      "no-NO": "Oppgaveveiviser",
+      "sv-SE": "Uppgiftsguide",
+      "es-ES": "Asistente de tareas",
+      "fr-FR": "Assistant de tâches",
+      "it-IT": "Assistente di compiti",
+      "nl-NL": "Taakwizard",
+      "pt-BR": "Assistente de tarefas",
+      "pt-PT": "Assistente de tarefas",
+      "fi-FI": "Tehtävän avustaja"
+    }
+  },
+  {
+    "Key": "ErrorWhileObtainingTasks",
+    "LocalizedValue": {
+      "da": "Fejl ved hentning af opgaver",
+      "de": "Fehler beim Abrufen von Aufgaben",
+      "en-US": "Error while obtaining tasks",
+      "uk-UA": "Помилка при отриманні завдань",
+      "pl-PL": "Błąd podczas pobierania zadań",
+      "no-NO": "Feil ved henting av oppgaver",
+      "sv-SE": "Fel vid hämtning av uppgifter",
+      "es-ES": "Error al obtener las tareas",
+      "fr-FR": "Erreur lors de l'obtention des tâches",
+      "it-IT": "Errore durante il recupero delle attività",
+      "nl-NL": "Fout bij het ophalen van taken",
+      "pt-BR": "Erro ao obter tarefas",
+      "pt-PT": "Erro ao obter tarefas",
+      "fi-FI": "Virhe haettaessa tehtäviä"
+    }
+  },
+  {
+    "Key": "TaskNotFound",
+    "LocalizedValue": {
+      "da": "Opgave ikke fundet",
+      "de": "Aufgabe nicht gefunden",
+      "en-US": "Task not found",
+      "uk-UA": "Завдання не знайдено",
+      "pl-PL": "Nie znaleziono zadania",
+      "no-NO": "Finner ikke oppgaven",
+      "sv-SE": "Uppgift ej hittad",
+      "es-ES": "Tarea no encontrada",
+      "fr-FR": "Tâche introuvable",
+      "it-IT": "Attività non trovata",
+      "nl-NL": "Taak niet gevonden",
+      "pt-BR": "Tarefa não encontrada",
+      "pt-PT": "Tarefa não encontrada",
+      "fi-FI": "Tehtävää ei löytynyt"
+    }
+  },
+  {
+    "Key": "ErrorWhileObtainingTask",
+    "LocalizedValue": {
+      "da": "Fejl ved hentning af opgave",
+      "de": "Fehler beim Abrufen der Aufgabe",
+      "en-US": "Error while obtaining task",
+      "uk-UA": "Помилка при отриманні завдання",
+      "pl-PL": "Błąd podczas pobierania zadania",
+      "no-NO": "Feil ved henting av oppgave",
+      "sv-SE": "Fel vid hämtning av uppgift",
+      "es-ES": "Error al obtener la tarea",
+      "fr-FR": "Erreur lors de l'obtention de la tâche",
+      "it-IT": "Errore durante il recupero dell'attività",
+      "nl-NL": "Fout bij het ophalen van taak",
+      "pt-BR": "Erro ao obter tarefa",
+      "pt-PT": "Erro ao obter tarefa",
+      "fi-FI": "Virhe haettaessa tehtävää"
+    }
+  },
+  {
+    "Key": "TaskCreatedSuccessful",
+    "LocalizedValue": {
+      "da": "Opgave oprettet med succes",
+      "de": "Aufgabe erfolgreich erstellt",
+      "en-US": "Task created successful",
+      "uk-UA": "Завдання створено успішно",
+      "pl-PL": "Zadanie utworzone pomyślnie",
+      "no-NO": "Oppgave opprettet",
+      "sv-SE": "Uppgift skapades framgångsrikt",
+      "es-ES": "Tarea creada correctamente",
+      "fr-FR": "Tâche créée avec succès",
+      "it-IT": "Attività creata correttamente",
+      "nl-NL": "Taak succesvol aangemaakt",
+      "pt-BR": "Tarefa criada com sucesso",
+      "pt-PT": "Tarefa criada com sucesso",
+      "fi-FI": "Tehtävä luotu onnistuneesti"
+    }
+  },
+  {
+    "Key": "ErrorWhileCreatingTask",
+    "LocalizedValue": {
+      "da": "Fejl ved oprettelse af opgave",
+      "de": "Fehler beim Erstellen der Aufgabe",
+      "en-US": "Error while creating task",
+      "uk-UA": "Помилка при створенні завдання",
+      "pl-PL": "Błąd podczas tworzenia zadania",
+      "no-NO": "Feil ved oppretting av oppgave",
+      "sv-SE": "Fel vid skapande av uppgift",
+      "es-ES": "Error al crear la tarea",
+      "fr-FR": "Erreur lors de la création de la tâche",
+      "it-IT": "Errore durante la creazione dell'attività",
+      "nl-NL": "Fout bij het maken van taak",
+      "pt-BR": "Erro ao criar tarefa",
+      "pt-PT": "Erro ao criar tarefa",
+      "fi-FI": "Virhe luotaessa tehtävää"
+    }
+  },
+  {
+    "Key": "TaskUpdatedSuccessful",
+    "LocalizedValue": {
+      "da": "Opgave opdateret med succes",
+      "de": "Aufgabe erfolgreich aktualisiert",
+      "en-US": "Task updated successful",
+      "uk-UA": "Завдання оновлено успішно",
+      "pl-PL": "Zadanie zaktualizowane pomyślnie",
+      "no-NO": "Oppgave oppdatert",
+      "sv-SE": "Uppgift uppdaterades framgångsrikt",
+      "es-ES": "Tarea actualizada correctamente",
+      "fr-FR": "Tâche mise à jour avec succès",
+      "it-IT": "Attività aggiornata correttamente",
+      "nl-NL": "Taak succesvol bijgewerkt",
+      "pt-BR": "Tarefa atualizada com sucesso",
+      "pt-PT": "Tarefa atualizada com sucesso",
+      "fi-FI": "Tehtävä päivitetty onnistuneesti"
+    }
+  },
+  {
+    "Key": "ErrorWhileUpdatingTask",
+    "LocalizedValue": {
+      "da": "Fejl ved opdatering af opgave",
+      "de": "Fehler beim Aktualisieren der Aufgabe",
+      "en-US": "Error while updating task",
+      "uk-UA": "Помилка при оновленні завдання",
+      "pl-PL": "Błąd podczas aktualizacji zadania",
+      "no-NO": "Feil ved oppdatering av oppgave",
+      "sv-SE": "Fel vid uppdatering av uppgift",
+      "es-ES": "Error al actualizar la tarea",
+      "fr-FR": "Erreur lors de la mise à jour de la tâche",
+      "it-IT": "Errore durante l'aggiornamento dell'attività",
+      "nl-NL": "Fout bij het bijwerken van taak",
+      "pt-BR": "Erro ao atualizar tarefa",
+      "pt-PT": "Erro ao atualizar tarefa",
+      "fi-FI": "Virhe päivitettäessä tehtävää"
+    }
+  },
+  {
+    "Key": "TaskDeletedSuccessful",
+    "LocalizedValue": {
+      "da": "Opgave slettet med succes",
+      "de": "Aufgabe erfolgreich gelöscht",
+      "en-US": "Task deleted successful",
+      "uk-UA": "Завдання успішно видалено",
+      "pl-PL": "Zadanie usunięte pomyślnie",
+      "no-NO": "Oppgave slettet",
+      "sv-SE": "Uppgift raderad framgångsrikt",
+      "es-ES": "Tarea eliminada correctamente",
+      "fr-FR": "Tâche supprimée avec succès",
+      "it-IT": "Attività eliminata correttamente",
+      "nl-NL": "Taak succesvol verwijderd",
+      "pt-BR": "Tarefa excluída com sucesso",
+      "pt-PT": "Tarefa excluída com sucesso",
+      "fi-FI": "Tehtävä poistettu onnistuneesti"
+    }
+  },
+  {
+    "Key": "ErrorWhileDeletingTask",
+    "LocalizedValue": {
+      "da": "Fejl ved sletning af opgave",
+      "de": "Fehler beim Löschen der Aufgabe",
+      "en-US": "Error while deleting task",
+      "uk-UA": "Помилка при видаленні завдання",
+      "pl-PL": "Błąd podczas usuwania zadania",
+      "no-NO": "Feil ved sletting av oppgave",
+      "sv-SE": "Fel vid radering av uppgift",
+      "es-ES": "Error al eliminar la tarea",
+      "fr-FR": "Erreur lors de la suppression de la tâche",
+      "it-IT": "Errore durante l'eliminazione dell'attività",
+      "nl-NL": "Fout bij het verwijderen van taak",
+      "pt-BR": "Erro ao excluir tarefa",
+      "pt-PT": "Erro ao excluir tarefa",
+      "fi-FI": "Virhe poistaessa tehtävää"
+    }
   }
 ]

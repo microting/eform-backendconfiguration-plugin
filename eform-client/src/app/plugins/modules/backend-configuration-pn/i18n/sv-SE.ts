@@ -291,4 +291,13 @@ export const svSE = {
   'Show/hide columns': 'Visa/dölj kolumner',
   'GenerateWithTypeDoc': 'Generera {{type}}',
   'copyFromTo': 'Kopiera från {{from}} till {{to}}',
+  'Add new task': 'Lägg till ny uppgift',
+  Folders: 'Mappar',
+  Tags: 'Taggar',
+  'Assign to': 'Tilldela till',
+  Active: 'Aktiv',
+  NotActive: 'Inte aktiv',
+  'Task name': 'Uppgiftsnamn',
+  Folder: 'Mapp',
+  Notification: 'Meddelande',
 };

@@ -1,0 +1,193 @@
+<h3 mat-dialog-title>{{'Create task' | translate}}</h3>
+<div mat-dialog-content class="d-flex flex-column">
+  <mat-slide-toggle
+    color="primary"
+    id="createTaskStatusToggle"
+    [checked]="model.status === TaskWizardStatusesEnum.Active"
+    [ngModel]="model.status === TaskWizardStatusesEnum.Active"
+    (ngModelChange)="changeStatus($event)">
+    {{ 'Status' | translate }}
+  </mat-slide-toggle>
+  <mat-form-field>
+    <mat-label>{{ 'Property' | translate }}</mat-label>
+    <mtx-select
+      [items]="properties"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="createProperty"
+      [value]="model.propertyId"
+      (change)="changePropertyId($event)"
+      [clearable]="false"
+    />
+  </mat-form-field>
+  <mat-form-field (click)="openFoldersModal()">
+    <mat-label>{{ 'Folder' | translate }}</mat-label>
+    <input
+      matInput
+      id="createFolder"
+      [ngModel]="selectedFolderName"
+      [disabled]="true"
+    >
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Report tag' | translate }}</mat-label>
+    <mtx-select
+      [items]="tags"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="createTableTags"
+      [value]="model.itemPlanningTagId"
+      (change)="changePlanningTagId($event)"
+      [clearable]="true"
+      [multiple]="false"
+    />
+    <button
+      matSuffix
+      mat-icon-button
+      color="primary"
+      id="planningManageTagsBtn1"
+      (click)="openTagsModal()"
+      matTooltip="{{ 'Manage tags' | translate }}"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Tags' | translate }}</mat-label>
+    <mtx-select
+      [items]="tags"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="createTags"
+      [value]="model.tagIds"
+      (change)="changeTagIds($event)"
+      [clearable]="true"
+      [multiple]="true"
+    />
+    <button
+      matSuffix
+      mat-icon-button
+      color="primary"
+      id="planningManageTagsBtn2"
+      (click)="openTagsModal()"
+      matTooltip="{{ 'Manage tags' | translate }}"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
+  </mat-form-field>
+  <ng-container *ngFor="let languageModel of model.translates; let i = index; first as isFirst; last as isLast">
+    <mat-card
+      [class.mt-2]="!isFirst"
+      [class.mb-2]="isLast">
+      <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>
+      <mat-card-content>
+        <mat-form-field>
+          <mat-label>{{'Name' | translate}}</mat-label>
+          <input
+            type="text"
+            matInput
+            id="createName{{i}}"
+            [ngModel]="languageModel.name"
+            (ngModelChange)="updateName($event, i)"
+          >
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <!--<app-eform-translation
+          [class.mt-2]="!isFirst"
+          [class.mb-2]="isLast"
+          [model]="languageModel"
+          (modelChange)="updateLanguageModel($event, i)"
+          [title]="getLanguageName(languageModel.languageId)"/>-->
+  </ng-container>
+  <mat-form-field>
+    <mat-label>{{'eForm template' | translate}}</mat-label>
+    <mtx-select
+      [items]="templatesModel.templates"
+      [bindLabel]="'label'"
+      [bindValue]="'id'"
+      [typeahead]="typeahead"
+      [value]="model.eformId"
+      (change)="updateEformId($event)"
+      id="createTemplateSelector"
+      [clearable]="false"
+      [multiple]="false"
+    ></mtx-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{'Start from' | translate}}</mat-label>
+    <input
+      matInput
+      [matDatepicker]="picker"
+      [value]="model.startDate"
+      (dateChange)="updateStartDate($event)"
+      (dateInput)="updateStartDate($event)"
+      (click)="picker.open()"
+      id="createStartFrom"
+      name="createStartFrom"
+    >
+    <mat-datepicker #picker></mat-datepicker>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Repeat type' | translate }}</mat-label>
+    <mtx-select
+      [items]="repeatTypeArr"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="createRepeatType"
+      [value]="model.repeatType"
+      (change)="changeRepeatType($event)"
+      [clearable]="false"
+      [multiple]="false"
+    />
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ 'Repeat every' | translate }}</mat-label>
+    <mtx-select
+      [items]="repeatTypeMass()"
+      [bindValue]="'id'"
+      [bindLabel]="'name'"
+      id="createRepeatEvery"
+      [value]="model.repeatEvery"
+      (change)="changeRepeatEvery($event)"
+      [clearable]="false"
+      [multiple]="false"
+    />
+  </mat-form-field>
+  <mtx-grid
+    class="mb-2"
+    [data]="sites"
+    [columns]="tableHeaders"
+    [cellTemplate]="{select: selectTpl}"
+    [showPaginator]="false"
+    [pageOnFront]="false"
+    [rowStriped]="true"
+    [showToolbar]="false"
+    [showColumnMenuButton]="false"
+  />
+  <ng-template #selectTpl let-row let-i="index">
+    <mat-checkbox class="mat-checkbox"
+                  id="checkboxCreateAssignment{{ i }}"
+                  (change)="addToArray($event, row.id)"
+                  [checked]="getAssignmentBySiteId(row.id)"
+                  [value]="getAssignmentBySiteId(row.id).toString()"/>
+  </ng-template>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="accent"
+    id="createTaskBtn"
+    (click)="create()"
+  >
+    {{ 'Create' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    id="cancelCreateTaskBtn"
+    (click)="hide()"
+  >
+    {{ 'Cancel' | translate }}
+  </button>
+</div>

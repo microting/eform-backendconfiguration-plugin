@@ -5,7 +5,7 @@ import {
   CommonDictionaryModel, DeviceUserRequestModel,
   OperationDataResult,
   OperationResult,
-  Paged,
+  Paged, FolderDto,
 } from 'src/app/common/models';
 import {
   PropertyCreateModel,
@@ -13,12 +13,10 @@ import {
   PropertiesRequestModel,
   PropertyUpdateModel,
   PropertyAreaModel,
-  PropertyAreasUpdateModel,
-  PropertyAssignWorkersModel, ResultModel,
+  PropertyAreasUpdateModel, DeviceUserModel,
+  PropertyAssignWorkersModel, ResultModel, ChrResultModel, PropertyFolderModel,
 } from '../models';
 import { ApiBaseService } from 'src/app/common/services';
-import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
-import {ChrResultModel} from 'src/app/plugins/modules/backend-configuration-pn/models/properties/chr-result.model';
 
 export let BackendConfigurationPnPropertiesMethods = {
   Properties: 'api/backend-configuration-pn/properties',
@@ -32,6 +30,9 @@ export let BackendConfigurationPnPropertiesMethods = {
   GetCompanyType: 'api/backend-configuration-pn/properties/get-company-type',
   GetChrInformation: 'api/backend-configuration-pn/properties/get-chr-information',
   DictionaryProperties: 'api/backend-configuration-pn/properties/dictionary',
+  GetFolderDtos: 'api/backend-configuration-pn/properties/get-folder-dtos',
+  GetFolderList: 'api/backend-configuration-pn/properties/get-folder-list',
+  GetLinkedSites: 'api/backend-configuration-pn/properties/get-linked-sites',
 }
 
 @Injectable({
@@ -180,6 +181,48 @@ export class BackendConfigurationPnPropertiesService {
     return this.apiBaseService.post(
       BackendConfigurationPnPropertiesMethods.CreateEntityList + propertyAreaId,
       model
+    );
+  }
+
+  getLinkedFolderDtos(id: number): Observable<OperationDataResult<PropertyFolderModel[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.GetFolderDtos,
+      { propertyId: id }
+    );
+  }
+
+  getLinkedFolderDtosByMultipleProperties(ids: number[]): Observable<OperationDataResult<PropertyFolderModel[]>> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnPropertiesMethods.GetFolderDtos,
+      ids
+    );
+  }
+
+  getLinkedFolderList(id: number): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.GetFolderList,
+      { propertyId: id }
+    );
+  }
+
+  getLinkedFolderListByMultipleProperties(ids: number[]): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnPropertiesMethods.GetFolderList,
+      ids
+    );
+  }
+
+  getLinkedSites(id: number): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+    return this.apiBaseService.get(
+      BackendConfigurationPnPropertiesMethods.GetLinkedSites,
+      { propertyId: id }
+    );
+  }
+
+  getLinkedSitesByMultipleProperties(ids: number[]): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+    return this.apiBaseService.post(
+      BackendConfigurationPnPropertiesMethods.GetLinkedSites,
+      ids
     );
   }
 }

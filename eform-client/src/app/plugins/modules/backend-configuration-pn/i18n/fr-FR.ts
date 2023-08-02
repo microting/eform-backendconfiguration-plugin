@@ -293,4 +293,13 @@ export const frFR = {
   'Show/hide columns': 'Afficher/masquer les colonnes',
   'GenerateWithTypeDoc': 'Générer avec type de document {{type}}',
   'copyFromTo': 'Copier de {{from}} à {{to}}',
+  'Add new task': 'Ajouter une nouvelle tâche',
+  Folders: 'Dossiers',
+  Tags: 'Tags',
+  'Assign to': 'Assigner à',
+  Active: 'Actif',
+  NotActive: 'Non actif',
+  'Task name': 'Nom de la tâche',
+  Folder: 'Dossier',
+  Notification: 'Notification',
 };

@@ -48,7 +48,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
 
   initTable() {
     this.currentDate = this.setDate(new Date());
-    if (this.tasks) {
+    if (this.tasks && this.tasks.length) {
       this.daysInTable = R.flatten(this.tasks[this.tasks.length - 1].weeks.map(x => x.dateList.map(y => y.date)));
       this.weeks = this.tasks[this.tasks.length - 1].weeks.map(x => {
         return {weekNumber: x.weekNumber, length: x.weekRange};

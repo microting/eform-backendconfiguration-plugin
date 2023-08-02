@@ -362,9 +362,12 @@ public static class BackendConfigurationPropertiesServiceHelper
 
             }
             property.WorkorderEnable = updateModel.WorkorderEnable;
+            var languages = await sdkDbContext.Languages.Where(x => x.IsActive == true)
+                .AsNoTracking().ToListAsync().ConfigureAwait(false);
 
             property.SelectedLanguages = property.SelectedLanguages
                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => languages.Any(y => y.Id == x.LanguageId))
                 .ToList();
             await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 

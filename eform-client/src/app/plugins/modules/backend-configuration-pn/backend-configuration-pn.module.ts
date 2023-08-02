@@ -8,7 +8,7 @@ import {FileUploadModule} from 'ng2-file-upload';
 import {EformCasesModule} from 'src/app/common/modules/eform-cases/eform-cases.module';
 import {EformSharedTagsModule} from 'src/app/common/modules/eform-shared-tags/eform-shared-tags.module';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
-import {BackendConfigurationPnRouting} from './backend-configuration-pn.routing.module';
+import {BackendConfigurationPnRouting} from './backend-configuration-pn.routing';
 import {
   PropertiesContainerComponent,
   PropertyCreateModalComponent,

@@ -178,6 +178,10 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                                 dbPlanning.NextExecutionTime = nextExecutionTime;
                             }
+                            else
+                            {
+                                mainElement.Repeated = dbPlanning.RepeatEvery;
+                            }
 
                             break;
                         case RepeatType.Week:
@@ -537,11 +541,6 @@ namespace BackendConfiguration.Pn.Infrastructure
                         if (planning.RepeatEvery == 0 && planning.RepeatType == RepeatType.Day)
                         {
                             mainElement.Repeated = 0;
-                        }
-
-                        if (mainElement.Label == "Morgenrundtur")
-                        {
-                            mainElement.Repeated = 1;
                         }
 
                         var caseId = await sdkCore.CaseCreate(mainElement, "", (int) sdkSite.MicrotingUid, null)

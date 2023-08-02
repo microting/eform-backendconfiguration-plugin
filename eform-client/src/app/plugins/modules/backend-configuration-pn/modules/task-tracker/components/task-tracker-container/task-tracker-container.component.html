@@ -1,18 +1,21 @@
 <eform-new-subheader>
-<!--  <button
+  <button
     mat-icon-button
     id="createNewTaskBtn"
     color="accent"
     matTooltip="{{ 'Create new task' | translate }}"
-    (click)="openCreateModal()"
+    (click)="openCreateTaskModal()"
   >
     <mat-icon>add_task</mat-icon>
-  </button>-->
+  </button>
 </eform-new-subheader>
 
 <div class="d-flex flex-column">
-  <app-task-tracker-filters (updateTable)="updateTable()">
-  </app-task-tracker-filters>
+  <app-task-tracker-filters
+    (updateTable)="updateTable()"
+    [properties]="properties"
+    [tags]="tags"
+  />
   <div class="d-flex flex-row justify-content-start mb-2">
     <button
       mat-raised-button
@@ -35,7 +38,12 @@
     [columnsFromDb]="columns"
     [tasks]="tasks"
     (updateTable)="updateTable()"
-    (openAreaRulePlanningModal)="openAreaRulePlanningModal($event)"
+    (openAreaRulePlanningModal)="openEditTaskModal($event)"
   >
   </app-task-tracker-table>
 </div>
+
+<app-planning-tags
+  #planningTagsModal
+  [availableTags]="tags"
+></app-planning-tags>

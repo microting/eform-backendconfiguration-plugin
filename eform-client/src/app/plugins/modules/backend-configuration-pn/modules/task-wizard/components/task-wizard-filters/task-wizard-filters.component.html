@@ -1,0 +1,61 @@
+<div class="d-flex flex-column" [formGroup]="filtersForm">
+  <div class="d-flex need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Property' | translate}}</mat-label>
+      <mtx-select
+        formControlName="propertyIds"
+        multiple="true"
+        clearable="true"
+        [items]="properties"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+      />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Folders' | translate}}</mat-label>
+      <mtx-select
+        formControlName="folderIds"
+        multiple="true"
+        clearable="true"
+        [items]="folders"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+      />
+    </mat-form-field>
+  </div>
+  <div class="d-flex need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Tags' | translate}}</mat-label>
+      <mtx-select
+        formControlName="tagIds"
+        multiple="true"
+        clearable="true"
+        [items]="tags"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+      />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Status' | translate}}</mat-label>
+      <mtx-select
+        [multiple]="false"
+        [clearable]="true"
+        formControlName="status"
+        [items]="statuses"
+        [bindValue]="'value'"
+        [bindLabel]="'label'"
+      />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{'Assign to' | translate}}</mat-label>
+      <mtx-select
+        multiple="true"
+        clearable="true"
+        formControlName="assignToIds"
+        [items]="sites"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+      />
+    </mat-form-field>
+  </div>
+</div>

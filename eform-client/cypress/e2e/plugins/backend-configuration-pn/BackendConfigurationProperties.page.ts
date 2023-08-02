@@ -19,6 +19,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
       }
     });
     this.backendConfigurationPnPropertiesButton().click();
+    cy.get('app-properties-container').should('be.visible');
     // this.waitForSpinnerHide();
   }
 
@@ -142,8 +143,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
   };
 
   public rowNum(): Cypress.Chainable<number> {
-    return cy.get('.mat-row').its('length')/*.invoke('valueOf')*/;
-    // return cy.get('.mat-row').should('have.length.gt', 0).then($rows => $rows.length);
+    return cy.get('app-properties-table .mat-row').its('length');
   }
 
   createProperty(property: PropertyCreateUpdate, clickCancel = false) {
@@ -221,7 +221,11 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
 
   clearTable() {
     cy.log('**CLEAR PROPERTIES TABLE**');
-    this.rowNum().then(rowNum => {
+    cy.get('app-properties-table').should('be.visible');
+    cy.get('app-properties-table .mat-row').then(rows => {
+      const rowNum = rows.length;
+      cy.log(rowNum.toString());
+
       for (let i = rowNum; i > 0; i--) {
         this.getFirstRowObject().delete();
         cy.wait(500);
@@ -235,16 +239,16 @@ export default backendConfigurationPropertiesPage;
 
 export class PropertyRowObject {
   row: Cypress.Chainable<JQuery<HTMLElement>>;
-  viewAreasBtn: Cypress.Chainable<JQuery<HTMLElement>>;
-  editPropertyBtn: Cypress.Chainable<JQuery<HTMLElement>>;
-  deleteBtn: Cypress.Chainable<JQuery<HTMLElement>>;
+  viewAreasBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
+  editPropertyBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
+  deleteBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
 
   getRow(rowNum: number) {
     const row = () => cy.get('.mat-row').eq(rowNum - 1);
     this.row = row();
-    this.viewAreasBtn = row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
-    this.editPropertyBtn = row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
+    this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = () => row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
     return this;
   }
 
@@ -255,14 +259,14 @@ export class PropertyRowObject {
       .parent() // met-cell
       .parent(); // mat-row
     this.row = row();
-    this.viewAreasBtn = row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
-    this.editPropertyBtn = row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
-    this.deleteBtn = row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
+    this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
+    this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
+    this.deleteBtn = () => row().find('[id^=deletePropertyBtn]').should('be.visible').should('be.enabled');
     return this;
   }
 
   goToAreas() {
-    this.viewAreasBtn.click();
+    this.viewAreasBtn().click();
     backendConfigurationPropertiesPage.configurePropertyAreasBtn().should('be.visible');
   }
 
@@ -272,7 +276,7 @@ export class PropertyRowObject {
   }
 
   openDeleteModal() {
-    this.deleteBtn.click();
+    this.deleteBtn().click();
     backendConfigurationPropertiesPage.propertyDeleteCancelBtn().should('be.visible');
   }
 
