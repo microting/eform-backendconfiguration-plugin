@@ -159,7 +159,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   }
 
   openEditTaskModal(task: TaskModel) {
-    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanningId).pipe(
+    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanId).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
