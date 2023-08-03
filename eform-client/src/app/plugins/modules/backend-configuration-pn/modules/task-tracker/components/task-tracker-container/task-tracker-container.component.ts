@@ -102,7 +102,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.getColumns();
     this.getProperties();
     this.getEnabledLanguages();
-    // this.getTags(); // todo not used for now
+    this.getTags();
   }
 
   ngOnDestroy(): void {
