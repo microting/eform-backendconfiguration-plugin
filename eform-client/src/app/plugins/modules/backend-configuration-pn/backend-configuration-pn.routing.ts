@@ -93,6 +93,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'reportsv2',
+        canActivate: [AuthGuard],
+        loadChildren: () =>
+          import('./modules/reports/reports.module').then(
+            (m) => m.ReportsModule
+          ),
+      },
+      {
         path: 'reports',
         canActivate: [AuthGuard],
         component: ReportContainerComponent,

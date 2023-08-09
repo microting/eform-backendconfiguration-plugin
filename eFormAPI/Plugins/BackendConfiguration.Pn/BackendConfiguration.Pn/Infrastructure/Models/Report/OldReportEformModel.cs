@@ -1,7 +1,7 @@
 ﻿/*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2022 Microting A/S
+Copyright (c) 2007 - 2021 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using BackendConfiguration.Pn.Infrastructure.Models.Report;
+using System.Collections.Generic;
 
-namespace BackendConfiguration.Pn.Services.WordService
+namespace BackendConfiguration.Pn.Infrastructure.Models.Report
 {
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.TaskManagement;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-
-    public interface IWordService
+    public class OldReportEformModel
     {
-        Task<OperationDataResult<Stream>> GenerateReport(int propertyId, int areaId, int year);
+        public int CheckListId { get; set; }
 
-        Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
+        public string CheckListName { get; set; }
 
-        Task<OperationDataResult<Stream>> GenerateWordDashboard(List<OldReportEformModel> reportModel);
+        public string FromDate { get; set; }
+
+        public string ToDate { get; set; }
+
+        public string TableName { get; set; }
+
+        public List<string> DescriptionBlocks { get; set; } = new();
+
+        public List<KeyValuePair<List<string>, List<string>>> ImageNames { get; set; } = new();
+
+        public List<KeyValuePair<int, string>> ItemHeaders { get; set; } = new();
+
+        public List<ReportEformItemModel> Items { get; set; } = new();
+
+        public List<ReportEformPostModel> Posts { get; set; } = new();
+
+        public ReportEformTextHeaderModel TextHeaders { get; set; }
+
+        public List<string> NameTagsInEndPage { get; set; } = new();
     }
 }

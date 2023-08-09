@@ -81,7 +81,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
         }
 
-        public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx)
+        public async Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx)
         {
             try
             {
@@ -126,7 +126,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     .Select(x => x.Key)
                     .ToList();
 
-                List<CheckList> checkLists = new List<CheckList>();
+                var checkLists = new List<CheckList>();
 
                 if (groupedCaseCheckListIds.Count > 0)
                 {
@@ -150,7 +150,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     .ToList();
 
 
-                var result = new List<ReportEformModel>();
+                var result = new List<OldReportEformModel>();
                 // Exclude field types: None, Picture, Audio, Movie, Signature, Show PDF, FieldGroup, SaveButton
                 var excludedFieldTypes = new List<string>
                 {
@@ -168,7 +168,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 //foreach (var groupedCase in groupedCases)
                 foreach (var checkList in checkLists)
                 {
-                    bool hasChildCheckLists = sdkDbContext.CheckLists.Any(x => x.ParentId == checkList.Id);
+                    var hasChildCheckLists = sdkDbContext.CheckLists.Any(x => x.ParentId == checkList.Id);
                     var checkListTranslation = sdkDbContext.CheckListTranslations
                         .Where(x => x.CheckListId == checkList.Id)
                         .First(x => x.LanguageId == language.Id).Text;
@@ -178,7 +178,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     if (groupedCase != null)
                     {
 
-                        var reportModel = new ReportEformModel
+                        var reportModel = new OldReportEformModel
                         {
                             CheckListId = checkList.Id,
                             CheckListName = checkListTranslation,
@@ -252,7 +252,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 var fieldTranslation =
                                     await sdkDbContext.FieldTranslations.FirstAsync(x =>
                                         x.FieldId == fieldDto.Id && x.LanguageId == language.Id);
-                                string text = fieldTranslation.Text;
+                                var text = fieldTranslation.Text;
                                 if (hasChildCheckLists)
                                 {
                                     var clTranslation =
@@ -318,7 +318,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             var planningNameTranslation =
                                 await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x =>
                                     x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
-                            string propertyName = "";
+                            var propertyName = "";
 
                             var areaRulePlanning =
                                 await _backendConfigurationPnDbContext.AreaRulePlannings.FirstOrDefaultAsync(x =>
@@ -341,28 +341,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                     propertyName = _backendConfigurationPnDbContext.Properties
                                         .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
                                 }
-                                // if (model.TagIds.Count == 1)
-                                // {
-                                //     var planningTag = await _itemsPlanningPnDbContext.PlanningTags
-                                //         .FirstOrDefaultAsync(x => x.Id == model.TagIds.First());
-                                //     propertyName = planningTag.Name.Replace("00. ", "");
-                                //     foreach (var property in await _backendConfigurationPnDbContext.Properties.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync())
-                                //     {
-                                //         if (propertyName.Contains(property.Name))
-                                //         {
-                                //             propertyName = property.Name;
-                                //             var areaRulePlanningNew = new AreaRulePlanning
-                                //             {
-                                //                 PropertyId = property.Id,
-                                //                 ItemPlanningId = planningCase.PlanningId,
-                                //                 AreaRuleId = 1
-                                //             };
-                                //             await areaRulePlanningNew.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                                //             await areaRulePlanningNew.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                                //             break;
-                                //         }
-                                //     }
-                                // }
                             }
 
                             var dbCase = await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
@@ -409,17 +387,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                         switch (fieldDto.FieldType)
                                         {
                                             case Constants.FieldTypes.MultiSelect:
-                                                List<string> keyLst = string.IsNullOrEmpty(caseField.Value) ? new List<string>() : caseField.Value.Split('|').ToList();
+                                                var keyLst = string.IsNullOrEmpty(caseField.Value) ? new List<string>() : caseField.Value.Split('|').ToList();
                                                 var valueReadable = "";
-                                                foreach (string key in keyLst)
+                                                foreach (var key in keyLst)
                                                 {
                                                     if (!string.IsNullOrEmpty(key))
                                                     {
-                                                        FieldOption fieldOption = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
+                                                        var fieldOption = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
                                                             x.FieldId == caseField.FieldId && x.Key == key);
                                                         if (fieldOption != null)
                                                         {
-                                                            FieldOptionTranslation fieldOptionTranslation =
+                                                            var fieldOptionTranslation =
                                                                 await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
                                                                     x.FieldOptionId == fieldOption.Id && x.LanguageId == language.Id);
                                                             if (valueReadable != "")
@@ -433,11 +411,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("string", valueReadable));
                                                 break;
                                             case Constants.FieldTypes.SingleSelect:
-                                                FieldOption fo = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
+                                                var fo = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
                                                     x.FieldId == caseField.FieldId && x.Key == caseField.Value);
                                                 if (fo != null)
                                                 {
-                                                    FieldOptionTranslation fieldOptionTranslation =
+                                                    var fieldOptionTranslation =
                                                         await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
                                                             x.FieldOptionId == fo.Id && x.LanguageId == language.Id);
                                                     item.CaseFields.Add(new KeyValuePair<string, string>("string", fieldOptionTranslation.Text));
@@ -451,8 +429,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                                 Constants.FieldTypes.EntitySelect:
                                                 if (caseField.Value != null && caseField.Value != "null")
                                                 {
-                                                    int id = int.Parse(caseField.Value);
-                                                    EntityItem match =
+                                                    var id = int.Parse(caseField.Value);
+                                                    var match =
                                                         await sdkDbContext.EntityItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
                                                     item.CaseFields.Add(new KeyValuePair<string, string>("string", match.Name));
                                                 }
@@ -510,12 +488,387 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                 }
 
-                var reportEformModel = new ReportEformModel();
+                var reportEformModel = new OldReportEformModel();
                 reportEformModel.NameTagsInEndPage.AddRange(_itemsPlanningPnDbContext.PlanningTags
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => model.TagIds.Any(y => y == x.Id))
                     .Select(x => x.Name));
                 result.Add(reportEformModel);
+
+                if (result.Any())
+                {
+                    return new OperationDataResult<List<OldReportEformModel>>(true, result);
+                }
+
+                return new OperationDataResult<List<OldReportEformModel>>(false, _backendConfigurationLocalizationService.GetString("NoDataInSelectedPeriod"));
+
+            }
+            catch (Exception e)
+            {
+                Trace.TraceError(e.Message);
+                _logger.LogError(e.Message);
+                return new OperationDataResult<List<OldReportEformModel>>(false,
+                    _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
+            }
+        }
+
+        public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReport(GenerateReportModel model)
+        {
+            try
+            {
+                var timeZoneInfo = await _userService.GetCurrentUserTimeZoneInfo();
+                var core = await _coreHelper.GetCore();
+                await using var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var fromDate = new DateTime(model.DateFrom!.Value.Year, model.DateFrom.Value.Month,
+                    model.DateFrom.Value.Day, 0, 0, 0);
+                var toDate = new DateTime(model.DateTo!.Value.Year, model.DateTo.Value.Month,
+                    model.DateTo.Value.Day, 23, 59, 59);
+
+                var planningCasesQuery = _itemsPlanningPnDbContext.PlanningCases
+                    .Include(x => x.Planning)
+                    .ThenInclude(x => x.PlanningsTags)
+                    .Where(x => x.Status == 100)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .AsNoTracking()
+                    .AsQueryable();
+
+                if (model.DateFrom != null)
+                {
+                    planningCasesQuery = planningCasesQuery.Where(x =>
+                        x.MicrotingSdkCaseDoneAt >= fromDate);
+                }
+
+                if (model.DateTo != null)
+                {
+                    planningCasesQuery = planningCasesQuery.Where(x =>
+                        x.MicrotingSdkCaseDoneAt <= toDate);
+                }
+
+                if (model.TagIds.Count > 0)
+                {
+                    foreach (var tagId in model.TagIds)
+                    {
+                        planningCasesQuery = planningCasesQuery
+                            .Where(x => x.Planning.PlanningsTags
+                                .Any(y => y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
+                            .AsNoTracking();
+                    }
+                }
+
+                var planningTagIdsForGroup = await _backendConfigurationPnDbContext.AreaRulePlannings
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.ItemPlanningTagId.HasValue)
+                    .Select(x => x.ItemPlanningTagId.Value)
+                    .ToListAsync();
+
+                var planningTagsForGroup = await _itemsPlanningPnDbContext.PlanningTags
+                    .Where(x => planningTagIdsForGroup.Contains(x.Id))
+                    .ToListAsync();
+
+
+                var result = new List<ReportEformModel>();
+                // Exclude field types: None, Picture, Audio, Movie, Signature, Show PDF, FieldGroup, SaveButton
+                var excludedFieldTypes = new List<string>
+                {
+                    Constants.FieldTypes.None,
+                    Constants.FieldTypes.Picture,
+                    Constants.FieldTypes.Audio,
+                    Constants.FieldTypes.Movie,
+                    Constants.FieldTypes.Signature,
+                    Constants.FieldTypes.ShowPdf,
+                    Constants.FieldTypes.FieldGroup,
+                    Constants.FieldTypes.SaveButton
+                };
+                var localeString = await _userService.GetCurrentUserLocale();
+                var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
+                var groupedPlanningCases = planningCasesQuery
+                    .ToList()
+                    .Where(x => x.Planning.PlanningsTags.Any(y =>
+                        planningTagIdsForGroup.Contains(y.PlanningTagId)))
+                    .Select(x => new
+                    {
+                        planningCase = x,
+                        planningTag = planningTagsForGroup
+                            .Single(y => x.Planning.PlanningsTags
+                                .Any(t => t.PlanningTagId == y.Id))
+                    })
+                    .GroupBy(x => x.planningTag,
+                        (tag, enumerable) => new
+                        {
+                            planningTag = tag,
+                            casesGroupedByEfromId = enumerable
+                                .Select(y => y.planningCase)
+                                .GroupBy(y => y.MicrotingSdkeFormId,
+                                    (eFormId, cases) => new
+                                    {
+                                        eFormId, cases,
+                                    })
+                        });
+                foreach (var groupedPlanningCase in groupedPlanningCases)
+                {
+
+                    var reportModel = new ReportEformModel
+                    {
+                        FromDate = $"{fromDate:yyyy-MM-dd}",
+                        ToDate = $"{toDate:yyyy-MM-dd}",
+                        GroupTagName = groupedPlanningCase.planningTag.Name,
+                    };
+
+                    var groupEform = new List<ReportEformGroupModel>();
+                    foreach (var eformIdAndCases in groupedPlanningCase.casesGroupedByEfromId)
+                    {
+                        var checkList = await sdkDbContext.CheckLists
+                            .Where(x => x.Id == eformIdAndCases.eFormId)
+                            .FirstOrDefaultAsync();
+                        var hasChildCheckLists = sdkDbContext.CheckLists.Any(x => x.ParentId == checkList.Id);
+                        var checkListTranslation = sdkDbContext.CheckListTranslations
+                            .Where(x => x.CheckListId == checkList.Id)
+                            .First(x => x.LanguageId == language.Id).Text;
+                        var group = new ReportEformGroupModel()
+                        {
+                            CheckListId = checkList.Id,
+                            CheckListName = checkListTranslation,
+                        };
+
+                        var fields = await core.Advanced_TemplateFieldReadAll(
+                            checkList.Id, language);
+
+                        foreach (var fieldDto in fields.Where(fieldDto => !excludedFieldTypes.Contains(fieldDto.FieldType)))
+                        {
+                            string text;
+                            var queryFieldTranslation = sdkDbContext.FieldTranslations
+                                    .Where(x => x.FieldId == fieldDto.Id)
+                                    .Where(x => x.Text != string.Empty)
+                                    .AsQueryable();
+                            if (queryFieldTranslation.Any(x => x.LanguageId == language.Id))
+                            {
+                                text = await queryFieldTranslation
+                                    .Where(x => x.LanguageId == language.Id)
+                                    .Select(x => x.Text)
+                                    .FirstOrDefaultAsync() ?? "";
+                            }
+                            else
+                            {
+                                text = await queryFieldTranslation
+                                    .Select(x => x.Text)
+                                    .FirstOrDefaultAsync() ?? "";
+                            }
+                            if (hasChildCheckLists)
+                            {
+                                var clTranslation =
+                                    await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x =>
+                                        x.CheckListId == fieldDto.CheckListId && x.LanguageId == language.Id);
+                                if (checkListTranslation != clTranslation.Text)
+                                {
+                                    text = $"{clTranslation.Text} - {text}";
+                                }
+                            }
+                            var kvp = new KeyValuePair<int, string>(fieldDto.Id, text);
+                            
+                            group.ItemHeaders.Add(kvp);
+                        }
+
+                        // images
+                        var imagesForEform = await sdkDbContext.FieldValues
+                            .Include(x => x.UploadedData)
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.UploadedData.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => x.Field.FieldTypeId == 5) // magic number 5 - it is FieldTypes.Picture
+                            .Where(x => x.CheckListId == eformIdAndCases.eFormId)
+                            .Where(x => x.UploadedDataId != null)
+                            .OrderBy(x => x.CaseId)
+                            .ToListAsync();
+
+                        foreach (var planningCase in eformIdAndCases.cases)
+                        {
+
+                            var planningNameTranslation =
+                                await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
+                                    x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
+                            foreach (var imageField in imagesForEform)
+                            {
+
+                                if (planningNameTranslation != null)
+                                {
+                                    var label = $"{imageField.CaseId}; {planningNameTranslation.Name}";
+                                    var geoTag = "";
+                                    if (!string.IsNullOrEmpty(imageField.Latitude))
+                                    {
+                                        geoTag =
+                                            $"https://www.google.com/maps/place/{imageField.Latitude},{imageField.Longitude}";
+                                    }
+
+                                    var keyList = new List<string> { imageField.CaseId.ToString(), label };
+                                    var list = new List<string>();
+                                    if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
+                                    {
+                                        list.Add(imageField.UploadedData.FileName);
+                                        list.Add(geoTag);
+                                        group.ImageNames.Add(
+                                            new KeyValuePair<List<string>, List<string>>(keyList, list));
+                                    }
+                                }
+                            }
+
+                            var propertyName = "";
+
+                            var areaRulePlanning =
+                                await _backendConfigurationPnDbContext.AreaRulePlannings.FirstOrDefaultAsync(x =>
+                                    x.ItemPlanningId == planningCase.PlanningId);
+
+                            if (areaRulePlanning != null)
+                            {
+                                propertyName = _backendConfigurationPnDbContext.Properties
+                                    .First(x => x.Id == areaRulePlanning.PropertyId).Name;
+                            }
+                            else
+                            {
+                                var areaRulePlanningVersion = await _backendConfigurationPnDbContext.AreaRulesPlanningVersions
+                                    .Where(x => x.ItemPlanningId == planningCase.PlanningId)
+                                    .OrderByDescending(x => x.Version)
+                                    .FirstOrDefaultAsync();
+
+                                if (areaRulePlanningVersion != null)
+                                {
+                                    propertyName = _backendConfigurationPnDbContext.Properties
+                                        .First(x => x.Id == areaRulePlanningVersion.PropertyId).Name;
+                                }
+                            }
+
+                            var dbCase = await sdkDbContext.Cases.FirstOrDefaultAsync(x => x.Id == planningCase.MicrotingSdkCaseId);
+
+                            if (dbCase == null)
+                            {
+                                Console.BackgroundColor = ConsoleColor.Red;
+                                Console.ForegroundColor = ConsoleColor.White;
+                                Console.WriteLine($"Could not find case with id {planningCase.MicrotingSdkCaseId}");
+
+                                continue;
+                            }
+                            if (planningNameTranslation != null)
+                            {
+                                var item = new ReportEformItemModel
+                                {
+                                    Id = planningCase.Id,
+                                    ItemId = planningCase.PlanningId,
+                                    MicrotingSdkCaseId = planningCase.MicrotingSdkCaseId,
+                                    MicrotingSdkCaseDoneAt = TimeZoneInfo.ConvertTimeFromUtc((DateTime)planningCase.MicrotingSdkCaseDoneAt, timeZoneInfo),
+                                    ServerTime = TimeZoneInfo.ConvertTimeFromUtc((DateTime)dbCase.CreatedAt, timeZoneInfo),
+                                    eFormId = planningCase.MicrotingSdkeFormId,
+                                    DoneBy = planningCase.DoneByUserName,
+                                    ItemName = planningNameTranslation.Name,
+                                    ItemDescription = planningCase.Planning.Description,
+                                    PropertyName = propertyName
+                                };
+
+
+                                var caseFields = await sdkDbContext.FieldValues
+                                    .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId && x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToListAsync();
+
+                                foreach (var fieldDto in fields)
+                                {
+                                    var caseField = caseFields.FirstOrDefault(x => x.FieldId == fieldDto.Id);
+                                    if (caseField != null)
+                                    {
+                                        switch (fieldDto.FieldType)
+                                        {
+                                            case Constants.FieldTypes.MultiSelect:
+                                                var keyLst = string.IsNullOrEmpty(caseField.Value) ? new List<string>() : caseField.Value.Split('|').ToList();
+                                                var valueReadable = "";
+                                                foreach (var key in keyLst)
+                                                {
+                                                    if (!string.IsNullOrEmpty(key))
+                                                    {
+                                                        var fieldOption = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
+                                                            x.FieldId == caseField.FieldId && x.Key == key);
+                                                        if (fieldOption != null)
+                                                        {
+                                                            var fieldOptionTranslation =
+                                                                await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
+                                                                    x.FieldOptionId == fieldOption.Id && x.LanguageId == language.Id);
+                                                            if (valueReadable != "")
+                                                            {
+                                                                valueReadable += '|';
+                                                            }
+                                                            valueReadable += fieldOptionTranslation.Text;
+                                                        }
+                                                    }
+                                                }
+                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", valueReadable));
+                                                break;
+                                            case Constants.FieldTypes.SingleSelect:
+                                                var fo = await sdkDbContext.FieldOptions.FirstOrDefaultAsync(x =>
+                                                    x.FieldId == caseField.FieldId && x.Key == caseField.Value);
+                                                if (fo != null)
+                                                {
+                                                    var fieldOptionTranslation =
+                                                        await sdkDbContext.FieldOptionTranslations.FirstAsync(x =>
+                                                            x.FieldOptionId == fo.Id && x.LanguageId == language.Id);
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string", fieldOptionTranslation.Text));
+                                                }
+                                                else
+                                                {
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string", ""));
+                                                }
+                                                break;
+                                            case Constants.FieldTypes.EntitySearch or
+                                                Constants.FieldTypes.EntitySelect:
+                                                if (caseField.Value != null && caseField.Value != "null")
+                                                {
+                                                    var id = int.Parse(caseField.Value);
+                                                    var match =
+                                                        await sdkDbContext.EntityItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string", match.Name));
+                                                }
+                                                else
+                                                {
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string", ""));
+                                                }
+                                                break;
+                                            case Constants.FieldTypes.Picture
+                                                or Constants.FieldTypes.SaveButton
+                                                or Constants.FieldTypes.Signature
+                                                or Constants.FieldTypes.None
+                                                or Constants.FieldTypes.FieldGroup:
+                                                break;
+                                            case Constants.FieldTypes.Number
+                                                or Constants.FieldTypes.NumberStepper:
+                                                item.CaseFields.Add(caseField.Value != null
+                                                    ? new KeyValuePair<string, string>("number",
+                                                        caseField.Value.Replace(",", "."))
+                                                    : new KeyValuePair<string, string>("number", ""));
+                                                break;
+                                            case Constants.FieldTypes.Date:
+                                                item.CaseFields.Add(new KeyValuePair<string, string>("date", caseField.Value));
+                                                break;
+                                            default:
+                                                item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
+                                                break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        item.CaseFields.Add(new KeyValuePair<string, string>("string", ""));
+                                    }
+                                }
+
+                                item.ImagesCount = await sdkDbContext.FieldValues
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .Where(x => x.Field.FieldTypeId == 5)
+                                    .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId)
+                                    .Where(x => x.UploadedDataId != null)
+                                    .Select(x => x.Id)
+                                    .CountAsync();
+
+                                group.Items.Add(item);
+                            }
+                        }
+                        reportModel.GroupEform.Add(group);
+                    }
+
+                    result.Add(reportModel);
+                }
 
                 if (result.Any())
                 {
@@ -591,9 +944,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             // convert file to pdf
                             ReportHelper.ConvertToPdf(resultDocumentDocx, directoryPath);
                             // read converted file and return
-                            using (FileStream fileStream = File.OpenRead(resultDocumentPdf))
+                            using (var fileStream = File.OpenRead(resultDocumentPdf))
                             {
-                                MemoryStream memoryStream = new MemoryStream();
+                                var memoryStream = new MemoryStream();
                                 fileStream.CopyTo(memoryStream);
                                 return new OperationDataResult<Stream>(true, memoryStream);
                             }

@@ -15,6 +15,7 @@ import {
   AreaRuleUpdateModel,
   AreaModel,
   PropertyModel,
+  ChemicalModel,
 } from '../../../../models';
 import {
   BackendConfigurationPnAreasService,
@@ -24,12 +25,11 @@ import {TranslateService} from '@ngx-translate/core';
 import {AreaRuleEntityListModalComponent, AreaRulePlanModalComponent} from '../../../../components';
 import {EntityItemModel, Paged} from 'src/app/common/models';
 import {EntitySelectService} from 'src/app/common/services';
-import {ChemicalModel} from '../../../../modules';
 import {ChemicalsStateService} from '../../../../components/chemicals/store';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {AreaRulesStateService} from 'src/app/plugins/modules/backend-configuration-pn/modules/area-rules/components/store';
+import {AreaRulesStateService} from '../store';
 import { Sort } from '@angular/material/sort';
 
 @AutoUnsubscribe()

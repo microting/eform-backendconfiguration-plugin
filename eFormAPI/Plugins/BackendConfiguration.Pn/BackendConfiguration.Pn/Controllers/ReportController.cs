@@ -84,17 +84,24 @@ public class ReportController : Controller
 
     [HttpPost]
     [Route("reports")]
-    public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReport([FromBody]GenerateReportModel requestModel)
+    public async Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport([FromBody]GenerateReportModel requestModel)
     {
         return await _reportService.GenerateReport(requestModel, false);
     }
 
-	/// <summary>Download records export word</summary>
-	/// <param name="dateFrom">The date from.</param>
-	/// <param name="dateTo">The date to.</param>
-	/// <param name="tagIds">The tag ids.</param>
-	/// <param name="type">docx or xlsx</param>
-	[HttpGet]
+    [HttpPost]
+    [Route("new-reports")]
+    public async Task<OperationDataResult<List<ReportEformModel>>> GenerateNewReport([FromBody] GenerateReportModel requestModel)
+    {
+        return await _reportService.GenerateReport(requestModel);
+    }
+
+    /// <summary>Download records export word</summary>
+    /// <param name="dateFrom">The date from.</param>
+    /// <param name="dateTo">The date to.</param>
+    /// <param name="tagIds">The tag ids.</param>
+    /// <param name="type">docx or xlsx</param>
+    [HttpGet]
     [Route("reports/file")]
 
     [ProducesResponseType(typeof(string), 400)]

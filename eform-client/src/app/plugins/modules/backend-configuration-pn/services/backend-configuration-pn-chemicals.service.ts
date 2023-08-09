@@ -1,5 +1,5 @@
 import {ApiBaseService} from 'src/app/common/services';
-import {ChemicalModel, ChemicalsRequestModel} from 'src/app/plugins/modules/backend-configuration-pn/modules';
+import {ChemicalModel, ChemicalsRequestModel} from '../models';
 import {OperationDataResult, Paged} from 'src/app/common/models';
 import {Observable} from 'rxjs';
 import {Injectable} from '@angular/core';

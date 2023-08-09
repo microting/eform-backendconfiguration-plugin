@@ -542,7 +542,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             return new OperationDataResult<Stream>(true, docxFileStream);
         }
 
-        public async Task<OperationDataResult<Stream>> GenerateWordDashboard(List<ReportEformModel> reportModel)
+        public async Task<OperationDataResult<Stream>> GenerateWordDashboard(List<OldReportEformModel> reportModel)
         {
             try
             {
