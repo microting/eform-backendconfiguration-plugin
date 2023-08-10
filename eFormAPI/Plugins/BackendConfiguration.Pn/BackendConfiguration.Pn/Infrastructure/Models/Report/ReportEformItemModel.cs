@@ -41,8 +41,6 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Report
         public int PostsCount { get; set; }
         public int ImagesCount { get; set; }
         public string PropertyName { get; set; }
-
-        public List<KeyValuePair<string, string>> CaseFields { get; set; }
-            = new List<KeyValuePair<string, string>>();
+        public List<KeyValuePair<string, string>> CaseFields { get; set; } = new();
     }
 }

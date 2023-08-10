@@ -1,0 +1,55 @@
+<h3 mat-dialog-title>{{'Are you sure you want to delete' | translate}}?</h3>
+<div mat-dialog-content>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>ID</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{reportEformItemModel.id}}</strong>
+    </div>
+  </div>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>{{'Finished at' | translate}}</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>
+        <date-formatter
+          [date]="reportEformItemModel.microtingSdkCaseDoneAt"
+          [Format]="'datetime'"
+        ></date-formatter>
+      </strong>
+    </div>
+  </div>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>{{ 'Done by' | translate }}</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{ reportEformItemModel.doneBy }}</strong>
+    </div>
+  </div>
+  <div class="d-flex flex-row justify-content-between">
+    <div class="d-flex flex-column">
+      <p>{{'eForm Id' | translate}}</p>
+    </div>
+    <div class="d-flex flex-column">
+      <strong>{{reportEformItemModel.eFormId}}</strong>
+    </div>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row justify-content-end">
+  <button
+    mat-raised-button
+    color="warn"
+    id="planningDeleteDeleteBtn"
+    (click)="deletePlanning()">
+    {{'Delete' | translate}}
+  </button>
+  <button
+    mat-raised-button
+    id="planningDeleteCancelBtn"
+    (click)="hide()">
+    {{'Close' | translate}}
+  </button>
+</div>

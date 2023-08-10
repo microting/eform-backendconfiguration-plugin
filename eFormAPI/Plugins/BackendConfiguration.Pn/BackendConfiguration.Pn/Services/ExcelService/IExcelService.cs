@@ -37,7 +37,7 @@ public interface IExcelService
 {
     Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
 
-    Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel);
+    Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<OldReportEformModel> reportModel);
 
     Task<Stream> GenerateTaskTracker(List<TaskTrackerModel> model);
 }

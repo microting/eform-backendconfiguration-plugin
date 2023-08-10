@@ -213,7 +213,7 @@ public class ExcelService : IExcelService
 	}
 
 #pragma warning disable CS1998
-	public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
+	public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<OldReportEformModel> reportModel)
 #pragma warning restore CS1998
 	{
 		try
