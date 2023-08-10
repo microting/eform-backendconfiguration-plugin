@@ -436,7 +436,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (propertyFolder != null) // if folder is not deleted
                 {
-                    await propertyFolder.Delete(sdkDbContext).ConfigureAwait(false);
+                    await core.FolderDelete(propertyFolder.Id);
                 }
 
                 // delete property folder for tasks
@@ -446,7 +446,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .FirstOrDefaultAsync().ConfigureAwait(false);
                 if (propertyFolderForTasks != null) // if folder is not created
                 {
-                    await propertyFolderForTasks.Delete(sdkDbContext).ConfigureAwait(false);
+                    await core.FolderDelete(propertyFolderForTasks.Id);
                 }
 
                 // delete linked files

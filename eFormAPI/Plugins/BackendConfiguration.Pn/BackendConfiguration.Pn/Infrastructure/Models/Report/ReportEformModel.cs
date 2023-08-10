@@ -28,34 +28,25 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Report
 {
     public class ReportEformModel
     {
-        public int CheckListId { get; set; }
-
-        public string CheckListName { get; set; }
+        public List<ReportEformGroupModel> GroupEform { get; set; } = new();
 
         public string FromDate { get; set; }
 
         public string ToDate { get; set; }
 
-        public string TableName { get; set; }
+        public string GroupTagName { get; set; }
+    }
 
-        public List<string> DescriptionBlocks { get; set; }
-            = new List<string>();
+    public class ReportEformGroupModel
+    {
+        public int CheckListId { get; set; }
 
-        public List<KeyValuePair<List<string>, List<string>>> ImageNames { get; set; }
-            = new List<KeyValuePair<List<string>, List<string>>>();
+        public string CheckListName { get; set; }
 
-        public List<KeyValuePair<int, string>> ItemHeaders { get; set; }
-            = new List<KeyValuePair<int, string>>();
+        public List<KeyValuePair<List<string>, List<string>>> ImageNames { get; set; } = new();
 
-        public List<ReportEformItemModel> Items { get; set; }
-            = new List<ReportEformItemModel>();
+        public List<KeyValuePair<int, string>> ItemHeaders { get; set; } = new();
 
-        public List<ReportEformPostModel> Posts { get; set; }
-            = new List<ReportEformPostModel>();
-
-        public ReportEformTextHeaderModel TextHeaders { get; set; }
-
-        public List<string> NameTagsInEndPage { get; set; }
-            = new List<string>();
+        public List<ReportEformItemModel> Items { get; set; } = new();
     }
 }

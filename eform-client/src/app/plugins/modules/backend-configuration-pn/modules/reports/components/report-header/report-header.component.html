@@ -1,0 +1,68 @@
+<form [formGroup]="generateForm">
+  <div class="d-flex flex-row need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Select filter' | translate}}</mat-label>
+      <mtx-select
+        class="custom"
+        dropdownPosition="bottom"
+        [items]="availableTags"
+        formControlName="tagIds"
+        [clearable]="false"
+        [bindLabel]="'name'"
+        [bindValue]="'id'"
+        (add)="addOrDeleteTagId($event)"
+        (remove)="addOrDeleteTagId($event.value)"
+        id="tagSelector"
+        [multiple]="true"
+      >
+      </mtx-select>
+    </mat-form-field>
+    <mat-form-field formGroupName="dateRange">
+      <mat-label>{{ 'Select date range' | translate }}</mat-label>
+      <mat-datepicker-toggle matPrefix [for]="picker"></mat-datepicker-toggle>
+      <mat-date-range-input [rangePicker]="picker" (click)="picker.open()">
+        <input formControlName="dateFrom" matStartDate class="dateFormInput">
+        <input formControlName="dateTo" matEndDate class="dateFormInput">
+      </mat-date-range-input>
+      <mat-date-range-picker #picker></mat-date-range-picker>
+    </mat-form-field>
+    <div class="d-flex flex-row align-items-center ml-4">
+      <button
+        mat-raised-button
+        color="accent"
+        [disabled]="generateForm.invalid"
+        (click)="onSubmit()"
+        id="generateTableBtn"
+      >
+        {{ 'Generate' | translate }}
+      </button>
+      <button
+        mat-icon-button
+        [disabled]="generateForm.invalid"
+        (click)="onWordSave()"
+        id="generateWordBtn"
+        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Word'}"
+      >
+        <mat-icon svgIcon="file-word"></mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        [disabled]="generateForm.invalid"
+        (click)="onExcelSave()"
+        id="generateExcelBtn"
+        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'Excel'}"
+      >
+        <mat-icon svgIcon="file-excel"></mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        [disabled]="generateForm.invalid"
+        (click)="onPdfSave()"
+        id="generatePdfBtn"
+        [matTooltip]="'GenerateWithTypeDoc' | translate:{type: 'PDF'}"
+      >
+        <mat-icon svgIcon="file-pdf"></mat-icon>
+      </button>
+    </div>
+  </div>
+</form>

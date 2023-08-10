@@ -1,0 +1,27 @@
+<eform-new-subheader [title]="'Generate Report' | translate" [forceStaticTitle]="true"></eform-new-subheader>
+
+<app-items-planning-pn-report-header
+  [range]="range"
+  [availableTags]="availableTags"
+  (downloadReport)="onDownloadReport($event)"
+  (generateReport)="onGenerateReport($event)"
+>
+</app-items-planning-pn-report-header>
+<ng-container *ngFor="let report of reportsModel; let i = index; last as isLastReport">
+  <ng-container *ngFor="let groupEform of report.groupEform; let i = index; last as isLastGroupEform">
+    <ng-container *ngIf="groupEform.items.length > 0">
+      <div [class.mb-4]="!(isLastGroupEform && isLastReport)">
+        <h1>{{report.groupTagName}}</h1>
+        <app-report-table
+          [items]="groupEform.items"
+          [reportIndex]="i"
+          [itemHeaders]="groupEform.itemHeaders"
+          [dateFrom]="dateFrom"
+          [dateTo]="dateTo"
+          (planningCaseDeleted)="onPlanningCaseDeleted()"
+          (btnViewPicturesClicked)="onClickViewPicture($event)"
+        ></app-report-table>
+      </div>
+    </ng-container>
+  </ng-container>
+</ng-container>
