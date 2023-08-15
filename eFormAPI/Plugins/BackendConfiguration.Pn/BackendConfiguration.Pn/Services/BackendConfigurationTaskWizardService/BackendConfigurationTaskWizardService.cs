@@ -357,6 +357,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 StartDate = createModel.StartDate,
                 RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)createModel.RepeatType,
                 RelatedEFormId = createModel.EformId,
+                PushMessageOnDeployment = true,
+                ShowExpireDate = true,
                 RelatedEFormName = eformName,
                 RepeatEvery = createModel.RepeatEvery,
                 SdkFolderId = createModel.FolderId,
@@ -403,6 +405,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             await planning.Create(_itemsPlanningPnDbContext);
 
             var areaId = await GetLogBooksAreaId();
+
+            if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
+            {
+                createModel.RepeatEvery = 0;
+            }
             // create area rule with translations and area rule plannings
             var areRule = new AreaRule
             {
