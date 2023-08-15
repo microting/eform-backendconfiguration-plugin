@@ -346,6 +346,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.Name)
                 .FirstOrDefault();
+
+            if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
+            {
+                createModel.RepeatEvery = 0;
+            }
             // create planning
             var planning = new Planning
             {
@@ -406,10 +411,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             var areaId = await GetLogBooksAreaId();
 
-            if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
-            {
-                createModel.RepeatEvery = 0;
-            }
             // create area rule with translations and area rule plannings
             var areRule = new AreaRule
             {
