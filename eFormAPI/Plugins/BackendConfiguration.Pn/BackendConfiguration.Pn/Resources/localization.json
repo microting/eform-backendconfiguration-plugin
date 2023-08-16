@@ -87,6 +87,14 @@
     }
   },
   {
+    "Key": "DocumentTranslationNotFound",
+    "LocalizedValue": {
+      "da": "Der mangler en eller flere oversættelser",
+      "en-US": "One or more translations are missing",
+      "uk-UK": ""
+    }
+  },
+  {
     "Key": "Documents",
     "LocalizedValue": {
       "da": "Dokumenter",
@@ -110,7 +118,7 @@
       "da": "Gemt",
       "de": "Gerettet",
       "en-US": "Saved",
-      "uk-UA": "Збережено"
+      "uk-UA": "Збережено",
     }
   },
   {
