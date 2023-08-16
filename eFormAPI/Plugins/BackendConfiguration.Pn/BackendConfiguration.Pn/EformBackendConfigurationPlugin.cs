@@ -341,11 +341,11 @@ namespace BackendConfiguration.Pn
                 }
             }
 
-            await UpdateAreaTranslations(context);
+            // await UpdateAreaTranslations(context);
 
-            await CreateFoldersTranslations(core);
+            // await CreateFoldersTranslations(core);
 
-			await UpdateCheckLists(sdkDbContext);
+			// await UpdateCheckLists(sdkDbContext);
 
 			var propertyWorkers = await context.PropertyWorkers
                 .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
