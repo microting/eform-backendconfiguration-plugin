@@ -589,7 +589,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     {
                         planningCase = x,
                         planningTag = planningTagsForGroup
-                            .Single(y => x.Planning.PlanningsTags
+                            .First(y => x.Planning.PlanningsTags
                                 .Any(t => t.PlanningTagId == y.Id))
                     })
                     .GroupBy(x => x.planningTag,
