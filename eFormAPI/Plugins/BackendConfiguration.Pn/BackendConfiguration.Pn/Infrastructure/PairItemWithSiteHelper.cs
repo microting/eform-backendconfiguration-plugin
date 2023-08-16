@@ -519,32 +519,25 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                     if (planningCaseSite.MicrotingSdkCaseId < 1 && planning.StartDate <= DateTime.Now)
                     {
-                        // ReSharper disable once PossibleInvalidOperationException
-                        if (planning.PushMessageOnDeployment)
+                        var body = "";
+                        folder = await GetTopFolder((int) planning.SdkFolderId, sdkDbContext).ConfigureAwait(false);
+                        if (folder != null)
                         {
-                            var body = "";
-                            folder = await GetTopFolder((int) planning.SdkFolderId, sdkDbContext).ConfigureAwait(false);
-                            if (folder != null)
-                            {
-                                //planningPnModel.SdkFolderId = sdkDbContext.Folders
-                                //    .FirstOrDefault(y => y.Id == planningPnModel.SdkFolderId)
-                                //    ?.Id;
-                                var folderTranslation =
-                                    await sdkDbContext.FolderTranslations.SingleOrDefaultAsync(x =>
-                                            x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId)
-                                        .ConfigureAwait(false);
-                                body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:dd.MM.yyyy})";
-                            }
-
-                            var planningNameTranslation =
-                                planning.NameTranslations.FirstOrDefault(x => x.LanguageId == sdkSite.LanguageId);
-
-                            if (planning.RepeatType != RepeatType.Day && planning.RepeatEvery != 0)
-                            {
-                                mainElement.PushMessageBody = body;
-                                mainElement.PushMessageTitle = planningNameTranslation?.Name;
-                            }
+                            //planningPnModel.SdkFolderId = sdkDbContext.Folders
+                            //    .FirstOrDefault(y => y.Id == planningPnModel.SdkFolderId)
+                            //    ?.Id;
+                            var folderTranslation =
+                                await sdkDbContext.FolderTranslations.SingleOrDefaultAsync(x =>
+                                        x.FolderId == folder.Id && x.LanguageId == sdkSite.LanguageId)
+                                    .ConfigureAwait(false);
+                            body = $"{folderTranslation.Name} ({sdkSite.Name};{DateTime.Now:dd.MM.yyyy})";
                         }
+
+                        var planningNameTranslation =
+                            planning.NameTranslations.FirstOrDefault(x => x.LanguageId == sdkSite.LanguageId);
+
+                        mainElement.PushMessageBody = body;
+                        mainElement.PushMessageTitle = planningNameTranslation?.Name;
 
                         if (planning.RepeatEvery == 0 && planning.RepeatType == RepeatType.Day)
                         {

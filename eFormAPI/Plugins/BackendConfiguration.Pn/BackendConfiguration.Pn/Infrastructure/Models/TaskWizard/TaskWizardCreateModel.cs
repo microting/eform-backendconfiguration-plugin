@@ -14,7 +14,7 @@ public class TaskWizardCreateModel
     public List<int> TagIds { get; set; } = new();
     public List<CommonTranslationsModel> Translates { get; set; } = new();
     public int EformId { get; set; }
-    public DateTime StartDate { get; set; }
+    public DateTime? StartDate { get; set; }
     public RepeatType RepeatType { get; set; }
     public int RepeatEvery { get; set; }
     public TaskWizardStatuses Status { get; set; }

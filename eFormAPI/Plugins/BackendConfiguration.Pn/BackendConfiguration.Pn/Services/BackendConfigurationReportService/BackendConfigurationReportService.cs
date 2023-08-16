@@ -589,7 +589,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     {
                         planningCase = x,
                         planningTag = planningTagsForGroup
-                            .Single(y => x.Planning.PlanningsTags
+                            .First(y => x.Planning.PlanningsTags
                                 .Any(t => t.PlanningTagId == y.Id))
                     })
                     .GroupBy(x => x.planningTag,
@@ -668,13 +668,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             group.ItemHeaders.Add(kvp);
                         }
 
+                        var templateCaseIds = eformIdAndCases.cases.Select(x => (int?)x.MicrotingSdkCaseId).ToArray();
                         // images
                         var imagesForEform = await sdkDbContext.FieldValues
                             .Include(x => x.UploadedData)
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .Where(x => x.UploadedData.WorkflowState != Constants.WorkflowStates.Removed)
                             .Where(x => x.Field.FieldTypeId == 5) // magic number 5 - it is FieldTypes.Picture
-                            .Where(x => x.CheckListId == eformIdAndCases.eFormId)
+                            .Where(x => templateCaseIds.Contains(x.CaseId))
                             .Where(x => x.UploadedDataId != null)
                             .OrderBy(x => x.CaseId)
                             .ToListAsync();

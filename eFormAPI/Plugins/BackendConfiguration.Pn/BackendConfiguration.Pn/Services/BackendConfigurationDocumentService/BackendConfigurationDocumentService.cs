@@ -300,8 +300,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         document.EndAt = model.EndDate;
         document.FolderId = model.FolderId;
         document.Status = model.Status;
-        document.IsLocked = document.Status;
-        await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 
         foreach (var translation in model.DocumentTranslations)
         {
@@ -319,6 +317,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
             await documentTranslation.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
         }
+        document.IsLocked = document.Status;
+        await document.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 
         var assignmentsForDelete = document.DocumentProperties
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -344,7 +344,6 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
             await documentSite.Delete(_caseTemplatePnDbContext);
         }
-
 
         if (model.DocumentProperties != null)
         {

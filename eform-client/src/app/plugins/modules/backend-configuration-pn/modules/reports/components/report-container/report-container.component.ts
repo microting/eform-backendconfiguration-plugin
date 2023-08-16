@@ -142,7 +142,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     const imageNamesByCaseId = reportEformPnModel.groupEform
       .map(x => x.imageNames)
       .flat()
-      .filter(x => x.key[0] === caseId.toString())
+      .filter(x => x.key[0] === caseId.toString());
     const length = imageNamesByCaseId.length;
     imageNamesByCaseId
       .forEach((imageValue) => {
