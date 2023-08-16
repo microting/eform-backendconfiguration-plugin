@@ -347,6 +347,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Select(x => x.Name)
                 .FirstOrDefault();
 
+            if (createModel.StartDate == null)
+            {
+                createModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
+            }
+
             if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
             {
                 createModel.RepeatEvery = 0;
@@ -359,7 +364,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 Enabled = true,
                 IsLocked = true,
                 IsHidden = false,
-                StartDate = createModel.StartDate,
+                StartDate = (DateTime)createModel.StartDate,
                 RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)createModel.RepeatType,
                 RelatedEFormId = createModel.EformId,
                 PushMessageOnDeployment = true,
@@ -1017,6 +1022,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             .Where(x => x.Id == areaRule.PropertyId)
             .Select(x => x.ItemPlanningTagId)
             .FirstAsync().ConfigureAwait(false);
+        var startDate = taskWizardCreateModel.StartDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
         var planning = new Planning
         {
             CreatedByUserId = _userService.UserId,
@@ -1027,8 +1033,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             DaysBeforeRedeploymentPushMessageRepeat = false,
             DaysBeforeRedeploymentPushMessage = 5,
             PushMessageOnDeployment = true,
-            StartDate = new DateTime(taskWizardCreateModel.StartDate.Year, taskWizardCreateModel.StartDate.Month,
-                taskWizardCreateModel.StartDate.Day, 0, 0, 0),
+            StartDate = new DateTime(startDate.Year, startDate.Month,
+                startDate.Day, 0, 0, 0),
             IsLocked = true,
             IsEditable = false,
             IsHidden = true
