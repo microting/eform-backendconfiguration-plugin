@@ -1,4 +1,4 @@
-﻿namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
+namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 
 using Infrastructure.Helpers;
 using BackendConfigurationLocalizationService;
@@ -59,6 +59,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var query = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRule.AreaRuleTranslations)
+                .Include(x => x.AreaRulePlanningTags)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.AreaId == areaId);
 
@@ -84,89 +85,98 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 query = query.Where(x => x.Status == booleanStatus);
             }
 
-            var areaRulePlannings = await query
+            if (request.Filters.TagIds.Any())
+            {
+                if (request.Filters.TagIds.Any())
+                {
+                    query = query.Where(x => x.AreaRulePlanningTags
+                                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                                                 .Any(y => request.Filters.TagIds.Contains(y.ItemPlanningTagId)) ||
+                                             x.ItemPlanningTagId.HasValue && request.Filters.TagIds.Contains(x.ItemPlanningTagId.Value));
+                }
+            }
+
+            var itemPlanningTagIds = await query
+                .SelectMany(x => x.AreaRulePlanningTags
+                    .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(y => y.ItemPlanningTagId))
+                .Distinct()
+                .ToListAsync();
+            itemPlanningTagIds.AddRange(await query
+                .Where(x => x.ItemPlanningTagId.HasValue)
+                .Select(x => x.ItemPlanningTagId.Value)
+                .Distinct()
+                .ToListAsync());
+
+            var itemPlanningTags = await _itemsPlanningPnDbContext.PlanningTags
+                .Where(x => itemPlanningTagIds.Contains(x.Id))
+                .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => new
                 {
                     x.Id,
-                    x.PlanningSites,
-                    x.StartDate,
-                    x.ItemPlanningId,
-                    x.FolderId,
-                    x.AreaRule.EformId,
-                    x.RepeatEvery,
-                    x.RepeatType,
-                    x.Status,
-                    TaskName = x.AreaRule.AreaRuleTranslations
-                        .Where(y => y.LanguageId == userLanguage.Id)
-                        .Select(y => y.Name)
-                        .FirstOrDefault(),
-                    PropertyName = _backendConfigurationPnDbContext.Properties.Where(y => y.Id == x.PropertyId)
-                        .Select(y => y.Name).FirstOrDefault(),
+                    x.Name,
                 })
                 .ToListAsync();
+            var itemPlanningTagNames = itemPlanningTags.ToDictionary(x => x.Id, x => x.Name);
 
-            var itemPlaningIds = areaRulePlannings.Select(y => y.ItemPlanningId).Distinct().ToList();
-
-            var itemsPlanningQuery = _itemsPlanningPnDbContext.Plannings
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => itemPlaningIds.Contains(x.Id))
-                .Include(x => x.PlanningsTags)
-                .ThenInclude(x => x.PlanningTag)
-                .AsQueryable();
-
-            if (request.Filters.TagIds.Any())
+            var areaRulePlannings = query.Select(x => new
             {
-                itemsPlanningQuery = itemsPlanningQuery
-                    .Where(x => x.PlanningsTags.Any(y => request.Filters.TagIds.Contains(y.PlanningTagId)));
-            }
+                x.Id,
+                PlanningSites = x.PlanningSites
+                    .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(y => y.SiteId)
+                    .ToList(),
+                x.StartDate,
+                x.ItemPlanningId,
+                x.FolderId,
+                x.AreaRule.EformId,
+                x.RepeatEvery,
+                x.RepeatType,
+                x.Status,
+                TaskName = x.AreaRule.AreaRuleTranslations
+                    .Where(y => y.LanguageId == userLanguage.Id)
+                    .Select(y => y.Name)
+                    .FirstOrDefault(),
+                PropertyName = _backendConfigurationPnDbContext.Properties.Where(y => y.Id == x.PropertyId)
+                    .Select(y => y.Name).FirstOrDefault(),
 
-            // add items planning tags to list area rules
-            var itemsPlanningAndAreaRules = areaRulePlannings.Join(await itemsPlanningQuery.ToListAsync(),
-                areaRule => areaRule.ItemPlanningId,
-                planning => planning.Id,
-                (areaRule, planning) => new
+                Tags = x.AreaRulePlanningTags
+                    .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Select(y => new CommonTagModel
+                    {
+                        Id = y.ItemPlanningTagId,
+                        Name = itemPlanningTagNames.ContainsKey(y.ItemPlanningTagId) ? itemPlanningTagNames[y.ItemPlanningTagId] : "",
+                    })
+                    .ToList(),
+                // add report tag to all tags
+                TagReport = new CommonTagModel
                 {
-                    areaRule.ItemPlanningId,
-                    areaRule.TaskName,
-                    areaRule.Id,
-                    AssignedSiteIds = areaRule.PlanningSites
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => x.SiteId)
-                        .ToList(),
-                    areaRule.PropertyName,
-                    areaRule.FolderId,
-                    areaRule.EformId,
-                    areaRule.RepeatEvery,
-                    areaRule.RepeatType,
-                    areaRule.Status,
-                    areaRule.StartDate,
-                    Tags = planning.PlanningsTags
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => x.PlanningTag)
-                        .Select(x => new CommonTagModel { Id = x.Id, Name = x.Name }),
-                }).ToList();
+                    Id = x.ItemPlanningTagId,
+                    Name = itemPlanningTagNames.ContainsKey((int)x.ItemPlanningTagId) ? itemPlanningTagNames[(int)x.ItemPlanningTagId] : "",
+                },
+            }).ToList();
 
             // add eForm names, folder names and site names
             var eformNamesQuery = await sdkDbContext.CheckListTranslations
                 .Where(x => x.LanguageId == userLanguage.Id)
-                .Where(x => itemsPlanningAndAreaRules.Select(y => (int)y.EformId).Distinct().Contains(x.CheckListId))
+                .Where(x => areaRulePlannings.Select(y => (int)y.EformId).Distinct().Contains(x.CheckListId))
                 .Select(x => new { x.CheckListId, x.Text })
                 .ToListAsync();
 
             var folderNamesQuery = await sdkDbContext.FolderTranslations
                 .Where(x => x.LanguageId == userLanguage.Id)
-                .Where(x => itemsPlanningAndAreaRules.Select(y => y.FolderId).Distinct().Contains(x.FolderId))
+                .Where(x => areaRulePlannings.Select(y => y.FolderId).Distinct().Contains(x.FolderId))
                 .Select(x => new { x.FolderId, x.Name })
                 .ToListAsync();
 
-            var siteIds = itemsPlanningAndAreaRules.SelectMany(y => y.AssignedSiteIds).Distinct().ToList();
+            var siteIds = areaRulePlannings.SelectMany(y => y.PlanningSites).Distinct().ToList();
 
             var siteNamesQuery = await sdkDbContext.Sites
                 .Where(x => siteIds.Contains(x.Id))
                 .Select(x => new { x.Id, x.Name })
                 .ToListAsync();
 
-            var fulfilledQuery = itemsPlanningAndAreaRules
+            var fulfilledQuery = areaRulePlannings
                 .Select(areaRule => new TaskWizardModel
                 {
                     StartDate = (DateTime)areaRule.StartDate,
@@ -176,8 +186,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     TaskName = areaRule.TaskName,
                     Id = areaRule.Id,
                     Property = areaRule.PropertyName,
-                    Tags = areaRule.Tags.ToList(),
-                    AssignedTo = siteNamesQuery.Where(x => areaRule.AssignedSiteIds.Contains(x.Id)).Select(x => x.Name)
+                    Tags = areaRule.Tags.Append(areaRule.TagReport).ToList(),
+                    AssignedTo = siteNamesQuery.Where(x => areaRule.PlanningSites.Contains(x.Id)).Select(x => x.Name)
                         .ToList(),
                     Eform = eformNamesQuery.Where(x => x.CheckListId == areaRule.EformId).Select(x => x.Text)
                         .FirstOrDefault(),
@@ -239,6 +249,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var query = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRule.AreaRuleTranslations)
+                .Include(x => x.AreaRulePlanningTags)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == id);
 
@@ -248,76 +259,43 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     _localizationService.GetString("TaskNotFound"));
             }
 
-            var areaRulePlannings = await query
-                .Select(x => new
+            var areaRulePlanning = await query
+                .Select(x => new TaskWizardTaskModel
                 {
-                    x.Id,
-                    x.PlanningSites,
-                    x.StartDate,
-                    x.ItemPlanningId,
-                    x.FolderId,
-                    x.AreaRule.EformId,
-                    x.RepeatEvery,
-                    x.RepeatType,
-                    x.Status,
-                    x.PropertyId,
-                    x.ItemPlanningTagId,
-                    TaskNames = x.AreaRule.AreaRuleTranslations
+                    FolderId = x.FolderId,
+                    EformId = (int)x.AreaRule.EformId,
+                    Id = x.Id,
+                    AssignedTo = x.PlanningSites
+                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(y => y.SiteId)
+                        .ToList(),
+                    PropertyId = x.PropertyId,
+                    Translations = x.AreaRule.AreaRuleTranslations
                         .Select(y => new CommonTranslationsModel()
                             { Id = y.Id, LanguageId = y.LanguageId, Name = y.Name })
                         .ToList(),
+                    RepeatEvery = (int)x.RepeatEvery,
+                    StartDate = (DateTime)x.StartDate,
+                    RepeatType = (RepeatType)x.RepeatType,
+                    ItemPlanningTagId = x.ItemPlanningTagId,
+                    Status = x.Status ? TaskWizardStatuses.Active : TaskWizardStatuses.NotActive,
+                    Tags = x.AreaRulePlanningTags
+                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(y => y.ItemPlanningTagId)
+                        // .Where(y => !x.ItemPlanningTagId.HasValue || y != x.ItemPlanningTagId) // delete report tag from all tags
+                        .ToList(),
                 })
-                .ToListAsync();
+                .FirstOrDefaultAsync();
 
-            var itemPlaningIds = areaRulePlannings.Select(y => y.ItemPlanningId).Distinct().ToList();
-
-            var itemsPlanningQuery = _itemsPlanningPnDbContext.Plannings
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => itemPlaningIds.Contains(x.Id))
-                .Include(x => x.PlanningsTags)
-                .ThenInclude(x => x.PlanningTag)
-                .AsQueryable();
-
-            var eformNamesQuery = await sdkDbContext.CheckListTranslations
+            var eFormName = await sdkDbContext.CheckListTranslations
                 .Where(x => x.LanguageId == userLanguage.Id)
-                .Where(x => areaRulePlannings.Select(y => (int)y.EformId).Distinct().Contains(x.CheckListId))
-                .Select(x => new { x.CheckListId, x.Text })
-                .ToListAsync();
+                .Where(x => areaRulePlanning.EformId == x.CheckListId)
+                .Select(x => x.Text )
+                .FirstOrDefaultAsync();
 
-            // add items planning tags to list area rules
-            var itemsPlanningAndAreaRules = areaRulePlannings.Join(await itemsPlanningQuery.ToListAsync(),
-                areaRule => areaRule.ItemPlanningId,
-                planning => planning.Id,
-                (areaRule, planning) => new TaskWizardTaskModel
-                {
-                    FolderId = areaRule.FolderId,
-                    EformId = (int)areaRule.EformId,
-                    EformName = eformNamesQuery
-                        .Where(y => y.CheckListId == areaRule.EformId)
-                        .Select(y => y.Text)
-                        .FirstOrDefault(),
-                    Id = areaRule.Id,
-                    AssignedTo = areaRule.PlanningSites
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => x.SiteId)
-                        .ToList(),
-                    PropertyId = areaRule.PropertyId,
-                    Translations = areaRule.TaskNames,
-                    RepeatEvery = (int)areaRule.RepeatEvery,
-                    StartDate = (DateTime)areaRule.StartDate,
-                    RepeatType = (RepeatType)areaRule.RepeatType,
-                    ItemPlanningTagId = areaRule.ItemPlanningTagId,
-                    Status = areaRule.Status ? TaskWizardStatuses.Active : TaskWizardStatuses.NotActive,
-                    Tags = planning.PlanningsTags
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(x => x.PlanningTag)
-                        .Select(x => x.Id)
-                        .Where(x => !areaRule.ItemPlanningTagId.HasValue ||
-                                    x != areaRule.ItemPlanningTagId) // delete report tag from all tags
-                        .ToList(),
-                }).First();
+            areaRulePlanning.EformName = eFormName;
 
-            return new OperationDataResult<TaskWizardTaskModel>(true, itemsPlanningAndAreaRules);
+            return new OperationDataResult<TaskWizardTaskModel>(true, areaRulePlanning);
         }
         catch (Exception e)
         {
@@ -346,16 +324,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.Name)
                 .FirstOrDefault();
-
-            if (createModel.StartDate == null)
-            {
-                createModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
-            }
-
-            if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
-            {
-                createModel.RepeatEvery = 0;
-            }
             // create planning
             var planning = new Planning
             {
@@ -367,8 +335,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 StartDate = (DateTime)createModel.StartDate,
                 RepeatType = (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)createModel.RepeatType,
                 RelatedEFormId = createModel.EformId,
-                PushMessageOnDeployment = true,
-                ShowExpireDate = true,
                 RelatedEFormName = eformName,
                 RepeatEvery = createModel.RepeatEvery,
                 SdkFolderId = createModel.FolderId,
@@ -415,7 +381,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             await planning.Create(_itemsPlanningPnDbContext);
 
             var areaId = await GetLogBooksAreaId();
-
             // create area rule with translations and area rule plannings
             var areRule = new AreaRule
             {
@@ -465,6 +430,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         ItemPlanningTagId = createModel.ItemPlanningTagId,
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
+                        AreaRulePlanningTags = createModel.TagIds
+                            .Select(x => new AreaRulePlanningTag
+                            {
+                                ItemPlanningTagId = x,
+                                UpdatedByUserId = _userService.UserId,
+                                CreatedByUserId = _userService.UserId,
+                            })
+                            .ToList(),
                     }
                 },
                 UpdatedByUserId = _userService.UserId,
@@ -631,7 +604,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
                     var planning = await CreateItemPlanningObject(updateModel.EformId,
                         areaRulePlanning.AreaRule.EformName, areaRulePlanning.AreaRule.FolderId, updateModel,
-                        areaRulePlanning.AreaRule);
+                        areaRulePlanning.AreaRule, areaRulePlanning.Id);
                     planning.NameTranslations = areaRulePlanning.AreaRule.AreaRuleTranslations.Select(
                         areaRuleAreaRuleTranslation => new PlanningNameTranslation
                         {
@@ -669,6 +642,56 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 case true when !areaRulePlanning.Status:
                     if (areaRulePlanning.ItemPlanningId != 0)
                     {
+
+                        // update planning tags
+                        var planning = await _itemsPlanningPnDbContext.Plannings
+                            .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                            .Include(x => x.NameTranslations)
+                            .Include(x => x.PlanningsTags)
+                            .Include(x => x.PlanningSites)
+                            .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                        var tagsToDelete = planning.PlanningsTags
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Where(x => !updateModel.TagIds.Contains(x.PlanningTagId))
+                            .Select(x => x.PlanningTagId)
+                            .ToList();
+
+                        var tagsToCreate = updateModel.TagIds
+                            .Where(x => !planning.PlanningsTags
+                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                .Select(y => y.PlanningTagId)
+                                .Contains(x))
+                            .Select(x => new AreaRulePlanningTag
+                            {
+                                AreaRulePlanningId = areaRulePlanning.Id,
+                                ItemPlanningTagId = x,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId,
+                            })
+                            .ToList();
+
+                        if (updateModel.ItemPlanningTagId.HasValue && oldItemPlanningTagId.HasValue &&
+                            !oldItemPlanningTagId.Value.Equals(updateModel.ItemPlanningTagId.Value))
+                        {
+                            tagsToDelete.Add(planning.PlanningsTags.Where(x =>
+                                x.PlanningTagId == oldItemPlanningTagId.Value)
+                                .Select(x => x.PlanningTagId)
+                                .First());
+                        }
+
+                        foreach (var tagId in tagsToDelete)
+                        {
+                            await _backendConfigurationPnDbContext.AreaRulePlanningTags
+                                .First(x => x.AreaRulePlanningId == areaRulePlanning.Id && x.ItemPlanningTagId == tagId)
+                                .Delete(_backendConfigurationPnDbContext);
+                        }
+
+                        foreach (var tags in tagsToCreate)
+                        {
+                            await tags.Create(_backendConfigurationPnDbContext);
+                        }
+
                         var complianceList = await _backendConfigurationPnDbContext.Compliances
                             .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
                                         && x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -800,11 +823,23 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         {
                             tags.UpdatedByUserId = _userService.UserId;
                             await tags.Delete(_itemsPlanningPnDbContext);
+                            await _backendConfigurationPnDbContext.AreaRulePlanningTags
+                                .First(x => x.AreaRulePlanningId == areaRulePlanning.Id && x.ItemPlanningTagId == tags.PlanningTagId)
+                                .Delete(_backendConfigurationPnDbContext);
                         }
 
                         foreach (var tags in tagsToCreate)
                         {
                             await tags.Create(_itemsPlanningPnDbContext);
+
+                            var areaRulePlanningTag = new AreaRulePlanningTag
+                            {
+                                AreaRulePlanningId = areaRulePlanning.Id,
+                                ItemPlanningTagId = tags.PlanningTagId,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId
+                            };
+                            await areaRulePlanningTag.Create(_backendConfigurationPnDbContext);
                         }
 
                         // update planning sites
@@ -1016,13 +1051,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     }
 
     private async Task<Planning> CreateItemPlanningObject(int eformId, string eformName, int folderId,
-        TaskWizardCreateModel taskWizardCreateModel, AreaRule areaRule)
+        TaskWizardCreateModel taskWizardCreateModel, AreaRule areaRule, int areaRulePlanningId)
     {
         var propertyItemPlanningTagId = await _backendConfigurationPnDbContext.Properties
             .Where(x => x.Id == areaRule.PropertyId)
             .Select(x => x.ItemPlanningTagId)
             .FirstAsync().ConfigureAwait(false);
-        var startDate = taskWizardCreateModel.StartDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
         var planning = new Planning
         {
             CreatedByUserId = _userService.UserId,
@@ -1033,8 +1067,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             DaysBeforeRedeploymentPushMessageRepeat = false,
             DaysBeforeRedeploymentPushMessage = 5,
             PushMessageOnDeployment = true,
-            StartDate = new DateTime(startDate.Year, startDate.Month,
-                startDate.Day, 0, 0, 0),
+            StartDate = new DateTime(taskWizardCreateModel.StartDate.Value.Year, taskWizardCreateModel.StartDate.Value.Month,
+                taskWizardCreateModel.StartDate.Value.Day, 0, 0, 0),
             IsLocked = true,
             IsEditable = false,
             IsHidden = true
@@ -1071,6 +1105,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                  }))
         {
             await planningTag.Create(_itemsPlanningPnDbContext);
+
+            var areaRulePlanningTag = new AreaRulePlanningTag
+            {
+                AreaRulePlanningId = areaRulePlanningId,
+                ItemPlanningTagId = planningTag.PlanningTagId,
+                CreatedByUserId = _userService.UserId,
+                UpdatedByUserId = _userService.UserId
+            };
+            await areaRulePlanningTag.Create(_backendConfigurationPnDbContext);
         }
 
         return planning;
