@@ -324,6 +324,35 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.Name)
                 .FirstOrDefault();
+
+            if (createModel.StartDate == null)
+            {
+                createModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
+            }
+
+            if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
+            {
+                createModel.RepeatEvery = 0;
+            }
+
+            var dayOfWeek = DayOfWeek.Monday;
+            if (createModel.RepeatType == RepeatType.Week)
+            {
+                // get day of week from start date
+                dayOfWeek = createModel.StartDate.Value.DayOfWeek;
+            }
+
+            var dayOfMonth = 1;
+            if (createModel.RepeatType == RepeatType.Month)
+            {
+                // get day of month from start date
+                dayOfMonth = createModel.StartDate.Value.Day;
+                if (dayOfMonth > 28)
+                {
+                    dayOfMonth = 28;
+                }
+            }
+
             // create planning
             var planning = new Planning
             {
@@ -339,31 +368,33 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 RepeatEvery = createModel.RepeatEvery,
                 SdkFolderId = createModel.FolderId,
                 SdkFolderName = folderName,
-                PlanningsTags = createModel.TagIds
-                    .Select(x => new PlanningsTags
-                    {
-                        PlanningTagId = x,
-                        UpdatedByUserId = _userService.UserId,
-                        CreatedByUserId = _userService.UserId,
-                    })
-                    .ToList(),
-                PlanningSites = createModel.Sites
-                    .Select(x => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
-                    {
-                        SiteId = x,
-                        UpdatedByUserId = _userService.UserId,
-                        CreatedByUserId = _userService.UserId,
-                    })
-                    .ToList(),
-                NameTranslations = createModel.Translates
-                    .Select(x => new PlanningNameTranslation
-                    {
-                        LanguageId = x.LanguageId,
-                        Name = x.Name,
-                        UpdatedByUserId = _userService.UserId,
-                        CreatedByUserId = _userService.UserId,
-                    })
-                    .ToList(),
+                DayOfWeek = dayOfWeek,
+                DayOfMonth = dayOfMonth,
+                // PlanningsTags = createModel.TagIds
+                //     .Select(x => new PlanningsTags
+                //     {
+                //         PlanningTagId = x,
+                //         UpdatedByUserId = _userService.UserId,
+                //         CreatedByUserId = _userService.UserId,
+                //     })
+                //     .ToList(),
+                // PlanningSites = createModel.Sites
+                //     .Select(x => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                //     {
+                //         SiteId = x,
+                //         UpdatedByUserId = _userService.UserId,
+                //         CreatedByUserId = _userService.UserId,
+                //     })
+                //     .ToList(),
+                // NameTranslations = createModel.Translates
+                //     .Select(x => new PlanningNameTranslation
+                //     {
+                //         LanguageId = x.LanguageId,
+                //         Name = x.Name,
+                //         UpdatedByUserId = _userService.UserId,
+                //         CreatedByUserId = _userService.UserId,
+                //     })
+                //     .ToList(),
                 UpdatedByUserId = _userService.UserId,
                 CreatedByUserId = _userService.UserId,
             };
@@ -374,11 +405,85 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 {
                     PlanningTagId = createModel.ItemPlanningTagId.Value,
                     UpdatedByUserId = _userService.UserId,
-                    CreatedByUserId = _userService.UserId,
+                    CreatedByUserId = _userService.UserId
                 });
             }
 
             await planning.Create(_itemsPlanningPnDbContext);
+
+            foreach (var assignedSite in createModel.Sites)
+            {
+                var planningSite = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                {
+                    SiteId = assignedSite,
+                    PlanningId = planning.Id,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            foreach (var tagId in createModel.TagIds)
+            {
+                var planningsTags = new PlanningsTags
+                {
+                    PlanningId = planning.Id,
+                    PlanningTagId = tagId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningsTags.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            foreach (var translationsModel in createModel.Translates)
+            {
+                var planningNameTranslation = new PlanningNameTranslation
+                {
+                    PlanningId = planning.Id,
+                    LanguageId = translationsModel.LanguageId,
+                    Name = translationsModel.Name,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningNameTranslation.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            foreach (var assignedSite in createModel.Sites)
+            {
+                var planningSite = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                {
+                    SiteId = assignedSite,
+                    PlanningId = planning.Id,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            foreach (var tagId in createModel.TagIds)
+            {
+                var planningsTags = new PlanningsTags
+                {
+                    PlanningId = planning.Id,
+                    PlanningTagId = tagId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningsTags.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            foreach (var translationsModel in createModel.Translates)
+            {
+                var planningNameTranslation = new PlanningNameTranslation
+                {
+                    PlanningId = planning.Id,
+                    LanguageId = translationsModel.LanguageId,
+                    Name = translationsModel.Name,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningNameTranslation.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
 
             var areaId = await GetLogBooksAreaId();
             // create area rule with translations and area rule plannings
@@ -403,6 +508,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 RepeatType = (int?)createModel.RepeatType,
                 Notifications = true,
                 NotificationsModifiable = false,
+                ComplianceEnabled = true,
                 AreaRulesPlannings = new List<AreaRulePlanning>
                 {
                     new()
@@ -455,6 +561,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         catch (Exception e)
         {
             Console.WriteLine(e);
+            Console.WriteLine(e.StackTrace);
             _logger.LogError(e.Message);
             return new OperationResult(false,
                 _localizationService.GetString("ErrorWhileCreatingTask"));
@@ -970,6 +1077,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     {
         try
         {
+            var core = await _coreHelper.GetCore().ConfigureAwait(false);
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
             var areaRulePlanning = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.Id == id)
                 .Include(x => x.AreaRule)
@@ -988,6 +1097,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Include(x => x.NameTranslations)
                 .Include(x => x.PlanningsTags)
                 .Include(x => x.PlanningSites)
+                .Include(x => x.PlanningCases)
                 .First(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
             foreach (var translation in planning.NameTranslations)
@@ -1022,6 +1132,40 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 planningSite.UpdatedByUserId = _userService.UserId;
                 await planningSite.Delete(_backendConfigurationPnDbContext);
+            }
+
+            var planningCases = planning.PlanningCases
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToList();
+
+            foreach (var planningCase in planningCases)
+            {
+                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    .Where(x => x.PlanningCaseId == planningCase.Id)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync().ConfigureAwait(false);
+                foreach (var planningCaseSite in planningCaseSites)
+                {
+                    var result =
+                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
+                    if (result is { MicrotingUid: { } })
+                    {
+                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var clSites = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
+                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+
+                        if (clSites != null)
+                        {
+                            await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                // Delete planning case
+                await planningCase.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
             areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
