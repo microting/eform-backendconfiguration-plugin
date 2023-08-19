@@ -130,6 +130,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 x.ItemPlanningId,
                 x.FolderId,
                 x.AreaRule.EformId,
+                x.AreaRule.CreatedInGuide,
                 x.RepeatEvery,
                 x.RepeatType,
                 x.Status,
@@ -193,6 +194,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .FirstOrDefault(),
                     Folder = folderNamesQuery.Where(x => x.FolderId == areaRule.FolderId).Select(x => x.Name)
                         .FirstOrDefault(),
+                    CreatedInGuide = areaRule.CreatedInGuide,
                 })
                 .AsQueryable();
 
@@ -489,6 +491,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             // create area rule with translations and area rule plannings
             var areRule = new AreaRule
             {
+                CreatedInGuide = true,
                 AreaId = areaId,
                 AreaRuleTranslations = createModel.Translates
                     .Select(t => new AreaRuleTranslation

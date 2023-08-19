@@ -18,4 +18,6 @@ public class TaskWizardModel
     public int RepeatEvery { get; set; }
     public TaskWizardStatuses Status { get; set; }
     public List<string> AssignedTo { get; set; } = new();
+
+    public bool CreatedInGuide { get; set; }
 }

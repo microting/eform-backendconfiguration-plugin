@@ -13,4 +13,5 @@ export interface TaskWizardModel {
   repeatEvery: number,
   status: TaskWizardStatusesEnum,
   assignedTo: string[],
+  createdInGuide: boolean;
 }

@@ -78,6 +78,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
       right: '0px',
       buttons: [
         {
+          iif: (model: TaskWizardModel) => model.createdInGuide,
           color: 'accent',
           type: 'icon',
           icon: 'edit',
@@ -86,6 +87,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
           class: 'editBtn',
         },
         {
+          iif: (model: TaskWizardModel) => model.createdInGuide,
           color: 'accent',
           type: 'icon',
           icon: 'content_copy',
@@ -94,6 +96,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
           class: 'copyBtn',
         },
         {
+          iif: (model: TaskWizardModel) => model.createdInGuide,
           color: 'warn',
           type: 'icon',
           icon: 'delete',
