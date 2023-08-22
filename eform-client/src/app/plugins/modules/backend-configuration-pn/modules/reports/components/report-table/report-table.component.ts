@@ -45,7 +45,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
-    {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y'}},
+    {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Name'), field: 'itemName'},
     {
@@ -81,8 +81,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Planning Id'), field: 'itemId'},
     {header: this.translateService.stream('eForm Id'), field: 'eFormId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
-    {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
-    {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
+    {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
+    {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
     {
@@ -201,7 +201,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   onClickEditCase(microtingSdkCaseId: number, eFormId: number, id: number) {
     this.planningsReportStateService.updateScrollPosition(this.viewportScroller.getScrollPosition());
-    this.router.navigate([`/plugins/backend-configuration-pn/case/`, microtingSdkCaseId, eFormId, id, this.dateFrom, this.dateTo])
+    this.router.navigate([`/plugins/backend-configuration-pn/case/`, microtingSdkCaseId, eFormId, id, this.dateFrom, this.dateTo],
+      {queryParams: {reverseRoute: this.router.url}})
       .then();
   }
 

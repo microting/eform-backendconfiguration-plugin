@@ -116,6 +116,7 @@ public class ReportController : Controller
                 requestModel.TagIds.Add(int.Parse(tag));
             }
         }
+
         requestModel.DateFrom = dateFrom;
         requestModel.DateTo = dateTo;
         requestModel.Type = type;
@@ -146,7 +147,7 @@ public class ReportController : Controller
                     _ => "text/plain"
                 };
 
-                while ((bytesRead = wordStream.Read(buffer, 0, buffer.Length)) > 0 &&
+                while ((bytesRead = await wordStream.ReadAsync(buffer, 0, buffer.Length)) > 0 &&
                        !HttpContext.RequestAborted.IsCancellationRequested)
                 {
                     await Response.Body.WriteAsync(buffer, 0, bytesRead);

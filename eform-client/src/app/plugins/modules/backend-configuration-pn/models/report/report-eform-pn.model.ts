@@ -23,7 +23,7 @@ export interface NewReportEformPnModel {
 interface GroupEformModel {
   items: ReportEformItemModel[];
   itemHeaders: { key: string, value: string }[];
-  imageNames: { key: { key: number, value: string }, value: { key: string, value: string } }[];
+  imageNames: ReportImages[];
   checkListId: number;
   checkListName: string;
 }
@@ -34,4 +34,11 @@ export interface BaseReportModel {
   itemHeaders: { key: string, value: string }[];
   imageNames: { key: { key: number, value: string }, value: { key: string, value: string } }[];
   posts: ReportEformPostModel[];
+}
+
+interface ReportImages {
+  geoLink: string;
+  imageName: string;
+  label: string;
+  caseId: number;
 }
