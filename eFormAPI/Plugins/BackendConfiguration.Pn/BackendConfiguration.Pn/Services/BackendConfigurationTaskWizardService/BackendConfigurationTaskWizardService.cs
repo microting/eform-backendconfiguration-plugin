@@ -558,7 +558,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 createModel.Sites,
                 createModel.EformId,
                 planning.Id,
-                createModel.FolderId, core, _itemsPlanningPnDbContext, false, _localizationService);
+                createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
         catch (Exception e)

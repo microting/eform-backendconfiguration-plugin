@@ -188,8 +188,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                         {
                             if (useStartDateAsStartOfPeriod)
                             {
-                                var nextExecutionTime =
-                                    dbPlanning.StartDate.AddDays(planning.RepeatEvery * 7);
+                                var nextExecutionTime = dbPlanning.StartDate.AddDays(planning.RepeatEvery * 7);
                                 while (nextExecutionTime < now)
                                 {
                                     nextExecutionTime = nextExecutionTime.AddDays(planning.RepeatEvery * 7);
