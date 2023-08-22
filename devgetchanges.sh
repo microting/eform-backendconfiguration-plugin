@@ -34,3 +34,5 @@ cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-hea
 cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2i.conf.ts  Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2i.conf.ts 
 cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/wdio-headless-plugin-step2j.conf.ts  Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/wdio-headless-plugin-step2j.conf.ts 
 cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn
+cp -a Documents/workspace/microting/eform-angular-frontend/eform-client/cypress/fixtures Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/cypress
+rm Documents/workspace/microting/eform-backendconfiguration-plugin/eform-client/cypress/fixtures/example.json
