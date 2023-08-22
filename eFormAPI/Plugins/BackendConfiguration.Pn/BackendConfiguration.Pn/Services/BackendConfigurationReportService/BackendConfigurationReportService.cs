@@ -316,7 +316,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         foreach (var planningCase in groupedCase.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).ToList())
                         {
                             var planningNameTranslation =
-                                await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x =>
+                                await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                     x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
                             var propertyName = "";
 
@@ -507,6 +507,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             {
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
+                _logger.LogError(e.StackTrace);
                 return new OperationDataResult<List<OldReportEformModel>>(false,
                     _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
             }
@@ -663,7 +664,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 }
                             }
                             var kvp = new KeyValuePair<int, string>(fieldDto.Id, text);
-                            
+
                             group.ItemHeaders.Add(kvp);
                         }
 
@@ -877,6 +878,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             {
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
+                _logger.LogError(e.StackTrace);
                 return new OperationDataResult<List<ReportEformModel>>(false,
                     _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
             }
@@ -931,20 +933,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             var resultDocumentDocx = Path.Combine(directoryPath, $"{DateTime.Now.Ticks}.docx");
                             var resultDocumentPdf = resultDocumentDocx.Replace("docx", "pdf");
 
-                            using (var fileStream = File.Create(resultDocumentDocx))
+                            await using (var fileStream = File.Create(resultDocumentDocx))
                             {
                                 wordDataResult.Model.Seek(0, SeekOrigin.Begin);
-                                wordDataResult.Model.CopyTo(fileStream);
+                                await wordDataResult.Model.CopyToAsync(fileStream);
                             }
                             // convert file to pdf
                             ReportHelper.ConvertToPdf(resultDocumentDocx, directoryPath);
+
                             // read converted file and return
-                            using (var fileStream = File.OpenRead(resultDocumentPdf))
-                            {
-                                var memoryStream = new MemoryStream();
-                                fileStream.CopyTo(memoryStream);
-                                return new OperationDataResult<Stream>(true, memoryStream);
-                            }
+                            Stream result = File.Open(resultDocumentPdf, FileMode.Open);
+                            return new OperationDataResult<Stream>(true, result);
                         }
                     default:
                         {
@@ -957,6 +956,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             {
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
+                _logger.LogError(e.StackTrace);
                 return new OperationDataResult<Stream>(
                     false,
                     _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReportFile"));
