@@ -136,13 +136,16 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     }
   }
 
-  getImages(reportEformPnModel: NewReportEformPnModel, caseId: number) {
+  getImages(/*reportEformPnModel: NewReportEformPnModel, */caseId: number) {
     this.images = [];
     const observables: Observable<any>[] = [];
-    const imageNamesByCaseId = reportEformPnModel.groupEform
-      .map(x => x.imageNames)
-      .flat()
-      .filter(x => x.caseId === caseId);
+    // Get an array of all image names associated with a specific caseId.
+    const imageNamesByCaseId = this.reportsModel
+      .map(x => x.groupEform) // Map over the reportsModel array to get an array of groupEform objects.
+      .flat() // Flatten the array of groupEform objects into a single array.
+      .map(x => x.imageNames) // Map over the flattened array of groupEform objects to get an array of imageNames objects.
+      .flat() // Flatten the array of imageNames objects into a single array.
+      .filter(x => x.caseId === caseId); // Filter the array of imageNames objects to include only those with a matching caseId.
     const length = imageNamesByCaseId.length;
     imageNamesByCaseId
       .forEach((imageValue) => {
@@ -170,7 +173,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
             }
           }));
         }
-    });
+      });
   }
 
   updateGallery() {
@@ -187,9 +190,9 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     }
   }
 
-  onClickViewPicture(model: {reportIndex: number, caseId: number }) {
-    const reportEformPnModel = this.reportsModel[model.reportIndex];
-    this.getImages(reportEformPnModel, model.caseId);
+  onClickViewPicture(model: {/*reportIndex: number, */caseId: number }) {
+    // const reportEformPnModel = this.reportsModel[model.reportIndex];
+    this.getImages(/*reportEformPnModel, */model.caseId);
   }
 
   ngOnDestroy(): void {
