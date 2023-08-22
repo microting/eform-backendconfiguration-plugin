@@ -316,7 +316,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         foreach (var planningCase in groupedCase.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).ToList())
                         {
                             var planningNameTranslation =
-                                await _itemsPlanningPnDbContext.PlanningNameTranslation.SingleOrDefaultAsync(x =>
+                                await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                     x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
                             var propertyName = "";
 
@@ -507,6 +507,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             {
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
+                _logger.LogError(e.StackTrace);
                 return new OperationDataResult<List<OldReportEformModel>>(false,
                     _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
             }
@@ -883,6 +884,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             {
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
+                _logger.LogError(e.StackTrace);
                 return new OperationDataResult<List<ReportEformModel>>(false,
                     _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReport") + e.Message);
             }
@@ -963,6 +965,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             {
                 Trace.TraceError(e.Message);
                 _logger.LogError(e.Message);
+                _logger.LogError(e.StackTrace);
                 return new OperationDataResult<Stream>(
                     false,
                     _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReportFile"));
