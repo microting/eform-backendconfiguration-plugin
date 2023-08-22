@@ -266,11 +266,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
+
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddDays(multiplier * 2);
-        if (nextExecutionTime < now)
+            new DateTime(now.Year, now.Month, now.Day).AddDays(2);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddDays(2);
         }

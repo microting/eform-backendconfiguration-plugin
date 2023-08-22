@@ -356,7 +356,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var nextExecutionTime =new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
+        var nextExecutionTime =new DateTime(now.Year, now.Month, now.Day, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(1));
@@ -805,7 +805,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
+        var nextExecutionTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(1));
@@ -1306,7 +1306,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var nextExecutionTime = new DateTime(now.Year, now.Month, (int)plannings[0].DayOfMonth!, 0, 0, 0).AddMonths(1);
+        var nextExecutionTime = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0).AddMonths(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(1));

@@ -299,8 +299,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, now.Month + 1, 1);
-        if (nextExecutionTime < now)
+            new DateTime(now.Year, now.Month, now.Day);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddMonths(1);
         }
@@ -655,22 +655,8 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 3, 1);
-        var months = new[] {1, 3, 5, 7, 9, 11};
-
-        if (months.Contains(now.Month))
-        {
-            nextExecutionTime =
-                new DateTime(now.Year, now.Month + 2, 1,
-                    0, 0, 0);
-        }
-        else
-        {
-            nextExecutionTime =
-                new DateTime(now.Year, now.Month + 1, 1,
-                    0, 0, 0);
-        }
-        if (nextExecutionTime < now)
+            new DateTime(now.Year, now.Month, now.Day);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddMonths(2);
         }
@@ -1025,32 +1011,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 3, 1);
-        var months = new[] {1, 4, 7, 10};
+            new DateTime(now.Year, now.Month, now.Day);
 
-        if (months.Contains(now.Month))
-        {
-            nextExecutionTime =
-                new DateTime(now.Year, now.Month + 3, 1,
-                    0, 0, 0);
-        }
-        else
-        {
-            months = new[] {2, 5, 8, 11};
-            if (months.Contains(now.Month))
-            {
-                nextExecutionTime =
-                    new DateTime(now.Year, now.Month + 2, 1,
-                        0, 0, 0);
-            }
-            else
-            {
-                nextExecutionTime =
-                    new DateTime(now.Year, now.Month + 1, 1,
-                        0, 0, 0);
-            }
-        }
-        if (nextExecutionTime < now)
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddMonths(3);
         }
@@ -1405,14 +1368,12 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1);
+            new DateTime(now.Year, now.Month, now.Day, 0,0, 0);
 
-        nextExecutionTime = now.Month <= 6 ? nextExecutionTime.AddMonths(6) : nextExecutionTime.AddYears(1);
-        //
-        // if (nextExecutionTime < now)
-        // {
-        //     nextExecutionTime = nextExecutionTime.AddMonths(2);
-        // }
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddMonths(6);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(6));
@@ -1764,7 +1725,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(1);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(1);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(12));
@@ -2116,7 +2077,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(2);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(2);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(24));
@@ -2468,7 +2429,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(3);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(3);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(36));
@@ -2820,7 +2781,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(4);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(4);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(48));
@@ -3172,7 +3133,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(5);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(5);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(60));
@@ -3524,7 +3485,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(6);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(6);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(72));
@@ -3876,7 +3837,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(7);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(7);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(84));
@@ -4228,7 +4189,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(8);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(8);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(96));
@@ -4580,7 +4541,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(9);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(9);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(108));
@@ -4932,7 +4893,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddYears(10);
+            new DateTime(now.Year, now.Month, now.Day).AddYears(10);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(120));
