@@ -327,10 +327,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Select(x => x.Name)
                 .FirstOrDefault();
 
-            if (createModel.StartDate == null)
-            {
-                createModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
-            }
+            createModel.StartDate = createModel.StartDate == null
+                ? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0)
+                : new DateTime(createModel.StartDate.Value.Year, createModel.StartDate.Value.Month,
+                    createModel.StartDate.Value.Day, 0, 0, 0);
 
             if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
             {
