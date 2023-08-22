@@ -298,11 +298,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 2);
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddDays(multiplier * 2);
-        if (nextExecutionTime < now)
+            new DateTime(now.Year, now.Month, now.Day).AddDays(2);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddDays(2);
         }
@@ -656,25 +654,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 7);
-        var dayOfWeek = 1;
-        // if (dayOfWeek == 0)
-        // {
-        //     dayOfWeek = 7;
-        // }
-
-        var startOfWeek =
-            new DateTime(now.Year, 1, 1, 0, 0, 0).StartOfWeek(
-                (DayOfWeek) dayOfWeek);
-        if (startOfWeek.Year != now.Year)
-        {
-            startOfWeek = startOfWeek.AddDays(7);
-        }
+        now = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
 
         var nextExecutionTime =
-            startOfWeek.AddDays(multiplier * 7);
-        if (nextExecutionTime < now)
+            now.AddDays(7);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddDays(7);
         }
@@ -1029,25 +1013,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 14);
-        var dayOfWeek = 3;
-        // if (dayOfWeek == 0)
-        // {
-        //     dayOfWeek = 7;
-        // }
-
-        var startOfWeek =
-            new DateTime(now.Year, 1, 1, 0, 0, 0).StartOfWeek(
-                (DayOfWeek) dayOfWeek);
-        if (startOfWeek.Year != now.Year)
-        {
-            startOfWeek = startOfWeek.AddDays(7);
-        }
+        now = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0);
 
         var nextExecutionTime =
-            startOfWeek.AddDays(multiplier * 14);
-        if (nextExecutionTime < now)
+            now.AddDays(14);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddDays(14);
         }
@@ -2242,11 +2212,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooks : Te
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
-        var diff = (now - new DateTime(now.Year, 1, 1)).TotalDays;
-        var multiplier = (int) (diff / 4);
+
         var nextExecutionTime =
-            new DateTime(now.Year, 1, 1).AddDays(multiplier * 4);
-        if (nextExecutionTime < now)
+            new DateTime(now.Year, now.Month, now.Day).AddDays(4);
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddDays(4);
         }

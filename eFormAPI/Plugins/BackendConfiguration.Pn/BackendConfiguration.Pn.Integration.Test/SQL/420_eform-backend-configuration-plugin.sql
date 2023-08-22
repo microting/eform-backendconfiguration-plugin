@@ -357,6 +357,7 @@ CREATE TABLE `AreaRuleVersions` (
   `NotificationsModifiable` tinyint(1) NOT NULL DEFAULT 0,
   `SecondaryeFormId` int(11) NOT NULL DEFAULT 0,
   `SecondaryeFormName` longtext DEFAULT NULL,
+  `CreatedInGuide` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -406,6 +407,7 @@ CREATE TABLE `AreaRules` (
   `NotificationsModifiable` tinyint(1) NOT NULL DEFAULT 0,
   `SecondaryeFormId` int(11) NOT NULL DEFAULT 0,
   `SecondaryeFormName` longtext DEFAULT NULL,
+  `CreatedInGuide` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`Id`),
   KEY `IX_AreaRules_AreaId` (`AreaId`),
   KEY `IX_AreaRules_PropertyId` (`PropertyId`),

@@ -661,20 +661,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var now = DateTime.UtcNow;
         var nextExecutionTime =
             new DateTime(now.Year, now.Month, 12);
-        // var months = new[] {1, 3, 5, 7, 9, 11};
-        //
-        // if (months.Contains(now.Month))
-        // {
-        //     nextExecutionTime =
-        //         new DateTime(now.Year, now.Month + 2, 1,
-        //             0, 0, 0);
-        // }
-        // else
-        // {
-        //     nextExecutionTime =
-        //         new DateTime(now.Year, now.Month + 1, 1,
-        //             0, 0, 0);
-        // }
+
         while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddMonths(2);
@@ -1392,12 +1379,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var nextExecutionTime =
             new DateTime(now.Year, 4, 12);
 
-        //nextExecutionTime = now.Month < 6 ? nextExecutionTime.AddMonths(6) : nextExecutionTime.AddYears(1);
-        //
-        // if (nextExecutionTime < now)
-        // {
-        //     nextExecutionTime = nextExecutionTime.AddMonths(2);
-        // }
         nextExecutionTime = nextExecutionTime.AddMonths(6);
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
