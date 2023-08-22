@@ -669,7 +669,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                         var templateCaseIds = eformIdAndCases.cases.Select(x => (int?)x.MicrotingSdkCaseId).ToArray();
                         // images
-                        var imagesForEform = await sdkDbContext.FieldValues
+                        var allImagesFromCases = await sdkDbContext.FieldValues
                             .Include(x => x.UploadedData)
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .Where(x => x.UploadedData.WorkflowState != Constants.WorkflowStates.Removed)
@@ -681,33 +681,31 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                         foreach (var planningCase in eformIdAndCases.cases)
                         {
-
                             var planningNameTranslation =
                                 await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>
                                     x.PlanningId == planningCase.PlanningId && x.LanguageId == language.Id);
-                            foreach (var imageField in imagesForEform)
+                            foreach (var imageField in allImagesFromCases.Where(x => x.CaseId == planningCase.MicrotingSdkCaseId))
                             {
+                                var reportImages = new ReportImages
+                                {
+                                    CaseId = planningCase.MicrotingSdkCaseId
+                                };
 
                                 if (planningNameTranslation != null)
                                 {
-                                    var label = $"{imageField.CaseId}; {planningNameTranslation.Name}";
-                                    var geoTag = "";
-                                    if (!string.IsNullOrEmpty(imageField.Latitude))
-                                    {
-                                        geoTag =
-                                            $"https://www.google.com/maps/place/{imageField.Latitude},{imageField.Longitude}";
-                                    }
-
-                                    var keyList = new List<string> { imageField.CaseId.ToString(), label };
-                                    var list = new List<string>();
-                                    if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
-                                    {
-                                        list.Add(imageField.UploadedData.FileName);
-                                        list.Add(geoTag);
-                                        group.ImageNames.Add(
-                                            new KeyValuePair<List<string>, List<string>>(keyList, list));
-                                    }
+                                    reportImages.Label = $"{imageField.CaseId}; {planningNameTranslation.Name}";
                                 }
+                                if (!string.IsNullOrEmpty(imageField.Latitude))
+                                {
+                                    reportImages.GeoLink =
+                                        $"https://www.google.com/maps/place/{imageField.Latitude},{imageField.Longitude}";
+                                }
+
+                                if (!string.IsNullOrEmpty(imageField.UploadedData.FileName))
+                                {
+                                    reportImages.ImageName = imageField.UploadedData.FileName;
+                                }
+                                group.ImageNames.Add(reportImages);
                             }
 
                             var propertyName = "";
@@ -853,13 +851,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                     }
                                 }
 
-                                item.ImagesCount = await sdkDbContext.FieldValues
-                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                    .Where(x => x.Field.FieldTypeId == 5)
+                                item.ImagesCount = allImagesFromCases
                                     .Where(x => x.CaseId == planningCase.MicrotingSdkCaseId)
-                                    .Where(x => x.UploadedDataId != null)
                                     .Select(x => x.Id)
-                                    .CountAsync();
+                                    .Count();
 
                                 group.Items.Add(item);
                             }

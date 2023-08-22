@@ -43,10 +43,21 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Report
 
         public string CheckListName { get; set; }
 
-        public List<KeyValuePair<List<string>, List<string>>> ImageNames { get; set; } = new();
+        public List<ReportImages> ImageNames { get; set; } = new();
 
         public List<KeyValuePair<int, string>> ItemHeaders { get; set; } = new();
 
         public List<ReportEformItemModel> Items { get; set; } = new();
+    }
+
+    public class ReportImages
+    {
+        public string GeoLink { get; set; }
+
+        public string ImageName { get; set; }
+
+        public string Label { get; set; }
+
+        public int CaseId { get; set; }
     }
 }

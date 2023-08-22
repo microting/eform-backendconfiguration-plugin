@@ -142,11 +142,11 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     const imageNamesByCaseId = reportEformPnModel.groupEform
       .map(x => x.imageNames)
       .flat()
-      .filter(x => x.key[0] === caseId.toString());
+      .filter(x => x.caseId === caseId);
     const length = imageNamesByCaseId.length;
     imageNamesByCaseId
       .forEach((imageValue) => {
-        observables.push(this.imageService.getImage(imageValue.value[0]));
+        observables.push(this.imageService.getImage(imageValue.imageName));
         if (length === observables.length) {
           this.imageSub$.forEach(sub => sub.unsubscribe());
           this.imageSub$.push(forkJoin(observables).subscribe(blobArr => {
@@ -156,11 +156,11 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
                 const val = {
                   src: imageUrl,
                   thumbnail: imageUrl,
-                  fileName: imageValue.value[0],
-                  name: imageValue.key[1],
-                  geoTag: imageValue.value[1]
+                  fileName: imageValue.imageName,
+                  name: imageValue.label,
+                  geoTag: imageValue.geoLink
                 };
-                this.images.push({key: Number(imageValue.key[0]), value: val});
+                this.images.push({key: Number(imageValue.caseId), value: val});
                 this.images.sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
                 if (index + 1 === blobArr.length) {
                   this.updateGallery();
