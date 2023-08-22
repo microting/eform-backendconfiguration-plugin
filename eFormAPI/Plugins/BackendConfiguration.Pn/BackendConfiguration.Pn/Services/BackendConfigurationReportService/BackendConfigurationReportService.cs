@@ -614,7 +614,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         GroupTagName = groupedPlanningCase.planningTag.Name,
                     };
 
-                    var groupEform = new List<ReportEformGroupModel>();
                     foreach (var eformIdAndCases in groupedPlanningCase.casesGroupedByEfromId)
                     {
                         var checkList = await sdkDbContext.CheckLists

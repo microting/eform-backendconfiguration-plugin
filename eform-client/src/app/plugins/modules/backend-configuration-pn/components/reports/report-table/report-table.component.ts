@@ -198,7 +198,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   onClickEditCase(microtingSdkCaseId: number, eFormId: number, id: number) {
     this.planningsReportStateService.updateScrollPosition(this.viewportScroller.getScrollPosition());
-    this.router.navigate([`/plugins/backend-configuration-pn/case/`, microtingSdkCaseId, eFormId, id, this.dateFrom, this.dateTo])
+    this.router.navigate([`/plugins/backend-configuration-pn/case/`, microtingSdkCaseId, eFormId, id, this.dateFrom, this.dateTo],
+      {queryParams: {reverseRoute: this.router.url}})
       .then();
   }
 

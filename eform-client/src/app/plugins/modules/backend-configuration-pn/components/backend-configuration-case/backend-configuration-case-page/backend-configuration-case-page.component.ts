@@ -64,6 +64,9 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       this.dateTo = params['dateTo'];
       dateTimeAdapter.setLocale(authStateService.currentUserLocale);
     });
+    this.activateRoute.queryParams.subscribe((queryParams) => {
+      this.reverseRoute = queryParams['reverseRoute'];
+    })
   }
 
   ngOnInit() {
@@ -117,12 +120,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
         if (operation && operation.success) {
           this.replyElement = new ReplyElementDto();
           this.router
-            .navigate([
-              '/plugins/backend-configuration-pn/reports/' +
-                this.dateFrom +
-                '/' +
-                this.dateTo,
-            ])
+            .navigate([this.reverseRoute])
             .then();
         }
       });
