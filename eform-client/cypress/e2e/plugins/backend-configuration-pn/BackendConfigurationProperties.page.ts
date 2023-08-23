@@ -191,7 +191,9 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
     if (clickCancel) {
       this.propertyCreateSaveCancelBtn().click();
     } else {
+      cy.intercept('POST', '/api/backend-configuration-pn/properties/index').as('createProperty');
       this.propertyCreateSaveBtn().click();
+      cy.wait('@createProperty', { timeout: 60000 });
     }
     cy.wait(500);
     this.propertyCreateBtn().should('be.visible').should('be.enabled');
@@ -323,7 +325,11 @@ export class PropertyRowObject {
     if (clickCancel) {
       backendConfigurationPropertiesPage.editPropertyAreasViewCloseBtn().click();
     } else {
+      cy.intercept('PUT', '/api/backend-configuration-pn/property-areas').as('bindAreas');
+      //cy.intercept('GET', '/api/backend-configuration-pn/property-areas').as('getProperties');
       backendConfigurationPropertiesPage.editPropertyAreasViewSaveBtn().click();
+      cy.wait('@bindAreas', {timeout: 60000});
+      //cy.wait('@getProperties', {timeout: 60000});
     }
     backendConfigurationPropertiesPage.configurePropertyAreasBtn().should('be.visible');
     if (returnToProperties) {
@@ -335,9 +341,11 @@ export class PropertyRowObject {
     if (needGoToPropertyAreasPage) {
       this.goToAreas();
     }
-    const row = () => cy.get('.mat-row').contains(nameBindArea).parent().parent().parent().scrollIntoView();
-    const navigateBtn = row().find('#navigateToPropertyArea');
-    navigateBtn.should('be.visible').click();
+    const row = cy.get('.mat-row').contains(nameBindArea);
+    //const row = () => cy.get('.mat-row').contains(nameBindArea).scrollIntoView();
+    row.parent().parent().scrollIntoView();
+    const navigateBtn = row.get('.cdk-column-book > div').find('#navigateToPropertyArea');
+    navigateBtn.click();
     backendConfigurationAreaRulesPage.ruleCreateBtn().should('be.visible');
   }
 }

@@ -1,5 +1,5 @@
 import {PageWithNavbarPage} from '../../PageWithNavbar.page';
-import {selectValueInNgSelector} from '../../helper-functions';
+import {selectLanguage, selectValueInNgSelector} from '../../helper-functions';
 
 class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
   constructor() {
@@ -127,7 +127,7 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
         this.createLastNameInput().should('be.visible').clear().type(propertyWorker.surname);
       }
       if (propertyWorker.language) {
-        selectValueInNgSelector('#profileLanguageSelector', propertyWorker.language, true);
+        selectLanguage('#profileLanguageSelector', propertyWorker.language);
       }
       if (propertyWorker.properties) {
         cy.wait(500);
@@ -148,7 +148,11 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
     if (clickCancel) {
       this.cancelCreateBtn().should('be.visible').click();
     } else {
+      cy.intercept('PUT', '/api/backend-configuration-pn/properties/assignment/create-device-user').as('createDeviceUser');
       this.saveCreateBtn().should('be.visible').click();
+      cy.wait('@createDeviceUser', {timeout: 10000}).then((xhr) => {
+        expect(xhr.response.statusCode).to.eq(200);
+      });
     }
     this.newDeviceUserBtn().should('be.visible');
   }
