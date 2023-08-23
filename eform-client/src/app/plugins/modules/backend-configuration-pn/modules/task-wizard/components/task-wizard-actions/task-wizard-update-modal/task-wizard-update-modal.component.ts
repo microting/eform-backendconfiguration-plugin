@@ -176,7 +176,11 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   changePlanningTagId(tag: SharedTagModel) {
-    this.model.itemPlanningTagId = tag.id;
+    if(tag) {
+      this.model.itemPlanningTagId = tag.id;
+    } else {
+      this.model.itemPlanningTagId = null;
+    }
   }
 
   /*updateLanguageModel(translationsModel: CommonTranslationsModel, index: number) {
