@@ -150,11 +150,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     })
                     .ToList(),
                 // add report tag to all tags
-                TagReport = new CommonTagModel
+                TagReport = x.ItemPlanningTagId.HasValue ? new CommonTagModel
                 {
-                    Id = x.ItemPlanningTagId,
-                    Name = itemPlanningTagNames.ContainsKey((int)x.ItemPlanningTagId) ? itemPlanningTagNames[(int)x.ItemPlanningTagId] : "",
-                },
+                    Id = x.ItemPlanningTagId.Value,
+                    Name = itemPlanningTagNames.ContainsKey(x.ItemPlanningTagId.Value) ? itemPlanningTagNames[x.ItemPlanningTagId.Value] : "",
+                } : null,
             }).ToList();
 
             // add eForm names, folder names and site names
@@ -187,7 +187,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     TaskName = areaRule.TaskName,
                     Id = areaRule.Id,
                     Property = areaRule.PropertyName,
-                    Tags = areaRule.Tags.Append(areaRule.TagReport).ToList(),
+                    Tags = areaRule.TagReport != null ? areaRule.Tags.Append(areaRule.TagReport).ToList() : areaRule.Tags.ToList(),
                     AssignedTo = siteNamesQuery.Where(x => areaRule.PlanningSites.Contains(x.Id)).Select(x => x.Name)
                         .ToList(),
                     Eform = eformNamesQuery.Where(x => x.CheckListId == areaRule.EformId).Select(x => x.Text)
@@ -372,119 +372,62 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 SdkFolderName = folderName,
                 DayOfWeek = dayOfWeek,
                 DayOfMonth = dayOfMonth,
-                // PlanningsTags = createModel.TagIds
-                //     .Select(x => new PlanningsTags
-                //     {
-                //         PlanningTagId = x,
-                //         UpdatedByUserId = _userService.UserId,
-                //         CreatedByUserId = _userService.UserId,
-                //     })
-                //     .ToList(),
-                // PlanningSites = createModel.Sites
-                //     .Select(x => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
-                //     {
-                //         SiteId = x,
-                //         UpdatedByUserId = _userService.UserId,
-                //         CreatedByUserId = _userService.UserId,
-                //     })
-                //     .ToList(),
-                // NameTranslations = createModel.Translates
-                //     .Select(x => new PlanningNameTranslation
-                //     {
-                //         LanguageId = x.LanguageId,
-                //         Name = x.Name,
-                //         UpdatedByUserId = _userService.UserId,
-                //         CreatedByUserId = _userService.UserId,
-                //     })
-                //     .ToList(),
                 UpdatedByUserId = _userService.UserId,
                 CreatedByUserId = _userService.UserId,
             };
 
-            if (createModel.ItemPlanningTagId.HasValue)
-            {
-                planning.PlanningsTags.Add(new PlanningsTags
-                {
-                    PlanningTagId = createModel.ItemPlanningTagId.Value,
-                    UpdatedByUserId = _userService.UserId,
-                    CreatedByUserId = _userService.UserId
-                });
-            }
 
             await planning.Create(_itemsPlanningPnDbContext);
 
-            foreach (var assignedSite in createModel.Sites)
+            foreach (var planningSite in createModel.Sites.Select(assignedSite => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                     {
+                         SiteId = assignedSite,
+                         PlanningId = planning.Id,
+                         CreatedByUserId = _userService.UserId,
+                         UpdatedByUserId = _userService.UserId
+                     }))
             {
-                var planningSite = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
-                {
-                    SiteId = assignedSite,
-                    PlanningId = planning.Id,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId
-                };
                 await planningSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
-            foreach (var tagId in createModel.TagIds)
+            var tagIds = createModel.TagIds.ToList(); // ToList() need for not update createModel.TagIds
+            if (createModel.ItemPlanningTagId.HasValue)
             {
-                var planningsTags = new PlanningsTags
-                {
-                    PlanningId = planning.Id,
-                    PlanningTagId = tagId,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId
-                };
+                tagIds.Add(createModel.ItemPlanningTagId.Value);
+            }
+
+            foreach (var planningsTags in tagIds.Select(tagId => new PlanningsTags
+                     {
+                         PlanningId = planning.Id,
+                         PlanningTagId = tagId,
+                         CreatedByUserId = _userService.UserId,
+                         UpdatedByUserId = _userService.UserId
+                     }))
+            {
                 await planningsTags.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
-            foreach (var translationsModel in createModel.Translates)
+            foreach (var planningNameTranslation in createModel.Translates.Select(translationsModel => new PlanningNameTranslation
+                     {
+                         PlanningId = planning.Id,
+                         LanguageId = translationsModel.LanguageId,
+                         Name = translationsModel.Name,
+                         CreatedByUserId = _userService.UserId,
+                         UpdatedByUserId = _userService.UserId
+                     }))
             {
-                var planningNameTranslation = new PlanningNameTranslation
-                {
-                    PlanningId = planning.Id,
-                    LanguageId = translationsModel.LanguageId,
-                    Name = translationsModel.Name,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId
-                };
                 await planningNameTranslation.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
-            foreach (var assignedSite in createModel.Sites)
+            foreach (var planningSite in createModel.Sites.Select(assignedSite => new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                     {
+                         SiteId = assignedSite,
+                         PlanningId = planning.Id,
+                         CreatedByUserId = _userService.UserId,
+                         UpdatedByUserId = _userService.UserId
+                     }))
             {
-                var planningSite = new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
-                {
-                    SiteId = assignedSite,
-                    PlanningId = planning.Id,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId
-                };
                 await planningSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
-
-            foreach (var tagId in createModel.TagIds)
-            {
-                var planningsTags = new PlanningsTags
-                {
-                    PlanningId = planning.Id,
-                    PlanningTagId = tagId,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId
-                };
-                await planningsTags.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
-
-            foreach (var translationsModel in createModel.Translates)
-            {
-                var planningNameTranslation = new PlanningNameTranslation
-                {
-                    PlanningId = planning.Id,
-                    LanguageId = translationsModel.LanguageId,
-                    Name = translationsModel.Name,
-                    CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId
-                };
-                await planningNameTranslation.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
             var areaId = await GetLogBooksAreaId();
@@ -714,7 +657,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
                     var planning = await CreateItemPlanningObject(updateModel.EformId,
                         areaRulePlanning.AreaRule.EformName, areaRulePlanning.AreaRule.FolderId, updateModel,
-                        areaRulePlanning.AreaRule, areaRulePlanning.Id);
+                        areaRulePlanning.AreaRule.Id, areaRulePlanning.Id);
                     planning.NameTranslations = areaRulePlanning.AreaRule.AreaRuleTranslations.Select(
                         areaRuleAreaRuleTranslation => new PlanningNameTranslation
                         {
@@ -746,13 +689,13 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     areaRulePlanning.ItemPlanningId = planning.Id;
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext)
                         .ConfigureAwait(false);
-                    break;
+                    await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId, false);
+                        break;
                 }
-                // delete item planning
+                // delete item planning but not delete task
                 case true when !areaRulePlanning.Status:
                     if (areaRulePlanning.ItemPlanningId != 0)
                     {
-
                         // update planning tags
                         var planning = await _itemsPlanningPnDbContext.Plannings
                             .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
@@ -761,46 +704,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                             .Include(x => x.PlanningSites)
                             .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-                        var tagsToDelete = planning.PlanningsTags
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Where(x => !updateModel.TagIds.Contains(x.PlanningTagId))
-                            .Select(x => x.PlanningTagId)
-                            .ToList();
-
-                        var tagsToCreate = updateModel.TagIds
-                            .Where(x => !planning.PlanningsTags
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Select(y => y.PlanningTagId)
-                                .Contains(x))
-                            .Select(x => new AreaRulePlanningTag
-                            {
-                                AreaRulePlanningId = areaRulePlanning.Id,
-                                ItemPlanningTagId = x,
-                                CreatedByUserId = _userService.UserId,
-                                UpdatedByUserId = _userService.UserId,
-                            })
-                            .ToList();
-
-                        if (updateModel.ItemPlanningTagId.HasValue && oldItemPlanningTagId.HasValue &&
-                            !oldItemPlanningTagId.Value.Equals(updateModel.ItemPlanningTagId.Value))
-                        {
-                            tagsToDelete.Add(planning.PlanningsTags.Where(x =>
-                                x.PlanningTagId == oldItemPlanningTagId.Value)
-                                .Select(x => x.PlanningTagId)
-                                .First());
-                        }
-
-                        foreach (var tagId in tagsToDelete)
-                        {
-                            await _backendConfigurationPnDbContext.AreaRulePlanningTags
-                                .First(x => x.AreaRulePlanningId == areaRulePlanning.Id && x.ItemPlanningTagId == tagId)
-                                .Delete(_backendConfigurationPnDbContext);
-                        }
-
-                        foreach (var tags in tagsToCreate)
-                        {
-                            await tags.Create(_backendConfigurationPnDbContext);
-                        }
+                        await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId);
 
                         var complianceList = await _backendConfigurationPnDbContext.Compliances
                             .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
@@ -843,8 +747,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 // update item planning
                 case true when areaRulePlanning.Status:
                     // TODO, this is not possible to do, since the web interface does not allow to update active plannings
-                    if (areaRulePlanning.ItemPlanningId !=
-                        0) // Since ItemPlanningId is not 0, we already have a planning and therefore just update it
+                    if (areaRulePlanning.ItemPlanningId != 0) // Since ItemPlanningId is not 0, we already have a planning and therefore just update it
                     {
                         var planning = await _itemsPlanningPnDbContext.Plannings
                             .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
@@ -897,60 +800,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                             await translation.Create(_itemsPlanningPnDbContext);
                         }
 
-                        if (updateModel.ItemPlanningTagId.HasValue)
-                        {
-                            updateModel.TagIds.Add(updateModel.ItemPlanningTagId.Value);
-                        }
-
                         // update planning tags
-                        var tagsToDelete = planning.PlanningsTags
-                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                            .Where(x => !updateModel.TagIds.Contains(x.PlanningTagId))
-                            .ToList();
-
-                        var tagsToCreate = updateModel.TagIds
-                            .Where(x => !planning.PlanningsTags
-                                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                                .Select(y => y.PlanningTagId)
-                                .Contains(x))
-                            .Select(x => new PlanningsTags
-                            {
-                                PlanningTagId = x,
-                                PlanningId = planning.Id,
-                                CreatedByUserId = _userService.UserId,
-                                UpdatedByUserId = _userService.UserId,
-                            })
-                            .ToList();
-
-                        if (updateModel.ItemPlanningTagId.HasValue && oldItemPlanningTagId.HasValue &&
-                            !oldItemPlanningTagId.Value.Equals(updateModel.ItemPlanningTagId.Value))
-                        {
-                            tagsToDelete.Add(planning.PlanningsTags.First(x =>
-                                x.PlanningTagId == oldItemPlanningTagId.Value));
-                        }
-
-                        foreach (var tags in tagsToDelete)
-                        {
-                            tags.UpdatedByUserId = _userService.UserId;
-                            await tags.Delete(_itemsPlanningPnDbContext);
-                            await _backendConfigurationPnDbContext.AreaRulePlanningTags
-                                .First(x => x.AreaRulePlanningId == areaRulePlanning.Id && x.ItemPlanningTagId == tags.PlanningTagId)
-                                .Delete(_backendConfigurationPnDbContext);
-                        }
-
-                        foreach (var tags in tagsToCreate)
-                        {
-                            await tags.Create(_itemsPlanningPnDbContext);
-
-                            var areaRulePlanningTag = new AreaRulePlanningTag
-                            {
-                                AreaRulePlanningId = areaRulePlanning.Id,
-                                ItemPlanningTagId = tags.PlanningTagId,
-                                CreatedByUserId = _userService.UserId,
-                                UpdatedByUserId = _userService.UserId
-                            };
-                            await areaRulePlanningTag.Create(_backendConfigurationPnDbContext);
-                        }
+                        await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId);
 
                         // update planning sites
                         currentSiteIds = planning.PlanningSites.Select(ps => ps.SiteId).ToList();
@@ -1059,8 +910,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     }
 
                     break;
-                // nothing to do
+                // nothing to do, but update tags
                 case false when !areaRulePlanning.Status:
+                    await UpdateTags(0, updateModel, areaRulePlanning.Id, oldItemPlanningTagId, false);
                     break;
             }
 
@@ -1198,8 +1050,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     }
 
     private async Task<Planning> CreateItemPlanningObject(int eformId, string eformName, int folderId,
-        TaskWizardCreateModel taskWizardCreateModel, AreaRule areaRule, int areaRulePlanningId)
+        TaskWizardCreateModel taskWizardCreateModel, int areaRuleId, int areaRulePlanningId)
     {
+        var areaRule = await _backendConfigurationPnDbContext.AreaRules
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => x.Id == areaRuleId)
+            .Include(x => x.Area)
+            .FirstAsync();
+
         var propertyItemPlanningTagId = await _backendConfigurationPnDbContext.Properties
             .Where(x => x.Id == areaRule.PropertyId)
             .Select(x => x.ItemPlanningTagId)
@@ -1214,8 +1072,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             DaysBeforeRedeploymentPushMessageRepeat = false,
             DaysBeforeRedeploymentPushMessage = 5,
             PushMessageOnDeployment = true,
-            StartDate = new DateTime(taskWizardCreateModel.StartDate.Value.Year, taskWizardCreateModel.StartDate.Value.Month,
-                taskWizardCreateModel.StartDate.Value.Day, 0, 0, 0),
+            StartDate = taskWizardCreateModel.StartDate.HasValue ?
+                new DateTime(taskWizardCreateModel.StartDate.Value.Year, taskWizardCreateModel.StartDate.Value.Month, taskWizardCreateModel.StartDate.Value.Day, 0, 0, 0) :
+                new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0),
             IsLocked = true,
             IsEditable = false,
             IsHidden = true
@@ -1264,5 +1123,120 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
 
         return planning;
+    }
+
+    private async Task UpdateTags(int planningId, TaskWizardCreateModel updateModel, int areaRulePlanningId, int? oldItemPlanningTagId, bool updateItemPlanningTags = true)
+    {
+        var tagsQuery = _backendConfigurationPnDbContext.AreaRulePlanningTags
+            .Where(x => x.AreaRulePlanningId == areaRulePlanningId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .AsQueryable();
+
+        var tagsToDelete = await tagsQuery
+            .Where(x => !updateModel.TagIds.Contains(x.ItemPlanningTagId))
+            .ToListAsync();
+
+        var tagsToCreate = updateModel.TagIds
+            .Except(tagsQuery
+                .Select(tag => tag.ItemPlanningTagId)
+                .ToList())
+            .Select(tagId => new PlanningsTags
+            {
+                PlanningTagId = tagId,
+                PlanningId = planningId,
+                CreatedByUserId = _userService.UserId,
+                UpdatedByUserId = _userService.UserId,
+            })
+            .ToList();
+
+        foreach (var tags in tagsToDelete)
+        {
+            if(updateItemPlanningTags)
+            {
+                var itemPlanningTag = await _itemsPlanningPnDbContext.PlanningsTags
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == planningId)
+                    .Where(x => x.PlanningTagId == tags.ItemPlanningTagId)
+                    .FirstOrDefaultAsync();
+                if(itemPlanningTag != null)
+                {
+                    itemPlanningTag.UpdatedByUserId = _userService.UserId;
+                    await itemPlanningTag.Delete(_itemsPlanningPnDbContext);
+                }
+            }
+            tags.UpdatedByUserId = _userService.UserId;
+            await tags.Delete(_backendConfigurationPnDbContext);
+        }
+
+        foreach (var tags in tagsToCreate)
+        {
+            if (updateItemPlanningTags)
+            {
+                await tags.Create(_itemsPlanningPnDbContext);
+            }
+
+            var areaRulePlanningTag = new AreaRulePlanningTag
+            {
+                AreaRulePlanningId = areaRulePlanningId,
+                ItemPlanningTagId = tags.PlanningTagId,
+                CreatedByUserId = _userService.UserId,
+                UpdatedByUserId = _userService.UserId
+            };
+            await areaRulePlanningTag.Create(_backendConfigurationPnDbContext);
+        }
+
+        if (updateItemPlanningTags)
+        {
+            if (oldItemPlanningTagId.HasValue && updateModel.ItemPlanningTagId.HasValue)
+            {
+                var tagForDelete = await _itemsPlanningPnDbContext.PlanningsTags
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == planningId)
+                    .Where(x => x.PlanningTagId == oldItemPlanningTagId.Value)
+                    .FirstOrDefaultAsync();
+                var tagForCreate = new PlanningsTags
+                {
+                    PlanningTagId = updateModel.ItemPlanningTagId.Value,
+                    PlanningId = planningId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId,
+                };
+
+                if (tagForDelete != null)
+                {
+                    tagForDelete.UpdatedByUserId = _userService.UserId;
+                    await tagForDelete.Delete(_itemsPlanningPnDbContext);
+                }
+                await tagForCreate.Create(_itemsPlanningPnDbContext);
+            }
+            else if (!oldItemPlanningTagId.HasValue && updateModel.ItemPlanningTagId.HasValue)
+            {
+                var tagForCreate = new PlanningsTags
+                {
+                    PlanningTagId = updateModel.ItemPlanningTagId.Value,
+                    PlanningId = planningId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId,
+                };
+                await tagForCreate.Create(_itemsPlanningPnDbContext);
+            }
+            else if (oldItemPlanningTagId.HasValue && !updateModel.ItemPlanningTagId.HasValue)
+            {
+                var tagForDelete = await _itemsPlanningPnDbContext.PlanningsTags
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .Where(x => x.PlanningId == planningId)
+                    .Where(x => x.PlanningTagId == oldItemPlanningTagId.Value)
+                    .FirstOrDefaultAsync();
+                if (tagForDelete != null)
+                {
+                    tagForDelete.UpdatedByUserId = _userService.UserId;
+                    await tagForDelete.Delete(_itemsPlanningPnDbContext);
+                }
+            }
+            else if (!oldItemPlanningTagId.HasValue && !updateModel.ItemPlanningTagId.HasValue)
+            {
+                // nothing to do
+            }
+        }
     }
 }
