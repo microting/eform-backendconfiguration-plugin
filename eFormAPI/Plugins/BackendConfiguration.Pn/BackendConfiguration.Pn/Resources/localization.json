@@ -15,7 +15,19 @@
       "nl-NL": "Configuratie",
       "pt-BR": "Configuração",
       "pt-PT": "Configuração",
-      "fi-FI": "Konfigurointi"
+      "fi-FI": "Konfigurointi",
+      "et-ET": "Taustaprogrammi konfiguratsioon",
+      "lv-LV": "Aizmugursistēmas konfigurācija",
+      "lt-LT": "Backend konfigūracija",
+      "ro-RO": "Configurare backend",
+      "hr-HR": "Konfiguracija pozadine",
+      "sl-SL": "Konfiguracija zaledja",
+      "cs-CZ": "Konfigurace backendu",
+      "sk-SK": "Konfigurácia backendu",
+      "hu-HU": "Háttér konfiguráció",
+      "bg-BG": "Конфигурация на бекенда",
+      "el-GR": "Διαμόρφωση Backend",
+      "is-IS": "Bakendastillingar"
     }
   },
   {
@@ -34,7 +46,19 @@
       "nl-NL": "Eigenschappen",
       "pt-BR": "Propriedades",
       "pt-PT": "Propriedades",
-      "fi-FI": "Ominaisuudet"
+      "fi-FI": "Ominaisuudet",
+      "et-ET": "Omadused",
+      "lv-LV": "Īpašības",
+      "lt-LT": "Savybės",
+      "ro-RO": "Proprietăți",
+      "hr-HR": "Svojstva",
+      "sl-SL": "Lastnosti",
+      "cs-CZ": "Vlastnosti",
+      "sk-SK": "Vlastnosti",
+      "hu-HU": "Tulajdonságok",
+      "bg-BG": "Имоти",
+      "el-GR": "Ιδιότητες",
+      "is-IS": "Eiginleikar"
     }
   },
   {
@@ -53,7 +77,19 @@
       "nl-NL": "Arbeiders",
       "pt-BR": "Trabalhadores",
       "pt-PT": "Trabalhadores",
-      "fi-FI": "Työntekijät"
+      "fi-FI": "Työntekijät",
+      "et-ET": "Töölised",
+      "lv-LV": "Strādnieki",
+      "lt-LT": "Darbininkai",
+      "ro-RO": "Muncitorii",
+      "hr-HR": "Radnici",
+      "sl-SL": "delavci",
+      "cs-CZ": "Dělníci",
+      "sk-SK": "Robotníci",
+      "hu-HU": "Munkások",
+      "bg-BG": "работници",
+      "el-GR": "Εργάτες",
+      "is-IS": "Verkamenn"
     }
   },
   {
@@ -72,7 +108,19 @@
       "nl-NL": "Een map moet worden geselecteerd",
       "pt-BR": "Uma pasta deve ser selecionada",
       "pt-PT": "Uma pasta deve ser selecionada",
-      "fi-FI": "Kansion on valittava"
+      "fi-FI": "Kansion on valittava",
+      "et-ET": "Kaust tuleb valida",
+      "lv-LV": "Jāizvēlas mape",
+      "lt-LT": "Turi būti pasirinktas aplankas",
+      "ro-RO": "Trebuie selectat un folder",
+      "hr-HR": "Mapa mora biti odabrana",
+      "sl-SL": "Izbrati morate mapo",
+      "cs-CZ": "Musí být vybrána složka",
+      "sk-SK": "Musí byť vybratý priečinok",
+      "hu-HU": "Ki kell választani egy mappát",
+      "bg-BG": "Трябва да се избере папка",
+      "el-GR": "Πρέπει να επιλεγεί ένας φάκελος",
+      "is-IS": "Velja verður möppu"
     }
   },
   {
@@ -82,8 +130,29 @@
       "de": "Es muss ein Enddatum festgelegt werden",
       "en-US": "An end date must be set",
       "uk-UA": "Потрібно встановити кінцеву дату",
-      "pl-Pl": "Należy ustawić datę zakończenia"
-
+      "pl-Pl": "Należy ustawić datę zakończenia",
+      "pl-PL": "Należy ustawić datę końcową",
+      "no-NO": "En sluttdato må angis",
+      "sv-SE": "Ett slutdatum måste anges",
+      "es-ES": "Se debe fijar una fecha de finalización",
+      "fr-FR": "Une date de fin doit être fixée",
+      "it-IT": "È necessario impostare una data di fine",
+      "nl-NL": "Er moet een einddatum worden vastgelegd",
+      "pt-BR": "Uma data de término deve ser definida",
+      "pt-PT": "Uma data de término deve ser definida",
+      "fi-FI": "Päättymispäivä on asetettava",
+      "et-ET": "Tuleb määrata lõppkuupäev",
+      "lv-LV": "Ir jāiestata beigu datums",
+      "lt-LT": "Turi būti nustatyta pabaigos data",
+      "ro-RO": "Trebuie stabilită o dată de încheiere",
+      "hr-HR": "Datum završetka mora biti postavljen",
+      "sl-SL": "Nastaviti je treba končni datum",
+      "cs-CZ": "Musí být nastaveno datum ukončení",
+      "sk-SK": "Musí byť nastavený dátum ukončenia",
+      "hu-HU": "Be kell állítani egy befejezési dátumot",
+      "bg-BG": "Трябва да се зададе крайна дата",
+      "el-GR": "Πρέπει να οριστεί ημερομηνία λήξης",
+      "is-IS": "Setja þarf lokadagsetningu"
     }
   },
   {
@@ -91,7 +160,31 @@
     "LocalizedValue": {
       "da": "Der mangler en eller flere oversættelser",
       "en-US": "One or more translations are missing",
-      "uk-UK": ""
+      "uk-UK": "",
+      "de": "Eine oder mehrere Übersetzungen fehlen",
+      "uk-UA": "Один або кілька перекладів відсутні",
+      "pl-PL": "Brakuje jednego lub więcej tłumaczeń",
+      "no-NO": "En eller flere oversettelser mangler",
+      "sv-SE": "En eller flera översättningar saknas",
+      "es-ES": "Faltan una o más traducciones",
+      "fr-FR": "Il manque une ou plusieurs traductions",
+      "it-IT": "Mancano una o più traduzioni",
+      "nl-NL": "Eén of meer vertalingen ontbreken",
+      "pt-BR": "Uma ou mais traduções estão faltando",
+      "pt-PT": "Uma ou mais traduções estão faltando",
+      "fi-FI": "Yksi tai useampi käännös puuttuu",
+      "et-ET": "Üks või mitu tõlget on puudu",
+      "lv-LV": "Trūkst viena vai vairāku tulkojumu",
+      "lt-LT": "Trūksta vieno ar daugiau vertimų",
+      "ro-RO": "Una sau mai multe traduceri lipsesc",
+      "hr-HR": "Nedostaje jedan ili više prijevoda",
+      "sl-SL": "En ali več prevodov manjka",
+      "cs-CZ": "Chybí jeden nebo více překladů",
+      "sk-SK": "Chýba jeden alebo viacero prekladov",
+      "hu-HU": "Egy vagy több fordítás hiányzik",
+      "bg-BG": "Един или повече преводи липсват",
+      "el-GR": "Λείπουν μία ή περισσότερες μεταφράσεις",
+      "is-IS": "Eina eða fleiri þýðingar vantar"
     }
   },
   {
@@ -100,7 +193,29 @@
       "da": "Dokumenter",
       "de": "Unterlagen",
       "en-US": "Documents",
-      "uk-UA": "Документи"
+      "uk-UA": "Документи",
+      "pl-PL": "Dokumenty",
+      "no-NO": "Dokumenter",
+      "sv-SE": "Dokument",
+      "es-ES": "Documentos",
+      "fr-FR": "Documents",
+      "it-IT": "Documenti",
+      "nl-NL": "Documenten",
+      "pt-BR": "Documentos",
+      "pt-PT": "Documentos",
+      "fi-FI": "Asiakirjat",
+      "et-ET": "Dokumendid",
+      "lv-LV": "Dokumenti",
+      "lt-LT": "Dokumentai",
+      "ro-RO": "Documente",
+      "hr-HR": "Dokumenti",
+      "sl-SL": "Dokumenti",
+      "cs-CZ": "Dokumenty",
+      "sk-SK": "Dokumenty",
+      "hu-HU": "Dokumentumok",
+      "bg-BG": "Документи",
+      "el-GR": "Εγγραφα",
+      "is-IS": "Skjöl"
     }
   },
   {
@@ -109,7 +224,29 @@
       "da": "Fejl under hentning af ejendomme",
       "de": "Fehler beim Abrufen von Eigenschaften",
       "en-US": "Error retrieving properties",
-      "uk-UA": "Помилка отримання властивостей"
+      "uk-UA": "Помилка отримання властивостей",
+      "pl-PL": "Błąd podczas pobierania właściwości",
+      "no-NO": "Feil ved henting av egenskaper",
+      "sv-SE": "Det gick inte att hämta egenskaper",
+      "es-ES": "Error al recuperar propiedades",
+      "fr-FR": "Erreur lors de la récupération des propriétés",
+      "it-IT": "Errore durante il recupero delle proprietà",
+      "nl-NL": "Fout bij het ophalen van eigenschappen",
+      "pt-BR": "Erro ao recuperar propriedades",
+      "pt-PT": "Erro ao recuperar propriedades",
+      "fi-FI": "Virhe noudettaessa ominaisuuksia",
+      "et-ET": "Viga atribuutide toomisel",
+      "lv-LV": "Izgūstot rekvizītus, radās kļūda",
+      "lt-LT": "Nuskaitant ypatybes įvyko klaida",
+      "ro-RO": "Eroare la preluarea proprietăților",
+      "hr-HR": "Pogreška pri dohvaćanju svojstava",
+      "sl-SL": "Napaka pri pridobivanju lastnosti",
+      "cs-CZ": "Chyba při načítání vlastností",
+      "sk-SK": "Chyba pri načítavaní vlastností",
+      "hu-HU": "Hiba a tulajdonságok lekérésekor",
+      "bg-BG": "Грешка при извличане на свойства",
+      "el-GR": "Σφάλμα κατά την ανάκτηση ιδιοτήτων",
+      "is-IS": "Villa við að sækja eiginleika"
     }
   },
   {
@@ -118,7 +255,29 @@
       "da": "Gemt",
       "de": "Gerettet",
       "en-US": "Saved",
-      "uk-UA": "Збережено"
+      "uk-UA": "Збережено",
+      "pl-PL": "Zapisano",
+      "no-NO": "Lagret",
+      "sv-SE": "Sparad",
+      "es-ES": "Salvado",
+      "fr-FR": "Enregistré",
+      "it-IT": "Salvato",
+      "nl-NL": "Opgeslagen",
+      "pt-BR": "Salvou",
+      "pt-PT": "Salvou",
+      "fi-FI": "Tallennettu",
+      "et-ET": "Salvestatud",
+      "lv-LV": "Saglabāts",
+      "lt-LT": "Išsaugota",
+      "ro-RO": "Salvat",
+      "hr-HR": "Spremljeno",
+      "sl-SL": "Shranjeno",
+      "cs-CZ": "Uložené",
+      "sk-SK": "Uložené",
+      "hu-HU": "Mentett",
+      "bg-BG": "Запазено",
+      "el-GR": "Αποθηκεύτηκε",
+      "is-IS": "Vistað"
     }
   },
   {
@@ -137,7 +296,19 @@
       "nl-NL": "Fout bij het maken van eigenschappen",
       "pt-BR": "Erro ao criar propriedades",
       "pt-PT": "Erro ao criar propriedades",
-      "fi-FI": "Virhe ominaisuuksien luonnissa"
+      "fi-FI": "Virhe ominaisuuksien luonnissa",
+      "et-ET": "Viga atribuutide loomisel",
+      "lv-LV": "Veidojot īpašumus, radās kļūda",
+      "lt-LT": "Klaida kuriant ypatybes",
+      "ro-RO": "Eroare la crearea proprietăților",
+      "hr-HR": "Pogreška prilikom stvaranja svojstava",
+      "sl-SL": "Napaka pri ustvarjanju lastnosti",
+      "cs-CZ": "Chyba při vytváření vlastností",
+      "sk-SK": "Chyba pri vytváraní vlastností",
+      "hu-HU": "Hiba a tulajdonságok létrehozásakor",
+      "bg-BG": "Грешка при създаване на свойства",
+      "el-GR": "Σφάλμα κατά τη δημιουργία ιδιοτήτων",
+      "is-IS": "Villa við að búa til eiginleika"
     }
   },
   {
@@ -156,7 +327,19 @@
       "nl-NL": "Niet gevonden",
       "pt-BR": "Não encontrado",
       "pt-PT": "Não encontrado",
-      "fi-FI": "Ei löytynyt"
+      "fi-FI": "Ei löytynyt",
+      "et-ET": "Ei leitud",
+      "lv-LV": "Nav atrasts",
+      "lt-LT": "Nerastas",
+      "ro-RO": "Nu a fost găsit",
+      "hr-HR": "Nije pronađeno",
+      "sl-SL": "Ni najdeno",
+      "cs-CZ": "Nenalezeno",
+      "sk-SK": "Nenájdené",
+      "hu-HU": "Nem található",
+      "bg-BG": "Не е намерено",
+      "el-GR": "Δεν βρέθηκε",
+      "is-IS": "Ekki fundið"
     }
   },
   {
@@ -175,7 +358,19 @@
       "nl-NL": "Fout bij het lezen van eigenschap",
       "pt-BR": "Erro ao ler a propriedade",
       "pt-PT": "Erro ao ler a propriedade",
-      "fi-FI": "Virhe luettaessa ominaisuutta"
+      "fi-FI": "Virhe luettaessa ominaisuutta",
+      "et-ET": "Viga atribuudi lugemisel",
+      "lv-LV": "Rekvizīta lasīšanas laikā radās kļūda",
+      "lt-LT": "Klaida skaitant nuosavybę",
+      "ro-RO": "Eroare la citirea proprietății",
+      "hr-HR": "Pogreška prilikom čitanja svojstva",
+      "sl-SL": "Napaka med branjem lastnosti",
+      "cs-CZ": "Chyba při čtení vlastnosti",
+      "sk-SK": "Chyba pri čítaní vlastnosti",
+      "hu-HU": "Hiba a tulajdonság olvasása közben",
+      "bg-BG": "Грешка при четене на свойството",
+      "el-GR": "Σφάλμα κατά την ανάγνωση της ιδιότητας",
+      "is-IS": "Villa við lestur eiginleika"
     }
   },
   {
@@ -194,7 +389,19 @@
       "nl-NL": "Bijgewerkt",
       "pt-BR": "Atualizado",
       "pt-PT": "Atualizado",
-      "fi-FI": "Päivitetty"
+      "fi-FI": "Päivitetty",
+      "et-ET": "Edukalt värskendatud",
+      "lv-LV": "Veiksmīgi atjaunināts",
+      "lt-LT": "Sėkmingai atnaujinta",
+      "ro-RO": "Actualizat cu succes",
+      "hr-HR": "Uspješno ažurirano",
+      "sl-SL": "Uspešno posodobljeno",
+      "cs-CZ": "Úspěšně aktualizováno",
+      "sk-SK": "Úspešne aktualizované",
+      "hu-HU": "Sikeresen frissítve",
+      "bg-BG": "Успешно актуализиран",
+      "el-GR": "Ενημερώθηκε με επιτυχία",
+      "is-IS": "Tókst uppfært"
     }
   },
   {
@@ -213,7 +420,19 @@
       "nl-NL": "Fout bij bijwerken",
       "pt-BR": "Erro ao atualizar",
       "pt-PT": "Erro ao atualizar",
-      "fi-FI": "Virhe päivittäessä"
+      "fi-FI": "Virhe päivittäessä",
+      "et-ET": "Viga värskendamisel",
+      "lv-LV": "Atjaunināšanas laikā radās kļūda",
+      "lt-LT": "Atnaujinant įvyko klaida",
+      "ro-RO": "Eroare la actualizare",
+      "hr-HR": "Pogreška tijekom ažuriranja",
+      "sl-SL": "Napaka pri posodabljanju",
+      "cs-CZ": "Chyba při aktualizaci",
+      "sk-SK": "Chyba pri aktualizácii",
+      "hu-HU": "Hiba a frissítés során",
+      "bg-BG": "Грешка при актуализиране",
+      "el-GR": "Σφάλμα κατά την ενημέρωση",
+      "is-IS": "Villa við uppfærslu"
     }
   },
   {
@@ -232,7 +451,19 @@
       "nl-NL": "Verwijderd",
       "pt-BR": "Excluído",
       "pt-PT": "Excluído",
-      "fi-FI": "Poistettu"
+      "fi-FI": "Poistettu",
+      "et-ET": "Edukalt kustutatud",
+      "lv-LV": "Veiksmīgi izdzēsts",
+      "lt-LT": "Sėkmingai ištrinta",
+      "ro-RO": "S-a șters cu succes",
+      "hr-HR": "Uspješno izbrisano",
+      "sl-SL": "Uspešno izbrisano",
+      "cs-CZ": "Úspěšně smazáno",
+      "sk-SK": "Úspešne odstránené",
+      "hu-HU": "Sikeresen törölve",
+      "bg-BG": "Успешно изтрито",
+      "el-GR": "Διαγράφηκε με επιτυχία",
+      "is-IS": "Tókst að eyða"
     }
   },
   {
@@ -251,7 +482,19 @@
       "nl-NL": "Fout bij verwijderen",
       "pt-BR": "Erro ao excluir",
       "pt-PT": "Erro ao excluir",
-      "fi-FI": "Virhe poistettaessa"
+      "fi-FI": "Virhe poistettaessa",
+      "et-ET": "Viga kustutamisel",
+      "lv-LV": "Dzēšot radās kļūda",
+      "lt-LT": "Trinant įvyko klaida",
+      "ro-RO": "Eroare la ștergere",
+      "hr-HR": "Pogreška prilikom brisanja",
+      "sl-SL": "Napaka pri brisanju",
+      "cs-CZ": "Chyba při mazání",
+      "sk-SK": "Chyba pri odstraňovaní",
+      "hu-HU": "Hiba a törlés során",
+      "bg-BG": "Грешка при изтриването",
+      "el-GR": "Σφάλμα κατά τη διαγραφή",
+      "is-IS": "Villa við að eyða"
     }
   },
   {
@@ -270,7 +513,19 @@
       "nl-NL": "Fout bij lezen",
       "pt-BR": "Erro ao ler",
       "pt-PT": "Erro ao ler",
-      "fi-FI": "Virhe luettaessa"
+      "fi-FI": "Virhe luettaessa",
+      "et-ET": "Viga planeerimise lugemisel",
+      "lv-LV": "Kļūda lasot plānošanu",
+      "lt-LT": "Klaida skaitant planavimą",
+      "ro-RO": "Eroare la citirea planificării",
+      "hr-HR": "Pogreška prilikom čitanja planiranja",
+      "sl-SL": "Napaka med branjem načrtovanja",
+      "cs-CZ": "Chyba při plánování čtení",
+      "sk-SK": "Chyba pri plánovaní čítania",
+      "hu-HU": "Hiba a tervezés olvasása közben",
+      "bg-BG": "Грешка при четене на планирането",
+      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
+      "is-IS": "Villa við lestur áætlanagerðar"
     }
   },
   {
@@ -289,7 +544,19 @@
       "nl-NL": "Bijgewerkt",
       "pt-BR": "Atualizado",
       "pt-PT": "Atualizado",
-      "fi-FI": "Päivitetty"
+      "fi-FI": "Päivitetty",
+      "et-ET": "Edukalt värskendatud",
+      "lv-LV": "Veiksmīgi atjaunināts",
+      "lt-LT": "Sėkmingai atnaujinta",
+      "ro-RO": "Actualizat cu succes",
+      "hr-HR": "Uspješno ažurirano",
+      "sl-SL": "Uspešno posodobljeno",
+      "cs-CZ": "Úspěšně aktualizováno",
+      "sk-SK": "Úspešne aktualizované",
+      "hu-HU": "Sikeresen frissítve",
+      "bg-BG": "Успешно актуализиран",
+      "el-GR": "Ενημερώθηκε με επιτυχία",
+      "is-IS": "Tókst uppfært"
     }
   },
   {
@@ -308,7 +575,19 @@
       "nl-NL": "Fout bij bijwerken",
       "pt-BR": "Erro ao atualizar",
       "pt-PT": "Erro ao atualizar",
-      "fi-FI": "Virhe päivittäessä"
+      "fi-FI": "Virhe päivittäessä",
+      "et-ET": "Viga värskendamisel",
+      "lv-LV": "Atjaunināšanas laikā radās kļūda",
+      "lt-LT": "Klaida atnaujinant",
+      "ro-RO": "Eroare la actualizare",
+      "hr-HR": "Pogreška tijekom ažuriranja",
+      "sl-SL": "Napaka pri posodabljanju",
+      "cs-CZ": "Chyba při aktualizaci",
+      "sk-SK": "Chyba pri aktualizácii",
+      "hu-HU": "Hiba a frissítés során",
+      "bg-BG": "Грешка при актуализиране",
+      "el-GR": "Σφάλμα κατά την ενημέρωση",
+      "is-IS": "Villa við uppfærslu"
     }
   },
   {
@@ -327,7 +606,19 @@
       "nl-NL": "Niet gevonden",
       "pt-BR": "Não encontrado",
       "pt-PT": "Não encontrado",
-      "fi-FI": "Ei löytynyt"
+      "fi-FI": "Ei löytynyt",
+      "et-ET": "Ei leitud",
+      "lv-LV": "Nav atrasts",
+      "lt-LT": "Nerastas",
+      "ro-RO": "Nu a fost găsit",
+      "hr-HR": "Nije pronađeno",
+      "sl-SL": "Ni najdeno",
+      "cs-CZ": "Nenalezeno",
+      "sk-SK": "Nenájdené",
+      "hu-HU": "Nem található",
+      "bg-BG": "Не е намерено",
+      "el-GR": "Δεν βρέθηκε",
+      "is-IS": "Ekki fundið"
     }
   },
   {
@@ -346,7 +637,19 @@
       "nl-NL": "Fout bij lezen",
       "pt-BR": "Erro ao ler",
       "pt-PT": "Erro ao ler",
-      "fi-FI": "Virhe luettaessa"
+      "fi-FI": "Virhe luettaessa",
+      "et-ET": "Viga planeerimise lugemisel",
+      "lv-LV": "Kļūda lasot plānošanu",
+      "lt-LT": "Klaida skaitant planavimą",
+      "ro-RO": "Eroare la citirea planificării",
+      "hr-HR": "Pogreška prilikom čitanja planiranja",
+      "sl-SL": "Napaka med branjem načrtovanja",
+      "cs-CZ": "Chyba při plánování čtení",
+      "sk-SK": "Chyba pri plánovaní čítania",
+      "hu-HU": "Hiba a tervezés olvasása közben",
+      "bg-BG": "Грешка при четене на планирането",
+      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
+      "is-IS": "Villa við lestur áætlanagerðar"
     }
   },
   {
@@ -365,7 +668,19 @@
       "nl-NL": "Fout bij lezen",
       "pt-BR": "Erro ao ler",
       "pt-PT": "Erro ao ler",
-      "fi-FI": "Virhe luettaessa"
+      "fi-FI": "Virhe luettaessa",
+      "et-ET": "Viga planeerimise lugemisel",
+      "lv-LV": "Kļūda lasot plānošanu",
+      "lt-LT": "Klaida skaitant planavimą",
+      "ro-RO": "Eroare la citirea planificării",
+      "hr-HR": "Pogreška prilikom čitanja planiranja",
+      "sl-SL": "Napaka med branjem načrtovanja",
+      "cs-CZ": "Chyba při plánování čtení",
+      "sk-SK": "Chyba pri plánovaní čítania",
+      "hu-HU": "Hiba a tervezés olvasása közben",
+      "bg-BG": "Грешка при четене на планирането",
+      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
+      "is-IS": "Villa við lestur áætlanagerðar"
     }
   },
   {
@@ -384,7 +699,19 @@
       "nl-NL": "Opgeslagen",
       "pt-BR": "Salvo",
       "pt-PT": "Salvo",
-      "fi-FI": "Tallennettu"
+      "fi-FI": "Tallennettu",
+      "et-ET": "Salvestatud",
+      "lv-LV": "Saglabāts",
+      "lt-LT": "Išsaugota",
+      "ro-RO": "Salvat",
+      "hr-HR": "Spremljeno",
+      "sl-SL": "Shranjeno",
+      "cs-CZ": "Uložené",
+      "sk-SK": "Uložené",
+      "hu-HU": "Mentett",
+      "bg-BG": "Запазено",
+      "el-GR": "Αποθηκεύτηκε",
+      "is-IS": "Vistað"
     }
   },
   {
@@ -403,7 +730,19 @@
       "nl-NL": "Fout bij maken",
       "pt-BR": "Erro ao criar",
       "pt-PT": "Erro ao criar",
-      "fi-FI": "Virhe luotaessa"
+      "fi-FI": "Virhe luotaessa",
+      "et-ET": "Viga loomisel",
+      "lv-LV": "Veidojot, radās kļūda",
+      "lt-LT": "Kuriant įvyko klaida",
+      "ro-RO": "Eroare la creare",
+      "hr-HR": "Pogreška prilikom izrade",
+      "sl-SL": "Napaka pri ustvarjanju",
+      "cs-CZ": "Chyba při vytváření",
+      "sk-SK": "Chyba pri vytváraní",
+      "hu-HU": "Hiba a létrehozás során",
+      "bg-BG": "Грешка при създаването",
+      "el-GR": "Σφάλμα κατά τη δημιουργία",
+      "is-IS": "Villa við að búa til"
     }
   },
   {
@@ -422,7 +761,19 @@
       "nl-NL": "Bijgewerkt",
       "pt-BR": "Atualizado",
       "pt-PT": "Atualizado",
-      "fi-FI": "Päivitetty"
+      "fi-FI": "Päivitetty",
+      "et-ET": "Edukalt värskendatud",
+      "lv-LV": "Veiksmīgi atjaunināts",
+      "lt-LT": "Sėkmingai atnaujinta",
+      "ro-RO": "Actualizat cu succes",
+      "hr-HR": "Uspješno ažurirano",
+      "sl-SL": "Uspešno posodobljeno",
+      "cs-CZ": "Úspěšně aktualizováno",
+      "sk-SK": "Úspešne aktualizované",
+      "hu-HU": "Sikeresen frissítve",
+      "bg-BG": "Успешно актуализиран",
+      "el-GR": "Ενημερώθηκε με επιτυχία",
+      "is-IS": "Tókst uppfært"
     }
   },
   {
@@ -441,7 +792,19 @@
       "nl-NL": "Fout bij bijwerken",
       "pt-BR": "Erro ao atualizar",
       "pt-PT": "Erro ao atualizar",
-      "fi-FI": "Virhe päivittäessä"
+      "fi-FI": "Virhe päivittäessä",
+      "et-ET": "Viga värskendamisel",
+      "lv-LV": "Atjaunināšanas laikā radās kļūda",
+      "lt-LT": "Atnaujinant įvyko klaida",
+      "ro-RO": "Eroare la actualizare",
+      "hr-HR": "Pogreška tijekom ažuriranja",
+      "sl-SL": "Napaka pri posodabljanju",
+      "cs-CZ": "Chyba při aktualizaci",
+      "sk-SK": "Chyba pri aktualizácii",
+      "hu-HU": "Hiba a frissítés során",
+      "bg-BG": "Грешка при актуализиране",
+      "el-GR": "Σφάλμα κατά την ενημέρωση",
+      "is-IS": "Villa við uppfærslu"
     }
   },
   {
@@ -460,7 +823,19 @@
       "nl-NL": "Verwijderd",
       "pt-BR": "Excluído",
       "pt-PT": "Excluído",
-      "fi-FI": "Poistettu"
+      "fi-FI": "Poistettu",
+      "et-ET": "Edukalt kustutatud",
+      "lv-LV": "Veiksmīgi izdzēsts",
+      "lt-LT": "Sėkmingai ištrinta",
+      "ro-RO": "S-a șters cu succes",
+      "hr-HR": "Uspješno izbrisano",
+      "sl-SL": "Uspešno izbrisano",
+      "cs-CZ": "Úspěšně smazáno",
+      "sk-SK": "Úspešne odstránené",
+      "hu-HU": "Sikeresen törölve",
+      "bg-BG": "Успешно изтрито",
+      "el-GR": "Διαγράφηκε με επιτυχία",
+      "is-IS": "Tókst að eyða"
     }
   },
   {
@@ -479,7 +854,19 @@
       "nl-NL": "Fout bij verwijderen",
       "pt-BR": "Erro ao excluir",
       "pt-PT": "Erro ao excluir",
-      "fi-FI": "Virhe poistaessa"
+      "fi-FI": "Virhe poistaessa",
+      "et-ET": "Viga kustutamisel",
+      "lv-LV": "Dzēšot radās kļūda",
+      "lt-LT": "Trinant įvyko klaida",
+      "ro-RO": "Eroare la ștergere",
+      "hr-HR": "Pogreška prilikom brisanja",
+      "sl-SL": "Napaka pri brisanju",
+      "cs-CZ": "Chyba při mazání",
+      "sk-SK": "Chyba pri odstraňovaní",
+      "hu-HU": "Hiba a törlés során",
+      "bg-BG": "Грешка при изтриването",
+      "el-GR": "Σφάλμα κατά τη διαγραφή",
+      "is-IS": "Villa við að eyða"
     }
   },
   {
@@ -498,7 +885,19 @@
       "nl-NL": "Fout bij lezen planning",
       "pt-BR": "Erro ao ler planejamento",
       "pt-PT": "Erro ao ler planejamento",
-      "fi-FI": "Virhe luettaessa suunnittelua"
+      "fi-FI": "Virhe luettaessa suunnittelua",
+      "et-ET": "Viga planeerimise lugemisel",
+      "lv-LV": "Kļūda lasot plānošanu",
+      "lt-LT": "Klaida skaitant planą",
+      "ro-RO": "Eroare la citirea planificării",
+      "hr-HR": "Pogreška prilikom čitanja planiranja",
+      "sl-SL": "Napaka med branjem načrtovanja",
+      "cs-CZ": "Chyba při plánování čtení",
+      "sk-SK": "Chyba pri plánovaní čítania",
+      "hu-HU": "Hiba a tervezés olvasása közben",
+      "bg-BG": "Грешка при четене на планирането",
+      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
+      "is-IS": "Villa við lestur áætlanagerðar"
     }
   },
   {
@@ -517,7 +916,19 @@
       "nl-NL": "Niet gevonden",
       "pt-BR": "Não encontrado",
       "pt-PT": "Não encontrado",
-      "fi-FI": "Ei löytynyt"
+      "fi-FI": "Ei löytynyt",
+      "et-ET": "Ei leitud",
+      "lv-LV": "Nav atrasts",
+      "lt-LT": "Nerastas",
+      "ro-RO": "Nu a fost găsit",
+      "hr-HR": "Nije pronađeno",
+      "sl-SL": "Ni najdeno",
+      "cs-CZ": "Nenalezeno",
+      "sk-SK": "Nenájdené",
+      "hu-HU": "Nem található",
+      "bg-BG": "Не е намерено",
+      "el-GR": "Δεν βρέθηκε",
+      "is-IS": "Ekki fundið"
     }
   },
   {
@@ -536,7 +947,19 @@
       "nl-NL": "Fout bij lezen planning",
       "pt-BR": "Erro ao ler planejamento",
       "pt-PT": "Erro ao ler planejamento",
-      "fi-FI": "Virhe luettaessa suunnittelua"
+      "fi-FI": "Virhe luettaessa suunnittelua",
+      "et-ET": "Viga planeerimise lugemisel",
+      "lv-LV": "Kļūda lasot plānošanu",
+      "lt-LT": "Klaida skaitant planą",
+      "ro-RO": "Eroare la citirea planificării",
+      "hr-HR": "Pogreška prilikom čitanja planiranja",
+      "sl-SL": "Napaka med branjem načrtovanja",
+      "cs-CZ": "Chyba při plánování čtení",
+      "sk-SK": "Chyba pri plánovaní čítania",
+      "hu-HU": "Hiba a tervezés olvasása közben",
+      "bg-BG": "Грешка при четене на планирането",
+      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
+      "is-IS": "Villa við lestur áætlanagerðar"
     }
   },
   {
@@ -555,7 +978,19 @@
       "nl-NL": "Fout bij bijwerken",
       "pt-BR": "Erro ao atualizar",
       "pt-PT": "Erro ao atualizar",
-      "fi-FI": "Virhe päivittäessä"
+      "fi-FI": "Virhe päivittäessä",
+      "et-ET": "Viga värskendamisel",
+      "lv-LV": "Atjaunināšanas laikā radās kļūda",
+      "lt-LT": "Atnaujinant įvyko klaida",
+      "ro-RO": "Eroare la actualizare",
+      "hr-HR": "Pogreška tijekom ažuriranja",
+      "sl-SL": "Napaka pri posodabljanju",
+      "cs-CZ": "Chyba při aktualizaci",
+      "sk-SK": "Chyba pri aktualizácii",
+      "hu-HU": "Hiba a frissítés során",
+      "bg-BG": "Грешка при актуализиране",
+      "el-GR": "Σφάλμα κατά την ενημέρωση",
+      "is-IS": "Villa við uppfærslu"
     }
   },
   {
@@ -574,7 +1009,19 @@
       "nl-NL": "Bijgewerkt",
       "pt-BR": "Atualizado",
       "pt-PT": "Atualizado",
-      "fi-FI": "Päivitetty"
+      "fi-FI": "Päivitetty",
+      "et-ET": "Edukalt värskendatud",
+      "lv-LV": "Veiksmīgi atjaunināts",
+      "lt-LT": "Sėkmingai atnaujinta",
+      "ro-RO": "Actualizat cu succes",
+      "hr-HR": "Uspješno ažurirano",
+      "sl-SL": "Uspešno posodobljeno",
+      "cs-CZ": "Úspěšně aktualizováno",
+      "sk-SK": "Úspešne aktualizované",
+      "hu-HU": "Sikeresen frissítve",
+      "bg-BG": "Успешно актуализиран",
+      "el-GR": "Ενημερώθηκε με επιτυχία",
+      "is-IS": "Tókst uppfært"
     }
   },
   {
@@ -593,7 +1040,19 @@
       "nl-NL": "Fout bij bijwerken",
       "pt-BR": "Erro ao atualizar",
       "pt-PT": "Erro ao atualizar",
-      "fi-FI": "Virhe päivittäessä"
+      "fi-FI": "Virhe päivittäessä",
+      "et-ET": "Viga värskendamisel",
+      "lv-LV": "Atjaunināšanas laikā radās kļūda",
+      "lt-LT": "Atnaujinant įvyko klaida",
+      "ro-RO": "Eroare la actualizare",
+      "hr-HR": "Pogreška tijekom ažuriranja",
+      "sl-SL": "Napaka pri posodabljanju",
+      "cs-CZ": "Chyba při aktualizaci",
+      "sk-SK": "Chyba pri aktualizácii",
+      "hu-HU": "Hiba a frissítés során",
+      "bg-BG": "Грешка при актуализиране",
+      "el-GR": "Σφάλμα κατά την ενημέρωση",
+      "is-IS": "Villa við uppfærslu"
     }
   },
   {
@@ -612,7 +1071,19 @@
       "nl-NL": "Fout bij verwijderen",
       "pt-BR": "Erro ao excluir",
       "pt-PT": "Erro ao excluir",
-      "fi-FI": "Virhe poistettaessa"
+      "fi-FI": "Virhe poistettaessa",
+      "et-ET": "Viga kustutamisel",
+      "lv-LV": "Dzēšot radās kļūda",
+      "lt-LT": "Trinant įvyko klaida",
+      "ro-RO": "Eroare la ștergere",
+      "hr-HR": "Pogreška prilikom brisanja",
+      "sl-SL": "Napaka pri brisanju",
+      "cs-CZ": "Chyba při mazání",
+      "sk-SK": "Chyba pri odstraňovaní",
+      "hu-HU": "Hiba a törlés során",
+      "bg-BG": "Грешка при изтриването",
+      "el-GR": "Σφάλμα κατά τη διαγραφή",
+      "is-IS": "Villa við að eyða"
     }
   },
   {
@@ -631,7 +1102,19 @@
       "nl-NL": "Verwijderd",
       "pt-BR": "Excluído",
       "pt-PT": "Excluído",
-      "fi-FI": "Poistettu"
+      "fi-FI": "Poistettu",
+      "et-ET": "Edukalt kustutatud",
+      "lv-LV": "Veiksmīgi izdzēsts",
+      "lt-LT": "Sėkmingai ištrinta",
+      "ro-RO": "S-a șters cu succes",
+      "hr-HR": "Uspješno izbrisano",
+      "sl-SL": "Uspešno izbrisano",
+      "cs-CZ": "Úspěšně smazáno",
+      "sk-SK": "Úspešne odstránené",
+      "hu-HU": "Sikeresen törölve",
+      "bg-BG": "Успешно изтрито",
+      "el-GR": "Διαγράφηκε με επιτυχία",
+      "is-IS": "Tókst að eyða"
     }
   },
   {
@@ -650,7 +1133,19 @@
       "nl-NL": "Fout bij verwijderen",
       "pt-BR": "Erro ao excluir",
       "pt-PT": "Erro ao excluir",
-      "fi-FI": "Virhe poistettaessa"
+      "fi-FI": "Virhe poistettaessa",
+      "et-ET": "Viga kustutamisel",
+      "lv-LV": "Dzēšot radās kļūda",
+      "lt-LT": "Trinant įvyko klaida",
+      "ro-RO": "Eroare la ștergere",
+      "hr-HR": "Pogreška prilikom brisanja",
+      "sl-SL": "Napaka pri brisanju",
+      "cs-CZ": "Chyba při mazání",
+      "sk-SK": "Chyba pri odstraňovaní",
+      "hu-HU": "Hiba a törlés során",
+      "bg-BG": "Грешка при изтриването",
+      "el-GR": "Σφάλμα κατά τη διαγραφή",
+      "is-IS": "Villa við að eyða"
     }
   },
   {
@@ -669,7 +1164,19 @@
       "nl-NL": "Opgeslagen",
       "pt-BR": "Salvo",
       "pt-PT": "Salvo",
-      "fi-FI": "Tallennettu"
+      "fi-FI": "Tallennettu",
+      "et-ET": "Salvestatud",
+      "lv-LV": "Saglabāts",
+      "lt-LT": "Išsaugota",
+      "ro-RO": "Salvat",
+      "hr-HR": "Spremljeno",
+      "sl-SL": "Shranjeno",
+      "cs-CZ": "Uložené",
+      "sk-SK": "Uložené",
+      "hu-HU": "Mentett",
+      "bg-BG": "Запазено",
+      "el-GR": "Αποθηκεύτηκε",
+      "is-IS": "Vistað"
     }
   },
   {
@@ -688,7 +1195,19 @@
       "nl-NL": "Fout bij aanmaken",
       "pt-BR": "Erro ao criar",
       "pt-PT": "Erro ao criar",
-      "fi-FI": "Virhe luotaessa"
+      "fi-FI": "Virhe luotaessa",
+      "et-ET": "Viga loomisel",
+      "lv-LV": "Veidojot, radās kļūda",
+      "lt-LT": "Kuriant įvyko klaida",
+      "ro-RO": "Eroare la creare",
+      "hr-HR": "Pogreška prilikom izrade",
+      "sl-SL": "Napaka pri ustvarjanju",
+      "cs-CZ": "Chyba při vytváření",
+      "sk-SK": "Chyba pri vytváraní",
+      "hu-HU": "Hiba a létrehozás során",
+      "bg-BG": "Грешка при създаването",
+      "el-GR": "Σφάλμα κατά τη δημιουργία",
+      "is-IS": "Villa við að búa til"
     }
   },
   {
@@ -707,7 +1226,19 @@
       "nl-NL": "Bijgewerkt",
       "pt-BR": "Atualizado",
       "pt-PT": "Atualizado",
-      "fi-FI": "Päivitetty"
+      "fi-FI": "Päivitetty",
+      "et-ET": "Edukalt värskendatud",
+      "lv-LV": "Veiksmīgi atjaunināts",
+      "lt-LT": "Sėkmingai atnaujinta",
+      "ro-RO": "Actualizat cu succes",
+      "hr-HR": "Uspješno ažurirano",
+      "sl-SL": "Uspešno posodobljeno",
+      "cs-CZ": "Úspěšně aktualizováno",
+      "sk-SK": "Úspešne aktualizované",
+      "hu-HU": "Sikeresen frissítve",
+      "bg-BG": "Успешно актуализиран",
+      "el-GR": "Ενημερώθηκε με επιτυχία",
+      "is-IS": "Tókst uppfært"
     }
   },
   {
@@ -726,7 +1257,19 @@
       "nl-NL": "Fout bij bijwerken",
       "pt-BR": "Erro ao atualizar",
       "pt-PT": "Erro ao atualizar",
-      "fi-FI": "Virhe päivittäessä"
+      "fi-FI": "Virhe päivittäessä",
+      "et-ET": "Viga värskendamisel",
+      "lv-LV": "Atjaunināšanas laikā radās kļūda",
+      "lt-LT": "Atnaujinant įvyko klaida",
+      "ro-RO": "Eroare la actualizare",
+      "hr-HR": "Pogreška tijekom ažuriranja",
+      "sl-SL": "Napaka pri posodabljanju",
+      "cs-CZ": "Chyba při aktualizaci",
+      "sk-SK": "Chyba pri aktualizácii",
+      "hu-HU": "Hiba a frissítés során",
+      "bg-BG": "Грешка при актуализиране",
+      "el-GR": "Σφάλμα κατά την ενημέρωση",
+      "is-IS": "Villa við uppfærslu"
     }
   },
   {
@@ -745,7 +1288,19 @@
       "nl-NL": "Fout bij lezen planning",
       "pt-BR": "Erro ao ler planejamento",
       "pt-PT": "Erro ao ler planejamento",
-      "fi-FI": "Virhe luettaessa suunnitelmaa"
+      "fi-FI": "Virhe luettaessa suunnitelmaa",
+      "et-ET": "Viga planeerimise lugemisel",
+      "lv-LV": "Kļūda lasot plānošanu",
+      "lt-LT": "Klaida skaitant planą",
+      "ro-RO": "Eroare la citirea planificării",
+      "hr-HR": "Pogreška prilikom čitanja planiranja",
+      "sl-SL": "Napaka med branjem načrtovanja",
+      "cs-CZ": "Chyba při plánování čtení",
+      "sk-SK": "Chyba pri plánovaní čítania",
+      "hu-HU": "Hiba a tervezés olvasása közben",
+      "bg-BG": "Грешка при четене на планирането",
+      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
+      "is-IS": "Villa við lestur áætlanagerðar"
     }
   },
   {
@@ -764,7 +1319,19 @@
       "nl-NL": "Niet gevonden",
       "pt-BR": "Não encontrado",
       "pt-PT": "Não encontrado",
-      "fi-FI": "Ei löytynyt"
+      "fi-FI": "Ei löytynyt",
+      "et-ET": "Ei leitud",
+      "lv-LV": "Nav atrasts",
+      "lt-LT": "Nerastas",
+      "ro-RO": "Nu a fost găsit",
+      "hr-HR": "Nije pronađeno",
+      "sl-SL": "Ni najdeno",
+      "cs-CZ": "Nenalezeno",
+      "sk-SK": "Nenájdené",
+      "hu-HU": "Nem található",
+      "bg-BG": "Не е намерено",
+      "el-GR": "Δεν βρέθηκε",
+      "is-IS": "Ekki fundið"
     }
   },
   {
@@ -783,7 +1350,19 @@
       "nl-NL": "Fout bij lezen planning",
       "pt-BR": "Erro ao ler planejamento",
       "pt-PT": "Erro ao ler planejamento",
-      "fi-FI": "Virhe luettaessa suunnitelmaa"
+      "fi-FI": "Virhe luettaessa suunnitelmaa",
+      "et-ET": "Viga planeerimise lugemisel",
+      "lv-LV": "Kļūda lasot plānošanu",
+      "lt-LT": "Klaida skaitant planavimą",
+      "ro-RO": "Eroare la citirea planificării",
+      "hr-HR": "Pogreška prilikom čitanja planiranja",
+      "sl-SL": "Napaka med branjem načrtovanja",
+      "cs-CZ": "Chyba při plánování čtení",
+      "sk-SK": "Chyba pri plánovaní čítania",
+      "hu-HU": "Hiba a tervezés olvasása közben",
+      "bg-BG": "Грешка при четене на планирането",
+      "el-GR": "Σφάλμα κατά την ανάγνωση του προγραμματισμού",
+      "is-IS": "Villa við lestur áætlanagerðar"
     }
   },
   {
@@ -802,7 +1381,19 @@
       "nl-NL": "Opgeslagen",
       "pt-BR": "Salvo",
       "pt-PT": "Salvo",
-      "fi-FI": "Tallennettu"
+      "fi-FI": "Tallennettu",
+      "et-ET": "Salvestatud",
+      "lv-LV": "Saglabāts",
+      "lt-LT": "Išsaugota",
+      "ro-RO": "Salvat",
+      "hr-HR": "Spremljeno",
+      "sl-SL": "Shranjeno",
+      "cs-CZ": "Uložené",
+      "sk-SK": "Uložené",
+      "hu-HU": "Mentett",
+      "bg-BG": "Запазено",
+      "el-GR": "Αποθηκεύτηκε",
+      "is-IS": "Vistað"
     }
   },
   {
@@ -916,7 +1507,19 @@
       "nl-NL": "Controleplan",
       "pt-BR": "Plano de controle",
       "pt-PT": "Plano de controlo",
-      "fi-FI": "Valvontasuunnitelma"
+      "fi-FI": "Valvontasuunnitelma",
+      "et-ET": "Controlplan IE-aruandlus",
+      "lv-LV": "Controlplan IE-ziņošana",
+      "lt-LT": "Controlplan IE ataskaitų teikimas",
+      "ro-RO": "Controlplan IE-raportare",
+      "hr-HR": "Controlplan IE-izvješćivanje",
+      "sl-SL": "Controlplan IE-poročanje",
+      "cs-CZ": "Controlplan IE-hlášení",
+      "sk-SK": "Controlplan IE-hlásenie",
+      "hu-HU": "Controlplan IE-jelentés",
+      "bg-BG": "Controlplan IE-отчитане",
+      "el-GR": "Σχέδιο ελέγχου IE-reporting",
+      "is-IS": "Controlplan IE-skýrslur"
     }
   },
   {
@@ -935,7 +1538,19 @@
       "nl-NL": "Jaar",
       "pt-BR": "Ano",
       "pt-PT": "Ano",
-      "fi-FI": "Vuosi"
+      "fi-FI": "Vuosi",
+      "et-ET": "aasta",
+      "lv-LV": "gads",
+      "lt-LT": "Metai",
+      "ro-RO": "An",
+      "hr-HR": "Godina",
+      "sl-SL": "leto",
+      "cs-CZ": "Rok",
+      "sk-SK": "rok",
+      "hu-HU": "Év",
+      "bg-BG": "година",
+      "el-GR": "Ετος",
+      "is-IS": "Ár"
     }
   },
   {
@@ -954,7 +1569,19 @@
       "nl-NL": "CVR-nummer",
       "pt-BR": "Número CVR",
       "pt-PT": "Número CVR",
-      "fi-FI": "CVR-numero"
+      "fi-FI": "CVR-numero",
+      "et-ET": "CVR-nr",
+      "lv-LV": "CVR-nr",
+      "lt-LT": "CVR-nr",
+      "ro-RO": "CVR-nr",
+      "hr-HR": "CVR-br",
+      "sl-SL": "CVR-št",
+      "cs-CZ": "CVR-č",
+      "sk-SK": "CVR-č",
+      "hu-HU": "CVR-sz",
+      "bg-BG": "CVR-№",
+      "el-GR": "CVR-αρ",
+      "is-IS": "CVR-nr"
     }
   },
   {
@@ -973,7 +1600,19 @@
       "nl-NL": "CHR-nummer",
       "pt-BR": "Número CHR",
       "pt-PT": "Número CHR",
-      "fi-FI": "CHR-numero"
+      "fi-FI": "CHR-numero",
+      "et-ET": "CHR-nr",
+      "lv-LV": "CHR-nr",
+      "lt-LT": "CHR-nr",
+      "ro-RO": "CHR-nr",
+      "hr-HR": "CHR-br",
+      "sl-SL": "CHR-št",
+      "cs-CZ": "CHR-č",
+      "sk-SK": "CHR-č",
+      "hu-HU": "CHR-sz",
+      "bg-BG": "CHR-номер",
+      "el-GR": "CHR-αρ",
+      "is-IS": "CHR-nr"
     }
   },
   {
@@ -992,7 +1631,19 @@
       "nl-NL": "Naam",
       "pt-BR": "Nome",
       "pt-PT": "Nome",
-      "fi-FI": "Nimi"
+      "fi-FI": "Nimi",
+      "et-ET": "Nimi",
+      "lv-LV": "Vārds",
+      "lt-LT": "vardas",
+      "ro-RO": "Nume",
+      "hr-HR": "Ime",
+      "sl-SL": "Ime",
+      "cs-CZ": "název",
+      "sk-SK": "názov",
+      "hu-HU": "Név",
+      "bg-BG": "Име",
+      "el-GR": "Ονομα",
+      "is-IS": "Nafn"
     }
   },
   {
@@ -1011,7 +1662,19 @@
       "nl-NL": "Adres",
       "pt-BR": "Endereço",
       "pt-PT": "Endereço",
-      "fi-FI": "Osoite"
+      "fi-FI": "Osoite",
+      "et-ET": "Aadress",
+      "lv-LV": "Adrese",
+      "lt-LT": "Adresas",
+      "ro-RO": "Abordare",
+      "hr-HR": "Adresa",
+      "sl-SL": "Naslov",
+      "cs-CZ": "Adresa",
+      "sk-SK": "Adresa",
+      "hu-HU": "Cím",
+      "bg-BG": "Адрес",
+      "el-GR": "Διεύθυνση",
+      "is-IS": "Heimilisfang"
     }
   },
   {
@@ -1030,7 +1693,19 @@
       "nl-NL": "Locatie",
       "pt-BR": "Localização",
       "pt-PT": "Localização",
-      "fi-FI": "Sijainti"
+      "fi-FI": "Sijainti",
+      "et-ET": "Asukoht",
+      "lv-LV": "Atrašanās vieta",
+      "lt-LT": "Vieta",
+      "ro-RO": "Locație",
+      "hr-HR": "Mjesto",
+      "sl-SL": "Lokacija",
+      "cs-CZ": "Umístění",
+      "sk-SK": "Poloha",
+      "hu-HU": "Elhelyezkedés",
+      "bg-BG": "Местоположение",
+      "el-GR": "Τοποθεσία",
+      "is-IS": "Staðsetning"
     }
   },
   {
@@ -1049,7 +1724,19 @@
       "nl-NL": "Toegewezen aan",
       "pt-BR": "Atribuído a",
       "pt-PT": "Atribuído a",
-      "fi-FI": "Määritetty"
+      "fi-FI": "Määritetty",
+      "et-ET": "Määratud",
+      "lv-LV": "Piešķirts",
+      "lt-LT": "Priskirtas",
+      "ro-RO": "Atribuit",
+      "hr-HR": "Dodijeljena",
+      "sl-SL": "Dodeljena",
+      "cs-CZ": "Přiřazen",
+      "sk-SK": "Priradený",
+      "hu-HU": "Hozzárendelve",
+      "bg-BG": "Присвоено на",
+      "el-GR": "Ανατεθεί",
+      "is-IS": "Úthlutað til"
     }
   },
   {
@@ -1068,7 +1755,19 @@
       "nl-NL": "Lopend",
       "pt-BR": "Em andamento",
       "pt-PT": "Em andamento",
-      "fi-FI": "Käynnissä"
+      "fi-FI": "Käynnissä",
+      "et-ET": "Jätkuv",
+      "lv-LV": "Notiek",
+      "lt-LT": "Vykdoma",
+      "ro-RO": "În curs de desfășurare",
+      "hr-HR": "U tijeku",
+      "sl-SL": "V teku",
+      "cs-CZ": "Pokračující",
+      "sk-SK": "Prebieha",
+      "hu-HU": "Folyamatban lévő",
+      "bg-BG": "Продължава",
+      "el-GR": "Σε εξέλιξη",
+      "is-IS": "Í gangi"
     }
   },
   {
@@ -1087,7 +1786,19 @@
       "nl-NL": "Aanmaakdatum",
       "pt-BR": "Data de criação",
       "pt-PT": "Data de criação",
-      "fi-FI": "Luontipäivä"
+      "fi-FI": "Luontipäivä",
+      "et-ET": "Loomise kuupäev",
+      "lv-LV": "CreatedDate",
+      "lt-LT": "Sukūrimo data",
+      "ro-RO": "Data creata",
+      "hr-HR": "Datum kreiranja",
+      "sl-SL": "CreatedDate",
+      "cs-CZ": "Datum vytvoření",
+      "sk-SK": "Dátum vytvorenia",
+      "hu-HU": "Létrehozás dátuma",
+      "bg-BG": "CreatedDate",
+      "el-GR": "Ημερομηνία δημιουργίας",
+      "is-IS": "Búið til Dagsetning"
     }
   },
   {
@@ -1106,7 +1817,19 @@
       "nl-NL": "Aangemaakt door",
       "pt-BR": "Criado por",
       "pt-PT": "Criado por",
-      "fi-FI": "Luonut"
+      "fi-FI": "Luonut",
+      "et-ET": "Loodud",
+      "lv-LV": "Radīts",
+      "lt-LT": "Sukurta",
+      "ro-RO": "Creat de",
+      "hr-HR": "Napravio",
+      "sl-SL": "Ustvaril",
+      "cs-CZ": "Vytvořil",
+      "sk-SK": "Vytvoril",
+      "hu-HU": "Készítette",
+      "bg-BG": "Създадено от",
+      "el-GR": "Δημιουργήθηκε από",
+      "is-IS": "Búið til af"
     }
   },
   {
@@ -1125,7 +1848,19 @@
       "nl-NL": "Eigendom",
       "pt-BR": "Propriedade",
       "pt-PT": "Propriedade",
-      "fi-FI": "Kiinteistö"
+      "fi-FI": "Kiinteistö",
+      "et-ET": "Kinnisvara",
+      "lv-LV": "Īpašums",
+      "lt-LT": "Nuosavybė",
+      "ro-RO": "Proprietate",
+      "hr-HR": "Vlasništvo",
+      "sl-SL": "Lastnina",
+      "cs-CZ": "Vlastnictví",
+      "sk-SK": "Nehnuteľnosť",
+      "hu-HU": "Ingatlan",
+      "bg-BG": "Имот",
+      "el-GR": "Ιδιοκτησία",
+      "is-IS": "Eign"
     }
   },
   {
@@ -1144,7 +1879,19 @@
       "nl-NL": "Eigendomsgebied",
       "pt-BR": "Área da propriedade",
       "pt-PT": "Área da propriedade",
-      "fi-FI": "Kiinteistöalue"
+      "fi-FI": "Kiinteistöalue",
+      "et-ET": "Kinnistu piirkond",
+      "lv-LV": "Īpašuma zona",
+      "lt-LT": "Nuosavybės plotas",
+      "ro-RO": "Zona de proprietate",
+      "hr-HR": "Površina posjeda",
+      "sl-SL": "Območje nepremičnine",
+      "cs-CZ": "Oblast nemovitosti",
+      "sk-SK": "Oblasť nehnuteľnosti",
+      "hu-HU": "Az ingatlan területe",
+      "bg-BG": "Площ на имота",
+      "el-GR": "Περιοχή ιδιοκτησίας",
+      "is-IS": "Fasteignasvæði"
     }
   },
   {
@@ -1163,7 +1910,19 @@
       "nl-NL": "Beschrijving",
       "pt-BR": "Descrição",
       "pt-PT": "Descrição",
-      "fi-FI": "Kuvaus"
+      "fi-FI": "Kuvaus",
+      "et-ET": "Kirjeldus",
+      "lv-LV": "Apraksts",
+      "lt-LT": "apibūdinimas",
+      "ro-RO": "Descriere",
+      "hr-HR": "Opis",
+      "sl-SL": "Opis",
+      "cs-CZ": "Popis",
+      "sk-SK": "Popis",
+      "hu-HU": "Leírás",
+      "bg-BG": "Описание",
+      "el-GR": "Περιγραφή",
+      "is-IS": "Lýsing"
     }
   },
   {
@@ -1182,7 +1941,19 @@
       "nl-NL": "Gebied",
       "pt-BR": "Área",
       "pt-PT": "Área",
-      "fi-FI": "Alue"
+      "fi-FI": "Alue",
+      "et-ET": "Piirkond",
+      "lv-LV": "Apgabals",
+      "lt-LT": "Plotas",
+      "ro-RO": "Zonă",
+      "hr-HR": "Površina",
+      "sl-SL": "Območje",
+      "cs-CZ": "Plocha",
+      "sk-SK": "Oblasť",
+      "hu-HU": "Terület",
+      "bg-BG": "■ площ",
+      "el-GR": "Περιοχή",
+      "is-IS": "Svæði"
     }
   },
   {
@@ -1201,7 +1972,19 @@
       "nl-NL": "Laatst toegewezen aan",
       "pt-BR": "Último atribuído a",
       "pt-PT": "Último atribuído a",
-      "fi-FI": "Viimeksi määritetty"
+      "fi-FI": "Viimeksi määritetty",
+      "et-ET": "Viimati määratud",
+      "lv-LV": "Pēdējo reizi piešķirts",
+      "lt-LT": "Paskutinį kartą priskirta",
+      "ro-RO": "Ultima atribuită la",
+      "hr-HR": "Zadnje dodijeljeno",
+      "sl-SL": "Nazadnje dodeljeno",
+      "cs-CZ": "Naposledy přiděleno",
+      "sk-SK": "Naposledy pridelené",
+      "hu-HU": "Utoljára hozzárendelve",
+      "bg-BG": "Последно възложено на",
+      "el-GR": "Τελευταία ανάθεση σε",
+      "is-IS": "Síðast úthlutað til"
     }
   },
   {
@@ -1220,7 +2003,19 @@
       "nl-NL": "Datum",
       "pt-BR": "Data",
       "pt-PT": "Data",
-      "fi-FI": "Päiväys"
+      "fi-FI": "Päiväys",
+      "et-ET": "Kuupäev",
+      "lv-LV": "Datums",
+      "lt-LT": "Data",
+      "ro-RO": "Data",
+      "hr-HR": "Datum",
+      "sl-SL": "Datum",
+      "cs-CZ": "datum",
+      "sk-SK": "Dátum",
+      "hu-HU": "Dátum",
+      "bg-BG": "Дата",
+      "el-GR": "Ημερομηνία",
+      "is-IS": "Dagsetning"
     }
   },
   {
@@ -1239,7 +2034,19 @@
       "nl-NL": "Aangemaakt door",
       "pt-BR": "Criado por",
       "pt-PT": "Criado por",
-      "fi-FI": "Luonut"
+      "fi-FI": "Luonut",
+      "et-ET": "Loodud",
+      "lv-LV": "Radīts",
+      "lt-LT": "Sukurta",
+      "ro-RO": "Creat de",
+      "hr-HR": "Napravio",
+      "sl-SL": "Ustvaril",
+      "cs-CZ": "Vytvořil",
+      "sk-SK": "Vytvoril",
+      "hu-HU": "Készítette",
+      "bg-BG": "Създадено от",
+      "el-GR": "Δημιουργήθηκε από",
+      "is-IS": "Búið til af"
     }
   },
   {
@@ -1258,7 +2065,19 @@
       "nl-NL": "Laatste update datum",
       "pt-BR": "Última data de atualização",
       "pt-PT": "Última data de atualização",
-      "fi-FI": "Viimeisin päivitys"
+      "fi-FI": "Viimeisin päivitys",
+      "et-ET": "Viimase värskenduse kuupäev",
+      "lv-LV": "Pēdējās atjaunināšanas datums",
+      "lt-LT": "Paskutinio atnaujinimo data",
+      "ro-RO": "Data ultimei actualizări",
+      "hr-HR": "Datum posljednjeg ažuriranja",
+      "sl-SL": "Datum zadnje posodobitve",
+      "cs-CZ": "Datum poslední aktualizace",
+      "sk-SK": "Dátum poslednej aktualizácie",
+      "hu-HU": "Utolsó frissítés dátuma",
+      "bg-BG": "Дата на последна актуализация",
+      "el-GR": "Ημερομηνία τελευταίας ενημέρωσης",
+      "is-IS": "Síðasta uppfærsla"
     }
   },
   {
@@ -1277,7 +2096,19 @@
       "nl-NL": "Laatste update door",
       "pt-BR": "Última atualização por",
       "pt-PT": "Última atualização por",
-      "fi-FI": "Viimeisin päivitys"
+      "fi-FI": "Viimeisin päivitys",
+      "et-ET": "Viimane värskendus",
+      "lv-LV": "Pēdējo reizi atjaunināja",
+      "lt-LT": "Paskutinį kartą atnaujino",
+      "ro-RO": "Ultima actualizare de către",
+      "hr-HR": "Zadnje ažuriranje od",
+      "sl-SL": "Zadnja posodobitev avtor",
+      "cs-CZ": "Poslední aktualizace od",
+      "sk-SK": "Posledná aktualizácia od",
+      "hu-HU": "Utolsó frissítés:",
+      "bg-BG": "Последна актуализация от",
+      "el-GR": "Τελευταία ενημέρωση από",
+      "is-IS": "Síðasta uppfærsla af"
     }
   },
   {
@@ -1296,7 +2127,19 @@
       "nl-NL": "Aangemaakt door (2)",
       "pt-BR": "Criado por (2)",
       "pt-PT": "Criado por (2)",
-      "fi-FI": "Luonut (2)"
+      "fi-FI": "Luonut (2)",
+      "et-ET": "Looja (2)",
+      "lv-LV": "Izveidoja (2)",
+      "lt-LT": "Sukūrė (2)",
+      "ro-RO": "Creat de (2)",
+      "hr-HR": "Stvorio (2)",
+      "sl-SL": "Ustvaril (2)",
+      "cs-CZ": "Vytvořil (2)",
+      "sk-SK": "Vytvoril (2)",
+      "hu-HU": "Létrehozta (2)",
+      "bg-BG": "Създадено от (2)",
+      "el-GR": "Δημιουργήθηκε από (2)",
+      "is-IS": "Búið til af (2)"
     }
   },
   {
@@ -1315,7 +2158,19 @@
       "nl-NL": "Startdatum",
       "pt-BR": "Data de início",
       "pt-PT": "Data de início",
-      "fi-FI": "Aloituspäivä"
+      "fi-FI": "Aloituspäivä",
+      "et-ET": "Algus kuupäev",
+      "lv-LV": "Sākuma datums",
+      "lt-LT": "Pradžios data",
+      "ro-RO": "Data de început",
+      "hr-HR": "Početni datum",
+      "sl-SL": "Začetni datum",
+      "cs-CZ": "Datum zahájení",
+      "sk-SK": "Dátum začiatku",
+      "hu-HU": "Kezdő dátum",
+      "bg-BG": "Начална дата",
+      "el-GR": "Ημερομηνία έναρξης",
+      "is-IS": "Upphafsdagur"
     }
   },
   {
@@ -1334,7 +2189,19 @@
       "nl-NL": "IE-controlegebieden",
       "pt-BR": "Áreas de controle IE",
       "pt-PT": "Áreas de controle IE",
-      "fi-FI": "IE-kontrollialueet"
+      "fi-FI": "IE-kontrollialueet",
+      "et-ET": "IE-juhtimisalad",
+      "lv-LV": "IE kontroles apgabali",
+      "lt-LT": "IE valdymo sritys",
+      "ro-RO": "IE-Zone de control",
+      "hr-HR": "IE-kontrolna područja",
+      "sl-SL": "Nadzorna območja IE",
+      "cs-CZ": "Oblasti ovládání IE",
+      "sk-SK": "IE-kontrolné oblasti",
+      "hu-HU": "IE-vezérlési területek",
+      "bg-BG": "IE-контролни зони",
+      "el-GR": "Περιοχές IE-Control",
+      "is-IS": "IE-eftirlitssvæði"
     }
   },
   {
@@ -1353,7 +2220,19 @@
       "nl-NL": "Frequentie",
       "pt-BR": "Frequência",
       "pt-PT": "Frequência",
-      "fi-FI": "Toistuu joka"
+      "fi-FI": "Toistuu joka",
+      "et-ET": "Sagedus",
+      "lv-LV": "Biežums",
+      "lt-LT": "Dažnis",
+      "ro-RO": "Frecvență",
+      "hr-HR": "Učestalost",
+      "sl-SL": "Pogostost",
+      "cs-CZ": "Frekvence",
+      "sk-SK": "Frekvencia",
+      "hu-HU": "Frekvencia",
+      "bg-BG": "Честота",
+      "el-GR": "Συχνότητα",
+      "is-IS": "Tíðni"
     }
   },
   {
@@ -1372,7 +2251,19 @@
       "nl-NL": "Dag",
       "pt-BR": "Dia",
       "pt-PT": "Dia",
-      "fi-FI": "Päivä"
+      "fi-FI": "Päivä",
+      "et-ET": "päev",
+      "lv-LV": "diena",
+      "lt-LT": "Diena",
+      "ro-RO": "Zi",
+      "hr-HR": "Dan",
+      "sl-SL": "Dan",
+      "cs-CZ": "Den",
+      "sk-SK": "deň",
+      "hu-HU": "Nap",
+      "bg-BG": "ден",
+      "el-GR": "Ημέρα",
+      "is-IS": "Dagur"
     }
   },
   {
@@ -1391,7 +2282,19 @@
       "nl-NL": "Week",
       "pt-BR": "Semana",
       "pt-PT": "Semana",
-      "fi-FI": "Viikko"
+      "fi-FI": "Viikko",
+      "et-ET": "Nädal",
+      "lv-LV": "nedēļa",
+      "lt-LT": "Savaitė",
+      "ro-RO": "Săptămână",
+      "hr-HR": "Tjedan",
+      "sl-SL": "teden",
+      "cs-CZ": "Týden",
+      "sk-SK": "týždeň",
+      "hu-HU": "Hét",
+      "bg-BG": "седмица",
+      "el-GR": "Εβδομάδα",
+      "is-IS": "Vika"
     }
   },
   {
@@ -1410,7 +2313,20 @@
       "nl-NL": "Maand",
       "pt-BR": "Mês",
       "pt-PT": "Mês",
-      "fi-FI": "Kuukausi"
+      "fi-FI": "Kuukausi",
+      "uk-UA": "місяць",
+      "et-ET": "Kuu",
+      "lv-LV": "Mēnesis",
+      "lt-LT": "Mėnuo",
+      "ro-RO": "Lună",
+      "hr-HR": "Mjesec",
+      "sl-SL": "mesec",
+      "cs-CZ": "Měsíc",
+      "sk-SK": "mesiac",
+      "hu-HU": "Hónap",
+      "bg-BG": "месец",
+      "el-GR": "Μήνας",
+      "is-IS": "Mánuður"
     }
   },
   {
@@ -1429,7 +2345,19 @@
       "nl-NL": "Dag",
       "pt-BR": "Dia",
       "pt-PT": "Dia",
-      "fi-FI": "Päivä"
+      "fi-FI": "Päivä",
+      "et-ET": "päev",
+      "lv-LV": "diena",
+      "lt-LT": "Diena",
+      "ro-RO": "Zi",
+      "hr-HR": "Dan",
+      "sl-SL": "Dan",
+      "cs-CZ": "Den",
+      "sk-SK": "deň",
+      "hu-HU": "Nap",
+      "bg-BG": "ден",
+      "el-GR": "Ημέρα",
+      "is-IS": "Dagur"
     }
   },
   {
@@ -1448,7 +2376,19 @@
       "nl-NL": "Week",
       "pt-BR": "Semana",
       "pt-PT": "Semana",
-      "fi-FI": "Viikko"
+      "fi-FI": "Viikko",
+      "et-ET": "Nädal",
+      "lv-LV": "nedēļa",
+      "lt-LT": "Savaitė",
+      "ro-RO": "Săptămână",
+      "hr-HR": "Tjedan",
+      "sl-SL": "teden",
+      "cs-CZ": "Týden",
+      "sk-SK": "týždeň",
+      "hu-HU": "Hét",
+      "bg-BG": "седмица",
+      "el-GR": "Εβδομάδα",
+      "is-IS": "Vika"
     }
   },
   {
@@ -1467,7 +2407,19 @@
       "nl-NL": "Maand",
       "pt-BR": "Mês",
       "pt-PT": "Mês",
-      "fi-FI": "Kuukausi"
+      "fi-FI": "Kuukausi",
+      "et-ET": "Kuu",
+      "lv-LV": "Mēnesis",
+      "lt-LT": "Mėnuo",
+      "ro-RO": "Lună",
+      "hr-HR": "Mjesec",
+      "sl-SL": "mesec",
+      "cs-CZ": "Měsíc",
+      "sk-SK": "mesiac",
+      "hu-HU": "Hónap",
+      "bg-BG": "месец",
+      "el-GR": "Μήνας",
+      "is-IS": "Mánuður"
     }
   },
   {
@@ -1486,7 +2438,19 @@
       "nl-NL": "elke",
       "pt-BR": "cada",
       "pt-PT": "cada",
-      "fi-FI": "joka"
+      "fi-FI": "joka",
+      "et-ET": "iga",
+      "lv-LV": "katrs",
+      "lt-LT": "kas",
+      "ro-RO": "fiecare",
+      "hr-HR": "svaki",
+      "sl-SL": "vsak",
+      "cs-CZ": "každý",
+      "sk-SK": "každý",
+      "hu-HU": "minden",
+      "bg-BG": "всеки",
+      "el-GR": "κάθε",
+      "is-IS": "hverjum"
     }
   },
   {
@@ -1505,7 +2469,19 @@
       "nl-NL": "Aangemaakt op",
       "pt-BR": "Criado em",
       "pt-PT": "Criado em",
-      "fi-FI": "Luotu"
+      "fi-FI": "Luotu",
+      "et-ET": "Loodud kl",
+      "lv-LV": "Izveidots plkst",
+      "lt-LT": "Sukurta",
+      "ro-RO": "Creat la",
+      "hr-HR": "Stvoreno u",
+      "sl-SL": "Ustvarjeno pri",
+      "cs-CZ": "Vytvořeno v",
+      "sk-SK": "Vytvorené o",
+      "hu-HU": "Létrehozva:",
+      "bg-BG": "Създаден Ат",
+      "el-GR": "Δημιουργήθηκε στο",
+      "is-IS": "Búið til á"
     }
   },
   {
@@ -1524,7 +2500,19 @@
       "nl-NL": "Uitgevoerd door",
       "pt-BR": "Feito por",
       "pt-PT": "Feito por",
-      "fi-FI": "Suorittanut"
+      "fi-FI": "Suorittanut",
+      "et-ET": "Valmis",
+      "lv-LV": "Pabeigts",
+      "lt-LT": "Padaryta",
+      "ro-RO": "Făcut de",
+      "hr-HR": "Završio",
+      "sl-SL": "Končano",
+      "cs-CZ": "Hotovo",
+      "sk-SK": "Vykonáva",
+      "hu-HU": "Által végzett",
+      "bg-BG": "Направено от",
+      "el-GR": "Γίνεται από",
+      "is-IS": "Gert af"
     }
   },
   {
@@ -1543,7 +2531,19 @@
       "nl-NL": "Itemnaam",
       "pt-BR": "Nome do item",
       "pt-PT": "Nome do item",
-      "fi-FI": "Kohteen nimi"
+      "fi-FI": "Kohteen nimi",
+      "et-ET": "Asja nimi",
+      "lv-LV": "Priekšmeta nosaukums",
+      "lt-LT": "Daikto pavadinimas",
+      "ro-RO": "Numele articolului",
+      "hr-HR": "Ime proizvoda",
+      "sl-SL": "Ime izdelka",
+      "cs-CZ": "Název položky",
+      "sk-SK": "Názov položky",
+      "hu-HU": "Termék név",
+      "bg-BG": "Име на предмета",
+      "el-GR": "Ονομα προϊόντος",
+      "is-IS": "Nafn hlutar"
     }
   },
   {
@@ -1562,7 +2562,19 @@
       "nl-NL": "Wachten",
       "pt-BR": "Aguardando",
       "pt-PT": "Aguardando",
-      "fi-FI": "Odotetaan"
+      "fi-FI": "Odotetaan",
+      "et-ET": "Ootab",
+      "lv-LV": "Gaida",
+      "lt-LT": "Laukia",
+      "ro-RO": "În așteptare",
+      "hr-HR": "Čekanje",
+      "sl-SL": "Čakanje",
+      "cs-CZ": "Čekání",
+      "sk-SK": "Čakanie",
+      "hu-HU": "Várakozás",
+      "bg-BG": "В очакване",
+      "el-GR": "Αναμονή",
+      "is-IS": "Bíður"
     }
   },
   {
@@ -1581,7 +2593,19 @@
       "nl-NL": "Lopend",
       "pt-BR": "Em andamento",
       "pt-PT": "Em andamento",
-      "fi-FI": "Käynnissä"
+      "fi-FI": "Käynnissä",
+      "et-ET": "Jätkuv",
+      "lv-LV": "Notiek",
+      "lt-LT": "Vykdoma",
+      "ro-RO": "În curs de desfășurare",
+      "hr-HR": "U tijeku",
+      "sl-SL": "V teku",
+      "cs-CZ": "Pokračující",
+      "sk-SK": "Prebieha",
+      "hu-HU": "Folyamatban lévő",
+      "bg-BG": "Продължава",
+      "el-GR": "Σε εξέλιξη",
+      "is-IS": "Í gangi"
     }
   },
   {
@@ -1600,7 +2624,19 @@
       "nl-NL": "Uitgevoerd",
       "pt-BR": "Feito",
       "pt-PT": "Feito",
-      "fi-FI": "Suoritettu"
+      "fi-FI": "Suoritettu",
+      "et-ET": "Valmis",
+      "lv-LV": "Gatavs",
+      "lt-LT": "padaryta",
+      "ro-RO": "Terminat",
+      "hr-HR": "Gotovo",
+      "sl-SL": "Končano",
+      "cs-CZ": "Hotovo",
+      "sk-SK": "hotový",
+      "hu-HU": "Kész",
+      "bg-BG": "Свършен",
+      "el-GR": "Εγινε",
+      "is-IS": "Búið"
     }
   },
   {
@@ -1619,7 +2655,19 @@
       "nl-NL": "Besteld",
       "pt-BR": "Encomendado",
       "pt-PT": "Encomendado",
-      "fi-FI": "Tilattu"
+      "fi-FI": "Tilattu",
+      "et-ET": "Tellitud",
+      "lv-LV": "Pasūtīts",
+      "lt-LT": "Užsakyta",
+      "ro-RO": "Ordonat",
+      "hr-HR": "Naručeno",
+      "sl-SL": "Naročeno",
+      "cs-CZ": "Objednáno",
+      "sk-SK": "Objednané",
+      "hu-HU": "Rendelve",
+      "bg-BG": "Поръчан",
+      "el-GR": "Διέταξε",
+      "is-IS": "Pantaði"
     }
   },
   {
@@ -1638,7 +2686,19 @@
       "nl-NL": "Urgent",
       "pt-BR": "Urgente",
       "pt-PT": "Urgente",
-      "fi-FI": "Kiireellinen"
+      "fi-FI": "Kiireellinen",
+      "et-ET": "Kiireloomuline",
+      "lv-LV": "Steidzams",
+      "lt-LT": "Skubiai",
+      "ro-RO": "Urgent",
+      "hr-HR": "Hitno",
+      "sl-SL": "Nujno",
+      "cs-CZ": "Naléhavé",
+      "sk-SK": "Naliehavé",
+      "hu-HU": "Sürgős",
+      "bg-BG": "Спешно",
+      "el-GR": "Επείγων",
+      "is-IS": "Brýnt"
     }
   },
   {
@@ -1657,7 +2717,19 @@
       "nl-NL": "Hoog",
       "pt-BR": "Alto",
       "pt-PT": "Alto",
-      "fi-FI": "Korkea"
+      "fi-FI": "Korkea",
+      "et-ET": "Kõrge",
+      "lv-LV": "Augsts",
+      "lt-LT": "Aukštas",
+      "ro-RO": "Înalt",
+      "hr-HR": "visoko",
+      "sl-SL": "visoko",
+      "cs-CZ": "Vysoký",
+      "sk-SK": "Vysoká",
+      "hu-HU": "Magas",
+      "bg-BG": "Високо",
+      "el-GR": "Υψηλός",
+      "is-IS": "Hár"
     }
   },
   {
@@ -1676,7 +2748,19 @@
       "nl-NL": "Gemiddeld",
       "pt-BR": "Médio",
       "pt-PT": "Médio",
-      "fi-FI": "Keski"
+      "fi-FI": "Keski",
+      "et-ET": "Keskmine",
+      "lv-LV": "Vidēja",
+      "lt-LT": "Vidutinis",
+      "ro-RO": "Mediu",
+      "hr-HR": "Srednji",
+      "sl-SL": "Srednje",
+      "cs-CZ": "Střední",
+      "sk-SK": "Stredná",
+      "hu-HU": "Közepes",
+      "bg-BG": "Среден",
+      "el-GR": "Μεσαίο",
+      "is-IS": "Miðlungs"
     }
   },
   {
@@ -1695,7 +2779,19 @@
       "nl-NL": "Laag",
       "pt-BR": "Baixo",
       "pt-PT": "Baixo",
-      "fi-FI": "Matala"
+      "fi-FI": "Matala",
+      "et-ET": "Madal",
+      "lv-LV": "Zems",
+      "lt-LT": "Žemas",
+      "ro-RO": "Scăzut",
+      "hr-HR": "Niska",
+      "sl-SL": "Nizka",
+      "cs-CZ": "Nízký",
+      "sk-SK": "Nízka",
+      "hu-HU": "Alacsony",
+      "bg-BG": "ниско",
+      "el-GR": "Χαμηλός",
+      "is-IS": "Lágt"
     }
   },
   {
@@ -1714,7 +2810,19 @@
       "nl-NL": "Prioriteit",
       "pt-BR": "Prioridade",
       "pt-PT": "Prioridade",
-      "fi-FI": "Prioriteetti"
+      "fi-FI": "Prioriteetti",
+      "et-ET": "Prioriteet",
+      "lv-LV": "Prioritāte",
+      "lt-LT": "Pirmenybė",
+      "ro-RO": "Prioritate",
+      "hr-HR": "Prioritet",
+      "sl-SL": "Prioriteta",
+      "cs-CZ": "Přednost",
+      "sk-SK": "Priorita",
+      "hu-HU": "Kiemelten fontos",
+      "bg-BG": "Приоритет",
+      "el-GR": "Προτεραιότητα",
+      "is-IS": "Forgangur"
     }
   },
   {
@@ -1733,7 +2841,19 @@
       "nl-NL": "Laatst bijgewerkt",
       "pt-BR": "Última atualização",
       "pt-PT": "Última atualização",
-      "fi-FI": "Viimeksi päivitetty"
+      "fi-FI": "Viimeksi päivitetty",
+      "et-ET": "Viimati värskendatud",
+      "lv-LV": "Pēdējoreiz atjaunots",
+      "lt-LT": "Paskutinį kartą atnaujinta",
+      "ro-RO": "Ultima actualizare",
+      "hr-HR": "Zadnje ažuriranje",
+      "sl-SL": "Zadnja posodobitev",
+      "cs-CZ": "Naposledy aktualizováno",
+      "sk-SK": "Naposledy aktualizovaný",
+      "hu-HU": "Utolsó frissítés",
+      "bg-BG": "Последна актуализация",
+      "el-GR": "Τελευταία ενημέρωση",
+      "is-IS": "Síðast uppfært"
     }
   },
   {
@@ -1752,7 +2872,19 @@
       "nl-NL": "De taak is verwijderd",
       "pt-BR": "A tarefa foi excluída",
       "pt-PT": "A tarefa foi excluída",
-      "fi-FI": "Tehtävä poistettiin"
+      "fi-FI": "Tehtävä poistettiin",
+      "et-ET": "Ülesanne kustutati",
+      "lv-LV": "Uzdevums tika izdzēsts",
+      "lt-LT": "Užduotis ištrinta",
+      "ro-RO": "Sarcina a fost ștearsă",
+      "hr-HR": "Zadatak je izbrisan",
+      "sl-SL": "Naloga je bila izbrisana",
+      "cs-CZ": "Úkol byl smazán",
+      "sk-SK": "Úloha bola odstránená",
+      "hu-HU": "A feladat törölve",
+      "bg-BG": "Задачата беше изтрита",
+      "el-GR": "Η εργασία διαγράφηκε",
+      "is-IS": "Verkefni var eytt"
     }
   },
   {
@@ -1771,7 +2903,19 @@
       "nl-NL": "De taak is aangemaakt",
       "pt-BR": "A tarefa foi criada",
       "pt-PT": "A tarefa foi criada",
-      "fi-FI": "Tehtävä luotiin"
+      "fi-FI": "Tehtävä luotiin",
+      "et-ET": "Ülesanne on loodud",
+      "lv-LV": "Uzdevums tika izveidots",
+      "lt-LT": "Užduotis buvo sukurta",
+      "ro-RO": "Sarcina a fost creată",
+      "hr-HR": "Zadatak je kreiran",
+      "sl-SL": "Naloga je bila ustvarjena",
+      "cs-CZ": "Úkol byl vytvořen",
+      "sk-SK": "Úloha bola vytvorená",
+      "hu-HU": "A feladat létrejött",
+      "bg-BG": "Задачата е създадена",
+      "el-GR": "Η εργασία δημιουργήθηκε",
+      "is-IS": "Verkefni var búið til"
     }
   },
   {
@@ -1790,7 +2934,19 @@
       "nl-NL": "De taak is bijgewerkt",
       "pt-BR": "A tarefa foi atualizada",
       "pt-PT": "A tarefa foi atualizada",
-      "fi-FI": "Tehtävä päivitettiin"
+      "fi-FI": "Tehtävä päivitettiin",
+      "et-ET": "Ülesannet värskendati",
+      "lv-LV": "Uzdevums tika atjaunināts",
+      "lt-LT": "Užduotis buvo atnaujinta",
+      "ro-RO": "Sarcina a fost actualizată",
+      "hr-HR": "Zadatak je ažuriran",
+      "sl-SL": "Naloga je bila posodobljena",
+      "cs-CZ": "Úkol byl aktualizován",
+      "sk-SK": "Úloha bola aktualizovaná",
+      "hu-HU": "A feladat frissítve",
+      "bg-BG": "Задачата беше актуализирана",
+      "el-GR": "Η εργασία ενημερώθηκε",
+      "is-IS": "Verkefni var uppfært"
     }
   },
   {
@@ -1809,7 +2965,19 @@
       "nl-NL": "Niet geselecteerde bestanden",
       "pt-BR": "Arquivos não selecionados",
       "pt-PT": "Ficheiros não selecionados",
-      "fi-FI": "Ei valittuja tiedostoja"
+      "fi-FI": "Ei valittuja tiedostoja",
+      "et-ET": "Valimata failid",
+      "lv-LV": "Nav atlasīti faili",
+      "lt-LT": "Nepasirinkti failai",
+      "ro-RO": "Fișiere neselectate",
+      "hr-HR": "Nisu odabrane datoteke",
+      "sl-SL": "Neizbrane datoteke",
+      "cs-CZ": "Nejsou vybrané soubory",
+      "sk-SK": "Nie sú vybraté súbory",
+      "hu-HU": "Nincsenek kiválasztott fájlok",
+      "bg-BG": "Неизбрани файлове",
+      "el-GR": "Μη επιλεγμένα αρχεία",
+      "is-IS": "Ekki valdar skrár"
     }
   },
   {
@@ -1828,7 +2996,19 @@
       "nl-NL": "Bestand niet gevonden",
       "pt-BR": "Arquivo não encontrado",
       "pt-PT": "Ficheiro não encontrado",
-      "fi-FI": "Tiedostoa ei löytynyt"
+      "fi-FI": "Tiedostoa ei löytynyt",
+      "et-ET": "Faili ei leitud",
+      "lv-LV": "Fails nav atrasts",
+      "lt-LT": "Failas nerastas",
+      "ro-RO": "Fișierul nu a fost găsit",
+      "hr-HR": "Datoteka nije pronađena",
+      "sl-SL": "Datoteka ni najdena",
+      "cs-CZ": "Soubor nenalezen",
+      "sk-SK": "Súbor nenájdený",
+      "hu-HU": "Fájl nem található",
+      "bg-BG": "Файлът не е намерен",
+      "el-GR": "Το αρχείο δε βρέθηκε",
+      "is-IS": "Skjal finnst ekki"
     }
   },
   {
@@ -1847,7 +3027,19 @@
       "nl-NL": "Fout bij ophalen van bestand",
       "pt-BR": "Erro ao obter o arquivo",
       "pt-PT": "Erro ao obter o ficheiro",
-      "fi-FI": "Virhe tiedoston hakemisessa"
+      "fi-FI": "Virhe tiedoston hakemisessa",
+      "et-ET": "Viga faili hankimisel",
+      "lv-LV": "Iegūstot failu, radās kļūda",
+      "lt-LT": "Klaida gaunant failą",
+      "ro-RO": "Eroare la preluarea fișierului",
+      "hr-HR": "Pogreška prilikom preuzimanja datoteke",
+      "sl-SL": "Napaka pri pridobivanju datoteke",
+      "cs-CZ": "Chyba při načítání souboru",
+      "sk-SK": "Chyba pri získavaní súboru",
+      "hu-HU": "Hiba a fájl beolvasása közben",
+      "bg-BG": "Грешка при получаване на файл",
+      "el-GR": "Σφάλμα κατά τη λήψη του αρχείου",
+      "is-IS": "Villa við að sækja skrá"
     }
   },
   {
@@ -1866,7 +3058,19 @@
       "nl-NL": "Fout bij ophalen bestanden",
       "pt-BR": "Erro ao obter arquivos",
       "pt-PT": "Erro ao obter ficheiros",
-      "fi-FI": "Virhe tiedostojen hakuessa"
+      "fi-FI": "Virhe tiedostojen hakuessa",
+      "et-ET": "Viga failide hankimisel",
+      "lv-LV": "Iegūstot failus, radās kļūda",
+      "lt-LT": "Klaida gaunant failus",
+      "ro-RO": "Eroare la obținerea fișierelor",
+      "hr-HR": "Pogreška prilikom preuzimanja datoteka",
+      "sl-SL": "Napaka pri pridobivanju datotek",
+      "cs-CZ": "Chyba při získávání souborů",
+      "sk-SK": "Chyba pri získavaní súborov",
+      "hu-HU": "Hiba a fájlok beolvasása közben",
+      "bg-BG": "Грешка при получаване на файлове",
+      "el-GR": "Σφάλμα κατά τη λήψη αρχείων",
+      "is-IS": "Villa við að sækja skrár"
     }
   },
   {
@@ -1885,7 +3089,19 @@
       "nl-NL": "Fout bij bijwerken bestand",
       "pt-BR": "Erro ao atualizar arquivo",
       "pt-PT": "Erro ao atualizar ficheiro",
-      "fi-FI": "Virhe tiedoston päivittämisessä"
+      "fi-FI": "Virhe tiedoston päivittämisessä",
+      "et-ET": "Viga faili värskendamisel",
+      "lv-LV": "Atjauninot failu, radās kļūda",
+      "lt-LT": "Klaida atnaujinant failą",
+      "ro-RO": "Eroare la actualizarea fișierului",
+      "hr-HR": "Pogreška prilikom ažuriranja datoteke",
+      "sl-SL": "Napaka med posodobitvijo datoteke",
+      "cs-CZ": "Chyba při aktualizaci souboru",
+      "sk-SK": "Chyba pri aktualizácii súboru",
+      "hu-HU": "Hiba a fájl frissítése közben",
+      "bg-BG": "Грешка при актуализиране на файла",
+      "el-GR": "Σφάλμα κατά την ενημέρωση του αρχείου",
+      "is-IS": "Villa við að uppfæra skrá"
     }
   },
   {
@@ -1904,7 +3120,19 @@
       "nl-NL": "Fout bij het bijwerken van bestandstags",
       "pt-BR": "Erro ao atualizar tags de arquivo",
       "pt-PT": "Erro ao atualizar tags de ficheiro",
-      "fi-FI": "Virhe päivitettäessä tiedostotunnisteita"
+      "fi-FI": "Virhe päivitettäessä tiedostotunnisteita",
+      "et-ET": "Viga failimärgendite värskendamisel",
+      "lv-LV": "Atjauninot faila tagus, radās kļūda",
+      "lt-LT": "Klaida atnaujinant failo žymas",
+      "ro-RO": "Eroare la actualizarea etichetelor fișierului",
+      "hr-HR": "Pogreška prilikom ažuriranja oznaka datoteke",
+      "sl-SL": "Napaka pri posodabljanju oznak datoteke",
+      "cs-CZ": "Chyba při aktualizaci značek souborů",
+      "sk-SK": "Chyba pri aktualizácii značiek súborov",
+      "hu-HU": "Hiba a fájlcímkék frissítése közben",
+      "bg-BG": "Грешка при актуализиране на файлови тагове",
+      "el-GR": "Σφάλμα κατά την ενημέρωση των ετικετών αρχείων",
+      "is-IS": "Villa við að uppfæra skráarmerki"
     }
   },
   {
@@ -1923,7 +3151,19 @@
       "nl-NL": "Fout bij het maken van bestanden",
       "pt-BR": "Erro ao criar arquivos",
       "pt-PT": "Erro ao criar ficheiros",
-      "fi-FI": "Virhe tiedostojen luomisen aikana"
+      "fi-FI": "Virhe tiedostojen luomisen aikana",
+      "et-ET": "Viga failide loomisel",
+      "lv-LV": "Veidojot failus, radās kļūda",
+      "lt-LT": "Klaida kuriant failus",
+      "ro-RO": "Eroare la crearea fișierelor",
+      "hr-HR": "Pogreška prilikom izrade datoteka",
+      "sl-SL": "Napaka med ustvarjanjem datotek",
+      "cs-CZ": "Chyba při vytváření souborů",
+      "sk-SK": "Chyba pri vytváraní súborov",
+      "hu-HU": "Hiba a fájlok létrehozásakor",
+      "bg-BG": "Грешка при създаване на файлове",
+      "el-GR": "Σφάλμα κατά τη δημιουργία αρχείων",
+      "is-IS": "Villa við að búa til skrár"
     }
   },
   {
@@ -1942,7 +3182,19 @@
       "nl-NL": "Fout bij het verwijderen van bestand",
       "pt-BR": "Erro ao excluir arquivo",
       "pt-PT": "Erro ao eliminar ficheiro",
-      "fi-FI": "Virhe poistettaessa tiedostoa"
+      "fi-FI": "Virhe poistettaessa tiedostoa",
+      "et-ET": "Viga faili kustutamisel",
+      "lv-LV": "Faila dzēšanas laikā radās kļūda",
+      "lt-LT": "Klaida ištrinant failą",
+      "ro-RO": "Eroare la ștergerea fișierului",
+      "hr-HR": "Pogreška prilikom brisanja datoteke",
+      "sl-SL": "Napaka pri brisanju datoteke",
+      "cs-CZ": "Chyba při mazání souboru",
+      "sk-SK": "Chyba pri odstraňovaní súboru",
+      "hu-HU": "Hiba a fájl törlésekor",
+      "bg-BG": "Грешка при изтриване на файл",
+      "el-GR": "Σφάλμα κατά τη διαγραφή του αρχείου",
+      "is-IS": "Villa við að eyða skrá"
     }
   },
   {
@@ -1961,7 +3213,19 @@
       "nl-NL": "Document succesvol gemaakt",
       "pt-BR": "Documento criado com sucesso",
       "pt-PT": "Documento criado com sucesso",
-      "fi-FI": "Dokumentti luotiin onnistuneesti"
+      "fi-FI": "Dokumentti luotiin onnistuneesti",
+      "et-ET": "Dokument edukalt loodud",
+      "lv-LV": "Dokuments ir veiksmīgi izveidots",
+      "lt-LT": "Dokumentas sėkmingai sukurtas",
+      "ro-RO": "Document creat cu succes",
+      "hr-HR": "Dokument je uspješno kreiran",
+      "sl-SL": "Dokument je bil uspešno ustvarjen",
+      "cs-CZ": "Dokument byl úspěšně vytvořen",
+      "sk-SK": "Dokument bol úspešne vytvorený",
+      "hu-HU": "A dokumentum sikeresen létrehozva",
+      "bg-BG": "Документът е създаден успешно",
+      "el-GR": "Το έγγραφο δημιουργήθηκε με επιτυχία",
+      "is-IS": "Skjal búið til"
     }
   },
   {
@@ -1980,7 +3244,19 @@
       "nl-NL": "Document succesvol bijgewerkt",
       "pt-BR": "Documento atualizado com sucesso",
       "pt-PT": "Documento atualizado com sucesso",
-      "fi-FI": "Dokumentti päivitettiin onnistuneesti"
+      "fi-FI": "Dokumentti päivitettiin onnistuneesti",
+      "et-ET": "Dokumendi värskendamine õnnestus",
+      "lv-LV": "Dokuments ir veiksmīgi atjaunināts",
+      "lt-LT": "Dokumentas sėkmingai atnaujintas",
+      "ro-RO": "Documentul a fost actualizat cu succes",
+      "hr-HR": "Dokument je uspješno ažuriran",
+      "sl-SL": "Dokument je bil uspešno posodobljen",
+      "cs-CZ": "Dokument byl úspěšně aktualizován",
+      "sk-SK": "Dokument bol úspešne aktualizovaný",
+      "hu-HU": "A dokumentum sikeresen frissítve",
+      "bg-BG": "Документът е актуализиран успешно",
+      "el-GR": "Το έγγραφο ενημερώθηκε με επιτυχία",
+      "is-IS": "Skjal uppfært"
     }
   },
   {
@@ -1999,7 +3275,19 @@
       "nl-NL": "Document succesvol verwijderd",
       "pt-BR": "Documento excluído com sucesso",
       "pt-PT": "Documento eliminado com sucesso",
-      "fi-FI": "Dokumentti poistettiin onnistuneesti"
+      "fi-FI": "Dokumentti poistettiin onnistuneesti",
+      "et-ET": "Dokumendi kustutamine õnnestus",
+      "lv-LV": "Dokuments veiksmīgi izdzēsts",
+      "lt-LT": "Dokumentas sėkmingai ištrintas",
+      "ro-RO": "Documentul a fost șters cu succes",
+      "hr-HR": "Dokument je uspješno izbrisan",
+      "sl-SL": "Dokument je bil uspešno izbrisan",
+      "cs-CZ": "Dokument byl úspěšně smazán",
+      "sk-SK": "Dokument bol úspešne odstránený",
+      "hu-HU": "A dokumentum sikeresen törölve",
+      "bg-BG": "Документът е изтрит успешно",
+      "el-GR": "Το έγγραφο διαγράφηκε με επιτυχία",
+      "is-IS": "Skjalinu var eytt"
     }
   },
   {
@@ -2018,7 +3306,19 @@
       "nl-NL": "Map succesvol gemaakt",
       "pt-BR": "Pasta criada com sucesso",
       "pt-PT": "Pasta criada com sucesso",
-      "fi-FI": "Kansio luotiin onnistuneesti"
+      "fi-FI": "Kansio luotiin onnistuneesti",
+      "et-ET": "Kausta loomine õnnestus",
+      "lv-LV": "Mape veiksmīgi izveidota",
+      "lt-LT": "Aplankas sėkmingai sukurtas",
+      "ro-RO": "Dosar creat cu succes",
+      "hr-HR": "Mapa je uspješno kreirana",
+      "sl-SL": "Mapa je bila uspešno ustvarjena",
+      "cs-CZ": "Složka byla úspěšně vytvořena",
+      "sk-SK": "Priečinok bol úspešne vytvorený",
+      "hu-HU": "A mappa sikeresen létrehozva",
+      "bg-BG": "Папката е създадена успешно",
+      "el-GR": "Ο φάκελος δημιουργήθηκε με επιτυχία",
+      "is-IS": "Mappa búin til"
     }
   },
   {
@@ -2037,7 +3337,19 @@
       "nl-NL": "Map succesvol bijgewerkt",
       "pt-BR": "Pasta atualizada com sucesso",
       "pt-PT": "Pasta atualizada com sucesso",
-      "fi-FI": "Kansio päivitettiin onnistuneesti"
+      "fi-FI": "Kansio päivitettiin onnistuneesti",
+      "et-ET": "Kausta värskendamine õnnestus",
+      "lv-LV": "Mape veiksmīgi atjaunināta",
+      "lt-LT": "Aplankas sėkmingai atnaujintas",
+      "ro-RO": "Dosarul a fost actualizat cu succes",
+      "hr-HR": "Mapa je uspješno ažurirana",
+      "sl-SL": "Mapa je bila uspešno posodobljena",
+      "cs-CZ": "Složka byla úspěšně aktualizována",
+      "sk-SK": "Priečinok bol úspešne aktualizovaný",
+      "hu-HU": "A mappa sikeresen frissítve",
+      "bg-BG": "Папката е актуализирана успешно",
+      "el-GR": "Ο φάκελος ενημερώθηκε με επιτυχία",
+      "is-IS": "Mappa uppfærð"
     }
   },
   {
@@ -2056,7 +3368,19 @@
       "nl-NL": "Tags succesvol aangemaakt",
       "pt-BR": "Tags criadas com sucesso",
       "pt-PT": "Tags criadas com sucesso",
-      "fi-FI": "Tunnisteet luotu onnistuneesti"
+      "fi-FI": "Tunnisteet luotu onnistuneesti",
+      "et-ET": "Sildid edukalt loodud",
+      "lv-LV": "Tagi ir veiksmīgi izveidoti",
+      "lt-LT": "Žymos sėkmingai sukurtos",
+      "ro-RO": "Etichete create cu succes",
+      "hr-HR": "Oznake su uspješno stvorene",
+      "sl-SL": "Oznake so bile uspešno ustvarjene",
+      "cs-CZ": "Štítky byly úspěšně vytvořeny",
+      "sk-SK": "Značky boli úspešne vytvorené",
+      "hu-HU": "A címkék sikeresen létrehozva",
+      "bg-BG": "Маркерите са създадени успешно",
+      "el-GR": "Οι ετικέτες δημιουργήθηκαν με επιτυχία",
+      "is-IS": "Merki búin til"
     }
   },
   {
@@ -2075,7 +3399,19 @@
       "nl-NL": "Fout bij het maken van tags",
       "pt-BR": "Erro ao criar tags",
       "pt-PT": "Erro ao criar tags",
-      "fi-FI": "Virhe luotaessa tunnisteita"
+      "fi-FI": "Virhe luotaessa tunnisteita",
+      "et-ET": "Viga siltide loomisel",
+      "lv-LV": "Veidojot tagus, radās kļūda",
+      "lt-LT": "Kuriant žymas įvyko klaida",
+      "ro-RO": "Eroare la crearea etichetelor",
+      "hr-HR": "Pogreška prilikom izrade oznaka",
+      "sl-SL": "Napaka pri ustvarjanju oznak",
+      "cs-CZ": "Chyba při vytváření značek",
+      "sk-SK": "Chyba pri vytváraní značiek",
+      "hu-HU": "Hiba a címkék létrehozásakor",
+      "bg-BG": "Грешка при създаване на тагове",
+      "el-GR": "Σφάλμα κατά τη δημιουργία ετικετών",
+      "is-IS": "Villa við að búa til merki"
     }
   },
   {
@@ -2094,7 +3430,19 @@
       "nl-NL": "Taaktracker",
       "pt-BR": "Rastreador de tarefas",
       "pt-PT": "Rastreador de tarefas",
-      "fi-FI": "Tehtäväseuranta"
+      "fi-FI": "Tehtäväseuranta",
+      "et-ET": "Ülesande jälgija",
+      "lv-LV": "Uzdevumu izsekotājs",
+      "lt-LT": "Užduočių stebėjimo priemonė",
+      "ro-RO": "Tracker de sarcini",
+      "hr-HR": "Praćenje zadataka",
+      "sl-SL": "Sledilnik opravil",
+      "cs-CZ": "Sledování úkolů",
+      "sk-SK": "Sledovač úloh",
+      "hu-HU": "Feladatkövető",
+      "bg-BG": "Проследяване на задачи",
+      "el-GR": "Παρακολούθηση εργασιών",
+      "is-IS": "Verkefnaeftirlit"
     }
   },
   {
@@ -2113,7 +3461,19 @@
       "nl-NL": "Kolommen succesvol bijgewerkt",
       "pt-BR": "Colunas atualizadas com sucesso",
       "pt-PT": "Colunas atualizadas com sucesso",
-      "fi-FI": "Sarakkeet päivitetty onnistuneesti"
+      "fi-FI": "Sarakkeet päivitetty onnistuneesti",
+      "et-ET": "Veergude värskendamine õnnestus",
+      "lv-LV": "Kolonnas ir veiksmīgi atjauninātas",
+      "lt-LT": "Stulpeliai atnaujinti sėkmingai",
+      "ro-RO": "Coloanele au fost actualizate cu succes",
+      "hr-HR": "Stupci su uspješno ažurirani",
+      "sl-SL": "Stolpci so bili uspešno posodobljeni",
+      "cs-CZ": "Sloupce byly úspěšně aktualizovány",
+      "sk-SK": "Stĺpce boli úspešne aktualizované",
+      "hu-HU": "Az oszlopok frissítése sikeres volt",
+      "bg-BG": "Колоните са актуализирани успешно",
+      "el-GR": "Οι στήλες ενημερώθηκαν με επιτυχία",
+      "is-IS": "Dálkar uppfærðir tókst"
     }
   },
   {
@@ -2132,7 +3492,19 @@
       "nl-NL": "Fout bij het ophalen van kolommen",
       "pt-BR": "Erro ao obter colunas",
       "pt-PT": "Erro ao obter colunas",
-      "fi-FI": "Virhe haettaessa sarakkeita"
+      "fi-FI": "Virhe haettaessa sarakkeita",
+      "et-ET": "Viga veergude hankimisel",
+      "lv-LV": "Iegūstot kolonnas, radās kļūda",
+      "lt-LT": "Klaida gaunant stulpelius",
+      "ro-RO": "Eroare la obținerea coloanelor",
+      "hr-HR": "Pogreška prilikom preuzimanja stupaca",
+      "sl-SL": "Napaka pri pridobivanju stolpcev",
+      "cs-CZ": "Chyba při získávání sloupců",
+      "sk-SK": "Chyba pri získavaní stĺpcov",
+      "hu-HU": "Hiba az oszlopok lekérésekor",
+      "bg-BG": "Грешка при получаване на колони",
+      "el-GR": "Σφάλμα κατά τη λήψη στηλών",
+      "is-IS": "Villa við að sækja dálka"
     }
   },
   {
@@ -2151,7 +3523,19 @@
       "nl-NL": "Fout bij het bijwerken van kolommen",
       "pt-BR": "Erro ao atualizar colunas",
       "pt-PT": "Erro ao atualizar colunas",
-      "fi-FI": "Virhe päivitettäessä sarakkeita"
+      "fi-FI": "Virhe päivitettäessä sarakkeita",
+      "et-ET": "Viga veergude värskendamisel",
+      "lv-LV": "Atjauninot kolonnas, radās kļūda",
+      "lt-LT": "Klaida atnaujinant stulpelius",
+      "ro-RO": "Eroare la actualizarea coloanelor",
+      "hr-HR": "Pogreška prilikom ažuriranja stupaca",
+      "sl-SL": "Napaka pri posodabljanju stolpcev",
+      "cs-CZ": "Chyba při aktualizaci sloupců",
+      "sk-SK": "Chyba pri aktualizácii stĺpcov",
+      "hu-HU": "Hiba az oszlopok frissítésekor",
+      "bg-BG": "Грешка при актуализиране на колони",
+      "el-GR": "Σφάλμα κατά την ενημέρωση στηλών",
+      "is-IS": "Villa við að uppfæra dálka"
     }
   },
   {
@@ -2170,7 +3554,19 @@
       "nl-NL": "Zaak is bijgewerkt",
       "pt-BR": "O caso foi atualizado",
       "pt-PT": "O caso foi atualizado",
-      "fi-FI": "Tapaus on päivitetty"
+      "fi-FI": "Tapaus on päivitetty",
+      "et-ET": "Juhtumit on värskendatud",
+      "lv-LV": "Lieta ir atjaunināta",
+      "lt-LT": "Byla buvo atnaujinta",
+      "ro-RO": "Cazul a fost actualizat",
+      "hr-HR": "Slučaj je ažuriran",
+      "sl-SL": "Primer je posodobljen",
+      "cs-CZ": "Případ byl aktualizován",
+      "sk-SK": "Prípad bol aktualizovaný",
+      "hu-HU": "A tok frissítve lett",
+      "bg-BG": "Случаят е актуализиран",
+      "el-GR": "Η υπόθεση έχει ενημερωθεί",
+      "is-IS": "Málið hefur verið uppfært"
     }
   },
   {
@@ -2189,7 +3585,19 @@
       "nl-NL": "Map is niet verwijderbaar",
       "pt-BR": "A pasta não pode ser excluída",
       "pt-PT": "A pasta não é eliminável",
-      "fi-FI": "Kansiota ei voi poistaa"
+      "fi-FI": "Kansiota ei voi poistaa",
+      "et-ET": "Kausta ei saa kustutada",
+      "lv-LV": "Mape nav dzēšama",
+      "lt-LT": "Aplankas neištrinamas",
+      "ro-RO": "Dosarul nu poate fi șters",
+      "hr-HR": "Mapa se ne može izbrisati",
+      "sl-SL": "Mape ni mogoče izbrisati",
+      "cs-CZ": "Složku nelze smazat",
+      "sk-SK": "Priečinok nie je možné odstrániť",
+      "hu-HU": "A mappa nem törölhető",
+      "bg-BG": "Папката не може да се изтрие",
+      "el-GR": "Ο φάκελος δεν μπορεί να διαγραφεί",
+      "is-IS": "Ekki er hægt að eyða möppu"
     }
   },
   {
@@ -2208,7 +3616,19 @@
       "nl-NL": "Zo",
       "pt-BR": "Dom",
       "pt-PT": "Dom",
-      "fi-FI": "Su"
+      "fi-FI": "Su",
+      "et-ET": "Su",
+      "lv-LV": "Su",
+      "lt-LT": "Su",
+      "ro-RO": "Su",
+      "hr-HR": "su",
+      "sl-SL": "su",
+      "cs-CZ": "Ne",
+      "sk-SK": "Su",
+      "hu-HU": "Su",
+      "bg-BG": "Су",
+      "el-GR": "Su",
+      "is-IS": "Su"
     }
   },
   {
@@ -2227,7 +3647,19 @@
       "nl-NL": "Ma",
       "pt-BR": "Seg",
       "pt-PT": "Seg",
-      "fi-FI": "Ma"
+      "fi-FI": "Ma",
+      "et-ET": "Mo",
+      "lv-LV": "Mo",
+      "lt-LT": "Mo",
+      "ro-RO": "lu",
+      "hr-HR": "Mo",
+      "sl-SL": "Mo",
+      "cs-CZ": "Mo",
+      "sk-SK": "Mo",
+      "hu-HU": "Mo",
+      "bg-BG": "мо",
+      "el-GR": "Μο",
+      "is-IS": "Mo"
     }
   },
   {
@@ -2246,7 +3678,19 @@
       "nl-NL": "Di",
       "pt-BR": "Ter",
       "pt-PT": "Ter",
-      "fi-FI": "Ti"
+      "fi-FI": "Ti",
+      "et-ET": "Tu",
+      "lv-LV": "Tu",
+      "lt-LT": "Tu",
+      "ro-RO": "Tu",
+      "hr-HR": "uto",
+      "sl-SL": "tor",
+      "cs-CZ": "út",
+      "sk-SK": "Ut",
+      "hu-HU": "Tu",
+      "bg-BG": "вт",
+      "el-GR": "Tu",
+      "is-IS": "Þri"
     }
   },
   {
@@ -2265,7 +3709,19 @@
       "nl-NL": "Wo",
       "pt-BR": "Qua",
       "pt-PT": "Qua",
-      "fi-FI": "Ke"
+      "fi-FI": "Ke",
+      "et-ET": "Meie",
+      "lv-LV": "Mēs",
+      "lt-LT": "Mes",
+      "ro-RO": "Noi",
+      "hr-HR": "Mi",
+      "sl-SL": "mi",
+      "cs-CZ": "My",
+      "sk-SK": "my",
+      "hu-HU": "Mi",
+      "bg-BG": "Ние",
+      "el-GR": "Εμείς",
+      "is-IS": "Við"
     }
   },
   {
@@ -2284,7 +3740,19 @@
       "nl-NL": "Do",
       "pt-BR": "Qui",
       "pt-PT": "Qui",
-      "fi-FI": "To"
+      "fi-FI": "To",
+      "et-ET": "Th",
+      "lv-LV": "Th",
+      "lt-LT": "Th",
+      "ro-RO": "Th",
+      "hr-HR": "Th",
+      "sl-SL": "Th",
+      "cs-CZ": "Th",
+      "sk-SK": "Th",
+      "hu-HU": "Th",
+      "bg-BG": "Th",
+      "el-GR": "Th",
+      "is-IS": "Th"
     }
   },
   {
@@ -2303,7 +3771,19 @@
       "nl-NL": "Vr",
       "pt-BR": "Sex",
       "pt-PT": "Sex",
-      "fi-FI": "Pe"
+      "fi-FI": "Pe",
+      "et-ET": "Fr",
+      "lv-LV": "Fr",
+      "lt-LT": "Kun",
+      "ro-RO": "pr",
+      "hr-HR": "Fr",
+      "sl-SL": "Fr",
+      "cs-CZ": "Fr",
+      "sk-SK": "O",
+      "hu-HU": "Fr",
+      "bg-BG": "о",
+      "el-GR": "Ο π",
+      "is-IS": "Fr"
     }
   },
   {
@@ -2322,7 +3802,19 @@
       "nl-NL": "Za",
       "pt-BR": "Sáb",
       "pt-PT": "Sáb",
-      "fi-FI": "La"
+      "fi-FI": "La",
+      "et-ET": "Sa",
+      "lv-LV": "Sa",
+      "lt-LT": "Sa",
+      "ro-RO": "Sa",
+      "hr-HR": "Sa",
+      "sl-SL": "Sa",
+      "cs-CZ": "so",
+      "sk-SK": "So",
+      "hu-HU": "Sa",
+      "bg-BG": "Sa",
+      "el-GR": "ΑΝΩΝΥΜΗ ΕΤΑΙΡΙΑ",
+      "is-IS": "Sa"
     }
   },
   {
@@ -2341,7 +3833,19 @@
       "nl-NL": "Taakkalender",
       "pt-BR": "Calendário de tarefas",
       "pt-PT": "Calendário de tarefas",
-      "fi-FI": "Tehtäväkalenteri"
+      "fi-FI": "Tehtäväkalenteri",
+      "et-ET": "Ülesannete kalender",
+      "lv-LV": "Uzdevumu kalendārs",
+      "lt-LT": "Užduočių kalendorius",
+      "ro-RO": "Calendarul sarcinilor",
+      "hr-HR": "Kalendar zadataka",
+      "sl-SL": "Koledar opravil",
+      "cs-CZ": "Kalendář úkolů",
+      "sk-SK": "Kalendár úloh",
+      "hu-HU": "Feladatnaptár",
+      "bg-BG": "Календар на задачите",
+      "el-GR": "Ημερολόγιο εργασιών",
+      "is-IS": "Verkefnadagatal"
     }
   },
   {
@@ -2360,7 +3864,19 @@
       "nl-NL": "Taak",
       "pt-BR": "Tarefa",
       "pt-PT": "Tarefa",
-      "fi-FI": "Tehtävä"
+      "fi-FI": "Tehtävä",
+      "et-ET": "Ülesanne",
+      "lv-LV": "Uzdevums",
+      "lt-LT": "Užduotis",
+      "ro-RO": "Sarcină",
+      "hr-HR": "Zadatak",
+      "sl-SL": "Naloga",
+      "cs-CZ": "Úkol",
+      "sk-SK": "Úloha",
+      "hu-HU": "Feladat",
+      "bg-BG": "Задача",
+      "el-GR": "Εργο",
+      "is-IS": "Verkefni"
     }
   },
   {
@@ -2379,7 +3895,19 @@
       "nl-NL": "Medewerker",
       "pt-BR": "Trabalhador",
       "pt-PT": "Trabalhador",
-      "fi-FI": "Työntekijä"
+      "fi-FI": "Työntekijä",
+      "et-ET": "Tööline",
+      "lv-LV": "Strādnieks",
+      "lt-LT": "Darbininkas",
+      "ro-RO": "Muncitor",
+      "hr-HR": "Radnik",
+      "sl-SL": "Delavec",
+      "cs-CZ": "Pracovník",
+      "sk-SK": "Pracovník",
+      "hu-HU": "Munkás",
+      "bg-BG": "работник",
+      "el-GR": "Εργάτης",
+      "is-IS": "Vinnumaður"
     }
   },
   {
@@ -2398,7 +3926,19 @@
       "nl-NL": "Herhalen",
       "pt-BR": "Repetir",
       "pt-PT": "Repetir",
-      "fi-FI": "Toista"
+      "fi-FI": "Toista",
+      "et-ET": "Korda",
+      "lv-LV": "Atkārtojiet",
+      "lt-LT": "Pakartokite",
+      "ro-RO": "Repeta",
+      "hr-HR": "Ponoviti",
+      "sl-SL": "ponovi",
+      "cs-CZ": "Opakovat",
+      "sk-SK": "Opakujte",
+      "hu-HU": "Ismétlés",
+      "bg-BG": "Повторете",
+      "el-GR": "Επαναλαμβάνω",
+      "is-IS": "Endurtaktu"
     }
   },
   {
@@ -2417,7 +3957,19 @@
       "nl-NL": "Deadline",
       "pt-BR": "Prazo",
       "pt-PT": "Prazo",
-      "fi-FI": "Määräaika"
+      "fi-FI": "Määräaika",
+      "et-ET": "Tähtaeg",
+      "lv-LV": "Nodošanas laiks",
+      "lt-LT": "Terminas",
+      "ro-RO": "Termen limită",
+      "hr-HR": "Rok",
+      "sl-SL": "Rok",
+      "cs-CZ": "Uzávěrka",
+      "sk-SK": "Konečný termín",
+      "hu-HU": "Határidő",
+      "bg-BG": "Краен срок",
+      "el-GR": "Προθεσμία",
+      "is-IS": "Frestur"
     }
   },
   {
@@ -2436,7 +3988,19 @@
       "nl-NL": "Taakwizard",
       "pt-BR": "Assistente de tarefas",
       "pt-PT": "Assistente de tarefas",
-      "fi-FI": "Tehtävän avustaja"
+      "fi-FI": "Tehtävän avustaja",
+      "et-ET": "Ülesande viisard",
+      "lv-LV": "Uzdevumu vednis",
+      "lt-LT": "Užduočių vedlys",
+      "ro-RO": "Expert de sarcini",
+      "hr-HR": "Čarobnjak za zadatke",
+      "sl-SL": "Čarovnik za opravila",
+      "cs-CZ": "Průvodce úkolem",
+      "sk-SK": "Sprievodca úlohou",
+      "hu-HU": "Feladatvarázsló",
+      "bg-BG": "Съветник за задачи",
+      "el-GR": "Οδηγός εργασιών",
+      "is-IS": "Verkefnahjálp"
     }
   },
   {
@@ -2455,7 +4019,19 @@
       "nl-NL": "Fout bij het ophalen van taken",
       "pt-BR": "Erro ao obter tarefas",
       "pt-PT": "Erro ao obter tarefas",
-      "fi-FI": "Virhe haettaessa tehtäviä"
+      "fi-FI": "Virhe haettaessa tehtäviä",
+      "et-ET": "Viga ülesannete hankimisel",
+      "lv-LV": "Kļūda, iegūstot uzdevumus",
+      "lt-LT": "Klaida gaunant užduotis",
+      "ro-RO": "Eroare la obținerea sarcinilor",
+      "hr-HR": "Pogreška prilikom dobivanja zadataka",
+      "sl-SL": "Napaka pri pridobivanju nalog",
+      "cs-CZ": "Chyba při získávání úkolů",
+      "sk-SK": "Chyba pri získavaní úloh",
+      "hu-HU": "Hiba a feladatok beolvasása közben",
+      "bg-BG": "Грешка при получаване на задачи",
+      "el-GR": "Σφάλμα κατά τη λήψη εργασιών",
+      "is-IS": "Villa við að sækja verkefni"
     }
   },
   {
@@ -2474,7 +4050,19 @@
       "nl-NL": "Taak niet gevonden",
       "pt-BR": "Tarefa não encontrada",
       "pt-PT": "Tarefa não encontrada",
-      "fi-FI": "Tehtävää ei löytynyt"
+      "fi-FI": "Tehtävää ei löytynyt",
+      "et-ET": "Ülesannet ei leitud",
+      "lv-LV": "Uzdevums nav atrasts",
+      "lt-LT": "Užduotis nerasta",
+      "ro-RO": "Sarcina nu a fost găsită",
+      "hr-HR": "Zadatak nije pronađen",
+      "sl-SL": "Naloga ni najdena",
+      "cs-CZ": "Úkol nenalezen",
+      "sk-SK": "Úloha sa nenašla",
+      "hu-HU": "A feladat nem található",
+      "bg-BG": "Задачата не е намерена",
+      "el-GR": "Η εργασία δεν βρέθηκε",
+      "is-IS": "Verkefni fannst ekki"
     }
   },
   {
@@ -2493,7 +4081,19 @@
       "nl-NL": "Fout bij het ophalen van taak",
       "pt-BR": "Erro ao obter tarefa",
       "pt-PT": "Erro ao obter tarefa",
-      "fi-FI": "Virhe haettaessa tehtävää"
+      "fi-FI": "Virhe haettaessa tehtävää",
+      "et-ET": "Viga ülesande hankimisel",
+      "lv-LV": "Iegūstot uzdevumu, radās kļūda",
+      "lt-LT": "Klaida gaunant užduotį",
+      "ro-RO": "Eroare la obținerea sarcinii",
+      "hr-HR": "Pogreška prilikom dobivanja zadatka",
+      "sl-SL": "Napaka pri pridobivanju naloge",
+      "cs-CZ": "Chyba při získávání úkolu",
+      "sk-SK": "Chyba pri získavaní úlohy",
+      "hu-HU": "Hiba a feladat beszerzése közben",
+      "bg-BG": "Грешка при получаване на задачата",
+      "el-GR": "Σφάλμα κατά τη λήψη της εργασίας",
+      "is-IS": "Villa við að sækja verkefni"
     }
   },
   {
@@ -2512,7 +4112,19 @@
       "nl-NL": "Taak succesvol aangemaakt",
       "pt-BR": "Tarefa criada com sucesso",
       "pt-PT": "Tarefa criada com sucesso",
-      "fi-FI": "Tehtävä luotu onnistuneesti"
+      "fi-FI": "Tehtävä luotu onnistuneesti",
+      "et-ET": "Ülesanne loodud õnnestus",
+      "lv-LV": "Uzdevums izveidots veiksmīgi",
+      "lt-LT": "Užduotis sukurta sėkmingai",
+      "ro-RO": "Sarcina creată cu succes",
+      "hr-HR": "Zadatak je uspješno izrađen",
+      "sl-SL": "Naloga je bila uspešno ustvarjena",
+      "cs-CZ": "Úkol byl úspěšně vytvořen",
+      "sk-SK": "Úloha bola úspešne vytvorená",
+      "hu-HU": "A feladat sikeresen létrehozva",
+      "bg-BG": "Задачата е създадена успешно",
+      "el-GR": "Η εργασία δημιουργήθηκε με επιτυχία",
+      "is-IS": "Verkefni búið til tókst"
     }
   },
   {
@@ -2531,7 +4143,19 @@
       "nl-NL": "Fout bij het maken van taak",
       "pt-BR": "Erro ao criar tarefa",
       "pt-PT": "Erro ao criar tarefa",
-      "fi-FI": "Virhe luotaessa tehtävää"
+      "fi-FI": "Virhe luotaessa tehtävää",
+      "et-ET": "Viga ülesande loomisel",
+      "lv-LV": "Veidojot uzdevumu, radās kļūda",
+      "lt-LT": "Klaida kuriant užduotį",
+      "ro-RO": "Eroare la crearea sarcinii",
+      "hr-HR": "Pogreška prilikom izrade zadatka",
+      "sl-SL": "Napaka pri ustvarjanju naloge",
+      "cs-CZ": "Chyba při vytváření úkolu",
+      "sk-SK": "Chyba pri vytváraní úlohy",
+      "hu-HU": "Hiba a feladat létrehozásakor",
+      "bg-BG": "Грешка при създаване на задача",
+      "el-GR": "Σφάλμα κατά τη δημιουργία εργασίας",
+      "is-IS": "Villa við að búa til verkefni"
     }
   },
   {
@@ -2550,7 +4174,19 @@
       "nl-NL": "Taak succesvol bijgewerkt",
       "pt-BR": "Tarefa atualizada com sucesso",
       "pt-PT": "Tarefa atualizada com sucesso",
-      "fi-FI": "Tehtävä päivitetty onnistuneesti"
+      "fi-FI": "Tehtävä päivitetty onnistuneesti",
+      "et-ET": "Ülesande värskendamine õnnestus",
+      "lv-LV": "Uzdevums ir veiksmīgi atjaunināts",
+      "lt-LT": "Užduotis sėkmingai atnaujinta",
+      "ro-RO": "Sarcina a fost actualizată cu succes",
+      "hr-HR": "Zadatak je uspješno ažuriran",
+      "sl-SL": "Naloga je bila uspešno posodobljena",
+      "cs-CZ": "Úkol byl úspěšně aktualizován",
+      "sk-SK": "Úloha bola úspešne aktualizovaná",
+      "hu-HU": "A feladat frissítése sikeres volt",
+      "bg-BG": "Задачата е актуализирана успешно",
+      "el-GR": "Η εργασία ενημερώθηκε με επιτυχία",
+      "is-IS": "Verkefni uppfært tókst"
     }
   },
   {
@@ -2569,7 +4205,19 @@
       "nl-NL": "Fout bij het bijwerken van taak",
       "pt-BR": "Erro ao atualizar tarefa",
       "pt-PT": "Erro ao atualizar tarefa",
-      "fi-FI": "Virhe päivitettäessä tehtävää"
+      "fi-FI": "Virhe päivitettäessä tehtävää",
+      "et-ET": "Viga ülesande värskendamisel",
+      "lv-LV": "Atjauninot uzdevumu, radās kļūda",
+      "lt-LT": "Klaida atnaujinant užduotį",
+      "ro-RO": "Eroare la actualizarea sarcinii",
+      "hr-HR": "Pogreška prilikom ažuriranja zadatka",
+      "sl-SL": "Napaka pri posodabljanju opravila",
+      "cs-CZ": "Chyba při aktualizaci úlohy",
+      "sk-SK": "Chyba pri aktualizácii úlohy",
+      "hu-HU": "Hiba a feladat frissítése közben",
+      "bg-BG": "Грешка при актуализиране на задачата",
+      "el-GR": "Σφάλμα κατά την ενημέρωση της εργασίας",
+      "is-IS": "Villa við að uppfæra verkefni"
     }
   },
   {
@@ -2588,7 +4236,19 @@
       "nl-NL": "Taak succesvol verwijderd",
       "pt-BR": "Tarefa excluída com sucesso",
       "pt-PT": "Tarefa excluída com sucesso",
-      "fi-FI": "Tehtävä poistettu onnistuneesti"
+      "fi-FI": "Tehtävä poistettu onnistuneesti",
+      "et-ET": "Ülesande kustutamine õnnestus",
+      "lv-LV": "Uzdevums izdzēsts veiksmīgi",
+      "lt-LT": "Užduotis sėkmingai ištrinta",
+      "ro-RO": "Sarcina a fost ștearsă cu succes",
+      "hr-HR": "Zadatak uspješno izbrisan",
+      "sl-SL": "Naloga uspešno izbrisana",
+      "cs-CZ": "Úkol byl úspěšně smazán",
+      "sk-SK": "Úloha bola úspešne odstránená",
+      "hu-HU": "A feladat törlése sikeres volt",
+      "bg-BG": "Задачата е изтрита успешно",
+      "el-GR": "Η εργασία διαγράφηκε με επιτυχία",
+      "is-IS": "Verkefni eytt tókst"
     }
   },
   {
@@ -2607,7 +4267,19 @@
       "nl-NL": "Fout bij het verwijderen van taak",
       "pt-BR": "Erro ao excluir tarefa",
       "pt-PT": "Erro ao excluir tarefa",
-      "fi-FI": "Virhe poistaessa tehtävää"
+      "fi-FI": "Virhe poistaessa tehtävää",
+      "et-ET": "Viga ülesande kustutamisel",
+      "lv-LV": "Dzēšot uzdevumu, radās kļūda",
+      "lt-LT": "Trinant užduotį įvyko klaida",
+      "ro-RO": "Eroare la ștergerea sarcinii",
+      "hr-HR": "Pogreška prilikom brisanja zadatka",
+      "sl-SL": "Napaka pri brisanju opravila",
+      "cs-CZ": "Chyba při mazání úkolu",
+      "sk-SK": "Chyba pri odstraňovaní úlohy",
+      "hu-HU": "Hiba történt a feladat törlése közben",
+      "bg-BG": "Грешка при изтриване на задача",
+      "el-GR": "Σφάλμα κατά τη διαγραφή της εργασίας",
+      "is-IS": "Villa við að eyða verkefni"
     }
   }
 ]
