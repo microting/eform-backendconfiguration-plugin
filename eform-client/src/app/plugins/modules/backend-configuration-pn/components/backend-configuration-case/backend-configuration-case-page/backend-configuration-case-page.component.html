@@ -10,19 +10,18 @@
         {{ 'Done at' | translate }}
       </mat-card-title>
       <mat-card-content>
-        <mat-form-field [owlDateTimeTrigger]="dt1">
+        <mat-form-field>
           <mat-label>{{ 'Select date' | translate }}</mat-label>
-          <mat-icon matPrefix>calendar_today</mat-icon>
+          <mat-datepicker-toggle matSuffix [for]="pickerDoneAt"></mat-datepicker-toggle>
           <input
-            matInput
-            id="doneAt"
-            name="doneAt"
-            [owlDateTime]="dt1"
-            [(ngModel)]="replyElement.doneAt"
             required
-            type="text"
+            matInput
+            [matDatepicker]="pickerDoneAt"
+            [value]="replyElement.doneAt"
+            (dateChange)="replyElement.doneAt = $event.value"
+            (click)="pickerDoneAt.open()"
           >
-          <owl-date-time [pickerType]="'calendar'" #dt1 [firstDayOfWeek]="1"></owl-date-time>
+          <mat-datepicker #pickerDoneAt></mat-datepicker>
           <mat-error class="text-warn" *ngIf="!replyElement.doneAt">
             {{'Date is required'| translate}}*
           </mat-error>
