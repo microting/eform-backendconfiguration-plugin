@@ -5,7 +5,6 @@ on:
     branches: [ master, stable, angular14 ]
     paths-ignore:
     - '**.md'
-    - '.github/**'
 
 jobs:
   backend-pn-build:
@@ -153,9 +152,15 @@ jobs:
       if: matrix.test == 'a'
       run: |
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_Angular.EformPlugins set Status = 1'
-        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_SDK.sql
-        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-backend-configuration-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-backend-configuration-plugin.sql
-        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-angular-items-planning-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-angular-items-planning-plugin.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_SDK`'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_SDK`'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK < eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_SDK.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_eform-backend-configuration-plugin`'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_eform-backend-configuration-plugin`'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-backend-configuration-plugin < eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-backend-configuration-plugin.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_eform-angular-items-planning-plugin`'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_eform-angular-items-planning-plugin`'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-angular-items-planning-plugin < eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-angular-items-planning-plugin.sql
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
     - name: ${{matrix.test}} test
       uses: cypress-io/github-action@v4
@@ -179,6 +184,7 @@ jobs:
       if: always()
       run: |
         cat docker_run_log
+        ls -l ~/Downloads/
     - name: Archive screenshot artifacts
       if: ${{ failure() }}
       uses: actions/upload-artifact@v3
@@ -186,6 +192,14 @@ jobs:
         name: error Screenshots
         path: |
           eform-angular-frontend/eform-client/errorShots/chrome*.png
+        retention-days: 2
+    - name: Archive videos
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: error Screenshots
+        path: |
+          /home/runner/work/eform-backendconfiguration-plugin/eform-backendconfiguration-plugin/eform-angular-frontend/eform-client/cypress/videos/*.mp4
         retention-days: 2
   test-dotnet:
     runs-on: ubuntu-latest
