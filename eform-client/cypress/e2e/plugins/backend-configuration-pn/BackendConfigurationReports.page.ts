@@ -21,7 +21,9 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
         this.backendConfigurationPnButton().click();
       }
     });
+    cy.intercept('GET', '**/api/items-planning-pn/tags').as('reports');
     this.backendConfigurationPnReportsButton().click();
+    cy.wait('@reports');
     // this.waitForSpinnerHide();
   }
 
@@ -34,7 +36,7 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
   }
 
   public dateFormInput() {
-    return cy.get('#dateFormInput').should('be.visible');
+    return cy.get('mat-date-range-input').should('be.visible');
   }
 
   public generateTableBtn() {
