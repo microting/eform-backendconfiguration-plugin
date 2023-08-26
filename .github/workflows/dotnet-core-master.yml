@@ -184,6 +184,7 @@ jobs:
       if: always()
       run: |
         cat docker_run_log
+        ls -l ~/Downloads/
     - name: Archive screenshot artifacts
       if: ${{ failure() }}
       uses: actions/upload-artifact@v3
