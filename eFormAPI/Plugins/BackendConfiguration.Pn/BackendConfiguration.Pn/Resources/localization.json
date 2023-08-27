@@ -4281,5 +4281,36 @@
       "el-GR": "Σφάλμα κατά τη διαγραφή της εργασίας",
       "is-IS": "Villa við að eyða verkefni"
     }
+  },
+  {
+    "Key": "NoDataInSelectedPeriod",
+    "LocalizedValue": {
+      "da": "Ingen data i den valgte periode",
+      "de": "Keine Daten im ausgewählten Zeitraum",
+      "en-US": "No data in the selected period",
+      "uk-UA": "Немає даних за вибраний період",
+      "pl-PL": "Brak danych w wybranym okresie",
+      "no-NO": "Ingen data i den valgte perioden",
+      "sv-SE": "Ingen data i den valda perioden",
+      "es-ES": "No hay datos en el período seleccionado",
+      "fr-FR": "Aucune donnée sur la période sélectionnée",
+      "it-IT": "Nessun dato nel periodo selezionato",
+      "nl-NL": "Geen gegevens in de geselecteerde periode",
+      "pt-BR": "Nenhum dado no período selecionado",
+      "pt-PT": "Nenhum dado no período selecionado",
+      "fi-FI": "Valitulla aikavälillä ei ole tietoja",
+      "et-ET": "Valitud perioodil andmeid pole",
+      "lv-LV": "Nav datu atlasītajā periodā",
+      "lt-LT": "Pasirinktu laikotarpiu duomenų nėra",
+      "ro-RO": "Nu există date în perioada selectată",
+      "hr-HR": "Nema podataka u odabranom razdoblju",
+      "sl-SL": "V izbranem obdobju ni podatkov",
+      "cs-CZ": "Ve vybraném období nejsou žádná data",
+      "sk-SK": "Žiadne údaje vo vybranom období",
+      "hu-HU": "Nincs adat a kiválasztott időszakban",
+      "bg-BG": "Няма данни за избрания период",
+      "el-GR": "Δεν υπάρχουν δεδομένα στην επιλεγμένη περίοδο",
+      "is-IS": "Engin gögn á völdu tímabili"
+    }
   }
 ]
