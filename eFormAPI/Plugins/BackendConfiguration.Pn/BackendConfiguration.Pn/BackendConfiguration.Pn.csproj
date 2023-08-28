@@ -559,7 +559,7 @@
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.56" />
       <PackageReference Include="ClosedXML" Version="0.102.1" />
-      <PackageReference Include="Microting.TimePlanningBase" Version="7.0.51" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="7.0.52" />
     </ItemGroup>
 
     <ItemGroup>
