@@ -327,10 +327,17 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Select(x => x.Name)
                 .FirstOrDefault();
 
-            createModel.StartDate = createModel.StartDate == null
-                ? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0)
-                : new DateTime(createModel.StartDate.Value.Year, createModel.StartDate.Value.Month,
-                    createModel.StartDate.Value.Day, 0, 0, 0);
+            if (createModel.StartDate != null)
+            {
+                if (createModel.StartDate!.Value.Hour != 0)
+                {
+                    createModel.StartDate = createModel.StartDate.Value.AddHours(24 - createModel.StartDate.Value.Hour);
+                }
+            }
+            else
+            {
+                createModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
+            }
 
             if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
             {
@@ -462,6 +469,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         AreaId = areaId,
                         FolderId = createModel.FolderId,
                         ItemPlanningId = planning.Id,
+                        ComplianceEnabled = true,
                         PlanningSites = createModel.Sites
                             .Select(x =>
                                 new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite
