@@ -20,8 +20,11 @@
       [clearable]="false"
     />
   </mat-form-field>
-  <mat-form-field (click)="openFoldersModal()">
-    <mat-label>{{ 'Folder' | translate }}</mat-label>
+  <mat-form-field
+    (click)="openFoldersModal()">
+    <mat-icon matPrefix>folder</mat-icon>
+    <mat-label>
+      {{ 'Folder' | translate }}</mat-label>
     <input
       matInput
       id="createFolder"
