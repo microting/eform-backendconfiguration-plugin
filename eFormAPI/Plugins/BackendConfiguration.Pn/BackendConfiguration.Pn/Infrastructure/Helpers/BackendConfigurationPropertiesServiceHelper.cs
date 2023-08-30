@@ -365,10 +365,14 @@ public static class BackendConfigurationPropertiesServiceHelper
             var languages = await sdkDbContext.Languages.Where(x => x.IsActive == true)
                 .AsNoTracking().ToListAsync().ConfigureAwait(false);
 
-            property.SelectedLanguages = property.SelectedLanguages
-                .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => languages.Any(y => y.Id == x.LanguageId))
-                .ToList();
+            foreach (var propertySelectedLanguage in property.SelectedLanguages)
+            {
+                if (languages.All(x => x.Id != propertySelectedLanguage.LanguageId))
+                {
+                    await propertySelectedLanguage.Delete(backendConfigurationPnDbContext);
+                }
+            }
+
             await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var selectedLanguagesForDelete = property.SelectedLanguages
@@ -405,6 +409,7 @@ public static class BackendConfigurationPropertiesServiceHelper
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
+            Console.WriteLine(e.StackTrace);
             //Log.LogException(e.Message);
             //Log.LogException(e.StackTrace);
             return new OperationResult(false, "ErrorWhileUpdateProperties");
