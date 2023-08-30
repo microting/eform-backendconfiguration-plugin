@@ -144,7 +144,7 @@ public static class WorkOrderHelper
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
             description = "<strong>"+localizationService.GetString("Location") + "</strong>: " + property.Name;
-            newTask = localizationService.GetString("Newtask");
+            newTask = localizationService.GetString("NewTask");
         }
 
         mainElement.Repeated = 0;
