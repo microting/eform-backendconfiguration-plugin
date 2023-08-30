@@ -68,19 +68,13 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
       });
     this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
       .pipe(
-        // filter(value => !R.equals(value.tagIds, this.filtersForm.getRawValue().tagIds)),
+        filter(value => !R.equals(value, this.filtersForm.getRawValue())),
         tap(filters => {
-          if(!R.equals(filters.tagIds, this.filtersForm.getRawValue().tagIds)) {
-            this.updateTable.emit()
-          }
-          this.filtersForm.patchValue({
-            propertyIds: filters.propertyIds,
-            folderIds: filters.folderIds,
-            tagIds: filters.tagIds,
-            status: filters.status,
-            assignToIds: filters.assignToIds,
-          });
           this.propertyIdsChange(filters.propertyIds);
+          this.folderIdsChange(filters.folderIds);
+          this.tagIdsChange(filters.tagIds);
+          this.statusChange(filters.status);
+          this.assignToIdsChange(filters.assignToIds);
         })).subscribe();
 
     this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
@@ -134,22 +128,29 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
     }
     this.filtersForm.patchValue({folderIds: [], assignToIds: []});
     this.taskWizardStateService.updatePropertyIds(value);
+    this.filtersForm.get('propertyIds').patchValue(value);
+    this.folderIdsChange([]);
+    this.assignToIdsChange([]);
   }
 
   folderIdsChange(value: number[]) {
     this.taskWizardStateService.updateFolderIds(value);
+    this.filtersForm.get('folderIds').patchValue(value);
   }
 
   assignToIdsChange(value: number[]) {
     this.taskWizardStateService.updateAssignToIds(value);
+    this.filtersForm.get('assignToIds').patchValue(value);
   }
 
   tagIdsChange(value: number[]) {
     this.taskWizardStateService.updateTagIds(value);
+    this.filtersForm.get('tagIds').patchValue(value);
   }
 
   statusChange(value: TaskWizardStatusesEnum) {
     this.taskWizardStateService.updateStatus(value);
+    this.filtersForm.get('status').patchValue(value);
   }
 
   ngOnDestroy(): void {
