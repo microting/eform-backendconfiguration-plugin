@@ -20,18 +20,29 @@
       [clearable]="false"
     />
   </mat-form-field>
-  <mat-form-field
-    (click)="openFoldersModal()">
-    <mat-icon matPrefix>folder</mat-icon>
-    <mat-label>
-      {{ 'Folder' | translate }}</mat-label>
-    <input
-      matInput
+  <div style="width: 450px">
+    <button
+      mat-icon-button
+      color="accent"
       id="createFolder"
-      [ngModel]="selectedFolderName"
-      [disabled]="true"
+      (click)="openFoldersModal()"
+      style="margin-left: -10px"
+      [disabled]="!model.propertyId"
+      [matTooltip]="(!model.propertyId ? 'Need select property': 'Select folder') | translate"
     >
-  </mat-form-field>
+      <mat-icon>folder</mat-icon>
+    </button>
+    <span>{{selectedFolderName || ('Folder not selected' | translate)}}</span>
+  </div>
+  <!--  <mat-form-field (click)="openFoldersModal()">
+      <mat-label>{{ 'Folder' | translate }}</mat-label>
+      <input
+        matInput
+        id="createFolder"
+        [ngModel]="selectedFolderName"
+        [disabled]="true"
+      >
+    </mat-form-field>-->
   <mat-form-field>
     <mat-label>{{ 'Report tag' | translate }}</mat-label>
     <mtx-select

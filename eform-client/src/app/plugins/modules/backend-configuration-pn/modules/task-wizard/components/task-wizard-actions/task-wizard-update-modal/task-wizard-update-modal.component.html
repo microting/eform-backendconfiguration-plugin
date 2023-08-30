@@ -21,7 +21,22 @@
       [disabled]="model.status === TaskWizardStatusesEnum.Active"
     />
   </mat-form-field>
-  <mat-form-field (click)="model.status === TaskWizardStatusesEnum.NotActive ? openFoldersModal() : null">
+
+  <div style="width: 450px">
+    <button
+      mat-icon-button
+      color="accent"
+      id="createFolder"
+      (click)="openFoldersModal()"
+      style="margin-left: -10px"
+      [disabled]="!model.propertyId || model.status === TaskWizardStatusesEnum.NotActive"
+      [matTooltip]="(!model.propertyId ? 'Need select property': 'Select folder') | translate"
+    >
+      <mat-icon>folder</mat-icon>
+    </button>
+    <span>{{selectedFolderName || ('Folder not selected' | translate)}}</span>
+  </div>
+<!--  <mat-form-field (click)="model.status === TaskWizardStatusesEnum.NotActive ? openFoldersModal() : null">
     <mat-label>{{ 'Folder' | translate }}</mat-label>
     <input
       matInput
@@ -29,7 +44,7 @@
       [ngModel]="selectedFolderName"
       [disabled]="true"
     >
-  </mat-form-field>
+  </mat-form-field>-->
   <mat-form-field>
     <mat-label>{{ 'Report tag' | translate }}</mat-label>
     <mtx-select
