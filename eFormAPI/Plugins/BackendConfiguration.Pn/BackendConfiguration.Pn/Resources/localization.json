@@ -4312,5 +4312,36 @@
       "el-GR": "Δεν υπάρχουν δεδομένα στην επιλεγμένη περίοδο",
       "is-IS": "Engin gögn á völdu tímabili"
     }
+  },
+  {
+    "Key": "NewTask",
+    "LocalizedValue": {
+      "da": "Ny opgave",
+      "de": "Neue Aufgabe",
+      "en-US": "New task",
+      "uk-UA": "Нове завдання",
+      "pl-PL": "Nowe zadanie",
+      "no-NO": "Ny oppgave",
+      "sv-SE": "Ny uppgift",
+      "es-ES": "Nueva tarea",
+      "fr-FR": "Nouvelle tâche",
+      "it-IT": "Nuova attività",
+      "nl-NL": "Nieuwe taak",
+      "pt-BR": "Nova tarefa",
+      "pt-PT": "Nova tarefa",
+      "fi-FI": "Uusi tehtävä",
+      "et-ET": "Uus ülesanne",
+      "lv-LV": "Jauns uzdevums",
+      "lt-LT": "Nauja užduotis",
+      "ro-RO": "Sarcină nouă",
+      "hr-HR": "Nova zadaća",
+      "sl-SL": "Nova naloga",
+      "cs-CZ": "Nový úkol",
+      "sk-SK": "Nová úloha",
+      "hu-HU": "Új feladat",
+      "bg-BG": "Нова задача",
+      "el-GR": "Νέα εργασία",
+      "is-IS": "Nýtt verkefni"
+    }
   }
 ]
