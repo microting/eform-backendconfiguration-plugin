@@ -136,6 +136,14 @@ export const routes: Routes = [
             (m) => m.TaskWizardModule
           ),
       },
+      {
+        path: 'statistics',
+        /*canActivate: [PermissionGuard],*/
+        loadChildren: () =>
+          import('./modules/statistics/statistics.module').then(
+            (m) => m.StatisticsModule
+          ),
+      },
     ],
   },
 ];
