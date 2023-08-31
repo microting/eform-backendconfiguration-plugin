@@ -1,4 +1,4 @@
-FROM node:18.12.1 as node-env
+FROM node:lts as node-env
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 COPY eform-angular-frontend/eform-client ./
