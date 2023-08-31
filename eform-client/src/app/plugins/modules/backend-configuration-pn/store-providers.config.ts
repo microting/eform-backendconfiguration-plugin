@@ -5,6 +5,7 @@ import {taskWorkerAssignmentsPersistProvider} from './modules/task-worker-assign
 import {taskManagementPersistProvider} from './modules/task-management/components/store';
 import {taskTrackerPersistProvider} from './modules/task-tracker/components/store';
 import {taskWizardPersistProvider} from './modules/task-wizard/components/store';
+import {statisticsPersistProvider} from './modules/statistics/store';
 
 export const backendConfigurationStoreProviders = [
   propertiesPersistProvider,
@@ -14,4 +15,5 @@ export const backendConfigurationStoreProviders = [
   taskManagementPersistProvider,
   taskTrackerPersistProvider,
   taskWizardPersistProvider,
+  statisticsPersistProvider,
 ];

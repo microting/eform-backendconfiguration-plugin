@@ -22,68 +22,68 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Threading.Tasks;
-using BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 
 namespace BackendConfiguration.Pn
 {
-	using ChemicalsBase.Infrastructure;
-	using ChemicalsBase.Infrastructure.Data.Factories;
-	using eFormCore;
-	using Infrastructure.Data.Seed;
-	using Infrastructure.Data.Seed.Data;
-	using Infrastructure.Models.Settings;
-	using Messages;
-	using Microsoft.AspNetCore.Builder;
-	using Microsoft.EntityFrameworkCore;
-	using Microsoft.Extensions.Configuration;
-	using Microsoft.Extensions.DependencyInjection;
-	using Microting.eForm.Infrastructure;
-	using Microting.eForm.Infrastructure.Data.Entities;
-	using Microting.eForm.Infrastructure.Models;
-	using Microting.eFormApi.BasePn;
-	using Microting.eFormApi.BasePn.Abstractions;
-	using Microting.eFormApi.BasePn.Infrastructure.Consts;
-	using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
-	using Microting.eFormApi.BasePn.Infrastructure.Helpers;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.Application;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.Application.NavigationMenu;
-	using Microting.eFormApi.BasePn.Infrastructure.Settings;
-	using Microting.EformBackendConfigurationBase.Infrastructure.Const;
-	using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-	using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
-	using Microting.eFormCaseTemplateBase.Infrastructure.Data;
-	using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
-	using Microting.ItemsPlanningBase.Infrastructure.Data;
-	using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
-	using Microting.TimePlanningBase.Infrastructure.Data;
-	using Rebus.Bus;
-	using Services.BackendConfigurationAreaRulePlanningsService;
-	using Services.BackendConfigurationAreaRulesService;
-	using Services.BackendConfigurationAssignmentWorkerService;
-	using Services.BackendConfigurationCaseService;
-	using Services.BackendConfigurationCompliancesService;
-	using Services.BackendConfigurationDocumentService;
-	using Services.BackendConfigurationLocalizationService;
-	using Services.BackendConfigurationPropertiesService;
-	using Services.BackendConfigurationPropertyAreasService;
-	using Services.BackendConfigurationReportService;
-	using Services.BackendConfigurationTaskManagementService;
-	using Services.ChemicalService;
-	using Services.ExcelService;
-	using Services.RebusService;
-	using Services.WordService;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Reflection;
-	using Services.BackendConfigurationFilesService;
-	using Services.BackendConfigurationFileTagsService;
-	using Services.BackendConfigurationTaskTrackerService;
-	using FolderTranslation = Microting.eForm.Infrastructure.Data.Entities.FolderTranslation;
+    using ChemicalsBase.Infrastructure;
+    using ChemicalsBase.Infrastructure.Data.Factories;
+    using eFormCore;
+    using Infrastructure.Data.Seed;
+    using Infrastructure.Data.Seed.Data;
+    using Infrastructure.Models.Settings;
+    using Microsoft.AspNetCore.Builder;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+    using Microting.eForm.Infrastructure;
+    using Microting.eForm.Infrastructure.Data.Entities;
+    using Microting.eForm.Infrastructure.Models;
+    using Microting.eFormApi.BasePn;
+    using Microting.eFormApi.BasePn.Abstractions;
+    using Microting.eFormApi.BasePn.Infrastructure.Consts;
+    using Microting.eFormApi.BasePn.Infrastructure.Database.Extensions;
+    using Microting.eFormApi.BasePn.Infrastructure.Helpers;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Application;
+    using Microting.eFormApi.BasePn.Infrastructure.Models.Application.NavigationMenu;
+    using Microting.eFormApi.BasePn.Infrastructure.Settings;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Const;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
+    using Microting.eFormCaseTemplateBase.Infrastructure.Data;
+    using Microting.eFormCaseTemplateBase.Infrastructure.Data.Factories;
+    using Microting.ItemsPlanningBase.Infrastructure.Data;
+    using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+    using Microting.TimePlanningBase.Infrastructure.Data;
+    using Rebus.Bus;
+    using Services.BackendConfigurationAreaRulePlanningsService;
+    using Services.BackendConfigurationAreaRulesService;
+    using Services.BackendConfigurationAssignmentWorkerService;
+    using Services.BackendConfigurationCaseService;
+    using Services.BackendConfigurationCompliancesService;
+    using Services.BackendConfigurationDocumentService;
+    using Services.BackendConfigurationFilesService;
+    using Services.BackendConfigurationFileTagsService;
+    using Services.BackendConfigurationLocalizationService;
+    using Services.BackendConfigurationPropertiesService;
+    using Services.BackendConfigurationPropertyAreasService;
+    using Services.BackendConfigurationReportService;
+    using Services.BackendConfigurationStatsService;
+    using Services.BackendConfigurationTaskManagementService;
+    using Services.BackendConfigurationTaskTrackerService;
+    using Services.BackendConfigurationTaskWizardService;
+    using Services.ChemicalService;
+    using Services.ExcelService;
+    using Services.RebusService;
+    using Services.WordService;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Threading.Tasks;
+    using FolderTranslation = Microting.eForm.Infrastructure.Data.Entities.FolderTranslation;
 
-	public class EformBackendConfigurationPlugin : IEformPlugin
+    public class EformBackendConfigurationPlugin : IEformPlugin
     {
         public string Name => "Microting Backend Configuration Plugin";
         public string PluginId => "eform-backend-configuration-plugin";
@@ -100,25 +100,26 @@ namespace BackendConfiguration.Pn
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
-            services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
-            services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
-            services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
-            services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
             services.AddTransient<IBackendConfigurationAreaRulePlanningsService, BackendConfigurationAreaRulePlanningsService>();
-            services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
+            services.AddTransient<IBackendConfigurationAssignmentWorkerService, BackendConfigurationAssignmentWorkerService>();
             services.AddTransient<IBackendConfigurationTaskManagementService, BackendConfigurationTaskManagementService>();
+            services.AddTransient<IBackendConfigurationPropertyAreasService, BackendConfigurationPropertyAreasService>();
+            services.AddSingleton<IBackendConfigurationLocalizationService, BackendConfigurationLocalizationService>();
+            services.AddTransient<IBackendConfigurationCompliancesService, BackendConfigurationCompliancesService>();
+            services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
+            services.AddTransient<IBackendConfigurationPropertiesService, BackendConfigurationPropertiesService>();
+            services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();
+            services.AddTransient<IBackendConfigurationAreaRulesService, BackendConfigurationAreaRulesService>();
             services.AddTransient<IBackendConfigurationDocumentService, BackendConfigurationDocumentService>();
             services.AddTransient<IBackendConfigurationReportService, BackendConfigurationReportService>();
+            services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
+            services.AddTransient<IBackendConfigurationStatsService, BackendConfigurationStatsService>();
             services.AddTransient<IBackendConfigurationCaseService, BackendConfigurationCaseService>();
             services.AddTransient<IBackendConfigurationTagsService, BackendConfigurationTagsService>();
-            services.AddTransient<IBackendConfigurationFilesService, BackendConfigurationFilesService>();
-            services.AddTransient<IBackendConfigurationTaskTrackerService, BackendConfigurationTaskTrackerService>();
-            services.AddTransient<IBackendConfigurationTaskWizardService, BackendConfigurationTaskWizardService>();
-            services.AddSingleton<IRebusService, RebusService>();
-            services.AddTransient<IWordService, WordService>();
-            services.AddTransient<IExcelService, ExcelService>();
             services.AddTransient<IChemicalService, ChemicalService>();
+            services.AddSingleton<IRebusService, RebusService>();
+            services.AddTransient<IExcelService, ExcelService>();
+            services.AddTransient<IWordService, WordService>();
             services.AddControllers();
             SeedEForms(services);
         }
@@ -1103,6 +1104,75 @@ namespace BackendConfiguration.Pn
                                     Language = LanguageNames.Ukrainian
                                 }
                             }
+                        },
+                        new()
+                        {
+                            Name = "Statistics",
+                            E2EId = "backend-configuration-pn-statistics",
+                            Link = "/plugins/backend-configuration-pn/statistics",
+                            Type = MenuItemTypeEnum.Link,
+                            Position = 7,
+                            MenuTemplate = new PluginMenuTemplateModel
+                            {
+                                Name = "Statistics",
+                                E2EId = "backend-configuration-pn-statistics",
+                                DefaultLink = "/plugins/backend-configuration-pn/statistics",
+                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                                Translations = new List<PluginMenuTranslationModel>
+                                {
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.English,
+                                        Name = "Statistics",
+                                        Language = LanguageNames.English
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.German,
+                                        Name = "Statistik",
+                                        Language = LanguageNames.German
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Danish,
+                                        Name = "Statistik",
+                                        Language = LanguageNames.Danish
+                                    },
+                                    new()
+                                    {
+                                        LocaleName = LocaleNames.Ukrainian,
+                                        Name = "Статистика",
+                                        Language = LanguageNames.Ukrainian
+                                    }
+                                }
+                            },
+                            Translations = new List<PluginMenuTranslationModel>
+                            {
+                                new()
+                                {
+                                    LocaleName = LocaleNames.English,
+                                    Name = "Statistics",
+                                    Language = LanguageNames.English
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.German,
+                                    Name = "Statistik",
+                                    Language = LanguageNames.German
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Danish,
+                                    Name = "Statistik",
+                                    Language = LanguageNames.Danish
+                                },
+                                new()
+                                {
+                                    LocaleName = LocaleNames.Ukrainian,
+                                    Name = "Статистика",
+                                    Language = LanguageNames.Ukrainian
+                                }
+                            }
                         }
                     }
                 }
@@ -1180,6 +1250,14 @@ namespace BackendConfiguration.Pn
                         Link = "/plugins/backend-configuration/task-wizard",
                         Guards = new List<string>(),
                         Position = 6
+                    },
+                    new()
+                    {
+                        Name = localizationService?.GetString("Statistics"),
+                        E2EId = "backend-configuration-statistics",
+                        Link = "/plugins/backend-configuration/statistics",
+                        Guards = new List<string>(),
+                        Position = 7
                     }
                 }
             });

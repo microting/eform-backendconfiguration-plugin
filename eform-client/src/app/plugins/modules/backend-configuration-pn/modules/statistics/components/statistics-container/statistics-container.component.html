@@ -1,0 +1,52 @@
+<eform-new-subheader/>
+
+<mat-card>
+  <mat-card-content class="d-flex flex-column">
+    <mat-form-field>
+      <mat-label>{{'Select property' | translate}}</mat-label>
+      <mtx-select
+        [multiple]="false"
+        [items]="properties"
+        [bindLabel]="'name'"
+        [bindValue]="'id'"
+        [value]="statisticsStateService.getPropertyIdAsync() | async"
+        (change)="changeProperty($event)"
+        [clearable]="true"
+      />
+    </mat-form-field>
+    <div class="d-flex flex-row flex-wrap mb-2">
+      <app-planned-task-days
+        [plannedTaskDaysModel]="plannedTaskDays"
+        [selectedPropertyName]="propertyName"
+        [view]="viewTopLine"
+        class="ml-2"
+      />
+      <app-ad-hoc-task-priorities
+        [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
+        [selectedPropertyName]="propertyName"
+        [view]="viewTopLine"
+        class="ml-2"
+      />
+      <app-document-updated-days
+        [documentUpdatedDaysModel]="documentUpdatedDaysModel"
+        [selectedPropertyName]="propertyName"
+        [view]="viewTopLine"
+        class="ml-2"
+      />
+    </div>
+    <div class="d-flex flex-row flex-wrap">
+      <app-planned-task-workers
+        [plannedTaskWorkers]="plannedTaskWorkers"
+        [selectedPropertyName]="propertyName"
+        [view]="viewBottomLine"
+        class="ml-2"
+      />
+      <app-ad-hoc-task-workers
+        [adHocTaskWorkers]="adHocTaskWorkers"
+        [selectedPropertyName]="propertyName"
+        [view]="viewBottomLine"
+        class="ml-2"
+      />
+    </div>
+  </mat-card-content>
+</mat-card>
