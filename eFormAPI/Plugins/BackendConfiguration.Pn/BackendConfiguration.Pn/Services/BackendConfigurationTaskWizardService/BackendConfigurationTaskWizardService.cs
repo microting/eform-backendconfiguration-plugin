@@ -955,34 +955,74 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     _localizationService.GetString("TaskNotFound"));
             }
 
-            var planning = _itemsPlanningPnDbContext.Plannings
-                .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
-                .Include(x => x.NameTranslations)
-                .Include(x => x.PlanningsTags)
-                .Include(x => x.PlanningSites)
-                .Include(x => x.PlanningCases)
-                .First(x => x.WorkflowState != Constants.WorkflowStates.Removed);
-
-            foreach (var translation in planning.NameTranslations)
+            if (areaRulePlanning.ItemPlanningId != 0)
             {
-                translation.UpdatedByUserId = _userService.UserId;
-                await translation.Delete(_itemsPlanningPnDbContext);
-            }
 
-            foreach (var planningSite in planning.PlanningSites)
-            {
-                planningSite.UpdatedByUserId = _userService.UserId;
-                await planningSite.Delete(_itemsPlanningPnDbContext);
-            }
 
-            foreach (var planningsTag in planning.PlanningsTags)
-            {
-                planningsTag.UpdatedByUserId = _userService.UserId;
-                await planningsTag.Delete(_itemsPlanningPnDbContext);
-            }
 
-            planning.UpdatedByUserId = _userService.UserId;
-            await planning.Delete(_itemsPlanningPnDbContext);
+                var planning = _itemsPlanningPnDbContext.Plannings
+                    .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                    .Include(x => x.NameTranslations)
+                    .Include(x => x.PlanningsTags)
+                    .Include(x => x.PlanningSites)
+                    .Include(x => x.PlanningCases)
+                    .First(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                foreach (var translation in planning.NameTranslations)
+                {
+                    translation.UpdatedByUserId = _userService.UserId;
+                    await translation.Delete(_itemsPlanningPnDbContext);
+                }
+
+                foreach (var planningSite in planning.PlanningSites)
+                {
+                    planningSite.UpdatedByUserId = _userService.UserId;
+                    await planningSite.Delete(_itemsPlanningPnDbContext);
+                }
+
+                foreach (var planningsTag in planning.PlanningsTags)
+                {
+                    planningsTag.UpdatedByUserId = _userService.UserId;
+                    await planningsTag.Delete(_itemsPlanningPnDbContext);
+                }
+
+                planning.UpdatedByUserId = _userService.UserId;
+                await planning.Delete(_itemsPlanningPnDbContext);
+
+                var planningCases = planning.PlanningCases
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToList();
+
+                foreach (var planningCase in planningCases)
+                {
+                    var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                        .Where(x => x.PlanningCaseId == planningCase.Id)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync().ConfigureAwait(false);
+                    foreach (var planningCaseSite in planningCaseSites)
+                    {
+                        var result =
+                            await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
+                        if (result is { MicrotingUid: { } })
+                        {
+                            await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            var clSites = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
+                                x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+
+                            if (clSites != null)
+                            {
+                                await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                            }
+                        }
+                    }
+
+                    // Delete planning case
+                    await planningCase.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+            }
 
             // delete area rule planning and linked object
             foreach (var areaRuleAreaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations)
@@ -997,39 +1037,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 await planningSite.Delete(_backendConfigurationPnDbContext);
             }
 
-            var planningCases = planning.PlanningCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .ToList();
 
-            foreach (var planningCase in planningCases)
-            {
-                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.PlanningCaseId == planningCase.Id)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToListAsync().ConfigureAwait(false);
-                foreach (var planningCaseSite in planningCaseSites)
-                {
-                    var result =
-                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId).ConfigureAwait(false);
-                    if (result is { MicrotingUid: { } })
-                    {
-                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var clSites = await sdkDbContext.CheckListSites.SingleOrDefaultAsync(x =>
-                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                        if (clSites != null)
-                        {
-                            await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
-                        }
-                    }
-                }
-
-                // Delete planning case
-                await planningCase.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
 
             areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
             await areaRulePlanning.AreaRule.Delete(_backendConfigurationPnDbContext);
