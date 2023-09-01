@@ -1,4 +1,4 @@
-import {Component, Input, OnChanges, OnDestroy, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
 import {
   PlannedTaskWorkers,
 } from '../../../../models';
@@ -18,6 +18,7 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
   @Input() plannedTaskWorkers: PlannedTaskWorkers;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
+  @Output() clickOnDiagram: EventEmitter<number | null> = new EventEmitter<number | null>();
   chartData: { name: string, value: number }[] = [];
   colorSchemeLight = {
     domain: ['#0000ff']
@@ -67,5 +68,14 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  onClickOnDiagram(chartData: { name: string, value: number } = null) {
+    if(!chartData){
+      this.clickOnDiagram.emit();
+    } else {
+      const workerId = this.plannedTaskWorkers.taskWorkers.find(x => x.workerName === chartData.name).workerId;
+      this.clickOnDiagram.emit(workerId);
+    }
   }
 }

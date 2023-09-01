@@ -43,6 +43,13 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
   providers: [
     statisticsPersistProvider,
   ],
+  exports: [
+    PlannedTaskDaysComponent,
+    AdHocTaskPrioritiesComponent,
+    AdHocTaskWorkersComponent,
+    PlannedTaskWorkersComponent,
+    DocumentUpdatedDaysComponent
+  ]
 })
 
 export class StatisticsModule {

@@ -6,3 +6,4 @@ export * from './backend-configuration-pn-claims.const';
 export * from './property-compliances-color-badges.enum';
 export * from './repeat-type.enum';
 export * from './task-wizard-statuses.enum';
+export * from './documents-expiration-filter.enum';

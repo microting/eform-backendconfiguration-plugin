@@ -31,6 +31,7 @@ import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MtxCheckboxGroupModule} from '@ng-matero/extensions/checkbox-group';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {StatisticsModule} from '../statistics/statistics.module';
 
 @NgModule({
   declarations: [
@@ -45,31 +46,32 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     DocumentsDocumentEditComponent,
     DocumentsDocumentDeleteComponent
   ],
-    imports: [
-        CommonModule,
-        TranslateModule,
-        RouterModule,
-        DocumentsRouting,
-        EformSharedModule,
-        ReactiveFormsModule,
-        EformImportedModule,
-        FormsModule,
-        MatButtonModule,
-        MatTooltipModule,
-        MatIconModule,
-        MatFormFieldModule,
-        MtxSelectModule,
-        MatInputModule,
-        MtxGridModule,
-        MatDialogModule,
-        MatCardModule,
-        MatSlideToggleModule,
-        MatCheckboxModule,
-        MtxCheckboxGroupModule,
-        MatDatepickerModule,
-    ],
-  providers: [
+  imports: [
+    CommonModule,
+    TranslateModule,
+    RouterModule,
+    DocumentsRouting,
+    EformSharedModule,
+    ReactiveFormsModule,
+    EformImportedModule,
+    FormsModule,
+    MatButtonModule,
+    MatTooltipModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MtxSelectModule,
+    MatInputModule,
+    MtxGridModule,
+    MatDialogModule,
+    MatCardModule,
+    MatSlideToggleModule,
+    MatCheckboxModule,
+    MtxCheckboxGroupModule,
+    MatDatepickerModule,
+    StatisticsModule,
   ],
+  providers: [],
 })
 
-export class DocumentsModule {}
+export class DocumentsModule {
+}

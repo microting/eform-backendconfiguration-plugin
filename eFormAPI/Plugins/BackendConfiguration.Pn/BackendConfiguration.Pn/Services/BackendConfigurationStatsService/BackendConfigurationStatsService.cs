@@ -45,8 +45,8 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     {
         try
         {
-            var currentDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
-            var currentEndDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23, 59, 59);
+            var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
+            var currentEndDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 23, 59, 59);
             var query = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Status && x.ItemPlanningId != 0)
@@ -169,8 +169,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     {
         try
         {
-            var currentDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
-            var currentEndDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23, 59, 59);
+            var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
             var result = new DocumentUpdatedDays();
 
             var query = _caseTemplatePnDbContext.Documents
@@ -184,12 +183,17 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             }
 
             result.ExceededOrToday = await query
-                .Where(x => x.EndAt > currentDateTime && x.EndAt < currentEndDateTime)
+                .Where(x => x.EndAt <= currentDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             result.UnderThirtiethDays = await query
-                .Where(x => x.EndAt > currentEndDateTime)
+                .Where(x => x.EndAt <= currentDateTime.AddMonths(1))
+                .Select(x => x.Id)
+                .CountAsync();
+
+            result.OverThirtiethDays = await query
+                .Where(x => x.EndAt > currentDateTime.AddMonths(1))
                 .Select(x => x.Id)
                 .CountAsync();
 
@@ -254,6 +258,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .Where(y => y.Value == x.SiteId)
                         .Select(y => y.Key)
                         .FirstOrDefault(),
+                    WorkerId = x.SiteId,
                 })
                 .ToList();
 
@@ -317,6 +322,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .Where(y => y.Value == x.SiteId)
                         .Select(y => y.Key)
                         .FirstOrDefault(),
+                    WorkerId = x.SiteId,
                 })
                 .ToList();
 

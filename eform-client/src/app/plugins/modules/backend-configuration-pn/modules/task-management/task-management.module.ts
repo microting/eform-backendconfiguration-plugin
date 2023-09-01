@@ -23,6 +23,7 @@ import {MtxGridModule} from '@ng-matero/extensions/grid';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatCardModule} from '@angular/material/card';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {StatisticsModule} from '../statistics/statistics.module';
 
 @NgModule({
   declarations: [
@@ -51,8 +52,9 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     MatDialogModule,
     MatCardModule,
     MatDatepickerModule,
+    StatisticsModule,
   ],
-  providers: [
-  ],
+  providers: [],
 })
-export class TaskManagementModule {}
+export class TaskManagementModule {
+}

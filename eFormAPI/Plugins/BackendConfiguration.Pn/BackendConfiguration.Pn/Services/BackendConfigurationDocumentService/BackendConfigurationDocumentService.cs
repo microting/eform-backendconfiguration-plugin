@@ -78,28 +78,16 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
         if (pnRequestModel.Expiration != null)
         {
-            switch (pnRequestModel.Expiration)
+            query = pnRequestModel.Expiration switch
             {
-                case 0:
-                    query = query.Where(x => x.EndAt <= DateTime.UtcNow);
-                    break;
-                case 1:
-                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1));
-                    break;
-                case 2:
-                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(3));
-                    break;
-                case 3:
-                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(6));
-                    break;
-                case 4:
-                    query = query.Where(x => x.EndAt <= DateTime.UtcNow.AddYears(1));
-                    break;
-                case 5:
-                    query = query.Where(x => x.EndAt > DateTime.UtcNow.AddYears(1));
-                    break;
-
-            }
+                0 => query.Where(x => x.EndAt <= DateTime.UtcNow),
+                1 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1)),
+                2 => query.Where(x => x.EndAt > DateTime.UtcNow.AddMonths(1)),
+                _ => query
+                /*2 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(3)),
+                3 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(6)),
+                4 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddYears(1)),*/
+            };
         }
 
         // sorting

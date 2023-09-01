@@ -9,6 +9,7 @@ public class PlannedTaskWorkers
 
 public class PlannedTaskWorker
 {
+    public int WorkerId { get; set; }
     public string WorkerName { get; set; }
     public int StatValue { get; set; }
 }

@@ -4,4 +4,5 @@ public class DocumentUpdatedDays
 {
     public int ExceededOrToday { get; set; }
     public int UnderThirtiethDays { get; set; }
+    public int OverThirtiethDays { get; set; }
 }

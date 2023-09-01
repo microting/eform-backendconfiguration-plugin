@@ -1,8 +1,11 @@
-import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
-import { WorkOrderCaseModel } from '../../../../models';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, WorkOrderCaseModel} from '../../../../models';
 import {TaskManagementStateService} from '../store';
-import {TaskManagementCreateShowModalComponent, TaskManagementDeleteModalComponent} from '../';
+import {
+  TaskManagementCreateShowModalComponent,
+  TaskManagementDeleteModalComponent
+} from '../';
 import {
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskManagementService
@@ -18,7 +21,9 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {LoaderService} from 'src/app/common/services';
-import {catchError, tap} from 'rxjs/operators';
+import {catchError, skip, tap} from 'rxjs/operators';
+import {StatisticsStateService} from '../../../statistics/store';
+import {ActivatedRoute} from '@angular/router';
 
 @AutoUnsubscribe()
 @Component({
@@ -27,11 +32,13 @@ import {catchError, tap} from 'rxjs/operators';
   styleUrls: ['./task-management-container.component.scss'],
 })
 export class TaskManagementContainerComponent implements OnInit, OnDestroy {
-  @ViewChild('showCreateModal', { static: true })
-  showCreateModal: TaskManagementCreateShowModalComponent;
-
   workOrderCases: WorkOrderCaseModel[] = [];
   properties: CommonDictionaryModel[] = [];
+  adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;
+  adHocTaskWorkers: AdHocTaskWorkers;
+  selectedPropertyId: number | null = null;
+  view = [1000, 300];
+  diagramForShow: string = '';
 
   downloadWordReportSub$: Subscription;
   downloadExcelReportSub$: Subscription;
@@ -41,6 +48,19 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   workOrderCaseDeleteSub$: Subscription;
   taskCreatedSub$: Subscription;
   taskUpdatedSub$: Subscription;
+  getAdHocTaskPrioritiesSub$: Subscription;
+  getPropertyIdAsyncSub$: Subscription;
+  getAdHocTaskWorkersSub$: Subscription;
+
+  get propertyName(): string {
+    if (this.properties && this.selectedPropertyId) {
+      const index = this.properties.findIndex(x => x.id === this.selectedPropertyId);
+      if (index !== -1) {
+        return this.properties[index].name;
+      }
+    }
+    return '';
+  }
 
   constructor(
     private loaderService: LoaderService,
@@ -52,9 +72,36 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     sanitizer: DomSanitizer,
     public dialog: MatDialog,
     private overlay: Overlay,
+    private statisticsStateService: StatisticsStateService,
+    private route: ActivatedRoute,
   ) {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
+    this.route.queryParams.subscribe(x => {
+      if (x && x.diagramForShow) {
+        this.diagramForShow = x.diagramForShow;
+        const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
+        this.selectedPropertyId = propertyId !== -1 ? propertyId : null;
+        this.getStats();
+      } else {
+        this.diagramForShow = '';
+      }
+    });
+    this.getPropertyIdAsyncSub$ = taskManagementStateService.getFiltersAsync()
+      .pipe(skip(1))
+      .subscribe(filters => {
+        if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
+          this.selectedPropertyId = filters.propertyId;
+          if (this.diagramForShow) {
+            this.getStats();
+          }
+        } else if (filters.propertyId === -1 && this.selectedPropertyId !== null) {
+          this.selectedPropertyId = null;
+          if (this.diagramForShow) {
+            this.getStats();
+          }
+        }
+      });
   }
 
   ngOnInit() {
@@ -62,7 +109,8 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     this.getProperties();
   }
 
-  ngOnDestroy(): void {}
+  ngOnDestroy(): void {
+  }
 
   updateTable(delayed: boolean = false) {
     this.getAllWorkOrderCasesSub$ = this.taskManagementStateService
@@ -113,7 +161,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
         if (data && data.success && data.model) {
           this.properties = data.model;
         }
-    });
+      });
   }
 
   onDownloadWordReport() {
@@ -122,13 +170,13 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .downloadWordReport()
       .pipe(
         tap((data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${ filters.areaName ? '_' + filters.areaName : ''}_report.docx`);
+          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.docx`);
         }),
         catchError((err, caught) => {
           this.toasterService.error('Error downloading report');
           return caught;
         })
-        )
+      )
       .subscribe();
   }
 
@@ -138,7 +186,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       .downloadExcelReport()
       .pipe(
         tap((data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${ filters.areaName ? '_' + filters.areaName : ''}_report.xlsx`);
+          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.xlsx`);
         }),
         catchError((_, caught) => {
           this.toasterService.error('Error downloading report');
@@ -146,5 +194,33 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
         }),
       )
       .subscribe();
+  }
+
+  getAdHocTaskPriorities() {
+    this.getAdHocTaskPrioritiesSub$ = this.statisticsStateService.getAdHocTaskPriorities(this.selectedPropertyId)
+      .pipe(tap(model => {
+        if (model && model.success && model.model) {
+          this.adHocTaskPrioritiesModel = model.model;
+        }
+      }))
+      .subscribe();
+  }
+
+  getAdHocTaskWorkers() {
+    this.getAdHocTaskWorkersSub$ = this.statisticsStateService.getAdHocTaskWorkers(this.selectedPropertyId)
+      .pipe(tap(model => {
+        if (model && model.success && model.model) {
+          this.adHocTaskWorkers = model.model;
+        }
+      }))
+      .subscribe();
+  }
+
+  getStats() {
+    if (this.diagramForShow === 'ad-hoc-task-priorities') {
+      this.getAdHocTaskPriorities();
+    } else if (this.diagramForShow === 'ad-hoc-task-workers') {
+      this.getAdHocTaskWorkers();
+    }
   }
 }

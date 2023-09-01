@@ -5,7 +5,7 @@ import {filter, tap} from 'rxjs/operators';
 import {Subscription, zip} from 'rxjs';
 import {CommonDictionaryModel, DeleteModalSettingModel, FolderDto, LanguagesModel} from 'src/app/common/models';
 import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
-import {TaskWizardCreateModel, TaskWizardEditModel, TaskWizardModel} from '../../../../models';
+import {PlannedTaskWorkers, TaskWizardCreateModel, TaskWizardEditModel, TaskWizardModel} from '../../../../models';
 import {TaskWizardStateService} from '../store';
 import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/components';
 import {dialogConfigHelper, findFullNameById} from 'src/app/common/helpers';
@@ -16,6 +16,8 @@ import {AppSettingsStateService} from 'src/app/modules/application-settings/comp
 import {TaskWizardCreateModalComponent, TaskWizardUpdateModalComponent} from '../../components';
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
 import {AuthStateService} from 'src/app/common/store';
+import {ActivatedRoute} from '@angular/router';
+import {StatisticsStateService} from '../../../statistics/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -33,6 +35,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   appLanguages: LanguagesModel = new LanguagesModel();
   createModal: MatDialogRef<TaskWizardCreateModalComponent>;
   updateModal: MatDialogRef<TaskWizardUpdateModalComponent>;
+  plannedTaskWorkers: PlannedTaskWorkers;
+  selectedPropertyId: number | null = null;
+  view = [1000, 300];
+  showDiagram: boolean = false;
 
   getPropertiesSub$: Subscription;
   getFoldersSub$: Subscription;
@@ -49,6 +55,17 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   tagsChangedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   changePropertySub$: Subscription;
+  getPlannedTaskWorkersSub$: Subscription;
+
+  get propertyName(): string {
+    if (this.properties && this.selectedPropertyId) {
+      const index = this.properties.findIndex(x => x.id === this.selectedPropertyId);
+      if (index !== -1) {
+        return this.properties[index].name;
+      }
+    }
+    return '';
+  }
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -60,7 +77,18 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
     private appSettingsStateService: AppSettingsStateService,
     private authStateService: AuthStateService,
+    private route: ActivatedRoute,
+    private statisticsStateService: StatisticsStateService,
   ) {
+    this.route.queryParams.subscribe(x => {
+      if (x && x.showDiagram) {
+        this.showDiagram = x.showDiagram;
+        this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+        this.getPlannedTaskWorkers();
+      } else {
+        this.showDiagram = false;
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -71,13 +99,19 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
       .pipe(
         tap(filters => {
-          if(filters.propertyIds.length !== 0) {
+          if (filters.propertyIds.length !== 0) {
             this.getFolders();
             this.getSites();
           }
+        },),
+        tap(_ => {
+          if (this.showDiagram) {
+            this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+            this.getPlannedTaskWorkers();
+          }
         })
       )
-      .subscribe()
+      .subscribe();
   }
 
   getProperties() {
@@ -168,25 +202,25 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
           this.updateModal.componentInstance.properties = this.properties;
           this.updateModal.componentInstance.tags = this.tags;
           this.updateModal.componentInstance.appLanguages = this.appLanguages;
-          if(this.changePropertySub$) {
-            this.changePropertySub$.unsubscribe()
+          if (this.changePropertySub$) {
+            this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.updateModal.componentInstance.changeProperty.subscribe(propertyId => {
             zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
               .subscribe(([folders, sites]) => {
-                if(folders && folders.success && folders.model) {
+                if (folders && folders.success && folders.model) {
                   this.updateModal.componentInstance.foldersTreeDto = folders.model;
                 }
-                if(sites && sites.success && sites.model) {
+                if (sites && sites.success && sites.model) {
                   this.updateModal.componentInstance.sites = sites.model;
                 }
-                this.updateModal.componentInstance.selectedFolderName  = findFullNameById(
+                this.updateModal.componentInstance.selectedFolderName = findFullNameById(
                   this.updateModal.componentInstance.model.folderId,
                   folders.model
                 );
-              })
-          })
-          this.updateModal.componentInstance.changeProperty.emit(data.model.propertyId)
+              });
+          });
+          this.updateModal.componentInstance.changeProperty.emit(data.model.propertyId);
           if (this.updateTaskInModalSub$) {
             this.updateTaskInModalSub$.unsubscribe();
           }
@@ -234,25 +268,25 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
           this.createModal.componentInstance.properties = this.properties;
           this.createModal.componentInstance.tags = this.tags;
           this.createModal.componentInstance.appLanguages = this.appLanguages;
-          if(this.changePropertySub$) {
-            this.changePropertySub$.unsubscribe()
+          if (this.changePropertySub$) {
+            this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
             zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
               .subscribe(([folders, sites]) => {
-                if(folders && folders.success && folders.model) {
+                if (folders && folders.success && folders.model) {
                   this.createModal.componentInstance.foldersTreeDto = folders.model;
                 }
-                if(sites && sites.success && sites.model) {
+                if (sites && sites.success && sites.model) {
                   this.createModal.componentInstance.sites = sites.model;
                 }
                 this.createModal.componentInstance.selectedFolderName = findFullNameById(
                   this.createModal.componentInstance.model.folderId,
                   folders.model
                 );
-              })
-          })
-          this.createModal.componentInstance.changeProperty.emit(data.model.propertyId)
+              });
+          });
+          this.createModal.componentInstance.changeProperty.emit(data.model.propertyId);
           if (this.createTaskInModalSub$) {
             this.createTaskInModalSub$.unsubscribe();
           }
@@ -270,24 +304,24 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.createModal.componentInstance.properties = this.properties;
     this.createModal.componentInstance.tags = this.tags;
     this.createModal.componentInstance.appLanguages = this.appLanguages;
-    if(this.changePropertySub$) {
-      this.changePropertySub$.unsubscribe()
+    if (this.changePropertySub$) {
+      this.changePropertySub$.unsubscribe();
     }
     this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
       zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
         .subscribe(([folders, sites]) => {
-          if(folders && folders.success && folders.model) {
+          if (folders && folders.success && folders.model) {
             this.createModal.componentInstance.foldersTreeDto = folders.model;
           }
-          if(sites && sites.success && sites.model) {
+          if (sites && sites.success && sites.model) {
             this.createModal.componentInstance.sites = sites.model;
           }
-          this.createModal.componentInstance.selectedFolderName  = findFullNameById(
+          this.createModal.componentInstance.selectedFolderName = findFullNameById(
             this.createModal.componentInstance.model.folderId,
             folders.model
           );
-        })
-    })
+        });
+    });
     if (this.createTaskInModalSub$) {
       this.createTaskInModalSub$.unsubscribe();
     }
@@ -369,6 +403,16 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   onUpdateTags() {
     this.getTags();
     this.updateTable();
+  }
+
+  getPlannedTaskWorkers() {
+    this.getPlannedTaskWorkersSub$ = this.statisticsStateService.getPlannedTaskWorkers(this.selectedPropertyId)
+      .pipe(tap(model => {
+        if (model && model.success && model.model) {
+          this.plannedTaskWorkers = model.model;
+        }
+      }))
+      .subscribe();
   }
 
   ngOnDestroy(): void {

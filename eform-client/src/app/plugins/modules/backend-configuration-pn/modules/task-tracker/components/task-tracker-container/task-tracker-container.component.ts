@@ -5,6 +5,7 @@ import {
   Columns,
   TaskWizardEditModel,
   TaskWizardCreateModel,
+  PlannedTaskDaysModel,
 } from '../../../../models';
 import {TaskTrackerStateService} from '../store';
 import {
@@ -26,17 +27,22 @@ import {LoaderService} from 'src/app/common/services';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon} from 'src/app/common/const';
-import {catchError, tap} from 'rxjs/operators';
+import {catchError, skip, tap} from 'rxjs/operators';
 import {saveAs} from 'file-saver';
 import {format} from 'date-fns';
-import {CommonDictionaryModel, LanguagesModel} from 'src/app/common/models';
+import {
+  CommonDictionaryModel,
+  LanguagesModel
+} from 'src/app/common/models';
 import {
   TaskWizardCreateModalComponent,
   TaskWizardUpdateModalComponent
 } from '../../../../modules/task-wizard/components';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
-import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
-import {PlanningTagsComponent} from 'src/app/plugins/modules/items-planning-pn/modules/plannings/components';
+import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
+import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
+import {StatisticsStateService} from '../../../statistics/store';
+import {ActivatedRoute} from '@angular/router';
 
 @AutoUnsubscribe()
 @Component({
@@ -62,6 +68,10 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   appLanguages: LanguagesModel = new LanguagesModel();
   createModal: MatDialogRef<TaskWizardCreateModalComponent>;
   updateModal: MatDialogRef<TaskWizardUpdateModalComponent>;
+  plannedTaskDays: PlannedTaskDaysModel;
+  selectedPropertyId: number | null = null;
+  view = [1000, 300];
+  showDiagram: boolean = false;
 
   getAllTasksSub$: Subscription;
   taskCreatedSub$: Subscription;
@@ -78,6 +88,18 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   updateTaskSub$: Subscription;
   createTaskSub$: Subscription;
   createTaskInModalSub$: Subscription;
+  getPlannedTaskDaysSub$: Subscription;
+  getPropertyIdAsyncSub$: Subscription;
+
+  get propertyName(): string {
+    if (this.properties && this.selectedPropertyId) {
+      const index = this.properties.findIndex(x => x.id === this.selectedPropertyId);
+      if (index !== -1) {
+        return this.properties[index].name;
+      }
+    }
+    return '';
+  }
 
   constructor(
     private loaderService: LoaderService,
@@ -93,8 +115,30 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
     private appSettingsStateService: AppSettingsStateService,
     private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
+    public statisticsStateService: StatisticsStateService,
+    private route: ActivatedRoute,
   ) {
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
+    this.route.queryParams.subscribe(x => {
+      if (x && x.showDiagram) {
+        this.showDiagram = x.showDiagram;
+        this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;
+        this.getPlannedTaskDays();
+      } else {
+        this.showDiagram = false;
+      }
+    });
+    this.getPropertyIdAsyncSub$ = taskTrackerStateService.getFiltersAsync()
+      .pipe(skip(1))
+      .subscribe(filters => {
+        if (filters.propertyIds[0] && filters.propertyIds[0] !== this.selectedPropertyId && this.showDiagram) {
+          this.selectedPropertyId = filters.propertyIds[0];
+          this.getPlannedTaskDays();
+        } else if (!filters.propertyIds[0] && this.showDiagram) {
+          this.selectedPropertyId = null;
+          this.getPlannedTaskDays();
+        }
+      });
   }
 
   ngOnInit() {
@@ -103,6 +147,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.getProperties();
     this.getEnabledLanguages();
     this.getTags();
+    this.getPlannedTaskDays();
   }
 
   ngOnDestroy(): void {
@@ -181,25 +226,25 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
           this.updateModal.componentInstance.properties = this.properties;
           this.updateModal.componentInstance.tags = this.tags;
           this.updateModal.componentInstance.appLanguages = this.appLanguages;
-          if(this.changePropertySub$) {
-            this.changePropertySub$.unsubscribe()
+          if (this.changePropertySub$) {
+            this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.updateModal.componentInstance.changeProperty.subscribe(propertyId => {
             zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
               .subscribe(([folders, sites]) => {
-                if(folders && folders.success && folders.model) {
+                if (folders && folders.success && folders.model) {
                   this.updateModal.componentInstance.foldersTreeDto = folders.model;
                 }
-                if(sites && sites.success && sites.model) {
+                if (sites && sites.success && sites.model) {
                   this.updateModal.componentInstance.sites = sites.model;
                 }
-                this.updateModal.componentInstance.selectedFolderName  = findFullNameById(
+                this.updateModal.componentInstance.selectedFolderName = findFullNameById(
                   this.updateModal.componentInstance.model.folderId,
                   folders.model
                 );
-              })
-          })
-          this.updateModal.componentInstance.changeProperty.emit(data.model.propertyId)
+              });
+          });
+          this.updateModal.componentInstance.changeProperty.emit(data.model.propertyId);
           if (this.updateTaskInModalSub$) {
             this.updateTaskInModalSub$.unsubscribe();
           }
@@ -230,20 +275,20 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.createModal.componentInstance.properties = this.properties;
     this.createModal.componentInstance.tags = this.tags;
     this.createModal.componentInstance.appLanguages = this.appLanguages;
-    if(this.changePropertySub$) {
-      this.changePropertySub$.unsubscribe()
+    if (this.changePropertySub$) {
+      this.changePropertySub$.unsubscribe();
     }
     this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
       zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
         .subscribe(([folders, sites]) => {
-          if(folders && folders.success && folders.model) {
+          if (folders && folders.success && folders.model) {
             this.createModal.componentInstance.foldersTreeDto = folders.model;
           }
-          if(sites && sites.success && sites.model) {
+          if (sites && sites.success && sites.model) {
             this.createModal.componentInstance.sites = sites.model;
           }
-        })
-    })
+        });
+    });
     if (this.createTaskInModalSub$) {
       this.createTaskInModalSub$.unsubscribe();
     }
@@ -311,6 +356,16 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
       .pipe(tap(data => {
         if (data && data.success && data.model) {
           this.appLanguages = data.model;
+        }
+      }))
+      .subscribe();
+  }
+
+  getPlannedTaskDays() {
+    this.getPlannedTaskDaysSub$ = this.statisticsStateService.getPlannedTaskDays(this.selectedPropertyId)
+      .pipe(tap(model => {
+        if (model && model.success && model.model) {
+          this.plannedTaskDays = model.model;
         }
       }))
       .subscribe();

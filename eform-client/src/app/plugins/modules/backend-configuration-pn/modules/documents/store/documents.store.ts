@@ -1,16 +1,16 @@
 import { Injectable } from '@angular/core';
 import { persistState, Store, StoreConfig } from '@datorama/akita';
 import {
-  FiltrationStateModel,
   CommonPaginationState,
 } from 'src/app/common/models';
+import {DocumentsExpirationFilterEnum} from '../../../enums';
 
 
 export interface DocumentsFiltrationModel {
   propertyId: number,
   folderId?: string,
   documentId?: string,
-  expiration?: string,
+  expiration?: DocumentsExpirationFilterEnum,
 }
 
 export interface DocumentsState {

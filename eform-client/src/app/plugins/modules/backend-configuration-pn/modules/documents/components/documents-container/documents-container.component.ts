@@ -6,7 +6,10 @@ import {
   DocumentsFoldersComponent
 } from '../';
 import {
-  DocumentModel, DocumentSimpleFolderModel, DocumentSimpleModel,
+  DocumentModel,
+  DocumentSimpleFolderModel,
+  DocumentSimpleModel,
+  DocumentUpdatedDaysModel,
 } from '../../../../models';
 import {CommonDictionaryModel, Paged} from 'src/app/common/models';
 import {LocaleService} from 'src/app/common/services';
@@ -18,10 +21,12 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {
   BackendConfigurationPnDocumentsService,
-  BackendConfigurationPnPropertiesService
+  BackendConfigurationPnPropertiesService,
 } from '../../../../services';
 import {TranslateService} from '@ngx-translate/core';
 import {skip, tap} from 'rxjs/operators';
+import {ActivatedRoute} from '@angular/router';
+import {StatisticsStateService} from '../../../statistics/store';
 
 @Component({
   selector: 'app-documents-container',
@@ -34,12 +39,28 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   simpleDocuments: DocumentSimpleModel[];
   selectedLanguage: number;
   properties: CommonDictionaryModel[] = [];
+  documentUpdatedDaysModel: DocumentUpdatedDaysModel;
+  selectedPropertyId: number | null = null;
+  view = [1000, 300];
+  showDiagram: boolean = false;
 
   documentDeletedSub$: Subscription;
   documentUpdatedSub$: Subscription;
   documentCreatedSub$: Subscription;
   folderManageModalClosedSub$: Subscription;
   getActiveSortDirectionSub$: Subscription;
+  getFiltersAsyncSub$: Subscription;
+  getDocumentUpdatedDaysSub$: Subscription;
+
+  get propertyName(): string {
+    if (this.properties && this.selectedPropertyId) {
+      const index = this.properties.findIndex(x => x.id === this.selectedPropertyId);
+      if (index !== -1) {
+        return this.properties[index].name;
+      }
+    }
+    return '';
+  }
 
   constructor(
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -48,10 +69,21 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     private overlay: Overlay,
     private translate: TranslateService,
     public documentsStateService: DocumentsStateService,
-    public localeService: LocaleService) {
+    public localeService: LocaleService,
+    private route: ActivatedRoute,
+    private statisticsStateService: StatisticsStateService,) {
     this.selectedLanguage = applicationLanguagesTranslated.find(
       (x) => x.locale === localeService.getCurrentUserLocale()
     ).id;
+    this.route.queryParams.subscribe(x => {
+      if (x && x.showDiagram) {
+        this.showDiagram = x.showDiagram;
+        this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
+        this.getDocumentUpdatedDays();
+      } else {
+        this.showDiagram = false;
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -61,6 +93,17 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
         skip(1), // skip initial value
         tap(() => {
           this.updateTable();
+        }),
+      )
+      .subscribe();
+    this.getFiltersAsyncSub$ = this.documentsStateService.getFiltersAsync()
+      .pipe(
+        skip(1), // skip initial value
+        tap(() => {
+          if (this.showDiagram) {
+            this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
+            this.getDocumentUpdatedDays();
+          }
         }),
       )
       .subscribe();
@@ -142,5 +185,15 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
         this.simpleDocuments = data.model;
       }
     });
+  }
+
+  getDocumentUpdatedDays() {
+    this.getDocumentUpdatedDaysSub$ = this.statisticsStateService.getDocumentUpdatedDays()
+      .pipe(tap(model => {
+        if (model && model.success && model.model) {
+          this.documentUpdatedDaysModel = model.model;
+        }
+      }))
+      .subscribe();
   }
 }

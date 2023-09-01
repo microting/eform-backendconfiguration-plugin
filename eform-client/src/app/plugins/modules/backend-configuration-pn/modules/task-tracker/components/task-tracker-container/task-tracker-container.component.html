@@ -11,6 +11,13 @@
 </eform-new-subheader>
 
 <div class="d-flex flex-column">
+  <app-planned-task-days
+    *ngIf="showDiagram"
+    [plannedTaskDaysModel]="plannedTaskDays"
+    [selectedPropertyName]="propertyName"
+    [view]="view"
+    class="mb-2"
+  />
   <app-task-tracker-filters
     (updateTable)="updateTable()"
     [properties]="properties"

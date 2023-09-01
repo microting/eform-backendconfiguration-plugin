@@ -19,6 +19,14 @@
   </button>
 </eform-new-subheader>
 
+<app-planned-task-workers
+  *ngIf="showDiagram"
+  [plannedTaskWorkers]="plannedTaskWorkers"
+  [selectedPropertyName]="propertyName"
+  [view]="view"
+  class="mb-2"
+/>
+
 <app-task-wizard-filters
   [properties]="properties"
   [folders]="folders"

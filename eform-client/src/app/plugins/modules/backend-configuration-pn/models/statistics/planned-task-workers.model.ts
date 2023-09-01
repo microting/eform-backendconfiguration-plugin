@@ -3,6 +3,7 @@ export interface PlannedTaskWorkers {
 }
 
 export interface PlannedTaskWorker {
+  workerId: number;
   workerName: string;
   statValue: number;
 }

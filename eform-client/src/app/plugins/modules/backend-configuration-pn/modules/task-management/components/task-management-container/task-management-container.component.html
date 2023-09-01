@@ -1,4 +1,4 @@
-<eform-new-subheader [title]="'Task management' | translate">
+<eform-new-subheader [title]="'Task management' | translate" forceStaticTitle="true">
   <button
     mat-icon-button
     id="createNewTaskBtn"
@@ -11,7 +11,21 @@
 </eform-new-subheader>
 
 <div class="d-flex flex-column">
-  <app-task-management-filters></app-task-management-filters>
+  <app-ad-hoc-task-priorities
+    *ngIf="diagramForShow === 'ad-hoc-task-priorities'"
+    [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
+    [selectedPropertyName]="propertyName"
+    [view]="view"
+    class="mb-2"
+  />
+  <app-ad-hoc-task-workers
+    *ngIf="diagramForShow === 'ad-hoc-task-workers'"
+    [adHocTaskWorkers]="adHocTaskWorkers"
+    [selectedPropertyName]="propertyName"
+    [view]="view"
+    class="mb-2"
+  />
+  <app-task-management-filters/>
   <div class="d-flex flex-row align-items-center">
     <button
       mat-raised-button

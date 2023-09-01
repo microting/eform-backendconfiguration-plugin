@@ -3,6 +3,7 @@ import {Injectable} from '@angular/core';
 import {OperationDataResult, OperationResult, Paged} from 'src/app/common/models';
 import {Observable} from 'rxjs';
 import {DocumentModel, DocumentFolderModel, DocumentSimpleFolderModel, DocumentSimpleModel} from '../models';
+import {DocumentsExpirationFilterEnum} from '../enums';
 
 export let BackendConfigurationPnDocumentsMethods = {
   Documents: 'api/backend-configuration-pn/documents',
@@ -22,7 +23,7 @@ export let BackendConfigurationPnDocumentsMethods = {
 export class BackendConfigurationPnDocumentsService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getAllDocuments(model: { documentId?: string; expiration?: string; propertyId: number; folderId?: string }):
+  getAllDocuments(model: { documentId?: string; expiration?: DocumentsExpirationFilterEnum; propertyId: number; folderId?: string }):
     Observable<OperationDataResult<Paged<DocumentModel>>> {
     return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.Documents, model);
   }
@@ -47,7 +48,7 @@ export class BackendConfigurationPnDocumentsService {
     return this.apiBaseService.delete(BackendConfigurationPnDocumentsMethods.DocumentDelete + '/' + documentId);
   }
 
-  getAllFolders(model: { documentId?: string; expiration?: string; propertyId: number; folderId?: string }):
+  getAllFolders(model: { documentId?: string; expiration?: DocumentsExpirationFilterEnum; propertyId: number; folderId?: string }):
     Observable<OperationDataResult<Paged<DocumentFolderModel>>> {
     return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.Folders, model);
   }

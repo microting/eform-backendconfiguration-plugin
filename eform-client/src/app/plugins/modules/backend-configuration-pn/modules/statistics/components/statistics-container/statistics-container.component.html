@@ -19,18 +19,21 @@
         [plannedTaskDaysModel]="plannedTaskDays"
         [selectedPropertyName]="propertyName"
         [view]="viewTopLine"
+        (clickOnDiagram)="clickOnPlannedTaskDays()"
         class="ml-2"
       />
       <app-ad-hoc-task-priorities
         [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
         [selectedPropertyName]="propertyName"
         [view]="viewTopLine"
+        (clickOnDiagram)="clickOnAdHocTaskPriorities()"
         class="ml-2"
       />
       <app-document-updated-days
         [documentUpdatedDaysModel]="documentUpdatedDaysModel"
         [selectedPropertyName]="propertyName"
         [view]="viewTopLine"
+        (clickOnDiagram)="clickOnDocumentUpdatedDays($event)"
         class="ml-2"
       />
     </div>
@@ -39,12 +42,14 @@
         [plannedTaskWorkers]="plannedTaskWorkers"
         [selectedPropertyName]="propertyName"
         [view]="viewBottomLine"
+        (clickOnDiagram)="clickOnPlannedTaskWorkers($event)"
         class="ml-2"
       />
       <app-ad-hoc-task-workers
         [adHocTaskWorkers]="adHocTaskWorkers"
         [selectedPropertyName]="propertyName"
         [view]="viewBottomLine"
+        (clickOnDiagram)="clickOnAdHocTaskWorkers($event)"
         class="ml-2"
       />
     </div>

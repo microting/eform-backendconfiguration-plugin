@@ -116,16 +116,16 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           }));
           this.filtersForm
             .get('areaName')
-            .setValue(undefined, {emitEvent: false});
+            .setValue(null, {emitEvent: false});
           this.filtersForm
             .get('createdBy')
-            .setValue(undefined, {emitEvent: false});
+            .setValue(null, {emitEvent: false});
           this.filtersForm
             .get('lastAssignedTo')
-            .setValue(undefined, {emitEvent: false});
+            .setValue(null, {emitEvent: false});
           this.filtersForm
             .get('status')
-            .setValue(undefined, {emitEvent: false});
+            .setValue(null, {emitEvent: false});
           this.filtersForm.get('date.dateFrom').setValue(null, {emitEvent: false});
           this.filtersForm.get('date.dateTo').setValue(null, {emitEvent: false});
           if(value !== -1) {
@@ -201,7 +201,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
       }));
     });
     this.filtersForm.get('date.dateFrom').valueChanges.subscribe((value: Date) => {
-      if (value) {
+      // @ts-ignore
+      if (!isNaN(value) && value) { // invalid date - it's NaN.
         const dateFrom = set(value, {
           hours: 0,
           minutes: 0,
@@ -224,7 +225,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
       }
     });
     this.filtersForm.get('date.dateTo').valueChanges.subscribe((value: Date) => {
-      if (value) {
+      // @ts-ignore
+      if (!isNaN(value) && value) { // invalid date - it's NaN.
         const dateTo = set(value, {
           hours: 0,
           minutes: 0,
