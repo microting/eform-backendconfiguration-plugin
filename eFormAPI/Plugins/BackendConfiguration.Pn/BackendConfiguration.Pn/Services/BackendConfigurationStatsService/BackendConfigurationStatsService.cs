@@ -45,8 +45,8 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     {
         try
         {
-            var currentDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
-            var currentEndDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23, 59, 59);
+            var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
+            var currentEndDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 23, 59, 59);
             var query = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Status && x.ItemPlanningId != 0)
@@ -76,28 +76,28 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
 
             // get exceeded tasks
             result.Exceeded = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentDateTime)
+                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get today tasks
             result.Today = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentDateTime)
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentEndDateTime)
+                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentDateTime)
+                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get 1-7
             result.FromFirstToSeventhDays = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentDateTime.AddDays(1))
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentEndDateTime.AddDays(7))
+                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentDateTime.AddDays(1))
+                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime.AddDays(7))
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get 8-30
             result.FromEighthToThirtiethDays = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentDateTime.AddDays(8))
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentEndDateTime.AddDays(30))
+                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentDateTime.AddDays(8))
+                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime.AddDays(30))
                 .Select(x => x.Id)
                 .CountAsync();
 
@@ -124,7 +124,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 .ThenInclude(x => x.Property)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyWorker.Property.WorkorderEnable)
-                .Where(x => x.LeadingCase == true)
+                .Where(x => x.LeadingCase)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
 
             if (propertyId.HasValue)
@@ -169,8 +169,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     {
         try
         {
-            var currentDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
-            var currentEndDateTime = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 23, 59, 59);
+            var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
             var result = new DocumentUpdatedDays();
 
             var query = _caseTemplatePnDbContext.Documents
@@ -184,12 +183,17 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             }
 
             result.ExceededOrToday = await query
-                .Where(x => x.EndAt > currentDateTime && x.EndAt < currentEndDateTime)
+                .Where(x => x.EndAt <= currentDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             result.UnderThirtiethDays = await query
-                .Where(x => x.EndAt > currentEndDateTime)
+                .Where(x => x.EndAt <= currentDateTime.AddMonths(1))
+                .Select(x => x.Id)
+                .CountAsync();
+
+            result.OverThirtiethDays = await query
+                .Where(x => x.EndAt > currentDateTime.AddMonths(1))
                 .Select(x => x.Id)
                 .CountAsync();
 
@@ -214,7 +218,6 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var result = new PlannedTaskWorkers();
             var query = _backendConfigurationPnDbContext.PlanningSites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Status == 1)
                 .Include(x => x.AreaRulePlanning)
                 .ThenInclude(x => x.AreaRule)
                 .ThenInclude(x => x.Area)
@@ -255,6 +258,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .Where(y => y.Value == x.SiteId)
                         .Select(y => y.Key)
                         .FirstOrDefault(),
+                    WorkerId = x.SiteId,
                 })
                 .ToList();
 
@@ -295,10 +299,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 {
                     SiteId = x.Key,
                     Count = x
-                        .Count(y => y.WorkorderCases
-                            .All(z => z.PropertyWorker.Property.WorkorderEnable &&
-                                      z.WorkflowState != Constants.WorkflowStates.Removed &&
-                                      z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.NewTask))
+                        .SelectMany(y => y.WorkorderCases)
+                        .Count(z => z.PropertyWorker.Property.WorkorderEnable &&
+                                    z.WorkflowState != Constants.WorkflowStates.Removed &&
+                                    z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.NewTask)
                 })
                 .ToListAsync();
 
@@ -318,6 +322,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .Where(y => y.Value == x.SiteId)
                         .Select(y => y.Key)
                         .FirstOrDefault(),
+                    WorkerId = x.SiteId,
                 })
                 .ToList();
 

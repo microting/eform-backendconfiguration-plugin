@@ -1,5 +1,5 @@
 <mat-card class="d-flex flex-column">
-  <mat-card-title>
+  <mat-card-title (click)="onClickOnDiagram()" class="cursor-pointer">
     <span>{{'Documents update per' | translate}} {{currentDate}}</span>
     <br/>
     <span>{{'Property'}}: {{(selectedPropertyName || 'All') | translate}}</span>
@@ -24,6 +24,7 @@
       [barPadding]="8"
       [animations]="true"
       [roundEdges]="true"
+      (select)="onClickOnDiagram($event)"
     />
   </mat-card-content>
 </mat-card>

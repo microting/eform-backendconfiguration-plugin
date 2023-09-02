@@ -1,4 +1,4 @@
-import {Component, Input, OnChanges, OnDestroy, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
 import {
   AdHocTaskPrioritiesModel,
 } from '../../../../models';
@@ -18,6 +18,7 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   @Input() adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
+  @Output() clickOnDiagram: EventEmitter<void> = new EventEmitter<void>();
   currentDate = format(new Date(), 'P', {locale: this.authStateService.dateFnsLocale});
   chartData: { name: string, value: number }[] = [];
   colorSchemeLight = {

@@ -16,6 +16,7 @@ import {AuthStateService} from 'src/app/common/store';
 import {DocumentSimpleFolderModel, DocumentSimpleModel} from '../../../../models';
 import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {DocumentsStateService} from '../../store';
+import {DocumentsExpirationFilterEnum} from '../../../../enums';
 
 @AutoUnsubscribe()
 @Component({
@@ -123,7 +124,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
       });
     this.expireChangesSub$ = this.filtersForm
       .get('expiration')
-      .valueChanges.subscribe((value: string) => {
+      .valueChanges.subscribe((value: DocumentsExpirationFilterEnum) => {
         if (this.documentsStateService.store.getValue().filters.expiration !== value) {
           this.documentsStateService.store.update((state) => ({
             filters: {

@@ -1,4 +1,4 @@
-import {Component, Input, OnChanges, OnDestroy, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
 import {
   PlannedTaskDaysModel,
 } from '../../../../models';
@@ -18,6 +18,7 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
   @Input() plannedTaskDaysModel: PlannedTaskDaysModel;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
+  @Output() clickOnDiagram: EventEmitter<void> = new EventEmitter<void>();
   chartData: { name: string, value: number }[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa', '#3b3bff']

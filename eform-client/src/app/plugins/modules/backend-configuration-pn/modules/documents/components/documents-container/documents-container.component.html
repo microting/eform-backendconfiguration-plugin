@@ -1,7 +1,4 @@
-<eform-new-subheader
-  [title]="'Documents' | translate"
-  [forceStaticTitle]="true"
->
+<eform-new-subheader>
   <ng-container *ngIf="folders !== undefined">
     <button *ngIf="folders.length > 0"
             mat-icon-button
@@ -24,17 +21,25 @@
   </button>
 </eform-new-subheader>
 
-<app-documents-filters (updateTable)="updateTable()"
-                       [properties]="properties"
-                       [folders]="folders"
-                       [documents]="simpleDocuments">
 
-</app-documents-filters>
+<app-document-updated-days
+  *ngIf="showDiagram"
+  [documentUpdatedDaysModel]="documentUpdatedDaysModel"
+  [selectedPropertyName]="propertyName"
+  [view]="view"
+  class="mb-2"
+/>
+
+<app-documents-filters
+  (updateTable)="updateTable()"
+  [properties]="properties"
+  [folders]="folders"
+  [documents]="simpleDocuments"
+/>
 
 <app-documents-table
   [documents]="documents.entities || []"
   (openEditModal)="showEditDocumentModal($event)"
   (openDeleteModal)="showDeleteDocumentModal($event)"
   [folders]="folders"
->
-</app-documents-table>
+/>

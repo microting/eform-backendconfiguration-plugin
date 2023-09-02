@@ -1,4 +1,4 @@
-import {Component, Input, OnChanges, OnDestroy, SimpleChanges} from '@angular/core';
+import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
 import {
   AdHocTaskWorkers,
 } from '../../../../models';
@@ -18,6 +18,7 @@ export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
   @Input() adHocTaskWorkers: AdHocTaskWorkers;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
+  @Output() clickOnDiagram: EventEmitter<number | null> = new EventEmitter<number | null>();
   chartData: { name: string, value: number }[] = [];
   colorSchemeLight = {
     domain: ['#0000ff']
@@ -63,6 +64,15 @@ export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
       this.chartData = this.adHocTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: x.statValue}));
       this.customColorsDark = this.adHocTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
       this.customColorsLight = this.adHocTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
+    }
+  }
+
+  onClickOnDiagram(chartData: { name: string, value: number } = null) {
+    if(!chartData){
+      this.clickOnDiagram.emit();
+    } else {
+      const workerId = this.adHocTaskWorkers.taskWorkers.find(x => x.workerName === chartData.name).workerId;
+      this.clickOnDiagram.emit(workerId);
     }
   }
 

@@ -20,24 +20,24 @@ export class StatisticsStateService {
   ) {
   }
 
-  getPlannedTaskDays(): Observable<OperationDataResult<PlannedTaskDaysModel>> {
-    return this.service.getPlannedTaskDays({propertyId: this.getPropertyId()});
+  getPlannedTaskDays(propertyId: number | null = undefined): Observable<OperationDataResult<PlannedTaskDaysModel>> {
+    return this.service.getPlannedTaskDays({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
   }
 
-  getAdHocTaskPriorities(): Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
-    return this.service.getAdHocTaskPriorities({propertyId: this.getPropertyId()});
+  getAdHocTaskPriorities(propertyId: number | null = undefined): Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
+    return this.service.getAdHocTaskPriorities({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
   }
 
-  getDocumentUpdatedDays(): Observable<OperationDataResult<DocumentUpdatedDaysModel>> {
-    return this.service.getDocumentUpdatedDays({propertyId: this.getPropertyId()});
+  getDocumentUpdatedDays(propertyId: number | null = undefined): Observable<OperationDataResult<DocumentUpdatedDaysModel>> {
+    return this.service.getDocumentUpdatedDays({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
   }
 
-  getPlannedTaskWorkers(): Observable<OperationDataResult<PlannedTaskWorkers>> {
-    return this.service.getPlannedTaskWorkers({propertyId: this.getPropertyId()});
+  getPlannedTaskWorkers(propertyId: number | null = undefined): Observable<OperationDataResult<PlannedTaskWorkers>> {
+    return this.service.getPlannedTaskWorkers({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
   }
 
-  getAdHocTaskWorkers(): Observable<OperationDataResult<AdHocTaskWorkers>> {
-    return this.service.getAdHocTaskWorkers({propertyId: this.getPropertyId()});
+  getAdHocTaskWorkers(propertyId: number | null = undefined): Observable<OperationDataResult<AdHocTaskWorkers>> {
+    return this.service.getAdHocTaskWorkers({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
   }
 
   getPropertyIdAsync(): Observable<number> {

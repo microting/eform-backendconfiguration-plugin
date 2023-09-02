@@ -3,6 +3,7 @@ export interface AdHocTaskWorkers {
 }
 
 export interface AdHocTaskWorker {
+  workerId: number;
   workerName: string;
   statValue: number;
 }
