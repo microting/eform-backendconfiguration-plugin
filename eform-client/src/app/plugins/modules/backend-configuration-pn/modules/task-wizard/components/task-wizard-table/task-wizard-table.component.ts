@@ -123,6 +123,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
 
   onClickTag(tag: CommonDictionaryModel) {
     this.taskWizardStateService.addTagToFilters(tag);
+    this.updateTable.emit();
   }
 
   onSortTable(sort: Sort) {

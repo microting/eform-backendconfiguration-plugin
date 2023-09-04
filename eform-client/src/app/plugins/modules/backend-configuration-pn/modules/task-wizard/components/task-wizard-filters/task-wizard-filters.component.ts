@@ -8,12 +8,12 @@ import {
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {CommonDictionaryModel, FolderDto} from 'src/app/common/models';
 import {FormControl, FormGroup} from '@angular/forms';
-import {filter, tap} from 'rxjs/operators';
+import {debounce, filter, tap} from 'rxjs/operators';
 import {TaskWizardStateService} from '../store';
 import {TaskWizardStatusesEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
-import {Subscription} from 'rxjs';
+import {interval, Subscription} from 'rxjs';
 
 @AutoUnsubscribe()
 @Component({
@@ -68,6 +68,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
       });
     this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
       .pipe(
+        debounce(x => interval(200)),
         filter(value => !R.equals(value, this.filtersForm.getRawValue())),
         tap(filters => {
           this.propertyIdsChange(filters.propertyIds);
@@ -78,6 +79,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
         })).subscribe();
 
     this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
+      debounce(x => interval(200)),
       filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.propertyIds)),
       tap(value => {
         this.propertyIdsChange(value);
@@ -86,6 +88,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
     ).subscribe();
 
     this.valueChangesFolderIdsSub$ = this.filtersForm.get('folderIds').valueChanges.pipe(
+      debounce(x => interval(200)),
       filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.folderIds)),
       tap(value => {
         this.folderIdsChange(value);
@@ -94,6 +97,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
     ).subscribe();
 
     this.valueChangesTagIdsSub$ = this.filtersForm.get('tagIds').valueChanges.pipe(
+      debounce(x => interval(200)),
       filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.tagIds)),
       tap(value => {
         this.tagIdsChange(value);
@@ -102,6 +106,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
     ).subscribe();
 
     this.valueChangesAssignToIdsSub$ = this.filtersForm.get('assignToIds').valueChanges.pipe(
+      debounce(x => interval(200)),
       filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.assignToIds)),
       tap(value => {
         this.assignToIdsChange(value);
@@ -110,6 +115,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
     ).subscribe();
 
     this.valueChangesStatusSub$ = this.filtersForm.get('status').valueChanges.pipe(
+      debounce(x => interval(200)),
       filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.status)),
       tap(value => {
         this.statusChange(value);
