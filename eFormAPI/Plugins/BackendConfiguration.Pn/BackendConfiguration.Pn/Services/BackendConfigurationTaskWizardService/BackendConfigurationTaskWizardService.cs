@@ -114,7 +114,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Select(x => new
                 {
                     x.Id,
-                    x.Name,
+                    x.Name
                 })
                 .ToListAsync();
             var itemPlanningTagNames = itemPlanningTags.ToDictionary(x => x.Id, x => x.Name);
@@ -397,7 +397,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 await planningSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
-            var tagIds = createModel.TagIds.ToList(); // ToList() need for not update createModel.TagIds
+            var tagIds = createModel.TagIds.Distinct().ToList(); // ToList() need for not update createModel.TagIds
             if (createModel.ItemPlanningTagId.HasValue)
             {
                 tagIds.Add(createModel.ItemPlanningTagId.Value);
@@ -497,7 +497,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                 UpdatedByUserId = _userService.UserId,
                                 CreatedByUserId = _userService.UserId,
                             })
-                            .ToList(),
+                            .ToList()
                     }
                 },
                 UpdatedByUserId = _userService.UserId,
@@ -1128,14 +1128,23 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         {
             await planningTag.Create(_itemsPlanningPnDbContext);
 
-            var areaRulePlanningTag = new AreaRulePlanningTag
+            var areaRulePlanningTag = await _backendConfigurationPnDbContext.AreaRulePlanningTags
+                .Where(x => x.AreaRulePlanningId == areaRulePlanningId)
+                .Where(x => x.ItemPlanningTagId == planningTag.PlanningTagId)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .FirstOrDefaultAsync();
+
+            if (areaRulePlanningTag == null)
             {
-                AreaRulePlanningId = areaRulePlanningId,
-                ItemPlanningTagId = planningTag.PlanningTagId,
-                CreatedByUserId = _userService.UserId,
-                UpdatedByUserId = _userService.UserId
-            };
-            await areaRulePlanningTag.Create(_backendConfigurationPnDbContext);
+                areaRulePlanningTag = new AreaRulePlanningTag
+                {
+                    AreaRulePlanningId = areaRulePlanningId,
+                    ItemPlanningTagId = planningTag.PlanningTagId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await areaRulePlanningTag.Create(_backendConfigurationPnDbContext);
+            }
         }
 
         return planning;
@@ -1149,10 +1158,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             .AsQueryable();
 
         var tagsToDelete = await tagsQuery
-            .Where(x => !updateModel.TagIds.Contains(x.ItemPlanningTagId))
+            .Where(x => !updateModel.TagIds.Distinct().Contains(x.ItemPlanningTagId))
             .ToListAsync();
 
-        var tagsToCreate = updateModel.TagIds
+        var tagsToCreate = updateModel.TagIds.Distinct()
             .Except(tagsQuery
                 .Select(tag => tag.ItemPlanningTagId)
                 .ToList())
