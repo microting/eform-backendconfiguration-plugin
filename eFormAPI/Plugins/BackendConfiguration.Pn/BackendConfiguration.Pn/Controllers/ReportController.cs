@@ -93,7 +93,7 @@ public class ReportController : Controller
     [Route("new-reports")]
     public async Task<OperationDataResult<List<ReportEformModel>>> GenerateNewReport([FromBody] GenerateReportModel requestModel)
     {
-        return await _reportService.GenerateReport(requestModel);
+        return await _reportService.GenerateReportV2(requestModel);
     }
 
     /// <summary>Download records export word</summary>

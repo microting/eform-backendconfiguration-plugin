@@ -34,7 +34,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
     public interface IBackendConfigurationReportService
     {
         Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx);
-        Task<OperationDataResult<List<ReportEformModel>>> GenerateReport(GenerateReportModel model);
+        Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model);
         Task<OperationDataResult<Stream>> GenerateReportFile(GenerateReportModel model);
         Task<OperationResult> Update(ReplyRequest model);
     }
