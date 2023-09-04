@@ -17,35 +17,35 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
---
--- Table structure for table `Languages`
---
-
-DROP TABLE IF EXISTS `Languages`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Languages` (
-  `Id` int(11) NOT NULL AUTO_INCREMENT,
-  `Version` int(11) DEFAULT NULL,
-  `WorkflowState` varchar(255) DEFAULT NULL,
-  `CreatedAt` datetime(6) DEFAULT NULL,
-  `UpdatedAt` datetime(6) DEFAULT NULL,
-  `Name` longtext DEFAULT NULL,
-  `LanguageCode` longtext DEFAULT NULL,
-  `IsActive` tinyint(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`Id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `Languages`
---
-
-LOCK TABLES `Languages` WRITE;
-/*!40000 ALTER TABLE `Languages` DISABLE KEYS */;
-INSERT INTO `Languages` VALUES (1,1,'created','2023-02-07 11:45:25.000000','2023-02-07 11:45:25.000000','Danish','da',0),(2,1,'created','2023-02-07 11:45:25.000000','2023-02-07 11:45:25.000000','English','en-US',0),(3,1,'created','2023-02-07 11:45:25.000000','2023-02-07 11:45:25.000000','German','de-DE',0);
-/*!40000 ALTER TABLE `Languages` ENABLE KEYS */;
-UNLOCK TABLES;
+# --
+# -- Table structure for table `Languages`
+# --
+#
+# DROP TABLE IF EXISTS `Languages`;
+# /*!40101 SET @saved_cs_client     = @@character_set_client */;
+# /*!40101 SET character_set_client = utf8 */;
+# CREATE TABLE `Languages` (
+#   `Id` int(11) NOT NULL AUTO_INCREMENT,
+#   `Version` int(11) DEFAULT NULL,
+#   `WorkflowState` varchar(255) DEFAULT NULL,
+#   `CreatedAt` datetime(6) DEFAULT NULL,
+#   `UpdatedAt` datetime(6) DEFAULT NULL,
+#   `Name` longtext DEFAULT NULL,
+#   `LanguageCode` longtext DEFAULT NULL,
+#   `IsActive` tinyint(1) NOT NULL DEFAULT 0,
+#   PRIMARY KEY (`Id`)
+# ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+# /*!40101 SET character_set_client = @saved_cs_client */;
+#
+# --
+# -- Dumping data for table `Languages`
+# --
+#
+# LOCK TABLES `Languages` WRITE;
+# /*!40000 ALTER TABLE `Languages` DISABLE KEYS */;
+# INSERT INTO `Languages` VALUES (1,1,'created','2023-02-07 11:45:25.000000','2023-02-07 11:45:25.000000','Danish','da',0),(2,1,'created','2023-02-07 11:45:25.000000','2023-02-07 11:45:25.000000','English','en-US',0),(3,1,'created','2023-02-07 11:45:25.000000','2023-02-07 11:45:25.000000','German','de-DE',0);
+# /*!40000 ALTER TABLE `Languages` ENABLE KEYS */;
+# UNLOCK TABLES;
 
 --
 -- Table structure for table `PlanningCaseSiteVersions`
@@ -276,7 +276,6 @@ CREATE TABLE `PlanningNameTranslation` (
   PRIMARY KEY (`Id`),
   KEY `IX_PlanningNameTranslation_PlanningId` (`PlanningId`),
   KEY `IX_PlanningNameTranslation_LanguageId` (`LanguageId`),
-  CONSTRAINT `FK_PlanningNameTranslation_Languages_LanguageId` FOREIGN KEY (`LanguageId`) REFERENCES `Languages` (`Id`) ON DELETE CASCADE,
   CONSTRAINT `FK_PlanningNameTranslation_Plannings_PlanningId` FOREIGN KEY (`PlanningId`) REFERENCES `Plannings` (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -504,6 +503,7 @@ CREATE TABLE `PlanningVersions` (
   `IsLocked` tinyint(1) NOT NULL DEFAULT 0,
   `ExpireInYears` int(11) NOT NULL DEFAULT 0,
   `ShowExpireDate` tinyint(1) NOT NULL DEFAULT 0,
+  `ReportGroupPlanningTagId` int(11) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -572,6 +572,7 @@ CREATE TABLE `Plannings` (
   `IsLocked` tinyint(1) NOT NULL DEFAULT 0,
   `ExpireInYears` int(11) NOT NULL DEFAULT 0,
   `ShowExpireDate` tinyint(1) NOT NULL DEFAULT 0,
+  `ReportGroupPlanningTagId` int(11) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

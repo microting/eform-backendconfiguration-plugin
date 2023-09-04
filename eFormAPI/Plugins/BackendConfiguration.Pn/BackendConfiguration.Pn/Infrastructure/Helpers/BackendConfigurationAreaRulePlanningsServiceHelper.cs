@@ -1506,7 +1506,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         catch (Exception e)
         {
             Console.WriteLine(e.Message);
-            // Log.LogException(e.StackTrace);
+            Console.WriteLine(e.StackTrace);
             return new OperationDataResult<AreaRuleModel>(false, "ErrorWhileUpdatePlanning");
         }
     }
