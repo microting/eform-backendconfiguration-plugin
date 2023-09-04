@@ -513,7 +513,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             }
         }
 
-        public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReport(GenerateReportModel model)
+        public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model)
         {
             try
             {
@@ -560,6 +560,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.ItemPlanningTagId.HasValue)
                     .Select(x => x.ItemPlanningTagId.Value)
+                    .Distinct()
                     .ToListAsync();
 
                 var planningTagsForGroup = await _itemsPlanningPnDbContext.PlanningTags
@@ -584,16 +585,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
                 var groupedPlanningCases = planningCasesQuery
                     .ToList()
-                    .Where(x => x.Planning.PlanningsTags.Any(y =>
-                        planningTagIdsForGroup.Contains(y.PlanningTagId)))
+                    .Where(x => planningTagIdsForGroup.Contains(x.Planning.ReportGroupPlanningTagId))
+                    // .Where(x => x.Planning.PlanningsTags.Any(y =>
+                    //     planningTagIdsForGroup.Contains(y.PlanningTagId)))
                     .Select(x => new
                     {
                         planningCase = x,
-                        planningTag = planningTagsForGroup
-                            .First(y => x.Planning.PlanningsTags
-                                .Any(t => t.PlanningTagId == y.Id))
+                        ReportGroupPlanningTagId = planningTagsForGroup
+                            .First(y => x.Planning.ReportGroupPlanningTagId == y.Id)
+                            //    .Any(t => t.PlanningTagId == y.Id))
                     })
-                    .GroupBy(x => x.planningTag,
+                    .GroupBy(x => x.ReportGroupPlanningTagId,
                         (tag, enumerable) => new
                         {
                             planningTag = tag,
@@ -612,7 +614,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     {
                         FromDate = $"{fromDate:yyyy-MM-dd}",
                         ToDate = $"{toDate:yyyy-MM-dd}",
-                        GroupTagName = groupedPlanningCase.planningTag.Name,
+                        GroupTagName = groupedPlanningCase.planningTag.Name
                     };
 
                     foreach (var eformIdAndCases in groupedPlanningCase.casesGroupedByEfromId)
@@ -624,7 +626,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         var checkListTranslation = sdkDbContext.CheckListTranslations
                             .Where(x => x.CheckListId == checkList.Id)
                             .First(x => x.LanguageId == language.Id).Text;
-                        var group = new ReportEformGroupModel()
+                        var group = new ReportEformGroupModel
                         {
                             CheckListId = checkList.Id,
                             CheckListName = checkListTranslation,
