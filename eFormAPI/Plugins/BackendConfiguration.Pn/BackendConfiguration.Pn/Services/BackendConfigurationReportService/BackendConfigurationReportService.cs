@@ -585,7 +585,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
                 var groupedPlanningCases = planningCasesQuery
                     .ToList()
-                    .Where(x => planningTagIdsForGroup.Contains(x.Planning.ReportGroupPlanningTagId))
+                    .Where(x => planningTagIdsForGroup.Contains((int)x.Planning.ReportGroupPlanningTagId))
                     // .Where(x => x.Planning.PlanningsTags.Any(y =>
                     //     planningTagIdsForGroup.Contains(y.PlanningTagId)))
                     .Select(x => new
