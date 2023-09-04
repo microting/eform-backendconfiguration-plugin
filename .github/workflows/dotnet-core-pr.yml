@@ -167,6 +167,10 @@ jobs:
         cat docker_run_log
         result=`cat docker_run_log | grep "Now listening on: http://0.0.0.0:5000" -m 1 | wc -l`
         if [ $result -ne 1 ];then exit 1; fi
+    - name: Get standard output
+      if: ${{ failure() }}
+      run: |
+        cat docker_run_log
     - name: Archive screenshot artifacts
       if: ${{ failure() }}
       uses: actions/upload-artifact@v3
