@@ -188,6 +188,10 @@ jobs:
         path: |
           eform-angular-frontend/eform-client/errorShots/chrome*.png
         retention-days: 2
+    - name: Get standard output
+      if: ${{ failure() }}
+      run: |
+        cat docker_run_log
     - name: Archive videos
       if: ${{ failure() }}
       uses: actions/upload-artifact@v3
