@@ -1,0 +1,19 @@
+mat-card-content.d-flex.flex-column {
+  .top-stats {
+    app-planned-task-days, app-ad-hoc-task-priorities, app-document-updated-days {
+      width: calc(100% / 3) - 1;
+    }
+  }
+
+  .bottom-stats {
+    app-planned-task-workers, app-ad-hoc-task-workers {
+      width: calc(100% / 2) - 1.3;
+    }
+  }
+
+  @media screen and (max-device-width: 900px) {
+    app-planned-task-days, app-ad-hoc-task-priorities, app-document-updated-days, app-planned-task-workers, app-ad-hoc-task-workers {
+      width: unset !important;
+    }
+  }
+}
