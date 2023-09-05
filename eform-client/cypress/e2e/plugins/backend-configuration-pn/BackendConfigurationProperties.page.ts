@@ -286,7 +286,9 @@ export class PropertyRowObject {
     if (clickCancel) {
       backendConfigurationPropertiesPage.propertyDeleteCancelBtn().click();
     } else {
+      cy.intercept('DELETE', '**/api/backend-configuration-pn/properties*').as('deleteProperty');
       backendConfigurationPropertiesPage.propertyDeleteDeleteBtn().click();
+      cy.wait('@deleteProperty', {timeout: 10000});
     }
     backendConfigurationPropertiesPage.propertyCreateBtn().should('be.enabled');
   }
