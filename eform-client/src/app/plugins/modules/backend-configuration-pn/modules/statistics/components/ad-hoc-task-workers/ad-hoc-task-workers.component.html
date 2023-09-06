@@ -2,7 +2,7 @@
   <mat-card-title (click)="onClickOnDiagram()" class="cursor-pointer">
     <span>{{'Task allocation, ad-hoc tasks per' | translate}} {{currentDate}}</span>
     <br/>
-    <span>{{'Property'}}: {{(selectedPropertyName || 'All') | translate}}</span>
+    <span>{{'Property' | translate}}: {{(selectedPropertyName || 'All') | translate}}</span>
   </mat-card-title>
   <mat-card-content>
     <ngx-charts-bar-horizontal
