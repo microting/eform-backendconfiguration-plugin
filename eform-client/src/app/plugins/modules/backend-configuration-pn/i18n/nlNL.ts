@@ -261,4 +261,5 @@ export const nlNL = {
   Exceeded: 'Overschreden',
   'Exeeded or today': 'Overtroffen of vandaag',
   'Under 30 days': 'Minder dan 30 dagen',
+  'Exceeded or today': 'Overschreden of vandaag',
 };

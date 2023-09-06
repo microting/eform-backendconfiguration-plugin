@@ -261,4 +261,5 @@ export const roRO = {
   Exceeded: 'Depășit',
   'Exeeded or today': 'Execedat sau azi',
   'Under 30 days': 'Sub 30 de zile',
+  'Exceeded or today': 'Depășit sau astăzi',
 };

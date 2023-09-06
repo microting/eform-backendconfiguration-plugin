@@ -261,4 +261,5 @@ export const da = {
   Exceeded: 'Overskredet',
   'Exeeded or today': 'Exeeded eller i dag',
   'Under 30 days': 'Under 30 dage',
+  'Exceeded or today': 'Overskredet eller i dag',
 };

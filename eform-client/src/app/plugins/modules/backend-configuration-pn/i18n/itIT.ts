@@ -261,4 +261,5 @@ export const itIT = {
   Exceeded: 'Superato',
   'Exeeded or today': 'Superato o oggi',
   'Under 30 days': 'Meno di 30 giorni',
+  'Exceeded or today': 'Superato o oggi',
 };

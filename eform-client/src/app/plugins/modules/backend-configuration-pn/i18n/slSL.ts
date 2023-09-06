@@ -261,4 +261,5 @@ export const slSL = {
   Exceeded: 'Preseženo',
   'Exeeded or today': 'Exeeded ali danes',
   'Under 30 days': 'Manj kot 30 dni',
+  'Exceeded or today': 'Presežen ali danes',
 };

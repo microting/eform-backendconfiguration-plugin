@@ -326,4 +326,5 @@ export const deDE = {
   Exceeded: 'Übertroffen',
   'Exeeded or today': 'Übertroffen oder heute',
   'Under 30 days': 'Unter 30 Tage',
+  'Exceeded or today': 'Überschritten oder heute',
 };

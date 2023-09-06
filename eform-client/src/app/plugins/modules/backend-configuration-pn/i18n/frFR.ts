@@ -261,4 +261,5 @@ export const frFR = {
   Exceeded: 'Dépassé',
   'Exeeded or today': 'Dépassé ou aujourd&#39;hui',
   'Under 30 days': 'Moins de 30 jours',
+  'Exceeded or today': 'Dépassé ou aujourd&#39;hui',
 };

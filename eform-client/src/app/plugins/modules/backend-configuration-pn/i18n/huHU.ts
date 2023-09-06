@@ -261,4 +261,5 @@ export const huHU = {
   Exceeded: 'Meghaladta',
   'Exeeded or today': 'Exeeded vagy ma',
   'Under 30 days': '30 nap alatt',
+  'Exceeded or today': 'Meghaladta vagy ma',
 };

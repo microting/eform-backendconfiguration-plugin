@@ -261,4 +261,5 @@ export const etET = {
   Exceeded: 'Ületatud',
   'Exeeded or today': 'Exeeded või täna',
   'Under 30 days': 'Alla 30 päeva',
+  'Exceeded or today': 'Ületatud või täna',
 };

@@ -261,4 +261,5 @@ export const ptBR = {
   Exceeded: 'Excedido',
   'Exeeded or today': 'Exeded ou hoje',
   'Under 30 days': 'Menos de 30 dias',
+  'Exceeded or today': 'Excedido ou hoje',
 };

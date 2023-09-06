@@ -261,4 +261,5 @@ export const svSE = {
   Exceeded: 'Överskred',
   'Exeeded or today': 'Exeeded eller idag',
   'Under 30 days': 'Under 30 dagar',
+  'Exceeded or today': 'Överskriden eller idag',
 };
