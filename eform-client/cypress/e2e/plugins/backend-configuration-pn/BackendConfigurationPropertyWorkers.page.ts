@@ -213,7 +213,11 @@ export class WorkerRowObject {
     if (clickCancel) {
       backendConfigurationPropertyWorkersPage.cancelDeleteBtn().click();
     } else {
+      cy.intercept('DELETE', '**/api/device-users/delete/*').as('deleteDeviceUser');
+      cy.intercept('GET', '**/api/backend-configuration-pn/properties/assignment*').as('getAssignments');
       backendConfigurationPropertyWorkersPage.saveDeleteBtn().click();
+      cy.wait('@deleteDeviceUser', {timeout: 10000});
+      cy.wait('@getAssignments', {timeout: 10000});
     }
     backendConfigurationPropertyWorkersPage.newDeviceUserBtn().should('be.visible');
   }

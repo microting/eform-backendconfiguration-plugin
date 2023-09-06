@@ -1,24 +1,24 @@
-import { enUS } from './en-US';
+import { enUS } from './enUS';
 import { da } from './da';
-import { deDE } from './de-DE';
-import { ukUA } from './uk-UA';
-import { plPl } from './pl-PL';
-import { frFR } from './fr-FR';
-import { esES } from './es-ES';
-import { itIT } from './it-IT';
-import { nlNL } from './nl-NL';
-import { ptBR } from './pt-BR';
-import { svSE } from './sv-SE';
-import { fiFI } from './fi-FI';
-import { noNO } from './no-NO';
-import { ptPT } from './pt-PT';
+import { deDE } from './deDE';
+import { ukUA } from './ukUA';
+import { plPL } from './plPL';
+import { frFR } from './frFR';
+import { esES } from './esES';
+import { itIT } from './itIT';
+import { nlNL } from './nlNL';
+import { ptBR } from './ptBR';
+import { svSE } from './svSE';
+import { fiFI } from './fiFI';
+import { noNO } from './noNO';
+import { ptPT } from './ptPT';
 
 export const translates = {
   'en-US': enUS,
   da     : da,
   'de-DE': deDE,
   'uk-UA': ukUA,
-  'pl-PL': plPl,
+  'pl-PL': plPL,
   'fr-FR': frFR,
   'es-ES': esES,
   'it-IT': itIT,

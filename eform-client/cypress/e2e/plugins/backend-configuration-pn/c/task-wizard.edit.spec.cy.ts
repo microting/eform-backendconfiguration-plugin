@@ -94,6 +94,13 @@ describe('Area rules type 1', () => {
   //   cy.wait(500);
   //   cy.get('.d-flex > #folderTreeName').click();
   //   cy.wait(500);
+  //   cy.get('#createTableTags').click();
+  //   cy.wait(500);
+  //   selectValueInNgSelectorNoSelector(`03. Flydelag`);
+  //   cy.get('#createTags').click();
+  //   cy.wait(500);
+  //   selectValueInNgSelectorNoSelector(`00. Logbøger`);
+  //   cy.wait(500);
   //   for (let i = 0; i < task.translations.length; i++) {
   //     cy.get(`#createName${i}`).type(task.translations[i]);
   //   }
@@ -104,7 +111,9 @@ describe('Area rules type 1', () => {
   //   cy.get('#createRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(task.repeatEvery);
   //   cy.get(`.ng-option`).first().should('have.text', task.repeatEvery).should('be.visible').click();
   //   cy.get('mat-checkbox#checkboxCreateAssignment0').click();
+  //   cy.intercept('POST', '**/api/backend-configuration-pn/task-wizard').as('createTask');
   //   cy.get('#createTaskBtn').click();
+  //   cy.wait('@createTask', { timeout: 60000 });
   //   cy.wait(500);
   //   // check table
   //   cy.get('.cdk-row').should('have.length', 1);
@@ -134,14 +143,23 @@ describe('Area rules type 1', () => {
   //   cy.get('#backend-configuration-pn-task-wizard').click();
   //   cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
   //   // change task
+  //   cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
   //   cy.get('#updateProperty').click();
   //   selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
+  //   cy.wait('@getFolders', { timeout: 60000 });
   //   cy.wait(500);
   //   cy.get('#updateFolder').click({force: true});
   //   cy.wait(500);
   //   cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
   //   cy.wait(500);
   //   cy.contains('#folderTreeName', newFolderName).click();
+  //   cy.wait(500);
+  //   cy.get('#createTableTags').click();
+  //   cy.wait(500);
+  //   selectValueInNgSelectorNoSelector(`03. Flydelag`);
+  //   cy.get('#createTags').click();
+  //   cy.wait(500);
+  //   selectValueInNgSelectorNoSelector(`00. Logbøger`);
   //   cy.wait(500);
   //   for (let i = 0; i < editedTask.translations.length; i++) {
   //     cy.get(`#updateName${i}`).clear().type(editedTask.translations[i]);
@@ -167,11 +185,11 @@ describe('Area rules type 1', () => {
   //   cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
   //   cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
   // });
-  // after(() => {
-  //   backendConfigurationPropertiesPage.goToProperties();
-  //   cy.wait(500);
-  //   backendConfigurationPropertiesPage.clearTable();
-  //   backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
-  //   backendConfigurationPropertyWorkersPage.clearTable();
-  // });
+  after(() => {
+    backendConfigurationPropertiesPage.goToProperties();
+    cy.wait(500);
+    backendConfigurationPropertiesPage.clearTable();
+    backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
+    backendConfigurationPropertyWorkersPage.clearTable();
+  });
 });

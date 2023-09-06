@@ -44,6 +44,7 @@ describe('Area rules type 1', () => {
     cy.visit('http://localhost:4200');
     loginPage.login();
   });
+  // TODO: Fix this
   it('should create task', () => {
     backendConfigurationPropertiesPage.goToProperties();
     backendConfigurationPropertiesPage.createProperty(property);
@@ -57,14 +58,23 @@ describe('Area rules type 1', () => {
     cy.wait(3000);
     cy.get('#createNewTaskBtn').should('be.enabled').click();
     cy.wait(500);
+    cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.get('#createProperty').click();
     selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(500);
     cy.get('#createFolder').click({force: true});
     cy.wait(500);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
     cy.get('.d-flex > #folderTreeName').click();
+    cy.wait(500);
+    cy.get('#createTableTags').click();
+    cy.wait(500);
+    selectValueInNgSelectorNoSelector(`03. Flydelag`);
+    cy.get('#createTags').click();
+    cy.wait(500);
+    selectValueInNgSelectorNoSelector(`00. Logbøger`);
     cy.wait(500);
     for (let i = 0; i < task.translations.length; i++) {
       cy.get(`#createName${i}`).type(task.translations[i]);
@@ -76,7 +86,9 @@ describe('Area rules type 1', () => {
     cy.get('#createRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(task.repeatEvery);
     cy.get(`.ng-option`).first().should('have.text', task.repeatEvery).should('be.visible').click();
     cy.get('mat-checkbox#checkboxCreateAssignment0').click();
+    cy.intercept('POST', '**/api/backend-configuration-pn/task-wizard').as('createTask');
     cy.get('#createTaskBtn').click();
+    cy.wait('@createTask', { timeout: 60000 });
     cy.wait(500);
 
     cy.get('.cdk-row').should('have.length', 1);

@@ -505,7 +505,6 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         // Act
         await BackendConfigurationAreaRulePlanningsServiceHelper.UpdatePlanning(areaRulePlanningModel,
             core, 1, BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
-
         // Assert
         var areaRuleTranslations = await BackendConfigurationPnDbContext!.AreaRuleTranslations
             .Join(BackendConfigurationPnDbContext.AreaRules, atr => atr.AreaRuleId, ar => ar.Id,
