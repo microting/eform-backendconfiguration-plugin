@@ -25,7 +25,7 @@ export class TaskManagementTableComponent implements OnInit {
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'id', sortProp: {id: 'Id'}, sortable: true, class: 'id'},
     {
-      header: this.translateService.stream('CreatedDate'),
+      header: this.translateService.stream('Created date'),
       field: 'caseInitiated',
       sortProp: {id: 'CaseInitiated'},
       sortable: true,
@@ -35,9 +35,9 @@ export class TaskManagementTableComponent implements OnInit {
     },
     {header: this.translateService.stream('Property'), field: 'propertyName', sortProp: {id: 'PropertyName'}, sortable: true, class: 'propertyName'},
     {header: this.translateService.stream('Area'), field: 'areaName', sortProp: {id: 'SelectedAreaName'}, sortable: true, class: 'areaName'},
-    {header: this.translateService.stream('Created by 1'), field: 'createdByName', sortProp: {id: 'CreatedByName'}, sortable: true, class: 'createdByName'},
-    {header: this.translateService.stream('Created by 2'), field: 'createdByText', sortProp: {id: 'CreatedByText'}, sortable: true, class: 'createdByText'},
-    {header: this.translateService.stream('LastAssignedTo'), field: 'lastAssignedTo', sortProp: {id: 'LastAssignedToName'}, sortable: true, class: 'lastAssignedTo'},
+    {header: this.translateService.stream('Created by'), field: 'createdByName', sortProp: {id: 'CreatedByName'}, sortable: true, class: 'createdByName'},
+    {header: this.translateService.stream('Created by text'), field: 'createdByText', sortProp: {id: 'CreatedByText'}, sortable: true, class: 'createdByText'},
+    {header: this.translateService.stream('Last assigned to'), field: 'lastAssignedTo', sortProp: {id: 'LastAssignedToName'}, sortable: true, class: 'lastAssignedTo'},
     {
       header: this.translateService.stream('Description'),
       field: 'description',
@@ -45,7 +45,7 @@ export class TaskManagementTableComponent implements OnInit {
       class: 'description',
     },
     {
-      header: this.translateService.stream('LastUpdateDate'),
+      header: this.translateService.stream('Last update date'),
       field: 'lastUpdateDate',
       sortProp: {id: 'UpdatedAt'},
       sortable: true,
@@ -53,7 +53,7 @@ export class TaskManagementTableComponent implements OnInit {
       typeParameter: {format: 'dd.MM.yyyy HH:mm'},
       class: 'lastUpdateDate'
     },
-    {header: this.translateService.stream('LastUpdateBy'), field: 'lastUpdatedBy', sortProp: {id: 'LastUpdatedByName'}, sortable: true, class: 'lastUpdatedBy'},
+    {header: this.translateService.stream('Last update by'), field: 'lastUpdatedBy', sortProp: {id: 'LastUpdatedByName'}, sortable: true, class: 'lastUpdatedBy'},
     {header: this.translateService.stream('Priority'),
       field: 'priority',
       sortProp: {id: 'Priority'},
