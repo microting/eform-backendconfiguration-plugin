@@ -259,4 +259,6 @@ export const csCZ = {
   'Copy task': 'Kopírovat úkol',
   'Delete task': 'Smazat úkol',
   Exceeded: 'Překročeno',
+  'Exeeded or today': 'Exeeded nebo dnes',
+  'Under 30 days': 'Méně než 30 dní',
 };

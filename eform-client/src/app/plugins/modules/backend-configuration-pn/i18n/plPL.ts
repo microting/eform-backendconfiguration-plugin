@@ -259,4 +259,6 @@ export const plPL = {
   'Copy task': 'Skopiuj zadanie',
   'Delete task': 'Usuń zadanie',
   Exceeded: 'Przekroczono',
+  'Exeeded or today': 'Exeeded lub dzisiaj',
+  'Under 30 days': 'Poniżej 30 dni',
 };

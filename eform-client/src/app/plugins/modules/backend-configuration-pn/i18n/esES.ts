@@ -259,4 +259,6 @@ export const esES = {
   'Copy task': 'Copiar tarea',
   'Delete task': 'Eliminar tarea',
   Exceeded: 'Excedido',
+  'Exeeded or today': 'Excedido o hoy',
+  'Under 30 days': 'Menos de 30 días',
 };

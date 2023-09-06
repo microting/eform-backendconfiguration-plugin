@@ -259,4 +259,6 @@ export const huHU = {
   'Copy task': 'Feladat másolása',
   'Delete task': 'Feladat törlése',
   Exceeded: 'Meghaladta',
+  'Exeeded or today': 'Exeeded vagy ma',
+  'Under 30 days': '30 nap alatt',
 };

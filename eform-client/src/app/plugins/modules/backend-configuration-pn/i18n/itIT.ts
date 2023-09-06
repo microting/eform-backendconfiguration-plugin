@@ -259,4 +259,6 @@ export const itIT = {
   'Copy task': 'Copia attività',
   'Delete task': 'Elimina attività',
   Exceeded: 'Superato',
+  'Exeeded or today': 'Superato o oggi',
+  'Under 30 days': 'Meno di 30 giorni',
 };

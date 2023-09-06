@@ -259,4 +259,6 @@ export const svSE = {
   'Copy task': 'Kopiera uppgift',
   'Delete task': 'Ta bort uppgift',
   Exceeded: 'Överskred',
+  'Exeeded or today': 'Exeeded eller idag',
+  'Under 30 days': 'Under 30 dagar',
 };

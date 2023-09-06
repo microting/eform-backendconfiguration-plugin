@@ -259,4 +259,6 @@ export const noNO = {
   'Copy task': 'Kopier oppgave',
   'Delete task': 'Slett oppgave',
   Exceeded: 'Overskredet',
+  'Exeeded or today': 'Exeeded eller i dag',
+  'Under 30 days': 'Under 30 dager',
 };

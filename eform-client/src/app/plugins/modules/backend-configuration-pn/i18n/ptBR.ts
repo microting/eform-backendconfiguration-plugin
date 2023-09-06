@@ -259,4 +259,6 @@ export const ptBR = {
   'Copy task': 'Copiar tarefa',
   'Delete task': 'Excluir tarefa',
   Exceeded: 'Excedido',
+  'Exeeded or today': 'Exeded ou hoje',
+  'Under 30 days': 'Menos de 30 dias',
 };

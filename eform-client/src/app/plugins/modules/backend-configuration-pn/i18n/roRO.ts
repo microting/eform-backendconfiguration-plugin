@@ -259,4 +259,6 @@ export const roRO = {
   'Copy task': 'Sarcina de copiere',
   'Delete task': 'Ștergeți sarcina',
   Exceeded: 'Depășit',
+  'Exeeded or today': 'Execedat sau azi',
+  'Under 30 days': 'Sub 30 de zile',
 };

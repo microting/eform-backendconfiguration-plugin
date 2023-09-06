@@ -277,4 +277,6 @@ export const enUS = {
   'Copy task': 'Copy task',
   'Delete task': 'Delete task',
   'Exceeded': 'Exceeded',
+  'Exeeded or today': 'Exeeded or today',
+  'Under 30 days': 'Under 30 days',
 };

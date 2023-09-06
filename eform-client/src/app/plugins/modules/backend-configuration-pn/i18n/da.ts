@@ -259,4 +259,6 @@ export const da = {
   'Copy task': 'Kopiér opgave',
   'Delete task': 'Slet opgave',
   Exceeded: 'Overskredet',
+  'Exeeded or today': 'Exeeded eller i dag',
+  'Under 30 days': 'Under 30 dage',
 };

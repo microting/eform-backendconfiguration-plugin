@@ -259,4 +259,6 @@ export const frFR = {
   'Copy task': 'Tâche de copie',
   'Delete task': 'Supprimer la tâche',
   Exceeded: 'Dépassé',
+  'Exeeded or today': 'Dépassé ou aujourd&#39;hui',
+  'Under 30 days': 'Moins de 30 jours',
 };

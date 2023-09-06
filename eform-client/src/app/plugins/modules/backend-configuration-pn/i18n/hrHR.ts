@@ -259,4 +259,6 @@ export const hrHR = {
   'Copy task': 'Kopiraj zadatak',
   'Delete task': 'Izbriši zadatak',
   Exceeded: 'Prekoračeno',
+  'Exeeded or today': 'Exeeded ili danas',
+  'Under 30 days': 'Ispod 30 dana',
 };

@@ -259,4 +259,6 @@ export const ukUA = {
   'Copy task': 'Копіювати завдання',
   'Delete task': 'Видалити завдання',
   Exceeded: 'Перевищено',
+  'Exeeded or today': 'Exeeded або сьогодні',
+  'Under 30 days': 'Менше 30 днів',
 };

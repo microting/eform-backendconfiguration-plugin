@@ -259,4 +259,6 @@ export const fiFI = {
   'Copy task': 'Kopioi tehtävä',
   'Delete task': 'Poista tehtävä',
   Exceeded: 'Ylitetty',
+  'Exeeded or today': 'Exeeded tai tänään',
+  'Under 30 days': 'Alle 30 päivää',
 };

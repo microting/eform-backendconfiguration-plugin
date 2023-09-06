@@ -259,4 +259,6 @@ export const nlNL = {
   'Copy task': 'Kopieer taak',
   'Delete task': 'Taak verwijderen',
   Exceeded: 'Overschreden',
+  'Exeeded or today': 'Overtroffen of vandaag',
+  'Under 30 days': 'Minder dan 30 dagen',
 };
