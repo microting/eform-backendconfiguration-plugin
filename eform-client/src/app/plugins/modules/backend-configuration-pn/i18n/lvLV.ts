@@ -261,4 +261,5 @@ export const lvLV = {
   Exceeded: 'Pārsniegts',
   'Exeeded or today': 'Exeeded vai šodien',
   'Under 30 days': 'Mazāk par 30 dienām',
+  'Exceeded or today': 'Pārsniegts vai šodien',
 };

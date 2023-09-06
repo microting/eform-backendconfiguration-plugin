@@ -261,4 +261,5 @@ export const bgBG = {
   Exceeded: 'Превишено',
   'Exeeded or today': 'Exeeded или днес',
   'Under 30 days': 'Под 30 дни',
+  'Exceeded or today': 'Превишен или днес',
 };

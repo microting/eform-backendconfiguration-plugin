@@ -261,4 +261,5 @@ export const hrHR = {
   Exceeded: 'Prekoračeno',
   'Exeeded or today': 'Exeeded ili danas',
   'Under 30 days': 'Ispod 30 dana',
+  'Exceeded or today': 'Prekoračen ili danas',
 };

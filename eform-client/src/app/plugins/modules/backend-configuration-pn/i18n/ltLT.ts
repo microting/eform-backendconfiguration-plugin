@@ -261,4 +261,5 @@ export const ltLT = {
   Exceeded: 'Viršytas',
   'Exeeded or today': 'Exeded arba šiandien',
   'Under 30 days': 'Mažiau nei 30 dienų',
+  'Exceeded or today': 'Viršytas arba šiandien',
 };

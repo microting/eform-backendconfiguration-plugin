@@ -261,4 +261,5 @@ export const csCZ = {
   Exceeded: 'Překročeno',
   'Exeeded or today': 'Exeeded nebo dnes',
   'Under 30 days': 'Méně než 30 dní',
+  'Exceeded or today': 'Překročeno nebo dnes',
 };

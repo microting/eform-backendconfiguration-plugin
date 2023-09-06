@@ -261,4 +261,5 @@ export const ukUA = {
   Exceeded: 'Перевищено',
   'Exeeded or today': 'Exeeded або сьогодні',
   'Under 30 days': 'Менше 30 днів',
+  'Exceeded or today': 'Перевищено або сьогодні',
 };

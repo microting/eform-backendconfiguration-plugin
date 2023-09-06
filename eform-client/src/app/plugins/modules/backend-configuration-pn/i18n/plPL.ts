@@ -261,4 +261,5 @@ export const plPL = {
   Exceeded: 'Przekroczono',
   'Exeeded or today': 'Exeeded lub dzisiaj',
   'Under 30 days': 'Poniżej 30 dni',
+  'Exceeded or today': 'Przekroczono lub dzisiaj',
 };

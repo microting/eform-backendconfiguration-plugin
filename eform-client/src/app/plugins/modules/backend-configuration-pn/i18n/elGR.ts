@@ -261,4 +261,5 @@ export const elGR = {
   Exceeded: 'Υπέρβαση',
   'Exeeded or today': 'Exeeded ή σήμερα',
   'Under 30 days': 'Κάτω από 30 ημέρες',
+  'Exceeded or today': 'Υπέρβαση ή σήμερα',
 };

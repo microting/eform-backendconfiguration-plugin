@@ -261,4 +261,5 @@ export const esES = {
   Exceeded: 'Excedido',
   'Exeeded or today': 'Excedido o hoy',
   'Under 30 days': 'Menos de 30 días',
+  'Exceeded or today': 'Superado o hoy',
 };

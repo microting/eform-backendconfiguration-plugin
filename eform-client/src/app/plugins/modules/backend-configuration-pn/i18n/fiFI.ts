@@ -261,4 +261,5 @@ export const fiFI = {
   Exceeded: 'Ylitetty',
   'Exeeded or today': 'Exeeded tai tänään',
   'Under 30 days': 'Alle 30 päivää',
+  'Exceeded or today': 'Ylitetty tai tänään',
 };
