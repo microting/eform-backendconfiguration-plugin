@@ -259,4 +259,6 @@ export const slSL = {
   'Copy task': 'Kopiraj opravilo',
   'Delete task': 'Izbriši nalogo',
   Exceeded: 'Preseženo',
+  'Exeeded or today': 'Exeeded ali danes',
+  'Under 30 days': 'Manj kot 30 dni',
 };

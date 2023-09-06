@@ -324,4 +324,6 @@ export const deDE = {
   Every: 'Jeden',
   'Copy task': 'Aufgabe kopieren',
   Exceeded: 'Übertroffen',
+  'Exeeded or today': 'Übertroffen oder heute',
+  'Under 30 days': 'Unter 30 Tage',
 };

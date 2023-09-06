@@ -259,4 +259,6 @@ export const bgBG = {
   'Copy task': 'Копиране на задача',
   'Delete task': 'Изтриване на задача',
   Exceeded: 'Превишено',
+  'Exeeded or today': 'Exeeded или днес',
+  'Under 30 days': 'Под 30 дни',
 };

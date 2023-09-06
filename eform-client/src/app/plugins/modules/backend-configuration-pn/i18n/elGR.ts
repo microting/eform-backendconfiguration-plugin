@@ -259,4 +259,6 @@ export const elGR = {
   'Copy task': 'Αντιγραφή εργασίας',
   'Delete task': 'Διαγραφή εργασίας',
   Exceeded: 'Υπέρβαση',
+  'Exeeded or today': 'Exeeded ή σήμερα',
+  'Under 30 days': 'Κάτω από 30 ημέρες',
 };

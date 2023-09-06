@@ -259,4 +259,6 @@ export const isIS = {
   'Copy task': 'Afrita verkefni',
   'Delete task': 'Eyða verkefni',
   Exceeded: 'Farið fram úr',
+  'Exeeded or today': 'Exeeded eða í dag',
+  'Under 30 days': 'Undir 30 dögum',
 };

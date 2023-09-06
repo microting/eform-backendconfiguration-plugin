@@ -259,4 +259,6 @@ export const skSK = {
   'Copy task': 'Kopírovať úlohu',
   'Delete task': 'Odstrániť úlohu',
   Exceeded: 'Prekonal',
+  'Exeeded or today': 'Exeeded alebo dnes',
+  'Under 30 days': 'Menej ako 30 dní',
 };

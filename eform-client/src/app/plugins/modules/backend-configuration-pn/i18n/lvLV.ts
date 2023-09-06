@@ -259,4 +259,6 @@ export const lvLV = {
   'Copy task': 'Kopēt uzdevumu',
   'Delete task': 'Dzēst uzdevumu',
   Exceeded: 'Pārsniegts',
+  'Exeeded or today': 'Exeeded vai šodien',
+  'Under 30 days': 'Mazāk par 30 dienām',
 };

@@ -259,4 +259,6 @@ export const ltLT = {
   'Copy task': 'Kopijuoti užduotį',
   'Delete task': 'Ištrinti užduotį',
   Exceeded: 'Viršytas',
+  'Exeeded or today': 'Exeded arba šiandien',
+  'Under 30 days': 'Mažiau nei 30 dienų',
 };

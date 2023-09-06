@@ -259,4 +259,6 @@ export const etET = {
   'Copy task': 'Kopeeri ülesanne',
   'Delete task': 'Kustuta ülesanne',
   Exceeded: 'Ületatud',
+  'Exeeded or today': 'Exeeded või täna',
+  'Under 30 days': 'Alla 30 päeva',
 };
