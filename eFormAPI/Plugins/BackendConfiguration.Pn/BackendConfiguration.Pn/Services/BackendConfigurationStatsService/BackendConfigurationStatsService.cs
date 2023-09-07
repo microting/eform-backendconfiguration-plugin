@@ -63,39 +63,30 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                     .AsQueryable();
             }
 
-            var itemsPlanningIds = await query
-                .Select(x => x.PlanningId)
-                .ToListAsync();
-
-            var itemPlanningQuery = _itemsPlanningPnDbContext.Plannings
-                .Where(x => itemsPlanningIds.Contains(x.Id))
-                .Where(x => x.NextExecutionTime.HasValue)
-                .AsQueryable();
-
             // get exceeded tasks
-            result.Exceeded = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime)
+            result.Exceeded = await query
+                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get today tasks
-            result.Today = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentDateTime)
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime)
+            result.Today = await query
+                .Where(x => x.Deadline.AddDays(-1) > currentDateTime)
+                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get 1-7
-            result.FromFirstToSeventhDays = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentDateTime.AddDays(1))
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime.AddDays(7))
+            result.FromFirstToSeventhDays = await query
+                .Where(x => x.Deadline.AddDays(-1) > currentDateTime.AddDays(1))
+                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime.AddDays(7))
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get 8-30
-            result.FromEighthToThirtiethDays = await itemPlanningQuery
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) > currentDateTime.AddDays(8))
-                .Where(x => x.NextExecutionTime.Value.AddDays(-1) < currentEndDateTime.AddDays(30))
+            result.FromEighthToThirtiethDays = await query
+                .Where(x => x.Deadline.AddDays(-1) > currentDateTime.AddDays(8))
+                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime.AddDays(30))
                 .Select(x => x.Id)
                 .CountAsync();
 
