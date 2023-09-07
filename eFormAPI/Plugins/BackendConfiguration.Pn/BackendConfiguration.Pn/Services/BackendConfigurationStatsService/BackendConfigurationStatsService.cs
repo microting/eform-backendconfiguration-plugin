@@ -51,6 +51,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PlanningId != 0)
                 .Where(x => x.StartDate <= currentDateTime)
+                .OrderBy(x => x.Deadline)
                 //.Where(x => x.Deadline > currentEndDateTime)
                 .AsQueryable();
             var result = new PlannedTaskDays();
