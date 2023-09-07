@@ -47,26 +47,23 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         {
             var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
             var currentEndDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 23, 59, 59);
-            var query = _backendConfigurationPnDbContext.AreaRulePlannings
+            var query = _backendConfigurationPnDbContext.Compliances
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Status && x.ItemPlanningId != 0)
-                .Where(x => x.StartDate.HasValue && x.StartDate.Value <= currentDateTime)
-                .Where(x => (x.EndDate.HasValue && x.EndDate.Value > currentEndDateTime) || !x.EndDate.HasValue)
-                .Include(x => x.AreaRule)
-                .ThenInclude(x => x.Area)
-                .ThenInclude(x => x.AreaProperties)
+                .Where(x => x.PlanningId != 0)
+                .Where(x => x.StartDate <= currentDateTime)
+                //.Where(x => x.Deadline > currentEndDateTime)
                 .AsQueryable();
             var result = new PlannedTaskDays();
 
             if (propertyId.HasValue)
             {
                 query = query
-                    .Where(x => x.PropertyId == propertyId.Value || x.AreaRule.PropertyId == propertyId.Value ||
-                                x.AreaRule.Area.AreaProperties.Select(y => y.PropertyId).Contains(propertyId.Value));
+                    .Where(x => x.PropertyId == propertyId.Value)
+                    .AsQueryable();
             }
 
             var itemsPlanningIds = await query
-                .Select(x => x.ItemPlanningId)
+                .Select(x => x.PlanningId)
                 .ToListAsync();
 
             var itemPlanningQuery = _itemsPlanningPnDbContext.Plannings
