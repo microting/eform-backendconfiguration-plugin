@@ -84,16 +84,13 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 var booleanStatus = request.Filters.Status == TaskWizardStatuses.Active;
                 query = query.Where(x => x.Status == booleanStatus);
             }
-
+            
             if (request.Filters.TagIds.Any())
             {
-                if (request.Filters.TagIds.Any())
-                {
-                    query = query.Where(x => x.AreaRulePlanningTags
-                                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                                                 .Any(y => request.Filters.TagIds.Contains(y.ItemPlanningTagId)) ||
-                                             x.ItemPlanningTagId.HasValue && request.Filters.TagIds.Contains(x.ItemPlanningTagId.Value));
-                }
+                query = query.Where(x => x.AreaRulePlanningTags
+                                             .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                                             .Any(y => request.Filters.TagIds.Contains(y.ItemPlanningTagId)) ||
+                                         x.ItemPlanningTagId.HasValue && request.Filters.TagIds.Contains(x.ItemPlanningTagId.Value));
             }
 
             var itemPlanningTagIds = await query
