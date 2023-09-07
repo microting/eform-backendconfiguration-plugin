@@ -18,6 +18,7 @@ import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/pl
 import {AuthStateService} from 'src/app/common/store';
 import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
+import * as R from 'ramda';
 
 @AutoUnsubscribe()
 @Component({
@@ -92,6 +93,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   ngOnInit(): void {
+    let propertyIds: number[] = [];
     this.getProperties();
     this.getTags();
     this.getTasks();
@@ -99,7 +101,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
       .pipe(
         tap(filters => {
-          if (filters.propertyIds.length !== 0) {
+          if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
+            propertyIds = filters.propertyIds;
             this.getFolders();
             this.getSites();
           }
