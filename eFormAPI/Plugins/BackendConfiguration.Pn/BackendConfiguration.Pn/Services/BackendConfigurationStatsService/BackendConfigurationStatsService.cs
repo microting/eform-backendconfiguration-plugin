@@ -90,6 +90,12 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 .Select(x => x.Id)
                 .CountAsync();
 
+            // get over 30
+            result.OverThirtiethDays = await query
+                .Where(x => x.Deadline.AddDays(-1) >= currentEndDateTime.AddDays(30))
+                .Select(x => x.Id)
+                .CountAsync();
+
             return new OperationDataResult<PlannedTaskDays>(true, result);
         }
         catch (Exception e)
