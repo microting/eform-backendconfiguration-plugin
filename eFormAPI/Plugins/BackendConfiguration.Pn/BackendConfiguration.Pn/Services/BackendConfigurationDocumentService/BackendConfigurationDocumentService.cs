@@ -81,8 +81,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             query = pnRequestModel.Expiration switch
             {
                 0 => query.Where(x => x.EndAt <= DateTime.UtcNow),
-                1 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(1)),
-                2 => query.Where(x => x.EndAt > DateTime.UtcNow.AddMonths(1)),
+                1 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddDays(30) && x.EndAt > DateTime.UtcNow),
+                2 => query.Where(x => x.EndAt > DateTime.UtcNow.AddDays(30)),
                 _ => query
                 /*2 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(3)),
                 3 => query.Where(x => x.EndAt <= DateTime.UtcNow.AddMonths(6)),

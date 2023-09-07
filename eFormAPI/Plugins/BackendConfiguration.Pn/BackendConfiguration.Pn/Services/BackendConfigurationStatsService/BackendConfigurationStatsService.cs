@@ -50,7 +50,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var query = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Status && x.ItemPlanningId != 0)
-                .Where(x => x.StartDate.HasValue && x.StartDate.Value < currentDateTime)
+                .Where(x => x.StartDate.HasValue && x.StartDate.Value <= currentDateTime)
                 .Where(x => (x.EndDate.HasValue && x.EndDate.Value > currentEndDateTime) || !x.EndDate.HasValue)
                 .Include(x => x.AreaRule)
                 .ThenInclude(x => x.Area)
@@ -188,12 +188,12 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 .CountAsync();
 
             result.UnderThirtiethDays = await query
-                .Where(x => x.EndAt <= currentDateTime.AddMonths(1))
+                .Where(x => x.EndAt <= currentDateTime.AddDays(30) && x.EndAt > currentDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             result.OverThirtiethDays = await query
-                .Where(x => x.EndAt > currentDateTime.AddMonths(1))
+                .Where(x => x.EndAt > currentDateTime.AddDays(30))
                 .Select(x => x.Id)
                 .CountAsync();
 
@@ -302,7 +302,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .SelectMany(y => y.WorkorderCases)
                         .Count(z => z.PropertyWorker.Property.WorkorderEnable &&
                                     z.WorkflowState != Constants.WorkflowStates.Removed &&
-                                    z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+                                    z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.Completed)
                 })
                 .ToListAsync();
 
