@@ -132,6 +132,16 @@ namespace BackendConfiguration.Pn.Services.WordService
 
         public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels)
         {
+            var filtersLastAssignedTo = "";
+            if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                filtersLastAssignedTo = await sdkDbContext.Sites
+                    .Where(x => x.Id == filtersModel.LastAssignedTo.Value)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync();
+            }
             // Read html and template
             var resourceString = "BackendConfiguration.Pn.Resources.Templates.WordExport.page.html";
             var assembly = Assembly.GetExecutingAssembly();
@@ -166,7 +176,7 @@ namespace BackendConfiguration.Pn.Services.WordService
             itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName)}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
-            itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.LastAssignedTo) ? "" : filtersModel.LastAssignedTo)}</td>");
+            itemsHtml.Append($@"<td>{filtersLastAssignedTo}</td>");
             itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus()))}</td>");
             itemsHtml.Append($@"<td>{(!filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d"))}");
             itemsHtml.Append($@"{(!filtersModel.DateTo.HasValue ? "" : " - " + filtersModel.DateTo.Value.ToString("d"))}</td>");

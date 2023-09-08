@@ -184,7 +184,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     });
     this.filtersForm
       .get('lastAssignedTo')
-      .valueChanges.subscribe((value: string) => {
+      .valueChanges.subscribe((value: number) => {
       this.taskManagementStateService.store.update((state) => ({
         filters: {
           ...state.filters,

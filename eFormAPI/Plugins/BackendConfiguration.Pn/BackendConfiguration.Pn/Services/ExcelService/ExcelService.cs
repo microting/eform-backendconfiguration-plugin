@@ -51,23 +51,35 @@ public class ExcelService : IExcelService
 	private readonly IBackendConfigurationLocalizationService _localizationService;
 	private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
 	private readonly IUserService _userService;
+    private readonly IEFormCoreService _coreHelper;
 
-	public ExcelService(ILogger<ExcelService> logger,
+    public ExcelService(ILogger<ExcelService> logger,
 		IBackendConfigurationLocalizationService localizationService,
 		BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-		IUserService userService)
+		IUserService userService, IEFormCoreService coreHelper)
 	{
 		_logger = logger;
 		_localizationService = localizationService;
 		_backendConfigurationPnDbContext = backendConfigurationPnDbContext;
 		_userService = userService;
-	}
+        _coreHelper = coreHelper;
+    }
 
 	public async Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels)
 	{
 		try
 		{
-			var propertyName = await _backendConfigurationPnDbContext.Properties
+            var filtersLastAssignedTo = "";
+            if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
+            {
+                var core = await _coreHelper.GetCore();
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                filtersLastAssignedTo = await sdkDbContext.Sites
+                    .Where(x => x.Id == filtersModel.LastAssignedTo.Value)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync();
+            }
+            var propertyName = await _backendConfigurationPnDbContext.Properties
 				.Where(x => x.Id == filtersModel.PropertyId)
 				.Select(x => x.Name)
 				.FirstOrDefaultAsync().ConfigureAwait(false);
@@ -116,9 +128,7 @@ public class ExcelService : IExcelService
 				string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
 			worksheet.Cell(currentRow, currentColumn++).Value =
 				string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy;
-			worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.LastAssignedTo)
-				? ""
-				: filtersModel.LastAssignedTo;
+			worksheet.Cell(currentRow, currentColumn++).Value = filtersLastAssignedTo;
 			worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus())
 				? ""
 				: _localizationService.GetString(filtersModel.GetStringStatus());

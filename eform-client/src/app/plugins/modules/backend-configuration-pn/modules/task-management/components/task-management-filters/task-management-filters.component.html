@@ -38,7 +38,7 @@
       <mat-label>{{'Last assigned to' | translate}}</mat-label>
       <mtx-select
         bindLabel="name"
-        bindValue="name"
+        bindValue="id"
         formControlName="lastAssignedTo"
         [items]="assignedSitesToProperty"
         id="lastAssignedToFilter"
@@ -50,10 +50,10 @@
       <mtx-select
         [items]="[
           {id: -1, name: ('All' | translate)},
-          {id: 1, name: ('Ongoing' | translate)},
-          {id: 2, name: ('Completed' | translate)},
+          {id: 1, name: ('In progress' | translate)},
+          {id: 2, name: ('Done' | translate)},
           {id: 3, name: ('Ordered' | translate)},
-          {id: 4, name: ('Awaiting' | translate)},
+          {id: 4, name: ('Waiting' | translate)},
         ]"
         bindLabel="name"
         bindValue="id"

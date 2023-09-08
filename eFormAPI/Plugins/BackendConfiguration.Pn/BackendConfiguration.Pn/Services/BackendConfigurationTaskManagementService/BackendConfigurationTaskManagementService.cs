@@ -1,4 +1,4 @@
-﻿/*
+/*
 The MIT License (MIT)
 
 Copyright (c) 2007 - 2022 Microting A/S
@@ -133,6 +133,20 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                         filtersModel.DateTo.Value.Month, filtersModel.DateTo.Value.Day, 23, 59, 59));
             }
 
+            if (filtersModel.LastAssignedTo.HasValue && filtersModel.LastAssignedTo.Value != 0)
+            {
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var siteName = await sdkDbContext.Sites
+                    .Where(x => x.Id == filtersModel.LastAssignedTo.Value)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync();
+                if (!string.IsNullOrEmpty(siteName))
+                {
+                    query = query.Where(x => x.LastAssignedToName == siteName);
+                }
+            }
+
             var excludeSort = new List<string>
             {
                 "PropertyName"
@@ -158,12 +172,6 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     Priority = string.IsNullOrEmpty(x.Priority) ? 3 : int.Parse(x.Priority) == 0 ? 3 : int.Parse(x.Priority)
                 })
                 .ToListAsync().ConfigureAwait(false);
-
-            if (!string.IsNullOrEmpty(filtersModel.LastAssignedTo))
-            {
-                workOrderCaseFromDb = workOrderCaseFromDb.Where(x => x.LastAssignedTo == filtersModel.LastAssignedTo)
-                    .ToList();
-            }
 
             if (excludeSort.Contains(filtersModel.Sort))
             {
