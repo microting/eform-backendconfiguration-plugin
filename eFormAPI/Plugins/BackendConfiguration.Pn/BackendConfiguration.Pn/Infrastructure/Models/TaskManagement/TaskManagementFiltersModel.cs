@@ -35,7 +35,7 @@ public class TaskManagementFiltersModel : FilterAndSortModel
 
     public string CreatedBy { get; set; }
 
-    public string LastAssignedTo { get; set; }
+    public int? LastAssignedTo { get; set; }
 
     public int? Status { get; set; }
 

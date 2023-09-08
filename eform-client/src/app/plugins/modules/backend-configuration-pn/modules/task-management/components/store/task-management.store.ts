@@ -8,7 +8,7 @@ export interface TaskManagementFiltrationModel {
   propertyId: number;
   areaName?: string;
   createdBy?: string;
-  lastAssignedTo?: string;
+  lastAssignedTo?: number;
   status?: number;
   dateFrom?: Date | string;
   dateTo?: Date | string;
