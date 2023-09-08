@@ -19,7 +19,7 @@ import {TaskTrackerStateService} from '../../../task-tracker/components/store';
 import {TaskManagementStateService} from '../../../task-management/components/store';
 import {TaskWizardStateService} from '../../../task-wizard/components/store';
 import {DocumentsStateService} from '../../../documents/store';
-import {DocumentsExpirationFilterEnum} from '../../../../enums';
+import {DocumentsExpirationFilterEnum, TaskWizardStatusesEnum} from '../../../../enums';
 
 @AutoUnsubscribe()
 @Component({
@@ -220,9 +220,9 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       filters: {
         ...state.filters,
         propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
-        assignToIds: [], // workerId ? [workerId] : [],
+        assignToIds: this.selectedPropertyId && workerId ? [workerId] : [],
         tagIds: [],
-        status: null,
+        status: this.selectedPropertyId && workerId ? TaskWizardStatusesEnum.Active : null,
         folderIds: [],
       },
     }));
@@ -239,7 +239,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
         dateTo: null,
         status: null,
         createdBy: null,
-        lastAssignedTo: null, // workerId
+        lastAssignedTo: this.selectedPropertyId && workerId ? workerId : null,
       },
     }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-management'], {queryParams: {diagramForShow: 'ad-hoc-task-workers'}}).then();
