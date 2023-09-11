@@ -707,7 +707,20 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     foreach (var planningSite in areaRulePlanning.PlanningSites.Where(x => x.Status == 0))
                     {
                         planningSite.Status = 33;
+                        planningSite.WorkflowState = Constants.WorkflowStates.Created;
                         await planningSite.Update(_backendConfigurationPnDbContext);
+                    }
+
+                    foreach (var planningSite in areaRulePlanning.PlanningSites)
+                    {
+                        var itemsPlanningSite = await _itemsPlanningPnDbContext.PlanningSites.FirstOrDefaultAsync(x =>
+                            x.PlanningId == planning.Id && x.SiteId == planningSite.SiteId);
+
+                        if (itemsPlanningSite != null)
+                        {
+                            itemsPlanningSite.WorkflowState = Constants.WorkflowStates.Created;
+                            await itemsPlanningSite.Update(_itemsPlanningPnDbContext);
+                        }
                     }
 
                     await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -805,6 +818,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     areaRulePlanning.Status = false;
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext)
                         .ConfigureAwait(false);
+
+                    var planningSites =
+                        await _itemsPlanningPnDbContext.PlanningSites.Where(x => x.PlanningId == planning.Id).ToListAsync().ConfigureAwait(false);
+
+                    foreach (var planningSite in planningSites)
+                    {
+                        await planningSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    }
+
                     //
                     //     var planningSites = await _backendConfigurationPnDbContext.PlanningSites
                     //         .Where(x => x.AreaRulePlanningsId == areaRulePlanning.Id)
@@ -1051,6 +1073,19 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             areaRulePlanning.UpdatedByUserId = _userService.UserId;
             await areaRulePlanning.Delete(_backendConfigurationPnDbContext);
+
+            var complianceList = await _backendConfigurationPnDbContext.Compliances
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var compliance in complianceList)
+            {
+                if (compliance != null)
+                {
+                    await compliance.Delete(_backendConfigurationPnDbContext)
+                        .ConfigureAwait(false);
+                }
+            }
 
             return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
         }
