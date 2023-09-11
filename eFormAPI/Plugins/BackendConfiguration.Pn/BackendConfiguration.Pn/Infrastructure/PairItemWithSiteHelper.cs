@@ -120,7 +120,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                 if (planningCase.Status == 100 && planning.RepeatType != RepeatType.Day && planning.RepeatEvery != 0)
                 {
                     var planningCaseSite =
-                        await _itemsPlanningPnDbContext.PlanningCaseSites.SingleOrDefaultAsync(x =>
+                        await _itemsPlanningPnDbContext.PlanningCaseSites.FirstOrDefaultAsync(x =>
                             x.PlanningCaseId == planningCase.Id
                             && x.MicrotingSdkSiteId == assignmentSiteId
                             && x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
@@ -139,9 +139,9 @@ namespace BackendConfiguration.Pn.Infrastructure
                         await planningCaseSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
 
-                    planningCaseSite.Status = planningCaseSite.Status == 100 ? planningCaseSite.Status : 2;
-                    planningCaseSite.WorkflowState = Constants.WorkflowStates.Retracted;
-                    await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                    // planningCaseSite.Status = planningCaseSite.Status == 100 ? planningCaseSite.Status : 2;
+                    // planningCaseSite.WorkflowState = Constants.WorkflowStates.Retracted;
+                    // await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
                 else
                 {
