@@ -84,7 +84,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 var booleanStatus = request.Filters.Status == TaskWizardStatuses.Active;
                 query = query.Where(x => x.Status == booleanStatus);
             }
-            
+
             if (request.Filters.TagIds.Any())
             {
                 query = query.Where(x => x.AreaRulePlanningTags
@@ -184,7 +184,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     TaskName = areaRule.TaskName,
                     Id = areaRule.Id,
                     Property = areaRule.PropertyName,
-                    Tags = areaRule.TagReport != null ? areaRule.Tags.Append(areaRule.TagReport).ToList() : areaRule.Tags.ToList(),
+                    Tags = areaRule.TagReport != null
+                        ? areaRule.Tags.Any(x => x.Id == areaRule.TagReport.Id)
+                            ? areaRule.Tags.ToList() : areaRule.Tags.Append(areaRule.TagReport).ToList()
+                        : areaRule.Tags.ToList(),
                     AssignedTo = siteNamesQuery.Where(x => areaRule.PlanningSites.Contains(x.Id)).Select(x => x.Name)
                         .ToList(),
                     Eform = eformNamesQuery.Where(x => x.CheckListId == areaRule.EformId).Select(x => x.Text)
@@ -401,7 +404,23 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 await planningSite.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
+            var propertyItemPlanningTagId = await _backendConfigurationPnDbContext.Properties
+                .Where(x => x.Id == createModel.PropertyId)
+                .Select(x => x.ItemPlanningTagId)
+                .FirstAsync();
+
+            // PlanningsTags propertyPlanningsTags = new PlanningsTags
+            // {
+            //     PlanningId = planning.Id,
+            //     PlanningTagId = propertyItemPlanningTagId,
+            //     CreatedByUserId = _userService.UserId,
+            //     UpdatedByUserId = _userService.UserId
+            // };
+            // await propertyPlanningsTags.Create(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+
             var tagIds = createModel.TagIds.Distinct().ToList(); // ToList() need for not update createModel.TagIds
+            tagIds.Add(propertyItemPlanningTagId);
             if (createModel.ItemPlanningTagId.HasValue)
             {
                 tagIds.Add(createModel.ItemPlanningTagId.Value);
@@ -494,7 +513,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         ItemPlanningTagId = createModel.ItemPlanningTagId, // This is the report table header tag
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
-                        AreaRulePlanningTags = createModel.TagIds // These are the tags for filtering
+                        AreaRulePlanningTags = createModel.TagIds.Distinct().ToList() // These are the tags for filtering
                             .Select(x => new AreaRulePlanningTag
                             {
                                 ItemPlanningTagId = x,
