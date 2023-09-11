@@ -551,7 +551,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     {
                         planningCasesQuery = planningCasesQuery
                             .Where(x => x.Planning.PlanningsTags
-                                .Any(y => y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
+                                .Any(y => y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed)
+                            || x.Planning.ReportGroupPlanningTagId == tagId)
                             .AsNoTracking();
                     }
                 }
