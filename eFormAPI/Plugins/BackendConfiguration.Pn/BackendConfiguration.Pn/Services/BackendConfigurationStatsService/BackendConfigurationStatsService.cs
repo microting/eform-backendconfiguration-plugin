@@ -214,18 +214,20 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var query = _backendConfigurationPnDbContext.PlanningSites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Include(x => x.AreaRulePlanning)
-                .ThenInclude(x => x.AreaRule)
-                .ThenInclude(x => x.Area)
-                .ThenInclude(x => x.AreaProperties)
+                // .ThenInclude(x => x.AreaRule)
+                // .ThenInclude(x => x.Area)
+                // .ThenInclude(x => x.AreaProperties)
                 .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0);
 
             if (propertyId.HasValue)
             {
                 query = query
-                    .Where(x => x.AreaRulePlanning.PropertyId == propertyId.Value ||
-                                x.AreaRulePlanning.AreaRule.PropertyId == propertyId.Value ||
-                                x.AreaRulePlanning.AreaRule.Area.AreaProperties.Select(y => y.PropertyId)
-                                    .Contains(propertyId.Value));
+                    .Where(x => x.AreaRulePlanning.PropertyId == propertyId.Value
+                                // ||
+                                // x.AreaRulePlanning.AreaRule.PropertyId == propertyId.Value ||
+                                // x.AreaRulePlanning.AreaRule.Area.AreaProperties.Select(y => y.PropertyId)
+                                    // .Contains(propertyId.Value)
+                                );
             }
 
             var groupedData = await query
@@ -278,7 +280,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var result = new AdHocTaskWorkers();
             var query = _backendConfigurationPnDbContext.PropertyWorkers
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Include(x => x.WorkorderCases)
+                // .Include(x => x.WorkorderCases)
                 .Include(x => x.Property)
                 .Where(x => x.Property.WorkorderEnable);
 
@@ -288,18 +290,36 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                     .Where(x => x.PropertyId == propertyId.Value);
             }
 
-            var groupedData = await query
-                .GroupBy(x => x.WorkerId)
+            var propertyWorkerIds = await query
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            var groupedData = await _backendConfigurationPnDbContext.WorkorderCases
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.LeadingCase)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => propertyWorkerIds.Contains(x.PropertyWorkerId))
+                .GroupBy(x => x.PropertyWorkerId)
                 .Select(x => new
                 {
                     SiteId = x.Key,
-                    Count = x
-                        .SelectMany(y => y.WorkorderCases)
-                        .Count(z => z.PropertyWorker.Property.WorkorderEnable &&
-                                    z.WorkflowState != Constants.WorkflowStates.Removed &&
-                                    z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                    Count = x.Count()
                 })
                 .ToListAsync();
+
+
+            // var groupedData = await query
+            //     .GroupBy(x => x.WorkerId)
+            //     .Select(x => new
+            //     {
+            //         SiteId = x.Key,
+            //         Count = x
+            //             .SelectMany(y => y.WorkorderCases)
+            //             .Count(z => z.PropertyWorker.Property.WorkorderEnable &&
+            //                         z.WorkflowState != Constants.WorkflowStates.Removed &&
+            //                         z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            //     })
+            //     .ToListAsync();
 
             var siteIds = groupedData
                 .Select(x => x.SiteId)
