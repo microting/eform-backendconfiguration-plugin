@@ -439,7 +439,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         Assert.That(itemPlanningCaseSites[1].MicrotingSdkSiteId, Is.EqualTo(sites[3].Id));
         Assert.That(itemPlanningCaseSites[1].MicrotingSdkCaseId, Is.EqualTo(0));
         Assert.That(itemPlanningCaseSites[1].Status, Is.EqualTo(2));
-        Assert.That(itemPlanningCaseSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Retracted));
+        Assert.That(itemPlanningCaseSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(itemPlanningCaseSites[1].MicrotingCheckListSitId, Is.EqualTo(0));
 
         // Assert compliances
@@ -915,7 +915,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         Assert.That(itemPlanningCaseSites[1].MicrotingSdkSiteId, Is.EqualTo(sites[3].Id));
         Assert.That(itemPlanningCaseSites[1].MicrotingSdkCaseId, Is.EqualTo(0));
         Assert.That(itemPlanningCaseSites[1].Status, Is.EqualTo(2));
-        Assert.That(itemPlanningCaseSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Retracted));
+        Assert.That(itemPlanningCaseSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(itemPlanningCaseSites[1].MicrotingCheckListSitId, Is.EqualTo(0));
         // Assert.That(itemPlanningCaseSites[2].PlanningCaseId, Is.EqualTo(itemPlanningCases[0].Id));
         // Assert.That(itemPlanningCaseSites[2].PlanningId, Is.EqualTo(plannings[0].Id));
@@ -1416,7 +1416,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanksFillDa
         Assert.That(itemPlanningCaseSites[1].MicrotingSdkSiteId, Is.EqualTo(sites[3].Id));
         Assert.That(itemPlanningCaseSites[1].MicrotingSdkCaseId, Is.EqualTo(0));
         Assert.That(itemPlanningCaseSites[1].Status, Is.EqualTo(2));
-        Assert.That(itemPlanningCaseSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Retracted));
+        Assert.That(itemPlanningCaseSites[1].WorkflowState, Is.EqualTo(Constants.WorkflowStates.Created));
         Assert.That(itemPlanningCaseSites[1].MicrotingCheckListSitId, Is.EqualTo(0));
         // Assert.That(itemPlanningCaseSites[2].PlanningCaseId, Is.EqualTo(itemPlanningCases[0].Id));
         // Assert.That(itemPlanningCaseSites[2].PlanningId, Is.EqualTo(plannings[0].Id));
