@@ -276,7 +276,7 @@ namespace BackendConfiguration.Pn.Infrastructure
 
                     mainElement.CheckListFolderName = folderMicrotingId;
                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
-                    mainElement.EndDate = DateTime.Now.AddYears(10).ToUniversalTime();
+                    mainElement.EndDate = ((DateTime)dbPlanning.NextExecutionTime).AddDays(-1);
 
                     // mainElement.PushMessageBody = mainElement.Label;
                     // mainElement.PushMessageTitle = folder.Name;
