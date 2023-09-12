@@ -272,11 +272,15 @@ namespace BackendConfiguration.Pn.Infrastructure
                             mainElement.ElementList[0].Description.InderValue +=
                                 $"<br><strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
                         }
+                        mainElement.EndDate = (DateTime)dbPlanning.NextExecutionTime;
+                    }
+                    else
+                    {
+                        mainElement.EndDate = DateTime.Now.AddYears(10);
                     }
 
                     mainElement.CheckListFolderName = folderMicrotingId;
                     mainElement.StartDate = DateTime.Now.ToUniversalTime();
-                    mainElement.EndDate = ((DateTime)dbPlanning.NextExecutionTime).AddDays(-1);
 
                     // mainElement.PushMessageBody = mainElement.Label;
                     // mainElement.PushMessageTitle = folder.Name;
