@@ -1032,6 +1032,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     {
         try
         {
+            var core = await _coreHelper.GetCore();
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
             var areaRulePlanning = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.Id == id)
                 .Include(x => x.AreaRule)
@@ -1066,6 +1068,38 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 planningSite.UpdatedByUserId = _userService.UserId;
                 await planningSite.Delete(_backendConfigurationPnDbContext);
+            }
+
+            var planningCases = await _itemsPlanningPnDbContext.PlanningCases
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
+                .ToListAsync().ConfigureAwait(false);
+
+            foreach (var planningCase in planningCases)
+            {
+                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    .Where(x => x.PlanningCaseId == planningCase.Id)
+                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
+                                               planningCaseSite.MicrotingCheckListSitId != 0)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync().ConfigureAwait(false);
+                foreach (var planningCaseSite in planningCaseSites)
+                {
+                    var result =
+                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
+                            .ConfigureAwait(false);
+                    if (result is { MicrotingUid: { } })
+                    {
+                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+
+                        await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                    }
+                }
             }
 
             areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
