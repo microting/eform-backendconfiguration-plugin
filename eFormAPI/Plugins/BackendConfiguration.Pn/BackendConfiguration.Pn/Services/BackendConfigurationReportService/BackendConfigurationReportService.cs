@@ -551,20 +551,13 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     {
                         planningCasesQuery = planningCasesQuery
                             .Where(x => x.Planning.PlanningsTags
-                                .Any(y => y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
+                                .Any(y => y.PlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed)
+                            || x.Planning.ReportGroupPlanningTagId == tagId)
                             .AsNoTracking();
                     }
                 }
 
-                var planningTagIdsForGroup = await _backendConfigurationPnDbContext.AreaRulePlannings
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.ItemPlanningTagId.HasValue)
-                    .Select(x => x.ItemPlanningTagId.Value)
-                    .Distinct()
-                    .ToListAsync();
-
                 var planningTagsForGroup = await _itemsPlanningPnDbContext.PlanningTags
-                    .Where(x => planningTagIdsForGroup.Contains(x.Id))
                     .ToListAsync();
 
 
@@ -585,9 +578,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                 var language = sdkDbContext.Languages.Single(x => x.LanguageCode == localeString);
                 var groupedPlanningCases = planningCasesQuery
                     .ToList()
-                    .Where(x => planningTagIdsForGroup.Contains((int)x.Planning.ReportGroupPlanningTagId))
-                    // .Where(x => x.Planning.PlanningsTags.Any(y =>
-                    //     planningTagIdsForGroup.Contains(y.PlanningTagId)))
                     .Select(x => new
                     {
                         planningCase = x,

@@ -46,7 +46,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
         try
         {
             var currentDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
-            var currentEndDateTime = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 23, 59, 59);
+            var currentEndDateTime = currentDateTime.AddDays(1);
             var query = _backendConfigurationPnDbContext.Compliances
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PlanningId != 0)
@@ -65,34 +65,34 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
 
             // get exceeded tasks
             result.Exceeded = await query
-                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime)
+                .Where(x => x.Deadline < currentEndDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get today tasks
             result.Today = await query
-                .Where(x => x.Deadline.AddDays(-1) > currentDateTime)
-                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime)
+                .Where(x => x.Deadline > currentDateTime)
+                .Where(x => x.Deadline <= currentEndDateTime)
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get 1-7
             result.FromFirstToSeventhDays = await query
-                .Where(x => x.Deadline.AddDays(-1) > currentDateTime.AddDays(1))
-                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime.AddDays(7))
+                .Where(x => x.Deadline > currentDateTime.AddDays(1))
+                .Where(x => x.Deadline < currentEndDateTime.AddDays(7))
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get 8-30
             result.FromEighthToThirtiethDays = await query
-                .Where(x => x.Deadline.AddDays(-1) > currentDateTime.AddDays(8))
-                .Where(x => x.Deadline.AddDays(-1) < currentEndDateTime.AddDays(30))
+                .Where(x => x.Deadline > currentDateTime.AddDays(8))
+                .Where(x => x.Deadline < currentEndDateTime.AddDays(30))
                 .Select(x => x.Id)
                 .CountAsync();
 
             // get over 30
             result.OverThirtiethDays = await query
-                .Where(x => x.Deadline.AddDays(-1) >= currentEndDateTime.AddDays(30))
+                .Where(x => x.Deadline >= currentEndDateTime.AddDays(30))
                 .Select(x => x.Id)
                 .CountAsync();
 
@@ -214,18 +214,20 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var query = _backendConfigurationPnDbContext.PlanningSites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Include(x => x.AreaRulePlanning)
-                .ThenInclude(x => x.AreaRule)
-                .ThenInclude(x => x.Area)
-                .ThenInclude(x => x.AreaProperties)
+                // .ThenInclude(x => x.AreaRule)
+                // .ThenInclude(x => x.Area)
+                // .ThenInclude(x => x.AreaProperties)
                 .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0);
 
             if (propertyId.HasValue)
             {
                 query = query
-                    .Where(x => x.AreaRulePlanning.PropertyId == propertyId.Value ||
-                                x.AreaRulePlanning.AreaRule.PropertyId == propertyId.Value ||
-                                x.AreaRulePlanning.AreaRule.Area.AreaProperties.Select(y => y.PropertyId)
-                                    .Contains(propertyId.Value));
+                    .Where(x => x.AreaRulePlanning.PropertyId == propertyId.Value
+                                // ||
+                                // x.AreaRulePlanning.AreaRule.PropertyId == propertyId.Value ||
+                                // x.AreaRulePlanning.AreaRule.Area.AreaProperties.Select(y => y.PropertyId)
+                                    // .Contains(propertyId.Value)
+                                );
             }
 
             var groupedData = await query
