@@ -1,6 +1,5 @@
 import loginPage from '../../../Login.page';
-import backendConfigurationPropertiesPage from '../BackendConfigurationProperties.page';
-import {PropertyCreateUpdate} from '../../../../../e2e/Page objects/BackendConfiguration/BackendConfigurationProperties.page';
+import backendConfigurationPropertiesPage, {PropertyCreateUpdate} from '../BackendConfigurationProperties.page';
 import backendConfigurationPropertyWorkersPage, {PropertyWorker} from '../BackendConfigurationPropertyWorkers.page';
 import {
   selectValueInNgSelector,
@@ -69,7 +68,7 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
-    cy.get('.d-flex > #folderTreeName').click();
+    cy.get('.folder-tree-name').first().click();
     cy.get('#createTableTags').click();
     cy.wait(500);
     selectValueInNgSelectorNoSelector(`03. Flydelag`);

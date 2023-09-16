@@ -279,4 +279,5 @@ export const enUS = {
   'Exceeded': 'Exceeded',
   'Exceeded or today': 'Exceeded or today',
   'Under 30 days': 'Under 30 days',
+  'Generate report': 'Generate report',
 };
