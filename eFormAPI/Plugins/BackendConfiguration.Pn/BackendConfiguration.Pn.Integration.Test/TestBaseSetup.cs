@@ -32,8 +32,10 @@ public class TestBaseSetup
     {
         var optionsBuilder = new DbContextOptionsBuilder<BackendConfigurationPnDbContext>();
 
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin").Replace("bla", "root"), new MariaDbServerVersion(
-            new Version(10, 8)));
+        optionsBuilder.UseMySql(
+            connectionStr.Replace("myDb", "420_eform-backend-configuration-plugin").Replace("bla", "root"),
+            new MariaDbServerVersion(
+                new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new BackendConfigurationPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-backend-configuration-plugin.sql");
@@ -42,10 +44,12 @@ public class TestBaseSetup
         try
         {
             backendConfigurationPnDbContext.Database.EnsureCreated();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             Console.WriteLine(e);
         }
+
         backendConfigurationPnDbContext.Database.ExecuteSqlRaw(rawSql);
 
         return backendConfigurationPnDbContext;
@@ -55,8 +59,10 @@ public class TestBaseSetup
     {
         var optionsBuilder = new DbContextOptionsBuilder<ItemsPlanningPnDbContext>();
 
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"), new MariaDbServerVersion(
-            new Version(10, 8)));
+        optionsBuilder.UseMySql(
+            connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"),
+            new MariaDbServerVersion(
+                new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new ItemsPlanningPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-items-planning-plugin.sql");
@@ -72,8 +78,10 @@ public class TestBaseSetup
     {
         var optionsBuilder = new DbContextOptionsBuilder<TimePlanningPnDbContext>();
 
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"), new MariaDbServerVersion(
-            new Version(10, 8)));
+        optionsBuilder.UseMySql(
+            connectionStr.Replace("myDb", "420_eform-angular-items-planning-plugin").Replace("bla", "root"),
+            new MariaDbServerVersion(
+                new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new TimePlanningPnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-time-planning-plugin.sql");
@@ -89,8 +97,10 @@ public class TestBaseSetup
     {
         var optionsBuilder = new DbContextOptionsBuilder<CaseTemplatePnDbContext>();
 
-        optionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin").Replace("bla", "root"), new MariaDbServerVersion(
-            new Version(10, 8)));
+        optionsBuilder.UseMySql(
+            connectionStr.Replace("myDb", "420_eform-angular-case-template-plugin").Replace("bla", "root"),
+            new MariaDbServerVersion(
+                new Version(10, 8)));
 
         var backendConfigurationPnDbContext = new CaseTemplatePnDbContext(optionsBuilder.Options);
         var file = Path.Combine("SQL", "420_eform-angular-case-template-plugin.sql");
@@ -106,9 +116,10 @@ public class TestBaseSetup
     {
         var dbContextOptionsBuilder = new DbContextOptionsBuilder();
 
-        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK").Replace("bla", "root"), new MariaDbServerVersion(
-            new Version(10, 8)));
-        var microtingDbContext =  new MicrotingDbContext(dbContextOptionsBuilder.Options);
+        dbContextOptionsBuilder.UseMySql(connectionStr.Replace("myDb", "420_SDK").Replace("bla", "root"),
+            new MariaDbServerVersion(
+                new Version(10, 8)));
+        var microtingDbContext = new MicrotingDbContext(dbContextOptionsBuilder.Options);
         var file = Path.Combine("SQL", "420_SDK.sql");
         var rawSql = File.ReadAllText(file);
 
@@ -121,7 +132,8 @@ public class TestBaseSetup
     protected async Task<Core> GetCore()
     {
         var core = new Core();
-        await core.StartSqlOnly(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK").Replace("bla", "root"));
+        await core.StartSqlOnly(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK")
+            .Replace("bla", "root"));
         return core;
     }
 
@@ -153,8 +165,32 @@ public class TestBaseSetup
         CaseTemplatePnDbContext.Database.SetCommandTimeout(300);
 
         var rebusService =
-            new RebusService(new EFormCoreService(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK").Replace("bla", "root")), new BackendConfigurationLocalizationService());
-        rebusService.Start(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK").Replace("bla", "root")).GetAwaiter().GetResult();
+            new RebusService(
+                new EFormCoreService(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK")
+                    .Replace("bla", "root")), new BackendConfigurationLocalizationService());
+        rebusService
+            .Start(_mariadbTestcontainer.GetConnectionString().Replace("myDb", "420_SDK").Replace("bla", "root"))
+            .GetAwaiter().GetResult();
         Bus = rebusService.GetBus();
+    }
+
+    [OneTimeTearDown]
+    public async Task OneTimeTearDown()
+    {
+        Console.WriteLine($"{DateTime.Now} : Stopping MariaDb Container...");
+        await _mariadbTestcontainer.StopAsync();
+        await _mariadbTestcontainer.DisposeAsync();
+        Console.WriteLine($"{DateTime.Now} : Stopped MariaDb Container");
+    }
+
+    [TearDown]
+    public async Task TearDown()
+    {
+        await BackendConfigurationPnDbContext!.DisposeAsync();
+        await ItemsPlanningPnDbContext!.DisposeAsync();
+        await TimePlanningPnDbContext!.DisposeAsync();
+        await MicrotingDbContext!.DisposeAsync();
+        await CaseTemplatePnDbContext!.DisposeAsync();
+        Bus!.Dispose();
     }
 }
