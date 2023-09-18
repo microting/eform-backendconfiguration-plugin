@@ -43,7 +43,6 @@ describe('Area rules type 1', () => {
     cy.visit('http://localhost:4200');
     loginPage.login();
   });
-  // TODO: Fix this
   it('should create task', () => {
     backendConfigurationPropertiesPage.goToProperties();
     backendConfigurationPropertiesPage.createProperty(property);
@@ -51,8 +50,9 @@ describe('Area rules type 1', () => {
     backendConfigurationPropertyWorkersPage.create(workerForCreate);
     backendConfigurationPropertiesPage.goToProperties();
     const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
+    const bindArea = '00. Logbøger';
     propertyEl.goToAreas();
-    propertyEl.bindAreasByName(['00. Logbøger']);
+    propertyEl.bindAreasByName([bindArea]);
     cy.intercept('GET', '**/api/backend-configuration-pn/task-wizard/properties?**').as('getProperties');
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.wait('@getProperties', { timeout: 60000 });
@@ -68,13 +68,13 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
-    cy.get('.folder-tree-name').first().click();
+    cy.contains('.folder-tree-name', bindArea).first().click();
     cy.get('#createTableTags').click();
     cy.wait(500);
     selectValueInNgSelectorNoSelector(`03. Flydelag`);
     cy.get('#createTags').click();
     cy.wait(500);
-    selectValueInNgSelectorNoSelector(`00. Logbøger`);
+    selectValueInNgSelectorNoSelector(bindArea);
     cy.wait(500);
     for (let i = 0; i < task.translations.length; i++) {
       cy.get(`#createName${i}`).type(task.translations[i]);
@@ -93,7 +93,7 @@ describe('Area rules type 1', () => {
     // check table
     cy.get('.cdk-row').should('have.length', 1);
     cy.get('.cdk-row .cdk-column-property span').should('have.text', task.property);
-    cy.get('.cdk-row .cdk-column-folder span').should('have.text', '00. Logbøger');
+    cy.get('.cdk-row .cdk-column-folder span').should('have.text', bindArea);
     cy.get('.cdk-row .cdk-column-taskName span').should('have.text', task.translations[0]);
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', task.eformName);
     cy.get('.cdk-row .cdk-column-startDate span')

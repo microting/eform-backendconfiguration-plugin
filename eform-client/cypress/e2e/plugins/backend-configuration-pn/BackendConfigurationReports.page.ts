@@ -19,12 +19,13 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
     this.backendConfigurationPnReportsButton().then(($ele) => {
       if (!$ele.is(':visible')) {
         this.backendConfigurationPnButton().click();
+        cy.wait(500);
       }
+    }).then(() => {
+      cy.intercept('GET', '**/api/items-planning-pn/tags').as('reports');
+      this.backendConfigurationPnReportsButton().click();
+      cy.wait('@reports');
     });
-    cy.intercept('GET', '**/api/items-planning-pn/tags').as('reports');
-    this.backendConfigurationPnReportsButton().click();
-    cy.wait('@reports');
-    // this.waitForSpinnerHide();
   }
 
   public rowNum() {

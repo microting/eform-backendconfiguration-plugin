@@ -51,8 +51,9 @@ describe('Area rules type 1', () => {
     backendConfigurationPropertyWorkersPage.create(workerForCreate);
     backendConfigurationPropertiesPage.goToProperties();
     const propertyEl = backendConfigurationPropertiesPage.getFirstRowObject();
+    const bindArea = '00. Logbøger';
     propertyEl.goToAreas();
-    propertyEl.bindAreasByName(['00. Logbøger']);
+    propertyEl.bindAreasByName([bindArea]);
     cy.get('#backend-configuration-pn-task-wizard').click();
     cy.wait(3000);
     cy.get('#createNewTaskBtn').should('be.enabled').click();
@@ -66,14 +67,14 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
-    cy.get('.folder-tree-name').first().click();
+    cy.contains('.folder-tree-name', bindArea).first().click();
     cy.wait(500);
     cy.get('#createTableTags').click();
     cy.wait(500);
     selectValueInNgSelectorNoSelector(`03. Flydelag`);
     cy.get('#createTags').click();
     cy.wait(500);
-    selectValueInNgSelectorNoSelector(`00. Logbøger`);
+    selectValueInNgSelectorNoSelector(bindArea);
     cy.wait(500);
     for (let i = 0; i < task.translations.length; i++) {
       cy.get(`#createName${i}`).type(task.translations[i]);
