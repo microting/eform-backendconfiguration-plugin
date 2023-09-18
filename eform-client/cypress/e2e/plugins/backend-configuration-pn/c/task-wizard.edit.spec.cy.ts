@@ -90,7 +90,7 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
-    cy.get('.folder-tree-name').first().click();
+    cy.contains('.folder-tree-name', `00. Logbøger`).first().click();
     cy.wait(500);
     cy.get('#createTableTags').click();
     cy.wait(500);

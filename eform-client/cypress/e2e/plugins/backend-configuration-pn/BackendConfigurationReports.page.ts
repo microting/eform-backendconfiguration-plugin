@@ -19,11 +19,12 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
     this.backendConfigurationPnReportsButton().then(($ele) => {
       if (!$ele.is(':visible')) {
         this.backendConfigurationPnButton().click();
-        cy.wait(500);
+        cy.wait(2000);
       }
     }).then(() => {
       cy.intercept('GET', '**/api/items-planning-pn/tags').as('reports');
       this.backendConfigurationPnReportsButton().click();
+      cy.wait(3000);
       cy.wait('@reports');
     });
   }
