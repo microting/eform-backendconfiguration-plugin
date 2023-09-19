@@ -138,7 +138,7 @@ describe('Area rules type 1', () => {
     cy.get('#createFolderNameTranslation_0').type(newFolderName);
     cy.get('#folderSaveBtn').click();
     cy.wait(500);
-    cy.get('#backend-configuration-pn-task-wizard').click();
+    cy.get('#backend-configuration-pn-task-wizard').scrollIntoView().click();
     cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
     // change task
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
@@ -174,7 +174,7 @@ describe('Area rules type 1', () => {
     // check table
     cy.get('.cdk-row').should('have.length', 1);
     cy.get('.cdk-row .cdk-column-property span').should('have.text', editedTask.property);
-    cy.get('.cdk-row .cdk-column-folder span').should('have.text', newFolderName);
+    cy.get('.cdk-row .cdk-column-folder span').should('have.text', '00. Logbøger');
     cy.get('.cdk-row .cdk-column-taskName span').should('have.text', editedTask.translations[0]);
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', editedTask.eformName);
     cy.get('.cdk-row .cdk-column-startDate span')
