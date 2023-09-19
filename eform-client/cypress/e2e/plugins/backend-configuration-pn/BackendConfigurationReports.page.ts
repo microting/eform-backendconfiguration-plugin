@@ -15,23 +15,7 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
     return cy.get('#backend-configuration-pn-reports');
   }
 
-  backendConfigurationPnPropertiesButton() {
-    return cy.get('#backend-configuration-pn-properties');
-  }
-
-  goToProperties() {
-    this.backendConfigurationPnPropertiesButton().then(($ele) => {
-      if (!$ele.is(':visible')) {
-        this.backendConfigurationPnButton().click();
-      }
-    });
-    this.backendConfigurationPnPropertiesButton().click();
-    cy.get('app-properties-container').should('be.visible');
-    // this.waitForSpinnerHide();
-  }
-
   goToReports() {
-    this.goToProperties();
     this.backendConfigurationPnReportsButton().then(($ele) => {
       if (!$ele.is(':visible')) {
         this.backendConfigurationPnButton().click();
