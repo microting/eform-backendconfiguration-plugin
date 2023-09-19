@@ -135,9 +135,12 @@ describe('Area rules type 1', () => {
       .click();
     cy.get('#createFolderChildBtn').click();
     const newFolderName = generateRandmString(10);
+    cy.wait(2000);
     cy.get('#createFolderNameTranslation_0').type(newFolderName);
-    cy.get('#folderSaveBtn').click();
+    cy.get('#createFolderDescriptionTranslation_0 .NgxEditor__Content').type(generateRandmString());
     cy.wait(500);
+    cy.get('#folderSaveBtn').click();
+    cy.wait(1000);
     cy.get('#backend-configuration-pn-task-wizard').scrollIntoView().click();
     cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
     // change task
