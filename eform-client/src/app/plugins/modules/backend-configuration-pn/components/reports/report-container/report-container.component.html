@@ -1,12 +1,11 @@
-<eform-new-subheader [title]="'Generate report' | translate" [forceStaticTitle]="true"> </eform-new-subheader>
+<eform-new-subheader/>
 
-<app-items-planning-pn-report-header
+<app-backend-pn-report-header
   [range]="range"
   [availableTags]="availableTags"
   (downloadReport)="onDownloadReport($event)"
   (generateReport)="onGenerateReport($event)"
->
-</app-items-planning-pn-report-header>
+/>
 <ng-container *ngFor="let report of reportsModel; let i = index">
   <div class="mb-4">
     <!--Headers block-->
