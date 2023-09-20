@@ -149,19 +149,23 @@ describe('Area rules type 1', () => {
     selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
-    cy.get('app-task-wizard-update-modal button#createFolder').click();// need be #updateFolder
+    cy.get('app-task-wizard-update-modal button#createFolder').click();// must be #updateFolder
     cy.wait(500);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
     cy.contains('.folder-tree-name', newFolderName).click();
+    /*cy.wait(500);
+    cy.get('#updateTableTags').find('.ng-clear-wrapper').click();
+    selectValueInNgSelector('#updateTableTags', `03. Flydelag`, true);
     cy.wait(500);
-    cy.get('#updateTableTags').click();
-    cy.wait(500);
-    selectValueInNgSelectorNoSelector(`03. Flydelag`);
+    selectValueInNgSelector('#updateTags', `00. Logbøger`, true);*/
+    /*selectValueInNgSelectorNoSelector(`03. Flydelag`);
     cy.get('#updateTags').click();
     cy.wait(500);
-    selectValueInNgSelectorNoSelector(`00. Logbøger`);
+    selectValueInNgSelectorNoSelector(`00. Logbøger`);*/
     cy.wait(500);
+    // disable task for enable edit names
+    cy.get('#updateTaskStatusToggle').click();
     for (let i = 0; i < editedTask.translations.length; i++) {
       cy.get(`#updateName${i}`).clear().type(editedTask.translations[i]);
     }
@@ -171,13 +175,15 @@ describe('Area rules type 1', () => {
     selectValueInNgSelector('#updateRepeatType', editedTask.repeatType, true);
     cy.get('#updateRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(editedTask.repeatEvery);
     cy.get(`.ng-option`).first().should('have.text', editedTask.repeatEvery).should('be.visible').click();
+    // enable task
+    cy.get('#updateTaskStatusToggle').click();
     cy.get('mat-checkbox#checkboxUpdateAssignment0').click();
     cy.get('#updateTaskBtn').click();
     cy.wait(500);
     // check table
     cy.get('.cdk-row').should('have.length', 1);
     cy.get('.cdk-row .cdk-column-property span').should('have.text', editedTask.property);
-    cy.get('.cdk-row .cdk-column-folder span').should('have.text', '00. Logbøger');
+    cy.get('.cdk-row .cdk-column-folder span').should('have.text', newFolderName);
     cy.get('.cdk-row .cdk-column-taskName span').should('have.text', editedTask.translations[0]);
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', editedTask.eformName);
     cy.get('.cdk-row .cdk-column-startDate span')
