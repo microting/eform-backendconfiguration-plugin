@@ -440,7 +440,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 CaseId = 0,
                 PropertyWorkerId = propertyWorkers.First().Id,
                 SelectedAreaName = createModel.AreaName,
-                CreatedByName = $"{await _userService.GetCurrentUserFullName().ConfigureAwait(false)} - web",
+                CreatedByName = await _userService.GetCurrentUserFullName().ConfigureAwait(false),
                 CreatedByText = "",
                 CaseStatusesEnum = createModel.CaseStatusEnum,
                 Description = createModel.Description,
