@@ -149,7 +149,7 @@ describe('Area rules type 1', () => {
     selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
-    cy.get('app-task-wizard-update-modal button#updateFolder').click();
+    cy.get('app-task-wizard-update-modal button#createFolder').click();// need be #updateFolder
     cy.wait(500);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);

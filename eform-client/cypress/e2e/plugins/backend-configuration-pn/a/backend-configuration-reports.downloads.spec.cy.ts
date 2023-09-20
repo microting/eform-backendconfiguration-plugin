@@ -34,6 +34,7 @@ describe('Reports', () => {
     cy.visit('http://localhost:4200');
     loginPage.login();
     backendConfigurationReportsPage.goToReports();
+    cy.intercept('GET', '**/api/backend-configuration-pn/report/reports/file?**').as('downloadReport');
   });
   it('should download correct files', () => {
     backendConfigurationReportsPage.fillFilters(filters[0]);
@@ -42,6 +43,7 @@ describe('Reports', () => {
 
     cy.log('**GENERATE WORD REPORT**');
     backendConfigurationReportsPage.generateWordBtn().click();
+    cy.wait('@downloadReport', { timeout: 90000 });
     const downloadedWordFilename = path.join(downloadsFolder, `${fileName}.docx`);
     const fixturesWordFilename = path.join(<string>fixturesFolder, `${fileName}.docx`);
     cy.readFile(fixturesWordFilename, null, {timeout: 20000}).then((fileContent1: Uint8Array) => {
@@ -57,9 +59,9 @@ describe('Reports', () => {
 
     cy.log('**GENERATE EXCEL REPORT**');
     backendConfigurationReportsPage.generateExcelBtn().click();
+    cy.wait('@downloadReport', { timeout: 90000 });
     const downloadedExcelFilename = path.join(downloadsFolder, `${fileName}.xlsx`);
     const fixturesExcelFilename = path.join(<string>fixturesFolder, `${fileName}.xlsx`);
-
     cy.task('readXlsx', {file: fixturesExcelFilename}).then((file1Content) => {
       cy.task('readXlsx', {file: downloadedExcelFilename}).then((file2Content) => {
         expect(file1Content, 'excel file').deep.eq(file2Content);
@@ -73,6 +75,7 @@ describe('Reports', () => {
 
     cy.log('**GENERATE WORD REPORT**');
     backendConfigurationReportsPage.generateWordBtn().click();
+    cy.wait('@downloadReport', { timeout: 90000 });
     const downloadedWordFilename = path.join(downloadsFolder, `${fileName2}.docx`);
     const fixturesWordFilename = path.join(<string>fixturesFolder, `${fileName2}.docx`);
     cy.readFile(fixturesWordFilename, null, {timeout: 20000}).then((fileContent1: Uint8Array) => {
@@ -88,6 +91,7 @@ describe('Reports', () => {
 
     cy.log('**GENERATE EXCEL REPORT**');
     backendConfigurationReportsPage.generateExcelBtn().click();
+    cy.wait('@downloadReport', { timeout: 90000 });
     const downloadedExcelFilename = path.join(downloadsFolder, `${fileName2}.xlsx`);
     const fixturesExcelFilename = path.join(<string>fixturesFolder, `${fileName2}.xlsx`);
     cy.task('readXlsx', {file: fixturesExcelFilename}).then((file1Content) => {

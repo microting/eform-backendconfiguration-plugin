@@ -19,13 +19,10 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
     this.backendConfigurationPnReportsButton().then(($ele) => {
       if (!$ele.is(':visible')) {
         this.backendConfigurationPnButton().click();
-        cy.wait(2000);
       }
-    }).then(() => {
-      this.backendConfigurationPnReportsButton().click();
-      cy.get('app-backend-configuration-pn-report').should('exist').should('be.visible')
-      cy.wait(3000);
     });
+    this.backendConfigurationPnReportsButton().click();
+    cy.get('app-backend-configuration-pn-report').should('exist').should('be.visible');
   }
 
   public rowNum() {
