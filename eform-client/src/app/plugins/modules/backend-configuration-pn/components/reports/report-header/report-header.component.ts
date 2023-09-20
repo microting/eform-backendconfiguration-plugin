@@ -21,7 +21,7 @@ import {format, parse} from 'date-fns';
 
 @AutoUnsubscribe()
 @Component({
-  selector: 'app-items-planning-pn-report-header',
+  selector: 'app-backend-pn-report-header',
   templateUrl: './report-header.component.html',
   styleUrls: ['./report-header.component.scss'],
 })

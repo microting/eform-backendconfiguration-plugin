@@ -197,7 +197,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                 Description = newDescription,
                 CaseInitiated = workOrderCase.CaseInitiated,
                 LastAssignedToName = siteName,
-                LastUpdatedByName = $"{updatedByName} - web",
+                LastUpdatedByName = updatedByName,
                 LeadingCase = i == 0,
                 Priority = workOrderCase.Priority
             }.Create(backendConfigurationPnDbContext);
