@@ -21,10 +21,8 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
         this.backendConfigurationPnButton().click();
       }
     });
-    cy.intercept('GET', '**/api/items-planning-pn/tags').as('reports');
     this.backendConfigurationPnReportsButton().click();
-    cy.wait('@reports');
-    // this.waitForSpinnerHide();
+    cy.get('app-backend-configuration-pn-report').should('exist').should('be.visible');
   }
 
   public rowNum() {
