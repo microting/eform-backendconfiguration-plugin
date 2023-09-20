@@ -155,10 +155,10 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     cy.contains('.folder-tree-name', newFolderName).click();
     cy.wait(500);
-    cy.get('#createTableTags').click();
+    cy.get('#updateTableTags').click();
     cy.wait(500);
     selectValueInNgSelectorNoSelector(`03. Flydelag`);
-    cy.get('#createTags').click();
+    cy.get('#updateTags').click();
     cy.wait(500);
     selectValueInNgSelectorNoSelector(`00. Logbøger`);
     cy.wait(500);
