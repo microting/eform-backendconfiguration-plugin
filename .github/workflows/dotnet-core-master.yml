@@ -154,13 +154,27 @@ jobs:
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_Angular.EformPlugins set Status = 2'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_SDK`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_SDK`'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e "use 420_SDK; show tables"
+    - name: Load DB dump
+      if: matrix.test == 'a'
+      run: |
         docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_SDK.sql
+    - name: Load DB dump
+      if: matrix.test == 'a'
+      run: |
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK -e "use 420_SDK; show tables"
+    - name: Load DB dump
+      if: matrix.test == 'a'
+      run: |
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_eform-backend-configuration-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_eform-backend-configuration-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-backend-configuration-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-backend-configuration-plugin.sql
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_eform-angular-items-planning-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_eform-angular-items-planning-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-angular-items-planning-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-angular-items-planning-plugin.sql
+    - name: Load DB dump
+      if: matrix.test == 'a'
+      run: |
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
     - name: Restart the Docker container
       if: matrix.test == 'a'
