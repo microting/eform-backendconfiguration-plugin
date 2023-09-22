@@ -74,7 +74,8 @@
     (click)="onShowPlanAreaRule(row)">
     <mat-icon>assignment</mat-icon>
   </button>
-  <ng-container *ngIf="!row.isDefault">
+<!--  <ng-container *ngIf="!row.isDefault">-->
+  <ng-container>
     <button
       mat-icon-button
       *ngIf="selectedArea.type !== 9"
