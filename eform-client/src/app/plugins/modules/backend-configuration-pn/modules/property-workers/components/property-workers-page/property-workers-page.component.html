@@ -41,7 +41,9 @@
   [toolbarTemplate]="toolbarTpl"
   [sortActive]="propertyWorkersStateService.getActiveSort() | async"
   [sortDirection]="propertyWorkersStateService.getActiveSortDirection() | async"
-  (sortChange)="sortTable($event)">
+  (sortChange)="sortTable($event)"
+  style="max-height: 80vh;"
+>
 </mtx-grid>
 <ng-template #deviceUserIdTpl let-row let-i="index">
   <div class="deviceUserId" id="deviceUserId-{{i}}">{{row.siteId}}</div>

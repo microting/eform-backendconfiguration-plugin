@@ -8,7 +8,9 @@
   [showColumnMenuButton]="false"
   (sortChange)="onSortChange($event)"
   [sortDirection]="documentsStateService.getActiveSortDirection() | async"
-  [sortActive]="documentsStateService.getActiveSort() | async">
+  [sortActive]="documentsStateService.getActiveSort() | async"
+  style="max-height: 66vh;"
+>
 </mtx-grid>
 
 <!--<ng-template #downloadButton let-row let-i="index">

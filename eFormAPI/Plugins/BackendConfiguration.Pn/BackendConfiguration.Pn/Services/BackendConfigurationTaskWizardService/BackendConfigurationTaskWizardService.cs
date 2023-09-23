@@ -61,6 +61,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Include(x => x.AreaRule.AreaRuleTranslations)
                 .Include(x => x.AreaRulePlanningTags)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.AreaRule.CreatedInGuide)
                 .Where(x => x.AreaId == areaId);
 
             // filtration
