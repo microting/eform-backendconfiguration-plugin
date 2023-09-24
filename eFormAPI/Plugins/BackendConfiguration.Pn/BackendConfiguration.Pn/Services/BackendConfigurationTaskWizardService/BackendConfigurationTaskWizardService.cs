@@ -715,6 +715,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     //         Name = areaRuleAreaRuleTranslation.Name
                     //     }).ToList();
                     planning.DayOfMonth = 1;
+                    planning.Enabled = true;
                     planning.DayOfWeek = DayOfWeek.Monday;
                     planning.RepeatEvery = updateModel.RepeatEvery;
                     planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
@@ -778,9 +779,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .Include(x => x.NameTranslations)
                         .Include(x => x.PlanningsTags)
                         .Include(x => x.PlanningSites)
-                        .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+                        .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed).ConfigureAwait(false);
 
-                    await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId);
+                    await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId).ConfigureAwait(false);
+                    planning.Enabled = false;
+                    await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                     var complianceList = await _backendConfigurationPnDbContext.Compliances
                         .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
