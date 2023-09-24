@@ -62,7 +62,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Include(x => x.AreaRulePlanningTags)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.AreaRule.CreatedInGuide)
-                .Where(x => x.AreaId == areaId);
+                .Where(x => x.AreaId == areaId)
+                .AsNoTracking();
 
             // filtration
             if (request.Filters.PropertyIds.Any())
@@ -229,7 +230,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     Id = x.Id,
                     Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
                     Description = ""
-                }).ToListAsync().ConfigureAwait(false);
+                }).AsNoTracking().ToListAsync().ConfigureAwait(false);
             return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
         }
         catch (Exception ex)
@@ -254,7 +255,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Include(x => x.AreaRule.AreaRuleTranslations)
                 .Include(x => x.AreaRulePlanningTags)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Id == id);
+                .Where(x => x.Id == id)
+                .AsNoTracking();
 
             if (!await query.Select(x => x.Id).AnyAsync())
             {
@@ -333,6 +335,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.Name)
                 .FirstOrDefault();
+
+            if (createModel.Status == TaskWizardStatuses.Active && createModel.Sites.Count == 0)
+            {
+             createModel.Status = TaskWizardStatuses.NotActive;
+            }
 
             if (createModel.StartDate != null)
             {
@@ -580,6 +587,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 return new OperationResult(false,
                     _localizationService.GetString("TaskNotFound"));
+            }
+
+            if (updateModel.Status == TaskWizardStatuses.Active && updateModel.Sites.Count == 0)
+            {
+                updateModel.Status = TaskWizardStatuses.NotActive;
             }
 
             var currentSiteIds = areaRulePlanning.PlanningSites.Select(ps => ps.SiteId).ToList();
@@ -1017,7 +1029,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     break;
                 // nothing to do, but update tags
                 case false when !areaRulePlanning.Status:
-                    //await UpdateTags(0, updateModel, areaRulePlanning.Id, oldItemPlanningTagId, false);
+                {
+                    await UpdateTags(areaRulePlanning.ItemPlanningId, updateModel, areaRulePlanning.Id, oldItemPlanningTagId, true);
+                }
                     break;
             }
 
@@ -1279,7 +1293,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         {
             if (updateItemPlanningTags)
             {
-                await tags.Create(_itemsPlanningPnDbContext);
+                PlanningsTags planningTagsTags = new()
+                {
+                    PlanningId = tags.PlanningId,
+                    PlanningTagId = tags.PlanningTagId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningTagsTags.Create(_itemsPlanningPnDbContext);
             }
 
             var areaRulePlanningTag = new AreaRulePlanningTag
