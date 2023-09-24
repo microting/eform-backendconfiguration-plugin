@@ -374,7 +374,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 CreatedAt = DateTime.UtcNow,
                 IsEditable = false,
-                Enabled = true,
+                Enabled = createModel.Status == TaskWizardStatuses.Active,
                 IsLocked = true,
                 IsHidden = false,
                 StartDate = (DateTime)createModel.StartDate,
@@ -384,6 +384,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 RepeatEvery = createModel.RepeatEvery,
                 SdkFolderId = createModel.FolderId,
                 SdkFolderName = folderName,
+                ShowExpireDate = true,
                 DayOfWeek = dayOfWeek,
                 DayOfMonth = dayOfMonth,
                 UpdatedByUserId = _userService.UserId,
@@ -529,11 +530,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             };
             await areRule.Create(_backendConfigurationPnDbContext);
 
-            await PairItemWithSiteHelper.Pair(
-                createModel.Sites,
-                createModel.EformId,
-                planning.Id,
-                createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
+            if (createModel.Status == TaskWizardStatuses.Active && createModel.StartDate <= DateTime.UtcNow)
+            {
+                await PairItemWithSiteHelper.Pair(
+                    createModel.Sites,
+                    createModel.EformId,
+                    planning.Id,
+                    createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
+            }
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
         catch (Exception e)
