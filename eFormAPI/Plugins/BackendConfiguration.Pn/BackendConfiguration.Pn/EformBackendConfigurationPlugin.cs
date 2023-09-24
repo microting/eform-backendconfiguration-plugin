@@ -1521,7 +1521,7 @@ namespace BackendConfiguration.Pn
             {
 	            new("Ny Gyllebeholder", "Ny Flydelag"),
 	            new("New Slurry tank", "New Floating layer"),
-	            new("Neuer Gülletank", "Neue Schwimmende Ebene"),
+	            new("Neuer Gülletank", "Neue Schwimmende Ebene")
             };
 
             foreach (var (oldValue, newValue) in listWithdOldNewItemTranslations)

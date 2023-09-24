@@ -262,4 +262,8 @@ export const bgBG = {
   'Exeeded or today': 'Exeeded или днес',
   'Under 30 days': 'Под 30 дни',
   'Exceeded or today': 'Превишен или днес',
+  'Grouping tags': 'Групиране на етикети',
+  'Generate report': 'Генериране на отчет',
+  'Task description': 'Описание на задачата',
+  'Task solver': 'Решаване на задачи',
 };

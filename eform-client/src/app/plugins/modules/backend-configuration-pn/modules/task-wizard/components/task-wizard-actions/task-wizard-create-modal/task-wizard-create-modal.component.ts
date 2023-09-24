@@ -56,7 +56,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   templatesModel: TemplateListModel = new TemplateListModel();
   tableHeaders: MtxGridColumn[] = [
     {field: 'id', header: this.translateService.stream('Id')},
-    {field: 'name', header: this.translateService.stream('Name'),},
+    {field: 'name', header: this.translateService.stream('Task solver'),},
     {field: 'select', header: this.translateService.stream('Select'),},
   ];
   public model: TaskWizardCreateModel = {

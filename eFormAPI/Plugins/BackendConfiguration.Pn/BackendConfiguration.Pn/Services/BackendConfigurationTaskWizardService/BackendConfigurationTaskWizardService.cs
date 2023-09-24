@@ -144,15 +144,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .Select(y => new CommonTagModel
                     {
                         Id = y.ItemPlanningTagId,
-                        Name = itemPlanningTagNames.ContainsKey(y.ItemPlanningTagId) ? itemPlanningTagNames[y.ItemPlanningTagId] : "",
+                        Name = itemPlanningTagNames.ContainsKey(y.ItemPlanningTagId) ? itemPlanningTagNames[y.ItemPlanningTagId] : ""
                     })
                     .ToList(),
                 // add report tag to all tags
                 TagReport = x.ItemPlanningTagId.HasValue ? new CommonTagModel
                 {
                     Id = x.ItemPlanningTagId.Value,
-                    Name = itemPlanningTagNames.ContainsKey(x.ItemPlanningTagId.Value) ? itemPlanningTagNames[x.ItemPlanningTagId.Value] : "",
-                } : null,
+                    Name = itemPlanningTagNames.ContainsKey(x.ItemPlanningTagId.Value) ? itemPlanningTagNames[x.ItemPlanningTagId.Value] : ""
+                } : null
             }).ToList();
 
             // add eForm names, folder names and site names
@@ -195,7 +195,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .FirstOrDefault(),
                     Folder = folderNamesQuery.Where(x => x.FolderId == areaRule.FolderId).Select(x => x.Name)
                         .FirstOrDefault(),
-                    CreatedInGuide = areaRule.CreatedInGuide,
+                    CreatedInGuide = areaRule.CreatedInGuide
                 })
                 .AsQueryable();
 
@@ -286,7 +286,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => y.ItemPlanningTagId)
                         // .Where(y => !x.ItemPlanningTagId.HasValue || y != x.ItemPlanningTagId) // delete report tag from all tags
-                        .ToList(),
+                        .ToList()
                 })
                 .FirstOrDefaultAsync();
 
@@ -473,7 +473,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         Name = t.Name,
                         LanguageId = t.LanguageId,
                         UpdatedByUserId = _userService.UserId,
-                        CreatedByUserId = _userService.UserId,
+                        CreatedByUserId = _userService.UserId
                     })
                     .ToList(),
                 EformId = createModel.EformId,
@@ -502,7 +502,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                     SiteId = x,
                                     Status = 0,
                                     UpdatedByUserId = _userService.UserId,
-                                    CreatedByUserId = _userService.UserId,
+                                    CreatedByUserId = _userService.UserId
                                 })
                             .ToList(),
                         Status = createModel.Status == TaskWizardStatuses.Active,
@@ -606,7 +606,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                  AreaId = areaId,
                                  AreaRuleId = areaRulePlanning.AreaId,
                                  CreatedByUserId = _userService.UserId,
-                                 UpdatedByUserId = _userService.UserId,
+                                 UpdatedByUserId = _userService.UserId
                              }))
             {
                 await site.Create(_backendConfigurationPnDbContext);
@@ -652,7 +652,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                              LanguageId = t.LanguageId,
                              AreaRuleId = areaRulePlanning.AreaRuleId,
                              CreatedByUserId = _userService.UserId,
-                             UpdatedByUserId = _userService.UserId,
+                             UpdatedByUserId = _userService.UserId
                          })
                          .ToList())
             {
@@ -894,7 +894,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                          LanguageId = t.LanguageId,
                                          PlanningId = planning.Id,
                                          CreatedByUserId = _userService.UserId,
-                                         UpdatedByUserId = _userService.UserId,
+                                         UpdatedByUserId = _userService.UserId
                                      })
                                      .ToList())
                         {
@@ -915,7 +915,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                              SiteId = x,
                                              PlanningId = planning.Id,
                                              CreatedByUserId = _userService.UserId,
-                                             UpdatedByUserId = _userService.UserId,
+                                             UpdatedByUserId = _userService.UserId
                                          }))
                         {
                             await site.Create(_itemsPlanningPnDbContext);
@@ -1248,7 +1248,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 PlanningTagId = tagId,
                 PlanningId = planningId,
                 CreatedByUserId = _userService.UserId,
-                UpdatedByUserId = _userService.UserId,
+                UpdatedByUserId = _userService.UserId
             })
             .ToList();
 
@@ -1302,7 +1302,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     PlanningTagId = updateModel.ItemPlanningTagId.Value,
                     PlanningId = planningId,
                     CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
                 };
 
                 if (tagForDelete != null)
@@ -1319,7 +1319,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     PlanningTagId = updateModel.ItemPlanningTagId.Value,
                     PlanningId = planningId,
                     CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
                 };
                 await tagForCreate.Create(_itemsPlanningPnDbContext);
             }

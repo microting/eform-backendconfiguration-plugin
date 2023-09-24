@@ -1074,8 +1074,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 {
                     Notifications = true,
                     RepeatType = 1, // days
-                    ComplianceEnabled = true,
-                },
+                    ComplianceEnabled = true
+                }
             },
             new Area
             {
@@ -1847,7 +1847,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
                 },
                 AreaId = 5,
                 IsDefault = true
-            },
+            }
             // new()
             // {
             //     EformName = "01. Gyllekøling",

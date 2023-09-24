@@ -262,4 +262,8 @@ export const svSE = {
   'Exeeded or today': 'Exeeded eller idag',
   'Under 30 days': 'Under 30 dagar',
   'Exceeded or today': 'Överskriden eller idag',
+  'Grouping tags': 'Gruppering av taggar',
+  'Generate report': 'Generera rapport',
+  'Task description': 'Uppgifts beskrivning',
+  'Task solver': 'Uppgiftslösare',
 };

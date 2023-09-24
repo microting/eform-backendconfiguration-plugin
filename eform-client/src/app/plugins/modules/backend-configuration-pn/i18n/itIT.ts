@@ -262,4 +262,8 @@ export const itIT = {
   'Exeeded or today': 'Superato o oggi',
   'Under 30 days': 'Meno di 30 giorni',
   'Exceeded or today': 'Superato o oggi',
+  'Grouping tags': 'Tag di raggruppamento',
+  'Generate report': 'Genera rapporto',
+  'Task description': 'Descrizione del compito',
+  'Task solver': 'Risolutore di compiti',
 };

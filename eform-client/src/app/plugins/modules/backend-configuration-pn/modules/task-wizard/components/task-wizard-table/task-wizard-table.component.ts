@@ -30,7 +30,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
     {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'}},
     {
       field: 'property',
-      header: this.translateService.stream('Property'),
+      header: this.translateService.stream('Location'),
       sortable: true,
       sortProp: {id: 'Property'}
     },

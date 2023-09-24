@@ -262,4 +262,8 @@ export const elGR = {
   'Exeeded or today': 'Exeeded ή σήμερα',
   'Under 30 days': 'Κάτω από 30 ημέρες',
   'Exceeded or today': 'Υπέρβαση ή σήμερα',
+  'Grouping tags': 'Ομαδοποίηση ετικετών',
+  'Generate report': 'Δημιουργία αναφοράς',
+  'Task description': 'Περιγραφή των εργασιών',
+  'Task solver': 'Επίλυση εργασιών',
 };

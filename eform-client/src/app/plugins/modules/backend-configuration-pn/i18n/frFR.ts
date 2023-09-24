@@ -262,4 +262,8 @@ export const frFR = {
   'Exeeded or today': 'Dépassé ou aujourd&#39;hui',
   'Under 30 days': 'Moins de 30 jours',
   'Exceeded or today': 'Dépassé ou aujourd&#39;hui',
+  'Grouping tags': 'Balises de regroupement',
+  'Generate report': 'Générer un rapport',
+  'Task description': 'Description de la tâche',
+  'Task solver': 'Solveur de tâches',
 };

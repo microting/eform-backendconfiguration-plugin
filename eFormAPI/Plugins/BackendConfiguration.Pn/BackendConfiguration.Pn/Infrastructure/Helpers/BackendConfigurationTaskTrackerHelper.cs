@@ -197,7 +197,7 @@ public static class BackendConfigurationTaskTrackerHelper
 								Date = date.Date,
 								IsTask = listWithDateTasks
 									.Exists(dateTask => dateTask.ToString("d") == date.Date.ToString("d"))
-							}).ToList(),
+							}).ToList()
 					}).ToList();
 
 				var complianceModel = new TaskTrackerModel

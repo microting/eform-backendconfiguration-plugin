@@ -280,4 +280,7 @@ export const enUS = {
   'Exceeded or today': 'Exceeded or today',
   'Under 30 days': 'Under 30 days',
   'Generate report': 'Generate report',
+  'Grouping tags': 'Grouping tags',
+  'Task description': 'Task description',
+  'Task solver': 'Task solver',
 };

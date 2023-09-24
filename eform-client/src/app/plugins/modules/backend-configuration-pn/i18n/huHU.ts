@@ -262,4 +262,8 @@ export const huHU = {
   'Exeeded or today': 'Exeeded vagy ma',
   'Under 30 days': '30 nap alatt',
   'Exceeded or today': 'Meghaladta vagy ma',
+  'Grouping tags': 'Címkék csoportosítása',
+  'Generate report': 'Jelentést készít',
+  'Task description': 'Feladatleírás',
+  'Task solver': 'Feladat megoldó',
 };

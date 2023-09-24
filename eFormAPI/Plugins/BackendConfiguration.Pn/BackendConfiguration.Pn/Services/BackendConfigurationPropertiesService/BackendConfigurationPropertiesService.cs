@@ -776,7 +776,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                     .FirstOrDefault(),
                 MicrotingUId = folder.MicrotingUid,
                 ParentId = folder.ParentId,
-                Children = new List<PropertyFolderModel>(),
+                Children = new List<PropertyFolderModel>()
             };
 
             foreach (var childFolder in allFolders.Where(f => f.ParentId == folder.Id))

@@ -262,4 +262,8 @@ export const ltLT = {
   'Exeeded or today': 'Exeded arba šiandien',
   'Under 30 days': 'Mažiau nei 30 dienų',
   'Exceeded or today': 'Viršytas arba šiandien',
+  'Grouping tags': 'Grupavimo žymos',
+  'Generate report': 'Sukurti ataskaitą',
+  'Task description': 'Užduoties aprašymas',
+  'Task solver': 'Užduočių sprendėjas',
 };

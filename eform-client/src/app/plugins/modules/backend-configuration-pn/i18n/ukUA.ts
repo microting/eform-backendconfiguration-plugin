@@ -262,4 +262,8 @@ export const ukUA = {
   'Exeeded or today': 'Exeeded або сьогодні',
   'Under 30 days': 'Менше 30 днів',
   'Exceeded or today': 'Перевищено або сьогодні',
+  'Grouping tags': 'Групування тегів',
+  'Generate report': 'Створити звіт',
+  'Task description': 'Опис завдання',
+  'Task solver': 'Розв&#39;язник задач',
 };

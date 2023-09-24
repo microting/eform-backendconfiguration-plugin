@@ -262,4 +262,8 @@ export const skSK = {
   'Exeeded or today': 'Exeeded alebo dnes',
   'Under 30 days': 'Menej ako 30 dní',
   'Exceeded or today': 'Prekročené alebo dnes',
+  'Grouping tags': 'Zoskupovanie značiek',
+  'Generate report': 'Vygenerovať prehľad',
+  'Task description': 'Popis úlohy',
+  'Task solver': 'Riešiteľ úloh',
 };

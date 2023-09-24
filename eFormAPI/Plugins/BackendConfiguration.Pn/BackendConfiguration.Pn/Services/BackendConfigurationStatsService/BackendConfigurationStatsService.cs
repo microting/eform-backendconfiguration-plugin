@@ -120,6 +120,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyWorker.Property.WorkorderEnable)
                 .Where(x => x.LeadingCase)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
 
             if (propertyId.HasValue)
@@ -217,7 +218,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 // .ThenInclude(x => x.AreaRule)
                 // .ThenInclude(x => x.Area)
                 // .ThenInclude(x => x.AreaProperties)
-                .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0);
+                .Where(x => x.AreaRulePlanning.RepeatEvery > 0)
+                .Where(x => x.AreaRulePlanning.AreaRule.CreatedInGuide)
+                .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0)
+                .AsNoTracking();
 
             if (propertyId.HasValue)
             {
@@ -255,7 +259,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .Where(y => y.Value == x.SiteId)
                         .Select(y => y.Key)
                         .FirstOrDefault(),
-                    WorkerId = x.SiteId,
+                    WorkerId = x.SiteId
                 })
                 .ToList();
 
@@ -319,7 +323,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .Where(y => y.Value == x.SiteId)
                         .Select(y => y.Key)
                         .FirstOrDefault(),
-                    WorkerId = x.SiteId,
+                    WorkerId = x.SiteId
                 })
                 .ToList();
 

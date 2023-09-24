@@ -262,4 +262,8 @@ export const lvLV = {
   'Exeeded or today': 'Exeeded vai šodien',
   'Under 30 days': 'Mazāk par 30 dienām',
   'Exceeded or today': 'Pārsniegts vai šodien',
+  'Grouping tags': 'Grupēšanas tagi',
+  'Generate report': 'Ģenerēt atskaiti',
+  'Task description': 'Uzdevuma apraksts',
+  'Task solver': 'Uzdevumu risinātājs',
 };
