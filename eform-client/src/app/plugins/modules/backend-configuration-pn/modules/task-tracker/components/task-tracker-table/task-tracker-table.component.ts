@@ -56,7 +56,6 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       type: 'button',
       buttons: [  // action buttons for each row      ];
         {
-          iif: (record: TaskModel) => record.taskIsExpired,
           type: 'icon',
           icon: 'edit',
           tooltip: this.translateService.stream('Edit'),
