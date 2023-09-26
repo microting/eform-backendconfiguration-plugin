@@ -54,7 +54,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     {header: this.translateService.stream('Actions'), field: 'actions', sortable: false, width: '100px',
       pinned: 'right',
       type: 'button',
-      buttons: [  // action buttons for each row      ];
+      buttons: [  // action buttons for each row
         {
           type: 'icon',
           icon: 'edit',
