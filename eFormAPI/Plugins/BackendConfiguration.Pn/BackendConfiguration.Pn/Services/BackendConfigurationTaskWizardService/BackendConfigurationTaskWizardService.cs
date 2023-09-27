@@ -594,6 +594,18 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 updateModel.Status = TaskWizardStatuses.NotActive;
             }
 
+            if (updateModel.StartDate != null)
+            {
+                if (updateModel.StartDate!.Value.Hour != 0)
+                {
+                    updateModel.StartDate = updateModel.StartDate.Value.AddHours(24 - updateModel.StartDate.Value.Hour);
+                }
+            }
+            else
+            {
+                updateModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
+            }
+
             var currentSiteIds = areaRulePlanning.PlanningSites.Select(ps => ps.SiteId).ToList();
             var sitesToAdd = updateModel.Sites.Except(currentSiteIds).ToList();
             var sitesToRemove = currentSiteIds.Except(updateModel.Sites).ToList();
@@ -644,6 +656,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             areaRulePlanning.AreaRule.RepeatEvery = updateModel.RepeatEvery;
             areaRulePlanning.AreaRule.RepeatType = (int?)updateModel.RepeatType;
             areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
+            if (!oldStatus && areaRulePlanning.Status)
+            {
+                areaRulePlanning.StartDate = updateModel.StartDate;
+            }
             await areaRulePlanning.AreaRule.Update(_backendConfigurationPnDbContext);
 
             // update area rule translations
@@ -715,6 +731,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     //         Name = areaRuleAreaRuleTranslation.Name
                     //     }).ToList();
                     planning.DayOfMonth = 1;
+                    planning.StartDate = updateModel.StartDate!.Value;
                     planning.Enabled = true;
                     planning.DayOfWeek = DayOfWeek.Monday;
                     planning.RepeatEvery = updateModel.RepeatEvery;
