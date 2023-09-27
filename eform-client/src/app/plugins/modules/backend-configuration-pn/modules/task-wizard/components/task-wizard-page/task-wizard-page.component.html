@@ -10,13 +10,13 @@
 <!--    <mat-icon>discount</mat-icon>-->
 <!--  </button>-->
   <button
-    mat-icon-button
+    mat-raised-button
     color="accent"
-    [matTooltip]="'Add new task' | translate"
+    [matTooltip]="'Create new task' | translate"
     (click)="onCreateTask()"
     id="createNewTaskBtn"
   >
-    <mat-icon>add</mat-icon>
+    {{ 'Create new task' | translate }}
   </button>
 </eform-new-subheader>
 
