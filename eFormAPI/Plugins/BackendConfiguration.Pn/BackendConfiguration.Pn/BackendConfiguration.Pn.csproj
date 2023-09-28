@@ -545,6 +545,10 @@
       <EmbeddedResource Include="Resources\eForms\Kvittering.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+      <None Remove="Resources\eForms\Gyllebeholder: Aktivitet i beholder.xml" />
+      <EmbeddedResource Include="Resources\eForms\Gyllebeholder: Aktivitet i beholder.xml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>

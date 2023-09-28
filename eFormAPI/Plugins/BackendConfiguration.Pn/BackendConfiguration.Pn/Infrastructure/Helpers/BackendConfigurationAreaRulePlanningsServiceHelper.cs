@@ -1674,14 +1674,17 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             await planningSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
         }
 
-        var planningsTags = new PlanningsTags
+        if (areaRule.Area.ItemPlanningTagId != 0)
         {
-            PlanningId = planning.Id,
-            PlanningTagId = areaRule.Area.ItemPlanningTagId,
-            CreatedByUserId = userId,
-            UpdatedByUserId = userId
-        };
-        await planningsTags.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            var planningsTags = new PlanningsTags
+            {
+                PlanningId = planning.Id,
+                PlanningTagId = areaRule.Area.ItemPlanningTagId,
+                CreatedByUserId = userId,
+                UpdatedByUserId = userId
+            };
+            await planningsTags.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+        }
 
         var planningsTags2 = new PlanningsTags
         {
