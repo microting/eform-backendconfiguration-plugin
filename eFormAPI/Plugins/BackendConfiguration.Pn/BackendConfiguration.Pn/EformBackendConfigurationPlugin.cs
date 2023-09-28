@@ -212,7 +212,16 @@ namespace BackendConfiguration.Pn
                     }
                     else
                     {
-                        string contents;
+	                    List<string> hiddenIds = new List<string>
+	                    {
+		                    "1412",
+		                    "142663new2",
+		                    "142664new2",
+		                    "142665",
+		                    "8756",
+		                    "142720"
+	                    };
+	                    string contents;
                         using (var sr = new StreamReader(resourceStream))
                         {
                             contents = await sr.ReadToEndAsync().ConfigureAwait(false);
@@ -246,6 +255,7 @@ namespace BackendConfiguration.Pn
                         {
                             var clId = await core.TemplateCreate(newTemplate).ConfigureAwait(false);
                             var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId).ConfigureAwait(false);
+                            cl.IsHidden = hiddenIds.Contains(cl.OriginalId);
                             cl.IsLocked = true;
                             cl.IsEditable = false;
                             cl.ReportH1 = eform[0];
@@ -266,6 +276,7 @@ namespace BackendConfiguration.Pn
                                 var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
                                     x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
                                     x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                                cl.IsHidden = hiddenIds.Contains(cl.OriginalId);
                                 cl.IsLocked = true;
                                 cl.IsEditable = false;
                                 cl.ReportH1 = eform[0];

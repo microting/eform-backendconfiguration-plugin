@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Main>
+    <Id>142841</Id>
+    <Repeated>0</Repeated>
+    <Label>Gyllebeholder: Aktivitet i beholder|Slurry tank: Activity in tank</Label>
+    <StartDate>2023-06-12</StartDate>
+    <EndDate>2033-06-12</EndDate>
+    <Language>da</Language>
+    <MultiApproval>false</MultiApproval>
+    <FastNavigation>false</FastNavigation>
+    <Review>false</Review>
+    <Summary>false</Summary>
+    <DisplayOrder>0</DisplayOrder>
+    <ElementList>
+        <Element type="DataElement">
+            <Id>142841</Id>
+            <Label>Gyllebeholder: Aktivitet i beholder|Slurry tank: Activity in tank</Label>
+            <Description><![CDATA[]]></Description>
+            <DisplayOrder>0</DisplayOrder>
+            <ReviewEnabled>false</ReviewEnabled>
+            <ManualSync>false</ManualSync>
+            <ExtraFieldsEnabled>false</ExtraFieldsEnabled>
+            <DoneButtonDisabled>true</DoneButtonDisabled>
+            <ApprovalEnabled>false</ApprovalEnabled>
+            <DataItemList>
+                <DataItem type="None">
+                    <Id>377755</Id>
+                    <Label>Bemærk|Notice</Label>
+                    <Description><![CDATA[Udfyldes ved aktiviteter i beholderen.<br><br>Anfør dato i rubrikkerne for omrøring, udbringning, tømning og tiltag til etablering/supplering af den tætte overdækning.<br><br>Der kan eventuelt suppleres med en nærmere beskrivelse af hændelsen. Dette er specielt vigtigt ved tiltag til etablering/supplering af den tætte overdækning, hvor tiltag beskrives.<br>|<br>To be filled in for activities in the tank.<br><br>Enter the date in the boxes for stirring, application, emptying and measures to establish/complete the tight cover.<br><br>If necessary, a detailed description of the incident can be added. This is especially important for measures to establish/supplement the dense cover, where measures are described.]]></Description>
+                    <DisplayOrder>0</DisplayOrder>
+                    <Color>fff6df</Color>
+                </DataItem>
+                <DataItem type="SingleSelect">
+                    <Id>377756</Id>
+                    <Label>Vælg gyllebeholder|Select slurry tank</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>1</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <KeyValuePairList>
+                        <KeyValuePair>
+                            <Key>1</Key>
+                            <Value><![CDATA[Beholder 1|Tank 1]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>1</DisplayOrder>
+                        </KeyValuePair>
+                        <KeyValuePair>
+                            <Key>2</Key>
+                            <Value><![CDATA[Beholder 2|Tank 2]]></Value>
+                            <Selected>false</Selected>
+                            <DisplayOrder>2</DisplayOrder>
+                        </KeyValuePair>
+                    </KeyValuePairList>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Date">
+                    <Id>377757</Id>
+                    <Label>Omrøring med PROPEL|Stirring with PROPEL</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>2</DisplayOrder>
+                    <MinValue>2023-09-22</MinValue>
+                    <MaxValue>2033-09-22</MaxValue>
+                    <Value/>
+                    <Mandatory>false</Mandatory>
+                    <ReadOnly>false</ReadOnly>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Date">
+                    <Id>377758</Id>
+                    <Label>Omrøring med PUMPE|Stirring with PUMP</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>3</DisplayOrder>
+                    <MinValue>2023-09-22</MinValue>
+                    <MaxValue>2033-09-22</MaxValue>
+                    <Value/>
+                    <Mandatory>false</Mandatory>
+                    <ReadOnly>false</ReadOnly>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Date">
+                    <Id>377759</Id>
+                    <Label>Udbringning|Delivery</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>4</DisplayOrder>
+                    <MinValue>2023-09-22</MinValue>
+                    <MaxValue>2033-09-22</MaxValue>
+                    <Value/>
+                    <Mandatory>false</Mandatory>
+                    <ReadOnly>false</ReadOnly>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Date">
+                    <Id>377760</Id>
+                    <Label>Tank tømt helt|Tank emptied completely</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>5</DisplayOrder>
+                    <MinValue>2023-09-22</MinValue>
+                    <MaxValue>2033-09-22</MaxValue>
+                    <Value/>
+                    <Mandatory>false</Mandatory>
+                    <ReadOnly>false</ReadOnly>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Date">
+                    <Id>377761</Id>
+                    <Label>Tiltag til etablering/ supplering af den tætte overdækning|Measures to establish/ supplement the dense cover</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>6</DisplayOrder>
+                    <MinValue>2023-09-22</MinValue>
+                    <MaxValue>2033-09-22</MaxValue>
+                    <Value/>
+                    <Mandatory>false</Mandatory>
+                    <ReadOnly>false</ReadOnly>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Comment">
+                    <Id>377762</Id>
+                    <Label>Kommentar|Comment</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>7</DisplayOrder>
+                    <Multi>1</Multi>
+                    <GeolocationEnabled>false</GeolocationEnabled>
+                    <Split>false</Split>
+                    <Value/>
+                    <ReadOnly>false</ReadOnly>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="Picture">
+                    <Id>377763</Id>
+                    <Label>Billeder|Picture</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>8</DisplayOrder>
+                    <Mandatory>false</Mandatory>
+                    <Color>e8eaf6</Color>
+                </DataItem>
+                <DataItem type="SaveButton">
+                    <Id>377764</Id>
+                    <Label>Gem og indsend|Save and send</Label>
+                    <Description><![CDATA[]]></Description>
+                    <DisplayOrder>9</DisplayOrder>
+                    <Value>INDSEND|SEND</Value>
+                    <Color>f0f8db</Color>
+                </DataItem>
+            </DataItemList>
+        </Element>
+    </ElementList>
+</Main>

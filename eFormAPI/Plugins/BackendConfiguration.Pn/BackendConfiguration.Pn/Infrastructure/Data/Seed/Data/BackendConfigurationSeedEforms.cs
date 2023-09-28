@@ -843,12 +843,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// };
 			// item = new KeyValuePair<string, List<string>>("2.2 Gyllekøling Timer og MWh", headers);
 			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"01.Logbøger Miljøledelse","2.3Gyllekøling: Driftsstop",""
-			// };
-			// item = new KeyValuePair<string, List<string>>("2.3 Gyllekøling Driftsstop", headers);
-			// theList.Add(item);
+			headers = new List<string>
+			{
+				"01.Logbøger Miljøledelse","2.3Gyllekøling: Driftsstop",""
+			};
+			item = new KeyValuePair<string, List<string>>("2.3 Gyllekøling Driftsstop", headers);
+			theList.Add(item);
 			// headers = new List<string>
 			// {
 			// 	"01.Logbøger Miljøledelse","2.4Forsuring: pH-værdi",""
@@ -956,6 +956,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 				"","",""
 			};
 			item = new KeyValuePair<string, List<string>>("Kvittering", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("Gyllebeholder: Aktivitet i beholder", headers);
 			theList.Add(item);
 
 			return theList;
