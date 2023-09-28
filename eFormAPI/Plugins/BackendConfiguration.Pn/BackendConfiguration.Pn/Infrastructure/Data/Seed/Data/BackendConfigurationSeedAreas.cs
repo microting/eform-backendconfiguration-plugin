@@ -125,6 +125,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 3,
                 Type = AreaTypesEnum.Type2,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -568,6 +569,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 13,
                 Type = AreaTypesEnum.Type4,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -610,6 +612,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 14,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -653,6 +656,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 15,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -696,6 +700,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 16,
                 Type = AreaTypesEnum.Type1,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
@@ -1168,6 +1173,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             {
                 Id = 29,
                 Type = AreaTypesEnum.Type10,
+                IsDisabled = true,
                 AreaTranslations = new List<AreaTranslation>
                 {
                     new()
