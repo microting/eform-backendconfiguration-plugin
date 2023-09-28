@@ -262,4 +262,8 @@ export const hrHR = {
   'Exeeded or today': 'Exeeded ili danas',
   'Under 30 days': 'Ispod 30 dana',
   'Exceeded or today': 'Prekoračen ili danas',
+  'Grouping tags': 'Grupiranje oznaka',
+  'Generate report': 'Generiraj izvješće',
+  'Task description': 'Opis zadatka',
+  'Task solver': 'Rješivač zadataka',
 };

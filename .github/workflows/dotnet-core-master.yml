@@ -166,6 +166,7 @@ jobs:
       if: matrix.test == 'a'
       run: docker restart my-container
     - name: Sleep 15
+      if: matrix.test == 'a'
       run: sleep 15
     - name: Get standard output
       run: |

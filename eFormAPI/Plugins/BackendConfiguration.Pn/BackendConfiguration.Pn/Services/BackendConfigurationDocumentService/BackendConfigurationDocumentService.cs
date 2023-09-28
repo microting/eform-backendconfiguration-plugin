@@ -364,7 +364,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     DocumentId = document.Id,
                     LanguageId = documentUploadedData.LanguageId,
                     Name = documentUploadedData.Name,
-                    Extension = documentUploadedData.Extension,
+                    Extension = documentUploadedData.Extension
                 };
 
                 await documentUploadedDataDb.Create(_caseTemplatePnDbContext).ConfigureAwait(false);

@@ -77,7 +77,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     private overlay: Overlay,
     private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
     private appSettingsStateService: AppSettingsStateService,
-    private authStateService: AuthStateService,
+    public authStateService: AuthStateService,
     private route: ActivatedRoute,
     private statisticsStateService: StatisticsStateService,
   ) {

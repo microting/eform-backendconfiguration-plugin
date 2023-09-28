@@ -262,4 +262,8 @@ export const plPL = {
   'Exeeded or today': 'Exeeded lub dzisiaj',
   'Under 30 days': 'Poniżej 30 dni',
   'Exceeded or today': 'Przekroczono lub dzisiaj',
+  'Grouping tags': 'Grupowanie tagów',
+  'Generate report': 'Generuj raport',
+  'Task description': 'Opis zadania',
+  'Task solver': 'Rozwiązanie zadania',
 };

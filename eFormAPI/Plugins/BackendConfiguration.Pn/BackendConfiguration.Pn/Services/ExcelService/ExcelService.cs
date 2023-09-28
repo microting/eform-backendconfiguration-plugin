@@ -382,7 +382,7 @@ public class ExcelService : IExcelService
 				.Select(x => new
 				{
 					x.isColumnEnabled,
-					x.ColumnName,
+					x.ColumnName
 				})
 				.ToListAsync();
 

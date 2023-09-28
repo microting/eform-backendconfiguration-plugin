@@ -594,7 +594,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 .GroupBy(y => y.MicrotingSdkeFormId,
                                     (eFormId, cases) => new
                                     {
-                                        eFormId, cases,
+                                        eFormId, cases
                                     })
                         });
                 foreach (var groupedPlanningCase in groupedPlanningCases)
@@ -619,7 +619,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         var group = new ReportEformGroupModel
                         {
                             CheckListId = checkList.Id,
-                            CheckListName = checkListTranslation,
+                            CheckListName = checkListTranslation
                         };
 
                         var fields = await core.Advanced_TemplateFieldReadAll(

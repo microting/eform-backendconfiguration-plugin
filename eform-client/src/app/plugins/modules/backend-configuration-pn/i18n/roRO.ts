@@ -262,4 +262,8 @@ export const roRO = {
   'Exeeded or today': 'Execedat sau azi',
   'Under 30 days': 'Sub 30 de zile',
   'Exceeded or today': 'Depășit sau astăzi',
+  'Grouping tags': 'Etichete de grup',
+  'Generate report': 'Generează raport',
+  'Task description': 'Descrierea sarcinii',
+  'Task solver': 'Rezolvator de sarcini',
 };

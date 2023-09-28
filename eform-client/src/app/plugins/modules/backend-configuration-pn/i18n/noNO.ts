@@ -262,4 +262,8 @@ export const noNO = {
   'Exeeded or today': 'Exeeded eller i dag',
   'Under 30 days': 'Under 30 dager',
   'Exceeded or today': 'Overskredet eller i dag',
+  'Grouping tags': 'Gruppering av tags',
+  'Generate report': 'Generer rapport',
+  'Task description': 'Oppgavebeskrivelse',
+  'Task solver': 'Oppgaveløser',
 };

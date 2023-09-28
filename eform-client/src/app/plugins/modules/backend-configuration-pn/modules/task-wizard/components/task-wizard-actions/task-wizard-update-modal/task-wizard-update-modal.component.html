@@ -9,7 +9,7 @@
     {{ 'Status' | translate }}
   </mat-slide-toggle>
   <mat-form-field>
-    <mat-label>{{ 'Property' | translate }}</mat-label>
+    <mat-label>{{ 'Location' | translate }}</mat-label>
     <mtx-select
       [items]="properties"
       [bindValue]="'id'"
@@ -99,7 +99,7 @@
       <mat-card-title>{{getLanguageName(languageModel.languageId)}}</mat-card-title>
       <mat-card-content>
         <mat-form-field>
-          <mat-label>{{'Name' | translate}}</mat-label>
+          <mat-label>{{'Task description' | translate}}</mat-label>
           <input
             type="text"
             id="updateName{{i}}"

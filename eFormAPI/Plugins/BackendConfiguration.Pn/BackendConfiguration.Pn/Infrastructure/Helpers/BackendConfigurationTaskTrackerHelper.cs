@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 using Models.TaskTracker;
@@ -167,9 +169,12 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
 					.ToList();
 
-				var areaRulePlanning = await backendConfigurationPnDbContext.AreaRulePlannings
+				var areaRulePlanningQuery = backendConfigurationPnDbContext.AreaRulePlannings
+					.Include(x => x.AreaRulePlanningTags)
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					.Where(x => x.ItemPlanningId == compliance.PlanningId)
+					.Where(x => x.ItemPlanningId == compliance.PlanningId);
+
+				var areaRulePlanning = await areaRulePlanningQuery
 					.Select(x => new { x.AreaRuleId, x.StartDate, x.Id })
 					.FirstOrDefaultAsync();
 
@@ -197,13 +202,45 @@ public static class BackendConfigurationTaskTrackerHelper
 								Date = date.Date,
 								IsTask = listWithDateTasks
 									.Exists(dateTask => dateTask.ToString("d") == date.Date.ToString("d"))
-							}).ToList(),
+							}).ToList()
 					}).ToList();
+
+				var itemPlanningTagIds = await areaRulePlanningQuery
+					.SelectMany(x => x.AreaRulePlanningTags
+						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+						.Select(y => y.ItemPlanningTagId))
+					.Distinct()
+					.ToListAsync();
+				itemPlanningTagIds.AddRange(await areaRulePlanningQuery
+					.Where(x => x.ItemPlanningTagId.HasValue)
+					.Select(x => x.ItemPlanningTagId.Value)
+					.Distinct()
+					.ToListAsync());
+
+				var itemPlanningTags = await itemsPlanningPnDbContext.PlanningTags
+					.Where(x => itemPlanningTagIds.Contains(x.Id))
+					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+					.Select(x => new CommonTagModel
+					{
+						Id = x.Id,
+						Name = x.Name
+					})
+					.ToListAsync();
+				// var itemPlanningTagNames = itemPlanningTags.ToDictionary(x => x.Id, x => x.Name);
+				//
+				//
+				// var itemPlanningTags = await itemsPlanningPnDbContext.PlanningsTags.Where(x => x.PlanningId == planning.Id).ToListAsync();
+
+				// var tags = await itemsPlanningPnDbContext.PlanningTags.Where(x => itemPlanningTags.Select(y => y.PlanningTagId).Contains(x.Id)).Select(x => new CommonTagModel()
+				// {
+				// 	Id = x.Id,
+				// 	Name = x.Name
+				// }).ToListAsync();
 
 				var complianceModel = new TaskTrackerModel
 				{
 					Property = propertyName,
-					Tags = new(), //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
+					Tags = itemPlanningTags, //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
 					DeadlineTask = deadlineDate,
 					Workers = workerNames,
 					StartTask = startDate,

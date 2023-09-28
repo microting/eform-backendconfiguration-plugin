@@ -262,4 +262,8 @@ export const fiFI = {
   'Exeeded or today': 'Exeeded tai tänään',
   'Under 30 days': 'Alle 30 päivää',
   'Exceeded or today': 'Ylitetty tai tänään',
+  'Grouping tags': 'Tunnisteiden ryhmittely',
+  'Generate report': 'Luo raportti',
+  'Task description': 'Tehtävän kuvaus',
+  'Task solver': 'Tehtävän ratkaisija',
 };

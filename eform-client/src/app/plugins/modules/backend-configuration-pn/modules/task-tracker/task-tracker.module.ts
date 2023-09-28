@@ -26,6 +26,7 @@ import {MatTableModule} from '@angular/material/table';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {PlanningsModule} from '../../../items-planning-pn/modules/plannings/plannings.module';
 import {StatisticsModule} from '../statistics/statistics.module';
+import {MatChipsModule} from "@angular/material/chips";
 
 @NgModule({
   declarations: [
@@ -35,29 +36,30 @@ import {StatisticsModule} from '../statistics/statistics.module';
     TaskTrackerCreateShowModalComponent,
     TaskTrackerShownColumnsComponent
   ],
-  imports: [
-    CommonModule,
-    TranslateModule,
-    RouterModule,
-    TaskTrackerRouting,
-    EformSharedModule,
-    ReactiveFormsModule,
-    EformImportedModule,
-    FormsModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatTooltipModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MtxSelectModule,
-    MatInputModule,
-    MtxGridModule,
-    MatDialogModule,
-    MatCardModule,
-    MatTableModule,
-    PlanningsModule,
-    StatisticsModule,
-  ],
+    imports: [
+        CommonModule,
+        TranslateModule,
+        RouterModule,
+        TaskTrackerRouting,
+        EformSharedModule,
+        ReactiveFormsModule,
+        EformImportedModule,
+        FormsModule,
+        MatButtonModule,
+        MatCheckboxModule,
+        MatTooltipModule,
+        MatIconModule,
+        MatFormFieldModule,
+        MtxSelectModule,
+        MatInputModule,
+        MtxGridModule,
+        MatDialogModule,
+        MatCardModule,
+        MatTableModule,
+        PlanningsModule,
+        StatisticsModule,
+        MatChipsModule,
+    ],
   providers: [],
 })
 export class TaskTrackerModule {

@@ -312,35 +312,35 @@ namespace BackendConfiguration.Pn
 	                     .Where(x => x.IsDisabled == false))
             {
                 // create tag for area
-                var planningTag = new PlanningTag
-                {
-                    Name = newArea.AreaTranslations.First(x => x.LanguageId == 1).Name // danish
-                };
-                await planningTag.Create(itemsPlanningContext).ConfigureAwait(false);
-                newArea.ItemPlanningTagId = planningTag.Id;
+                // var planningTag = new PlanningTag
+                // {
+                //     Name = newArea.AreaTranslations.First(x => x.LanguageId == 1).Name // danish
+                // };
+                // await planningTag.Create(itemsPlanningContext).ConfigureAwait(false);
+                // newArea.ItemPlanningTagId = planningTag.Id;
                 await newArea.Create(context).ConfigureAwait(false);
             }
 
-            var pT = await itemsPlanningContext.PlanningTags.FirstOrDefaultAsync(x => x.Name.Contains("- fækale uheld")).ConfigureAwait(false);
-
-            if (pT != null)
-            {
-                var planningTags =
-                    await itemsPlanningContext.PlanningsTags
-                        .Where(x => x.WorkflowState !=
-                                    Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                        .Where(x => x.PlanningTagId == pT.Id).ToListAsync();
-
-                foreach (var planningTag in planningTags)
-                {
-                    var planningNameTranslation = await itemsPlanningContext.PlanningNameTranslation
-                        .FirstAsync(x => x.PlanningId == planningTag.PlanningId).ConfigureAwait(false);
-                    if (!planningNameTranslation.Name.Contains("24. Fækale uheld"))
-                    {
-                        await planningTag.Delete(itemsPlanningContext);
-                    }
-                }
-            }
+            // var pT = await itemsPlanningContext.PlanningTags.FirstOrDefaultAsync(x => x.Name.Contains("- fækale uheld")).ConfigureAwait(false);
+            //
+            // if (pT != null)
+            // {
+            //     var planningTags =
+            //         await itemsPlanningContext.PlanningsTags
+            //             .Where(x => x.WorkflowState !=
+            //                         Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            //             .Where(x => x.PlanningTagId == pT.Id).ToListAsync();
+            //
+            //     foreach (var planningTag in planningTags)
+            //     {
+            //         var planningNameTranslation = await itemsPlanningContext.PlanningNameTranslation
+            //             .FirstAsync(x => x.PlanningId == planningTag.PlanningId).ConfigureAwait(false);
+            //         if (!planningNameTranslation.Name.Contains("24. Fækale uheld"))
+            //         {
+            //             await planningTag.Delete(itemsPlanningContext);
+            //         }
+            //     }
+            // }
 
             // await UpdateAreaTranslations(context);
 
@@ -348,39 +348,39 @@ namespace BackendConfiguration.Pn
 
 			// await UpdateCheckLists(sdkDbContext);
 
-			var propertyWorkers = await context.PropertyWorkers
-                .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-				.Where(x => x.TaskManagementEnabled == null)
-                .ToListAsync();
-
-            foreach (var propertyWorker in propertyWorkers)
-            {
-                propertyWorker.TaskManagementEnabled = true;
-                await propertyWorker.Update(context);
-            }
-
-            var planningSites = await context.PlanningSites
-                .Where(x => x.Status == 0)
-                .Where(x =>
-                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .ToListAsync();
-
-            foreach (var planningSite in planningSites)
-            {
-                var areaRulePlanning =
-                    await context.AreaRulePlannings
-                        .FirstAsync(x => x.Id == planningSite.AreaRulePlanningsId)
-                        .ConfigureAwait(false);
-                var itemPlanningCaseSite = await itemsPlanningContext.PlanningCaseSites
-                    .Where(x => x.MicrotingSdkSiteId == planningSite.SiteId)
-                    .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                    .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
-                    .OrderBy(x => x.Id)
-                    .LastOrDefaultAsync().ConfigureAwait(false);
-                if (itemPlanningCaseSite == null) continue;
-                planningSite.Status = itemPlanningCaseSite.Status;
-                await planningSite.Update(context);
-            }
+			// var propertyWorkers = await context.PropertyWorkers
+   //              .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+			// 	.Where(x => x.TaskManagementEnabled == null)
+   //              .ToListAsync();
+   //
+   //          foreach (var propertyWorker in propertyWorkers)
+   //          {
+   //              propertyWorker.TaskManagementEnabled = true;
+   //              await propertyWorker.Update(context);
+   //          }
+   //
+   //          var planningSites = await context.PlanningSites
+   //              .Where(x => x.Status == 0)
+   //              .Where(x =>
+   //                  x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+   //              .ToListAsync();
+   //
+   //          foreach (var planningSite in planningSites)
+   //          {
+   //              var areaRulePlanning =
+   //                  await context.AreaRulePlannings
+   //                      .FirstAsync(x => x.Id == planningSite.AreaRulePlanningsId)
+   //                      .ConfigureAwait(false);
+   //              var itemPlanningCaseSite = await itemsPlanningContext.PlanningCaseSites
+   //                  .Where(x => x.MicrotingSdkSiteId == planningSite.SiteId)
+   //                  .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+   //                  .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId)
+   //                  .OrderBy(x => x.Id)
+   //                  .LastOrDefaultAsync().ConfigureAwait(false);
+   //              if (itemPlanningCaseSite == null) continue;
+   //              planningSite.Status = itemPlanningCaseSite.Status;
+   //              await planningSite.Update(context);
+   //          }
 
             // var documents = await caseTemplateContext.Documents
             //     .Where(x => x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
@@ -406,28 +406,28 @@ namespace BackendConfiguration.Pn
             //     await _bus.SendLocal(new DocumentUpdated(document.Id)).ConfigureAwait(false);
             // }
 
-            var documents = await caseTemplateContext.Documents
-                .Where(x => x.WorkflowState == Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
-                .Where(x => x.Status == true)
-                .ToListAsync();
+            // var documents = await caseTemplateContext.Documents
+            //     .Where(x => x.WorkflowState == Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed)
+            //     .Where(x => x.Status == true)
+            //     .ToListAsync();
 
-            foreach (var document in documents)
-            {
-	            document.Status = false;
-	            await document.Update(caseTemplateContext);
-
-	            var documentSites = await caseTemplateContext.DocumentSites
-		            .Where(x => x.DocumentId == document.Id)
-		            .ToListAsync();
-
-	            foreach (var documentSite in documentSites)
-	            {
-		            if (documentSite.SdkCaseId != 0)
-		            {
-		                await core.CaseDelete(documentSite.SdkCaseId);
-		            }
-	            }
-            }
+            // foreach (var document in documents)
+            // {
+	           //  document.Status = false;
+	           //  await document.Update(caseTemplateContext);
+            //
+	           //  var documentSites = await caseTemplateContext.DocumentSites
+		          //   .Where(x => x.DocumentId == document.Id)
+		          //   .ToListAsync();
+            //
+	           //  foreach (var documentSite in documentSites)
+	           //  {
+		          //   if (documentSite.SdkCaseId != 0)
+		          //   {
+		          //       await core.CaseDelete(documentSite.SdkCaseId);
+		          //   }
+	           //  }
+            // }
         }
 
 		public void ConfigureDbContext(IServiceCollection services, string connectionString)
@@ -1521,7 +1521,7 @@ namespace BackendConfiguration.Pn
             {
 	            new("Ny Gyllebeholder", "Ny Flydelag"),
 	            new("New Slurry tank", "New Floating layer"),
-	            new("Neuer Gülletank", "Neue Schwimmende Ebene"),
+	            new("Neuer Gülletank", "Neue Schwimmende Ebene")
             };
 
             foreach (var (oldValue, newValue) in listWithdOldNewItemTranslations)

@@ -262,4 +262,8 @@ export const isIS = {
   'Exeeded or today': 'Exeeded eða í dag',
   'Under 30 days': 'Undir 30 dögum',
   'Exceeded or today': 'Fram yfir eða í dag',
+  'Grouping tags': 'Hópa merki',
+  'Generate report': 'Búðu til skýrslu',
+  'Task description': 'Verkefnalýsing',
+  'Task solver': 'Verkefnalausari',
 };

@@ -590,11 +590,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 						_backendConfigurationLocalizationService.GetString("AreaRuleNotFound"));
 				}
 
-				if (areaRule.IsDefault)
-				{
-					return new OperationDataResult<AreaRuleModel>(false,
-						_backendConfigurationLocalizationService.GetString("AreaRuleCantBeDeleted"));
-				}
+				// if (areaRule.IsDefault)
+				// {
+				// 	return new OperationDataResult<AreaRuleModel>(false,
+				// 		_backendConfigurationLocalizationService.GetString("AreaRuleCantBeDeleted"));
+				// }
 
 
 				//if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)

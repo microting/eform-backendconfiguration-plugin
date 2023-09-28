@@ -1,12 +1,17 @@
-<mtx-grid
-  [data]="workOrderCases"
-  [columns]="tableHeaders"
-  [showPaginator]="false"
-  [pageOnFront]="false"
-  [rowStriped]="true"
-  [showToolbar]="false"
-  [showColumnMenuButton]="false"
-  [sortActive]="taskManagementStateService.getActiveSort() | async"
-  [sortDirection]="taskManagementStateService.getActiveSortDirection() | async"
-  (sortChange)="sortTable($event)">
-</mtx-grid>
+<div>
+  <mtx-grid
+    [data]="workOrderCases"
+    [columns]="tableHeaders"
+    [showPaginator]="false"
+    [pageOnFront]="false"
+    [rowStriped]="true"
+    [showToolbar]="false"
+    [showColumnMenuButton]="false"
+    [sortActive]="taskManagementStateService.getActiveSort() | async"
+    [sortDirection]="taskManagementStateService.getActiveSortDirection() | async"
+    (sortChange)="sortTable($event)"
+    style="max-height: 60vh;"
+  >
+  </mtx-grid>
+
+</div>

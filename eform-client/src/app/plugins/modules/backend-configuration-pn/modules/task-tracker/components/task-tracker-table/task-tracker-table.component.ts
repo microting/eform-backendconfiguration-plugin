@@ -12,6 +12,8 @@ import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
 import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
+import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
+import {AbstractControl} from "@angular/forms";
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -30,6 +32,47 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   enabledHeadersNumber: number = 7;
   propertyHeaderEnabled: boolean = false;
   currentDate: Date = this.setDate(new Date());
+
+  tableHeaders: MtxGridColumn[] = [
+    {header: this.translateService.stream('Id'), field: 'complianceId', sortProp: {id: 'Id'}, sortable: false},
+    {header: this.translateService.stream('CaseId'), field: 'sdkCaseId', sortProp: {id: 'CaseId'}, sortable: false},
+    {header: this.translateService.stream('Property'), sortProp: {id: 'Property'}, field: 'property', sortable: false},
+    {header: this.translateService.stream('Task'), field: 'taskName', sortable: false},
+    {header: this.translateService.stream('Tags'), sortProp: {id: 'Tags'}, field: 'tags', sortable: false},
+    {header: this.translateService.stream('Workers'), sortProp: {id: 'Workers'}, field: 'workers', sortable: false},
+    {header: this.translateService.stream('Start'), sortProp: {id: 'Start'}, field: 'startTask', sortable: false,
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y'}},
+    {header: this.translateService.stream('Repeated'), sortProp: {id: 'Repeated'}, field: 'repeated', sortable: false,
+    formatter: (data: TaskModel) => {
+      return this.getRepeatEveryAndRepeatTypeByTask(data);
+    }},
+    {header: this.translateService.stream('Deadline'), sortProp: {id: 'Deadline'}, field: 'deadlineTask', sortable: false,
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y'}},
+    // actions column with custom buttons
+    {header: this.translateService.stream('Actions'), field: 'actions', sortable: false, width: '100px',
+      pinned: 'right',
+      type: 'button',
+      buttons: [  // action buttons for each row
+        {
+          type: 'icon',
+          icon: 'edit',
+          tooltip: this.translateService.stream('Edit'),
+          click: (record: TaskModel) => this.redirectToCompliance(record),
+        },
+      ],
+    },
+  ];
+
+  get columns() {
+    return this.tableHeaders.map(x => x.field);
+  }
+  rowClassFormatter: MtxGridRowClassFormatter = {
+    'background-red-light': (data, index) => data.taskIsExpired === true && index % 2 === 0,
+    'background-red-dark': (data, index) => data.taskIsExpired === true && index % 2 === 1,
+    //'background-yellow': (data, index) => data.taskIsExpired === false,
+  };
 
   constructor(
     private translateService: TranslateService,

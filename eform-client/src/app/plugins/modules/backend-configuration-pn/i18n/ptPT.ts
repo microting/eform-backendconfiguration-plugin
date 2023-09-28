@@ -262,4 +262,8 @@ export const ptPT = {
   'Exeeded or today': 'Exeded ou hoje',
   'Under 30 days': 'Menos de 30 dias',
   'Exceeded or today': 'Excedido ou hoje',
+  'Grouping tags': 'Agrupamento de tags',
+  'Generate report': 'Gerar relatório',
+  'Task description': 'Descrição da tarefa',
+  'Task solver': 'Solucionador de tarefas',
 };

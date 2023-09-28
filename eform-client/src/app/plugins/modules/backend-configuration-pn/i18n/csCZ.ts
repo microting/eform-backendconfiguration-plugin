@@ -262,4 +262,8 @@ export const csCZ = {
   'Exeeded or today': 'Exeeded nebo dnes',
   'Under 30 days': 'Méně než 30 dní',
   'Exceeded or today': 'Překročeno nebo dnes',
+  'Grouping tags': 'Seskupování značek',
+  'Generate report': 'Vygenerovat zprávu',
+  'Task description': 'Popis ulohy',
+  'Task solver': 'Řešitel úloh',
 };

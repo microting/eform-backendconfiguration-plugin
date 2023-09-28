@@ -262,4 +262,8 @@ export const esES = {
   'Exeeded or today': 'Excedido o hoy',
   'Under 30 days': 'Menos de 30 días',
   'Exceeded or today': 'Superado o hoy',
+  'Grouping tags': 'Etiquetas de agrupación',
+  'Generate report': 'Generar informe',
+  'Task description': 'Descripción de la tarea',
+  'Task solver': 'solucionador de tareas',
 };
