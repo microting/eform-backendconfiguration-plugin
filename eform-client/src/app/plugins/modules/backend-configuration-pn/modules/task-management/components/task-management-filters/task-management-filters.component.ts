@@ -1,6 +1,6 @@
 import {
   Component,
-  EventEmitter,
+  EventEmitter, Input,
   OnDestroy,
   OnInit,
   Output,
@@ -13,11 +13,16 @@ import {
   BackendConfigurationPnPropertiesService,
   BackendConfigurationPnTaskManagementService,
 } from '../../../../services';
-import {CommonDictionaryModel} from 'src/app/common/models';
-import {SitesService} from 'src/app/common/services';
+import {CommonDictionaryModel, EntityItemModel, Paged} from 'src/app/common/models';
+import {EntitySelectService, SitesService} from 'src/app/common/services';
 import {format, parse, set} from 'date-fns';
 import {TranslateService} from '@ngx-translate/core';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
+import {PropertyModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {Overlay} from '@angular/cdk/overlay';
 
 @AutoUnsubscribe()
 @Component({
@@ -26,11 +31,18 @@ import {PARSING_DATE_FORMAT} from 'src/app/common/const';
   styleUrls: ['./task-management-filters.component.scss'],
 })
 export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
-  @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
+  @Output()
+  updateTable: EventEmitter<void> = new EventEmitter<void>();
+  @Output()
+  showEditEntityListModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
   filtersForm: FormGroup;
   propertyAreas: string[] = [];
   properties: CommonDictionaryModel[] = [];
+  propertiesModel: Paged<PropertyModel> = new Paged<PropertyModel>();
   assignedSitesToProperty: CommonDictionaryModel[] = [];
+  propertyUpdateSub$: Subscription;
+  getEntitySelectableGroupSub$: Subscription;
+  updateEntitySelectableGroupSub$: Subscription;
 
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
@@ -41,6 +53,9 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
     private sitesService: SitesService,
+    public dialog: MatDialog,
+    private entitySelectService: EntitySelectService,
+    private overlay: Overlay,
     private taskManagementService: BackendConfigurationPnTaskManagementService,
   ) {
   }
@@ -58,6 +73,10 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
               value: filters.areaName,
               disabled: !filters.propertyId || filters.propertyId === -1,
             }),
+            // areaNameEdit: new FormControl({
+            //   // value: filters.areaName,
+            //   disabled: !filters.propertyId || filters.propertyId === -1,
+            // }),
             createdBy: new FormControl({
               value: filters.createdBy,
               disabled: !filters.propertyId || filters.propertyId === -1,
@@ -280,6 +299,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
       pageIndex: 0
     }).subscribe((data) => {
       if (data && data.success && data.model) {
+        this.propertiesModel = data.model;
         this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities.filter((x) => x.workorderEnable)
           .map((x) => {
             return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
@@ -325,5 +345,41 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  onShowEditEntityListModal() {
+    const propertyId = this.filtersForm
+      .get('propertyId').value;
+    if (propertyId != -1) {
+      const propertyModel = this.propertiesModel.entities.find(x => x.id === propertyId);
+      this.ShowEditEntityListModal(propertyModel);
+      // this.showEditEntityListModal.emit(propertyModel);
+    }
+  }
+
+  ShowEditEntityListModal(propertyModel: PropertyModel) {
+    const modal = this.dialog
+      .open(AreaRuleEntityListModalComponent, {...dialogConfigHelper(this.overlay, propertyModel.workorderEntityListId)});
+    this.propertyUpdateSub$ = modal.componentInstance.entityListChanged.subscribe(x => this.updateEntityList(propertyModel, x, modal));
+  }
+
+  updateEntityList(propertyModel: PropertyModel, model: Array<EntityItemModel>, modal: MatDialogRef<AreaRuleEntityListModalComponent>) {
+    if(propertyModel.workorderEntityListId) {
+      this.getEntitySelectableGroupSub$ = this.entitySelectService.getEntitySelectableGroup(propertyModel.workorderEntityListId)
+        .subscribe(data => {
+          if (data.success) {
+            this.updateEntitySelectableGroupSub$ = this.entitySelectService.updateEntitySelectableGroup({
+              entityItemModels: model,
+              groupUid: +data.model.microtingUUID,
+              ...data.model
+            }).subscribe(x => {
+              if (x.success) {
+                modal.close();
+                this.getPropertyAreas(propertyModel.id);
+              }
+            });
+          }
+        });
+    }
   }
 }

@@ -1,6 +1,6 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, WorkOrderCaseModel} from '../../../../models';
+import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, PropertyModel, WorkOrderCaseModel} from '../../../../models';
 import {TaskManagementStateService} from '../store';
 import {
   TaskManagementCreateShowModalComponent,
@@ -13,17 +13,18 @@ import {
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
 import {Subscription} from 'rxjs';
-import {CommonDictionaryModel} from 'src/app/common/models';
+import {CommonDictionaryModel, EntityItemModel} from 'src/app/common/models';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, WordIcon} from 'src/app/common/const';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {LoaderService} from 'src/app/common/services';
+import {EntitySelectService, LoaderService} from 'src/app/common/services';
 import {catchError, skip, tap} from 'rxjs/operators';
 import {StatisticsStateService} from '../../../statistics/store';
 import {ActivatedRoute} from '@angular/router';
+import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 
 @AutoUnsubscribe()
 @Component({
@@ -223,4 +224,6 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       this.getAdHocTaskWorkers();
     }
   }
+
+
 }

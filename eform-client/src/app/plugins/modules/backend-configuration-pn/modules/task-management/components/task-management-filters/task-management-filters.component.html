@@ -21,6 +21,14 @@
       >
       </mtx-select>
     </mat-form-field>
+    <button
+      mat-icon-button
+      id="updateEntityList"
+      (click)="onShowEditEntityListModal()"
+      matTooltip="{{ 'Edit list of areas for task management' | translate }}"
+    >
+      <mat-icon>list</mat-icon>
+    </button>
   </div>
   <div class="d-flex flex-row need-wrapper">
     <mat-form-field>
