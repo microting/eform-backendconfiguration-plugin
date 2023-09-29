@@ -555,7 +555,7 @@
       <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.57" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
       <PackageReference Include="Microting.EformBackendConfigurationBase" Version="7.0.65" />
-      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="7.0.55" />
+      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="7.0.56" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
       <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.63" />
       <PackageReference Include="ClosedXML" Version="0.102.1" />
