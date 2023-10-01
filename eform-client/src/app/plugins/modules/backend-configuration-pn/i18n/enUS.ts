@@ -283,4 +283,5 @@ export const enUS = {
   'Grouping tags': 'Grouping tags',
   'Task description': 'Task description',
   'Task solver': 'Task solver',
+  'Description of task': 'Description of task',
 };
