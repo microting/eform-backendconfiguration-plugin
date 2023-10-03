@@ -1221,6 +1221,18 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     LanguageId = areaRuleAreaRuleTranslation.LanguageId,
                                                     Name = areaRuleAreaRuleTranslation.Name
                                                 }).ToList();
+                                            if (planning.NameTranslations.Any(x => x.Name == "01. Registrer halebid"))
+                                            {
+                                                var itemPlanningTag =
+                                                    await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(x =>
+                                                        x.Name == "Halebid");
+                                                if (itemPlanningTag != null)
+                                                {
+                                                    planning.ReportGroupPlanningTagId = itemPlanningTag.Id;
+                                                    await planning.Update(itemsPlanningPnDbContext)
+                                                        .ConfigureAwait(false);
+                                                }
+                                            }
                                             if (areaRulePlanningModel.TypeSpecificFields is not null)
                                             {
                                                 planning.DayOfMonth =
