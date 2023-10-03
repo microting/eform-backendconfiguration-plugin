@@ -755,6 +755,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         {
                             itemsPlanningSite.WorkflowState = Constants.WorkflowStates.Created;
                             await itemsPlanningSite.Update(_itemsPlanningPnDbContext);
+                        } else
+                        {
+                            await new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                            {
+                                PlanningId = planning.Id,
+                                SiteId = planningSite.SiteId,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId
+                            }.Create(_itemsPlanningPnDbContext);
                         }
                     }
 

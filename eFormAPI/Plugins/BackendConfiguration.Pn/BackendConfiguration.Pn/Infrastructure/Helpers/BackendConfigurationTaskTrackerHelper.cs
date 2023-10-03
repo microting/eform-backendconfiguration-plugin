@@ -79,37 +79,37 @@ public static class BackendConfigurationTaskTrackerHelper
 			var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
 			var endDate = currentDate.AddDays(28);
 			var weeks = new List<TaskTrackerWeeksListModel>();
-			var localCurrentDate = currentDate;
-			while (localCurrentDate < endDate) // get week numbers
-			{
-				var weekNumber = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(localCurrentDate,
-					CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-				var weekRange = 8 - (int)localCurrentDate.DayOfWeek;
-				if (weekRange == 8) // if current day of week - sunday
-				{
-					weekRange = 1;
-				}
-
-				var dateList = new List<TaskTrackerDateListModel>();
-
-				for (var i = 0; i < weekRange; i++)
-				{
-					var date = localCurrentDate.AddDays(i);
-					if (date < endDate)
-					{
-						dateList.Add(new TaskTrackerDateListModel
-							{ Date = date, IsTask = false }); // IsTask = false is default value
-					}
-					else
-					{
-						break;
-					}
-				}
-
-				weeks.Add(new TaskTrackerWeeksListModel
-					{ WeekNumber = weekNumber, DateList = dateList, WeekRange = dateList.Count });
-				localCurrentDate = localCurrentDate.AddDays(weekRange);
-			}
+			// var localCurrentDate = currentDate;
+			// while (localCurrentDate < endDate) // get week numbers
+			// {
+			// 	var weekNumber = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(localCurrentDate,
+			// 		CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+			// 	var weekRange = 8 - (int)localCurrentDate.DayOfWeek;
+			// 	if (weekRange == 8) // if current day of week - sunday
+			// 	{
+			// 		weekRange = 1;
+			// 	}
+			//
+			// 	var dateList = new List<TaskTrackerDateListModel>();
+			//
+			// 	for (var i = 0; i < weekRange; i++)
+			// 	{
+			// 		var date = localCurrentDate.AddDays(i);
+			// 		if (date < endDate)
+			// 		{
+			// 			dateList.Add(new TaskTrackerDateListModel
+			// 				{ Date = date, IsTask = false }); // IsTask = false is default value
+			// 		}
+			// 		else
+			// 		{
+			// 			break;
+			// 		}
+			// 	}
+			//
+			// 	weeks.Add(new TaskTrackerWeeksListModel
+			// 		{ WeekNumber = weekNumber, DateList = dateList, WeekRange = dateList.Count });
+			// 	localCurrentDate = localCurrentDate.AddDays(weekRange);
+			// }
 
 			foreach (var compliance in complianceList)
 			{
