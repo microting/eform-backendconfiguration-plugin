@@ -266,4 +266,12 @@ export const frFR = {
   'Generate report': 'Générer un rapport',
   'Task description': 'Description de la tâche',
   'Task solver': 'Solveur de tâches',
+  'Description of task': 'Description de la tâche',
+  'None found': 'Personne n&#39;est trouve',
+  'No tasks found': 'Aucune tâche trouvée',
+  'No employees found': 'Aucun employé trouvé',
+  'No documents found': 'Aucun document trouvé',
+  'No files found': 'Aucun fichier trouvé',
+  'Create new employee': 'Créer un nouvel employé',
+  'New employee': 'Nouvel employé',
 };

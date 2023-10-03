@@ -266,4 +266,12 @@ export const ptBR = {
   'Generate report': 'Gerar relatório',
   'Task description': 'Descrição da tarefa',
   'Task solver': 'Solucionador de tarefas',
+  'Description of task': 'Descrição da tarefa',
+  'None found': 'Nenhum encontrado',
+  'No tasks found': 'Nenhuma tarefa encontrada',
+  'No employees found': 'Nenhum funcionário encontrado',
+  'No documents found': 'Nenhum documento encontrado',
+  'No files found': 'Nenhum arquivo encontrado',
+  'Create new employee': 'Criar novo funcionário',
+  'New employee': 'Novo empregado',
 };

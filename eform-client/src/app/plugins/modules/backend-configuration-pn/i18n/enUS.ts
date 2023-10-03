@@ -284,4 +284,11 @@ export const enUS = {
   'Task description': 'Task description',
   'Task solver': 'Task solver',
   'Description of task': 'Description of task',
+  'None found': 'None found',
+  'No tasks found': 'No tasks found',
+  'No employees found': 'No employees found',
+  'No documents found': 'No documents found',
+  'No files found': 'No files found',
+  'Create new employee': 'Create new employee',
+  'New employee': 'New employee',
 };

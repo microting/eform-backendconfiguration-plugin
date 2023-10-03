@@ -266,4 +266,12 @@ export const elGR = {
   'Generate report': 'Δημιουργία αναφοράς',
   'Task description': 'Περιγραφή των εργασιών',
   'Task solver': 'Επίλυση εργασιών',
+  'Description of task': 'Περιγραφή της εργασίας',
+  'None found': 'Δεν βρέθηκε κανένα',
+  'No tasks found': 'Δεν βρέθηκαν εργασίες',
+  'No employees found': 'Δεν βρέθηκαν υπάλληλοι',
+  'No documents found': 'Δεν βρέθηκαν έγγραφα',
+  'No files found': 'Δεν βρέθηκαν αρχεία',
+  'Create new employee': 'Δημιουργία νέου υπαλλήλου',
+  'New employee': 'Νέος υπάλληλος',
 };

@@ -266,4 +266,12 @@ export const nlNL = {
   'Generate report': 'Rapport genereren',
   'Task description': 'Taakomschrijving',
   'Task solver': 'Taakoplosser',
+  'Description of task': 'Beschrijving van de taak',
+  'None found': 'Geen gevonden',
+  'No tasks found': 'Geen taken gevonden',
+  'No employees found': 'Geen medewerkers gevonden',
+  'No documents found': 'Geen documenten gevonden',
+  'No files found': 'Geen bestanden gevonden',
+  'Create new employee': 'Nieuwe medewerker aanmaken',
+  'New employee': 'Nieuwe medewerker',
 };

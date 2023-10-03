@@ -266,4 +266,12 @@ export const skSK = {
   'Generate report': 'Vygenerovať prehľad',
   'Task description': 'Popis úlohy',
   'Task solver': 'Riešiteľ úloh',
+  'Description of task': 'Popis úlohy',
+  'None found': 'Nenašli sa žiadne',
+  'No tasks found': 'Nenašli sa žiadne úlohy',
+  'No employees found': 'Nenašli sa žiadni zamestnanci',
+  'No documents found': 'Nenašli sa žiadne dokumenty',
+  'No files found': 'Nenašli sa žiadne súbory',
+  'Create new employee': 'Vytvorte nového zamestnanca',
+  'New employee': 'Nový zamestnanec',
 };

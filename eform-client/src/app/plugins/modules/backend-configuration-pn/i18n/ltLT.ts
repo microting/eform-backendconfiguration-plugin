@@ -266,4 +266,12 @@ export const ltLT = {
   'Generate report': 'Sukurti ataskaitą',
   'Task description': 'Užduoties aprašymas',
   'Task solver': 'Užduočių sprendėjas',
+  'Description of task': 'Užduoties aprašymas',
+  'None found': 'Nerasta',
+  'No tasks found': 'Užduočių nerasta',
+  'No employees found': 'Darbuotojų nerasta',
+  'No documents found': 'Dokumentų nerasta',
+  'No files found': 'Failų nerasta',
+  'Create new employee': 'Sukurti naują darbuotoją',
+  'New employee': 'Naujas darbuotojas',
 };

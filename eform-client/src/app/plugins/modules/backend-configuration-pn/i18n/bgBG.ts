@@ -266,4 +266,12 @@ export const bgBG = {
   'Generate report': 'Генериране на отчет',
   'Task description': 'Описание на задачата',
   'Task solver': 'Решаване на задачи',
+  'Description of task': 'Описание на задачата',
+  'None found': 'Няма намерени',
+  'No tasks found': 'Няма намерени задачи',
+  'No employees found': 'Няма намерени служители',
+  'No documents found': 'Няма намерени документи',
+  'No files found': 'Няма намерени файлове',
+  'Create new employee': 'Създайте нов служител',
+  'New employee': 'Нов служител',
 };

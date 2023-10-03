@@ -331,4 +331,10 @@ export const deDE = {
   'Generate report': 'Bericht generieren',
   'Task description': 'Aufgabenbeschreibung',
   'Task solver': 'Aufgabenlöser',
+  'None found': 'Keine gefunden',
+  'No tasks found': 'Keine Aufgaben gefunden',
+  'No employees found': 'Keine Mitarbeiter gefunden',
+  'No documents found': 'Keine Dokumente gefunden',
+  'No files found': 'Keine Dateien gefunden',
+  'New employee': 'Neuer Angestellter',
 };

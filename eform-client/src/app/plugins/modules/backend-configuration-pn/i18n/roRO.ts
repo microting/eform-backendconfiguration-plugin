@@ -266,4 +266,12 @@ export const roRO = {
   'Generate report': 'Generează raport',
   'Task description': 'Descrierea sarcinii',
   'Task solver': 'Rezolvator de sarcini',
+  'Description of task': 'Descrierea sarcinii',
+  'None found': 'Nu s-a găsit niciunul',
+  'No tasks found': 'Nu s-au găsit sarcini',
+  'No employees found': 'Nu s-au găsit angajați',
+  'No documents found': 'Nu s-au găsit documente',
+  'No files found': 'Niciun fișier găsit',
+  'Create new employee': 'Creați un nou angajat',
+  'New employee': 'Angajat nou',
 };

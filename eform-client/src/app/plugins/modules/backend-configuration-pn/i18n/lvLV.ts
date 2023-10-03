@@ -266,4 +266,12 @@ export const lvLV = {
   'Generate report': 'Ģenerēt atskaiti',
   'Task description': 'Uzdevuma apraksts',
   'Task solver': 'Uzdevumu risinātājs',
+  'Description of task': 'Uzdevuma apraksts',
+  'None found': 'Nav atrasts neviens',
+  'No tasks found': 'Nav atrasts neviens uzdevums',
+  'No employees found': 'Darbinieki nav atrasti',
+  'No documents found': 'Dokumenti nav atrasti',
+  'No files found': 'Nav atrasts neviens fails',
+  'Create new employee': 'Izveidojiet jaunu darbinieku',
+  'New employee': 'Jauns darbinieks',
 };

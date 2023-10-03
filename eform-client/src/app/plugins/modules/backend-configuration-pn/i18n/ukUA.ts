@@ -266,4 +266,12 @@ export const ukUA = {
   'Generate report': 'Створити звіт',
   'Task description': 'Опис завдання',
   'Task solver': 'Розв&#39;язник задач',
+  'Description of task': 'Опис завдання',
+  'None found': 'Не знайдено',
+  'No tasks found': 'Завдань не знайдено',
+  'No employees found': 'Співробітників не знайдено',
+  'No documents found': 'Документів не знайдено',
+  'No files found': 'Файли не знайдено',
+  'Create new employee': 'Створіть нового співробітника',
+  'New employee': 'Новий працівник',
 };

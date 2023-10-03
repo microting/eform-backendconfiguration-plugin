@@ -266,4 +266,12 @@ export const isIS = {
   'Generate report': 'Búðu til skýrslu',
   'Task description': 'Verkefnalýsing',
   'Task solver': 'Verkefnalausari',
+  'Description of task': 'Lýsing á verkefni',
+  'None found': 'Ekkert fannst',
+  'No tasks found': 'Engin verkefni fundust',
+  'No employees found': 'Engir starfsmenn fundust',
+  'No documents found': 'Engin skjöl fundust',
+  'No files found': 'Engar skrár fundust',
+  'Create new employee': 'Búa til nýjan starfsmann',
+  'New employee': 'Nýr starfsmaður',
 };

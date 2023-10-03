@@ -266,4 +266,12 @@ export const svSE = {
   'Generate report': 'Generera rapport',
   'Task description': 'Uppgifts beskrivning',
   'Task solver': 'Uppgiftslösare',
+  'Description of task': 'Beskrivning av uppgiften',
+  'None found': 'Ingen hittades',
+  'No tasks found': 'Inga uppgifter hittades',
+  'No employees found': 'Inga anställda hittades',
+  'No documents found': 'Inga dokument hittades',
+  'No files found': 'Inga filer funna',
+  'Create new employee': 'Skapa ny medarbetare',
+  'New employee': 'Ny anställd',
 };

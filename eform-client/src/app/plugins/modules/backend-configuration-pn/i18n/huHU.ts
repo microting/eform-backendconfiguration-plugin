@@ -266,4 +266,12 @@ export const huHU = {
   'Generate report': 'Jelentést készít',
   'Task description': 'Feladatleírás',
   'Task solver': 'Feladat megoldó',
+  'Description of task': 'A feladat leírása',
+  'None found': 'Egyik sem található',
+  'No tasks found': 'Nem található feladat',
+  'No employees found': 'Nem található alkalmazott',
+  'No documents found': 'Nem találhatók dokumentumok',
+  'No files found': 'Nem található fájl',
+  'Create new employee': 'Hozzon létre új alkalmazottat',
+  'New employee': 'Új alkalmazott',
 };

@@ -266,4 +266,12 @@ export const etET = {
   'Generate report': 'Loo aruanne',
   'Task description': 'Ülesande kirjeldus',
   'Task solver': 'Ülesande lahendaja',
+  'Description of task': 'Ülesande kirjeldus',
+  'None found': 'Ühtegi ei leitud',
+  'No tasks found': 'Ülesandeid ei leitud',
+  'No employees found': 'Töötajaid ei leitud',
+  'No documents found': 'Dokumente ei leitud',
+  'No files found': 'Faile ei leitud',
+  'Create new employee': 'Loo uus töötaja',
+  'New employee': 'Uus töötaja',
 };

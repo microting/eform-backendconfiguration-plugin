@@ -266,4 +266,12 @@ export const slSL = {
   'Generate report': 'Ustvari poročilo',
   'Task description': 'Opis naloge',
   'Task solver': 'Reševalec nalog',
+  'Description of task': 'Opis naloge',
+  'None found': 'Noben najden',
+  'No tasks found': 'Ni najdenih nalog',
+  'No employees found': 'Ni zaposlenih',
+  'No documents found': 'Ni dokumentov',
+  'No files found': 'Ni datotek',
+  'Create new employee': 'Ustvarite novega zaposlenega',
+  'New employee': 'Nov zaposleni',
 };

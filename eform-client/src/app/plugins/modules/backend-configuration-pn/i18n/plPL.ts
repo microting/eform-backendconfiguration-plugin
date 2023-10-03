@@ -266,4 +266,12 @@ export const plPL = {
   'Generate report': 'Generuj raport',
   'Task description': 'Opis zadania',
   'Task solver': 'Rozwiązanie zadania',
+  'Description of task': 'Opis zadania',
+  'None found': 'Nic nie znaleziono',
+  'No tasks found': 'Nie znaleziono żadnych zadań',
+  'No employees found': 'Nie znaleziono pracowników',
+  'No documents found': 'Nie znaleziono żadnych dokumentów',
+  'No files found': 'Nie znaleziono plików',
+  'Create new employee': 'Utwórz nowego pracownika',
+  'New employee': 'Nowy pracownik',
 };

@@ -266,4 +266,12 @@ export const fiFI = {
   'Generate report': 'Luo raportti',
   'Task description': 'Tehtävän kuvaus',
   'Task solver': 'Tehtävän ratkaisija',
+  'Description of task': 'Tehtävän kuvaus',
+  'None found': 'Ei löytynyt',
+  'No tasks found': 'Tehtäviä ei löytynyt',
+  'No employees found': 'Työntekijöitä ei löytynyt',
+  'No documents found': 'Asiakirjoja ei löytynyt',
+  'No files found': 'Tiedostoja ei löytynyt',
+  'Create new employee': 'Luo uusi työntekijä',
+  'New employee': 'Uusi työntekijä',
 };

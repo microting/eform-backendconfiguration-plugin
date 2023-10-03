@@ -1,14 +1,14 @@
 <eform-new-subheader>
   <button
     color="accent"
-    mat-icon-button
+    mat-raised-button
     id="newDeviceUserBtn"
     *ngIf="userClaims.deviceUsersCreate"
     matTooltip="{{ 'Create new employee' | translate }}"
     (click)="openCreateModal()"
     [matTooltipPosition]="'left'"
   >
-    <mat-icon>add</mat-icon>
+    {{ 'Create new employee' | translate }}
   </button>
 </eform-new-subheader>
 
@@ -43,6 +43,7 @@
   [sortDirection]="propertyWorkersStateService.getActiveSortDirection() | async"
   (sortChange)="sortTable($event)"
   style="max-height: 80vh;"
+  noResultText="{{'No employees found' | translate}}"
 >
 </mtx-grid>
 <ng-template #deviceUserIdTpl let-row let-i="index">

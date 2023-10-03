@@ -10,6 +10,7 @@
   [sortActive]="taskWizardStateService.getActiveSort() | async"
   [sortDirection]="taskWizardStateService.getActiveSortDirection() | async"
   (sortChange)="onSortTable($event)"
+  noResultText="{{'No tasks found' | translate}}"
 />
 
 <ng-template #tagsTpl let-row>

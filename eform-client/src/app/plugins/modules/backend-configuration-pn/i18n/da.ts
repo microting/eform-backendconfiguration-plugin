@@ -267,4 +267,11 @@ export const da = {
   'Task description': 'Opgavebeskrivelse',
   'Task solver': 'Opgaveløser',
   'Description of task': 'Opgavebeskrivelse',
+  'None found': 'Ingen fundet',
+  'No tasks found': 'Ingen opgaver fundet',
+  'No employees found': 'Ingen medarbejdere fundet',
+  'No documents found': 'Ingen dokumenter fundet',
+  'No files found': 'Ingen filer fundet',
+  'Create new employee': 'Opret ny medarbejder',
+  'New employee': 'Ny medarbejder',
 };

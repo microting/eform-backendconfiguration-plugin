@@ -266,4 +266,12 @@ export const esES = {
   'Generate report': 'Generar informe',
   'Task description': 'Descripción de la tarea',
   'Task solver': 'solucionador de tareas',
+  'Description of task': 'Descripción de la tarea',
+  'None found': 'Nada encontrado',
+  'No tasks found': 'No se encontraron tareas',
+  'No employees found': 'No se encontraron empleados',
+  'No documents found': 'No se encontraron documentos',
+  'No files found': 'No se encontraron archivos',
+  'Create new employee': 'Crear nuevo empleado',
+  'New employee': 'Nuevo empleado',
 };

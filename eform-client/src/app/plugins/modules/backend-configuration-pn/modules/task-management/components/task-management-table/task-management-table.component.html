@@ -11,6 +11,7 @@
     [sortDirection]="taskManagementStateService.getActiveSortDirection() | async"
     (sortChange)="sortTable($event)"
     style="max-height: 60vh;"
+    noResultText="{{'No tasks found' | translate}}"
   >
   </mtx-grid>
 

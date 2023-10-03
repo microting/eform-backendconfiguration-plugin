@@ -266,4 +266,12 @@ export const hrHR = {
   'Generate report': 'Generiraj izvješće',
   'Task description': 'Opis zadatka',
   'Task solver': 'Rješivač zadataka',
+  'Description of task': 'Opis zadatka',
+  'None found': 'Nijedan nije pronađen',
+  'No tasks found': 'Nisu pronađeni zadaci',
+  'No employees found': 'Nije pronađen nijedan zaposlenik',
+  'No documents found': 'Nema pronađenih dokumenata',
+  'No files found': 'Nije pronađena nijedna datoteka',
+  'Create new employee': 'Kreirajte novog zaposlenika',
+  'New employee': 'Novi zaposlenik',
 };

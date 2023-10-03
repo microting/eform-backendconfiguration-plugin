@@ -266,4 +266,12 @@ export const csCZ = {
   'Generate report': 'Vygenerovat zprávu',
   'Task description': 'Popis ulohy',
   'Task solver': 'Řešitel úloh',
+  'Description of task': 'Popis úkolu',
+  'None found': 'Nebyl nalezen žádný',
+  'No tasks found': 'Nebyly nalezeny žádné úkoly',
+  'No employees found': 'Nebyli nalezeni žádní zaměstnanci',
+  'No documents found': 'Nebyly nalezeny žádné dokumenty',
+  'No files found': 'Nebyly nalezeny žádné soubory',
+  'Create new employee': 'Vytvořit nového zaměstnance',
+  'New employee': 'Nový zaměstnanec',
 };

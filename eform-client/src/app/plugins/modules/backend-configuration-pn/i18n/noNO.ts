@@ -266,4 +266,12 @@ export const noNO = {
   'Generate report': 'Generer rapport',
   'Task description': 'Oppgavebeskrivelse',
   'Task solver': 'Oppgaveløser',
+  'Description of task': 'Beskrivelse av oppgaven',
+  'None found': 'Ingen funnet',
+  'No tasks found': 'Ingen oppgaver funnet',
+  'No employees found': 'Ingen ansatte funnet',
+  'No documents found': 'Ingen dokumenter funnet',
+  'No files found': 'Ingen filer funnet',
+  'Create new employee': 'Opprett ny medarbeider',
+  'New employee': 'Ny ansatt',
 };

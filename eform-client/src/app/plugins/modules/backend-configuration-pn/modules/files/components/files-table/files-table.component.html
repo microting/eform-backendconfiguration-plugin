@@ -11,6 +11,7 @@
   [sortActive]="filesStateService.getActiveSort() | async"
   [sortDirection]="filesStateService.getActiveSortDirection() | async"
   (sortChange)="onSortTable($event)"
+  noResultText="{{'No files found' | translate}}"
 >
 </mtx-grid>
 

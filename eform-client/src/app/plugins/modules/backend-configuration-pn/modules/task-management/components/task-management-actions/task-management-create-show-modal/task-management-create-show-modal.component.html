@@ -14,10 +14,11 @@
     </mat-form-field>
     <mat-form-field>
       <mat-label>{{'Area' | translate }}</mat-label>
-      <mtx-select
+        <mtx-select
         [items]="propertyAreas"
         formControlName="areaName"
         id="areaName"
+        notFoundText="{{'None found' | translate}}"
         [clearable]="false">
       </mtx-select>
     </mat-form-field>

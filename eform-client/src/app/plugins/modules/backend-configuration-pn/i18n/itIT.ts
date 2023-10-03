@@ -266,4 +266,12 @@ export const itIT = {
   'Generate report': 'Genera rapporto',
   'Task description': 'Descrizione del compito',
   'Task solver': 'Risolutore di compiti',
+  'Description of task': 'Descrizione del compito',
+  'None found': 'Nessuno trovato',
+  'No tasks found': 'Nessuna attività trovata',
+  'No employees found': 'Nessun dipendente trovato',
+  'No documents found': 'Nessun documento trovato',
+  'No files found': 'Nessun file trovato',
+  'Create new employee': 'Crea nuovo dipendente',
+  'New employee': 'Nuovo impiegato',
 };
