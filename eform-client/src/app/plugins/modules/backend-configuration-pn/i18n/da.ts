@@ -239,7 +239,7 @@ export const da = {
   'Add controlareas to property': 'Tilføj kontrolområder til lokation',
   'CHR name': 'CHR navn',
   'CHR address': 'CHR adresse',
-  'Task management': 'Opgavestyring',
+  'Task management': 'Ad-hoc-opgaver',
   'Assigned tasks': 'Tildelte opgaver',
   Checkpoint: 'Kontrolpunkt',
   'Show assignments': 'Vis opgaver',
@@ -274,4 +274,5 @@ export const da = {
   'No files found': 'Ingen filer fundet',
   'Create new employee': 'Opret ny medarbejder',
   'New employee': 'Ny medarbejder',
+  'Timeregistration': 'Tidsregistrering',
 };

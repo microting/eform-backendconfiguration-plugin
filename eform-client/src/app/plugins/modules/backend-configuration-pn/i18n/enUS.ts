@@ -1,4 +1,4 @@
-export const enUS = {
+export const enUS= {
   Actions: 'Actions',
   areas: 'areas',
   Area: 'Area',
@@ -291,4 +291,6 @@ export const enUS = {
   'No files found': 'No files found',
   'Create new employee': 'Create new employee',
   'New employee': 'New employee',
+  'Edit employee': 'Edit employee',
+  'Timeregistration': 'Time registration'
 };

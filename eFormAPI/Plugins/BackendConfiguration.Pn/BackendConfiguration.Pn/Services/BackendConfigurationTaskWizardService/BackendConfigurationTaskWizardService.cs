@@ -320,6 +320,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 _localizationService.GetString("ReportTableHeaderTagIsRequired"));
         }
 
+        if (createModel.FolderId == null)
+        {
+            return new OperationResult(false,
+                _localizationService.GetString("FolderIsRequired"));
+        }
+
         try
         {
             var core = await _coreHelper.GetCore();
@@ -487,7 +493,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 EformId = createModel.EformId,
                 EformName = eformName,
                 PropertyId = createModel.PropertyId,
-                FolderId = createModel.FolderId,
+                FolderId = (int) createModel.FolderId,
                 FolderName = folderName,
                 RepeatEvery = createModel.RepeatEvery,
                 RepeatType = (int?)createModel.RepeatType,
@@ -499,7 +505,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     new()
                     {
                         AreaId = areaId,
-                        FolderId = createModel.FolderId,
+                        FolderId = (int) createModel.FolderId,
                         ItemPlanningId = planning.Id,
                         ComplianceEnabled = true,
                         PlanningSites = createModel.Sites
@@ -543,7 +549,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     createModel.Sites,
                     createModel.EformId,
                     planning.Id,
-                    createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
+                    (int) createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
             }
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
@@ -614,7 +620,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             // update area rule plannings and area rule with translations
             var oldStatus = areaRulePlanning.Status;
-            areaRulePlanning.FolderId = updateModel.FolderId;
+            areaRulePlanning.FolderId = (int) updateModel.FolderId;
             areaRulePlanning.Status = updateModel.Status == TaskWizardStatuses.Active;
             areaRulePlanning.StartDate = updateModel.StartDate;
             areaRulePlanning.RepeatEvery = updateModel.RepeatEvery;
@@ -651,7 +657,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             areaRulePlanning.AreaRule.EformId = updateModel.EformId;
             areaRulePlanning.AreaRule.EformName = eformName;
             areaRulePlanning.AreaRule.PropertyId = updateModel.PropertyId;
-            areaRulePlanning.AreaRule.FolderId = updateModel.FolderId;
+            areaRulePlanning.AreaRule.FolderId = (int) updateModel.FolderId;
             areaRulePlanning.AreaRule.FolderName = folderName;
             areaRulePlanning.AreaRule.RepeatEvery = updateModel.RepeatEvery;
             areaRulePlanning.AreaRule.RepeatType = (int?)updateModel.RepeatType;
