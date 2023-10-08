@@ -42,7 +42,7 @@ export class BackendConfigurationPnTaskWizardService {
   > {
     return this.apiBaseService.get(
       BackendConfigurationPnTaskWizardMethods.Properties,
-      {fullNames: fullNames}
+      {fullNames: false}
     );
   }
 }

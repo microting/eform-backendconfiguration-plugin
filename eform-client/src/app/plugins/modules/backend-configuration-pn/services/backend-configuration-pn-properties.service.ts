@@ -64,7 +64,7 @@ export class BackendConfigurationPnPropertiesService {
   > {
     return this.apiBaseService.get(
       BackendConfigurationPnPropertiesMethods.DictionaryProperties,
-      {fullNames: fullNames}
+      {fullNames: false}
     );
   }
 
