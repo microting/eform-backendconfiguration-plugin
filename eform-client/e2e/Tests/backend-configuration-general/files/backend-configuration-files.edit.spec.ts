@@ -56,7 +56,8 @@ describe('Backend Configuration Files Edit', function () {
     const testFile: BackendFileCreate = {
       files: ['test.pdf'],
       propertiesForCreate: [
-        `${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`,
+        //`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`,
+        `${properties[0].name}`,
       ],
       tags: [tags[0], tags[1]],
       propertyNamesForExpect: [properties[0].name],
@@ -82,8 +83,10 @@ describe('Backend Configuration Files Edit', function () {
     const testFile: BackendFileCreate = {
       files: ['test.pdf'],
       propertiesForCreate: [
-        `${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`,
-        `${properties[1].cvrNumber} - ${properties[1].chrNumber} - ${properties[1].name}`
+        //`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`,
+        `${properties[0].name}`,
+        //`${properties[1].cvrNumber} - ${properties[1].chrNumber} - ${properties[1].name}`
+        `${properties[1].name}`
       ],
       tags: null,
       propertyNamesForExpect: [properties[0].name, properties[1].name],
@@ -92,8 +95,10 @@ describe('Backend Configuration Files Edit', function () {
       fileName: null,
       tags: null,
       propertiesForEdit: [
-        `${properties[2].cvrNumber} - ${properties[2].chrNumber} - ${properties[2].name}`,
-        `${properties[3].cvrNumber} - ${properties[3].chrNumber} - ${properties[3].name}`
+        //`${properties[2].cvrNumber} - ${properties[2].chrNumber} - ${properties[2].name}`,
+        `${properties[2].name}`,
+        //`${properties[3].cvrNumber} - ${properties[3].chrNumber} - ${properties[3].name}`
+        `${properties[3].name}`
       ],
       propertyNamesForExpect: [properties[2].name, properties[3].name],
     }
