@@ -24,7 +24,8 @@ describe('Backend Configuration Files Delete', function () {
     await backendConfigurationFilesPage.goToFiles();
     const testFile: BackendFileCreate = {
       files: ['test.pdf'],
-      propertiesForCreate: [`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`],
+      //propertiesForCreate: [`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`],
+      propertiesForCreate: [`${property.name}`],
       tags: [],
       propertyNamesForExpect: [],
     }
