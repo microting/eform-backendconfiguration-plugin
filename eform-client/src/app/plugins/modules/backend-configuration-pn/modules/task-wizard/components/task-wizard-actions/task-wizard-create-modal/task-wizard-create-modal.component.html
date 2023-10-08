@@ -158,14 +158,14 @@
         </mat-form-field>
         <!-- Check if there's a next item and render it -->
 
-          <mat-form-field  *ngIf="model.translates[i + 1]" class="p-2">
+          <mat-form-field *ngIf="model.translates[i + 1]" class="p-2">
             <mat-label>{{'Task description' | translate}} ({{getLanguageName(model.translates[i + 1].languageId)}})</mat-label>
             <input
               type="text"
               matInput
-              id="createName{{i}}"
+              id="createName{{i + 1}}"
               [ngModel]="model.translates[i + 1].name"
-              (ngModelChange)="updateName($event, i)"
+              (ngModelChange)="updateName($event, i + 1)"
             >
           </mat-form-field>
 <!--          {{ getLanguageName(model.translates[i + 1].languageId) }}-->
