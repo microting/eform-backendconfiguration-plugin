@@ -335,7 +335,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
 
   getProperties() {
     this.getAllPropertiesDictionarySub$ = this.propertyService
-      .getAllPropertiesDictionary(true)
+      .getAllPropertiesDictionary(false)
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.properties = [...data.model];

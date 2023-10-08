@@ -118,7 +118,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getProperties() {
-    this.getPropertiesSub$ = this.backendConfigurationPnTaskWizardService.getAllPropertiesDictionary()
+    this.getPropertiesSub$ = this.backendConfigurationPnTaskWizardService.getAllPropertiesDictionary(false)
       .pipe(tap(data => {
         if (data && data.success && data.model) {
           this.properties = data.model;
