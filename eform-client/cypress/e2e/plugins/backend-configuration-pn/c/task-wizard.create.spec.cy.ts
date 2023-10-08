@@ -61,7 +61,8 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.get('#createProperty').click();
-    selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    //selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    selectValueInNgSelectorNoSelector(`${property.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(500);
     cy.get('#createFolder').click({force: true});

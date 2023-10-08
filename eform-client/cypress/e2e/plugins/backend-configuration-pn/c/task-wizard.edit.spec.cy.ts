@@ -85,7 +85,8 @@ describe('Area rules type 1', () => {
     // fill and create task
     cy.get('#createProperty').click();
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
-    selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    //selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    selectValueInNgSelectorNoSelector(`${property.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
     cy.get('#createFolder').click({force: true});
@@ -148,7 +149,8 @@ describe('Area rules type 1', () => {
     // change task
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.get('#updateProperty').click();
-    selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
+    //selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
+    selectValueInNgSelectorNoSelector(`${property2.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
     cy.get('app-task-wizard-update-modal button#updateFolder').click();
