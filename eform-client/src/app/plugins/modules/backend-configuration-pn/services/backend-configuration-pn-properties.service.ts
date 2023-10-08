@@ -59,7 +59,7 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getAllPropertiesDictionary(fullNames: boolean = true): Observable<
+  getAllPropertiesDictionary(fullNames: boolean = false): Observable<
     OperationDataResult<CommonDictionaryModel[]>
   > {
     return this.apiBaseService.get(

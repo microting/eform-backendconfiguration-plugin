@@ -37,7 +37,7 @@ export class BackendConfigurationPnTaskWizardService {
     return this.apiBaseService.delete(`${BackendConfigurationPnTaskWizardMethods.TaskWizard}/${id}`);
   }
 
-  getAllPropertiesDictionary(fullNames: boolean = true): Observable<
+  getAllPropertiesDictionary(fullNames: boolean = false): Observable<
     OperationDataResult<CommonDictionaryModel[]>
   > {
     return this.apiBaseService.get(

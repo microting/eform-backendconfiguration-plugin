@@ -186,7 +186,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
           this.updateModal.componentInstance.fillModelAndCopyModel({
             eformId: data.model.eformId,
             folderId: data.model.folderId,
@@ -252,7 +252,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
           this.createModal.componentInstance.model = {
             eformId: data.model.eformId,
             folderId: data.model.folderId,
@@ -302,7 +302,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onCreateTask() {
-    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
     this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
     this.createModal.componentInstance.properties = this.properties;
     this.createModal.componentInstance.tags = this.tags;

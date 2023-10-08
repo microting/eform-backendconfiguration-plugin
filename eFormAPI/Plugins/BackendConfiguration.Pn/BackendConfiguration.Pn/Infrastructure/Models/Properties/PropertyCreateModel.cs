@@ -50,7 +50,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
 
         public string FullName()
         {
-            return $"0. {Name} - {Address}";
+            return string.IsNullOrEmpty(Address) ? Name : $"{Name} - {Address}";
         }
     }
 }
