@@ -1,0 +1,26 @@
+<div class="d-flex flex-column" [formGroup]="filtersForm">
+  <div class="d-flex need-wrapper">
+    <mat-form-field>
+      <mat-label>{{'Location' | translate}}</mat-label>
+      <mtx-select
+        formControlName="propertyIds"
+        multiple="true"
+        clearable="true"
+        [items]="properties"
+        [bindValue]="'id'"
+        [bindLabel]="'name'"
+      />
+    </mat-form-field>
+<!--    <mat-form-field>-->
+<!--      <mat-label>{{'Workers' | translate}}</mat-label>-->
+<!--      <mtx-select-->
+<!--        bindLabel="siteName"-->
+<!--        bindValue="siteId"-->
+<!--        formControlName="workerIds"-->
+<!--        [items]="availableSites"-->
+<!--        id="createdByFilter"-->
+<!--      >-->
+<!--      </mtx-select>-->
+<!--    </mat-form-field>-->
+  </div>
+</div>

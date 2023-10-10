@@ -72,7 +72,7 @@ namespace BackendConfiguration.Pn.Controllers
         
         [HttpPost]
         [Route("index-device-user")]
-        public async Task<OperationDataResult<List<DeviceUserModel>>> Index([FromBody] FilterAndSortModel requestModel)
+        public async Task<OperationDataResult<List<DeviceUserModel>>> Index([FromBody] PropertyWorkersFiltrationModel requestModel)
         {
             return await _backendConfigurationAssignmentWorkerService.IndexDeviceUser(requestModel).ConfigureAwait(false);
         }

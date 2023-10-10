@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
-import { PropertyWorkersStore, PropertyWorkersQuery } from './';
+import {PropertyWorkersStore, PropertyWorkersQuery, PropertyWorkersFiltrationModel} from './';
 import { Observable } from 'rxjs';
-import { OperationDataResult } from 'src/app/common/models';
+import { OperationDataResult} from 'src/app/common/models';
 import { updateTableSort, getOffset } from 'src/app/common/helpers';
 import { map } from 'rxjs/operators';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
 import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models/device-users';
+import * as R from 'ramda';
 
 @Injectable({ providedIn: 'root' })
 export class PropertyWorkersStateService {
   constructor(
-    private store: PropertyWorkersStore,
+    public store: PropertyWorkersStore,
     private service: BackendConfigurationPnPropertiesService,
     private query: PropertyWorkersQuery,
     // private deviceUserService: DeviceUserService
@@ -60,6 +61,21 @@ export class PropertyWorkersStateService {
         offset: 0,
       },
     }));
+  }
+
+  getFiltersAsync(): Observable<PropertyWorkersFiltrationModel> {
+    return this.query.selectFilters$;
+  }
+
+  updatePropertyIds(propertyIds: number[]) {
+    if(!R.equals(this.store.getValue().filters.propertyIds, propertyIds)) {
+      this.store.update((state) => ({
+        filters: {
+          ...state.filters,
+          propertyIds: propertyIds,
+        },
+      }));
+    }
   }
 
   // updatePageSize(pageSize: number) {

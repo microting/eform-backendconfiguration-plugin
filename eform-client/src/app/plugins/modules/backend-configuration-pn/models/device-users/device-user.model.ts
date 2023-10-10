@@ -3,6 +3,8 @@ export class DeviceUserModel {
   siteId: number;
   siteUid: number;
   siteName: string;
+  propertyNames: string;
+  propertyIds: number[];
   userFirstName: string;
   userLastName: string;
   language: string;

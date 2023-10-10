@@ -262,7 +262,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             }
         }
 
-        public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel)
+        public async Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(PropertyWorkersFiltrationModel requestModel)
         {
             try
             {
@@ -313,10 +313,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     })
                     .ToListAsync().ConfigureAwait(false);
 
+                // var siteUids = await sitesQuery.Select(x => x.MicrotingUid).ToListAsync().ConfigureAwait(false);
+                // var siteIds = await sitesQuery.Select(x => x.Id).ToListAsync().ConfigureAwait(false);
+
+                var timeRegistrationEnabledSites =await
+                    _timePlanningDbContext.AssignedSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.SiteId).ToListAsync().ConfigureAwait(false);
+
                 foreach (var deviceUserModel in deviceUsers)
                 {
-                    deviceUserModel.TimeRegistrationEnabled = _timePlanningDbContext.AssignedSites.Any(x =>
-                        x.SiteId == deviceUserModel.SiteUid && x.WorkflowState != Constants.WorkflowStates.Removed);
+                    deviceUserModel.TimeRegistrationEnabled = timeRegistrationEnabledSites.Any(x =>x == deviceUserModel.SiteUid);
 
                     deviceUserModel.TaskManagementEnabled = _backendConfigurationPnDbContext.PropertyWorkers.Any(x =>
                         x.WorkflowState != Constants.WorkflowStates.Removed
@@ -327,6 +332,16 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                         .Where(x =>
                             x.WorkerId == deviceUserModel.SiteId
                             && x.WorkflowState != Constants.WorkflowStates.Removed).Select(x => x.PropertyId).ToListAsync().ConfigureAwait(false);
+
+                    var properties = _backendConfigurationPnDbContext.Properties
+                        .Where(x => propertyIds.Contains(x.Id))
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .OrderBy(x => x.Name)
+                        .Select(x => x.Name)
+                        .ToList();
+
+                    deviceUserModel.PropertyNames = string.Join(", ", properties);
+                    deviceUserModel.PropertyIds = propertyIds;
 
                     var numberOfAssignements = await _backendConfigurationPnDbContext.AreaRulePlannings
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -339,19 +354,28 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
                     deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfAssignements > 0;
 
-                    var siteName = await sdkDbContext.Sites
-                        .Where(x => x.Id == deviceUserModel.SiteId)
-                        .Select(x => x.Name)
-                        .SingleOrDefaultAsync().ConfigureAwait(false);
+                    // var siteName = await sdkDbContext.Sites
+                    //     .Where(x => x.Id == deviceUserModel.SiteId)
+                    //     .Select(x => x.Name)
+                    //     .SingleOrDefaultAsync().ConfigureAwait(false);
 
                     var numberOfWorkOrderCases = await _backendConfigurationPnDbContext.WorkorderCases
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                        .Where(x => x.LastAssignedToName == siteName)
+                        .Where(x => x.LastAssignedToName == deviceUserModel.SiteName)
                         .CountAsync();
 
                     deviceUserModel.IsLocked = deviceUserModel.IsLocked ? deviceUserModel.IsLocked : numberOfWorkOrderCases > 0;
                     deviceUserModel.HasWorkOrdersAssigned = numberOfWorkOrderCases > 0;
+                }
+
+                if (requestModel.PropertyIds != null)
+                {
+                    if (requestModel.PropertyIds.Any())
+                    {
+                        deviceUsers = deviceUsers
+                            .Where(x => x.PropertyIds.Any(y => requestModel.PropertyIds.Contains(y))).ToList();
+                    }
                 }
 
                 return new OperationDataResult<List<DeviceUserModel>>(true, deviceUsers);

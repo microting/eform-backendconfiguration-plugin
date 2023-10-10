@@ -29,4 +29,5 @@ export class PropertyWorkersQuery extends Query<PropertyWorkersState> {
 
   selectActiveSort$ = this.select((state) => state.pagination.sort);
   selectActiveSortDirection$ = this.select((state) => state.pagination.isSortDsc ? 'desc' : 'asc');
+  selectFilters$ = this.select((state) => state.filters);
 }

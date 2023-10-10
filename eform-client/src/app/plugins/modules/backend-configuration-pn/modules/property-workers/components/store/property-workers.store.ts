@@ -5,9 +5,13 @@ import {
   CommonPaginationState,
 } from 'src/app/common/models';
 
+export interface PropertyWorkersFiltrationModel extends FiltrationStateModel {
+  propertyIds: number[];
+}
+
 export interface PropertyWorkersState {
   pagination: CommonPaginationState;
-  filters: FiltrationStateModel;
+  filters: PropertyWorkersFiltrationModel;
   totalProperties: number;
 }
 

@@ -42,7 +42,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
 
         Task<OperationResult> Delete(int deviceUserId);
         
-        Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(FilterAndSortModel requestModel);
+        Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(PropertyWorkersFiltrationModel requestModel);
 
         Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel);
         

@@ -1,12 +1,12 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormsModule} from '@angular/forms';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
 import {
   PropertyWorkerCreateEditModalComponent,
   PropertyWorkerDeleteModalComponent,
   PropertyWorkersPageComponent,
-  PropertyWorkerOtpModalComponent,
+  PropertyWorkerOtpModalComponent, PropertyWorkerTableComponent,
 } from './components';
 import {PropertyWorkersRouting} from './property-workers.routing';
 import {TranslateModule} from '@ngx-translate/core';
@@ -21,30 +21,36 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatMenuModule} from '@angular/material/menu';
+import {
+  PropertyWorkerFiltersComponent
+} from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components/property-worker-filters/property-worker-filters.component';
 
 @NgModule({
-    imports: [
-        CommonModule,
-        PropertyWorkersRouting,
-        EformSharedModule,
-        TranslateModule,
-        FormsModule,
-        MatIconModule,
-        MatButtonModule,
-        MatTooltipModule,
-        MtxGridModule,
-        MatInputModule,
-        MatDialogModule,
-        MtxSelectModule,
-        MatSlideToggleModule,
-        MatCheckboxModule,
-        MatMenuModule,
-    ],
+  imports: [
+    CommonModule,
+    PropertyWorkersRouting,
+    EformSharedModule,
+    TranslateModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+    MtxGridModule,
+    MatInputModule,
+    MatDialogModule,
+    MtxSelectModule,
+    MatSlideToggleModule,
+    MatCheckboxModule,
+    MatMenuModule,
+    ReactiveFormsModule,
+  ],
   declarations: [
     PropertyWorkersPageComponent,
     PropertyWorkerOtpModalComponent,
     PropertyWorkerDeleteModalComponent,
     PropertyWorkerCreateEditModalComponent,
+    PropertyWorkerTableComponent,
+    PropertyWorkerFiltersComponent
   ],
   providers: [DeviceUsersPersistProvider],
 })
