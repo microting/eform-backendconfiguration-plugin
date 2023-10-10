@@ -24,6 +24,7 @@ function createInitialState(): PropertyWorkersState {
       // offset: 0,
     },
     filters: {
+      propertyIds: [],
       nameFilter: '',
       // tagIds: [],
     },

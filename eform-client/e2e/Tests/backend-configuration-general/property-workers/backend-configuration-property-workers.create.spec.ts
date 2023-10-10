@@ -46,6 +46,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
   it('should edit worker and unpair from property', async () => {
     const worker = await backendConfigurationPropertyWorkersPage.getLastRowObject();
     await worker.edit({ properties: [0] });
+    await browser.pause(500);
     const properties = await worker.getAssignedProperties();
     expect(properties).deep.eq([
       //{ propertyName: property.cvrNumber + ' - ' + property.chrNumber + ' - ' + property.name, checked: false },

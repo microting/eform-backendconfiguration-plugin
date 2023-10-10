@@ -58,18 +58,19 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     let propertyIds: number[] = [];
-    this.getDeviceUsersFiltered();
-    this.getPropertiesDictionary();
+    //this.getDeviceUsersFiltered();
+    //this.getPropertiesDictionary();
     this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
       .pipe(
         tap(filters => {
           if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
             propertyIds = filters.propertyIds;
-            this.updateTable();
-          } else {
-            propertyIds = [];
-            this.updateTable();
           }
+          this.updateTable();
+          // else {
+          //   propertyIds = [];
+          //   this.updateTable();
+          // }
         },),
         tap(_ => {
           // if (this.showDiagram) {
@@ -79,7 +80,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe();
-    this.getWorkerPropertiesAssignments();
+    //this.getWorkerPropertiesAssignments();
   }
 
   openEditModal(simpleSiteDto: DeviceUserModel) {
@@ -107,7 +108,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           availableProperties: this.availableProperties,
         }), minWidth: 500
       })
-      .afterClosed().subscribe(data => data ? this.getDeviceUsersFiltered() : undefined);
+      .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
   }
 
   openCreateModal() {
@@ -119,7 +120,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           availableProperties: this.availableProperties,
         }), minWidth: 500
       })
-      .afterClosed().subscribe(data => data ? this.getDeviceUsersFiltered() : undefined);
+      .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
   }
 
   getPropertiesDictionary() {
@@ -190,6 +191,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
 
   updateTable() {
+    this.getPropertiesDictionary();
     this.getDeviceUsersFiltered();
     this.getWorkerPropertiesAssignments();
   }

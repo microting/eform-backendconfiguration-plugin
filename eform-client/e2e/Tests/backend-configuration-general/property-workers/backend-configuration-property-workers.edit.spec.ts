@@ -35,6 +35,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
     expect(await lastProperty.editPropertyAreasBtn.isEnabled()).eq(false);
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
     await backendConfigurationPropertyWorkersPage.create(workerForCreate);
+    await browser.pause(500);
     const worker = await backendConfigurationPropertyWorkersPage.getLastRowObject();
     expect(worker.fullName).eq(workerForCreate.name + ' ' + workerForCreate.surname);
     const properties = await worker.getAssignedProperties();
@@ -46,6 +47,7 @@ describe('Backend Configuration Property Workers - Create and edit', function ()
   it('should edit worker and unpair from property', async () => {
     const worker = await backendConfigurationPropertyWorkersPage.getLastRowObject();
     await worker.edit({ properties: [0] });
+    await browser.pause(500);
     const properties = await worker.getAssignedProperties();
     expect(properties).deep.eq([
       //{ propertyName: property.cvrNumber + ' - ' + property.chrNumber + ' - ' + property.name, checked: false },
