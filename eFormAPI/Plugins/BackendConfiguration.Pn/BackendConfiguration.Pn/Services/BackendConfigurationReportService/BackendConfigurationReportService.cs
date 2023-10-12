@@ -924,12 +924,15 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             Directory.CreateDirectory(directoryPath);
                             var resultDocumentDocx = Path.Combine(directoryPath, $"{DateTime.Now.Ticks}.docx");
                             var resultDocumentPdf = resultDocumentDocx.Replace("docx", "pdf");
+                            Console.WriteLine($"Saving document to {resultDocumentDocx}");
 
                             await using (var fileStream = File.Create(resultDocumentDocx))
                             {
                                 wordDataResult.Model.Seek(0, SeekOrigin.Begin);
                                 await wordDataResult.Model.CopyToAsync(fileStream);
                             }
+                            Console.WriteLine($"docx saved to {resultDocumentDocx}");
+                            Console.WriteLine($"Converting to pdf {resultDocumentPdf}");
                             // convert file to pdf
                             ReportHelper.ConvertToPdf(resultDocumentDocx, directoryPath);
 
