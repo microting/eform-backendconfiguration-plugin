@@ -26,7 +26,7 @@ RUN dotnet publish TimePlanning.Pn -o TimePlanning.Pn/out /p:Version=$PLUGIN5VER
 RUN dotnet publish BackendConfiguration.Pn -o BackendConfiguration.Pn/out /p:Version=$PLUGIN4VERSION --runtime linux-x64 --configuration Release
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:7.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-jammy
 WORKDIR /app
 COPY --from=build-env /app/eFormAPI.Web/out .
 RUN mkdir -p ./Plugins/ItemsPlanning.Pn
