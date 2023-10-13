@@ -146,6 +146,9 @@ jobs:
         working-directory: eform-angular-frontend/eform-client
     - name: Change rabbitmq hostname
       run: docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
+    - name: Get standard output
+      run: |
+        cat docker_run_log
     - name: Plugin testing
       run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
     - name: Load DB dump
