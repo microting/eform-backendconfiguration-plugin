@@ -12,7 +12,6 @@ export interface PropertyWorkersFiltrationModel extends FiltrationStateModel {
 export interface PropertyWorkersState {
   pagination: CommonPaginationState;
   filters: PropertyWorkersFiltrationModel;
-  totalProperties: number;
 }
 
 function createInitialState(): PropertyWorkersState {
@@ -27,14 +26,13 @@ function createInitialState(): PropertyWorkersState {
       propertyIds: [],
       nameFilter: '',
       // tagIds: [],
-    },
-    totalProperties: 0,
+    }
   };
 }
 
 const propertyWorkersPersistStorage = persistState({
-  include: ['propertyWorkers'],
-  key: 'backendConfigurationPn',
+  include: ['property-workers'],
+  key: 'backendConfigurationPnv2',
   preStorageUpdate(storeName, state: PropertyWorkersState) {
     return {
       pagination: state.pagination,
@@ -44,7 +42,7 @@ const propertyWorkersPersistStorage = persistState({
 });
 
 @Injectable({ providedIn: 'root' })
-@StoreConfig({ name: 'propertyWorkers', resettable: true })
+@StoreConfig({ name: 'property-workers', resettable: true })
 export class PropertyWorkersStore extends Store<PropertyWorkersState> {
   constructor() {
     super(createInitialState());

@@ -18,7 +18,7 @@ export class PropertyWorkersQuery extends Query<PropertyWorkersState> {
   selectPagination$ = this.select(
     (state) =>
       new PaginationModel(
-        state.totalProperties,
+        //state.totalProperties,
         state.pagination.pageSize,
         state.pagination.offset
       )

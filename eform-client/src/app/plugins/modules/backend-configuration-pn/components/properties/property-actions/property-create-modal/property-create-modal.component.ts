@@ -110,7 +110,6 @@ export class PropertyCreateModalComponent implements OnInit, OnDestroy {
         this.getChrInformationSub$ = this.propertiesService.getChrInformation(number)
           .subscribe((data) => {
             if (data && data.success) {
-              //debugger;
               if (data.model.ejendom.byNavn === '' || data.model.ejendom.byNavn === null) {
                 this.newProperty.address = data.model.ejendom.adresse + ', ' + data.model.ejendom.postDistrikt;
               } else {

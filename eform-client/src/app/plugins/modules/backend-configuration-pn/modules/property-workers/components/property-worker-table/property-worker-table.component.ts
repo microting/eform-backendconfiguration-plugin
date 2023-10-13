@@ -208,7 +208,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
 
   onSortTable(sort: Sort) {
     this.propertyWorkersStateService.onSortTable(sort.active);
-    debugger;
     this.updateTable.emit();
   }
 

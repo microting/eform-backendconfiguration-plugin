@@ -99,9 +99,8 @@ export class PropertyWorkersStateService {
 
   onDelete() {
     this.store.update((state) => ({
-      totalProperties: state.totalProperties - 1,
     }));
-    this.checkOffset();
+    //this.checkOffset();
   }
 
   onSortTable(sort: string) {
@@ -119,21 +118,21 @@ export class PropertyWorkersStateService {
     }));
   }
 
-  checkOffset() {
-    const newOffset = getOffset(
-      this.query.pageSetting.pagination.pageSize,
-      this.query.pageSetting.pagination.offset,
-      this.query.pageSetting.totalProperties
-    );
-    if (newOffset !== this.query.pageSetting.pagination.offset) {
-      this.store.update((state) => ({
-        pagination: {
-          ...state.pagination,
-          offset: newOffset,
-        },
-      }));
-    }
-  }
+  // checkOffset() {
+  //   const newOffset = getOffset(
+  //     this.query.pageSetting.pagination.pageSize,
+  //     this.query.pageSetting.pagination.offset,
+  //     this.query.pageSetting.pagination.totalItems
+  //   );
+  //   if (newOffset !== this.query.pageSetting.pagination.offset) {
+  //     this.store.update((state) => ({
+  //       pagination: {
+  //         ...state.pagination,
+  //         offset: newOffset,
+  //       },
+  //     }));
+  //   }
+  // }
 
   // getPagination(): Observable<PaginationModel> {
   //   return this.query.selectPagination$;
