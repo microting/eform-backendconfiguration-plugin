@@ -1,11 +1,11 @@
-FROM node:lts as node-env
+FROM node:lts-bookworm-slim as node-env
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 COPY eform-angular-frontend/eform-client ./
 RUN yarn install
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:7.0-bookworm-slim AS build-env
 WORKDIR /app
 ARG GITVERSION
 ARG PLUGINVERSION
@@ -26,7 +26,7 @@ RUN dotnet publish TimePlanning.Pn -o TimePlanning.Pn/out /p:Version=$PLUGIN5VER
 RUN dotnet publish BackendConfiguration.Pn -o BackendConfiguration.Pn/out /p:Version=$PLUGIN4VERSION --runtime linux-x64 --configuration Release
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:7.0-jammy
+FROM mcr.microsoft.com/dotnet/aspnet:7.0-bookworm-slim
 WORKDIR /app
 COPY --from=build-env /app/eFormAPI.Web/out .
 RUN mkdir -p ./Plugins/ItemsPlanning.Pn
