@@ -1,23 +1,23 @@
 <eform-new-subheader>
   <ng-container *ngIf="folders !== undefined">
     <button *ngIf="folders.length > 0"
-            mat-icon-button
+            mat-raised-button
             id="createNewDocumentBtn"
             matTooltip="{{ 'Create new document' | translate }}"
             (click)="openCreateModal()"
             color="accent"
     >
-      <mat-icon>add</mat-icon>
+      {{ 'Create new document' | translate }}
     </button>
   </ng-container>
   <button
-    mat-icon-button
+    mat-raised-button
     id="manageFoldersBtn"
     matTooltip="{{ 'Manage folders' | translate }}"
     (click)="openManageFoldersModal()"
     color="accent"
   >
-    <mat-icon>folder</mat-icon>
+    {{ 'Manage folders' | translate }}
   </button>
 </eform-new-subheader>
 
