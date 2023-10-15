@@ -20,6 +20,7 @@ export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
   @Input() view: number[] = [];
   @Output() clickOnDiagram: EventEmitter<number | null> = new EventEmitter<number | null>();
   chartData: { name: string, value: number }[] = [];
+  xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#0000ff']
   };
@@ -49,6 +50,22 @@ export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
     }
   }
 
+  axisFormat(val) {
+    if (val % 1 === 0) {
+      return val.toLocaleString();
+    } else {
+      return '';
+    }
+  }
+
+  getxAxisTicks() {
+    // loop through the data and find the biggest value, then create an array from 0 to that value
+    if (this.chartData.length > 0) {
+      const max = Math.max.apply(Math, this.chartData.map(o => o.value)) + 1;
+      this.xAxisTicks = Array.from(Array(max).keys());
+    }
+  }
+
   constructor(
     private translateService: TranslateService,
     private authStateService: AuthStateService
@@ -64,6 +81,7 @@ export class AdHocTaskWorkersComponent implements OnChanges, OnDestroy {
       this.chartData = this.adHocTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: x.statValue}));
       this.customColorsDark = this.adHocTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
       this.customColorsLight = this.adHocTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
+      this.getxAxisTicks();
     }
   }
 

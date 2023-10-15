@@ -19,6 +19,7 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
   @Input() view: number[] = [];
   @Output() clickOnDiagram: EventEmitter<DocumentsExpirationFilterEnum | null> = new EventEmitter<DocumentsExpirationFilterEnum | null>();
   chartData: { name: string, value: number }[] = [];
+  xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#0000ff', '#0000ff']
   };
@@ -74,6 +75,22 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
     }
   }
 
+  axisFormat(val) {
+    if (val % 1 === 0) {
+      return val.toLocaleString();
+    } else {
+      return '';
+    }
+  }
+
+  getxAxisTicks() {
+    // loop through the data and find the biggest value, then create an array from 0 to that value
+    if (this.chartData.length > 0) {
+      const max = Math.max.apply(Math, this.chartData.map(o => o.value)) + 1;
+      this.xAxisTicks = Array.from(Array(max).keys());
+    }
+  }
+
   constructor(
     private translateService: TranslateService,
     private authStateService: AuthStateService
@@ -100,6 +117,7 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
           value: this.documentUpdatedDaysModel.overThirtiethDays,
         },
       ];
+      this.getxAxisTicks();
     }
   }
 

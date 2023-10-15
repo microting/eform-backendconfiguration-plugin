@@ -21,6 +21,7 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   @Output() clickOnDiagram: EventEmitter<void> = new EventEmitter<void>();
   currentDate = format(new Date(), 'P', {locale: this.authStateService.dateFnsLocale});
   chartData: { name: string, value: number }[] = [];
+  xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa']
   };
@@ -83,6 +84,22 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
     }
   }
 
+  axisFormat(val) {
+    if (val % 1 === 0) {
+      return val.toLocaleString();
+    } else {
+      return '';
+    }
+  }
+
+  getxAxisTicks() {
+    // loop through the data and find the biggest value, then create an array from 0 to that value
+    if (this.chartData.length > 0) {
+      const max = Math.max.apply(Math, this.chartData.map(o => o.value)) + 1;
+      this.xAxisTicks = Array.from(Array(max).keys());
+    }
+  }
+
   constructor(
     private translateService: TranslateService,
     private authStateService: AuthStateService
@@ -113,6 +130,7 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
           value: this.adHocTaskPrioritiesModel.low,
         },
       ];
+      this.getxAxisTicks();
     }
   }
 

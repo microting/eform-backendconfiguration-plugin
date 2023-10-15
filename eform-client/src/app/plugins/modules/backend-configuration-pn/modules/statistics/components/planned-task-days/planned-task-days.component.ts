@@ -20,6 +20,7 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
   @Input() view: number[] = [];
   @Output() clickOnDiagram: EventEmitter<void> = new EventEmitter<void>();
   chartData: { name: string, value: number }[] = [];
+  xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa', '#3b3bff']
   };
@@ -91,6 +92,22 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
     }
   }
 
+  axisFormat(val) {
+    if (val % 1 === 0) {
+      return val.toLocaleString();
+    } else {
+      return '';
+    }
+  }
+
+  getxAxisTicks() {
+    // loop through the data and find the biggest value, then create an array from 0 to that value
+    if (this.chartData.length > 0) {
+      const max = Math.max.apply(Math, this.chartData.map(o => o.value)) + 1;
+      this.xAxisTicks = Array.from(Array(max).keys());
+    }
+  }
+
   constructor(
     private translateService: TranslateService,
     private authStateService: AuthStateService
@@ -125,6 +142,7 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
           value: this.plannedTaskDaysModel.overThirtiethDays,
         },
       ];
+      this.getxAxisTicks();
     }
   }
 
