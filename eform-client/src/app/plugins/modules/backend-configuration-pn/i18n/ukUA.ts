@@ -274,4 +274,7 @@ export const ukUA = {
   'No files found': 'Файли не знайдено',
   'Create new employee': 'Створіть нового співробітника',
   'New employee': 'Новий працівник',
+  'Edit employee': 'Редагувати співробітника',
+  Timeregistration: 'Реєстрація часу',
+  'Submitted date': 'Дата подання',
 };

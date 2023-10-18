@@ -274,4 +274,7 @@ export const etET = {
   'No files found': 'Faile ei leitud',
   'Create new employee': 'Loo uus töötaja',
   'New employee': 'Uus töötaja',
+  'Edit employee': 'Redigeeri töötajat',
+  Timeregistration: 'Aja registreerimine',
+  'Submitted date': 'Esitamise kuupäev',
 };

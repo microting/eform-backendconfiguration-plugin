@@ -292,5 +292,6 @@ export const enUS= {
   'Create new employee': 'Create new employee',
   'New employee': 'New employee',
   'Edit employee': 'Edit employee',
-  'Timeregistration': 'Time registration'
+  'Timeregistration': 'Time registration',
+  'Submitted date': 'Submitted date',
 };

@@ -274,4 +274,7 @@ export const ltLT = {
   'No files found': 'Failų nerasta',
   'Create new employee': 'Sukurti naują darbuotoją',
   'New employee': 'Naujas darbuotojas',
+  'Edit employee': 'Redaguoti darbuotoją',
+  Timeregistration: 'Laiko registracija',
+  'Submitted date': 'Pateikimo data',
 };

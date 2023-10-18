@@ -274,4 +274,7 @@ export const elGR = {
   'No files found': 'Δεν βρέθηκαν αρχεία',
   'Create new employee': 'Δημιουργία νέου υπαλλήλου',
   'New employee': 'Νέος υπάλληλος',
+  'Edit employee': 'Υπάλληλος επεξεργασίας',
+  Timeregistration: 'Εγγραφή χρόνου',
+  'Submitted date': 'Ημερομηνία υποβολής',
 };

@@ -274,4 +274,7 @@ export const fiFI = {
   'No files found': 'Tiedostoja ei löytynyt',
   'Create new employee': 'Luo uusi työntekijä',
   'New employee': 'Uusi työntekijä',
+  'Edit employee': 'Muokkaa työntekijää',
+  Timeregistration: 'Ajan rekisteröinti',
+  'Submitted date': 'Lähetyspäivämäärä',
 };

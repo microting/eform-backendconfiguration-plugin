@@ -274,4 +274,7 @@ export const isIS = {
   'No files found': 'Engar skrár fundust',
   'Create new employee': 'Búa til nýjan starfsmann',
   'New employee': 'Nýr starfsmaður',
+  'Edit employee': 'Breyta starfsmanni',
+  Timeregistration: 'Tímaskráning',
+  'Submitted date': 'Lögð fram dagsetning',
 };

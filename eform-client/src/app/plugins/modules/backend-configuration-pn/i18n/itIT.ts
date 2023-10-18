@@ -274,4 +274,7 @@ export const itIT = {
   'No files found': 'Nessun file trovato',
   'Create new employee': 'Crea nuovo dipendente',
   'New employee': 'Nuovo impiegato',
+  'Edit employee': 'Modifica dipendente',
+  Timeregistration: 'Registrazione del tempo',
+  'Submitted date': 'Data di invio',
 };

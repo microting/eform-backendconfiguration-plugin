@@ -274,4 +274,7 @@ export const slSL = {
   'No files found': 'Ni datotek',
   'Create new employee': 'Ustvarite novega zaposlenega',
   'New employee': 'Nov zaposleni',
+  'Edit employee': 'Uredi zaposlenega',
+  Timeregistration: 'Registracija časa',
+  'Submitted date': 'Datum oddaje',
 };

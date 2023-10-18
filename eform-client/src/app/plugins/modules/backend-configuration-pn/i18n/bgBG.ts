@@ -274,4 +274,7 @@ export const bgBG = {
   'No files found': 'Няма намерени файлове',
   'Create new employee': 'Създайте нов служител',
   'New employee': 'Нов служител',
+  'Edit employee': 'Редактиране на служител',
+  Timeregistration: 'Регистрация на времето',
+  'Submitted date': 'Дата на подаване',
 };

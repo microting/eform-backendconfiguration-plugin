@@ -274,4 +274,7 @@ export const hrHR = {
   'No files found': 'Nije pronađena nijedna datoteka',
   'Create new employee': 'Kreirajte novog zaposlenika',
   'New employee': 'Novi zaposlenik',
+  'Edit employee': 'Uredi zaposlenika',
+  Timeregistration: 'Registracija vremena',
+  'Submitted date': 'Datum predaje',
 };

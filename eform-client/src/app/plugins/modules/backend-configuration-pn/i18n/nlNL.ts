@@ -274,4 +274,7 @@ export const nlNL = {
   'No files found': 'Geen bestanden gevonden',
   'Create new employee': 'Nieuwe medewerker aanmaken',
   'New employee': 'Nieuwe medewerker',
+  'Edit employee': 'Werknemer bewerken',
+  Timeregistration: 'Tijdregistratie',
+  'Submitted date': 'Datum ingediend',
 };

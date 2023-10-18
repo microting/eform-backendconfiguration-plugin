@@ -274,4 +274,7 @@ export const esES = {
   'No files found': 'No se encontraron archivos',
   'Create new employee': 'Crear nuevo empleado',
   'New employee': 'Nuevo empleado',
+  'Edit employee': 'Editar empleado',
+  Timeregistration: 'Registro de tiempo',
+  'Submitted date': 'Fecha de envío',
 };
