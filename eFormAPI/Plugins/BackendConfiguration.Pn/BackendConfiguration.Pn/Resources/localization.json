@@ -4591,5 +4591,36 @@
       "el-GR": "Απαιτείται φάκελος",
       "is-IS": "Mappa er krafist"
     }
+  },
+  {
+    "Key": "ReportPeriod",
+    "LocalizedValue": {
+      "da": "Rapport periode",
+      "de": "Berichtszeitraum",
+      "en-US": "Report period",
+      "uk-UA": "Звітний період",
+      "pl-PL": "Okres raportowania",
+      "no-NO": "Rapporteringsperiode",
+      "sv-SE": "Rapporteringsperiod",
+      "es-ES": "Periodo de informe",
+      "fr-FR": "Période de rapport",
+      "it-IT": "Periodo di rapporto",
+      "nl-NL": "Rapportageperiode",
+      "pt-BR": "Período de relatório",
+      "pt-PT": "Período de relatório",
+      "fi-FI": "Raportointiaika",
+      "et-ET": "Aruande periood",
+      "lv-LV": "Pārskata periods",
+      "lt-LT": "Ataskaitos laikotarpis",
+      "ro-RO": "Perioada de raportare",
+      "hr-HR": "Razdoblje izvješćivanja",
+      "sl-SL": "Obdobje poročanja",
+      "cs-CZ": "Období hlášení",
+      "sk-SK": "Obdobie hlásenia",
+      "hu-HU": "Jelentési időszak",
+      "bg-BG": "Период на докладване",
+      "el-GR": "Περίοδος αναφοράς",
+      "is-IS": "Skýrslutímabil"
+    }
   }
 ]
