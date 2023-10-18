@@ -275,4 +275,5 @@ export const da = {
   'Create new employee': 'Opret ny medarbejder',
   'New employee': 'Ny medarbejder',
   'Timeregistration': 'Tidsregistrering',
+  'Submitted date': 'Indsendt dato',
 };
