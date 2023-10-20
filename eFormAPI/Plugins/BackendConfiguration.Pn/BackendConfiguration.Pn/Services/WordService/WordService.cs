@@ -596,10 +596,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                 itemsHtml.Append($@"<p style='font-size:24px;text-align:center;'>{header}</p>");
                 itemsHtml.Append($@"<p style='font-size:20px;text-align:center;'>{subHeader}</p>");
                 itemsHtml.Append($@"<p style='font-size:15px;text-align:center;'>{_localizationService.GetString("ReportPeriod")}: {reportModel.First().FromDate} - {reportModel.First().ToDate}</p>");
-                // if (!string.IsNullOrEmpty(headerImageName) && headerImageName != "../../../assets/images/logo.png")
-                // {
-                //     itemsHtml = await InsertImage(headerImageName, itemsHtml, 150, 150, core, basePicturePath);
-                // }
+
                 itemsHtml.Append(@"</p>");
 
                 // moving the cursor to the end of the page
@@ -651,11 +648,6 @@ namespace BackendConfiguration.Pn.Services.WordService
                         itemsHtml.Append($@"<p style='font-size: 7pt;'>{description}</p>");
                     }
 
-                    // if (!string.IsNullOrEmpty(reportEformModel.TableName))
-                    // {
-                    //     itemsHtml.Append($@"<p style='padding-bottom: 0;'>{_localizationService.GetString("Table")}: {reportEformModel.TableName}</p>");
-                    // }
-
                     if (reportEformModel.Items.Any())
                     {
                         itemsHtml.Append(@"<table width=""100%"" border=""1"">"); // TODO change font-size 7
@@ -673,8 +665,6 @@ namespace BackendConfiguration.Pn.Services.WordService
                             itemsHtml.Append($@"<td>{itemHeader.Value}</td>");
                         }
 
-                        // itemsHtml += $@"<td>{_localizationService.GetString("Pictures")}</td>";
-                        // itemsHtml += $@"<td>{_localizationService.GetString("Posts")}</td>";
                         itemsHtml.Append(@"</tr>");
 
                         foreach (var dataModel in reportEformModel.Items)
@@ -720,9 +710,6 @@ namespace BackendConfiguration.Pn.Services.WordService
                                     }
                                 }
                             }
-
-                            // itemsHtml += $@"<td>{dataModel.ImagesCount}</td>";
-                            // itemsHtml += $@"<td>{dataModel.PostsCount}</td>";
                             itemsHtml.Append(@"</tr>");
                         }
 
@@ -730,11 +717,6 @@ namespace BackendConfiguration.Pn.Services.WordService
                     }
 
                     itemsHtml.Append(@"<br/>");
-
-                    // if (!string.IsNullOrEmpty(reportEformModel.TemplateName))
-                    // {
-                    //     itemsHtml.Append($@"{reportEformModel.TemplateName}");
-                    // }
 
 
                     foreach (var imagesName in reportEformModel.ImageNames)
@@ -748,30 +730,6 @@ namespace BackendConfiguration.Pn.Services.WordService
                             itemsHtml.Append($@"<p style='font-size: 7pt;'>{_localizationService.GetString("Position")}:<a href=""{imagesName.Value[1]}"">{imagesName.Value[1]}</a></p>"); // TODO change to Position : URL
                         }
                     }
-
-                    // itemsHtml += $@"<h2><b>{reportEformModel.Name} {_localizationService.GetString("posts")}</b></h2>";
-                    // itemsHtml += @"<table width=""100%"" border=""1"">";
-                    //
-                    // // Table header
-                    // itemsHtml += @"<tr style=""background-color:#f5f5f5;font-weight:bold"">";
-                    // // itemsHtml += $@"<td>{_localizationService.GetString("Id")}</td>";
-                    // itemsHtml += $@"<td>{_localizationService.GetString("CaseId")}</td>";
-                    // itemsHtml += $@"<td>{_localizationService.GetString("PostDate")}</td>";
-                    // itemsHtml += $@"<td>{_localizationService.GetString("SentTo")}</td>";
-                    // itemsHtml += $@"<td>{_localizationService.GetString("Comment")}</td>";
-                    // itemsHtml += @"</tr>";
-                    //
-                    // foreach (var dataModel in reportEformModel.Posts)
-                    // {
-                    //     itemsHtml += @"<tr>";
-                    //     // itemsHtml += $@"<td>{dataModel.PostId}</td>";
-                    //     itemsHtml += $@"<td>{dataModel.CaseId}</td>";
-                    //     itemsHtml += $@"<td>{dataModel.PostDate:dd.MM.yyyy HH:mm:ss}</td>";
-                    //     itemsHtml += $@"<td>{dataModel.SentTo.Join()} {dataModel.SentToTags.Join()}</td>";
-                    //     itemsHtml += $@"<td>{dataModel.Comment}</td>";
-                    //     itemsHtml += @"</tr>";
-                    // }
-                    // itemsHtml += @"</table>";
                 }
 
 
@@ -795,7 +753,12 @@ namespace BackendConfiguration.Pn.Services.WordService
             }
         }
 
-		private async Task<StringBuilder> InsertImage(string imageName, StringBuilder itemsHtml, int imageSize, int imageWidth, Core core, string basePicturePath)
+        public Task<OperationDataResult<Stream>> GenerateWordDashboard(List<ReportEformModel> reportModel)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task<StringBuilder> InsertImage(string imageName, StringBuilder itemsHtml, int imageSize, int imageWidth, Core core, string basePicturePath)
 		{
 			var filePath = Path.Combine(basePicturePath, imageName);
 			Stream stream;

@@ -513,7 +513,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             }
         }
 
-        public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model)
+        public async Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model, bool isDocx)
         {
             try
             {
@@ -880,7 +880,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
         {
             try
             {
-                var reportDataResult = await GenerateReport(model, true);
+                var reportDataResult = await GenerateReportV2(model, true);
                 if (!reportDataResult.Success)
                 {
                     return new OperationDataResult<Stream>(false, reportDataResult.Message);

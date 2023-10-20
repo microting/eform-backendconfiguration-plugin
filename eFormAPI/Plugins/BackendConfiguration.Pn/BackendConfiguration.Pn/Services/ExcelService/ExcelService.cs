@@ -372,6 +372,11 @@ public class ExcelService : IExcelService
 		}
 	}
 
+	public Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
+	{
+		throw new NotImplementedException();
+	}
+
 	public async Task<Stream> GenerateTaskTracker(List<TaskTrackerModel> model)
 	{
 		try
