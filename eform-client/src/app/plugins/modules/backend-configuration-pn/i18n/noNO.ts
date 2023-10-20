@@ -274,4 +274,7 @@ export const noNO = {
   'No files found': 'Ingen filer funnet',
   'Create new employee': 'Opprett ny medarbeider',
   'New employee': 'Ny ansatt',
+  'Edit employee': 'Rediger ansatt',
+  Timeregistration: 'Tidsregistrering',
+  'Submitted date': 'Innsendt dato',
 };

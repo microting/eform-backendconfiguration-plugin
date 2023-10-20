@@ -274,4 +274,7 @@ export const huHU = {
   'No files found': 'Nem található fájl',
   'Create new employee': 'Hozzon létre új alkalmazottat',
   'New employee': 'Új alkalmazott',
+  'Edit employee': 'Alkalmazott szerkesztése',
+  Timeregistration: 'Idő regisztráció',
+  'Submitted date': 'Beküldés dátuma',
 };

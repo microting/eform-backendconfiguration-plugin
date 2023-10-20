@@ -337,4 +337,7 @@ export const deDE = {
   'No documents found': 'Keine Dokumente gefunden',
   'No files found': 'Keine Dateien gefunden',
   'New employee': 'Neuer Angestellter',
+  'Edit employee': 'Mitarbeiter bearbeiten',
+  Timeregistration: 'Zeiterfassung',
+  'Submitted date': 'Datum der Einreichung',
 };

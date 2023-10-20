@@ -274,4 +274,7 @@ export const skSK = {
   'No files found': 'Nenašli sa žiadne súbory',
   'Create new employee': 'Vytvorte nového zamestnanca',
   'New employee': 'Nový zamestnanec',
+  'Edit employee': 'Upraviť zamestnanca',
+  Timeregistration: 'Registrácia času',
+  'Submitted date': 'Dátum odoslania',
 };

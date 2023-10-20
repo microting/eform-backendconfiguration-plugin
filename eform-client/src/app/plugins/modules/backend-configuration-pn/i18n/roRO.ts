@@ -274,4 +274,7 @@ export const roRO = {
   'No files found': 'Niciun fișier găsit',
   'Create new employee': 'Creați un nou angajat',
   'New employee': 'Angajat nou',
+  'Edit employee': 'Editați angajatul',
+  Timeregistration: 'Înregistrarea timpului',
+  'Submitted date': 'Data depunerii',
 };

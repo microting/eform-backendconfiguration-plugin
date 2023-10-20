@@ -274,4 +274,7 @@ export const csCZ = {
   'No files found': 'Nebyly nalezeny žádné soubory',
   'Create new employee': 'Vytvořit nového zaměstnance',
   'New employee': 'Nový zaměstnanec',
+  'Edit employee': 'Upravit zaměstnance',
+  Timeregistration: 'Registrace času',
+  'Submitted date': 'Datum odevzdání',
 };
