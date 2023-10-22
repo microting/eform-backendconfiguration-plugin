@@ -68,7 +68,8 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
         dateFrom: params['dateFrom'],
         dateTo: params['dateTo'],
         tagIds: planningsReportQuery.pageSetting.filters.tagIds,
-        type: ''
+        type: '',
+        version2: false
       };
       if (model.dateFrom !== undefined) {
         this.onGenerateReport(model);
@@ -104,7 +105,8 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
         dateFrom: model.dateFrom,
         dateTo: model.dateTo,
         tagIds: this.planningsReportQuery.pageSetting.filters.tagIds,
-        type: ''
+        type: '',
+        version2: false
       })
       .subscribe((data) => {
         if (data && data.success) {
@@ -135,7 +137,8 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
       dateFrom: this.dateFrom,
       dateTo: this.dateTo,
       tagIds: [],
-      type: ''
+      type: '',
+      version2: false
     };
     if (model.dateFrom !== undefined) {
       this.onGenerateReport(model);

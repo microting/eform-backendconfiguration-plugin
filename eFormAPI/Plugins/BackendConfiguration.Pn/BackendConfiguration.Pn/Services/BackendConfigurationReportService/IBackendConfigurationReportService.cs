@@ -35,7 +35,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
     {
         Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx);
         Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model, bool isDocx);
-        Task<OperationDataResult<Stream>> GenerateReportFile(GenerateReportModel model);
+        Task<OperationDataResult<Stream>> GenerateReportFile(GenerateReportModel model, bool version2);
         Task<OperationResult> Update(ReplyRequest model);
     }
 }

@@ -854,6 +854,10 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                         }
                         reportModel.GroupEform.Add(group);
                     }
+                    reportModel.NameTagsInEndPage.AddRange(_itemsPlanningPnDbContext.PlanningTags
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => model.TagIds.Any(y => y == x.Id))
+                        .Select(x => x.Name));
 
                     result.Add(reportModel);
                 }
@@ -876,22 +880,25 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
             }
         }
 
-        public async Task<OperationDataResult<Stream>> GenerateReportFile(GenerateReportModel model)
+        public async Task<OperationDataResult<Stream>> GenerateReportFile(GenerateReportModel model, bool version2)
         {
-            try
-            {
-                var reportDataResult = await GenerateReportV2(model, true);
-                if (!reportDataResult.Success)
-                {
-                    return new OperationDataResult<Stream>(false, reportDataResult.Message);
-                }
 
-                switch (model.Type)
+            if (version2)
+            {
+                try
                 {
-                    case "docx":
+                    var reportDataResult = await GenerateReportV2(model, true);
+                    if (!reportDataResult.Success)
+                    {
+                        return new OperationDataResult<Stream>(false, reportDataResult.Message);
+                    }
+
+                    switch (model.Type)
+                    {
+                        case "docx":
                         {
                             var wordDataResult = await _wordService
-                            .GenerateWordDashboard(reportDataResult.Model);
+                                .GenerateWordDashboard(reportDataResult.Model);
                             if (!wordDataResult.Success)
                             {
                                 return new OperationDataResult<Stream>(false, wordDataResult.Message);
@@ -899,7 +906,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                             return new OperationDataResult<Stream>(true, wordDataResult.Model);
                         }
-                    case "xlsx":
+                        case "xlsx":
                         {
                             var wordDataResult = await _excelService
                                 .GenerateExcelDashboard(reportDataResult.Model);
@@ -910,11 +917,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
 
                             return new OperationDataResult<Stream>(true, wordDataResult.Model);
                         }
-                    case "pdf":
+                        case "pdf":
                         {
                             // get word report and save him
                             var wordDataResult = await _wordService
-                            .GenerateWordDashboard(reportDataResult.Model);
+                                .GenerateWordDashboard(reportDataResult.Model);
                             if (!wordDataResult.Success)
                             {
                                 return new OperationDataResult<Stream>(false, wordDataResult.Message);
@@ -931,6 +938,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 wordDataResult.Model.Seek(0, SeekOrigin.Begin);
                                 await wordDataResult.Model.CopyToAsync(fileStream);
                             }
+
                             Console.WriteLine($"docx saved to {resultDocumentDocx}");
                             Console.WriteLine($"Converting to pdf {resultDocumentPdf}");
                             // convert file to pdf
@@ -940,10 +948,91 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             Stream result = File.Open(resultDocumentPdf, FileMode.Open);
                             return new OperationDataResult<Stream>(true, result);
                         }
-                    default:
+                        default:
                         {
                             throw new NotImplementedException($"Type {reportDataResult.Model} not implemented");
                         }
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    Trace.TraceError(e.Message);
+                    _logger.LogError(e.Message);
+                    _logger.LogError(e.StackTrace);
+                    return new OperationDataResult<Stream>(
+                        false,
+                        _backendConfigurationLocalizationService.GetString("ErrorWhileGeneratingReportFile"));
+                }
+            }
+
+            try
+            {
+                var reportDataResult = await GenerateReport(model, true);
+                if (!reportDataResult.Success)
+                {
+                    return new OperationDataResult<Stream>(false, reportDataResult.Message);
+                }
+
+                switch (model.Type)
+                {
+                    case "docx":
+                    {
+                        var wordDataResult = await _wordService
+                            .GenerateWordDashboard(reportDataResult.Model);
+                        if (!wordDataResult.Success)
+                        {
+                            return new OperationDataResult<Stream>(false, wordDataResult.Message);
+                        }
+
+                        return new OperationDataResult<Stream>(true, wordDataResult.Model);
+                    }
+                    case "xlsx":
+                    {
+                        var wordDataResult = await _excelService
+                            .GenerateExcelDashboard(reportDataResult.Model);
+                        if (!wordDataResult.Success)
+                        {
+                            return new OperationDataResult<Stream>(false, wordDataResult.Message);
+                        }
+
+                        return new OperationDataResult<Stream>(true, wordDataResult.Model);
+                    }
+                    case "pdf":
+                    {
+                        // get word report and save him
+                        var wordDataResult = await _wordService
+                            .GenerateWordDashboard(reportDataResult.Model);
+                        if (!wordDataResult.Success)
+                        {
+                            return new OperationDataResult<Stream>(false, wordDataResult.Message);
+                        }
+
+                        var directoryPath = Path.Combine(Path.GetTempPath(), "results");
+                        Directory.CreateDirectory(directoryPath);
+                        var resultDocumentDocx = Path.Combine(directoryPath, $"{DateTime.Now.Ticks}.docx");
+                        var resultDocumentPdf = resultDocumentDocx.Replace("docx", "pdf");
+                        Console.WriteLine($"Saving document to {resultDocumentDocx}");
+
+                        await using (var fileStream = File.Create(resultDocumentDocx))
+                        {
+                            wordDataResult.Model.Seek(0, SeekOrigin.Begin);
+                            await wordDataResult.Model.CopyToAsync(fileStream);
+                        }
+
+                        Console.WriteLine($"docx saved to {resultDocumentDocx}");
+                        Console.WriteLine($"Converting to pdf {resultDocumentPdf}");
+                        // convert file to pdf
+                        ReportHelper.ConvertToPdf(resultDocumentDocx, directoryPath);
+
+                        // read converted file and return
+                        Stream result = File.Open(resultDocumentPdf, FileMode.Open);
+                        return new OperationDataResult<Stream>(true, result);
+                    }
+                    default:
+                    {
+                        throw new NotImplementedException($"Type {reportDataResult.Model} not implemented");
+                    }
                 }
 
             }
