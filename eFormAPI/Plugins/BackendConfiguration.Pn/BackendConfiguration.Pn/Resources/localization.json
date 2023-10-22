@@ -4622,5 +4622,36 @@
       "el-GR": "Περίοδος αναφοράς",
       "is-IS": "Skýrslutímabil"
     }
+  },
+  {
+    "Key": "SubmittedDate",
+    "LocalizedValue": {
+      "da": "Indsendt dato",
+      "de": "Eingereichtes Datum",
+      "en-US": "Submitted date",
+      "uk-UA": "Дата подання",
+      "pl-PL": "Data złożenia",
+      "no-NO": "Innsendingsdato",
+      "sv-SE": "Inlämningsdatum",
+      "es-ES": "Fecha de envío",
+      "fr-FR": "Date de soumission",
+      "it-IT": "Data di presentazione",
+      "nl-NL": "Ingediende datum",
+      "pt-BR": "Data de envio",
+      "pt-PT": "Data de envio",
+      "fi-FI": "Toimituspäivä",
+      "et-ET": "Esitamise kuupäev",
+      "lv-LV": "Iesniegšanas datums",
+      "lt-LT": "Pateikimo data",
+      "ro-RO": "Data depunerii",
+      "hr-HR": "Datum podnošenja",
+      "sl-SL": "Datum oddaje",
+      "cs-CZ": "Datum podání",
+      "sk-SK": "Dátum podania",
+      "hu-HU": "Beadás dátuma",
+      "bg-BG": "Дата на подаване",
+      "el-GR": "Ημερομηνία υποβολής",
+      "is-IS": "Dagsetning skilað"
+    }
   }
 ]

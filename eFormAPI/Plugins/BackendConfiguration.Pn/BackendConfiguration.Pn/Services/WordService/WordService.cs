@@ -656,7 +656,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         itemsHtml.Append(@"<tr style='background-color:#f5f5f5;font-weight:bold;font-size: 7pt;'>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
-                        itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedAt")}</td>");
+                        itemsHtml.Append($@"<td>{_localizationService.GetString("SubmittedDate")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("DoneBy")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("ItemName")}</td>");
 
@@ -828,7 +828,7 @@ namespace BackendConfiguration.Pn.Services.WordService
                         itemsHtml.Append(@"<tr style='background-color:#f5f5f5;font-weight:bold;font-size: 7pt;'>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
-                        itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedAt")}</td>");
+                        itemsHtml.Append($@"<td>{_localizationService.GetString("SubmittedDate")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("DoneBy")}</td>");
                         itemsHtml.Append($@"<td>{_localizationService.GetString("ItemName")}</td>");
 

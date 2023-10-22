@@ -269,7 +269,7 @@ public class ExcelService : IExcelService
 						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Property");
 						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 						y++;
-						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("CreatedAt");
+						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("SubmittedDate");
 						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 						y++;
 						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
@@ -423,7 +423,7 @@ public class ExcelService : IExcelService
 							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Property");
 							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 							y++;
-							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("CreatedAt");
+							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("SubmittedDate");
 							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 							y++;
 							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
