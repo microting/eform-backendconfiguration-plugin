@@ -47,7 +47,9 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     propertyAssignment.TaskManagementEnabled = createModel.TaskManagementEnabled;
                     await propertyAssignment.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
-                    var documents = await caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
+                    var documents = await caseTemplatePnDbContext.DocumentProperties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
                     foreach (var document in documents)
                     {
                         if (!documentIds.Contains(document.DocumentId))
