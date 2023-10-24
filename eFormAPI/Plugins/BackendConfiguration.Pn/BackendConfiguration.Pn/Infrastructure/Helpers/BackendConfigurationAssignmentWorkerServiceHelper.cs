@@ -82,8 +82,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                 return new OperationResult(true,"SuccessfullyAssignmentsCreatingProperties");
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 // Log.LogException(e.Message);
                 // Log.LogException(e.StackTrace);
                 return new OperationResult(false, "ErrorWhileAssignmentsCreatingProperties");
