@@ -64,7 +64,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     var document = await caseTemplatePnDbContext.Documents
                         .Include(x => x.DocumentSites)
-                        .FirstAsync(x => x.Id == documentId).ConfigureAwait(false);
+                        .FirstOrDefaultAsync(x => x.Id == documentId).ConfigureAwait(false);
+                    if (document == null)
+                    {
+                        continue;
+                    }
                     foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         if (documentSite.SdkCaseId != 0)
