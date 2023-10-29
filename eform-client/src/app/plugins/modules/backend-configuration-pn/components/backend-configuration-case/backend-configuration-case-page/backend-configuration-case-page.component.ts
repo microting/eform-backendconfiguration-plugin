@@ -20,6 +20,8 @@ import * as R from 'ramda';
 import {
   BackendConfigurationPnCasesService
 } from 'src/app/plugins/modules/backend-configuration-pn/services/backend-configuration-pn-cases.service';
+import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-backend-configuration-case-page',
@@ -42,15 +44,13 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   replyRequest: ReplyRequest = new ReplyRequest();
   maxDate: Date;
   initialDate: Date;
-
-  get userClaims() {
-    return this.authStateService.currentUserClaims;
-  }
+  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
     private activateRoute: ActivatedRoute,
     private casesService: CasesService,
+    private authStore: Store,
     private eFormService: EFormService,
     private router: Router,
     private authStateService: AuthStateService,
@@ -62,7 +62,9 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       this.eFormId = +params['templateId'];
       this.dateFrom = params['dateFrom'];
       this.dateTo = params['dateTo'];
-      dateTimeAdapter.setLocale(authStateService.currentUserLocale);
+      this.selectCurrentUserLocale$.subscribe((locale) => {
+        dateTimeAdapter.setLocale(locale);
+      });
     });
     this.activateRoute.queryParams.subscribe((queryParams) => {
       this.reverseRoute = queryParams['reverseRoute'];

@@ -15,6 +15,7 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {selectAuthIsAuth} from "src/app/state/auth/auth.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -77,6 +78,7 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
   getPropertyAreasSub$: Subscription;
   updatePropertyAreasSub$: Subscription;
   onUpdatePropertyAreasSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   constructor(
     private route: ActivatedRoute,

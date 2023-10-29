@@ -17,6 +17,8 @@ import {DocumentSimpleFolderModel, DocumentSimpleModel} from '../../../../models
 import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {DocumentsStateService} from '../../store';
 import {DocumentsExpirationFilterEnum} from '../../../../enums';
+import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -37,18 +39,22 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   folderNameChangesSub$: Subscription;
   documentChangesSub$: Subscription;
   expireChangesSub$: Subscription;
+  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
+    private authStore: Store,
     private translate: TranslateService,
     public documentsStateService: DocumentsStateService,
     localeService: LocaleService,
     authStateService: AuthStateService
   ) {
-    this.selectedLanguage = applicationLanguagesTranslated.find(
-      (x) => x.locale === localeService.getCurrentUserLocale()
-    ).id;
-    dateTimeAdapter.setLocale(authStateService.currentUserLocale);
+    this.selectCurrentUserLocale$.subscribe((locale) => {
+      dateTimeAdapter.setLocale(locale);
+      this.selectedLanguage = applicationLanguagesTranslated.find(
+        (x) => x.locale === locale
+      ).id;
+    });
   }
 
   ngOnInit(): void {

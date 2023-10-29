@@ -23,6 +23,8 @@ import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -116,8 +118,10 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   mergedTableHeaders: MtxGridColumn[] = [];
 
   caseDeleteComponentComponentAfterClosedSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   constructor(
+    private store: Store,
     private authStateService: AuthStateService,
     private viewportScroller: ViewportScroller,
     private router: Router,

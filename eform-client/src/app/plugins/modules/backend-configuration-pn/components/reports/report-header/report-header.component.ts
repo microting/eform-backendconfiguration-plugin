@@ -18,6 +18,8 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
+import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -34,10 +36,12 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
+  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
     private formBuilder: FormBuilder,
+    private authStore: Store,
     private reportStateService: ReportStateService,
     private reportQuery: ReportQuery,
     authStateService: AuthStateService,
@@ -47,7 +51,9 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-    dateTimeAdapter.setLocale(authStateService.currentUserLocale);
+    this.selectCurrentUserLocale$.subscribe((locale) => {
+      dateTimeAdapter.setLocale(locale);
+    });
   }
 
   ngOnInit() {

@@ -24,6 +24,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {AreaRulesStateService} from '../store';
 import {Sort} from '@angular/material/sort';
 import * as R from 'ramda';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-area-rules-table',
@@ -479,8 +481,10 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
         return [];
     }
   }
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   constructor(
+    private store: Store,
     private authStateService: AuthStateService,
     private templateFilesService: TemplateFilesService,
     private translateService: TranslateService,

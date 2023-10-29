@@ -19,6 +19,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
 import * as R from 'ramda';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -57,6 +59,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   getFiltersAsyncSub$: Subscription;
   changePropertySub$: Subscription;
   getPlannedTaskWorkersSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -69,6 +72,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   constructor(
+    private store: Store,
     private propertyService: BackendConfigurationPnPropertiesService,
     private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
     private taskWizardStateService: TaskWizardStateService,

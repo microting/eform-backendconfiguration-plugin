@@ -14,6 +14,7 @@ import {AuthStateService} from 'src/app/common/store';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {selectAuthIsAuth} from "src/app/state/auth/auth.selector";
 
 @Component({
   selector: 'app-property-edit-areas-modal',
@@ -43,6 +44,7 @@ export class PropertyAreasEditModalComponent implements OnInit {
     '21. DANISH Standard',
     '100. Diverse',
   ];
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   constructor(
     public authStateService: AuthStateService,
