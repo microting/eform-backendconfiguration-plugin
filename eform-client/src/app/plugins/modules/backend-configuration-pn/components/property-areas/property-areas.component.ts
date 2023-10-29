@@ -15,7 +15,8 @@ import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {selectAuthIsAuth} from "src/app/state/auth/auth.selector";
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -79,8 +80,10 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
   updatePropertyAreasSub$: Subscription;
   onUpdatePropertyAreasSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
   constructor(
+    private store: Store,
     private route: ActivatedRoute,
     private router: Router,
     private dialog: MatDialog,
@@ -123,8 +126,10 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
       .getPropertyAreas(selectedPropertyId)
       .subscribe((data) => {
         if (data && data.success) {
-          this.selectedPropertyAreas = data.model
-            .filter(x => (!this.disabledAreas.includes(x.name) || this.authStateService.isAdmin) && x.activated);
+          this.selectAuthIsAdmin$.subscribe((isAdmin: any) => {
+            this.selectedPropertyAreas = data.model
+              .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin));
+          });
         }
       });
   }

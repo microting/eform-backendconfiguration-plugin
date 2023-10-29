@@ -400,7 +400,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   openTagsModal() {
-    this.planningTagsModal.show(this.authStateService.isAdmin);
+    this.planningTagsModal.show();
   }
 
   ngAfterViewInit() {

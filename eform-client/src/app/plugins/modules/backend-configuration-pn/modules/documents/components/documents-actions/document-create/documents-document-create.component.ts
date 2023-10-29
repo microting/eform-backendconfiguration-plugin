@@ -17,6 +17,8 @@ import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 import {MatDialogRef} from '@angular/material/dialog';
 import {saveAs} from 'file-saver';
 import {MatDatepickerInputEvent} from '@angular/material/datepicker';
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-documents-document-create',
@@ -35,6 +37,7 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   getSimpleFoldersSub$: Subscription;
   getPropertiesDictionary$: Subscription;
   pdfSub$: Subscription;
+  private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
 
   get languages() {
     return applicationLanguages2;
@@ -62,15 +65,19 @@ export class DocumentsDocumentCreateComponent implements OnInit {
   }
 
   constructor(
+    private authStore: Store,
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     localeService: LocaleService,
     public dialogRef: MatDialogRef<DocumentsDocumentCreateComponent>,
   ) {
-    this.selectedLanguage = applicationLanguages2.find(
-      (x) => x.locale === localeService.getCurrentUserLocale()
-    ).id;
+    this.selectCurrentUserLanguageId$.subscribe((languageId) => {
+      this.selectedLanguage = languageId;
+    });
+    // this.selectedLanguage = applicationLanguages2.find(
+    //   (x) => x.locale === localeService.getCurrentUserLocale()
+    // ).id;
   }
 
   ngOnInit(): void {

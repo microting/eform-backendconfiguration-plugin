@@ -450,9 +450,12 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
   repeatEveryTypeWeek: { id: number; name: string; }[] = [];
   repeatEveryTypeMonth: { id: number; name: string; }[] = [];
   repeatEveryTypeDay: { id: number; name: string; }[] = [];
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
   getColumns(): MtxGridColumn[] {
-    if (!this.authStateService.isAdmin) {
+    let isAdmin = false;
+    this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+    if (!isAdmin) {
       this.tableHeaderAdmin = [];
     }
 

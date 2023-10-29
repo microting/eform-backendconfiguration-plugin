@@ -129,6 +129,7 @@ export class CompliancesTableComponent implements OnInit {
   @Input() isComplianceThirtyDays: boolean;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
   constructor(
     private store: Store,
@@ -143,7 +144,9 @@ export class CompliancesTableComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.authStateService.isAdmin) {
+    let isAdmin = false;
+    this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+    if (isAdmin) {
       this.mergedTableHeaders = this.adminTableHeaders;
     } else {
       this.mergedTableHeaders = this.tableHeaders;

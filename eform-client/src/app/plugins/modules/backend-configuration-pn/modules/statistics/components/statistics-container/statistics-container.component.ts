@@ -20,6 +20,8 @@ import {TaskManagementStateService} from '../../../task-management/components/st
 import {TaskWizardStateService} from '../../../task-wizard/components/store';
 import {DocumentsStateService} from '../../../documents/store';
 import {DocumentsExpirationFilterEnum, TaskWizardStatusesEnum} from '../../../../enums';
+import {selectSideMenuOpened} from "src/app/state/auth/auth.selector";
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -75,8 +77,10 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       return this.viewBottomLineFull;
     }
   }
+  public selectSideMenuOpened$ = this.authStore.select(selectSideMenuOpened);
 
   constructor(
+    private authStore: Store,
     public statisticsStateService: StatisticsStateService,
     private translateService: TranslateService,
     private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
@@ -89,8 +93,11 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   ) {
     this.getPropertyIdAsyncSub$ = statisticsStateService.getPropertyIdAsync()
       .subscribe(propertyId => this.selectedPropertyId = propertyId);
-    this.sideMenuOpenedAsyncSub$ = authStateService.sideMenuOpenedAsync
-      .subscribe(sideMenuOpened => this.sideMenuOpened = sideMenuOpened);
+    this.selectSideMenuOpened$.subscribe((sideMenuOpened) => {
+      this.sideMenuOpened = sideMenuOpened;
+    });
+    // this.sideMenuOpenedAsyncSub$ = authStateService.sideMenuOpenedAsync
+    //   .subscribe(sideMenuOpened => this.sideMenuOpened = sideMenuOpened);
   }
 
   ngOnInit(): void {

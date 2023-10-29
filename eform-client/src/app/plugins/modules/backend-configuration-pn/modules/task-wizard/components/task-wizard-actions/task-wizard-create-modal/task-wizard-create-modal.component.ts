@@ -278,7 +278,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   }
 
   openTagsModal() {
-    this.planningTagsModal.show(this.authStateService.isAdmin);
+    this.planningTagsModal.show();
   }
 
   hide() {

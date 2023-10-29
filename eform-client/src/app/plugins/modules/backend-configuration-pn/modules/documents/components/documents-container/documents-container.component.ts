@@ -27,6 +27,8 @@ import {TranslateService} from '@ngx-translate/core';
 import {skip, tap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
+import {selectCurrentUserLanguageId} from "src/app/state/auth/auth.selector";
+import {Store} from "@ngrx/store";
 
 @Component({
   selector: 'app-documents-container',
@@ -51,6 +53,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   getActiveSortDirectionSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   getDocumentUpdatedDaysSub$: Subscription;
+  private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -63,6 +66,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private authStore: Store,
     private propertyService: BackendConfigurationPnPropertiesService,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     public dialog: MatDialog,
@@ -72,9 +76,12 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     public localeService: LocaleService,
     private route: ActivatedRoute,
     private statisticsStateService: StatisticsStateService,) {
-    this.selectedLanguage = applicationLanguagesTranslated.find(
-      (x) => x.locale === localeService.getCurrentUserLocale()
-    ).id;
+    this.selectCurrentUserLanguageId$.subscribe((languageId) => {
+      this.selectedLanguage = languageId;
+    });
+    // this.selectedLanguage = applicationLanguagesTranslated.find(
+    //   (x) => x.locale === localeService.getCurrentUserLocale()
+    // ).id;
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;

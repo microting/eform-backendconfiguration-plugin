@@ -6,6 +6,8 @@ import {format} from 'date-fns';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {DocumentsExpirationFilterEnum} from '../../../../enums';
+import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -90,13 +92,18 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
       this.xAxisTicks = Array.from(Array(max).keys());
     }
   }
+  private selectIsDarkMode$ = this.authStore.select(selectIsDarkMode);
 
   constructor(
+    private authStore: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {
-    this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
-      .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
+    this.selectIsDarkMode$.subscribe((isDarkMode) => {
+      this.isDarkTheme = isDarkMode;
+    });
+    // this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
+    //   .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
   }
 
   ngOnChanges(changes: SimpleChanges): void {

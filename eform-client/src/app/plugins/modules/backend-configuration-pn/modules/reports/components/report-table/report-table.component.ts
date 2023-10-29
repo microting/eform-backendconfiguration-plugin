@@ -23,7 +23,7 @@ import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
-import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
@@ -119,6 +119,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   caseDeleteComponentComponentAfterClosedSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
 
   constructor(
     private store: Store,
@@ -162,7 +164,9 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           },
         };
       });
-      const tableHeaders = [...(this.authStateService.isAdmin ? [...this.adminTableHeaders] : [...this.tableHeaders])];
+      let isAdmin = false;
+      this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+      const tableHeaders = [...(isAdmin ? [...this.adminTableHeaders] : [...this.tableHeaders])];
       const index = tableHeaders
         .findIndex(x => x.field === 'actions');
       tableHeaders[index].width = this.items.filter(x => x.imagesCount > 0).length > 0 ? '160px' : '110px';
@@ -184,7 +188,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   ) {
     this.newPostModal.caseId = caseId;
     this.newPostModal.efmroId = eformId;
-    this.newPostModal.currentUserFullName = this.authStateService.currentUserFullName;
+    this.selectCurrentUserFullName$.subscribe((selectCurrentUserFullName$) =>
+      this.newPostModal.currentUserFullName = selectCurrentUserFullName$);
     this.newPostModal.pdfReportAvailable = pdfReportAvailable;
     this.newPostModal.show();
   }

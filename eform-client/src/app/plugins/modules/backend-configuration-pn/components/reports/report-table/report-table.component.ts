@@ -23,7 +23,8 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
-import {selectAuthIsAuth} from "src/app/state/auth/auth.selector";
+import {selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -118,8 +119,11 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   caseDeleteComponentComponentAfterClosedSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
 
   constructor(
+    private store: Store,
     private authStateService: AuthStateService,
     private viewportScroller: ViewportScroller,
     private router: Router,
@@ -161,7 +165,9 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           },
         };
       });
-      if (this.authStateService.isAdmin) {
+      let isAdmin = false;
+      this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+      if (isAdmin) {
         this.mergedTableHeaders = [...this.adminTableHeaders, ...itemHeaders];
       } else {
         this.mergedTableHeaders = [...this.tableHeaders, ...itemHeaders];
@@ -179,7 +185,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   ) {
     this.newPostModal.caseId = caseId;
     this.newPostModal.efmroId = eformId;
-    this.newPostModal.currentUserFullName = this.authStateService.currentUserFullName;
+    this.selectCurrentUserFullName$.subscribe((selectCurrentUserFullName$) =>
+      this.newPostModal.currentUserFullName = selectCurrentUserFullName$);
     this.newPostModal.pdfReportAvailable = pdfReportAvailable;
     this.newPostModal.show();
   }

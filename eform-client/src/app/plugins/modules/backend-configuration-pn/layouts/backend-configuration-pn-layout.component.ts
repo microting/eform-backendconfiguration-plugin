@@ -17,8 +17,8 @@ export class BackendConfigurationPnLayoutComponent
   ngOnInit() {}
 
   ngAfterContentInit() {
-    const lang = this.authStateService.currentUserLocale;
-    const i18n = translates[lang];
-    this.translateService.setTranslation(lang, i18n, true);
+    // const lang = this.authStateService.currentUserLocale;
+    // const i18n = translates[lang];
+    // this.translateService.setTranslation(lang, i18n, true);
   }
 }

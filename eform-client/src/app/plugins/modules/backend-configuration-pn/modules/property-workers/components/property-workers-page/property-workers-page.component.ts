@@ -8,13 +8,10 @@ import {AuthStateService} from 'src/app/common/store';
 import {PropertyAssignWorkersModel, DeviceUserModel, TaskWizardModel,} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {
-  PropertyWorkerDeleteModalComponent,
-  PropertyWorkerOtpModalComponent,
   PropertyWorkerCreateEditModalComponent
 } from '../';
 import {PropertyWorkersStateService} from '../store';
 import {Sort} from '@angular/material/sort';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatDialog} from '@angular/material/dialog';
@@ -22,6 +19,10 @@ import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {tap} from 'rxjs/operators';
 import * as R from 'ramda';
+import {
+  selectCurrentUserClaimsDeviceUsersCreate
+} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -39,18 +40,12 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
-
-  get userClaims() {
-    return this.authStateService.currentUserClaims;
-  }
+  public selectCurrentUserClaimsDeviceUsersCreate$ = this.authStore.select(selectCurrentUserClaimsDeviceUsersCreate);
 
   constructor(
-    private authStateService: AuthStateService,
+    private authStore: Store,
     private propertiesService: BackendConfigurationPnPropertiesService,
     public propertyWorkersStateService: PropertyWorkersStateService,
-    private translateService: TranslateService,
-    private router: Router,
-    private route: ActivatedRoute,
     private dialog: MatDialog,
     private overlay: Overlay,
   ) {
@@ -58,8 +53,6 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     let propertyIds: number[] = [];
-    //this.getDeviceUsersFiltered();
-    //this.getPropertiesDictionary();
     this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
       .pipe(
         tap(filters => {

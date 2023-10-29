@@ -17,7 +17,7 @@
 
 <mtx-grid
   [data]="propertiesModel.entities"
-  [columns]="authStateService.isAdmin ?  adminTableHeaders : tableHeaders"
+  [columns]="(selectAuthIsAdmin$ | async) ?  adminTableHeaders : tableHeaders"
   [cellTemplate]="{id: idTpl, name: propertyNameTpl, cvr: cvrTpl, chr: chrTpl, address: addressTpl, actions: actionsTpl, compliance: complianceTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"

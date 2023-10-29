@@ -3,7 +3,7 @@
     color="accent"
     mat-raised-button
     id="newDeviceUserBtn"
-    *ngIf="userClaims.deviceUsersCreate"
+    *ngIf="selectCurrentUserClaimsDeviceUsersCreate$ | async"
     matTooltip="{{ 'Create new employee' | translate }}"
     (click)="openCreateModal()"
     [matTooltipPosition]="'left'"

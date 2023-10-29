@@ -20,6 +20,8 @@ import {
   PropertyWorkerCreateEditModalComponent, PropertyWorkerDeleteModalComponent, PropertyWorkerOtpModalComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {Store} from "@ngrx/store";
+import {selectCurrentUserClaimsDeviceUsersDelete} from "src/app/state/auth/auth.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -39,7 +41,13 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   deviceUserAssignments$: Subscription;
   //availableProperties: CommonDictionaryModel[];
   searchSubject = new Subject();
+  deviceUsersDelete: boolean = false;
+  deviceUsersUpdate: boolean = false;
+  private selectCurrentUserClaimsDeviceUsersDelete$ = this.authStore.select(selectCurrentUserClaimsDeviceUsersDelete);
+  private selectCurrentUserClaimsDeviceUsersUpdate$ = this.authStore.select(selectCurrentUserClaimsDeviceUsersDelete);
+
   constructor(
+    private authStore: Store,
     private authStateService: AuthStateService,
     private translateService: TranslateService,
     public propertyWorkersStateService: PropertyWorkersStateService,
@@ -51,6 +59,12 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
       // @ts-ignore
       this.propertyWorkersStateService.updateNameFilter(val);
+    });
+    this.selectCurrentUserClaimsDeviceUsersDelete$.subscribe((data) => {
+      this.deviceUsersDelete = data;
+    });
+    this.selectCurrentUserClaimsDeviceUsersUpdate$.subscribe((data) => {
+      this.deviceUsersUpdate = data;
     });
   }
 
@@ -103,14 +117,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
     {
       header: this.translateService.stream('Actions'),
       field: 'actions',
-      disabled: this.authStateService.currentUserClaims.deviceUsersDelete || this.authStateService.currentUserClaims.deviceUsersDelete,
+      disabled: this.deviceUsersDelete || this.deviceUsersUpdate,
     },
   ];
 
 
-  get userClaims() {
-    return this.authStateService.currentUserClaims;
-  }
+  // get userClaims() {
+  //   return this.authStateService.currentUserClaims;
+  // }
 
   openOtpModal(siteDto: DeviceUserModel) {
     if (!siteDto.unitId) {
