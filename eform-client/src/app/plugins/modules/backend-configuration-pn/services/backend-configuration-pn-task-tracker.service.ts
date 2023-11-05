@@ -3,11 +3,12 @@ import {Observable, take} from 'rxjs';
 import {OperationDataResult, OperationResult} from 'src/app/common/models';
 import {ApiBaseService} from 'src/app/common/services';
 import {
-  WorkOrderCaseCreateModel,
   TaskModel,
   ColumnsModel
 } from '../models';
-import {TaskTrackerFiltrationModel} from '../modules/task-tracker/components/store';
+import {
+  TaskTrackerFiltrationModel
+} from '../state/task-tracker/task-tracker.reducer';
 
 export let BackendConfigurationPnTaskTrackerMethods = {
   TaskTracker: 'api/backend-configuration-pn/task-tracker',

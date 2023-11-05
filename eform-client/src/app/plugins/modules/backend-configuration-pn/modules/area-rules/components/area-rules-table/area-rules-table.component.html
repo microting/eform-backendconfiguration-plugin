@@ -49,9 +49,6 @@
     [rowStriped]="true"
     [showToolbar]="false"
     [showColumnMenuButton]="false"
-    [sortActive]="areaRulesStateService.getActiveSort() | async"
-    [sortDirection]="areaRulesStateService.getActiveSortDirection() | async"
-    (sortChange)="onSortTable($event)"
   >
   </mtx-grid>
 </ng-container>

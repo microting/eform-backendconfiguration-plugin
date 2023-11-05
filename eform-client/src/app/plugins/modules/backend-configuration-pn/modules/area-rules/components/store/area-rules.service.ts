@@ -1,8 +1,8 @@
 import {Injectable} from '@angular/core';
-import {
-  AreaRulesStore,
-  AreaRulesQuery,
-} from './';
+// import {
+//   AreaRulesStore,
+//   AreaRulesQuery,
+// } from './';
 import {Observable} from 'rxjs';
 import {
   OperationDataResult,
@@ -14,9 +14,9 @@ import {updateTableSort} from 'src/app/common/helpers';
 @Injectable({providedIn: 'root'})
 export class AreaRulesStateService {
   constructor(
-    public store: AreaRulesStore,
+    // public store: AreaRulesStore,
     private service: BackendConfigurationPnAreasService,
-    private query: AreaRulesQuery
+    // private query: AreaRulesQuery
   ) {
   }
 
@@ -30,31 +30,33 @@ export class AreaRulesStateService {
     Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
     return this.service
       .getAreaRules({
-        ...this.query.pageSetting.pagination,
+        sort: 'Id',
+        isSortDsc: false,
+        // ...this.query.pageSetting.pagination,
         propertyAreaId: this.propertyAreaId,
       });
   }
 
-  getActiveSort(): Observable<string> {
-    return this.query.selectActiveSort$;
-  }
-
-  getActiveSortDirection(): Observable<'asc' | 'desc'> {
-    return this.query.selectActiveSortDirection$;
-  }
+  // getActiveSort(): Observable<string> {
+  //   return this.query.selectActiveSort$;
+  // }
+  //
+  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
+  //   return this.query.selectActiveSortDirection$;
+  // }
 
   onSortTable(sort: string) {
-    const localPageSetting = updateTableSort(
-      sort,
-      this.query.pageSetting.pagination.sort,
-      this.query.pageSetting.pagination.isSortDsc
-    );
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        isSortDsc: localPageSetting.isSortDsc,
-        sort: localPageSetting.sort,
-      },
-    }));
+  //   const localPageSetting = updateTableSort(
+  //     sort,
+  //     this.query.pageSetting.pagination.sort,
+  //     this.query.pageSetting.pagination.isSortDsc
+  //   );
+  //   this.store.update((state) => ({
+  //     pagination: {
+  //       ...state.pagination,
+  //       isSortDsc: localPageSetting.isSortDsc,
+  //       sort: localPageSetting.sort,
+  //     },
+  //   }));
   }
 }

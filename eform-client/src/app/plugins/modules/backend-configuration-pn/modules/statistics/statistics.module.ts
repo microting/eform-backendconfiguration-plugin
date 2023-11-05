@@ -13,7 +13,6 @@ import {
   AdHocTaskWorkersComponent,
 } from './components';
 import {StatisticsRouting} from './statistics.routing';
-import {statisticsPersistProvider} from './store';
 import {NgxChartsModule} from '@swimlane/ngx-charts';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -39,9 +38,6 @@ import {MtxSelectModule} from '@ng-matero/extensions/select';
     MatCardModule,
     MatFormFieldModule,
     MtxSelectModule,
-  ],
-  providers: [
-    statisticsPersistProvider,
   ],
   exports: [
     PlannedTaskDaysComponent,

@@ -1,10 +1,5 @@
 import { Injectable } from '@angular/core';
-import {
-  TaskManagementStore,
-  TaskManagementQuery,
-  TaskManagementFiltrationModel,
-} from './';
-import { Observable } from 'rxjs';
+import {Observable, zip} from 'rxjs';
 import {
   OperationDataResult,
   SortModel,
@@ -13,13 +8,19 @@ import { updateTableSort } from 'src/app/common/helpers';
 import { getOffset } from 'src/app/common/helpers/pagination.helper';
 import { BackendConfigurationPnTaskManagementService} from '../../../../services';
 import { WorkOrderCaseModel } from '../../../../models';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskManagementFilters,
+  selectTaskManagementPagination
+} from '../../../../state/task-management/task-management.selector';
 
 @Injectable({ providedIn: 'root' })
 export class TaskManagementStateService {
+  private selectTaskManagementPagination$ = this.store.select(selectTaskManagementPagination);
+  private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
   constructor(
-    public store: TaskManagementStore,
+      private store: Store,
     private service: BackendConfigurationPnTaskManagementService,
-    private query: TaskManagementQuery
   ) {}
 
   // getPageSize(): Observable<number> {
@@ -34,38 +35,51 @@ export class TaskManagementStateService {
   //   return this.query.selectNameFilter$;
   // }
 
-  getActiveSort(): Observable<string> {
-    return this.query.selectActiveSort$;
-  }
-
-  getActiveSortDirection(): Observable<'asc' | 'desc'> {
-    return this.query.selectActiveSortDirection$;
-  }
+  // getActiveSort(): Observable<string> {
+  //   return this.query.selectActiveSort$;
+  // }
+  //
+  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
+  //   return this.query.selectActiveSortDirection$;
+  // }
 
   getAllWorkOrderCases(delayed: boolean):
     Observable<OperationDataResult<WorkOrderCaseModel[]>> {
-    return this.service
-      .getWorkOrderCases({
-        ...this.query.pageSetting.pagination,
-        ...this.query.pageSetting.filters,
-        delayed: delayed,
-      });
+    let _filters:any;
+    zip(this.selectTaskManagementFilters$, this.selectTaskManagementPagination$).subscribe(
+        ([filters, pagination]) => {
+          _filters = {
+            ...filters,
+            ...pagination,
+          };
+        }
+    ).unsubscribe();
+    return this.service.getWorkOrderCases({
+      ..._filters,
+      delayed: delayed,
+    });
+    // return this.service
+    //   .getWorkOrderCases({
+    //     ...this.query.pageSetting.pagination,
+    //     ...this.query.pageSetting.filters,
+    //     delayed: delayed,
+    //   });
   }
 
   downloadWordReport() {
-    return this.service
-      .downloadWordReport({
-        ...this.query.pageSetting.pagination,
-        ...this.query.pageSetting.filters,
-      });
+    // return this.service
+    //   .downloadWordReport({
+    //     ...this.query.pageSetting.pagination,
+    //     ...this.query.pageSetting.filters,
+    //   });
   }
 
   downloadExcelReport() {
-    return this.service
-      .downloadExcelReport({
-        ...this.query.pageSetting.pagination,
-        ...this.query.pageSetting.filters,
-      });
+    // return this.service
+    //   .downloadExcelReport({
+    //     ...this.query.pageSetting.pagination,
+    //     ...this.query.pageSetting.filters,
+    //   });
   }
 
   // updateNameFilter(nameFilter: string) {
@@ -92,12 +106,12 @@ export class TaskManagementStateService {
   // }
 
   changePage(offset: number) {
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        offset: offset,
-      },
-    }));
+    // this.store.update((state) => ({
+    //   pagination: {
+    //     ...state.pagination,
+    //     offset: offset,
+    //   },
+    // }));
   }
 
   // onDelete() {
@@ -108,18 +122,18 @@ export class TaskManagementStateService {
   // }
 
   onSortTable(sort: string) {
-    const localPageSettings = updateTableSort(
-      sort,
-      this.query.pageSetting.pagination.sort,
-      this.query.pageSetting.pagination.isSortDsc
-    );
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        isSortDsc: localPageSettings.isSortDsc,
-        sort: localPageSettings.sort,
-      },
-    }));
+    // const localPageSettings = updateTableSort(
+    //   sort,
+    //   this.query.pageSetting.pagination.sort,
+    //   this.query.pageSetting.pagination.isSortDsc
+    // );
+    // this.store.update((state) => ({
+    //   pagination: {
+    //     ...state.pagination,
+    //     isSortDsc: localPageSettings.isSortDsc,
+    //     sort: localPageSettings.sort,
+    //   },
+    // }));
   }
 
   // checkOffset() {
@@ -138,9 +152,9 @@ export class TaskManagementStateService {
   //   }
   // }
 
-  getFiltersAsync(): Observable<TaskManagementFiltrationModel> {
-    return this.query.selectFilters$;
-  }
+  // getFiltersAsync(): Observable<TaskManagementFiltrationModel> {
+  //   return this.query.selectFilters$;
+  // }
 
   /*updateFilters(taskManagementFiltrationModel :TaskManagementFiltrationModel){
     this.store.update((state) => ({
@@ -156,14 +170,14 @@ export class TaskManagementStateService {
     }));
   }*/
 
-  getDisabledButtonsAsync() {
-    return this.query.selectDisableButtons$;
-  }
+  // getDisabledButtonsAsync() {
+  //   return this.query.selectDisableButtons$;
+  // }
 
-  getDisabledButtons() {
-    const storeValue = this.store.getValue()
-    return !storeValue.filters.propertyId;
-  }
+  // getDisabledButtons() {
+  //   const storeValue = this.store.getValue()
+  //   return !storeValue.filters.propertyId;
+  // }
 
   // getPagination(): Observable<PaginationModel> {
   //   return this.query.selectPagination$;

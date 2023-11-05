@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import {FilesFiltrationModel, FilesQuery, FilesStore} from './';
-import { Observable } from 'rxjs';
+import {Observable, zip} from 'rxjs';
 import {
   OperationDataResult,
   Paged,
@@ -14,82 +13,114 @@ import {
   BackendConfigurationPnFilesService,
 } from '../../../services';
 import {tap} from 'rxjs/operators';
+import {Store} from '@ngrx/store';
+import {FilesFiltrationModel} from '../../../state/files/files.reducer';
+import {
+  selectFilesFilters,
+  selectFilesPagination
+} from '../../../state/files/files.selector';
 
 @Injectable({ providedIn: 'root' })
 export class FilesStateService {
+  private selectFilesFilters$ = this.store.select(selectFilesFilters);
+  private selectFilesPagination$ = this.store.select(selectFilesPagination);
   constructor(
-    public store: FilesStore,
+      private store: Store,
     private service: BackendConfigurationPnFilesService,
-    private query: FilesQuery,
   ) {}
 
   getFiles() : Observable<OperationDataResult<Paged<FilesModel>>> {
-    const filters: FilesRequestModel = {
-      sort: this.query.pageSetting.pagination.sort,
-      isSortDsc: this.query.pageSetting.pagination.isSortDsc,
-      nameFilter: this.query.pageSetting.filters.nameFilter ?? '',
-      propertyIds: this.query.pageSetting.filters.propertyIds ?? null,
-      tagIds: this.query.pageSetting.filters.tagIds ?? null,
-      dateFrom: this.query.pageSetting.filters.dateRange.dateFrom,
-      dateTo: this.query.pageSetting.filters.dateRange.dateTo,
-    };
-
-    return this.service.getAllFiles(filters)
-      .pipe(tap(model => {
-        if(model.success && model.model) {
-          this.store.update(() => ({
-            total: model.model.total,
-          }));
+    let _filters: FilesRequestModel;
+    zip(this.selectFilesFilters$, this.selectFilesPagination$).subscribe(
+        ([filters, pagination]) => {
+          _filters = {
+            ..._filters,
+            ...filters,
+            ...pagination,
+          };
         }
-      }));
+    ).unsubscribe();
+    return this.service.getAllFiles(_filters).pipe(
+        tap((data) => {
+          if (data && data.success) {
+            this.store.dispatch(
+                {type: '[Files] Update Pagination Total Items Count', total: data.model.total ?? ''}
+            )
+            // this.store.update((state) => ({
+            //   total: data.model.total,
+            // }));
+          }
+        })
+    );
+    // this.selectFilesFilters$.subscribe((filters) => {
+    //   _filters = ;
+    // }).unsubscribe();
+    //  FilesRequestModel = {
+    //   sort: this.query.pageSetting.pagination.sort,
+    //   isSortDsc: this.query.pageSetting.pagination.isSortDsc,
+    //   nameFilter: this.query.pageSetting.filters.nameFilter ?? '',
+    //   propertyIds: this.query.pageSetting.filters.propertyIds ?? null,
+    //   tagIds: this.query.pageSetting.filters.tagIds ?? null,
+    //   dateFrom: this.query.pageSetting.filters.dateRange.dateFrom,
+    //   dateTo: this.query.pageSetting.filters.dateRange.dateTo,
+    // };
+    //
+    // return this.service.getAllFiles(filters)
+    //   .pipe(tap(model => {
+    //     if(model.success && model.model) {
+    //       this.store.update(() => ({
+    //         total: model.model.total,
+    //       }));
+    //     }
+    //   }));
   }
 
-  getFiltersAsync(): Observable<FilesFiltrationModel> {
-    return this.query.selectFilters$;
-  }
-
-  getActiveSort(): Observable<string> {
-    return this.query.selectActiveSort$;
-  }
-
-  getActiveSortDirection(): Observable<'asc' | 'desc'> {
-    return this.query.selectActiveSortDirection$;
-  }
+  // getFiltersAsync(): Observable<FilesFiltrationModel> {
+  //   return this.query.selectFilters$;
+  // }
+  //
+  // getActiveSort(): Observable<string> {
+  //   return this.query.selectActiveSort$;
+  // }
+  //
+  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
+  //   return this.query.selectActiveSortDirection$;
+  // }
 
   updateFilters(filters: FilesFiltrationModel) {
-    this.store.update((state) => ({
-      filters: {
-        ...state.filters,
-        ...filters,
-      },
-      pagination: {
-        ...state.pagination,
-        offset: 0,
-      },
-    }));
+    // this.store.update((state) => ({
+    //   filters: {
+    //     ...state.filters,
+    //     ...filters,
+    //   },
+    //   pagination: {
+    //     ...state.pagination,
+    //     offset: 0,
+    //   },
+    // }));
   }
 
   changePage(offset: number) {
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        offset: offset,
-      },
-    }));
+    // this.store.update((state) => ({
+    //   pagination: {
+    //     ...state.pagination,
+    //     offset: offset,
+    //   },
+    // }));
   }
 
   onSortTable(sort: string) {
-    const localPageSettings = updateTableSort(
-      sort,
-      this.query.pageSetting.pagination.sort,
-      this.query.pageSetting.pagination.isSortDsc
-    );
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        isSortDsc: localPageSettings.isSortDsc,
-        sort: localPageSettings.sort,
-      },
-    }));
+    // const localPageSettings = updateTableSort(
+    //   sort,
+    //   this.query.pageSetting.pagination.sort,
+    //   this.query.pageSetting.pagination.isSortDsc
+    // );
+    // this.store.update((state) => ({
+    //   pagination: {
+    //     ...state.pagination,
+    //     isSortDsc: localPageSettings.isSortDsc,
+    //     sort: localPageSettings.sort,
+    //   },
+    // }));
   }
 }
