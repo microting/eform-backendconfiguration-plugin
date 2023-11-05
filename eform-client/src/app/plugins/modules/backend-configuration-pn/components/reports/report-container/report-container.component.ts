@@ -13,13 +13,13 @@ import {
   SharedTagModel,
 } from 'src/app/common/models';
 import {EmailRecipientsService, TemplateFilesService} from 'src/app/common/services';
-import {ReportQuery} from '../store';
 import {AuthStateService} from 'src/app/common/store';
 import {Gallery, GalleryItem, ImageItem} from '@ngx-gallery/core';
 import {Lightbox} from '@ngx-gallery/lightbox';
 import {ViewportScroller} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../services';
 import {catchError, tap} from 'rxjs/operators';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -51,12 +51,12 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     private reportService: BackendConfigurationPnReportService,
     private toastrService: ToastrService,
     private router: Router,
-    private planningsReportQuery: ReportQuery,
     public authStateService: AuthStateService,
     public gallery: Gallery,
     public lightbox: Lightbox,
     private imageService: TemplateFilesService,
-    private viewportScroller: ViewportScroller
+    private viewportScroller: ViewportScroller,
+    private store: Store,
   ) {
     this.activateRoute.params.subscribe((params) => {
       this.dateFrom = params['dateFrom'];
@@ -64,25 +64,25 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
       this.range.push(parseISO(params['dateFrom']));
       this.range.push(parseISO(params['dateTo']));
       this.startWithParams = !!(this.dateTo && this.dateFrom);
-      const model = {
-        dateFrom: params['dateFrom'],
-        dateTo: params['dateTo'],
-        tagIds: planningsReportQuery.pageSetting.filters.tagIds,
-        type: '',
-        version2: false
-      };
-      if (model.dateFrom !== undefined) {
-        this.onGenerateReport(model);
-      }
+      // const model = {
+      //   dateFrom: params['dateFrom'],
+      //   dateTo: params['dateTo'],
+      //   tagIds: planningsReportQuery.pageSetting.filters.tagIds,
+      //   type: '',
+      //   version2: false
+      // };
+      // if (model.dateFrom !== undefined) {
+      //   this.onGenerateReport(model);
+      // }
     });
-    this.observableReportsModel.subscribe(x => {
-      if (x.length && this.startWithParams) {
-        const task = _ => this.planningsReportQuery.selectScrollPosition$
-          .subscribe(value => this.viewportScroller.scrollToPosition(value));
-        asyncScheduler.schedule(task, 1000);
-        this.startWithParams = false;
-      }
-    });
+    // this.observableReportsModel.subscribe(x => {
+    //   if (x.length && this.startWithParams) {
+    //     const task = _ => this.planningsReportQuery.selectScrollPosition$
+    //       .subscribe(value => this.viewportScroller.scrollToPosition(value));
+    //     asyncScheduler.schedule(task, 1000);
+    //     this.startWithParams = false;
+    //   }
+    // });
   }
 
   ngOnInit() {
@@ -100,23 +100,23 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   onGenerateReport(model: ReportPnGenerateModel) {
     this.dateFrom = model.dateFrom;
     this.dateTo = model.dateTo;
-    this.generateReportSub$ = this.reportService
-      .generateReport({
-        dateFrom: model.dateFrom,
-        dateTo: model.dateTo,
-        tagIds: this.planningsReportQuery.pageSetting.filters.tagIds,
-        type: '',
-        version2: false
-      })
-      .subscribe((data) => {
-        if (data && data.success) {
-          this.reportsModel = data.model;
-          this.isDescriptionBlockCollapsed = this.reportsModel.map(_ => {
-            return true;
-          });
-          this.observableReportsModel.next(data.model);
-        }
-      });
+    // this.generateReportSub$ = this.reportService
+    //   .generateReport({
+    //     dateFrom: model.dateFrom,
+    //     dateTo: model.dateTo,
+    //     tagIds: this.planningsReportQuery.pageSetting.filters.tagIds,
+    //     type: '',
+    //     version2: false
+    //   })
+    //   .subscribe((data) => {
+    //     if (data && data.success) {
+    //       this.reportsModel = data.model;
+    //       this.isDescriptionBlockCollapsed = this.reportsModel.map(_ => {
+    //         return true;
+    //       });
+    //       this.observableReportsModel.next(data.model);
+    //     }
+    //   });
   }
 
   onDownloadReport(model: ReportPnGenerateModel) {

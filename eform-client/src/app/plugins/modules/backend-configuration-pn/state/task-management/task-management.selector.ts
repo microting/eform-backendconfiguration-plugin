@@ -17,3 +17,5 @@ export const selectTaskManagementFilters =
     createSelector(selectTaskManagement, (state) => state.filters);
 export const selectTaskManagementPropertyId =
     createSelector(selectTaskManagement, (state) => state.filters.propertyId);
+export const selectTaskManagementPropertyIdIsNullOrUndefined =
+    createSelector(selectTaskManagement, (state) => state.filters.propertyId === null || state.filters.propertyId === undefined);

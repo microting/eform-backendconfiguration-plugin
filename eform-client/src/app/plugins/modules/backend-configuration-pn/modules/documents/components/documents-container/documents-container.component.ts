@@ -27,8 +27,8 @@ import {TranslateService} from '@ngx-translate/core';
 import {skip, tap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
-import {selectCurrentUserLanguageId} from "src/app/state/auth/auth.selector";
-import {Store} from "@ngrx/store";
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-documents-container',
@@ -82,38 +82,38 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     // this.selectedLanguage = applicationLanguagesTranslated.find(
     //   (x) => x.locale === localeService.getCurrentUserLocale()
     // ).id;
-    this.route.queryParams.subscribe(x => {
-      if (x && x.showDiagram) {
-        this.showDiagram = x.showDiagram;
-        this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
-        this.getDocumentUpdatedDays();
-      } else {
-        this.showDiagram = false;
-      }
-    });
+    // this.route.queryParams.subscribe(x => {
+    //   if (x && x.showDiagram) {
+    //     this.showDiagram = x.showDiagram;
+    //     this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
+    //     this.getDocumentUpdatedDays();
+    //   } else {
+    //     this.showDiagram = false;
+    //   }
+    // });
   }
 
   ngOnInit(): void {
     this.getProperties();
-    this.getActiveSortDirectionSub$ = this.documentsStateService.getActiveSortDirection()
-      .pipe(
-        skip(1), // skip initial value
-        tap(() => {
-          this.updateTable();
-        }),
-      )
-      .subscribe();
-    this.getFiltersAsyncSub$ = this.documentsStateService.getFiltersAsync()
-      .pipe(
-        skip(1), // skip initial value
-        tap(() => {
-          if (this.showDiagram) {
-            this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
-            this.getDocumentUpdatedDays();
-          }
-        }),
-      )
-      .subscribe();
+    // this.getActiveSortDirectionSub$ = this.documentsStateService.getActiveSortDirection()
+    //   .pipe(
+    //     skip(1), // skip initial value
+    //     tap(() => {
+    //       this.updateTable();
+    //     }),
+    //   )
+    //   .subscribe();
+    // this.getFiltersAsyncSub$ = this.documentsStateService.getFiltersAsync()
+    //   .pipe(
+    //     skip(1), // skip initial value
+    //     tap(() => {
+    //       if (this.showDiagram) {
+    //         this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
+    //         this.getDocumentUpdatedDays();
+    //       }
+    //     }),
+    //   )
+    //   .subscribe();
   }
 
   ngOnDestroy(): void {

@@ -11,7 +11,6 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {parseISO} from 'date-fns';
 import {SharedTagModel,} from 'src/app/common/models';
 import {EmailRecipientsService, TemplateFilesService} from 'src/app/common/services';
-import {ReportQuery} from '../store';
 import {AuthStateService} from 'src/app/common/store';
 import {Gallery, GalleryItem, ImageItem} from '@ngx-gallery/core';
 import {Lightbox} from '@ngx-gallery/lightbox';
@@ -48,7 +47,6 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     private reportService: BackendConfigurationPnReportService,
     private toastrService: ToastrService,
     private router: Router,
-    private planningsReportQuery: ReportQuery,
     public authStateService: AuthStateService,
     public gallery: Gallery,
     public lightbox: Lightbox,
@@ -61,25 +59,25 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
       this.range.push(parseISO(params['dateFrom']));
       this.range.push(parseISO(params['dateTo']));
       this.startWithParams = !!(this.dateTo && this.dateFrom);
-      const model = {
-        dateFrom: params['dateFrom'],
-        dateTo: params['dateTo'],
-        tagIds: planningsReportQuery.pageSetting.filters.tagIds,
-        type: '',
-        version2: true
-      };
-      if (model.dateFrom !== undefined) {
-        this.onGenerateReport(model);
-      }
+      // const model = {
+      //   dateFrom: params['dateFrom'],
+      //   dateTo: params['dateTo'],
+      //   tagIds: planningsReportQuery.pageSetting.filters.tagIds,
+      //   type: '',
+      //   version2: true
+      // };
+      // if (model.dateFrom !== undefined) {
+      //   this.onGenerateReport(model);
+      // }
     });
-    this.observableReportsModel.subscribe(x => {
-      if (x.length && this.startWithParams) {
-        const task = _ => this.planningsReportQuery.selectScrollPosition$
-          .subscribe(value => this.viewportScroller.scrollToPosition(value));
-        asyncScheduler.schedule(task, 1000);
-        this.startWithParams = false;
-      }
-    });
+    // this.observableReportsModel.subscribe(x => {
+    //   if (x.length && this.startWithParams) {
+    //     const task = _ => this.planningsReportQuery.selectScrollPosition$
+    //       .subscribe(value => this.viewportScroller.scrollToPosition(value));
+    //     asyncScheduler.schedule(task, 1000);
+    //     this.startWithParams = false;
+    //   }
+    // });
   }
 
   ngOnInit() {
@@ -97,20 +95,20 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   onGenerateReport(model: ReportPnGenerateModel) {
     this.dateFrom = model.dateFrom;
     this.dateTo = model.dateTo;
-    this.generateReportSub$ = this.reportService
-      .generateNewReport({
-        dateFrom: model.dateFrom,
-        dateTo: model.dateTo,
-        tagIds: this.planningsReportQuery.pageSetting.filters.tagIds,
-        type: '',
-        version2: true
-      })
-      .subscribe((data) => {
-        if (data && data.success) {
-          this.reportsModel = data.model;
-          this.observableReportsModel.next(data.model);
-        }
-      });
+    // this.generateReportSub$ = this.reportService
+    //   .generateNewReport({
+    //     dateFrom: model.dateFrom,
+    //     dateTo: model.dateTo,
+    //     tagIds: this.planningsReportQuery.pageSetting.filters.tagIds,
+    //     type: '',
+    //     version2: true
+    //   })
+    //   .subscribe((data) => {
+    //     if (data && data.success) {
+    //       this.reportsModel = data.model;
+    //       this.observableReportsModel.next(data.model);
+    //     }
+    //   });
   }
 
   onDownloadReport(model: ReportPnGenerateModel) {

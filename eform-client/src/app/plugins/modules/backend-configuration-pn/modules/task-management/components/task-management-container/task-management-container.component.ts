@@ -25,6 +25,11 @@ import {catchError, skip, tap} from 'rxjs/operators';
 import {StatisticsStateService} from '../../../statistics/store';
 import {ActivatedRoute} from '@angular/router';
 import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskManagementPropertyId,
+  selectTaskManagementPropertyIdIsNullOrUndefined
+} from '../../../../state/task-management/task-management.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -62,8 +67,11 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     }
     return '';
   }
+  public selectTaskManagementPropertyIdIsNullOrUndefined$ = this.store.select(selectTaskManagementPropertyIdIsNullOrUndefined);
+  public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
 
   constructor(
+    private store: Store,
     private loaderService: LoaderService,
     public taskManagementStateService: TaskManagementStateService,
     public taskManagementService: BackendConfigurationPnTaskManagementService,
@@ -78,31 +86,31 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   ) {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
-    this.route.queryParams.subscribe(x => {
-      if (x && x.diagramForShow) {
-        this.diagramForShow = x.diagramForShow;
-        const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
-        this.selectedPropertyId = propertyId !== -1 ? propertyId : null;
-        this.getStats();
-      } else {
-        this.diagramForShow = '';
-      }
-    });
-    this.getPropertyIdAsyncSub$ = taskManagementStateService.getFiltersAsync()
-      .pipe(skip(1))
-      .subscribe(filters => {
-        if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
-          this.selectedPropertyId = filters.propertyId;
-          if (this.diagramForShow) {
-            this.getStats();
-          }
-        } else if (filters.propertyId === -1 && this.selectedPropertyId !== null) {
-          this.selectedPropertyId = null;
-          if (this.diagramForShow) {
-            this.getStats();
-          }
-        }
-      });
+    // this.route.queryParams.subscribe(x => {
+    //   if (x && x.diagramForShow) {
+    //     this.diagramForShow = x.diagramForShow;
+    //     const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
+    //     this.selectedPropertyId = propertyId !== -1 ? propertyId : null;
+    //     this.getStats();
+    //   } else {
+    //     this.diagramForShow = '';
+    //   }
+    // });
+    // this.getPropertyIdAsyncSub$ = taskManagementStateService.getFiltersAsync()
+    //   .pipe(skip(1))
+    //   .subscribe(filters => {
+    //     if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
+    //       this.selectedPropertyId = filters.propertyId;
+    //       if (this.diagramForShow) {
+    //         this.getStats();
+    //       }
+    //     } else if (filters.propertyId === -1 && this.selectedPropertyId !== null) {
+    //       this.selectedPropertyId = null;
+    //       if (this.diagramForShow) {
+    //         this.getStats();
+    //       }
+    //     }
+    //   });
   }
 
   ngOnInit() {
@@ -166,35 +174,37 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   }
 
   onDownloadWordReport() {
-    const filters = this.taskManagementStateService.store.getValue().filters;
-    this.downloadWordReportSub$ = this.taskManagementStateService
-      .downloadWordReport()
-      .pipe(
-        tap((data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.docx`);
-        }),
-        catchError((err, caught) => {
-          this.toasterService.error('Error downloading report');
-          return caught;
-        })
-      )
-      .subscribe();
+    // const filters = this.taskManagementStateService.store.getValue().filters;
+    // this.downloadWordReportSub$ = this.taskManagementStateService
+    //   .downloadWordReport()
+    //   .pipe(
+    //     tap((data) => {
+    //       saveAs(data, `${this.properties.find(x =>
+    //       x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.docx`);
+    //     }),
+    //     catchError((err, caught) => {
+    //       this.toasterService.error('Error downloading report');
+    //       return caught;
+    //     })
+    //   )
+    //   .subscribe();
   }
 
   onDownloadExcelReport() {
-    const filters = this.taskManagementStateService.store.getValue().filters;
-    this.downloadExcelReportSub$ = this.taskManagementStateService
-      .downloadExcelReport()
-      .pipe(
-        tap((data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.xlsx`);
-        }),
-        catchError((_, caught) => {
-          this.toasterService.error('Error downloading report');
-          return caught;
-        }),
-      )
-      .subscribe();
+    // const filters = this.taskManagementStateService.store.getValue().filters;
+    // this.downloadExcelReportSub$ = this.taskManagementStateService
+    //   .downloadExcelReport()
+    //   .pipe(
+    //     tap((data) => {
+    //       saveAs(data, `${this.properties.find(x =>
+    //       x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.xlsx`);
+    //     }),
+    //     catchError((_, caught) => {
+    //       this.toasterService.error('Error downloading report');
+    //       return caught;
+    //     }),
+    //   )
+    //   .subscribe();
   }
 
   getAdHocTaskPriorities() {

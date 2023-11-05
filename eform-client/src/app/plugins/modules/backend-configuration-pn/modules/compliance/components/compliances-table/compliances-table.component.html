@@ -6,7 +6,5 @@
   [rowStriped]="true"
   [showToolbar]="false"
   [showColumnMenuButton]="false"
-  [sortActive]="compliancesStateService.getActiveSort() | async"
-  [sortDirection]="compliancesStateService.getActiveSortDirection() | async"
   (sortChange)="sortTable($event)">
 </mtx-grid>

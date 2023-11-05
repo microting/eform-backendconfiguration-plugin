@@ -53,26 +53,26 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     let propertyIds: number[] = [];
-    this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
-      .pipe(
-        tap(filters => {
-          if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
-            propertyIds = filters.propertyIds;
-          }
-          this.updateTable();
-          // else {
-          //   propertyIds = [];
-          //   this.updateTable();
-          // }
-        },),
-        tap(_ => {
-          // if (this.showDiagram) {
-          //   this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
-          //   this.getPlannedTaskWorkers();
-          // }
-        })
-      )
-      .subscribe();
+    // this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
+    //   .pipe(
+    //     tap(filters => {
+    //       if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
+    //         propertyIds = filters.propertyIds;
+    //       }
+    //       this.updateTable();
+    //       // else {
+    //       //   propertyIds = [];
+    //       //   this.updateTable();
+    //       // }
+    //     },),
+    //     tap(_ => {
+    //       // if (this.showDiagram) {
+    //       //   this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+    //       //   this.getPlannedTaskWorkers();
+    //       // }
+    //     })
+    //   )
+    //   .subscribe();
     //this.getWorkerPropertiesAssignments();
   }
 

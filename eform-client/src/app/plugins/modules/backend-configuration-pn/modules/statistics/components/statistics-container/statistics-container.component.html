@@ -9,7 +9,7 @@
         [items]="properties"
         [bindLabel]="'name'"
         [bindValue]="'id'"
-        [value]="statisticsStateService.getPropertyIdAsync() | async"
+        [value]="selectTaskManagementPropertyId$ | async"
         (change)="changeProperty($event)"
         [clearable]="true"
       />

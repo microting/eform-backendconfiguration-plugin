@@ -122,23 +122,23 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
-        this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;
+        // this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;
         this.getPlannedTaskDays();
       } else {
         this.showDiagram = false;
       }
     });
-    this.getPropertyIdAsyncSub$ = taskTrackerStateService.getFiltersAsync()
-      .pipe(skip(1))
-      .subscribe(filters => {
-        if (filters.propertyIds[0] && filters.propertyIds[0] !== this.selectedPropertyId && this.showDiagram) {
-          this.selectedPropertyId = filters.propertyIds[0];
-          this.getPlannedTaskDays();
-        } else if (!filters.propertyIds[0] && this.showDiagram) {
-          this.selectedPropertyId = null;
-          this.getPlannedTaskDays();
-        }
-      });
+    // this.getPropertyIdAsyncSub$ = taskTrackerStateService.getFiltersAsync()
+    //   .pipe(skip(1))
+    //   .subscribe(filters => {
+    //     if (filters.propertyIds[0] && filters.propertyIds[0] !== this.selectedPropertyId && this.showDiagram) {
+    //       this.selectedPropertyId = filters.propertyIds[0];
+    //       this.getPlannedTaskDays();
+    //     } else if (!filters.propertyIds[0] && this.showDiagram) {
+    //       this.selectedPropertyId = null;
+    //       this.getPlannedTaskDays();
+    //     }
+    //   });
   }
 
   ngOnInit() {
@@ -318,19 +318,19 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   }
 
   onDownloadExcelReport() {
-    const filters = this.taskTrackerStateService.store.getValue().filters;
-    this.downloadExcelReportSub$ = this.taskTrackerService
-      .downloadExcelReport(filters)
-      .pipe(
-        tap((data) => {
-          saveAs(data, `TT_${format(new Date(), 'yyyy/MM/dd')}_report.xlsx`);
-        }),
-        catchError((_, caught) => {
-          this.toasterService.error('Error downloading report');
-          return caught;
-        }),
-      )
-      .subscribe();
+    // const filters = this.taskTrackerStateService.store.getValue().filters;
+    // this.downloadExcelReportSub$ = this.taskTrackerService
+    //   .downloadExcelReport(filters)
+    //   .pipe(
+    //     tap((data) => {
+    //       saveAs(data, `TT_${format(new Date(), 'yyyy/MM/dd')}_report.xlsx`);
+    //     }),
+    //     catchError((_, caught) => {
+    //       this.toasterService.error('Error downloading report');
+    //       return caught;
+    //     }),
+    //   )
+    //   .subscribe();
   }
 
   getProperties() {

@@ -25,7 +25,6 @@ import {MatInputModule} from '@angular/material/input';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatCardModule} from '@angular/material/card';
 import {MatTableModule} from '@angular/material/table';
-import {areaRulesPersistProvider} from './components/store';
 
 @NgModule({
   declarations: [
@@ -57,9 +56,6 @@ import {areaRulesPersistProvider} from './components/store';
     MatCardModule,
     MatTableModule,
   ],
-  providers: [
-    areaRulesPersistProvider,
-  ]
 })
 export class AreaRulesModule {
 }

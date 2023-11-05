@@ -66,62 +66,62 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
           value: TaskWizardStatusesEnum[key],
         };
       });
-    this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
-      .pipe(
-        debounce(x => interval(200)),
-        filter(value => !R.equals(value, this.filtersForm.getRawValue())),
-        tap(filters => {
-          this.propertyIdsChange(filters.propertyIds);
-          this.folderIdsChange(filters.folderIds);
-          this.tagIdsChange(filters.tagIds);
-          this.statusChange(filters.status);
-          this.assignToIdsChange(filters.assignToIds);
-        })).subscribe();
+    // this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
+    //   .pipe(
+    //     debounce(x => interval(200)),
+    //     filter(value => !R.equals(value, this.filtersForm.getRawValue())),
+    //     tap(filters => {
+    //       this.propertyIdsChange(filters.propertyIds);
+    //       this.folderIdsChange(filters.folderIds);
+    //       this.tagIdsChange(filters.tagIds);
+    //       this.statusChange(filters.status);
+    //       this.assignToIdsChange(filters.assignToIds);
+    //     })).subscribe();
 
-    this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
-      debounce(x => interval(200)),
-      filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.propertyIds)),
-      tap(value => {
-        this.propertyIdsChange(value);
-      }),
-      tap(() => this.updateTable.emit())
-    ).subscribe();
+    // this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
+    //   debounce(x => interval(200)),
+    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.propertyIds)),
+    //   tap(value => {
+    //     this.propertyIdsChange(value);
+    //   }),
+    //   tap(() => this.updateTable.emit())
+    // ).subscribe();
 
-    this.valueChangesFolderIdsSub$ = this.filtersForm.get('folderIds').valueChanges.pipe(
-      debounce(x => interval(200)),
-      filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.folderIds)),
-      tap(value => {
-        this.folderIdsChange(value);
-      }),
-      tap(() => this.updateTable.emit())
-    ).subscribe();
-
-    this.valueChangesTagIdsSub$ = this.filtersForm.get('tagIds').valueChanges.pipe(
-      debounce(x => interval(200)),
-      filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.tagIds)),
-      tap(value => {
-        this.tagIdsChange(value);
-      }),
-      tap(() => this.updateTable.emit())
-    ).subscribe();
-
-    this.valueChangesAssignToIdsSub$ = this.filtersForm.get('assignToIds').valueChanges.pipe(
-      debounce(x => interval(200)),
-      filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.assignToIds)),
-      tap(value => {
-        this.assignToIdsChange(value);
-      }),
-      tap(() => this.updateTable.emit())
-    ).subscribe();
-
-    this.valueChangesStatusSub$ = this.filtersForm.get('status').valueChanges.pipe(
-      debounce(x => interval(200)),
-      filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.status)),
-      tap(value => {
-        this.statusChange(value);
-      }),
-      tap(() => this.updateTable.emit())
-    ).subscribe();
+    // this.valueChangesFolderIdsSub$ = this.filtersForm.get('folderIds').valueChanges.pipe(
+    //   debounce(x => interval(200)),
+    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.folderIds)),
+    //   tap(value => {
+    //     this.folderIdsChange(value);
+    //   }),
+    //   tap(() => this.updateTable.emit())
+    // ).subscribe();
+    //
+    // this.valueChangesTagIdsSub$ = this.filtersForm.get('tagIds').valueChanges.pipe(
+    //   debounce(x => interval(200)),
+    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.tagIds)),
+    //   tap(value => {
+    //     this.tagIdsChange(value);
+    //   }),
+    //   tap(() => this.updateTable.emit())
+    // ).subscribe();
+    //
+    // this.valueChangesAssignToIdsSub$ = this.filtersForm.get('assignToIds').valueChanges.pipe(
+    //   debounce(x => interval(200)),
+    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.assignToIds)),
+    //   tap(value => {
+    //     this.assignToIdsChange(value);
+    //   }),
+    //   tap(() => this.updateTable.emit())
+    // ).subscribe();
+    //
+    // this.valueChangesStatusSub$ = this.filtersForm.get('status').valueChanges.pipe(
+    //   debounce(x => interval(200)),
+    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.status)),
+    //   tap(value => {
+    //     this.statusChange(value);
+    //   }),
+    //   tap(() => this.updateTable.emit())
+    // ).subscribe();
   }
 
   propertyIdsChange(value: number[]) {

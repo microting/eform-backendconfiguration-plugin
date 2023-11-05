@@ -62,220 +62,220 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.getProperties();
-    this.selectFiltersSub$ = this.taskManagementStateService
-      .getFiltersAsync()
-      .pipe(take(1)) // get only one time
-      .subscribe((filters) => {
-        if (!this.filtersForm) {
-          this.filtersForm = new FormGroup({
-            propertyId: new FormControl(filters.propertyId),
-            areaName: new FormControl({
-              value: filters.areaName,
-              disabled: !filters.propertyId || filters.propertyId === -1,
-            }),
-            // areaNameEdit: new FormControl({
-            //   // value: filters.areaName,
-            //   disabled: !filters.propertyId || filters.propertyId === -1,
-            // }),
-            createdBy: new FormControl({
-              value: filters.createdBy,
-              disabled: !filters.propertyId || filters.propertyId === -1,
-            }),
-            lastAssignedTo: new FormControl({
-              value: filters.lastAssignedTo,
-              disabled: !filters.propertyId || filters.propertyId === -1,
-            }),
-            status: new FormControl({
-              value: filters.status,
-              disabled: !filters.propertyId,
-            }),
-            date: new FormGroup({
-              dateFrom: new FormControl({
-                value: parse(filters.dateFrom as string, PARSING_DATE_FORMAT, new Date),
-                disabled: !filters.propertyId,
-              }),
-              dateTo: new FormControl({
-                value: parse(filters.dateTo as string, PARSING_DATE_FORMAT, new Date),
-                disabled: !filters.propertyId,
-              }),
-            }),
-            priority: new FormControl({
-              value: filters.priority,
-              disabled: !filters.propertyId,
-            }),
-          });
-          if (filters.propertyId && filters.propertyId !== -1) {
-            this.getPropertyAreas(filters.propertyId);
-            this.getSites(filters.propertyId);
-          }
-        }
-      });
-    this.propertyIdValueChangesSub$ = this.filtersForm
-      .get('propertyId')
-      .valueChanges.subscribe((value: number) => {
-        if (
-          this.taskManagementStateService.store.getValue().filters
-            .propertyId !== value
-        ) {
-          if(value !== -1) {
-            this.getPropertyAreas(value);
-            this.getSites(value);
-          }
-          this.taskManagementStateService.store.update((state) => ({
-            filters: {
-              ...state.filters,
-              propertyId: value,
-              areaName: null,
-              dateFrom: null,
-              dateTo: null,
-              status: null,
-              createdBy: null,
-              lastAssignedTo: null,
-            },
-          }));
-          this.filtersForm
-            .get('areaName')
-            .setValue(null, {emitEvent: false});
-          this.filtersForm
-            .get('createdBy')
-            .setValue(null, {emitEvent: false});
-          this.filtersForm
-            .get('lastAssignedTo')
-            .setValue(null, {emitEvent: false});
-          this.filtersForm
-            .get('status')
-            .setValue(null, {emitEvent: false});
-          this.filtersForm.get('date.dateFrom').setValue(null, {emitEvent: false});
-          this.filtersForm.get('date.dateTo').setValue(null, {emitEvent: false});
-          if(value !== -1) {
-            this.filtersForm.get('areaName').enable({emitEvent: false});
-          } else {
-            this.filtersForm.get('areaName').disable({emitEvent: false});
-          }
-          if(value !== -1) {
-            this.filtersForm.get('createdBy').enable({emitEvent: false});
-          } else {
-            this.filtersForm.get('createdBy').disable({emitEvent: false});}
-          if(value !== -1) {
-            this.filtersForm.get('lastAssignedTo').enable({emitEvent: false});
-          } else {
-            this.filtersForm.get('lastAssignedTo').disable({emitEvent: false});}
-          this.filtersForm.get('status').enable({emitEvent: false});
-          this.filtersForm.get('date').enable({emitEvent: false});
-        }
-      });
-    this.areaNameValueChangesSub$ = this.filtersForm
-      .get('areaName')
-      .valueChanges.subscribe((value: string) => {
-        if (
-          this.taskManagementStateService.store.getValue().filters.areaName !==
-          value
-        ) {
-          this.taskManagementStateService.store.update((state) => ({
-            filters: {
-              ...state.filters,
-              areaName: value,
-            },
-          }));
-        }
-        /*if (value) {
-          this.filtersForm.get('createdBy').enable({ emitEvent: false });
-          this.filtersForm.get('lastAssignedTo').enable({ emitEvent: false });
-          this.filtersForm.get('status').enable({ emitEvent: false });
-          this.filtersForm.get('date').enable({ emitEvent: false });
-        } else {
-          this.filtersForm.get('createdBy').disable({ emitEvent: false });
-          this.filtersForm.get('lastAssignedTo').disable({ emitEvent: false });
-          this.filtersForm.get('status').disable({ emitEvent: false });
-          this.filtersForm.get('date').disable({ emitEvent: false });
-        }*/
-      });
+    // this.selectFiltersSub$ = this.taskManagementStateService
+    //   .getFiltersAsync()
+    //   .pipe(take(1)) // get only one time
+    //   .subscribe((filters) => {
+    //     if (!this.filtersForm) {
+    //       this.filtersForm = new FormGroup({
+    //         propertyId: new FormControl(filters.propertyId),
+    //         areaName: new FormControl({
+    //           value: filters.areaName,
+    //           disabled: !filters.propertyId || filters.propertyId === -1,
+    //         }),
+    //         // areaNameEdit: new FormControl({
+    //         //   // value: filters.areaName,
+    //         //   disabled: !filters.propertyId || filters.propertyId === -1,
+    //         // }),
+    //         createdBy: new FormControl({
+    //           value: filters.createdBy,
+    //           disabled: !filters.propertyId || filters.propertyId === -1,
+    //         }),
+    //         lastAssignedTo: new FormControl({
+    //           value: filters.lastAssignedTo,
+    //           disabled: !filters.propertyId || filters.propertyId === -1,
+    //         }),
+    //         status: new FormControl({
+    //           value: filters.status,
+    //           disabled: !filters.propertyId,
+    //         }),
+    //         date: new FormGroup({
+    //           dateFrom: new FormControl({
+    //             value: parse(filters.dateFrom as string, PARSING_DATE_FORMAT, new Date),
+    //             disabled: !filters.propertyId,
+    //           }),
+    //           dateTo: new FormControl({
+    //             value: parse(filters.dateTo as string, PARSING_DATE_FORMAT, new Date),
+    //             disabled: !filters.propertyId,
+    //           }),
+    //         }),
+    //         priority: new FormControl({
+    //           value: filters.priority,
+    //           disabled: !filters.propertyId,
+    //         }),
+    //       });
+    //       if (filters.propertyId && filters.propertyId !== -1) {
+    //         this.getPropertyAreas(filters.propertyId);
+    //         this.getSites(filters.propertyId);
+    //       }
+    //     }
+    //   });
+    // this.propertyIdValueChangesSub$ = this.filtersForm
+    //   .get('propertyId')
+    //   .valueChanges.subscribe((value: number) => {
+    //     if (
+    //       this.taskManagementStateService.store.getValue().filters
+    //         .propertyId !== value
+    //     ) {
+    //       if(value !== -1) {
+    //         this.getPropertyAreas(value);
+    //         this.getSites(value);
+    //       }
+    //       this.taskManagementStateService.store.update((state) => ({
+    //         filters: {
+    //           ...state.filters,
+    //           propertyId: value,
+    //           areaName: null,
+    //           dateFrom: null,
+    //           dateTo: null,
+    //           status: null,
+    //           createdBy: null,
+    //           lastAssignedTo: null,
+    //         },
+    //       }));
+    //       this.filtersForm
+    //         .get('areaName')
+    //         .setValue(null, {emitEvent: false});
+    //       this.filtersForm
+    //         .get('createdBy')
+    //         .setValue(null, {emitEvent: false});
+    //       this.filtersForm
+    //         .get('lastAssignedTo')
+    //         .setValue(null, {emitEvent: false});
+    //       this.filtersForm
+    //         .get('status')
+    //         .setValue(null, {emitEvent: false});
+    //       this.filtersForm.get('date.dateFrom').setValue(null, {emitEvent: false});
+    //       this.filtersForm.get('date.dateTo').setValue(null, {emitEvent: false});
+    //       if(value !== -1) {
+    //         this.filtersForm.get('areaName').enable({emitEvent: false});
+    //       } else {
+    //         this.filtersForm.get('areaName').disable({emitEvent: false});
+    //       }
+    //       if(value !== -1) {
+    //         this.filtersForm.get('createdBy').enable({emitEvent: false});
+    //       } else {
+    //         this.filtersForm.get('createdBy').disable({emitEvent: false});}
+    //       if(value !== -1) {
+    //         this.filtersForm.get('lastAssignedTo').enable({emitEvent: false});
+    //       } else {
+    //         this.filtersForm.get('lastAssignedTo').disable({emitEvent: false});}
+    //       this.filtersForm.get('status').enable({emitEvent: false});
+    //       this.filtersForm.get('date').enable({emitEvent: false});
+    //     }
+    //   });
+    // this.areaNameValueChangesSub$ = this.filtersForm
+    //   .get('areaName')
+    //   .valueChanges.subscribe((value: string) => {
+    //     if (
+    //       this.taskManagementStateService.store.getValue().filters.areaName !==
+    //       value
+    //     ) {
+    //       this.taskManagementStateService.store.update((state) => ({
+    //         filters: {
+    //           ...state.filters,
+    //           areaName: value,
+    //         },
+    //       }));
+    //     }
+    //     /*if (value) {
+    //       this.filtersForm.get('createdBy').enable({ emitEvent: false });
+    //       this.filtersForm.get('lastAssignedTo').enable({ emitEvent: false });
+    //       this.filtersForm.get('status').enable({ emitEvent: false });
+    //       this.filtersForm.get('date').enable({ emitEvent: false });
+    //     } else {
+    //       this.filtersForm.get('createdBy').disable({ emitEvent: false });
+    //       this.filtersForm.get('lastAssignedTo').disable({ emitEvent: false });
+    //       this.filtersForm.get('status').disable({ emitEvent: false });
+    //       this.filtersForm.get('date').disable({ emitEvent: false });
+    //     }*/
+    //   });
 
-    this.filtersForm
-      .get('createdBy')
-      .valueChanges.subscribe((value: string) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
-          createdBy: value,
-        },
-      }));
-    });
-    this.filtersForm
-      .get('lastAssignedTo')
-      .valueChanges.subscribe((value: number) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
-          lastAssignedTo: value,
-        },
-      }));
-    });
-    this.filtersForm.get('status').valueChanges.subscribe((value: number) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
-          status: value,
-        },
-      }));
-    });
-    this.filtersForm.get('date.dateFrom').valueChanges.subscribe((value: Date) => {
-      // @ts-ignore
-      if (!isNaN(value) && value) { // invalid date - it's NaN.
-        const dateFrom = set(value, {
-          hours: 0,
-          minutes: 0,
-          seconds: 0,
-          milliseconds: 0,
-        });
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateFrom: format(dateFrom, PARSING_DATE_FORMAT),
-          },
-        }));
-      } else {
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateFrom: null,
-          },
-        }));
-      }
-    });
-    this.filtersForm.get('date.dateTo').valueChanges.subscribe((value: Date) => {
-      // @ts-ignore
-      if (!isNaN(value) && value) { // invalid date - it's NaN.
-        const dateTo = set(value, {
-          hours: 0,
-          minutes: 0,
-          seconds: 0,
-          milliseconds: 0,
-        });
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateTo: format(dateTo, PARSING_DATE_FORMAT),
-          },
-        }));
-      } else {
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateTo: null,
-          },
-        }));
-      }
-    });
-    this.filtersForm.get('priority').valueChanges.subscribe((value: number) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
-          priority: value,
-        },
-      }));
-    }
-    );
+    // this.filtersForm
+    //   .get('createdBy')
+    //   .valueChanges.subscribe((value: string) => {
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       createdBy: value,
+    //     },
+    //   }));
+    // });
+    // this.filtersForm
+    //   .get('lastAssignedTo')
+    //   .valueChanges.subscribe((value: number) => {
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       lastAssignedTo: value,
+    //     },
+    //   }));
+    // });
+    // this.filtersForm.get('status').valueChanges.subscribe((value: number) => {
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       status: value,
+    //     },
+    //   }));
+    // });
+    // this.filtersForm.get('date.dateFrom').valueChanges.subscribe((value: Date) => {
+    //   // @ts-ignore
+    //   if (!isNaN(value) && value) { // invalid date - it's NaN.
+    //     const dateFrom = set(value, {
+    //       hours: 0,
+    //       minutes: 0,
+    //       seconds: 0,
+    //       milliseconds: 0,
+    //     });
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateFrom: format(dateFrom, PARSING_DATE_FORMAT),
+    //       },
+    //     }));
+    //   } else {
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateFrom: null,
+    //       },
+    //     }));
+    //   }
+    // });
+    // this.filtersForm.get('date.dateTo').valueChanges.subscribe((value: Date) => {
+    //   // @ts-ignore
+    //   if (!isNaN(value) && value) { // invalid date - it's NaN.
+    //     const dateTo = set(value, {
+    //       hours: 0,
+    //       minutes: 0,
+    //       seconds: 0,
+    //       milliseconds: 0,
+    //     });
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateTo: format(dateTo, PARSING_DATE_FORMAT),
+    //       },
+    //     }));
+    //   } else {
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateTo: null,
+    //       },
+    //     }));
+    //   }
+    // });
+    // this.filtersForm.get('priority').valueChanges.subscribe((value: number) => {
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       priority: value,
+    //     },
+    //   }));
+    // }
+    // );
   }
 
   getPropertyAreas(propertyId: number) {
@@ -350,7 +350,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   onShowEditEntityListModal() {
     const propertyId = this.filtersForm
       .get('propertyId').value;
-    if (propertyId != -1) {
+    if (propertyId !== -1) {
       const propertyModel = this.propertiesModel.entities.find(x => x.id === propertyId);
       this.ShowEditEntityListModal(propertyModel);
       // this.showEditEntityListModal.emit(propertyModel);

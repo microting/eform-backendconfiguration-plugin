@@ -39,26 +39,26 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   }
 
   ngOnInit(): void {
-    this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
-      .pipe(
-        debounce(x => interval(200)),
-        filter(value => !R.equals(value, this.filtersForm.getRawValue())),
-        tap(filters => {
-          this.propertyIdsChange(filters.propertyIds);
-          // this.propertyIdsChange(filters.propertyIds);
-          // this.folderIdsChange(filters.folderIds);
-          // this.tagIdsChange(filters.tagIds);
-          // this.statusChange(filters.status);
-          // this.assignToIdsChange(filters.assignToIds);
-        })).subscribe();
-    this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
-      debounce(x => interval(200)),
-      filter(value => !R.equals(value, this.propertyWorkersStateService.store.getValue().filters.propertyIds)),
-      tap(value => {
-        this.propertyIdsChange(value);
-      }),
-      tap(() => this.updateTable.emit())
-    ).subscribe();
+    // this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
+    //   .pipe(
+    //     debounce(x => interval(200)),
+    //     filter(value => !R.equals(value, this.filtersForm.getRawValue())),
+    //     tap(filters => {
+    //       this.propertyIdsChange(filters.propertyIds);
+    //       // this.propertyIdsChange(filters.propertyIds);
+    //       // this.folderIdsChange(filters.folderIds);
+    //       // this.tagIdsChange(filters.tagIds);
+    //       // this.statusChange(filters.status);
+    //       // this.assignToIdsChange(filters.assignToIds);
+    //     })).subscribe();
+    // this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
+    //   debounce(x => interval(200)),
+    //   filter(value => !R.equals(value, this.propertyWorkersStateService.store.getValue().filters.propertyIds)),
+    //   tap(value => {
+    //     this.propertyIdsChange(value);
+    //   }),
+    //   tap(() => this.updateTable.emit())
+    // ).subscribe();
   }
 
   propertyIdsChange(value: number[]) {

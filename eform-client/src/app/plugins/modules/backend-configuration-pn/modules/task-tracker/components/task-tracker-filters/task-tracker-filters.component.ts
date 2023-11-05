@@ -71,14 +71,14 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   subToFormChanges() {
-    this.getFiltersAsyncSub$ = this.taskTrackerStateService.getFiltersAsync().pipe(take(1)) // get values FIRST time
-      .subscribe(filters => {
-        this.filtersForm.patchValue({
-          propertyIds: filters.propertyIds ?? [],
-          tags: filters.tagIds ?? [],
-          workers: filters.workerIds ?? [],
-        });
-      });
+    // this.getFiltersAsyncSub$ = this.taskTrackerStateService.getFiltersAsync().pipe(take(1)) // get values FIRST time
+    //   .subscribe(filters => {
+    //     this.filtersForm.patchValue({
+    //       propertyIds: filters.propertyIds ?? [],
+    //       tags: filters.tagIds ?? [],
+    //       workers: filters.workerIds ?? [],
+    //     });
+    //   });
 
     this.filtersFormChangesSub$ = this.filtersForm.valueChanges
       .subscribe((filters) => {

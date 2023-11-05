@@ -88,7 +88,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
-        this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+        // this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
         this.getPlannedTaskWorkers();
       } else {
         this.showDiagram = false;
@@ -102,23 +102,23 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTags();
     this.getTasks();
     this.getEnabledLanguages();
-    this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
-      .pipe(
-        tap(filters => {
-          if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
-            propertyIds = filters.propertyIds;
-            this.getFolders();
-            this.getSites();
-          }
-        },),
-        tap(_ => {
-          if (this.showDiagram) {
-            this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
-            this.getPlannedTaskWorkers();
-          }
-        })
-      )
-      .subscribe();
+    // this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
+    //   .pipe(
+    //     tap(filters => {
+    //       if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
+    //         propertyIds = filters.propertyIds;
+    //         this.getFolders();
+    //         this.getSites();
+    //       }
+    //     },),
+    //     tap(_ => {
+    //       if (this.showDiagram) {
+    //         this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+    //         this.getPlannedTaskWorkers();
+    //       }
+    //     })
+    //   )
+    //   .subscribe();
   }
 
   getProperties() {
@@ -132,24 +132,24 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getFolders() {
-    this.getFoldersSub$ = this.propertyService
-      .getLinkedFolderListByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
-      .pipe(tap(data => {
-        if (data && data.success && data.model) {
-          this.folders = data.model;
-        }
-      }))
-      .subscribe();
+    // this.getFoldersSub$ = this.propertyService
+    //   .getLinkedFolderListByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
+    //   .pipe(tap(data => {
+    //     if (data && data.success && data.model) {
+    //       this.folders = data.model;
+    //     }
+    //   }))
+    //   .subscribe();
   }
 
   getSites() {
-    this.getSitesSub$ = this.propertyService
-      .getLinkedSitesByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
-      .pipe(tap(result => {
-        if (result && result.success && result.success) {
-          this.sites = result.model;
-        }
-      })).subscribe();
+    // this.getSitesSub$ = this.propertyService
+    //   .getLinkedSitesByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
+    //   .pipe(tap(result => {
+    //     if (result && result.success && result.success) {
+    //       this.sites = result.model;
+    //     }
+    //   })).subscribe();
   }
 
   getTags() {
@@ -171,15 +171,15 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getTasks() {
-    this.taskWizardStateService.getAllTasks()
-      .pipe(
-        tap(data => {
-          if (data && data.success && data.model) {
-            this.tasks = data.model;
-          }
-        })
-      )
-      .subscribe();
+    // this.taskWizardStateService.getAllTasks()
+    //   .pipe(
+    //     tap(data => {
+    //       if (data && data.success && data.model) {
+    //         this.tasks = data.model;
+    //       }
+    //     })
+    //   )
+    //   .subscribe();
   }
 
   updateTable() {
