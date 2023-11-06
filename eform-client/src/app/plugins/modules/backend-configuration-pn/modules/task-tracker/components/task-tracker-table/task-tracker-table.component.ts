@@ -14,6 +14,7 @@ import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {AbstractControl} from "@angular/forms";
+import {Store} from "@ngrx/store";
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -75,6 +76,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   };
 
   constructor(
+    private store: Store,
     private translateService: TranslateService,
     private taskTrackerStateService: TaskTrackerStateService,
     private route: ActivatedRoute,

@@ -80,11 +80,11 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       return this.viewBottomLineFull;
     }
   }
-  public selectSideMenuOpened$ = this.authStore.select(selectSideMenuOpened);
-  public selectTaskManagementPropertyId$ = this.authStore.select(selectTaskManagementPropertyId);
+  public selectSideMenuOpened$ = this.store.select(selectSideMenuOpened);
+  public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
 
   constructor(
-    private authStore: Store,
+    private store: Store,
     public statisticsStateService: StatisticsStateService,
     private translateService: TranslateService,
     private backendConfigurationPnPropertiesService: BackendConfigurationPnPropertiesService,
@@ -198,7 +198,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   }
 
   clickOnAdHocTaskPriorities() {
-    this.authStore.dispatch(
+    this.store.dispatch(
         {type: '[TaskManagement] Update filters',
           filters: {
             propertyId: this.selectedPropertyId || null,
@@ -226,7 +226,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   }
 
   clickOnDocumentUpdatedDays(filter?: DocumentsExpirationFilterEnum) {
-    this.authStore.dispatch(
+    this.store.dispatch(
         {type: '[Documents] Update filters',
           filters: {
             propertyId: this.selectedPropertyId || null,
@@ -249,7 +249,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   }
 
   clickOnPlannedTaskWorkers(workerId: number | null) {
-    this.authStore.dispatch(
+    this.store.dispatch(
         {type: '[TaskWizard] Update filters',
           filters: {
             propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
@@ -274,7 +274,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   }
 
   clickOnAdHocTaskWorkers(workerId: number | null) {
-    this.authStore.dispatch(
+    this.store.dispatch(
         {type: '[TaskManagement] Update filters',
           filters: {
             propertyId: this.selectedPropertyId || null,

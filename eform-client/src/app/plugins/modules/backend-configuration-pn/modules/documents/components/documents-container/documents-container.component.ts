@@ -53,7 +53,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   getActiveSortDirectionSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   getDocumentUpdatedDaysSub$: Subscription;
-  private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
+  private selectCurrentUserLanguageId$ = this.store.select(selectCurrentUserLanguageId);
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -66,7 +66,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    private authStore: Store,
+    private store: Store,
     private propertyService: BackendConfigurationPnPropertiesService,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     public dialog: MatDialog,

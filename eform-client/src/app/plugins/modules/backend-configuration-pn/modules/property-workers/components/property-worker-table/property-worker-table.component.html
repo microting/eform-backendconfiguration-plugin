@@ -8,8 +8,8 @@
   [showToolbar]="true"
   [showColumnMenuButton]="false"
   [toolbarTemplate]="toolbarTpl"
-  [sortActive]="propertyWorkersStateService.getActiveSort() | async"
-  [sortDirection]="propertyWorkersStateService.getActiveSortDirection() | async"
+  [sortActive]="selectPropertyWorkersPaginationSort$ | async"
+  [sortDirection]="selectPropertyWorkersPaginationIsSortDsc$ | async"
   (sortChange)="onSortTable($event)"
   style="max-height: 80vh;"
   noResultText="{{'No employees found' | translate}}"
@@ -27,7 +27,7 @@
           matInput
           type="text"
           (ngModelChange)="onSearchChanged($event)"
-          [ngModel]="propertyWorkersStateService.getNameFilter() | async"
+          [ngModel]="selectPropertyWorkersNameFilters$ | async"
           id="labelInput"
         />
       </mat-form-field>

@@ -14,6 +14,7 @@ import {TaskWizardStatusesEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
 import {interval, Subscription} from 'rxjs';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -45,6 +46,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   valueChangesPropertyIdsSub$: Subscription;
 
   constructor(
+    private store: Store,
     private taskWizardStateService: TaskWizardStateService,
     private translateService: TranslateService,
   ) {

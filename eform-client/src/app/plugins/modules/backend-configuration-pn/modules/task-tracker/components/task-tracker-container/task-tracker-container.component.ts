@@ -43,6 +43,7 @@ import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/servi
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
 import {StatisticsStateService} from '../../../statistics/store';
 import {ActivatedRoute} from '@angular/router';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -102,6 +103,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private store: Store,
     private loaderService: LoaderService,
     public taskTrackerStateService: TaskTrackerStateService,
     public taskTrackerService: BackendConfigurationPnTaskTrackerService,

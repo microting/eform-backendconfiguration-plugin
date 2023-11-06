@@ -39,11 +39,11 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   folderNameChangesSub$: Subscription;
   documentChangesSub$: Subscription;
   expireChangesSub$: Subscription;
-  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
+  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
-    private authStore: Store,
+    private store: Store,
     private translate: TranslateService,
     public documentsStateService: DocumentsStateService,
     localeService: LocaleService,

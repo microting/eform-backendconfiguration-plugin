@@ -2,7 +2,6 @@ import {
     BackendConfigurationState
 } from '../backend-configuration.state';
 import {createSelector} from '@ngrx/store';
-import {selectReportsV2} from "src/app/plugins/modules/backend-configuration-pn/state/reports-v2/reports-v2.selector";
 
 export const selectBackendConfigurationPn =
     (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;

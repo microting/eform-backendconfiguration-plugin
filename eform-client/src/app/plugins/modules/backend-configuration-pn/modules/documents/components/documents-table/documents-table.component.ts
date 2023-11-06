@@ -16,6 +16,11 @@ import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {DocumentsStateService} from '../../store';
 import {Sort} from '@angular/material/sort';
+import {Store} from "@ngrx/store";
+import {
+  selectDocumentsPaginationIsSortDsc,
+  selectDocumentsPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/documents/documents.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -99,8 +104,11 @@ export class DocumentsTableComponent implements OnInit, OnDestroy {
   @Output() openDeleteModal: EventEmitter<DocumentModel> = new EventEmitter<DocumentModel>();
   @Output() openEditModal: EventEmitter<DocumentModel> = new EventEmitter<DocumentModel>();
   pdfSub$: Subscription;
+  public selectDocumentsPaginationSort$ = this.store.select(selectDocumentsPaginationSort);
+  public selectDocumentsPaginationIsSortDsc$ = this.store.select(selectDocumentsPaginationIsSortDsc);
 
   constructor(
+    private store: Store,
     private templateFilesService: TemplateFilesService,
     private translateService: TranslateService,
     iconRegistry: MatIconRegistry,

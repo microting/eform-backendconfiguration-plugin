@@ -16,6 +16,11 @@ import {TranslateService} from '@ngx-translate/core';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {Store} from "@ngrx/store";
+import {
+  selectTaskWorkerAssignmentPaginationIsSortDsc,
+  selectTaskWorkerAssignmentPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/task-worker-assignment/task-worker-assignment.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -72,8 +77,11 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
   getAreaByRuleIdSub$: Subscription;
   updateAreaRulePlanSub$: Subscription;
   getAreaRulePlanningByPlanningIdSub$: Subscription;
+  public selectTaskWorkerAssignmentPaginationSort$ = this.store.select(selectTaskWorkerAssignmentPaginationSort);
+  public selectTaskWorkerAssignmentPaginationIsSortDsc$ = this.store.select(selectTaskWorkerAssignmentPaginationIsSortDsc);
 
   constructor(
+    private store: Store,
     public taskWorkerAssignmentsStateService: TaskWorkerAssignmentsStateService,
     private activatedRoute: ActivatedRoute,
     private sitesService: SitesService,

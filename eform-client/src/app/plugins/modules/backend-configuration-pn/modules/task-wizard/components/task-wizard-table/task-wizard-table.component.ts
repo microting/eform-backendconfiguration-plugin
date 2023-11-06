@@ -13,6 +13,14 @@ import {format} from 'date-fns';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TaskWizardStateService} from '../store';
 import {Sort} from '@angular/material/sort';
+import {Store} from '@ngrx/store';
+import {
+  selectDocumentsPaginationIsSortDsc,
+  selectDocumentsPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/documents/documents.selector";
+import {
+  selectTaskWizardPaginationIsSortDsc, selectTaskWizardPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/task-wizard/task-wizard.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -107,8 +115,11 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
       ],
     },
   ];
+  public selectTaskWizardPaginationSort$ = this.store.select(selectTaskWizardPaginationSort);
+  public selectTaskWizardPaginationIsSortDsc$ = this.store.select(selectTaskWizardPaginationIsSortDsc);
 
   constructor(
+    private store: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService,
     public taskWizardStateService: TaskWizardStateService,

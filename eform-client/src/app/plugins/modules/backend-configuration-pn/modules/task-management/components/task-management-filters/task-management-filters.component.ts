@@ -23,6 +23,7 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Overlay} from '@angular/cdk/overlay';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -49,6 +50,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   areaNameValueChangesSub$: Subscription;
 
   constructor(
+    private store: Store,
     private translate: TranslateService,
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,

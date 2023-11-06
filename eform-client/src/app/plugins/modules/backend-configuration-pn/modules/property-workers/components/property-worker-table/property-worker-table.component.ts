@@ -22,6 +22,11 @@ import {
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Store} from "@ngrx/store";
 import {selectCurrentUserClaimsDeviceUsersDelete} from "src/app/state/auth/auth.selector";
+import {
+  selectPropertyWorkersNameFilters,
+  selectPropertyWorkersPaginationIsSortDsc,
+  selectPropertyWorkersPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/property-workers/property-workers.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -43,11 +48,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   searchSubject = new Subject();
   deviceUsersDelete: boolean = false;
   deviceUsersUpdate: boolean = false;
-  private selectCurrentUserClaimsDeviceUsersDelete$ = this.authStore.select(selectCurrentUserClaimsDeviceUsersDelete);
-  private selectCurrentUserClaimsDeviceUsersUpdate$ = this.authStore.select(selectCurrentUserClaimsDeviceUsersDelete);
+  private selectCurrentUserClaimsDeviceUsersDelete$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
+  private selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
+  public selectPropertyWorkersPaginationSort$ = this.store.select(selectPropertyWorkersPaginationSort);
+  public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
+  public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
 
   constructor(
-    private authStore: Store,
+    private store: Store,
     private authStateService: AuthStateService,
     private translateService: TranslateService,
     public propertyWorkersStateService: PropertyWorkersStateService,

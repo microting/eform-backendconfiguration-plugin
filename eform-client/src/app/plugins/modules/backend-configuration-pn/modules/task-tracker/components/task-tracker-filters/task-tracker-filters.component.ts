@@ -15,6 +15,7 @@ import {
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -40,6 +41,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getSitesSub$: Subscription;
 
   constructor(
+    private store: Store,
     private translate: TranslateService,
     private taskTrackerStateService: TaskTrackerStateService,
     private propertyService: BackendConfigurationPnPropertiesService,

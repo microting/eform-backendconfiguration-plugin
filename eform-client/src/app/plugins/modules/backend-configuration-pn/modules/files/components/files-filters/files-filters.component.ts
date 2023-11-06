@@ -19,6 +19,7 @@ import {format, parse} from 'date-fns';
 import {debounceTime, skip} from 'rxjs/operators';
 import moment from 'moment';
 import * as R from 'ramda';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -75,6 +76,7 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private store: Store,
     private translate: TranslateService,
     public filesStateService: FilesStateService,
     private propertyService: BackendConfigurationPnPropertiesService,

@@ -17,6 +17,7 @@ import {Lightbox} from '@ngx-gallery/lightbox';
 import {ViewportScroller} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../../services';
 import {catchError, tap} from 'rxjs/operators';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -42,6 +43,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   imageSub$: Subscription[] = [];
 
   constructor(
+    private store: Store,
     private emailRecipientsService: EmailRecipientsService,
     private activateRoute: ActivatedRoute,
     private reportService: BackendConfigurationPnReportService,

@@ -40,10 +40,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
-  public selectCurrentUserClaimsDeviceUsersCreate$ = this.authStore.select(selectCurrentUserClaimsDeviceUsersCreate);
+  public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
 
   constructor(
-    private authStore: Store,
+    private store: Store,
     private propertiesService: BackendConfigurationPnPropertiesService,
     public propertyWorkersStateService: PropertyWorkersStateService,
     private dialog: MatDialog,

@@ -92,10 +92,10 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
       this.xAxisTicks = Array.from(Array(max).keys());
     }
   }
-  private selectIsDarkMode$ = this.authStore.select(selectIsDarkMode);
+  private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
 
   constructor(
-    private authStore: Store,
+    private store: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {

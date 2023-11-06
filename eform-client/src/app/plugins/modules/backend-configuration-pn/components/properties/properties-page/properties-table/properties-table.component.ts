@@ -18,7 +18,7 @@ import {
   selectPropertiesNameFilters,
   selectPropertiesPaginationIsSortDsc,
   selectPropertiesPaginationSort
-} from "src/app/plugins/modules/backend-configuration-pn/state/properties/properties.selector";
+} from '../../../../state/properties/properties.selector';
 
 @Component({
   selector: 'app-properties-table',

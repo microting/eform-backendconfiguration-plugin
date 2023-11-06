@@ -7,8 +7,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
-import {Store} from "@ngrx/store";
-import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
+import {Store} from '@ngrx/store';
+import {selectIsDarkMode} from 'src/app/state/auth/auth.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -109,10 +109,10 @@ export class PlannedTaskDaysComponent implements OnChanges, OnDestroy {
       this.xAxisTicks = Array.from(Array(max).keys());
     }
   }
-  private selectIsDarkMode$ = this.authStore.select(selectIsDarkMode);
+  private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
 
   constructor(
-    private authStore: Store,
+    private store: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {

@@ -15,6 +15,11 @@ import {TranslateService} from '@ngx-translate/core';
 import {
   TaskManagementPrioritiesEnum
 } from '../../../../enums';
+import {Store} from "@ngrx/store";
+import {
+  selectTaskManagementPaginationIsSortDsc,
+  selectTaskManagementPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/task-management/task-management.selector";
 
 @Component({
   selector: 'app-task-management-table',
@@ -96,8 +101,11 @@ export class TaskManagementTableComponent implements OnInit {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();
   @Output() openDeleteModal: EventEmitter<WorkOrderCaseModel> = new EventEmitter<WorkOrderCaseModel>();
+  public selectTaskManagementPaginationSort$ = this.store.select(selectTaskManagementPaginationSort);
+  public selectTaskManagementPaginationIsSortDsc$ = this.store.select(selectTaskManagementPaginationIsSortDsc);
 
   constructor(
+    private store: Store,
     public taskManagementStateService: TaskManagementStateService,
     private translateService: TranslateService,
   ) {

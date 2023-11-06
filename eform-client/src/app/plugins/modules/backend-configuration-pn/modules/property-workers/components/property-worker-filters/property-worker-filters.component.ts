@@ -9,6 +9,7 @@ import {
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components/store';
 import {debounce, filter, tap} from 'rxjs/operators';
 import * as R from 'ramda';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -30,6 +31,7 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   valueChangesPropertyIdsSub$: Subscription;
 
   constructor(
+    private store: Store,
     public propertyWorkersStateService: PropertyWorkersStateService,
   ) {
     this.filtersForm = new FormGroup({

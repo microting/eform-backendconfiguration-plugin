@@ -41,13 +41,13 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
-  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
-  private selectReportsV2Filters$ = this.authStore.select(selectReportsV2Filters);
-  private selectReportsV2DateRange$ = this.authStore.select(selectReportsV2DateRange);
+  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
+  private selectReportsV2Filters$ = this.store.select(selectReportsV2Filters);
+  private selectReportsV2DateRange$ = this.store.select(selectReportsV2DateRange);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
-    private authStore: Store,
+    private store: Store,
     private formBuilder: FormBuilder,
     private reportStateService: ReportStateService,
     authStateService: AuthStateService,

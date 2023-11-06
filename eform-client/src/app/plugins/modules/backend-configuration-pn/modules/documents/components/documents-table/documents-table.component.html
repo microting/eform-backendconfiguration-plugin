@@ -7,8 +7,8 @@
   [showToolbar]="false"
   [showColumnMenuButton]="false"
   (sortChange)="onSortChange($event)"
-  [sortDirection]="documentsStateService.getActiveSortDirection() | async"
-  [sortActive]="documentsStateService.getActiveSort() | async"
+  [sortActive]="selectDocumentsPaginationSort$ | async"
+  [sortDirection]="selectDocumentsPaginationIsSortDsc$ | async"
   style="max-height: 66vh;"
   noResultText="{{'No documents found' | translate}}"
 >
