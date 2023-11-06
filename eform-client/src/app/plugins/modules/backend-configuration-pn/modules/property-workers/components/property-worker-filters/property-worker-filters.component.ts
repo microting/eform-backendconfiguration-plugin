@@ -80,10 +80,10 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
     // ).subscribe();
   }
 
-  propertyIdsChange(value: number[]) {
-    this.propertyWorkersStateService.updatePropertyIds(value);
-    //this.filtersForm.get('propertyIds').patchValue(value);
-  }
+  // propertyIdsChange(value: number[]) {
+  //   this.propertyWorkersStateService.updatePropertyIds(value);
+  //   //this.filtersForm.get('propertyIds').patchValue(value);
+  // }
 
   ngOnDestroy(): void {
   }

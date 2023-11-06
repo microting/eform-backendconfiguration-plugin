@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import {Observable, zip} from 'rxjs';
-import {DeviceUserRequestModel, OperationDataResult} from 'src/app/common/models';
+import {CommonPaginationState, DeviceUserRequestModel, OperationDataResult} from 'src/app/common/models';
 import { updateTableSort, getOffset } from 'src/app/common/helpers';
 import { map } from 'rxjs/operators';
 import { BackendConfigurationPnPropertiesService } from '../../../../services';
@@ -88,6 +88,21 @@ export class PropertyWorkersStateService {
   }
 
   updateNameFilter(nameFilter: string) {
+    let currentFilters: DeviceUserRequestModel;
+    this.selectPropertyWorkersFilters$.subscribe((filters) => {
+      currentFilters = filters;
+    }).unsubscribe();
+    if (currentFilters.nameFilter !== nameFilter) {
+      this.store.dispatch({
+        type: '[PropertyWorkers] Update filters',
+        payload: {
+          filters: {
+            ...currentFilters,
+            nameFilter: nameFilter,
+          }
+        }
+      });
+    }
     // this.store.update((state) => ({
     //   filters: {
     //     ...state.filters,
@@ -141,6 +156,23 @@ export class PropertyWorkersStateService {
   }
 
   onSortTable(sort: string) {
+    let currentPagination: CommonPaginationState;
+    this.selectPropertyWorkersPagination$.subscribe((pagination) => {
+      currentPagination = pagination;
+    }).unsubscribe();
+    const localPageSettings = updateTableSort(
+      sort,
+      currentPagination.sort,
+      currentPagination.isSortDsc
+    );
+    this.store.dispatch({
+      type: '[PropertyWorkers] Update pagination',
+      pagination: {
+        ...currentPagination,
+        isSortDsc: localPageSettings.isSortDsc,
+        sort: localPageSettings.sort,
+      }
+    });
     // const localPageSettings = updateTableSort(
     //   sort,
     //   this.query.pageSetting.pagination.sort,

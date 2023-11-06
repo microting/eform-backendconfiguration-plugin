@@ -20,13 +20,13 @@ import {
   PropertyWorkerCreateEditModalComponent, PropertyWorkerDeleteModalComponent, PropertyWorkerOtpModalComponent
 } from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {Store} from "@ngrx/store";
-import {selectCurrentUserClaimsDeviceUsersDelete} from "src/app/state/auth/auth.selector";
+import {Store} from '@ngrx/store';
+import {selectCurrentUserClaimsDeviceUsersDelete} from 'src/app/state/auth/auth.selector';
 import {
   selectPropertyWorkersNameFilters,
   selectPropertyWorkersPaginationIsSortDsc,
   selectPropertyWorkersPaginationSort
-} from "src/app/plugins/modules/backend-configuration-pn/state/property-workers/property-workers.selector";
+} from '../../../../state/property-workers/property-workers.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -48,8 +48,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   searchSubject = new Subject();
   deviceUsersDelete: boolean = false;
   deviceUsersUpdate: boolean = false;
-  private selectCurrentUserClaimsDeviceUsersDelete$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
-  private selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
+  public selectCurrentUserClaimsDeviceUsersDelete$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
+  public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
   public selectPropertyWorkersPaginationSort$ = this.store.select(selectPropertyWorkersPaginationSort);
   public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
@@ -175,7 +175,9 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
           availableProperties: this.availableProperties,
         }), minWidth: 500
       })
-      .afterClosed().subscribe(data => data ? this.searchSubject.next('') : undefined);
+
+      .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
+      //.afterClosed().subscribe(data => data ? this.searchSubject.next('') : undefined);
   }
 
   openDeleteDeviceUserModal(simpleSiteDto: DeviceUserModel) {
