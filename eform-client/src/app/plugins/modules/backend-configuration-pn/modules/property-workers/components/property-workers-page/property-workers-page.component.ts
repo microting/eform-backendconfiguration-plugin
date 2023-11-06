@@ -23,6 +23,9 @@ import {
   selectCurrentUserClaimsDeviceUsersCreate
 } from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {
+  selectPropertyWorkersFilters
+} from '../../../../state/property-workers/property-workers.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -41,6 +44,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
+  private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
   constructor(
     private store: Store,
@@ -53,27 +57,27 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     let propertyIds: number[] = [];
-    // this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
-    //   .pipe(
-    //     tap(filters => {
-    //       if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
-    //         propertyIds = filters.propertyIds;
-    //       }
-    //       this.updateTable();
-    //       // else {
-    //       //   propertyIds = [];
-    //       //   this.updateTable();
-    //       // }
-    //     },),
-    //     tap(_ => {
-    //       // if (this.showDiagram) {
-    //       //   this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
-    //       //   this.getPlannedTaskWorkers();
-    //       // }
-    //     })
-    //   )
-    //   .subscribe();
-    //this.getWorkerPropertiesAssignments();
+    this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
+      .pipe(
+        tap(filters => {
+          if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
+            propertyIds = filters.propertyIds;
+          }
+          this.updateTable();
+          // else {
+          //   propertyIds = [];
+          //   this.updateTable();
+          // }
+        },),
+        tap(_ => {
+          // if (this.showDiagram) {
+          //   this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+          //   this.getPlannedTaskWorkers();
+          // }
+        })
+      )
+      .subscribe();
+    this.getWorkerPropertiesAssignments();
   }
 
   openEditModal(simpleSiteDto: DeviceUserModel) {

@@ -10,6 +10,9 @@ import {
 import {debounce, filter, tap} from 'rxjs/operators';
 import * as R from 'ramda';
 import {Store} from '@ngrx/store';
+import {
+  selectPropertyWorkersFilters
+} from "src/app/plugins/modules/backend-configuration-pn/state/property-workers/property-workers.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -29,6 +32,7 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   }>;
   getFiltersAsyncSub$: Subscription;
   valueChangesPropertyIdsSub$: Subscription;
+  private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
   constructor(
     private store: Store,
@@ -41,18 +45,18 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   }
 
   ngOnInit(): void {
-    // this.getFiltersAsyncSub$ = this.propertyWorkersStateService.getFiltersAsync()
-    //   .pipe(
-    //     debounce(x => interval(200)),
-    //     filter(value => !R.equals(value, this.filtersForm.getRawValue())),
-    //     tap(filters => {
-    //       this.propertyIdsChange(filters.propertyIds);
-    //       // this.propertyIdsChange(filters.propertyIds);
-    //       // this.folderIdsChange(filters.folderIds);
-    //       // this.tagIdsChange(filters.tagIds);
-    //       // this.statusChange(filters.status);
-    //       // this.assignToIdsChange(filters.assignToIds);
-    //     })).subscribe();
+    this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
+      .pipe(
+        debounce(x => interval(200)),
+        filter(value => !R.equals(value, this.filtersForm.getRawValue())),
+        tap(filters => {
+          this.propertyIdsChange(filters.propertyIds);
+          // this.propertyIdsChange(filters.propertyIds);
+          // this.folderIdsChange(filters.folderIds);
+          // this.tagIdsChange(filters.tagIds);
+          // this.statusChange(filters.status);
+          // this.assignToIdsChange(filters.assignToIds);
+        })).subscribe();
     // this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
     //   debounce(x => interval(200)),
     //   filter(value => !R.equals(value, this.propertyWorkersStateService.store.getValue().filters.propertyIds)),
