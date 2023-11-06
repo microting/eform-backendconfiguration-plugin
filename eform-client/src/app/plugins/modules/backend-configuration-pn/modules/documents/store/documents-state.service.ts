@@ -25,49 +25,16 @@ export class DocumentsStateService {
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService
   ) {}
 
-  // getOffset(): Observable<number> {
-  //   return this.query.selectOffset$;
-  // }
-
-  // getPageSize(): Observable<number> {
-  //   return this.query.selectPageSize$;
-  // }
-
-  // getActiveSort(): Observable<string> {
-  //   return this.query.selectActiveSort$;
-  // }
-  //
-  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
-  //   return this.query.selectActiveSortDirection$;
-  // }
-
   getFolders() : Observable<OperationDataResult<Paged<DocumentFolderModel>>> {
     let _filters:any;
     this.selectDocumentsFilters$.subscribe((filters) => {
       _filters = filters;
     }).unsubscribe();
-    // let _pagination = {};
-    // this.selectDocumentsPagination$.subscribe((pagination) => {
-    //   _pagination = pagination;
-    // }).unsubscribe();
-    // let requestModel = {
-    //   ..._filters,
-    //   ..._pagination
-    // };
     return this.backendConfigurationPnDocumentsService.getAllFolders({
       documentId: _filters.documentId,
       expiration: _filters.expiration,
       propertyId: _filters.propertyId,
       folderId: _filters.folderId});
-    // let requestModel = { documentId?: string; expiration?: DocumentsExpirationFilterEnum; propertyId: number; folderId?: string }
-    // return this.backendConfigurationPnDocumentsService.getAllFolders({
-    //   ...this.query.pageSetting.filters,
-    // });
-      //.subscribe((data) => {
-      //if (data && data.success) {
-        //return data.model;
-      //}
-    //});
   }
 
   getDocuments() : Observable<OperationDataResult<Paged<DocumentModel>>> {
@@ -80,12 +47,6 @@ export class DocumentsStateService {
         expiration: _filters.expiration,
         propertyId: _filters.propertyId,
         folderId: _filters.folderId});
-    // let requestModel = { documentId?: string; expiration?: DocumentsExpirationFilterEnum; propertyId: number; folderId?: string };
-    // const requestModel = new DocumentsRequestModel();
-    // return this.backendConfigurationPnDocumentsService.getAllDocuments({
-    //   ...this.query.pageSetting.filters,
-    //   ...this.query.pageSetting.pagination
-    // });
   }
 
   // getNameFilter(): Observable<string> {

@@ -29,6 +29,9 @@ import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {
+  selectDocumentsFiltersPropertyId
+} from '../../../../state/documents/documents.selector';
 
 @Component({
   selector: 'app-documents-container',
@@ -50,10 +53,9 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   documentUpdatedSub$: Subscription;
   documentCreatedSub$: Subscription;
   folderManageModalClosedSub$: Subscription;
-  getActiveSortDirectionSub$: Subscription;
-  getFiltersAsyncSub$: Subscription;
   getDocumentUpdatedDaysSub$: Subscription;
   private selectCurrentUserLanguageId$ = this.store.select(selectCurrentUserLanguageId);
+  private selectDocumentsFiltersPropertyId$ = this.store.select(selectDocumentsFiltersPropertyId);
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -82,15 +84,20 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     // this.selectedLanguage = applicationLanguagesTranslated.find(
     //   (x) => x.locale === localeService.getCurrentUserLocale()
     // ).id;
-    // this.route.queryParams.subscribe(x => {
-    //   if (x && x.showDiagram) {
-    //     this.showDiagram = x.showDiagram;
+    this.route.queryParams.subscribe(x => {
+      if (x && x.showDiagram) {
+        this.showDiagram = x.showDiagram;
+        this.selectDocumentsFiltersPropertyId$.subscribe((propertyId) => {
+          this.selectedPropertyId = propertyId;
+        });
+
+        this.getDocumentUpdatedDays();
     //     this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
     //     this.getDocumentUpdatedDays();
-    //   } else {
-    //     this.showDiagram = false;
-    //   }
-    // });
+      } else {
+        this.showDiagram = false;
+      }
+    });
   }
 
   ngOnInit(): void {

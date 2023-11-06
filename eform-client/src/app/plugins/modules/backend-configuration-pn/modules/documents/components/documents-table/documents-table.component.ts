@@ -16,11 +16,11 @@ import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {DocumentsStateService} from '../../store';
 import {Sort} from '@angular/material/sort';
-import {Store} from "@ngrx/store";
+import {Store} from '@ngrx/store';
 import {
   selectDocumentsPaginationIsSortDsc,
   selectDocumentsPaginationSort
-} from "src/app/plugins/modules/backend-configuration-pn/state/documents/documents.selector";
+} from '../../../../state/documents/documents.selector';
 
 @AutoUnsubscribe()
 @Component({

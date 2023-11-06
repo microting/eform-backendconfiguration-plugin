@@ -19,6 +19,12 @@ import {DocumentsStateService} from '../../store';
 import {DocumentsExpirationFilterEnum} from '../../../../enums';
 import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {
+  selectDocumentsFilters
+} from "src/app/plugins/modules/backend-configuration-pn/state/documents/documents.selector";
+import {
+  DocumentsFiltrationModel
+} from "src/app/plugins/modules/backend-configuration-pn/state/documents/documents.reducer";
 
 @AutoUnsubscribe()
 @Component({
@@ -40,6 +46,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   documentChangesSub$: Subscription;
   expireChangesSub$: Subscription;
   private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
+  private selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
@@ -59,33 +66,52 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     //this.getProperties();
-    // this.selectFiltersSub$ = this.documentsStateService
+    this.selectFiltersSub$ = this.selectDocumentsFilters$
     //   .getFiltersAsync()
-    //   .subscribe((filters) => {
-    //     if (!this.filtersForm) {
-    //       this.filtersForm = new FormGroup({
-    //         propertyId: new FormControl(filters.propertyId || -1),
-    //         folderId: new FormControl(filters.folderId),
-    //         documentId: new FormControl(filters.documentId),
-    //         expiration: new FormControl(filters.expiration),
-    //       });
-    //       if (filters.propertyId === null) {
+      .subscribe((filters) => {
+        if (!this.filtersForm) {
+          this.filtersForm = new FormGroup({
+            propertyId: new FormControl(filters.propertyId || -1),
+            folderId: new FormControl(filters.folderId),
+            documentId: new FormControl(filters.documentId),
+            expiration: new FormControl(filters.expiration),
+          });
+          if (filters.propertyId === null) {
+            this.store.dispatch({
+              type: '[Documents] Update filters',
+              payload: {
+                propertyId: -1,
+              }
+            });
     //         this.documentsStateService.store.update((state) => ({
     //           filters: {
     //             ...state.filters,
     //             propertyId: -1,
     //           },
     //         }));
-    //       }
-    //       if (filters.propertyId && filters.propertyId !== -1) {
-    //         //this.getDocuments(filters.propertyId);
-    //         //this.getSites(filters.propertyId);
-    //       }
-    //     }
-    //   });
-    // this.propertyIdValueChangesSub$ = this.filtersForm
-    //   .get('propertyId')
-    //   .valueChanges.subscribe((value: number) => {
+          }
+          if (filters.propertyId && filters.propertyId !== -1) {
+            //this.getDocuments(filters.propertyId);
+            //this.getSites(filters.propertyId);
+          }
+        }
+      });
+    this.propertyIdValueChangesSub$ = this.filtersForm
+      .get('propertyId')
+      .valueChanges.subscribe((value: number) => {
+        let currentFilters: DocumentsFiltrationModel;
+        this.selectDocumentsFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        if (currentFilters.propertyId !== value) {
+          this.store.dispatch({
+            type: '[Documents] Update filters',
+            payload: {
+              propertyId: value,
+            }
+          });
+          // this.documentsStateService.updateFilters({propertyId: value});
+        }
     //     if (
     //       this.documentsStateService.store.getValue().filters
     //         .propertyId !== value
@@ -100,10 +126,23 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
     //         },
     //       }));
     //     }
-    //   });
-    // this.folderNameChangesSub$ = this.filtersForm
-    //   .get('folderId')
-    //   .valueChanges.subscribe((value: string) => {
+      });
+    this.folderNameChangesSub$ = this.filtersForm
+      .get('folderId')
+      .valueChanges.subscribe((value: string) => {
+        let currentFilters: DocumentsFiltrationModel;
+        this.selectDocumentsFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        if (currentFilters.folderId !== value) {
+          this.store.dispatch({
+            type: '[Documents] Update filters',
+            payload: {
+              folderId: value,
+            }
+          });
+          // this.documentsStateService.updateFilters({folderId: value});
+        }
     //     if (
     //       this.documentsStateService.store.getValue().filters.folderId !==
     //       value
@@ -115,10 +154,23 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
     //         },
     //       }));
     //     }
-    //   });
-    // this.documentChangesSub$ = this.filtersForm
-    //   .get('documentId')
-    //   .valueChanges.subscribe((value: string) => {
+      });
+    this.documentChangesSub$ = this.filtersForm
+      .get('documentId')
+      .valueChanges.subscribe((value: string) => {
+        let currentFilters: DocumentsFiltrationModel;
+        this.selectDocumentsFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        if (currentFilters.documentId !== value) {
+          this.store.dispatch({
+            type: '[Documents] Update filters',
+            payload: {
+              documentId: value,
+            }
+          });
+          // this.documentsStateService.updateFilters({documentId: value});
+        }
     //     if (this.documentsStateService.store.getValue().filters.documentId !== value) {
     //       this.documentsStateService.store.update((state) => ({
     //         filters: {
@@ -127,10 +179,23 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
     //         },
     //       }));
     //     }
-    //   });
-    // this.expireChangesSub$ = this.filtersForm
-    //   .get('expiration')
-    //   .valueChanges.subscribe((value: DocumentsExpirationFilterEnum) => {
+      });
+    this.expireChangesSub$ = this.filtersForm
+      .get('expiration')
+      .valueChanges.subscribe((value: DocumentsExpirationFilterEnum) => {
+        let currentFilters: DocumentsFiltrationModel;
+        this.selectDocumentsFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        if (currentFilters.expiration !== value) {
+          this.store.dispatch({
+            type: '[Documents] Update filters',
+            payload: {
+              expiration: value,
+            }
+          });
+          // this.documentsStateService.updateFilters({expiration: value});
+        }
     //     if (this.documentsStateService.store.getValue().filters.expiration !== value) {
     //       this.documentsStateService.store.update((state) => ({
     //         filters: {
@@ -139,7 +204,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
     //         },
     //       }));
     //     }
-    //   });
+      });
   }
 
   ngOnDestroy(): void {
