@@ -31,9 +31,13 @@ export const initialState: PropertyWorkersState = {
 
 export const _reducer = createReducer(
   initialState,
-  on(propertyWorkersUpdateFilters, (state, {filters}) => ({
+  on(propertyWorkersUpdateFilters, (state, {payload}) => ({
     ...state,
-    filters: {...state.filters, ...filters}
+      filters: {
+        propertyIds: payload.filters.propertyIds,
+        nameFilter: payload.filters.nameFilter,
+        tagIds: payload.filters.tagIds,
+    }
     }
   )),
   on(propertyWorkersUpdatePagination, (state, {pagination}) => ({

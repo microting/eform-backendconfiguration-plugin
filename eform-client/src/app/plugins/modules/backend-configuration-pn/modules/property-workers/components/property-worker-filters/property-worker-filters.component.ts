@@ -45,19 +45,32 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   }
 
   ngOnInit(): void {
-    this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
-      .pipe(
-        debounce(x => interval(200)),
-        filter(value => !R.equals(value, this.filtersForm.getRawValue())),
-        tap(filters => {
-          this.propertyIdsChange(filters.propertyIds);
-          // this.propertyIdsChange(filters.propertyIds);
-          // this.folderIdsChange(filters.folderIds);
-          // this.tagIdsChange(filters.tagIds);
-          // this.statusChange(filters.status);
-          // this.assignToIdsChange(filters.assignToIds);
-        })).subscribe();
-    // this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
+    // this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
+    //   .pipe(
+    //     debounce(x => interval(200)),
+    //     filter(value => !R.equals(value, this.filtersForm.getRawValue())),
+    //     tap(filters => {
+    //       this.propertyIdsChange(filters.propertyIds);
+    //       // this.propertyIdsChange(filters.propertyIds);
+    //       // this.folderIdsChange(filters.folderIds);
+    //       // this.tagIdsChange(filters.tagIds);
+    //       // this.statusChange(filters.status);
+    //       // this.assignToIdsChange(filters.assignToIds);
+    //     })).subscribe();
+    this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
+      .subscribe((value: number[]) => {
+        this.store.dispatch({
+          type: '[PropertyWorkers] Update filters',
+          payload: {
+          filters: {
+            propertyIds: value,
+          },
+          }
+        }
+        );
+        this.updateTable.emit();
+      });
+    // .pipe(
     //   debounce(x => interval(200)),
     //   filter(value => !R.equals(value, this.propertyWorkersStateService.store.getValue().filters.propertyIds)),
     //   tap(value => {
@@ -69,7 +82,7 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
 
   propertyIdsChange(value: number[]) {
     this.propertyWorkersStateService.updatePropertyIds(value);
-    this.filtersForm.get('propertyIds').patchValue(value);
+    //this.filtersForm.get('propertyIds').patchValue(value);
   }
 
   ngOnDestroy(): void {
