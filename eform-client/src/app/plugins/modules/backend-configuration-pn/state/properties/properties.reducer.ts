@@ -7,7 +7,7 @@ import {
 export interface PropertiesState {
   pagination: CommonPaginationState;
   filters: FiltrationStateModel;
-  totalProperties: number;
+  total: number;
 }
 
 export const initialState: PropertiesState = {
@@ -23,23 +23,29 @@ export const initialState: PropertiesState = {
     nameFilter: '',
     tagIds: [],
   },
-  totalProperties: 0,
+  total: 0,
 }
 
 export const _reducer = createReducer(
   initialState,
   on(propertiesUpdateFilters, (state, {payload}) => ({
     ...state,
-    filters: {...state.filters, ...payload},
-    }
-  )
-  ),
+    filters: {
+      nameFilter: payload.filters.nameFilter,
+      tagIds: payload.filters.tagIds,
+    },
+  })),
   on(propertiesUpdatePagination, (state, {payload}) => ({
     ...state,
-    pagination: {...state.pagination, ...payload},
-    }
-  )
-  ),
+    pagination: {
+      offset: payload.pagination.offset,
+      pageSize: payload.pagination.pageSize,
+      pageIndex: payload.pagination.pageIndex,
+      sort: payload.pagination.sort,
+      isSortDsc: payload.pagination.isSortDsc,
+      total: payload.pagination.total,
+    },
+  })),
   on(propertiesUpdateTotalProperties, (state, {payload}) => ({
     ...state,
     totalProperties: payload,

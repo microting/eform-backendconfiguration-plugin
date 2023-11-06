@@ -20,4 +20,4 @@ export const selectPropertiesNameFilters =
 export const selectPropertiesPaginationPageSize =
     createSelector(selectProperties, (state) => state.pagination.pageSize);
 export const selectPropertiesTotal =
-    createSelector(selectProperties, (state) => state.totalProperties);
+    createSelector(selectProperties, (state) => state.total);
