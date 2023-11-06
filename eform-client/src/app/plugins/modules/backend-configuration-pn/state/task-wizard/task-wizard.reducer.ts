@@ -3,7 +3,7 @@ import {SortState} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
   taskWizardUpdateFilters, taskWizardUpdatePagination
-} from "src/app/plugins/modules/backend-configuration-pn/state/task-wizard/task-wizard.actions";
+} from './task-wizard.actions';
 
 export interface TaskWizardFiltrationModel {
   propertyIds: number[];
@@ -37,14 +37,20 @@ export const initialState: TaskWizardState = {
 
 export const _reducer = createReducer(
   initialState,
-  on(taskWizardUpdateFilters, (state, {filters}) => ({
+  on(taskWizardUpdateFilters, (state, {payload}) => ({
     ...state,
-    filters: {...state.filters, ...filters},
+    filters: {
+      propertyIds: payload.filters.propertyIds,
+      tagIds: payload.filters.tagIds,
+      folderIds: payload.filters.folderIds,
+      assignToIds: payload.filters.assignToIds,
+      status: payload.filters.status,
+    },
     }
   )),
-  on(taskWizardUpdatePagination, (state, {pagination}) => ({
+  on(taskWizardUpdatePagination, (state, {payload}) => ({
     ...state,
-    pagination: {...state.pagination, ...pagination},
+    pagination: {...state.pagination, ...payload},
     }
   )),
 );

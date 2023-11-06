@@ -21,6 +21,9 @@ import {StatisticsStateService} from '../../../statistics/store';
 import * as R from 'ramda';
 import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {
+  selectTaskWizardFilters, selectTaskWizardPropertyIds
+} from '../../../../state/task-wizard/task-wizard.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -70,6 +73,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     }
     return '';
   }
+  private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
+  private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
 
   constructor(
     private store: Store,
@@ -102,23 +107,23 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTags();
     this.getTasks();
     this.getEnabledLanguages();
-    // this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
-    //   .pipe(
-    //     tap(filters => {
-    //       if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
-    //         propertyIds = filters.propertyIds;
-    //         this.getFolders();
-    //         this.getSites();
-    //       }
-    //     },),
-    //     tap(_ => {
-    //       if (this.showDiagram) {
-    //         this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
-    //         this.getPlannedTaskWorkers();
-    //       }
-    //     })
-    //   )
-    //   .subscribe();
+    this.getFiltersAsyncSub$ = this.selectTaskWizardPropertyIds$
+      .pipe(
+        tap(filters => {
+          if (filters.length !== 0 && !R.equals(propertyIds, filters)) {
+            propertyIds = filters;
+            this.getFolders();
+            this.getSites();
+          }
+        },),
+        tap(_ => {
+          if (this.showDiagram) {
+            this.selectedPropertyId = _[0] || null;
+            this.getPlannedTaskWorkers();
+          }
+        })
+      )
+      .subscribe();
   }
 
   getProperties() {
@@ -132,6 +137,19 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getFolders() {
+    let propertyIds: number[] = [];
+    this.selectTaskWizardPropertyIds$.subscribe(x => propertyIds = x);
+    if (propertyIds.length === 0) {
+      return;
+    }
+    this.getFoldersSub$ = this.propertyService
+      .getLinkedFolderListByMultipleProperties(propertyIds)
+      .pipe(tap(data => {
+        if (data && data.success && data.model) {
+          this.folders = data.model;
+        }
+      }))
+      .subscribe();
     // this.getFoldersSub$ = this.propertyService
     //   .getLinkedFolderListByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
     //   .pipe(tap(data => {
@@ -143,13 +161,18 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getSites() {
-    // this.getSitesSub$ = this.propertyService
-    //   .getLinkedSitesByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
-    //   .pipe(tap(result => {
-    //     if (result && result.success && result.success) {
-    //       this.sites = result.model;
-    //     }
-    //   })).subscribe();
+    let propertyIds: number[] = [];
+    this.selectTaskWizardPropertyIds$.subscribe(x => propertyIds = x);
+    if (propertyIds.length === 0) {
+      return;
+    }
+    this.getSitesSub$ = this.propertyService
+      .getLinkedSitesByMultipleProperties(propertyIds)
+      .pipe(tap(result => {
+        if (result && result.success && result.success) {
+          this.sites = result.model;
+        }
+      })).subscribe();
   }
 
   getTags() {
@@ -171,15 +194,15 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getTasks() {
-    // this.taskWizardStateService.getAllTasks()
-    //   .pipe(
-    //     tap(data => {
-    //       if (data && data.success && data.model) {
-    //         this.tasks = data.model;
-    //       }
-    //     })
-    //   )
-    //   .subscribe();
+    this.taskWizardStateService.getAllTasks()
+      .pipe(
+        tap(data => {
+          if (data && data.success && data.model) {
+            this.tasks = data.model;
+          }
+        })
+      )
+      .subscribe();
   }
 
   updateTable() {

@@ -8,13 +8,14 @@ import {
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {CommonDictionaryModel, FolderDto} from 'src/app/common/models';
 import {FormControl, FormGroup} from '@angular/forms';
-import {debounce, filter, tap} from 'rxjs/operators';
 import {TaskWizardStateService} from '../store';
 import {TaskWizardStatusesEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
-import * as R from 'ramda';
-import {interval, Subscription} from 'rxjs';
-import {Store} from "@ngrx/store";
+import {Subscription} from 'rxjs';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskWizardFilters, selectTaskWizardPropertyIds
+} from 'src/app/plugins/modules/backend-configuration-pn/state/task-wizard/task-wizard.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -38,16 +39,16 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
     folderIds: FormControl<number[]>
   }>;
 
-  getFiltersAsyncSub$: Subscription;
   valueChangesStatusSub$: Subscription;
   valueChangesAssignToIdsSub$: Subscription;
   valueChangesTagIdsSub$: Subscription;
   valueChangesFolderIdsSub$: Subscription;
   valueChangesPropertyIdsSub$: Subscription;
+  private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
+  private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
 
   constructor(
     private store: Store,
-    private taskWizardStateService: TaskWizardStateService,
     private translateService: TranslateService,
   ) {
     this.filtersForm = new FormGroup({
@@ -68,62 +69,93 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
           value: TaskWizardStatusesEnum[key],
         };
       });
-    // this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
-    //   .pipe(
-    //     debounce(x => interval(200)),
-    //     filter(value => !R.equals(value, this.filtersForm.getRawValue())),
-    //     tap(filters => {
-    //       this.propertyIdsChange(filters.propertyIds);
-    //       this.folderIdsChange(filters.folderIds);
-    //       this.tagIdsChange(filters.tagIds);
-    //       this.statusChange(filters.status);
-    //       this.assignToIdsChange(filters.assignToIds);
-    //     })).subscribe();
 
-    // this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges.pipe(
-    //   debounce(x => interval(200)),
-    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.propertyIds)),
-    //   tap(value => {
-    //     this.propertyIdsChange(value);
-    //   }),
-    //   tap(() => this.updateTable.emit())
-    // ).subscribe();
+    this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
+      .subscribe((value: number[]) => {
+        this.store.dispatch({
+          type: '[TaskWizard] Update filters',
+          payload: {
+            filters: {
+              propertyIds: value,
+              folderIds: [],
+              assignToIds: [],
+              tagIds: [],
+              status: null,
+            }
+          }
+        });
+        this.propertyIdsChange(value);
+        this.updateTable.emit();
+    });
 
-    // this.valueChangesFolderIdsSub$ = this.filtersForm.get('folderIds').valueChanges.pipe(
-    //   debounce(x => interval(200)),
-    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.folderIds)),
-    //   tap(value => {
-    //     this.folderIdsChange(value);
-    //   }),
-    //   tap(() => this.updateTable.emit())
-    // ).subscribe();
-    //
-    // this.valueChangesTagIdsSub$ = this.filtersForm.get('tagIds').valueChanges.pipe(
-    //   debounce(x => interval(200)),
-    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.tagIds)),
-    //   tap(value => {
-    //     this.tagIdsChange(value);
-    //   }),
-    //   tap(() => this.updateTable.emit())
-    // ).subscribe();
-    //
-    // this.valueChangesAssignToIdsSub$ = this.filtersForm.get('assignToIds').valueChanges.pipe(
-    //   debounce(x => interval(200)),
-    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.assignToIds)),
-    //   tap(value => {
-    //     this.assignToIdsChange(value);
-    //   }),
-    //   tap(() => this.updateTable.emit())
-    // ).subscribe();
-    //
-    // this.valueChangesStatusSub$ = this.filtersForm.get('status').valueChanges.pipe(
-    //   debounce(x => interval(200)),
-    //   filter(value => !R.equals(value, this.taskWizardStateService.store.getValue().filters.status)),
-    //   tap(value => {
-    //     this.statusChange(value);
-    //   }),
-    //   tap(() => this.updateTable.emit())
-    // ).subscribe();
+    this.valueChangesFolderIdsSub$ = this.filtersForm.get('folderIds').valueChanges
+      .subscribe((value: number[]) => {
+        let currentFilters: any;
+        this.selectTaskWizardFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        this.store.dispatch({
+          type: '[TaskWizard] Update filters',
+          payload: {
+            filters: {
+              ...currentFilters,
+              folderIds: value,
+            }
+          }
+        });
+        this.updateTable.emit();
+      });
+    this.valueChangesTagIdsSub$ = this.filtersForm.get('tagIds').valueChanges
+      .subscribe((value: number[]) => {
+        let currentFilters: any;
+        this.selectTaskWizardFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        this.store.dispatch({
+          type: '[TaskWizard] Update filters',
+          payload: {
+            filters: {
+              ...currentFilters,
+              tagIds: value,
+            }
+          }
+        });
+        this.updateTable.emit();
+      });
+    this.valueChangesAssignToIdsSub$ = this.filtersForm.get('assignToIds').valueChanges
+      .subscribe((value: number[]) => {
+        let currentFilters: any;
+        this.selectTaskWizardFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        this.store.dispatch({
+          type: '[TaskWizard] Update filters',
+          payload: {
+            filters: {
+              ...currentFilters,
+              assignToIds: value,
+            }
+          }
+        });
+        this.updateTable.emit();
+      });
+    this.valueChangesStatusSub$ = this.filtersForm.get('status').valueChanges
+      .subscribe((value: TaskWizardStatusesEnum | null) => {
+        let currentFilters: any;
+        this.selectTaskWizardFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        this.store.dispatch({
+          type: '[TaskWizard] Update filters',
+          payload: {
+            filters: {
+              ...currentFilters,
+              status: value,
+            }
+          }
+        });
+        this.updateTable.emit();
+      });
   }
 
   propertyIdsChange(value: number[]) {
@@ -135,30 +167,6 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
       this.filtersForm.get('assignToIds').disable();
     }
     this.filtersForm.patchValue({folderIds: [], assignToIds: []});
-    this.taskWizardStateService.updatePropertyIds(value);
-    this.filtersForm.get('propertyIds').patchValue(value);
-    this.folderIdsChange([]);
-    this.assignToIdsChange([]);
-  }
-
-  folderIdsChange(value: number[]) {
-    this.taskWizardStateService.updateFolderIds(value);
-    this.filtersForm.get('folderIds').patchValue(value);
-  }
-
-  assignToIdsChange(value: number[]) {
-    this.taskWizardStateService.updateAssignToIds(value);
-    this.filtersForm.get('assignToIds').patchValue(value);
-  }
-
-  tagIdsChange(value: number[]) {
-    this.taskWizardStateService.updateTagIds(value);
-    this.filtersForm.get('tagIds').patchValue(value);
-  }
-
-  statusChange(value: TaskWizardStatusesEnum) {
-    this.taskWizardStateService.updateStatus(value);
-    this.filtersForm.get('status').patchValue(value);
   }
 
   ngOnDestroy(): void {

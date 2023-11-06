@@ -9,9 +9,14 @@ import {Store} from '@ngrx/store';
 import {
   TaskWizardFiltrationModel
 } from '../../../../state/task-wizard/task-wizard.reducer';
+import {
+  selectTaskWizardFilters, selectTaskWizardPagination
+} from '../../../../state/task-wizard/task-wizard.selector';
 
 @Injectable({providedIn: 'root'})
 export class TaskWizardStateService {
+  private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
+  private selectTaskWizardPagination$  = this.store.select(selectTaskWizardPagination);
   constructor(
       private store: Store,
     private service: BackendConfigurationPnTaskWizardService,
@@ -19,13 +24,17 @@ export class TaskWizardStateService {
   }
 
   getAllTasks() {
-    // return this.service
-    //   .getTasks({
-    //     filters: {...this.query.pageSetting.filters},
-    //     pagination: {...this.query.pageSetting.pagination},
-    //   }).pipe(
-    //     filter(data => !!(data && data.success && data.model)),
-    //   );
+    let filters: TaskWizardFiltrationModel;
+    let pagination: any;
+    this.selectTaskWizardFilters$.subscribe((x) => filters = x);
+    this.selectTaskWizardPagination$.subscribe((x) => pagination = x);
+    return this.service
+      .getTasks({
+        filters: {...filters},
+        pagination: {...pagination},
+      }).pipe(
+        filter(data => !!(data && data.success && data.model)),
+      );
   }
 
   // getFiltersAsync(): Observable<TaskWizardFiltrationModel> {
@@ -91,7 +100,8 @@ export class TaskWizardStateService {
     // this.store.update((state) => ({
     //   filters: {
     //     ...state.filters,
-    //     tagIds: state.filters.tagIds.findIndex(tagId => tagId === tag.id) === -1 ? [...state.filters.tagIds, tag.id] : state.filters.tagIds,
+    //     tagIds: state.filters.tagIds
+    //     .findIndex(tagId => tagId === tag.id) === -1 ? [...state.filters.tagIds, tag.id] : state.filters.tagIds,
     //   },
     // }));
   }

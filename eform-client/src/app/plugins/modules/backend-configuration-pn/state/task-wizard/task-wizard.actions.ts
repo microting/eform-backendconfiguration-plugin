@@ -1,11 +1,11 @@
 import {createAction} from '@ngrx/store';
 
 export const taskWizardUpdateFilters = createAction(
-  'taskWizardUpdateFilters',
-  (filters) => ({filters})
+  '[TaskWizard] Update filters',
+  (payload) => ({payload})
 )
 
 export const taskWizardUpdatePagination = createAction(
-  'taskWizardUpdatePagination',
-  (pagination) => ({pagination})
+  '[TaskWizard] Update pagination',
+  (payload) => ({payload})
 )

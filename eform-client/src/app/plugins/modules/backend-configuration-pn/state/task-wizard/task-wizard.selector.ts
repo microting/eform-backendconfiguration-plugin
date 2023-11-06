@@ -15,3 +15,5 @@ export const selectTaskWizardPaginationIsSortDsc =
   createSelector(selectTaskWizard, (state) => state.pagination.isSortDsc ? 'asc' : 'desc');
 export const selectTaskWizardFilters =
   createSelector(selectTaskWizard, (state) => state.filters);
+export const selectTaskWizardPropertyIds =
+  createSelector(selectTaskWizardFilters, (state) => state.propertyIds);
