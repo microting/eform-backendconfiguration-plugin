@@ -1,11 +1,11 @@
 import {createAction} from '@ngrx/store';
 
 export const updateDocumentsFilters = createAction(
-    '[Documents] Update Documents Filters',
+    '[Documents] Update filters',
   (payload) => ({ payload })
 );
 
 export const updateDocumentsPagination = createAction(
-    '[Documents] Update Documents Pagination',
+    '[Documents] Update pagination',
   (payload) => ({ payload })
 );

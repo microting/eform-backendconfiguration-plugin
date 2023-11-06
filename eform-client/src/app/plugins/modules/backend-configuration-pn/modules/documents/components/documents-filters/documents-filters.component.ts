@@ -9,10 +9,8 @@ import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {LocaleService} from 'src/app/common/services';
 import {TranslateService} from '@ngx-translate/core';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
-import {AuthStateService} from 'src/app/common/store';
 import {DocumentSimpleFolderModel, DocumentSimpleModel} from '../../../../models';
 import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {DocumentsStateService} from '../../store';
@@ -21,10 +19,10 @@ import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
   selectDocumentsFilters
-} from "src/app/plugins/modules/backend-configuration-pn/state/documents/documents.selector";
+} from '../../../../state/documents/documents.selector';
 import {
   DocumentsFiltrationModel
-} from "src/app/plugins/modules/backend-configuration-pn/state/documents/documents.reducer";
+} from '../../../../state/documents/documents.reducer';
 
 @AutoUnsubscribe()
 @Component({
@@ -53,8 +51,6 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
     private store: Store,
     private translate: TranslateService,
     public documentsStateService: DocumentsStateService,
-    localeService: LocaleService,
-    authStateService: AuthStateService
   ) {
     this.selectCurrentUserLocale$.subscribe((locale) => {
       dateTimeAdapter.setLocale(locale);
@@ -65,9 +61,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    //this.getProperties();
     this.selectFiltersSub$ = this.selectDocumentsFilters$
-    //   .getFiltersAsync()
       .subscribe((filters) => {
         if (!this.filtersForm) {
           this.filtersForm = new FormGroup({
@@ -83,12 +77,6 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
                 propertyId: -1,
               }
             });
-    //         this.documentsStateService.store.update((state) => ({
-    //           filters: {
-    //             ...state.filters,
-    //             propertyId: -1,
-    //           },
-    //         }));
           }
           if (filters.propertyId && filters.propertyId !== -1) {
             //this.getDocuments(filters.propertyId);
@@ -107,25 +95,13 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
           this.store.dispatch({
             type: '[Documents] Update filters',
             payload: {
-              propertyId: value,
+              filters: {
+                ...currentFilters,
+                propertyId: value,
+              }
             }
           });
-          // this.documentsStateService.updateFilters({propertyId: value});
         }
-    //     if (
-    //       this.documentsStateService.store.getValue().filters
-    //         .propertyId !== value
-    //     ) {
-    //       if (value !== -1) { /* empty */
-    //       } else { /* empty */
-    //       }
-    //       this.documentsStateService.store.update((state) => ({
-    //         filters: {
-    //           ...state.filters,
-    //           propertyId: value,
-    //         },
-    //       }));
-    //     }
       });
     this.folderNameChangesSub$ = this.filtersForm
       .get('folderId')
@@ -138,22 +114,13 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
           this.store.dispatch({
             type: '[Documents] Update filters',
             payload: {
-              folderId: value,
+              filters: {
+                ...currentFilters,
+                folderId: value,
+              }
             }
           });
-          // this.documentsStateService.updateFilters({folderId: value});
         }
-    //     if (
-    //       this.documentsStateService.store.getValue().filters.folderId !==
-    //       value
-    //     ) {
-    //       this.documentsStateService.store.update((state) => ({
-    //         filters: {
-    //           ...state.filters,
-    //           folderId: value,
-    //         },
-    //       }));
-    //     }
       });
     this.documentChangesSub$ = this.filtersForm
       .get('documentId')
@@ -166,19 +133,13 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
           this.store.dispatch({
             type: '[Documents] Update filters',
             payload: {
-              documentId: value,
+              filters: {
+                ...currentFilters,
+                documentId: value,
+              }
             }
           });
-          // this.documentsStateService.updateFilters({documentId: value});
         }
-    //     if (this.documentsStateService.store.getValue().filters.documentId !== value) {
-    //       this.documentsStateService.store.update((state) => ({
-    //         filters: {
-    //           ...state.filters,
-    //           documentId: value,
-    //         },
-    //       }));
-    //     }
       });
     this.expireChangesSub$ = this.filtersForm
       .get('expiration')
@@ -191,19 +152,13 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
           this.store.dispatch({
             type: '[Documents] Update filters',
             payload: {
-              expiration: value,
+              filters: {
+                ...currentFilters,
+                expiration: value,
+              }
             }
           });
-          // this.documentsStateService.updateFilters({expiration: value});
         }
-    //     if (this.documentsStateService.store.getValue().filters.expiration !== value) {
-    //       this.documentsStateService.store.update((state) => ({
-    //         filters: {
-    //           ...state.filters,
-    //           expiration: value,
-    //         },
-    //       }));
-    //     }
       });
   }
 

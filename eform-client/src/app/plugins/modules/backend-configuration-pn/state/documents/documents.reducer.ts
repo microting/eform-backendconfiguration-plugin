@@ -38,7 +38,12 @@ export const _reducer = createReducer(
   initialState,
   on(updateDocumentsFilters, (state, {payload}) => ({
     ...state,
-    filters: {...state.filters, ...payload}
+    filters: {
+      propertyId: payload.filters.propertyId,
+      folderId: payload.filters.folderId,
+      documentId: payload.filters.documentId,
+      expiration: payload.filters.expiration,
+    }
     }
   )),
   on(updateDocumentsPagination, (state, {payload}) => ({
