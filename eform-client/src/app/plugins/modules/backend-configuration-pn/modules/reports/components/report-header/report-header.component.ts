@@ -63,18 +63,26 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // this.generateForm = new FormGroup(
-    //   {
-    //     tagIds: new FormControl(this.reportQuery.pageSetting.filters.tagIds),
-    //     dateRange: new FormGroup({
-    //       dateFrom: new FormControl(
-    //         this.reportQuery.pageSetting.dateRange.startDate &&
-    //         parse(this.reportQuery.pageSetting.dateRange.startDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
-    //       dateTo: new FormControl(
-    //         this.reportQuery.pageSetting.dateRange.endDate &&
-    //         parse(this.reportQuery.pageSetting.dateRange.endDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
-    //     },),
-    //   });
+    let _filters: FiltrationStateModel;
+    this.selectReportsV2Filters$.subscribe((filters) => {
+      _filters = filters;
+    }).unsubscribe();
+    let dateRange: { startDate: string, endDate: string };
+    this.selectReportsV2DateRange$.subscribe((range) => {
+      dateRange = range;
+    }).unsubscribe();
+    this.generateForm = new FormGroup(
+      {
+        tagIds: new FormControl(_filters.tagIds),
+        dateRange: new FormGroup({
+          dateFrom: new FormControl(
+            dateRange.startDate &&
+            parse(dateRange.startDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
+          dateTo: new FormControl(
+            dateRange.endDate &&
+            parse(dateRange.endDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
+        },),
+      });
     this.valueChangesSub$ = this.generateForm.valueChanges.subscribe(
       (value: { tagIds: number[]; dateRange: {dateFrom: Date, dateTo: Date} }) => {
         if(value.dateRange.dateFrom) {
