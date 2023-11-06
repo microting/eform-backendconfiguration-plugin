@@ -110,6 +110,18 @@ export class FilesStateService {
   }
 
   onSortTable(sort: string) {
+    let currentPagination;
+    this.selectFilesPagination$.subscribe((pagination) => {
+      currentPagination = pagination;
+    }).unsubscribe();
+    const localPageSettings = updateTableSort(
+        sort,
+        currentPagination.sort,
+        currentPagination.isSortDsc
+    );
+    this.store.dispatch(
+        {type: '[Files] Update Pagination', payload: localPageSettings}
+    )
     // const localPageSettings = updateTableSort(
     //   sort,
     //   this.query.pageSetting.pagination.sort,

@@ -19,7 +19,9 @@ import {format, parse} from 'date-fns';
 import {debounceTime, skip} from 'rxjs/operators';
 import moment from 'moment';
 import * as R from 'ramda';
-import {Store} from "@ngrx/store";
+import {Store} from '@ngrx/store';
+import {selectFilesFilters} from '../../../../state/files/files.selector';
+import {FilesFiltrationModel} from '../../../../state/files/files.reducer';
 
 @AutoUnsubscribe()
 @Component({
@@ -39,11 +41,15 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     if (this.filtersForm && this.filtersForm.controls) {
       // delete from filter deleted tags
       const newTagIdsWithoutDeletedTags = this.filtersForm.value.tagIds.filter((x: number) => this._availableTags.some(y => y.id === x));
-      // if (newTagIdsWithoutDeletedTags.length !== this.filesStateService.store.getValue().filters.tagIds.length) {
-      //   this.filtersForm.patchValue({
-      //     tagIds: newTagIdsWithoutDeletedTags,
-      //   });
-      // }
+      let currentFilters: FilesFiltrationModel;
+      this.selectFilesFilters$.subscribe((filters) => {
+        currentFilters = filters;
+      }).unsubscribe();
+      if (newTagIdsWithoutDeletedTags.length !== currentFilters.tagIds.length) {
+        this.filtersForm.patchValue({
+          tagIds: newTagIdsWithoutDeletedTags,
+        });
+      }
     }
   }
 
@@ -75,6 +81,8 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     }
   }
 
+  private selectFilesFilters$ = this.store.select(selectFilesFilters);
+
   constructor(
     private store: Store,
     private translate: TranslateService,
@@ -85,39 +93,46 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.getProperties();
-    // this.selectFiltersSub$ = this.filesStateService
-    //   .getFiltersAsync()
-    //   .pipe(take(1))
-    //   .subscribe((filters) => {
-    //     this.filtersForm = new FormGroup({
-    //       propertyIds: new FormControl(filters.propertyIds),
-    //       dateRange: new FormGroup({
-    //         dateFrom: new FormControl(filters.dateRange.dateFrom ? parse(filters.dateRange.dateFrom, this.dateFormat, new Date) : null),
-    //         dateTo: new FormControl(filters.dateRange.dateTo ? parse(filters.dateRange.dateTo, this.dateFormat, new Date) : null),
-    //       }),
-    //       nameFilter: new FormControl(filters.nameFilter),
-    //       tagIds: new FormControl(filters.tagIds),
-    //     });
-    //   });
+    this.selectFiltersSub$ = this.selectFilesFilters$
+      // .getFiltersAsync()
+      .pipe(take(1))
+      .subscribe((filters) => {
+        this.filtersForm = new FormGroup({
+          propertyIds: new FormControl(filters.propertyIds),
+          dateRange: new FormGroup({
+            dateFrom: new FormControl(filters.dateRange.dateFrom ? parse(filters.dateRange.dateFrom, this.dateFormat, new Date) : null),
+            dateTo: new FormControl(filters.dateRange.dateTo ? parse(filters.dateRange.dateTo, this.dateFormat, new Date) : null),
+          }),
+          nameFilter: new FormControl(filters.nameFilter),
+          tagIds: new FormControl(filters.tagIds),
+        });
+      });
 
-    // this.filterChangesSub$ = this.filtersForm.valueChanges
-    //   .pipe(debounceTime(500), skip(1))
-    //   .subscribe((value: { propertyIds: number[], dateRange: { dateFrom: Date, dateTo: Date }, nameFilter: string, tagIds: number[] }) => {
-    //     const filters: FilesFiltrationModel = {
-    //       ...this.filesStateService.store.getValue().filters,
-    //       ...value,
-    //       dateRange: {
-    //         dateFrom: value.dateRange.dateFrom && format(value.dateRange.dateFrom, this.dateFormat),
-    //         dateTo: value.dateRange.dateTo && format(value.dateRange.dateTo, this.dateFormat)
-    //       },
-    //     };
-    //
-    //     if (filters.dateRange.dateFrom && !filters.dateRange.dateTo) {
-    //       return; // no update store and table if date range not fulfilled
-    //     }
-    //     this.filesStateService.updateFilters(filters);
-    //     this.updateTable.emit();
-    //   });
+    this.filterChangesSub$ = this.filtersForm.valueChanges
+      .pipe(debounceTime(500), skip(1))
+      .subscribe((value: { propertyIds: number[], dateRange: { dateFrom: Date, dateTo: Date }, nameFilter: string, tagIds: number[] }) => {
+        let currentFilters: FilesFiltrationModel;
+        this.selectFilesFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+        const filters: FilesFiltrationModel = {
+          ...currentFilters,
+          ...value,
+          dateRange: {
+            dateFrom: value.dateRange.dateFrom && format(value.dateRange.dateFrom, this.dateFormat),
+            dateTo: value.dateRange.dateTo && format(value.dateRange.dateTo, this.dateFormat)
+          },
+        };
+
+        if (filters.dateRange.dateFrom && !filters.dateRange.dateTo) {
+          return; // no update store and table if date range not fulfilled
+        }
+        this.store.dispatch(
+          {type: '[Files] Update Filters', payload: filters}
+        )
+        // this.filesStateService.updateFilters(filters);
+        this.updateTable.emit();
+      });
   }
 
   getProperties() {

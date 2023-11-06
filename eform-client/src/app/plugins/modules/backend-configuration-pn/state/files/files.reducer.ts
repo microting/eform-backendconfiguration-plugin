@@ -3,7 +3,7 @@ import {Action, createReducer, on} from '@ngrx/store';
 import {
   filesUpdateDateRange, filesUpdateFilters, filesUpdatePagination, filesUpdatePaginationTotalItemsCount,
   filesUpdatePropertyIds
-} from "src/app/plugins/modules/backend-configuration-pn/state/files/files.asctions";
+} from './files.asctions';
 
 export interface FilesFiltrationModel extends FiltrationStateModel{
   propertyIds: number[],
