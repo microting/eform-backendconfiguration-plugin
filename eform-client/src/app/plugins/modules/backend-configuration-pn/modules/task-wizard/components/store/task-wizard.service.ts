@@ -1,13 +1,13 @@
 import {Injectable} from '@angular/core';
 import {Observable, filter} from 'rxjs';
 import {BackendConfigurationPnTaskWizardService} from '../../../../services';
-import {CommonDictionaryModel} from 'src/app/common/models';
+import {CommonDictionaryModel, CommonPaginationState} from 'src/app/common/models';
 import {updateTableSort} from 'src/app/common/helpers';
 import * as R from 'ramda';
 import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
 import {Store} from '@ngrx/store';
 import {
-  TaskWizardFiltrationModel
+  TaskWizardFiltrationModel, TaskWizardPaginationModel
 } from '../../../../state/task-wizard/task-wizard.reducer';
 import {
   selectTaskWizardFilters, selectTaskWizardPagination
@@ -97,6 +97,22 @@ export class TaskWizardStateService {
   }
 
   addTagToFilters(tag: CommonDictionaryModel) {
+    let currentFilters: TaskWizardFiltrationModel;
+    this.selectTaskWizardFilters$.subscribe((x) => currentFilters = x);
+    const newTagIds = currentFilters.tagIds
+      .findIndex(tagId => tagId === tag.id) === -1 ? [...currentFilters.tagIds, tag.id] : currentFilters.tagIds;
+    this.store.dispatch({
+      type: '[TaskWizard] Update filters',
+      payload: {
+        filters: {
+          tagIds: newTagIds,
+          folderIds: currentFilters.folderIds,
+          propertyIds: currentFilters.propertyIds,
+          assignToIds: currentFilters.assignToIds,
+          status: currentFilters.status,
+        }
+      },
+    });
     // this.store.update((state) => ({
     //   filters: {
     //     ...state.filters,
@@ -115,17 +131,20 @@ export class TaskWizardStateService {
   // }
 
   onSortTable(sort: string) {
-    // const localPageSettings = updateTableSort(
-    //   sort,
-    //   this.query.pageSetting.pagination.sort,
-    //   this.query.pageSetting.pagination.isSortDsc
-    // );
-    // this.store.update((state) => ({
-    //   pagination: {
-    //     ...state.pagination,
-    //     isSortDsc: localPageSettings.isSortDsc,
-    //     sort: localPageSettings.sort,
-    //   },
-    // }));
+    let currentPagination: TaskWizardPaginationModel;
+    this.selectTaskWizardPagination$.subscribe((x) => currentPagination = x);
+    const localPageSettings = updateTableSort(
+      sort,
+      currentPagination.sort,
+      currentPagination.isSortDsc
+    );
+    this.store.dispatch({
+      type: '[TaskWizard] Update pagination',
+      payload: {
+        ...currentPagination,
+        isSortDsc: localPageSettings.isSortDsc,
+        sort: localPageSettings.sort,
+      },
+    })
   }
 }

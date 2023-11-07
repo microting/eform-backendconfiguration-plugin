@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import {Observable, zip} from 'rxjs';
 import {
+    CommonPaginationState,
   OperationDataResult,
   Paged,
 } from 'src/app/common/models';
-import { updateTableSort } from 'src/app/common/helpers';
+import {updateTableSort} from 'src/app/common/helpers';
 import {
   FilesModel,
   FilesRequestModel,
@@ -20,37 +21,39 @@ import {
   selectFilesPagination
 } from '../../../state/files/files.selector';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class FilesStateService {
   private selectFilesFilters$ = this.store.select(selectFilesFilters);
   private selectFilesPagination$ = this.store.select(selectFilesPagination);
-  constructor(
-      private store: Store,
-    private service: BackendConfigurationPnFilesService,
-  ) {}
 
-  getFiles() : Observable<OperationDataResult<Paged<FilesModel>>> {
+  constructor(
+    private store: Store,
+    private service: BackendConfigurationPnFilesService,
+  ) {
+  }
+
+  getFiles(): Observable<OperationDataResult<Paged<FilesModel>>> {
     let _filters: FilesRequestModel;
     zip(this.selectFilesFilters$, this.selectFilesPagination$).subscribe(
-        ([filters, pagination]) => {
-          _filters = {
-            ..._filters,
-            ...filters,
-            ...pagination,
-          };
-        }
+      ([filters, pagination]) => {
+        _filters = {
+          ..._filters,
+          ...filters,
+          ...pagination,
+        };
+      }
     ).unsubscribe();
     return this.service.getAllFiles(_filters).pipe(
-        tap((data) => {
-          if (data && data.success) {
-            this.store.dispatch(
-                {type: '[Files] Update Pagination Total Items Count', total: data.model.total ?? ''}
-            )
-            // this.store.update((state) => ({
-            //   total: data.model.total,
-            // }));
-          }
-        })
+      tap((data) => {
+        if (data && data.success) {
+          this.store.dispatch(
+            {type: '[Files] Update Pagination Total Items Count', total: data.model.total ?? ''}
+          )
+          // this.store.update((state) => ({
+          //   total: data.model.total,
+          // }));
+        }
+      })
     );
     // this.selectFilesFilters$.subscribe((filters) => {
     //   _filters = ;
@@ -110,7 +113,7 @@ export class FilesStateService {
   }
 
   onSortTable(sort: string) {
-    let currentPagination;
+    let currentPagination: CommonPaginationState;
     this.selectFilesPagination$.subscribe((pagination) => {
       currentPagination = pagination;
     }).unsubscribe();

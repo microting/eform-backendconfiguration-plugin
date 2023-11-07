@@ -11,11 +11,13 @@ import {FormControl, FormGroup} from '@angular/forms';
 import {TaskWizardStateService} from '../store';
 import {TaskWizardStatusesEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
-import {Subscription} from 'rxjs';
+import {interval, Subscription} from 'rxjs';
 import {Store} from '@ngrx/store';
+import * as R from 'ramda';
 import {
   selectTaskWizardFilters, selectTaskWizardPropertyIds
-} from 'src/app/plugins/modules/backend-configuration-pn/state/task-wizard/task-wizard.selector';
+} from '../../../../state/task-wizard/task-wizard.selector';
+import {debounce, filter, tap} from 'rxjs/operators';
 
 @AutoUnsubscribe()
 @Component({
@@ -44,6 +46,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   valueChangesTagIdsSub$: Subscription;
   valueChangesFolderIdsSub$: Subscription;
   valueChangesPropertyIdsSub$: Subscription;
+  getFiltersAsyncSub$: Subscription;
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
   private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
 
@@ -69,6 +72,18 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
           value: TaskWizardStatusesEnum[key],
         };
       });
+
+    this.getFiltersAsyncSub$ = this.selectTaskWizardFilters$
+      .pipe(
+        debounce(x => interval(200)),
+        filter(value => !R.equals(value, this.filtersForm.getRawValue())),
+        tap(filters => {
+          // this.propertyIdsChange(filters.propertyIds);
+          // this.folderIdsChange(filters.folderIds);
+          this.tagIdsChange(filters.tagIds);
+          // this.statusChange(filters.status);
+          // this.assignToIdsChange(filters.assignToIds);
+        })).subscribe();
 
     this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
       .subscribe((value: number[]) => {
@@ -167,6 +182,11 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
       this.filtersForm.get('assignToIds').disable();
     }
     this.filtersForm.patchValue({folderIds: [], assignToIds: []});
+  }
+
+  tagIdsChange(value: number[]) {
+    // this.taskWizardStateService.updateTagIds(value);
+    this.filtersForm.get('tagIds').patchValue(value);
   }
 
   ngOnDestroy(): void {
