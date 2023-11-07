@@ -84,8 +84,8 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
 
   constructor(
     private store: Store,
-    private route: ActivatedRoute,
-    private router: Router,
+    public route: ActivatedRoute,
+    public router: Router,
     private dialog: MatDialog,
     private overlay: Overlay,
     private translateService: TranslateService,
@@ -126,10 +126,10 @@ export class PropertyAreasComponent implements OnInit, OnDestroy {
       .getPropertyAreas(selectedPropertyId)
       .subscribe((data) => {
         if (data && data.success) {
-          this.selectAuthIsAdmin$.subscribe((isAdmin: any) => {
-            this.selectedPropertyAreas = data.model
-              .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin));
-          });
+          let isAdmin = false;
+          this.selectAuthIsAdmin$.subscribe(x => isAdmin = x);
+          this.selectedPropertyAreas = data.model
+            .filter(x => (!this.disabledAreas.includes(x.name) || isAdmin) && x.activated);
         }
       });
   }

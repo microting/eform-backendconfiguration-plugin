@@ -17,6 +17,7 @@ import {TaskWizardState} from './task-wizard/task-wizard.reducer';
 import {
   PropertyWorkersState
 } from './property-workers/property-workers.reducer';
+import {AreaRulesState} from './area-rules/area-rules.reducer';
 
 export interface BackendConfigurationState {
   documentsState: DocumentsState;
@@ -30,4 +31,5 @@ export interface BackendConfigurationState {
   taskTrackerState: TaskTrackerState;
   taskWizardState: TaskWizardState;
   taskWorkerAssignmentsState: TaskWorkerAssignmentsState;
+  areaRulesState: AreaRulesState;
 }

@@ -26,6 +26,10 @@ import {Sort} from '@angular/material/sort';
 import * as R from 'ramda';
 import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
+import {
+  selectAreaRulesPaginationIsSortDsc,
+  selectAreaRulesPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/area-rules/area-rules.selector";
 
 @Component({
   selector: 'app-area-rules-table',
@@ -485,6 +489,8 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
     }
   }
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectAreaRulesPaginationSort$ = this.store.select(selectAreaRulesPaginationSort);
+  public selectAreaRulesPaginationIsSortDsc$ = this.store.select(selectAreaRulesPaginationIsSortDsc);
 
   constructor(
     private store: Store,

@@ -49,6 +49,9 @@
     [rowStriped]="true"
     [showToolbar]="false"
     [showColumnMenuButton]="false"
+    [sortActive]="selectAreaRulesPaginationSort$ | async"
+    [sortDirection]="selectAreaRulesPaginationIsSortDsc$ | async"
+    (sortChange)="onSortTable($event)"
   >
   </mtx-grid>
 </ng-container>

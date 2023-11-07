@@ -57,6 +57,7 @@ import * as statisticsReducer from './state/statistics/statistics.reducer';
 import * as reportsV1Reducer from './state/reports-v1/reports-v1.reducer';
 import * as reportsV2Reducer from './state/reports-v2/reports-v2.reducer';
 import * as propertyWorkersReducer from './state/property-workers/property-workers.reducer';
+import * as areaRulesReducer from './state/area-rules/area-rules.reducer';
 
 
 @NgModule({
@@ -98,6 +99,7 @@ import * as propertyWorkersReducer from './state/property-workers/property-worke
         reportsV1State: reportsV1Reducer.reducer,
         reportsV2State: reportsV2Reducer.reducer,
         propertyWorkersState: propertyWorkersReducer.reducer,
+        areaRulesState: areaRulesReducer.reducer,
       })
     ],
   declarations: [

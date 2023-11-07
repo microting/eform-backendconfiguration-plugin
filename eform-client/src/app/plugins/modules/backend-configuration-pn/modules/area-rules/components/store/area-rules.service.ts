@@ -1,22 +1,23 @@
 import {Injectable} from '@angular/core';
-// import {
-//   AreaRulesStore,
-//   AreaRulesQuery,
-// } from './';
 import {Observable} from 'rxjs';
 import {
+  CommonPaginationState,
   OperationDataResult,
 } from 'src/app/common/models';
 import {BackendConfigurationPnAreasService} from '../../../../services';
 import {AreaRuleSimpleModel} from '../../../../models';
 import {updateTableSort} from 'src/app/common/helpers';
+import {Store} from '@ngrx/store';
+import {
+  selectAreaRulesPagination
+} from '../../../../state/area-rules/area-rules.selector';
 
 @Injectable({providedIn: 'root'})
 export class AreaRulesStateService {
+  private selectAreaRulesPagination$ = this.store.select(selectAreaRulesPagination);
   constructor(
-    // public store: AreaRulesStore,
+    private store: Store,
     private service: BackendConfigurationPnAreasService,
-    // private query: AreaRulesQuery
   ) {
   }
 
@@ -28,35 +29,34 @@ export class AreaRulesStateService {
 
   getAllAreaRules():
     Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
+    let pagination = new CommonPaginationState();
+    this.selectAreaRulesPagination$.subscribe((x) => (pagination = x));
     return this.service
-      .getAreaRules({
-        sort: 'Id',
-        isSortDsc: false,
-        // ...this.query.pageSetting.pagination,
+      .getAreaRules(
+        {
+        sort: pagination.sort,
+        isSortDsc: pagination.isSortDsc,
         propertyAreaId: this.propertyAreaId,
       });
   }
 
-  // getActiveSort(): Observable<string> {
-  //   return this.query.selectActiveSort$;
-  // }
-  //
-  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
-  //   return this.query.selectActiveSortDirection$;
-  // }
-
   onSortTable(sort: string) {
-  //   const localPageSetting = updateTableSort(
-  //     sort,
-  //     this.query.pageSetting.pagination.sort,
-  //     this.query.pageSetting.pagination.isSortDsc
-  //   );
-  //   this.store.update((state) => ({
-  //     pagination: {
-  //       ...state.pagination,
-  //       isSortDsc: localPageSetting.isSortDsc,
-  //       sort: localPageSetting.sort,
-  //     },
-  //   }));
+    let currentPagination: CommonPaginationState;
+    this.selectAreaRulesPagination$.subscribe((x) => (currentPagination = x));
+    const localPageSetting = updateTableSort(
+      sort,
+      currentPagination.sort,
+      currentPagination.isSortDsc
+    );
+    this.store.dispatch({
+      type: '[AreaRules] Update pagination',
+      payload: {
+        sort: localPageSetting.sort,
+        isSortDsc: localPageSetting.isSortDsc,
+        pageIndex: 0,
+        offset: 0,
+        propertyAreaId: this.propertyAreaId,
+      },
+    })
   }
 }
