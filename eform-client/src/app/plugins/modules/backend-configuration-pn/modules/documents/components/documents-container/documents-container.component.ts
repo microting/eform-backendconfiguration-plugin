@@ -30,7 +30,8 @@ import {StatisticsStateService} from '../../../statistics/store';
 import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
-  selectDocumentsFiltersPropertyId
+  selectDocumentsFilters,
+  selectDocumentsFiltersPropertyId, selectDocumentsPaginationIsSortDsc
 } from '../../../../state/documents/documents.selector';
 
 @Component({
@@ -53,9 +54,13 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   documentUpdatedSub$: Subscription;
   documentCreatedSub$: Subscription;
   folderManageModalClosedSub$: Subscription;
+  getActiveSortDirectionSub$: Subscription;
+  getFiltersAsyncSub$: Subscription;
   getDocumentUpdatedDaysSub$: Subscription;
   private selectCurrentUserLanguageId$ = this.store.select(selectCurrentUserLanguageId);
   private selectDocumentsFiltersPropertyId$ = this.store.select(selectDocumentsFiltersPropertyId);
+  private selectDocumentsPaginationIsSortDsc$ = this.store.select(selectDocumentsPaginationIsSortDsc);
+  private selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -102,15 +107,15 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.getProperties();
-    // this.getActiveSortDirectionSub$ = this.documentsStateService.getActiveSortDirection()
-    //   .pipe(
-    //     skip(1), // skip initial value
-    //     tap(() => {
-    //       this.updateTable();
-    //     }),
-    //   )
-    //   .subscribe();
-    // this.getFiltersAsyncSub$ = this.documentsStateService.getFiltersAsync()
+    this.getActiveSortDirectionSub$ = this.selectDocumentsPaginationIsSortDsc$
+      .pipe(
+        skip(1), // skip initial value
+        tap(() => {
+          this.updateTable();
+        }),
+      )
+      .subscribe();
+    // this.getFiltersAsyncSub$ = this.selectDocumentsFilters$
     //   .pipe(
     //     skip(1), // skip initial value
     //     tap(() => {

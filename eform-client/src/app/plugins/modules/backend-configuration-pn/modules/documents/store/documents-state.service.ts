@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  CommonPaginationState,
   OperationDataResult,
   Paged,
 } from 'src/app/common/models';
@@ -42,11 +43,18 @@ export class DocumentsStateService {
     this.selectDocumentsFilters$.subscribe((filters) => {
       _filters = filters;
     }).unsubscribe();
+    let _pagination: CommonPaginationState;
+    this.selectDocumentsPagination$.subscribe((pagination) => {
+      _pagination = pagination;
+    }).unsubscribe();
     return this.backendConfigurationPnDocumentsService.getAllDocuments({
         documentId: _filters.documentId,
         expiration: _filters.expiration,
         propertyId: _filters.propertyId,
-        folderId: _filters.folderId});
+        folderId: _filters.folderId,
+      sort: _pagination.sort,
+      isSortDsc: _pagination.isSortDsc,
+    });
   }
 
   // getNameFilter(): Observable<string> {
@@ -117,6 +125,23 @@ export class DocumentsStateService {
   // }
 
   onSortTable(sort: string) {
+    let currentPagination: CommonPaginationState;
+    this.selectDocumentsPagination$.subscribe((pagination) => {
+      currentPagination = pagination;
+    }).unsubscribe();
+    const localPageSettings = updateTableSort(
+      sort,
+      currentPagination.sort,
+      currentPagination.isSortDsc
+    );
+    this.store.dispatch({
+      type: '[Documents] Update pagination',
+      payload: {
+        ...currentPagination,
+        isSortDsc: localPageSettings.isSortDsc,
+        sort: localPageSettings.sort,
+      }
+    });
     // const localPageSettings = updateTableSort(
     //   sort,
     //   this.query.pageSetting.pagination.sort,
