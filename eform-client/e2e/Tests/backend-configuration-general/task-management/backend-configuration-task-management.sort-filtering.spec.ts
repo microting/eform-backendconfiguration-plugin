@@ -85,7 +85,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
         {
           areaName: areas1[i],
           assignedTo: `${workers[0].name} ${workers[0].surname}`,
-          propertyName: `${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`,
+          propertyName: `${properties[0].name}`,
           description: generateRandmString(),
         });
     }
@@ -94,7 +94,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
         {
           areaName: areas2[i],
           assignedTo: `${workers[1].name} ${workers[1].surname}`,
-          propertyName: `${properties[1].cvrNumber} - ${properties[1].chrNumber} - ${properties[1].name}`,
+          propertyName: `${properties[1].name}`,
           description: generateRandmString(),
         });
     }
@@ -103,14 +103,14 @@ describe('Backend Configuration Task Manager Delete Task', function () {
         {
           areaName: areas3[i],
           assignedTo: `${workers[2].name} ${workers[2].surname}`,
-          propertyName: `${properties[2].cvrNumber} - ${properties[2].chrNumber} - ${properties[2].name}`,
+          propertyName: `${properties[2].name}`,
           description: generateRandmString(),
         });
     }
   });
   it('should filter tasks', async () => {
     await backendConfigurationTaskManagementPage.changeFilters({
-      propertyName: `${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`
+      propertyName: `${properties[0].name}`
     });
     let taskRowObject = await backendConfigurationTaskManagementPage.getFirstTaskRowObject();
     expect(workers.findIndex(x => `${x.name} ${x.surname}` === taskRowObject.lastAssignedTo)).not.eq(-1);
@@ -118,7 +118,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     expect(areas1.findIndex(x => x === taskRowObject.area)).not.eq(-1);
 
     await backendConfigurationTaskManagementPage.changeFilters({
-      propertyName: `${properties[1].cvrNumber} - ${properties[1].chrNumber} - ${properties[1].name}`
+      propertyName: `${properties[1].name}`
     });
     taskRowObject = await backendConfigurationTaskManagementPage.getFirstTaskRowObject();
     expect(workers.findIndex(x => `${x.name} ${x.surname}` === taskRowObject.lastAssignedTo)).not.eq(-1);
@@ -126,7 +126,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
     expect(areas2.findIndex(x => x === taskRowObject.area)).not.eq(-1);
 
     await backendConfigurationTaskManagementPage.changeFilters({
-      propertyName: `${properties[2].cvrNumber} - ${properties[2].chrNumber} - ${properties[2].name}`
+      propertyName: `${properties[2].name}`
     });
     taskRowObject = await backendConfigurationTaskManagementPage.getFirstTaskRowObject();
     expect(workers.findIndex(x => `${x.name} ${x.surname}` === taskRowObject.lastAssignedTo)).not.eq(-1);

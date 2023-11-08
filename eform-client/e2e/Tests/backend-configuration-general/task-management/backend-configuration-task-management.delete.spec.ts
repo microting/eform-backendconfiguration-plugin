@@ -25,7 +25,7 @@ const workerForCreate = {
 };
 const areas = [generateRandmString(), generateRandmString(), generateRandmString(),]
 const filters: TaskManagementFilters = {
-  propertyName: `${property.cvrNumber} - ${property.chrNumber} - ${property.name}`,
+  propertyName: `${property.name}`,
 }
 
 describe('Backend Configuration Task Manager Delete Task', function () {
@@ -60,7 +60,7 @@ describe('Backend Configuration Task Manager Delete Task', function () {
       {
         areaName: areas[0],
         assignedTo: `${workerForCreate.name} ${workerForCreate.surname}`,
-        propertyName: `${property.cvrNumber} - ${property.chrNumber} - ${property.name}`,
+        propertyName: `${property.name}`,
         description: generateRandmString()
       });
     await backendConfigurationTaskManagementPage.changeFilters(filters);

@@ -180,7 +180,7 @@ export class TaskManagementCreateShowModalComponent
       if (data && data.success && data.model) {
         this.properties = [...data.model.entities.filter((x) => x.workorderEnable)
           .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+            return {name: `${x.name}`, description: '', id: x.id};
           })];
       }
     });

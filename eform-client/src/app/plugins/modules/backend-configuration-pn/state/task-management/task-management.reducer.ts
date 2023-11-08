@@ -26,7 +26,7 @@ export const initialState: TaskManagementState = {
   pagination: {
     pageSize: 10,
     sort: 'Id',
-    isSortDsc: false,
+    isSortDsc: true,
     offset: 0,
     pageIndex: 0,
     total: 0,
