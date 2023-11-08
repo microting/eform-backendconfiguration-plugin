@@ -24,6 +24,9 @@ import {Store} from '@ngrx/store';
 import {
   selectTaskWizardFilters, selectTaskWizardPropertyIds
 } from '../../../../state/task-wizard/task-wizard.selector';
+import {
+  selectStatisticsPropertyId
+} from "src/app/plugins/modules/backend-configuration-pn/state/statistics/statistics.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -75,6 +78,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
   private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
+  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
   constructor(
     private store: Store,
@@ -93,6 +97,23 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
+        this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+          if (propertyId) {
+            this.selectedPropertyId = propertyId;
+            this.store.dispatch({
+              type: '[TaskWizard] Update filters',
+              payload: {
+                filters: {
+                  propertyIds: [propertyId],
+                  tagIds: [],
+                  folderIds: [],
+                  assignToIds: [],
+                  status: null,
+                }
+              }
+            });
+          }
+        });
         // this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
         this.getPlannedTaskWorkers();
       } else {

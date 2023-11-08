@@ -190,7 +190,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
       if (data && data.success && data.model) {
         this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities
           .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+            return {name: `${x.name}`, description: '', id: x.id};
           })];
         this.getFoldersAndDocuments();
         this.getSimpleDocuments();

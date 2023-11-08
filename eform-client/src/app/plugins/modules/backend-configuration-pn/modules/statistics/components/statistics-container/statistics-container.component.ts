@@ -231,12 +231,14 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   clickOnDocumentUpdatedDays(filter?: DocumentsExpirationFilterEnum) {
     this.store.dispatch(
         {type: '[Documents] Update filters',
-          filters: {
-            propertyId: this.selectedPropertyId || null,
-            expiration: filter,
-            documentId: null,
-            folderId: null,
-        }
+          payload: {
+            filters: {
+              propertyId: this.selectedPropertyId || null,
+              expiration: filter,
+              documentId: null,
+              folderId: null,
+            }
+          }
         }
     )
     // this.documentsStateService.store.update((state) => ({
@@ -254,13 +256,15 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   clickOnPlannedTaskWorkers(workerId: number | null) {
     this.store.dispatch(
         {type: '[TaskWizard] Update filters',
-          filters: {
-            propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
-            assignToIds: this.selectedPropertyId && workerId ? [workerId] : [],
-            tagIds: [],
-            status: this.selectedPropertyId && workerId ? TaskWizardStatusesEnum.Active : null,
-            folderIds: [],
-        }
+          payload: {
+            filters: {
+              propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
+              assignToIds: this.selectedPropertyId && workerId ? [workerId] : [],
+              tagIds: [],
+              status: this.selectedPropertyId && workerId ? TaskWizardStatusesEnum.Active : null,
+              folderIds: [],
+            }
+          }
         }
     );
     // this.taskWizardStateService.store.update((state) => ({
