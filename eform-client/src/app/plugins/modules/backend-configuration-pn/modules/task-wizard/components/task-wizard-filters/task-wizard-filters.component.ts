@@ -87,20 +87,24 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
 
     this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
       .subscribe((value: number[]) => {
-        this.store.dispatch({
-          type: '[TaskWizard] Update filters',
-          payload: {
-            filters: {
-              propertyIds: value,
-              folderIds: [],
-              assignToIds: [],
-              tagIds: [],
-              status: null,
+        let currentFilters: any;
+        this.selectTaskWizardFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
+          this.store.dispatch({
+            type: '[TaskWizard] Update filters',
+            payload: {
+              filters: {
+                propertyIds: value,
+                folderIds: [],
+                assignToIds: [],
+                tagIds: [],
+                status: null,
+              }
             }
-          }
-        });
-        this.propertyIdsChange(value);
-        this.updateTable.emit();
+          });
+          this.propertyIdsChange(value);
+          this.updateTable.emit();
     });
 
     this.valueChangesFolderIdsSub$ = this.filtersForm.get('folderIds').valueChanges
@@ -109,16 +113,18 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
         this.selectTaskWizardFilters$.subscribe((filters) => {
           currentFilters = filters;
         }).unsubscribe();
-        this.store.dispatch({
-          type: '[TaskWizard] Update filters',
-          payload: {
-            filters: {
-              ...currentFilters,
-              folderIds: value,
+        if (currentFilters.folderIds.length !== value.length) {
+          this.store.dispatch({
+            type: '[TaskWizard] Update filters',
+            payload: {
+              filters: {
+                ...currentFilters,
+                folderIds: value,
+              }
             }
-          }
-        });
-        this.updateTable.emit();
+          });
+          this.updateTable.emit();
+        }
       });
     this.valueChangesTagIdsSub$ = this.filtersForm.get('tagIds').valueChanges
       .subscribe((value: number[]) => {
@@ -126,16 +132,18 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
         this.selectTaskWizardFilters$.subscribe((filters) => {
           currentFilters = filters;
         }).unsubscribe();
-        this.store.dispatch({
-          type: '[TaskWizard] Update filters',
-          payload: {
-            filters: {
-              ...currentFilters,
-              tagIds: value,
+        if (currentFilters.tagIds.length !== value.length) {
+          this.store.dispatch({
+            type: '[TaskWizard] Update filters',
+            payload: {
+              filters: {
+                ...currentFilters,
+                tagIds: value,
+              }
             }
-          }
-        });
-        this.updateTable.emit();
+          });
+          this.updateTable.emit();
+        }
       });
     this.valueChangesAssignToIdsSub$ = this.filtersForm.get('assignToIds').valueChanges
       .subscribe((value: number[]) => {
@@ -143,16 +151,18 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
         this.selectTaskWizardFilters$.subscribe((filters) => {
           currentFilters = filters;
         }).unsubscribe();
-        this.store.dispatch({
-          type: '[TaskWizard] Update filters',
-          payload: {
-            filters: {
-              ...currentFilters,
-              assignToIds: value,
+        if (currentFilters.assignToIds.length !== value.length) {
+          this.store.dispatch({
+            type: '[TaskWizard] Update filters',
+            payload: {
+              filters: {
+                ...currentFilters,
+                assignToIds: value,
+              }
             }
-          }
-        });
-        this.updateTable.emit();
+          });
+          this.updateTable.emit();
+        }
       });
     this.valueChangesStatusSub$ = this.filtersForm.get('status').valueChanges
       .subscribe((value: TaskWizardStatusesEnum | null) => {
@@ -160,16 +170,18 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
         this.selectTaskWizardFilters$.subscribe((filters) => {
           currentFilters = filters;
         }).unsubscribe();
-        this.store.dispatch({
-          type: '[TaskWizard] Update filters',
-          payload: {
-            filters: {
-              ...currentFilters,
-              status: value,
+        if (currentFilters.status !== value) {
+          this.store.dispatch({
+            type: '[TaskWizard] Update filters',
+            payload: {
+              filters: {
+                ...currentFilters,
+                status: value,
+              }
             }
-          }
-        });
-        this.updateTable.emit();
+          });
+          this.updateTable.emit();
+        }
       });
   }
 
@@ -187,6 +199,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   tagIdsChange(value: number[]) {
     // this.taskWizardStateService.updateTagIds(value);
     this.filtersForm.get('tagIds').patchValue(value);
+    this.updateTable.emit();
   }
 
   ngOnDestroy(): void {
