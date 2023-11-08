@@ -390,7 +390,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         this.propertiesModel = data.model;
         this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities.filter((x) => x.workorderEnable)
           .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+            return {name: `${x.name}`, description: '', id: x.id};
           })];
       }
     });

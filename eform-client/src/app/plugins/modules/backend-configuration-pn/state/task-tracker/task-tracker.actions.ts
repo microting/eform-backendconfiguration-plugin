@@ -1,6 +1,6 @@
 import {createAction} from '@ngrx/store';
 
 export const taskTrackerUpdateFilters = createAction(
-  '[TaskTracker] Update Filters',
+  '[TaskTracker] Update filters',
   (payload) => ({ payload })
 )

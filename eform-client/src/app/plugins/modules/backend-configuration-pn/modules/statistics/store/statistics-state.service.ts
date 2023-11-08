@@ -57,6 +57,10 @@ export class StatisticsStateService {
   }
 
   updatePropertyId(propertyId: number | null) {
+    this.store.dispatch({
+      type: '[Statistics] Update filters',
+      payload: {propertyId: propertyId}
+    })
     // this.store.update((state) => ({
     //   filters: {
     //     ...state.filters,

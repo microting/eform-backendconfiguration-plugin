@@ -47,6 +47,9 @@ import {Store} from '@ngrx/store';
 import {
   selectTaskTrackerFilters
 } from '../../../../state/task-tracker/task-tracker.selector';
+import {
+  selectStatisticsPropertyId
+} from "src/app/plugins/modules/backend-configuration-pn/state/statistics/statistics.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -105,6 +108,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     return '';
   }
   private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
+  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
   constructor(
     private store: Store,
@@ -128,6 +132,15 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
+        this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+          if (propertyId) {
+            this.selectedPropertyId = propertyId;
+            this.store.dispatch({
+              type: '[TaskTracker] Update filters',
+              payload: {propertyIds: [this.selectedPropertyId], tagIds: [], workerIds: []}
+            });
+          }
+        });
         // this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;
         this.getPlannedTaskDays();
       } else {

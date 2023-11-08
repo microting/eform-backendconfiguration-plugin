@@ -2,7 +2,7 @@ import {CommonPaginationState} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
   taskManagementUpdateFilters, taskManagementUpdatePagination
-} from "src/app/plugins/modules/backend-configuration-pn/state/task-management/task-management.actions";
+} from './task-management.actions';
 
 export interface TaskManagementFiltrationModel {
   propertyId: number;

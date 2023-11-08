@@ -25,6 +25,9 @@ import {Store} from '@ngrx/store';
 import {
   selectTaskManagementPropertyId
 } from '../../../../state/task-management/task-management.selector';
+import {
+  selectStatisticsPropertyId
+} from "src/app/plugins/modules/backend-configuration-pn/state/statistics/statistics.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -81,7 +84,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
     }
   }
   public selectSideMenuOpened$ = this.store.select(selectSideMenuOpened);
-  public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
+  public selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
   constructor(
     private store: Store,
@@ -95,7 +98,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
     private documentsStateService: DocumentsStateService,
     private taskWizardStateService: TaskWizardStateService,
   ) {
-    this.getPropertyIdAsyncSub$ = this.selectTaskManagementPropertyId$
+    this.getPropertyIdAsyncSub$ = this.selectStatisticsPropertyId$
       .subscribe(propertyId => this.selectedPropertyId = propertyId);
     this.selectSideMenuOpened$.subscribe((sideMenuOpened) => {
       this.sideMenuOpened = sideMenuOpened;

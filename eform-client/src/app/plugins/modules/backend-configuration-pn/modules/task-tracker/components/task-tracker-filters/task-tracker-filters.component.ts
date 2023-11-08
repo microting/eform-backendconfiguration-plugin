@@ -15,10 +15,10 @@ import {
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
-import {Store} from "@ngrx/store";
+import {Store} from '@ngrx/store';
 import {
   selectTaskTrackerFilters
-} from "src/app/plugins/modules/backend-configuration-pn/state/task-tracker/task-tracker.selector";
+} from '../../../../state/task-tracker/task-tracker.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -53,6 +53,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.subToFormChanges();
     this.propertyIdValueChangesSub$ = this.filtersForm
       .get('propertyIds')
       .valueChanges.subscribe((value: any) => {
@@ -63,7 +64,6 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
           }
         }
       );
-    this.subToFormChanges();
   }
 
   getSites(propertyIds: number[]) {

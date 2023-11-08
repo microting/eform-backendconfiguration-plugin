@@ -31,6 +31,9 @@ import {
   selectTaskManagementPropertyId,
   selectTaskManagementPropertyIdIsNullOrUndefined
 } from '../../../../state/task-management/task-management.selector';
+import {
+  selectStatisticsPropertyId
+} from '../../../../state/statistics/statistics.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -71,6 +74,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   public selectTaskManagementPropertyIdIsNullOrUndefined$ = this.store.select(selectTaskManagementPropertyIdIsNullOrUndefined);
   public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
+  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
   constructor(
     private store: Store,
@@ -91,12 +95,21 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(x => {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;
-        let currentFilters: any;
-        this.selectTaskManagementFilters$.subscribe((filters) => {
-          currentFilters = filters;
-        }).unsubscribe();
-        //     const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
-        this.selectedPropertyId = currentFilters.propertyId !== -1 ? currentFilters.propertyId : null;
+        // let currentFilters: any;
+        // this.selectTaskManagementFilters$.subscribe((filters) => {
+        //   currentFilters = filters;
+        // }).unsubscribe();
+        // //     const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
+        // this.selectedPropertyId = currentFilters.propertyId !== -1 ? currentFilters.propertyId : null;
+        this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+          if (propertyId) {
+            this.selectedPropertyId = propertyId;
+            this.store.dispatch({
+              type: '[TaskManagement] Update filters',
+              payload: {propertyId: this.selectedPropertyId}
+            });
+          }
+        });
         this.getStats();
       } else {
         this.diagramForShow = '';
