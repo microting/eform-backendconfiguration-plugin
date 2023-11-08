@@ -42,6 +42,10 @@ export class TaskTrackerStateService {
   // }
 
   updateFilters(taskManagementFiltrationModel: TaskTrackerFiltrationModel){
+    this.store.dispatch({
+      type: '[TaskTracker] Update Filters',
+      payload: taskManagementFiltrationModel,
+    })
     // this.store.update((state) => ({
     //   filters: {
     //     ...state.filters,

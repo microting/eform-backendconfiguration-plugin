@@ -16,6 +16,9 @@ import {CommonDictionaryModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
 import {Store} from "@ngrx/store";
+import {
+  selectTaskTrackerFilters
+} from "src/app/plugins/modules/backend-configuration-pn/state/task-tracker/task-tracker.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -39,6 +42,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getFiltersAsyncSub$: Subscription;
   filtersFormChangesSub$: Subscription;
   getSitesSub$: Subscription;
+  private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
 
   constructor(
     private store: Store,
@@ -73,14 +77,14 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   subToFormChanges() {
-    // this.getFiltersAsyncSub$ = this.taskTrackerStateService.getFiltersAsync().pipe(take(1)) // get values FIRST time
-    //   .subscribe(filters => {
-    //     this.filtersForm.patchValue({
-    //       propertyIds: filters.propertyIds ?? [],
-    //       tags: filters.tagIds ?? [],
-    //       workers: filters.workerIds ?? [],
-    //     });
-    //   });
+    this.getFiltersAsyncSub$ = this.selectTaskTrackerFilters$.pipe(take(1)) // get values FIRST time
+      .subscribe(filters => {
+        this.filtersForm.patchValue({
+          propertyIds: filters.propertyIds ?? [],
+          tags: filters.tagIds ?? [],
+          workers: filters.workerIds ?? [],
+        });
+      });
 
     this.filtersFormChangesSub$ = this.filtersForm.valueChanges
       .subscribe((filters) => {

@@ -24,8 +24,11 @@ export const initialState: TaskTrackerState = {
 export const _reducer = createReducer(
   initialState,
   on(taskTrackerUpdateFilters, (state, {payload}) => ({
-    ...state,
-    filters: {...payload}
+      ...state,
+      filters: {
+        ...state.filters,
+        ...payload,
+      },
     }
   ))
 )

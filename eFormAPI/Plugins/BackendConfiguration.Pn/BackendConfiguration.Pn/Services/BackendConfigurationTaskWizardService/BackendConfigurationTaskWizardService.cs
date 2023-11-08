@@ -634,6 +634,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var oldItemPlanningTagId = areaRulePlanning.ItemPlanningTagId;
             areaRulePlanning.ItemPlanningTagId = updateModel.ItemPlanningTagId;
             areaRulePlanning.UpdatedByUserId = _userService.UserId;
+            areaRulePlanning.ComplianceEnabled = true;
+            areaRulePlanning.SendNotifications = true;
             await areaRulePlanning.Update(_backendConfigurationPnDbContext);
 
             var planning = await _itemsPlanningPnDbContext.Plannings
