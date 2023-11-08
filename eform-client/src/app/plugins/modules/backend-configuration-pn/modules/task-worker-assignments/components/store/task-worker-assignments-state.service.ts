@@ -111,6 +111,23 @@ export class TaskWorkerAssignmentsStateService {
   // }
 
   onSortTable(sort: string) {
+    let _pagination: CommonPaginationState;
+    this.selectTaskWorkerAssignmentPagination$.subscribe((pagination) => {
+      _pagination = pagination;
+    }).unsubscribe();
+    const localPageSettings = updateTableSort(
+      sort,
+      _pagination.sort,
+      _pagination.isSortDsc
+    );
+    this.store.dispatch({
+      type: '[TaskWorkerAssignment] Update pagination',
+      payload: {
+        ..._pagination,
+        isSortDsc: localPageSettings.isSortDsc,
+        sort: localPageSettings.sort,
+      }
+    })
     // const localPageSettings = updateTableSort(
     //   sort,
     //   this.query.pageSetting.pagination.sort,

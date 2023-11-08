@@ -1,11 +1,11 @@
 import {createAction} from '@ngrx/store';
 
 export const taskWorkerAssignmentUpdatePagination = createAction(
-  '[TaskWorkerAssignment] UpdatePagination',
-  (pagination) => ({pagination})
+  '[TaskWorkerAssignment] Update pagination',
+  (payload) => ({payload})
 );
 
 export const taskWorkerAssignmentUpdateTotalProperties = createAction(
-  '[TaskWorkerAssignment] UpdateTotalProperties',
-  (totalProperties) => ({totalProperties})
+  '[TaskWorkerAssignment] Update total properties',
+  (payload) => ({payload})
 );

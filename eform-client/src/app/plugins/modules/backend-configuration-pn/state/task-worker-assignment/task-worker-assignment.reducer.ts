@@ -4,13 +4,13 @@ import {
   taskWorkerAssignmentUpdatePagination, taskWorkerAssignmentUpdateTotalProperties
 } from './task-worker-assignment.actions';
 
-export interface TaskWorkerAssignmentsState {
+export interface TaskWorkerAssignmentState {
   pagination: CommonPaginationState;
   // filters: FiltrationStateModel;
   totalProperties: number;
 }
 
-export const initialState: TaskWorkerAssignmentsState = {
+export const initialState: TaskWorkerAssignmentState = {
   pagination: {
     pageSize: 10,
     sort: 'Id',
@@ -24,18 +24,18 @@ export const initialState: TaskWorkerAssignmentsState = {
 
 export const _reducer = createReducer(
   initialState,
-  on(taskWorkerAssignmentUpdatePagination, (state, {pagination}) => ({
+  on(taskWorkerAssignmentUpdatePagination, (state, {payload}) => ({
     ...state,
-    pagination: {...state.pagination, ...pagination},
+      pagination: {...state.pagination, ...payload},
     }
   )),
-  on(taskWorkerAssignmentUpdateTotalProperties, (state, {totalProperties}) => ({
+  on(taskWorkerAssignmentUpdateTotalProperties, (state, {payload}) => ({
     ...state,
-    totalProperties,
+      payload,
     }
   )),
 );
 
-export function reducer(state: TaskWorkerAssignmentsState | undefined, action: Action) {
+export function reducer(state: TaskWorkerAssignmentState | undefined, action: Action) {
   return _reducer(state, action);
 }

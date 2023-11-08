@@ -6,7 +6,7 @@ import {createSelector} from '@ngrx/store';
 export const selectBackendConfigurationPn =
   (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;
 export const selectTaskWorkerAssignment =
-  createSelector(selectBackendConfigurationPn, (state: BackendConfigurationState) => state.taskWorkerAssignmentsState);
+  createSelector(selectBackendConfigurationPn, (state: BackendConfigurationState) => state.taskWorkerAssignmentState);
 
 export const selectTaskWorkerAssignmentPagination =
   createSelector(selectTaskWorkerAssignment, (state) => state.pagination);

@@ -3,7 +3,7 @@ import {
   TaskTrackerState
 } from './task-tracker/task-tracker.reducer';
 import {
-  TaskWorkerAssignmentsState
+  TaskWorkerAssignmentState
 } from './task-worker-assignment/task-worker-assignment.reducer';
 import {FilesState} from './files/files.reducer';
 import {DocumentsState} from './documents/documents.reducer';
@@ -30,6 +30,6 @@ export interface BackendConfigurationState {
   taskManagementState: TaskManagementState;
   taskTrackerState: TaskTrackerState;
   taskWizardState: TaskWizardState;
-  taskWorkerAssignmentsState: TaskWorkerAssignmentsState;
+  taskWorkerAssignmentState: TaskWorkerAssignmentState;
   areaRulesState: AreaRulesState;
 }
