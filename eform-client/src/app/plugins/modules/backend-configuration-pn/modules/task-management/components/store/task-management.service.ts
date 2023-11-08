@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import {Observable, zip} from 'rxjs';
 import {
+  CommonPaginationState,
   OperationDataResult,
   SortModel,
 } from 'src/app/common/models';
@@ -67,19 +68,30 @@ export class TaskManagementStateService {
   }
 
   downloadWordReport() {
-    // return this.service
-    //   .downloadWordReport({
-    //     ...this.query.pageSetting.pagination,
-    //     ...this.query.pageSetting.filters,
-    //   });
+    let currentFilters: any;
+    this.selectTaskManagementFilters$.subscribe((filters) => {
+      currentFilters = filters;
+    }).unsubscribe();
+    let currentPagination: CommonPaginationState;
+    this.selectTaskManagementPagination$.subscribe((x) => currentPagination = x).unsubscribe();
+    return this.service
+      .downloadWordReport({
+        ...currentPagination,
+        ...currentFilters,
+      });
   }
 
   downloadExcelReport() {
-    // return this.service
-    //   .downloadExcelReport({
-    //     ...this.query.pageSetting.pagination,
-    //     ...this.query.pageSetting.filters,
-    //   });
+    let currentFilters: any;
+    this.selectTaskManagementFilters$.subscribe((filters) => {
+      currentFilters = filters;
+    }).unsubscribe();
+    let currentPagination: CommonPaginationState;
+    return this.service
+      .downloadExcelReport({
+        ...currentPagination,
+        ...currentFilters,
+      });
   }
 
   // updateNameFilter(nameFilter: string) {
@@ -105,14 +117,14 @@ export class TaskManagementStateService {
   // this.checkOffset();
   // }
 
-  changePage(offset: number) {
-    // this.store.update((state) => ({
-    //   pagination: {
-    //     ...state.pagination,
-    //     offset: offset,
-    //   },
-    // }));
-  }
+  // changePage(offset: number) {
+  //   // this.store.update((state) => ({
+  //   //   pagination: {
+  //   //     ...state.pagination,
+  //   //     offset: offset,
+  //   //   },
+  //   // }));
+  // }
 
   // onDelete() {
   //   this.store.update((state) => ({
@@ -122,6 +134,21 @@ export class TaskManagementStateService {
   // }
 
   onSortTable(sort: string) {
+    let currentPagination: CommonPaginationState;
+    this.selectTaskManagementPagination$.subscribe((x) => currentPagination = x).unsubscribe();
+    const localPageSettings = updateTableSort(
+      sort,
+      currentPagination.sort,
+      currentPagination.isSortDsc
+    );
+    this.store.dispatch({
+      type: '[TaskManagement] Update pagination',
+      payload: {
+        ...currentPagination,
+        isSortDsc: localPageSettings.isSortDsc,
+        sort: localPageSettings.sort,
+      }
+    })
     // const localPageSettings = updateTableSort(
     //   sort,
     //   this.query.pageSetting.pagination.sort,

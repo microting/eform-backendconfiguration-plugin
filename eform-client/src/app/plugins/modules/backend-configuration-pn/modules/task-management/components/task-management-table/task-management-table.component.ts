@@ -15,11 +15,11 @@ import {TranslateService} from '@ngx-translate/core';
 import {
   TaskManagementPrioritiesEnum
 } from '../../../../enums';
-import {Store} from "@ngrx/store";
+import {Store} from '@ngrx/store';
 import {
   selectTaskManagementPaginationIsSortDsc,
   selectTaskManagementPaginationSort
-} from "src/app/plugins/modules/backend-configuration-pn/state/task-management/task-management.selector";
+} from '../../../../state/task-management/task-management.selector';
 
 @Component({
   selector: 'app-task-management-table',

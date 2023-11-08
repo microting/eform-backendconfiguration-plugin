@@ -48,12 +48,15 @@ export const _reducer = createReducer(
   initialState,
   on(taskManagementUpdateFilters, (state, {payload}) => ({
     ...state,
-    filters: payload,
+    filters: {
+      ...state.filters,
+      ...payload,
+    },
     }
   )),
   on(taskManagementUpdatePagination, (state, {payload}) => ({
     ...state,
-    pagination: payload,
+      pagination: {...state.pagination, ...payload},
     }
   )),
 );
