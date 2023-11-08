@@ -14,6 +14,6 @@ export const selectPropertyWorkersPagination =
 export const selectPropertyWorkersPaginationSort =
     createSelector(selectPropertyWorkers, (state) => state.pagination.sort);
 export const selectPropertyWorkersPaginationIsSortDsc =
-    createSelector(selectPropertyWorkers, (state) => state.pagination.isSortDsc ? 'asc' : 'desc');
+    createSelector(selectPropertyWorkers, (state) => state.pagination.isSortDsc ? 'desc' : 'asc');
 export const selectPropertyWorkersNameFilters =
     createSelector(selectPropertyWorkers, (state) => state.filters.nameFilter);

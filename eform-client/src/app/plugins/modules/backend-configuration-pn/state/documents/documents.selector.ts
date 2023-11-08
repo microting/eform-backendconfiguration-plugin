@@ -16,4 +16,4 @@ export const selectDocumentsPagination =
 export const selectDocumentsPaginationSort =
     createSelector(selectDocuments, (state) => state.pagination.sort);
 export const selectDocumentsPaginationIsSortDsc =
-    createSelector(selectDocuments, (state) => state.pagination.isSortDsc ? 'asc' : 'desc');
+    createSelector(selectDocuments, (state) => state.pagination.isSortDsc ? 'desc' : 'asc');

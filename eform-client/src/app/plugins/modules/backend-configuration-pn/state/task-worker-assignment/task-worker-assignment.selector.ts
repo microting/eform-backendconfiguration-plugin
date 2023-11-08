@@ -13,4 +13,4 @@ export const selectTaskWorkerAssignmentPagination =
 export const selectTaskWorkerAssignmentPaginationSort =
   createSelector(selectTaskWorkerAssignment, (state) => state.pagination.sort);
 export const selectTaskWorkerAssignmentPaginationIsSortDsc =
-  createSelector(selectTaskWorkerAssignment, (state) => state.pagination.isSortDsc ? 'asc' : 'desc');
+  createSelector(selectTaskWorkerAssignment, (state) => state.pagination.isSortDsc ? 'desc' : 'asc');

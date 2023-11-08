@@ -12,4 +12,4 @@ export const selectAreaRulesPagination =
 export const selectAreaRulesPaginationSort =
   createSelector(selectAreaRules, (state) => state.pagination.sort);
 export const selectAreaRulesPaginationIsSortDsc =
-  createSelector(selectAreaRules, (state) => state.pagination.isSortDsc ? 'asc' : 'desc');
+  createSelector(selectAreaRules, (state) => state.pagination.isSortDsc ? 'desc' : 'asc');
