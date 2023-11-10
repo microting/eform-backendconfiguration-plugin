@@ -16,6 +16,8 @@ import {LocaleService, TemplateFilesService} from 'src/app/common/services';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {saveAs} from 'file-saver';
 import {MatDatepickerInputEvent} from '@angular/material/datepicker';
+import {Store} from '@ngrx/store';
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
 
 @Component({
   selector: 'app-documents-document-edit',
@@ -34,6 +36,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
   pdfSub$: Subscription;
   documentSub$: Subscription;
   getPropertiesDictionary$: Subscription;
+  private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
 
   get languages() {
     return applicationLanguages2;
@@ -62,6 +65,7 @@ export class DocumentsDocumentEditComponent implements OnInit {
   }
 
   constructor(
+    private authStore: Store,
     private templateFilesService: TemplateFilesService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
@@ -70,9 +74,12 @@ export class DocumentsDocumentEditComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) documentModel: DocumentModel,
   ) {
     this.getDocument(documentModel.id);
-    this.selectedLanguage = applicationLanguages2.find(
-      (x) => x.locale === localeService.getCurrentUserLocale()
-    ).id;
+    this.selectCurrentUserLanguageId$.subscribe((languageId) => {
+      this.selectedLanguage = languageId;
+    });
+    // this.selectedLanguage = applicationLanguages2.find(
+    //   (x) => x.locale === localeService.getCurrentUserLocale()
+    // ).id;
   }
 
   ngOnInit(): void {

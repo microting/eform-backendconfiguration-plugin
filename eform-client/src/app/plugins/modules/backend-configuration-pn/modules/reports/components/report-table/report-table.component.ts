@@ -23,6 +23,8 @@ import {dialogConfigHelper, getRandomInt} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
+import {selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -45,7 +47,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
-    {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y', timezone: 'utc'}},
+    {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Name'), field: 'itemName'},
     {
@@ -81,7 +83,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Planning Id'), field: 'itemId'},
     {header: this.translateService.stream('eForm Id'), field: 'eFormId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
-    {header: this.translateService.stream('CreatedAt'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
+    {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm', timezone: 'utc'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
@@ -116,8 +118,12 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   mergedTableHeaders: MtxGridColumn[] = [];
 
   caseDeleteComponentComponentAfterClosedSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
 
   constructor(
+    private store: Store,
     private authStateService: AuthStateService,
     private viewportScroller: ViewportScroller,
     private router: Router,
@@ -158,7 +164,9 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           },
         };
       });
-      const tableHeaders = [...(this.authStateService.isAdmin ? [...this.adminTableHeaders] : [...this.tableHeaders])];
+      let isAdmin = false;
+      this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+      const tableHeaders = [...(isAdmin ? [...this.adminTableHeaders] : [...this.tableHeaders])];
       const index = tableHeaders
         .findIndex(x => x.field === 'actions');
       tableHeaders[index].width = this.items.filter(x => x.imagesCount > 0).length > 0 ? '160px' : '110px';
@@ -180,7 +188,8 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   ) {
     this.newPostModal.caseId = caseId;
     this.newPostModal.efmroId = eformId;
-    this.newPostModal.currentUserFullName = this.authStateService.currentUserFullName;
+    this.selectCurrentUserFullName$.subscribe((selectCurrentUserFullName$) =>
+      this.newPostModal.currentUserFullName = selectCurrentUserFullName$);
     this.newPostModal.pdfReportAvailable = pdfReportAvailable;
     this.newPostModal.show();
   }

@@ -4591,5 +4591,67 @@
       "el-GR": "Απαιτείται φάκελος",
       "is-IS": "Mappa er krafist"
     }
+  },
+  {
+    "Key": "ReportPeriod",
+    "LocalizedValue": {
+      "da": "Rapport periode",
+      "de": "Berichtszeitraum",
+      "en-US": "Report period",
+      "uk-UA": "Звітний період",
+      "pl-PL": "Okres raportowania",
+      "no-NO": "Rapporteringsperiode",
+      "sv-SE": "Rapporteringsperiod",
+      "es-ES": "Periodo de informe",
+      "fr-FR": "Période de rapport",
+      "it-IT": "Periodo di rapporto",
+      "nl-NL": "Rapportageperiode",
+      "pt-BR": "Período de relatório",
+      "pt-PT": "Período de relatório",
+      "fi-FI": "Raportointiaika",
+      "et-ET": "Aruande periood",
+      "lv-LV": "Pārskata periods",
+      "lt-LT": "Ataskaitos laikotarpis",
+      "ro-RO": "Perioada de raportare",
+      "hr-HR": "Razdoblje izvješćivanja",
+      "sl-SL": "Obdobje poročanja",
+      "cs-CZ": "Období hlášení",
+      "sk-SK": "Obdobie hlásenia",
+      "hu-HU": "Jelentési időszak",
+      "bg-BG": "Период на докладване",
+      "el-GR": "Περίοδος αναφοράς",
+      "is-IS": "Skýrslutímabil"
+    }
+  },
+  {
+    "Key": "SubmittedDate",
+    "LocalizedValue": {
+      "da": "Indsendt dato",
+      "de": "Eingereichtes Datum",
+      "en-US": "Submitted date",
+      "uk-UA": "Дата подання",
+      "pl-PL": "Data złożenia",
+      "no-NO": "Innsendingsdato",
+      "sv-SE": "Inlämningsdatum",
+      "es-ES": "Fecha de envío",
+      "fr-FR": "Date de soumission",
+      "it-IT": "Data di presentazione",
+      "nl-NL": "Ingediende datum",
+      "pt-BR": "Data de envio",
+      "pt-PT": "Data de envio",
+      "fi-FI": "Toimituspäivä",
+      "et-ET": "Esitamise kuupäev",
+      "lv-LV": "Iesniegšanas datums",
+      "lt-LT": "Pateikimo data",
+      "ro-RO": "Data depunerii",
+      "hr-HR": "Datum podnošenja",
+      "sl-SL": "Datum oddaje",
+      "cs-CZ": "Datum podání",
+      "sk-SK": "Dátum podania",
+      "hu-HU": "Beadás dátuma",
+      "bg-BG": "Дата на подаване",
+      "el-GR": "Ημερομηνία υποβολής",
+      "is-IS": "Dagsetning skilað"
+    }
   }
 ]

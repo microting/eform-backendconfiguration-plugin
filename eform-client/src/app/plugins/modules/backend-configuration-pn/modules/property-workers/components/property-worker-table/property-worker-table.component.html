@@ -8,8 +8,8 @@
   [showToolbar]="true"
   [showColumnMenuButton]="false"
   [toolbarTemplate]="toolbarTpl"
-  [sortActive]="propertyWorkersStateService.getActiveSort() | async"
-  [sortDirection]="propertyWorkersStateService.getActiveSortDirection() | async"
+  [sortActive]="selectPropertyWorkersPaginationSort$ | async"
+  [sortDirection]="selectPropertyWorkersPaginationIsSortDsc$ | async"
   (sortChange)="onSortTable($event)"
   style="max-height: 80vh;"
   noResultText="{{'No employees found' | translate}}"
@@ -27,7 +27,7 @@
           matInput
           type="text"
           (ngModelChange)="onSearchChanged($event)"
-          [ngModel]="propertyWorkersStateService.getNameFilter() | async"
+          [ngModel]="selectPropertyWorkersNameFilters$ | async"
           id="labelInput"
         />
       </mat-form-field>
@@ -57,7 +57,7 @@
     <button
       mat-icon-button
       color="warn"
-      *ngIf="userClaims.deviceUsersUpdate"
+      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
       matTooltip="{{ 'New OTP' | translate }}"
       (click)="openOtpModal(row)"
     >
@@ -82,7 +82,7 @@
     </button>
     <button
       mat-icon-button
-      *ngIf="userClaims.deviceUsersUpdate"
+      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
       matTooltip="{{ 'Edit Device User' | translate }}"
       id="editDeviceUserBtn-{{i}}"
       (click)="openEditModal(row)"
@@ -92,7 +92,7 @@
     <button
       mat-icon-button
       color="warn"
-      *ngIf="userClaims.deviceUsersDelete && !row.isLocked"
+      *ngIf="(selectCurrentUserClaimsDeviceUsersDelete$ | async) && !row.isLocked"
       matTooltip="{{ 'Delete Device User' | translate }}"
       id="deleteDeviceUserBtn-{{i}}"
       (click)="openDeleteDeviceUserModal(row)"

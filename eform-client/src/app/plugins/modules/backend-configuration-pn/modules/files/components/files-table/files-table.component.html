@@ -8,8 +8,8 @@
   [rowStriped]="true"
   [showToolbar]="false"
   [showColumnMenuButton]="false"
-  [sortActive]="filesStateService.getActiveSort() | async"
-  [sortDirection]="filesStateService.getActiveSortDirection() | async"
+  [sortActive]="selectFilesPaginationSort$ | async"
+  [sortDirection]="selectFilesPaginationIsSortDsc$ | async"
   (sortChange)="onSortTable($event)"
   noResultText="{{'No files found' | translate}}"
 >

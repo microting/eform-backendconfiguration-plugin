@@ -93,7 +93,7 @@ public class ReportController : Controller
     [Route("new-reports")]
     public async Task<OperationDataResult<List<ReportEformModel>>> GenerateNewReport([FromBody] GenerateReportModel requestModel)
     {
-        return await _reportService.GenerateReportV2(requestModel);
+        return await _reportService.GenerateReportV2(requestModel, false);
     }
 
     /// <summary>Download records export word</summary>
@@ -105,7 +105,7 @@ public class ReportController : Controller
     [Route("reports/file")]
 
     [ProducesResponseType(typeof(string), 400)]
-    public async Task GenerateReportFile([FromQuery]DateTime dateFrom, [FromQuery]DateTime dateTo, [FromQuery]string tagIds, [FromQuery]string type)
+    public async Task GenerateReportFile([FromQuery]DateTime dateFrom, [FromQuery]DateTime dateTo, [FromQuery]string tagIds, [FromQuery]string type, [FromQuery]bool version2 = false)
     {
         var requestModel = new GenerateReportModel();
         var tags = tagIds?.Split(",").ToList();
@@ -120,7 +120,7 @@ public class ReportController : Controller
         requestModel.DateFrom = dateFrom;
         requestModel.DateTo = dateTo;
         requestModel.Type = type;
-        var result = await _reportService.GenerateReportFile(requestModel);
+        var result = await _reportService.GenerateReportFile(requestModel, version2);
         const int bufferSize = 4086;
         byte[] buffer = new byte[bufferSize];
         Response.OnStarting(async () =>

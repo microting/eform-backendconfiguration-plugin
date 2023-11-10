@@ -1,18 +1,21 @@
 import { Injectable } from '@angular/core';
-import { TaskWorkerAssignmentsStore, TaskWorkerAssignmentsQuery } from './';
 import { Observable } from 'rxjs';
-import {OperationDataResult, Paged, SortModel} from 'src/app/common/models';
+import {CommonPaginationState, OperationDataResult, Paged, SortModel} from 'src/app/common/models';
 import { updateTableSort, getOffset } from 'src/app/common/helpers';
 import { map } from 'rxjs/operators';
 import {BackendConfigurationPnAreasService, } from '../../../../services';
 import {TaskWorkerModel} from '../../../../models';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskWorkerAssignmentPagination
+} from '../../../../state/task-worker-assignment/task-worker-assignment.selector';
 
 @Injectable({ providedIn: 'root' })
 export class TaskWorkerAssignmentsStateService {
+  private selectTaskWorkerAssignmentPagination$ = this.store.select(selectTaskWorkerAssignmentPagination);
   constructor(
-    private store: TaskWorkerAssignmentsStore,
+      private store: Store,
     private service: BackendConfigurationPnAreasService,
-    private query: TaskWorkerAssignmentsQuery,
   ) {}
 
   private _siteId: number;
@@ -26,13 +29,21 @@ export class TaskWorkerAssignmentsStateService {
   }
 
   getTaskWorkerAssignments(): Observable<OperationDataResult<Paged<TaskWorkerModel>>> {
-    return this.service.getTaskWorkerAssignments(this._siteId, this.query.pageSetting.pagination)
-      .pipe(
+    let _pagination: CommonPaginationState;
+    this.selectTaskWorkerAssignmentPagination$.subscribe((pagination) => {
+      _pagination = pagination;
+    }).unsubscribe();
+    return this.service.getTaskWorkerAssignments(this._siteId, _pagination).pipe(
         map((response) => {
           return response;
         })
-      );
-
+    );
+    // return this.service.getTaskWorkerAssignments(this._siteId, this.query.pageSetting.pagination)
+    //   .pipe(
+    //     map((response) => {
+    //       return response;
+    //     })
+    //   );
   }
 
   // getPageSize(): Observable<number> {
@@ -100,43 +111,60 @@ export class TaskWorkerAssignmentsStateService {
   // }
 
   onSortTable(sort: string) {
+    let _pagination: CommonPaginationState;
+    this.selectTaskWorkerAssignmentPagination$.subscribe((pagination) => {
+      _pagination = pagination;
+    }).unsubscribe();
     const localPageSettings = updateTableSort(
       sort,
-      this.query.pageSetting.pagination.sort,
-      this.query.pageSetting.pagination.isSortDsc
+      _pagination.sort,
+      _pagination.isSortDsc
     );
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
+    this.store.dispatch({
+      type: '[TaskWorkerAssignment] Update pagination',
+      payload: {
+        ..._pagination,
         isSortDsc: localPageSettings.isSortDsc,
         sort: localPageSettings.sort,
-      },
-    }));
+      }
+    })
+    // const localPageSettings = updateTableSort(
+    //   sort,
+    //   this.query.pageSetting.pagination.sort,
+    //   this.query.pageSetting.pagination.isSortDsc
+    // );
+    // this.store.update((state) => ({
+    //   pagination: {
+    //     ...state.pagination,
+    //     isSortDsc: localPageSettings.isSortDsc,
+    //     sort: localPageSettings.sort,
+    //   },
+    // }));
   }
 
-  checkOffset() {
-    const newOffset = getOffset(
-      this.query.pageSetting.pagination.pageSize,
-      this.query.pageSetting.pagination.offset,
-      this.query.pageSetting.totalProperties
-    );
-    if (newOffset !== this.query.pageSetting.pagination.offset) {
-      this.store.update((state) => ({
-        pagination: {
-          ...state.pagination,
-          offset: newOffset,
-        },
-      }));
-    }
-  }
+  // checkOffset() {
+  //   const newOffset = getOffset(
+  //     this.query.pageSetting.pagination.pageSize,
+  //     this.query.pageSetting.pagination.offset,
+  //     this.query.pageSetting.totalProperties
+  //   );
+  //   if (newOffset !== this.query.pageSetting.pagination.offset) {
+  //     this.store.update((state) => ({
+  //       pagination: {
+  //         ...state.pagination,
+  //         offset: newOffset,
+  //       },
+  //     }));
+  //   }
+  // }
 
-  getActiveSort(): Observable<string> {
-    return this.query.selectActiveSort$;
-  }
-
-  getActiveSortDirection(): Observable<'asc' | 'desc'> {
-    return this.query.selectActiveSortDirection$;
-  }
+  // getActiveSort(): Observable<string> {
+  //   return this.query.selectActiveSort$;
+  // }
+  //
+  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
+  //   return this.query.selectActiveSortDirection$;
+  // }
 
   // getPagination(): Observable<PaginationModel> {
   //   return this.query.selectPagination$;

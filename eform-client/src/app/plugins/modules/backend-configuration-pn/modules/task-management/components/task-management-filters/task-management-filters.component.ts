@@ -23,6 +23,10 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Overlay} from '@angular/cdk/overlay';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskManagementFilters,
+} from '../../../../state/task-management/task-management.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -47,8 +51,10 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
   areaNameValueChangesSub$: Subscription;
+  public selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
 
   constructor(
+    private store: Store,
     private translate: TranslateService,
     public taskManagementStateService: TaskManagementStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -62,8 +68,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.getProperties();
-    this.selectFiltersSub$ = this.taskManagementStateService
-      .getFiltersAsync()
+    this.selectFiltersSub$ = this.selectTaskManagementFilters$
       .pipe(take(1)) // get only one time
       .subscribe((filters) => {
         if (!this.filtersForm) {
@@ -113,26 +118,43 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     this.propertyIdValueChangesSub$ = this.filtersForm
       .get('propertyId')
       .valueChanges.subscribe((value: number) => {
+        let currentFilters: any;
+        this.selectTaskManagementFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
         if (
-          this.taskManagementStateService.store.getValue().filters
+          currentFilters
             .propertyId !== value
         ) {
           if(value !== -1) {
             this.getPropertyAreas(value);
             this.getSites(value);
           }
-          this.taskManagementStateService.store.update((state) => ({
-            filters: {
-              ...state.filters,
-              propertyId: value,
-              areaName: null,
-              dateFrom: null,
-              dateTo: null,
-              status: null,
-              createdBy: null,
-              lastAssignedTo: null,
+          this.store.dispatch({
+            type: '[TaskManagement] Update filters',
+            payload: {
+                ...currentFilters,
+                propertyId: value,
+                areaName: null,
+                dateFrom: null,
+                dateTo: null,
+                status: null,
+                createdBy: null,
+                lastAssignedTo: null,
             },
-          }));
+          })
+          // this.taskManagementStateService.store.update((state) => ({
+          //   filters: {
+          //     ...state.filters,
+          //     propertyId: value,
+          //     areaName: null,
+          //     dateFrom: null,
+          //     dateTo: null,
+          //     status: null,
+          //     createdBy: null,
+          //     lastAssignedTo: null,
+          //   },
+          // }));
           this.filtersForm
             .get('areaName')
             .setValue(null, {emitEvent: false});
@@ -167,16 +189,27 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     this.areaNameValueChangesSub$ = this.filtersForm
       .get('areaName')
       .valueChanges.subscribe((value: string) => {
+        let currentFilters: any;
+        this.selectTaskManagementFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
         if (
-          this.taskManagementStateService.store.getValue().filters.areaName !==
+          currentFilters.areaName !==
           value
         ) {
-          this.taskManagementStateService.store.update((state) => ({
-            filters: {
-              ...state.filters,
+          this.store.dispatch({
+            type: '[TaskManagement] Update filters',
+            payload: {
+              ...currentFilters,
               areaName: value,
             },
-          }));
+          });
+          // this.taskManagementStateService.store.update((state) => ({
+          //   filters: {
+          //     ...state.filters,
+          //     areaName: value,
+          //   },
+          // }));
         }
         /*if (value) {
           this.filtersForm.get('createdBy').enable({ emitEvent: false });
@@ -194,30 +227,50 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     this.filtersForm
       .get('createdBy')
       .valueChanges.subscribe((value: string) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
+      this.store.dispatch({
+        type: '[TaskManagement] Update filters',
+        payload: {
           createdBy: value,
         },
-      }));
+      });
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       createdBy: value,
+    //     },
+    //   }));
     });
     this.filtersForm
       .get('lastAssignedTo')
       .valueChanges.subscribe((value: number) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
-          lastAssignedTo: value,
-        },
-      }));
+        this.store.dispatch(
+          {
+            type: '[TaskManagement] Update filters',
+            payload: {
+              lastAssignedTo: value,
+            },
+          });
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       lastAssignedTo: value,
+    //     },
+    //   }));
     });
     this.filtersForm.get('status').valueChanges.subscribe((value: number) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
-          status: value,
-        },
-      }));
+      this.store.dispatch(
+        {
+          type: '[TaskManagement] Update filters',
+          payload: {
+            status: value,
+          },
+        });
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       status: value,
+    //     },
+    //   }));
     });
     this.filtersForm.get('date.dateFrom').valueChanges.subscribe((value: Date) => {
       // @ts-ignore
@@ -228,19 +281,33 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           seconds: 0,
           milliseconds: 0,
         });
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateFrom: format(dateFrom, PARSING_DATE_FORMAT),
-          },
-        }));
+        this.store.dispatch(
+          {
+            type: '[TaskManagement] Update filters',
+            payload: {
+              dateFrom: format(dateFrom, PARSING_DATE_FORMAT),
+            },
+          });
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateFrom: format(dateFrom, PARSING_DATE_FORMAT),
+    //       },
+    //     }));
       } else {
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateFrom: null,
-          },
-        }));
+        this.store.dispatch(
+          {
+            type: '[TaskManagement] Update filters',
+            payload: {
+              dateFrom: null,
+            },
+          });
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateFrom: null,
+    //       },
+    //     }));
       }
     });
     this.filtersForm.get('date.dateTo').valueChanges.subscribe((value: Date) => {
@@ -252,28 +319,49 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           seconds: 0,
           milliseconds: 0,
         });
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateTo: format(dateTo, PARSING_DATE_FORMAT),
-          },
-        }));
+        this.store.dispatch(
+          {
+            type: '[TaskManagement] Update filters',
+            payload: {
+              dateTo: format(dateTo, PARSING_DATE_FORMAT),
+            },
+          });
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateTo: format(dateTo, PARSING_DATE_FORMAT),
+    //       },
+    //     }));
       } else {
-        this.taskManagementStateService.store.update((state) => ({
-          filters: {
-            ...state.filters,
-            dateTo: null,
-          },
-        }));
+        this.store.dispatch(
+          {
+            type: '[TaskManagement] Update filters',
+            payload: {
+              dateTo: null,
+            },
+          });
+    //     this.taskManagementStateService.store.update((state) => ({
+    //       filters: {
+    //         ...state.filters,
+    //         dateTo: null,
+    //       },
+    //     }));
       }
     });
     this.filtersForm.get('priority').valueChanges.subscribe((value: number) => {
-      this.taskManagementStateService.store.update((state) => ({
-        filters: {
-          ...state.filters,
-          priority: value,
-        },
-      }));
+      this.store.dispatch(
+        {
+          type: '[TaskManagement] Update filters',
+          payload: {
+            priority: value,
+          },
+        });
+    //   this.taskManagementStateService.store.update((state) => ({
+    //     filters: {
+    //       ...state.filters,
+    //       priority: value,
+    //     },
+    //   }));
     }
     );
   }
@@ -293,7 +381,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     this.propertyService.getAllProperties({
       nameFilter: '',
       sort: 'Id',
-      isSortDsc: false,
+      isSortDsc: true,
       pageSize: 100000,
       offset: 0,
       pageIndex: 0
@@ -302,7 +390,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         this.propertiesModel = data.model;
         this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities.filter((x) => x.workorderEnable)
           .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+            return {name: `${x.name}`, description: '', id: x.id};
           })];
       }
     });
@@ -350,7 +438,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   onShowEditEntityListModal() {
     const propertyId = this.filtersForm
       .get('propertyId').value;
-    if (propertyId != -1) {
+    if (propertyId !== -1) {
       const propertyModel = this.propertiesModel.entities.find(x => x.id === propertyId);
       this.ShowEditEntityListModal(propertyModel);
       // this.showEditEntityListModal.emit(propertyModel);

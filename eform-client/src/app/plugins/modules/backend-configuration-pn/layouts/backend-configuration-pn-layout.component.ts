@@ -1,7 +1,8 @@
 import { AfterContentInit, Component, OnInit } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { translates } from './../i18n/translates';
-import { AuthStateService } from 'src/app/common/store';
+import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-backend-configuration-pn-layout',
@@ -9,16 +10,18 @@ import { AuthStateService } from 'src/app/common/store';
 })
 export class BackendConfigurationPnLayoutComponent
   implements AfterContentInit, OnInit {
+  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
   constructor(
     private translateService: TranslateService,
-    private authStateService: AuthStateService
+    private store: Store
   ) {}
 
   ngOnInit() {}
 
   ngAfterContentInit() {
-    const lang = this.authStateService.currentUserLocale;
-    const i18n = translates[lang];
-    this.translateService.setTranslation(lang, i18n, true);
+    this.selectCurrentUserLocale$.subscribe((locale) => {
+      const i18n = translates[locale];
+      this.translateService.setTranslation(locale, i18n, true);
+    });
   }
 }

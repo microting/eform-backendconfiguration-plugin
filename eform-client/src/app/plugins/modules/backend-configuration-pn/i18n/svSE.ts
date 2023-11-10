@@ -274,4 +274,7 @@ export const svSE = {
   'No files found': 'Inga filer funna',
   'Create new employee': 'Skapa ny medarbetare',
   'New employee': 'Ny anställd',
+  'Edit employee': 'Redigera medarbetare',
+  Timeregistration: 'Tidsregistrering',
+  'Submitted date': 'Inlämningsdatum',
 };

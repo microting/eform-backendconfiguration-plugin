@@ -4,7 +4,7 @@
   [title]="selectedProperty.name + ' - ' + ('Control area' | translate)"
 >
   <button
-    *ngIf="authStateService.isAdmin"
+    *ngIf="selectAuthIsAdmin$ | async"
     mat-icon-button
     id="configurePropertyAreasBtn"
     color="accent"

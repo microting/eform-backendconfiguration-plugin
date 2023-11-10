@@ -274,5 +274,7 @@ export const da = {
   'No files found': 'Ingen filer fundet',
   'Create new employee': 'Opret ny medarbejder',
   'New employee': 'Ny medarbejder',
-  'Timeregistration': 'Tidsregistrering',
+  Timeregistration: 'Tidsregistrering',
+  'Submitted date': 'Indsendt dato',
+  'Edit employee': 'Rediger medarbejder',
 };

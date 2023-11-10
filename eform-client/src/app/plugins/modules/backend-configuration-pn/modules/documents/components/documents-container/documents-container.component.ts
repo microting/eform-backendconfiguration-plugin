@@ -27,6 +27,12 @@ import {TranslateService} from '@ngx-translate/core';
 import {skip, tap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
+import {
+  selectDocumentsFilters,
+  selectDocumentsFiltersPropertyId, selectDocumentsPaginationIsSortDsc
+} from '../../../../state/documents/documents.selector';
 
 @Component({
   selector: 'app-documents-container',
@@ -51,6 +57,10 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   getActiveSortDirectionSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
   getDocumentUpdatedDaysSub$: Subscription;
+  private selectCurrentUserLanguageId$ = this.store.select(selectCurrentUserLanguageId);
+  private selectDocumentsFiltersPropertyId$ = this.store.select(selectDocumentsFiltersPropertyId);
+  private selectDocumentsPaginationIsSortDsc$ = this.store.select(selectDocumentsPaginationIsSortDsc);
+  private selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -63,6 +73,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private store: Store,
     private propertyService: BackendConfigurationPnPropertiesService,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     public dialog: MatDialog,
@@ -72,14 +83,22 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
     public localeService: LocaleService,
     private route: ActivatedRoute,
     private statisticsStateService: StatisticsStateService,) {
-    this.selectedLanguage = applicationLanguagesTranslated.find(
-      (x) => x.locale === localeService.getCurrentUserLocale()
-    ).id;
+    this.selectCurrentUserLanguageId$.subscribe((languageId) => {
+      this.selectedLanguage = languageId;
+    });
+    // this.selectedLanguage = applicationLanguagesTranslated.find(
+    //   (x) => x.locale === localeService.getCurrentUserLocale()
+    // ).id;
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
-        this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
+        this.selectDocumentsFiltersPropertyId$.subscribe((propertyId) => {
+          this.selectedPropertyId = propertyId;
+        });
+
         this.getDocumentUpdatedDays();
+    //     this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
+    //     this.getDocumentUpdatedDays();
       } else {
         this.showDiagram = false;
       }
@@ -88,7 +107,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.getProperties();
-    this.getActiveSortDirectionSub$ = this.documentsStateService.getActiveSortDirection()
+    this.getActiveSortDirectionSub$ = this.selectDocumentsPaginationIsSortDsc$
       .pipe(
         skip(1), // skip initial value
         tap(() => {
@@ -96,17 +115,17 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
         }),
       )
       .subscribe();
-    this.getFiltersAsyncSub$ = this.documentsStateService.getFiltersAsync()
-      .pipe(
-        skip(1), // skip initial value
-        tap(() => {
-          if (this.showDiagram) {
-            this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
-            this.getDocumentUpdatedDays();
-          }
-        }),
-      )
-      .subscribe();
+    // this.getFiltersAsyncSub$ = this.selectDocumentsFilters$
+    //   .pipe(
+    //     skip(1), // skip initial value
+    //     tap(() => {
+    //       if (this.showDiagram) {
+    //         this.selectedPropertyId = this.documentsStateService.store.getValue().filters.propertyId || null;
+    //         this.getDocumentUpdatedDays();
+    //       }
+    //     }),
+    //   )
+    //   .subscribe();
   }
 
   ngOnDestroy(): void {
@@ -171,7 +190,7 @@ export class DocumentsContainerComponent implements OnInit, OnDestroy {
       if (data && data.success && data.model) {
         this.properties = [{id: -1, name: this.translate.instant('All'), description: ''}, ...data.model.entities
           .map((x) => {
-            return {name: `${x.cvr ? x.cvr : ''} - ${x.chr ? x.chr : ''} - ${x.name}`, description: '', id: x.id};
+            return {name: `${x.name}`, description: '', id: x.id};
           })];
         this.getFoldersAndDocuments();
         this.getSimpleDocuments();

@@ -274,4 +274,7 @@ export const plPL = {
   'No files found': 'Nie znaleziono plików',
   'Create new employee': 'Utwórz nowego pracownika',
   'New employee': 'Nowy pracownik',
+  'Edit employee': 'Edytuj pracownika',
+  Timeregistration: 'Rejestracja czasu',
+  'Submitted date': 'Zaakceptowana Data',
 };

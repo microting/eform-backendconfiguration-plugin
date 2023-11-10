@@ -10,7 +10,6 @@ import {
 } from './components';
 import {PropertyWorkersRouting} from './property-workers.routing';
 import {TranslateModule} from '@ngx-translate/core';
-import {DeviceUsersPersistProvider} from 'src/app/modules/device-users/components/store';
 import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule} from '@angular/material/button';
 import {MatTooltipModule} from '@angular/material/tooltip';
@@ -52,7 +51,6 @@ import {
     PropertyWorkerTableComponent,
     PropertyWorkerFiltersComponent
   ],
-  providers: [DeviceUsersPersistProvider],
 })
 export class PropertyWorkersModule {
 }

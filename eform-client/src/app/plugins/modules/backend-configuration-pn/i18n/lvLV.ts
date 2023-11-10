@@ -274,4 +274,7 @@ export const lvLV = {
   'No files found': 'Nav atrasts neviens fails',
   'Create new employee': 'Izveidojiet jaunu darbinieku',
   'New employee': 'Jauns darbinieks',
+  'Edit employee': 'Rediģēt darbinieku',
+  Timeregistration: 'Laika reģistrācija',
+  'Submitted date': 'Iesniegšanas datums',
 };

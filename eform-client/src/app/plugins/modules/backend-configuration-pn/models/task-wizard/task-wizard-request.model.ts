@@ -1,4 +1,6 @@
-import {TaskWizardFiltrationModel, TaskWizardPaginationModel} from '../../modules/task-wizard/components/store';
+import {
+  TaskWizardFiltrationModel, TaskWizardPaginationModel
+} from '../../state/task-wizard/task-wizard.reducer';
 
 export interface TaskWizardRequestModel {
   filters: TaskWizardFiltrationModel

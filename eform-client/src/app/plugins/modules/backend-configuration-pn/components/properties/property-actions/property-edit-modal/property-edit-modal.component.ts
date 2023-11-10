@@ -12,6 +12,8 @@ import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -27,12 +29,15 @@ export class PropertyEditModalComponent implements OnInit, OnDestroy {
 
   getChrInformationSub$: Subscription;
   getCompanyTypeSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
   get applicationLanguages() {
     return applicationLanguages;
   }
 
   constructor(
+    private store: Store,
     public authStateService: AuthStateService,
     private propertiesService: BackendConfigurationPnPropertiesService,
     public dialogRef: MatDialogRef<PropertyEditModalComponent>,

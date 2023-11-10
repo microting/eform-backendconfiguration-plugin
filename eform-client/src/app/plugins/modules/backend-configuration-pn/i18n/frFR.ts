@@ -274,4 +274,7 @@ export const frFR = {
   'No files found': 'Aucun fichier trouvé',
   'Create new employee': 'Créer un nouvel employé',
   'New employee': 'Nouvel employé',
+  'Edit employee': 'Modifier un employé',
+  Timeregistration: 'Enregistrement du temps',
+  'Submitted date': 'Date proposée',
 };

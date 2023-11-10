@@ -10,16 +10,20 @@ import {BehaviorSubject, forkJoin, Observable, Subscription, asyncScheduler, of}
 import {ActivatedRoute, Router} from '@angular/router';
 import {parseISO} from 'date-fns';
 import {
+  FiltrationStateModel,
   SharedTagModel,
 } from 'src/app/common/models';
 import {EmailRecipientsService, TemplateFilesService} from 'src/app/common/services';
-import {ReportQuery} from '../store';
 import {AuthStateService} from 'src/app/common/store';
 import {Gallery, GalleryItem, ImageItem} from '@ngx-gallery/core';
 import {Lightbox} from '@ngx-gallery/lightbox';
 import {ViewportScroller} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../services';
 import {catchError, tap} from 'rxjs/operators';
+import {Store} from '@ngrx/store';
+import {
+  selectReportsV1Filters, selectReportsV1ScrollPosition
+} from "src/app/plugins/modules/backend-configuration-pn/state/reports-v1/reports-v1.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -39,6 +43,8 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   dateTo: any;
   startWithParams = false;
   private observableReportsModel = new BehaviorSubject<ReportEformPnModel[]>([]);
+  private selectReportsV1Filters$ = this.store.select(selectReportsV1Filters);
+  private selectReportsV1ScrollPosition$ = this.store.select(selectReportsV1ScrollPosition);
 
   getTagsSub$: Subscription;
   generateReportSub$: Subscription;
@@ -51,12 +57,12 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     private reportService: BackendConfigurationPnReportService,
     private toastrService: ToastrService,
     private router: Router,
-    private planningsReportQuery: ReportQuery,
     public authStateService: AuthStateService,
     public gallery: Gallery,
     public lightbox: Lightbox,
     private imageService: TemplateFilesService,
-    private viewportScroller: ViewportScroller
+    private viewportScroller: ViewportScroller,
+    private store: Store,
   ) {
     this.activateRoute.params.subscribe((params) => {
       this.dateFrom = params['dateFrom'];
@@ -64,11 +70,17 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
       this.range.push(parseISO(params['dateFrom']));
       this.range.push(parseISO(params['dateTo']));
       this.startWithParams = !!(this.dateTo && this.dateFrom);
+
+      let _filters: FiltrationStateModel;
+      this.selectReportsV1Filters$.subscribe((filters) => {
+        _filters = filters;
+      }).unsubscribe();
       const model = {
         dateFrom: params['dateFrom'],
         dateTo: params['dateTo'],
-        tagIds: planningsReportQuery.pageSetting.filters.tagIds,
-        type: ''
+        tagIds: _filters.tagIds,
+        type: '',
+        version2: false
       };
       if (model.dateFrom !== undefined) {
         this.onGenerateReport(model);
@@ -76,7 +88,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     });
     this.observableReportsModel.subscribe(x => {
       if (x.length && this.startWithParams) {
-        const task = _ => this.planningsReportQuery.selectScrollPosition$
+        const task = _ => this.selectReportsV1ScrollPosition$
           .subscribe(value => this.viewportScroller.scrollToPosition(value));
         asyncScheduler.schedule(task, 1000);
         this.startWithParams = false;
@@ -99,12 +111,18 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   onGenerateReport(model: ReportPnGenerateModel) {
     this.dateFrom = model.dateFrom;
     this.dateTo = model.dateTo;
+
+    let _filters: FiltrationStateModel;
+    this.selectReportsV1Filters$.subscribe((filters) => {
+      _filters = filters;
+    }).unsubscribe();
     this.generateReportSub$ = this.reportService
       .generateReport({
         dateFrom: model.dateFrom,
         dateTo: model.dateTo,
-        tagIds: this.planningsReportQuery.pageSetting.filters.tagIds,
-        type: ''
+        tagIds: _filters.tagIds,
+        type: '',
+        version2: false
       })
       .subscribe((data) => {
         if (data && data.success) {
@@ -135,7 +153,8 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
       dateFrom: this.dateFrom,
       dateTo: this.dateTo,
       tagIds: [],
-      type: ''
+      type: '',
+      version2: false
     };
     if (model.dateFrom !== undefined) {
       this.onGenerateReport(model);

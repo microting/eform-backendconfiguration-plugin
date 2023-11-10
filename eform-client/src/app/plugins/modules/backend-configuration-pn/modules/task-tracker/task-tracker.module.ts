@@ -26,7 +26,7 @@ import {MatTableModule} from '@angular/material/table';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {PlanningsModule} from '../../../items-planning-pn/modules/plannings/plannings.module';
 import {StatisticsModule} from '../statistics/statistics.module';
-import {MatChipsModule} from "@angular/material/chips";
+import {MatChipsModule} from '@angular/material/chips';
 
 @NgModule({
   declarations: [

@@ -25,7 +25,7 @@ const workerForCreate = {
 };
 const areas = [generateRandmString(), generateRandmString(), generateRandmString(),]
 const filters: TaskManagementFilters = {
-  propertyName: `${property.cvrNumber} - ${property.chrNumber} - ${property.name}`,
+  propertyName: `${property.name}`,
 }
 
 describe('Backend Configuration Task Manager Create Task', function () {
@@ -65,7 +65,7 @@ describe('Backend Configuration Task Manager Create Task', function () {
         areaName: areas[0],
         assignedTo: `${workerForCreate.name} ${workerForCreate.surname}`,
         description: description,
-        propertyName: `${property.cvrNumber} - ${property.chrNumber} - ${property.name}`
+        propertyName: `${property.name}`
       });
     await backendConfigurationTaskManagementPage.changeFilters(filters);
     expect(rowNum + 1).eq(await backendConfigurationTaskManagementPage.rowNum());

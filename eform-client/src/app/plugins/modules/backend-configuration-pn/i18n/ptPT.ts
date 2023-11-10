@@ -274,4 +274,7 @@ export const ptPT = {
   'No files found': 'Nenhum arquivo encontrado',
   'Create new employee': 'Criar novo funcionário',
   'New employee': 'Novo empregado',
+  'Edit employee': 'Editar funcionário',
+  Timeregistration: 'Registro de horário',
+  'Submitted date': 'Data de envio',
 };

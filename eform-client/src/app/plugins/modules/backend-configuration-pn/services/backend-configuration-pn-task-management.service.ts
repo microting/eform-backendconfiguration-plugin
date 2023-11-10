@@ -7,10 +7,9 @@ import {
   WorkOrderCaseForReadModel,
   WorkOrderCaseModel, WorkOrderCaseUpdateModel,
 } from '../models';
-import {TaskManagementFiltrationModel} from '../modules/task-management/components/store';
 import {
-  BackendConfigurationPnReportsMethods
-} from 'src/app/plugins/modules/backend-configuration-pn/services/backend-configuration-pn-report.service';
+  TaskManagementFiltrationModel
+} from '../state/task-management/task-management.reducer';
 
 export let BackendConfigurationPnTaskManagementMethods = {
   WorkOrderCases: 'api/backend-configuration-pn/task-management',

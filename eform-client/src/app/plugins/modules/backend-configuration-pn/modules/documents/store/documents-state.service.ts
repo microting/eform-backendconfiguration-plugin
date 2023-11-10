@@ -1,66 +1,59 @@
 import { Injectable } from '@angular/core';
-import {DocumentsFiltrationModel, DocumentsQuery, DocumentsStore} from './';
 import { Observable } from 'rxjs';
 import {
+  CommonPaginationState,
   OperationDataResult,
   Paged,
-  PaginationModel,
-  SortModel,
 } from 'src/app/common/models';
 import { updateTableSort } from 'src/app/common/helpers';
-import { getOffset } from 'src/app/common/helpers/pagination.helper';
-import { map } from 'rxjs/operators';
 import {
   DocumentFolderModel,
-  DocumentFolderRequestModel,
   DocumentModel,
-  DocumentsRequestModel,
-  PropertyModel
 } from '../../../models';
 import {BackendConfigurationPnDocumentsService, BackendConfigurationPnPropertiesService} from '../../../services';
-import { arrayToggle } from '@datorama/akita';
+import {Store} from '@ngrx/store';
+import {
+  selectDocumentsFilters, selectDocumentsPagination
+} from '../../../state/documents/documents.selector';
 
 @Injectable({ providedIn: 'root' })
 export class DocumentsStateService {
+  private selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
+  private selectDocumentsPagination$ = this.store.select(selectDocumentsPagination);
   constructor(
-    public store: DocumentsStore,
+      private store: Store,
     private service: BackendConfigurationPnPropertiesService,
-    private query: DocumentsQuery,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService
   ) {}
 
-  // getOffset(): Observable<number> {
-  //   return this.query.selectOffset$;
-  // }
-
-  // getPageSize(): Observable<number> {
-  //   return this.query.selectPageSize$;
-  // }
-
-  getActiveSort(): Observable<string> {
-    return this.query.selectActiveSort$;
-  }
-
-  getActiveSortDirection(): Observable<'asc' | 'desc'> {
-    return this.query.selectActiveSortDirection$;
-  }
-
   getFolders() : Observable<OperationDataResult<Paged<DocumentFolderModel>>> {
+    let _filters:any;
+    this.selectDocumentsFilters$.subscribe((filters) => {
+      _filters = filters;
+    }).unsubscribe();
     return this.backendConfigurationPnDocumentsService.getAllFolders({
-      ...this.query.pageSetting.filters,
-    });
-      //.subscribe((data) => {
-      //if (data && data.success) {
-        //return data.model;
-      //}
-    //});
+      documentId: _filters.documentId,
+      expiration: _filters.expiration,
+      propertyId: _filters.propertyId,
+      folderId: _filters.folderId});
   }
 
   getDocuments() : Observable<OperationDataResult<Paged<DocumentModel>>> {
-    // const requestModel = new DocumentsRequestModel();
+    let _filters:any;
+    this.selectDocumentsFilters$.subscribe((filters) => {
+      _filters = filters;
+    }).unsubscribe();
+    let _pagination: CommonPaginationState;
+    this.selectDocumentsPagination$.subscribe((pagination) => {
+      _pagination = pagination;
+    }).unsubscribe();
     return this.backendConfigurationPnDocumentsService.getAllDocuments({
-      ...this.query.pageSetting.filters,
-      ...this.query.pageSetting.pagination
+        documentId: _filters.documentId,
+        expiration: _filters.expiration,
+        propertyId: _filters.propertyId,
+        folderId: _filters.folderId,
+      sort: _pagination.sort,
+      isSortDsc: _pagination.isSortDsc,
     });
   }
 
@@ -88,21 +81,21 @@ export class DocumentsStateService {
   // }
 
 
-  getFiltersAsync(): Observable<DocumentsFiltrationModel> {
-    return this.query.selectFilters$;
-  }
+  // getFiltersAsync(): Observable<DocumentsFiltrationModel> {
+  //   return this.query.selectFilters$;
+  // }
 
   updateNameFilter(nameFilter: string) {
-    this.store.update((state) => ({
-      filters: {
-        ...state.filters,
-        nameFilter: nameFilter,
-      },
-      pagination: {
-        ...state.pagination,
-        offset: 0,
-      },
-    }));
+    // this.store.update((state) => ({
+    //   filters: {
+    //     ...state.filters,
+    //     nameFilter: nameFilter,
+    //   },
+    //   pagination: {
+    //     ...state.pagination,
+    //     offset: 0,
+    //   },
+    // }));
   }
 
   // updatePageSize(pageSize: number) {
@@ -116,12 +109,12 @@ export class DocumentsStateService {
   // }
 
   changePage(offset: number) {
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
-        offset: offset,
-      },
-    }));
+    // this.store.update((state) => ({
+    //   pagination: {
+    //     ...state.pagination,
+    //     offset: offset,
+    //   },
+    // }));
   }
 
   // onDelete() {
@@ -132,18 +125,35 @@ export class DocumentsStateService {
   // }
 
   onSortTable(sort: string) {
+    let currentPagination: CommonPaginationState;
+    this.selectDocumentsPagination$.subscribe((pagination) => {
+      currentPagination = pagination;
+    }).unsubscribe();
     const localPageSettings = updateTableSort(
       sort,
-      this.query.pageSetting.pagination.sort,
-      this.query.pageSetting.pagination.isSortDsc
+      currentPagination.sort,
+      currentPagination.isSortDsc
     );
-    this.store.update((state) => ({
-      pagination: {
-        ...state.pagination,
+    this.store.dispatch({
+      type: '[Documents] Update pagination',
+      payload: {
+        ...currentPagination,
         isSortDsc: localPageSettings.isSortDsc,
         sort: localPageSettings.sort,
-      },
-    }));
+      }
+    });
+    // const localPageSettings = updateTableSort(
+    //   sort,
+    //   this.query.pageSetting.pagination.sort,
+    //   this.query.pageSetting.pagination.isSortDsc
+    // );
+    // this.store.update((state) => ({
+    //   pagination: {
+    //     ...state.pagination,
+    //     isSortDsc: localPageSettings.isSortDsc,
+    //     sort: localPageSettings.sort,
+    //   },
+    // }));
   }
 
   // checkOffset() {

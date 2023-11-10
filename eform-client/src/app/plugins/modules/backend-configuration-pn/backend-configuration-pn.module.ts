@@ -30,7 +30,6 @@ import {
   BackendConfigurationPnSettingsService,
   BackendConfigurationPnTaskTrackerService,
 } from './services';
-import {backendConfigurationStoreProviders} from './store-providers.config';
 import {AreaRulePlanModalModule} from './components/area-rule-plan-modal.module';
 import {MatCardModule} from '@angular/material/card';
 import {MatButtonModule} from '@angular/material/button';
@@ -46,6 +45,20 @@ import {MatExpansionModule} from '@angular/material/expansion';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {ItemsPlanningPnTagsService} from 'src/app/plugins/modules/items-planning-pn/services';
 import {MatDatepickerModule} from '@angular/material/datepicker';
+import {StoreModule} from '@ngrx/store';
+import * as documentsReducer from './state/documents/documents.reducer';
+import * as filesReducer from './state/files/files.reducer';
+import * as propertyReducer from './state/properties/properties.reducer';
+import * as taskWorkerAssignmentReducer from './state/task-worker-assignment/task-worker-assignment.reducer';
+import * as taskWizardReducer from './state/task-wizard/task-wizard.reducer';
+import * as taskTrackerReducer from './state/task-tracker/task-tracker.reducer';
+import * as taskManagementReducer from './state/task-management/task-management.reducer';
+import * as statisticsReducer from './state/statistics/statistics.reducer';
+import * as reportsV1Reducer from './state/reports-v1/reports-v1.reducer';
+import * as reportsV2Reducer from './state/reports-v2/reports-v2.reducer';
+import * as propertyWorkersReducer from './state/property-workers/property-workers.reducer';
+import * as areaRulesReducer from './state/area-rules/area-rules.reducer';
+
 
 @NgModule({
     imports: [
@@ -74,6 +87,20 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
         MatExpansionModule,
         MatCheckboxModule,
         MatDatepickerModule,
+      StoreModule.forFeature('backendConfigurationPn', {
+        documentsState: documentsReducer.reducer,
+        filesState: filesReducer.reducer,
+        propertiesState: propertyReducer.reducer,
+        taskWorkerAssignmentState: taskWorkerAssignmentReducer.reducer,
+        taskWizardState: taskWizardReducer.reducer,
+        taskTrackerState: taskTrackerReducer.reducer,
+        taskManagementState: taskManagementReducer.reducer,
+        statisticsState: statisticsReducer.reducer,
+        reportsV1State: reportsV1Reducer.reducer,
+        reportsV2State: reportsV2Reducer.reducer,
+        propertyWorkersState: propertyWorkersReducer.reducer,
+        areaRulesState: areaRulesReducer.reducer,
+      })
     ],
   declarations: [
     BackendConfigurationPnLayoutComponent,
@@ -96,7 +123,6 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     BackendConfigurationPnChemicalsService,
     BackendConfigurationPnTaskTrackerService,
     ItemsPlanningPnTagsService,
-    ...backendConfigurationStoreProviders,
   ],
 })
 export class BackendConfigurationPnModule {

@@ -39,5 +39,6 @@ namespace BackendConfiguration.Pn.Services.WordService
         Task<Stream> GenerateWorkOrderCaseReport(TaskManagementFiltersModel filtersModel, List<WorkorderCaseModel> workOrderCaseModels);
 
         Task<OperationDataResult<Stream>> GenerateWordDashboard(List<OldReportEformModel> reportModel);
+        Task<OperationDataResult<Stream>> GenerateWordDashboard(List<ReportEformModel> reportModel);
     }
 }

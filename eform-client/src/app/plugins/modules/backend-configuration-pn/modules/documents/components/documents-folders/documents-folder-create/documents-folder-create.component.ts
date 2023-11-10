@@ -11,6 +11,8 @@ import {TranslateService} from '@ngx-translate/core';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {DocumentFolderModel} from '../../../../../models';
 import {MatDialogRef} from '@angular/material/dialog';
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-documents-folder-create',
@@ -24,21 +26,26 @@ export class DocumentsFolderCreateComponent implements OnInit {
   newFolderModel: FolderCreateModel = new FolderCreateModel();
   // folderTranslations: FormArray = new FormArray([]);
   selectedLanguage: number;
+  private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
 
   get languages() {
     return applicationLanguages2;
   }
 
   constructor(
+    private authStore: Store,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     private toastrService: ToastrService,
     private translateService: TranslateService,
     localeService: LocaleService,
     public dialogRef: MatDialogRef<DocumentsFolderCreateComponent>,
   ) {
-    this.selectedLanguage = applicationLanguages2.find(
-      (x) => x.locale === localeService.getCurrentUserLocale()
-    ).id;
+    this.selectCurrentUserLanguageId$.subscribe((languageId) => {
+      this.selectedLanguage = languageId;
+    });
+    // this.selectedLanguage = applicationLanguages2.find(
+    //   (x) => x.locale === localeService.getCurrentUserLocale()
+    // ).id;
   }
 
   ngOnInit() {

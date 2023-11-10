@@ -27,6 +27,8 @@ import {Overlay} from '@angular/cdk/overlay';
 import {TaskWizardFoldersModalComponent} from '../';
 import {PlanningTagsComponent} from '../../../../../../items-planning-pn/modules/plannings/components';
 import {AuthStateService} from 'src/app/common/store';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -75,6 +77,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   };
 
   folderSelectedSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;
@@ -85,6 +88,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private store: Store,
     private translateService: TranslateService,
     public dialogRef: MatDialogRef<TaskWizardUpdateModalComponent>,
     private eFormService: EFormService,
@@ -277,7 +281,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   openTagsModal() {
-    this.planningTagsModal.show(this.authStateService.isAdmin);
+    this.planningTagsModal.show();
   }
 
   hide() {

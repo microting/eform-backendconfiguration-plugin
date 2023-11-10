@@ -110,6 +110,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasServ
                             Type = x.Area.Type
                         })
                         .ToListAsync().ConfigureAwait(false);
+
                     areasForAdd = areas.Where(x => !propertyAreasQuery.Any(y => y.AreaId == x.Id))
                         .Select(x => new PropertyAreaModel
                         {

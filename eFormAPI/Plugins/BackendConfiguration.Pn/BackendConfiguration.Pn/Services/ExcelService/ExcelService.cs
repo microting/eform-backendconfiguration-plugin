@@ -269,7 +269,7 @@ public class ExcelService : IExcelService
 						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Property");
 						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 						y++;
-						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("CreatedAt");
+						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("SubmittedDate");
 						worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
 						y++;
 						worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
@@ -357,6 +357,165 @@ public class ExcelService : IExcelService
 					}
 				}
 			}
+			wb.SaveAs(resultDocument);
+
+			Stream result = File.Open(resultDocument, FileMode.Open);
+			return new OperationDataResult<Stream>(true, result);
+		}
+		catch (Exception e)
+		{
+			Trace.TraceError(e.Message);
+			_logger.LogError(e.Message);
+			return new OperationDataResult<Stream>(
+				false,
+				_localizationService.GetString("ErrorWhileCreatingWordFile"));
+		}
+	}
+#pragma warning disable CS1998
+	public async Task<OperationDataResult<Stream>> GenerateExcelDashboard(List<ReportEformModel> reportModel)
+#pragma warning restore CS1998
+	{
+		try
+		{
+			Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "results"));
+
+			var timeStamp = $"{DateTime.UtcNow:yyyyMMdd}_{DateTime.UtcNow:hhmmss}";
+
+			var resultDocument = Path.Combine(Path.GetTempPath(), "results",
+				$"{timeStamp}_.xlsx");
+
+			IXLWorkbook wb = new XLWorkbook();
+
+			foreach (var eformModel in reportModel)
+			{
+				foreach (var reportEformGroupModel in eformModel.GroupEform)
+				{
+					if (eformModel.FromDate != null)
+					{
+						var x = 0;
+						var y = 0;
+						var sheetName = eformModel.GroupEform.Count > 1
+							? $"{eformModel.GroupTagName} - {reportEformGroupModel.CheckListId}"
+							: $"{eformModel.GroupTagName}";
+
+						sheetName = sheetName
+							.Replace(":", "")
+							.Replace("\\", "")
+							.Replace("/", "")
+							.Replace("?", "")
+							.Replace("*", "")
+							.Replace("[", "")
+							.Replace("]", "");
+
+						if (sheetName.Length > 30)
+						{
+							sheetName = sheetName.Substring(0, 30);
+						}
+
+						var worksheet = wb.Worksheets.Add(sheetName);
+
+
+						if (reportEformGroupModel.Items.Any())
+						{
+							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Id");
+							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("Property");
+							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("SubmittedDate");
+							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("DoneBy");
+							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = _localizationService.GetString("ItemName");
+							worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+							foreach (var itemHeader in reportEformGroupModel.ItemHeaders)
+							{
+								y++;
+								worksheet.Cell(x + 1, y + 1).Value = itemHeader.Value;
+								worksheet.Cell(x + 1, y + 1).Style.Font.Bold = true;
+							}
+						}
+
+						x = 1;
+						foreach (var dataModel in reportEformGroupModel.Items)
+						{
+							y = 0;
+							worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseId;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = dataModel.PropertyName;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = dataModel.MicrotingSdkCaseDoneAt;
+							worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy HH:mm:ss";
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = dataModel.DoneBy;
+							y++;
+							worksheet.Cell(x + 1, y + 1).Value = dataModel.ItemName;
+							y++;
+							foreach (var dataModelCaseField in dataModel.CaseFields)
+							{
+								if (dataModelCaseField.Value == "checked")
+								{
+									worksheet.Cell(x + 1, y + 1).Value = 1;
+								}
+								else
+								{
+									var value = dataModelCaseField.Value == "unchecked" ? "0" :
+										dataModelCaseField.Value == "checked" ? "1" : dataModelCaseField.Value;
+
+									switch (dataModelCaseField.Key)
+									{
+										case "date":
+											try
+											{
+												var date = DateTime.Parse(value);
+												worksheet.Cell(x + 1, y + 1).SetValue(date);
+												worksheet.Cell(x + 1, y + 1).Style.DateFormat.Format = "dd.MM.yyyy";
+											}
+											catch (Exception e)
+											{
+												Console.WriteLine(e);
+												worksheet.Cell(x + 1, y + 1).SetValue(value);
+											}
+
+											break;
+										case "number":
+											try
+											{
+												if (!string.IsNullOrEmpty(value))
+												{
+													var number = Double.Parse(value, CultureInfo.InvariantCulture);
+													worksheet.Cell(x + 1, y + 1).SetValue(number);
+												}
+											}
+											catch (Exception e)
+											{
+												Console.WriteLine(e);
+												worksheet.Cell(x + 1, y + 1).SetValue(value);
+											}
+
+											//worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
+											//worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
+											break;
+										default:
+											worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
+											//worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Text;
+											break;
+									}
+								}
+
+								y++;
+							}
+
+							x++;
+						}
+					}
+
+				}
+			}
+
 			wb.SaveAs(resultDocument);
 
 			Stream result = File.Open(resultDocument, FileMode.Open);

@@ -9,7 +9,7 @@
   [rowStriped]="true"
   [showToolbar]="false"
   [showColumnMenuButton]="false"
-  [sortActive]="taskWorkerAssignmentsStateService.getActiveSort() | async"
-  [sortDirection]="taskWorkerAssignmentsStateService.getActiveSortDirection() | async"
+  [sortActive]="selectTaskWorkerAssignmentPaginationSort$ | async"
+  [sortDirection]="selectTaskWorkerAssignmentPaginationIsSortDsc$ | async"
   (sortChange)="sortTable($event)">
 </mtx-grid>
