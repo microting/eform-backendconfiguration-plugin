@@ -95,6 +95,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 					.Where(x => x.AreaId == areaProperty.AreaId)
 					.Where(x => x.PropertyId == areaProperty.PropertyId)
 					.Where(x => x.Area.AreaProperties.Select(y => y.Id).Contains(propertyAreaId))
+					.Where(x => x.CreatedInGuide == false)
 					.Include(x => x.AreaRuleTranslations)
 					.Include(x => x.AreaRuleInitialField)
 					.Include(x => x.AreaRulesPlannings)
