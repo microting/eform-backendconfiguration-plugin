@@ -7,8 +7,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
-import {Store} from "@ngrx/store";
+import {selectIsDarkMode} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({

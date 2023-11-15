@@ -184,18 +184,21 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
     this.router.navigate(['/plugins/backend-configuration-pn/task-tracker'], {queryParams: {showDiagram: true}}).then();
   }
 
-  clickOnAdHocTaskPriorities() {
+  clickOnAdHocTaskPriorities(event: any) {
     this.store.dispatch(
         {type: '[TaskManagement] Update filters',
-          filters: {
-            propertyId: this.selectedPropertyId || null,
-            areaName: null,
-            dateFrom: null,
-            dateTo: null,
-            status: null,
-            createdBy: null,
-            lastAssignedTo: null,
-        }
+          payload: {
+            filters: {
+              propertyId: this.selectedPropertyId || -1,
+              areaName: null,
+              dateFrom: null,
+              dateTo: null,
+              status: null,
+              createdBy: null,
+              lastAssignedTo: null,
+              priority: event,
+            }
+          }
         });
     this.router.navigate(['/plugins/backend-configuration-pn/task-management'], {queryParams: {diagramForShow: 'ad-hoc-task-priorities'}}).then();
   }
@@ -242,7 +245,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
               areaName: null,
               dateFrom: null,
               dateTo: null,
-              status: null,
+              status: 1,
               createdBy: null,
               lastAssignedTo: this.selectedPropertyId && workerId ? workerId : null,
             }
