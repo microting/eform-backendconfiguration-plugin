@@ -97,23 +97,23 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
-        this.selectStatisticsPropertyId$.subscribe((propertyId) => {
-          if (propertyId) {
-            this.selectedPropertyId = propertyId;
-            this.store.dispatch({
-              type: '[TaskWizard] Update filters',
-              payload: {
-                filters: {
-                  propertyIds: [propertyId],
-                  tagIds: [],
-                  folderIds: [],
-                  assignToIds: [],
-                  status: null,
-                }
-              }
-            });
-          }
-        });
+        // this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+        //   if (propertyId) {
+        //     this.selectedPropertyId = propertyId;
+        //     // this.store.dispatch({
+        //     //   type: '[TaskWizard] Update filters',
+        //     //   payload: {
+        //     //     filters: {
+        //     //       propertyIds: [propertyId],
+        //     //       tagIds: [],
+        //     //       folderIds: [],
+        //     //       assignToIds: [],
+        //     //       status: null,
+        //     //     }
+        //     //   }
+        //     // });
+        //   }
+        // });
         // this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
         this.getPlannedTaskWorkers();
       } else {
