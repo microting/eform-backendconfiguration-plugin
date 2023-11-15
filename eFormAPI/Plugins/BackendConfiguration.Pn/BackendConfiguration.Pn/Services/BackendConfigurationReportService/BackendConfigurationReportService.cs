@@ -582,7 +582,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                     {
                         planningCase = x,
                         ReportGroupPlanningTagId = planningTagsForGroup
-                            .First(y => x.Planning.ReportGroupPlanningTagId == y.Id)
+                            .FirstOrDefault(y => x.Planning.ReportGroupPlanningTagId == y.Id)
                             //    .Any(t => t.PlanningTagId == y.Id))
                     })
                     .GroupBy(x => x.ReportGroupPlanningTagId,
@@ -597,14 +597,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                         eFormId, cases
                                     })
                         });
-                foreach (var groupedPlanningCase in groupedPlanningCases)
+//                var newGroupedPlanningCases = groupedPlanningCases);
+
+
+                foreach (var groupedPlanningCase in groupedPlanningCases.Where(x => x.planningTag != null))
                 {
 
                     var reportModel = new ReportEformModel
                     {
                         FromDate = $"{fromDate:yyyy-MM-dd}",
                         ToDate = $"{toDate:yyyy-MM-dd}",
-                        GroupTagName = groupedPlanningCase.planningTag.Name
+                        GroupTagName = groupedPlanningCase.planningTag != null ? groupedPlanningCase.planningTag.Name : ""
                     };
 
                     foreach (var eformIdAndCases in groupedPlanningCase.casesGroupedByEfromId)
