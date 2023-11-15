@@ -239,7 +239,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             eformId: data.model.eformId,
             folderId: data.model.folderId,
             propertyId: data.model.propertyId,
-            repeatEvery: data.model.repeatEvery,
+            repeatEvery: data.model.repeatEvery === 0 ? 1 : data.model.repeatEvery,
             repeatType: data.model.repeatType,
             sites: data.model.assignedTo,
             startDate: data.model.startDate,
