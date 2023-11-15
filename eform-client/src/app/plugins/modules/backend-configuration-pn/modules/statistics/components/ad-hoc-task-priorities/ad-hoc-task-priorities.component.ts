@@ -20,9 +20,15 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   @Input() adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
-  @Output() clickOnDiagram: EventEmitter<void> = new EventEmitter<void>();
+  @Output() clickOnDiagram: EventEmitter<number | null> = new EventEmitter<number | null>();
   currentDate = format(new Date(), 'P', {locale: this.authStateService.dateFnsLocale});
   chartData: { name: string, value: number }[] = [];
+  priorityNames: string[] = [
+    this.translateService.instant('Urgent'),
+    this.translateService.instant('High'),
+    this.translateService.instant('Middle'),
+    this.translateService.instant('Low'),
+  ];
   xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa']
@@ -138,6 +144,16 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
         },
       ];
       this.getxAxisTicks();
+    }
+  }
+
+  onClickOnDiagram(chartData: { name: string, value: number } = null) {
+    if(!chartData){
+      this.clickOnDiagram.emit();
+    } else {
+      // lookup the chartData.name in the priorityNames array and get the index
+      const priorityIndex = this.priorityNames.indexOf(chartData.name);
+      this.clickOnDiagram.emit(priorityIndex + 1);
     }
   }
 

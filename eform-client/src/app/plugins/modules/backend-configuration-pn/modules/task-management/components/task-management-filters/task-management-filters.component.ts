@@ -100,7 +100,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             }),
             priority: new FormControl({
               value: filters.priority,
-              disabled: !filters.propertyId,
+              disabled: false,
             }),
           });
           if (filters.propertyId && filters.propertyId !== -1) {
@@ -325,11 +325,16 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
       }
     });
     this.filtersForm.get('priority').valueChanges.subscribe((value: number) => {
+        let currentFilters: any;
+        this.selectTaskManagementFilters$.subscribe((filters) => {
+          currentFilters = filters;
+        }).unsubscribe();
       this.store.dispatch(
         {
           type: '[TaskManagement] Update filters',
           payload: {
             filters: {
+              ...currentFilters,
               priority: value,
             }
           },
