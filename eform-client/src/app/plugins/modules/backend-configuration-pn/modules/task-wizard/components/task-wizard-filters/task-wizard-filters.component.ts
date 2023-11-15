@@ -18,7 +18,7 @@ import {
   selectTaskWizardFilters, selectTaskWizardPropertyIds
 } from '../../../../state/task-wizard/task-wizard.selector';
 import {debounce, filter, tap} from 'rxjs/operators';
-import {ActivatedRoute} from "@angular/router";
+import {ActivatedRoute} from '@angular/router';
 
 @AutoUnsubscribe()
 @Component({
