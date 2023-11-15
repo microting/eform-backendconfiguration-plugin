@@ -303,9 +303,9 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var groupedData = await query.GroupBy(x => x.LastAssignedToName)
                 .Select(x => new
                 {
-                    SiteId = x.Where(y => y.LastAssignedToName == x.Key)
-                        .Select(y => y.PropertyWorker.WorkerId)
-                        .FirstOrDefault(),
+                    // SiteId = x.Where(y => y.LastAssignedToName == x.Key)
+                    //     .Select(y => y.PropertyWorker.WorkerId)
+                    //     .FirstOrDefault(),
                     SiteName = x.Key,
                     Count = x.Count(y => y.LastAssignedToName == x.Key)
                 }).ToListAsync();
@@ -324,20 +324,24 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             //     })
             //     .ToListAsync();
             //
-            // var siteIds = query
-            //     .Select(x => x.PropertyWorker.WorkerId)
-            //     .ToList();
+            var names = query
+                .Select(x => x.LastAssignedToName)
+                .ToList();
             // //
-            // var siteNames = await sdkDbContext.Sites
-            //     .Where(x => siteIds.Contains(x.Id))
-            //     .ToDictionaryAsync(x => x.Name, x => x.Id);
+            var siteNames = await sdkDbContext.Sites
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => names.Contains(x.Name))
+                .ToDictionaryAsync(x => x.Name, x => x.Id);
             //
             result.TaskWorkers = groupedData
                 .Select(x => new AdHocTaskWorker()
                 {
                     StatValue = x.Count,
                     WorkerName = x.SiteName,
-                    WorkerId = x.SiteId
+                    WorkerId = siteNames
+                        .Where(y => y.Key == x.SiteName)
+                        .Select(y => y.Value)
+                        .FirstOrDefault()
                 })
                 .ToList();
 

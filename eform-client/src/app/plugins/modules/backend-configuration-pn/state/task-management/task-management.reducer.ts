@@ -50,7 +50,15 @@ export const _reducer = createReducer(
     ...state,
     filters: {
       ...state.filters,
-      ...payload,
+      propertyId: payload.filters.propertyId,
+      areaName: payload.filters.areaName,
+      createdBy: payload.filters.createdBy,
+      lastAssignedTo: payload.filters.lastAssignedTo,
+      status: payload.filters.status,
+      dateFrom: payload.filters.dateFrom,
+      dateTo: payload.filters.dateTo,
+      priority: payload.filters.priority,
+      delayed: payload.filters.delayed,
     },
     }
   )),

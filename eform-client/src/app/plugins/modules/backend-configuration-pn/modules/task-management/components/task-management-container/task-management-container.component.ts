@@ -101,15 +101,15 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
         // }).unsubscribe();
         // //     const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
         // this.selectedPropertyId = currentFilters.propertyId !== -1 ? currentFilters.propertyId : null;
-        this.selectStatisticsPropertyId$.subscribe((propertyId) => {
-          if (propertyId) {
-            this.selectedPropertyId = propertyId;
-            this.store.dispatch({
-              type: '[TaskManagement] Update filters',
-              payload: {propertyId: this.selectedPropertyId}
-            });
-          }
-        });
+        // this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+        //   if (propertyId) {
+        //     this.selectedPropertyId = propertyId;
+        //     // this.store.dispatch({
+        //     //   type: '[TaskManagement] Update filters',
+        //     //   payload: {propertyId: this.selectedPropertyId}
+        //     // });
+        //   }
+        // });
         this.getStats();
       } else {
         this.diagramForShow = '';
