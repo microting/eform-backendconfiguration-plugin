@@ -18,6 +18,7 @@ import {
   selectTaskWizardFilters, selectTaskWizardPropertyIds
 } from '../../../../state/task-wizard/task-wizard.selector';
 import {debounce, filter, tap} from 'rxjs/operators';
+import {ActivatedRoute} from "@angular/router";
 
 @AutoUnsubscribe()
 @Component({
@@ -47,12 +48,15 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   valueChangesFolderIdsSub$: Subscription;
   valueChangesPropertyIdsSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
+  showDiagram: boolean = false;
+  firstLoad: boolean = true;
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
   private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
 
   constructor(
     private store: Store,
     private translateService: TranslateService,
+    private route: ActivatedRoute,
   ) {
     this.filtersForm = new FormGroup({
       propertyIds: new FormControl([]),
@@ -60,6 +64,11 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
       tagIds: new FormControl([]),
       status: new FormControl(null),
       assignToIds: new FormControl({value: [], disabled: true}),
+    });
+    this.route.queryParams.subscribe(x => {
+      if (x && x.showDiagram) {
+        this.showDiagram = x.showDiagram;
+      }
     });
   }
 
@@ -78,11 +87,11 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
         debounce(x => interval(200)),
         filter(value => !R.equals(value, this.filtersForm.getRawValue())),
         tap(filters => {
-          // this.propertyIdsChange(filters.propertyIds);
-          // this.folderIdsChange(filters.folderIds);
-          this.tagIdsChange(filters.tagIds);
-          // this.statusChange(filters.status);
-          // this.assignToIdsChange(filters.assignToIds);
+          if (this.firstLoad) {
+            this.firstLoad = false;
+            this.filtersForm.get('propertyIds').patchValue(filters.propertyIds);
+            this.filtersForm.get('assignToIds').patchValue(filters.assignToIds);
+          }
         })).subscribe();
 
     this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
