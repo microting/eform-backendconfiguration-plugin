@@ -115,17 +115,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     propertyWorker.TaskManagementEnabled = updateModel.TaskManagementEnabled;
                     await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
-                    var documents = await caseTemplatePnDbContext.DocumentProperties
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.PropertyId == propertyWorker.PropertyId)
-                        .ToListAsync();
-                    foreach (var document in documents)
-                    {
-                        if (!documentIds.Contains(document.DocumentId))
-                        {
-                            documentIds.Add(document.DocumentId);
-                        }
-                    }
                 }
 
                 var assignmentsForCreate = updateModel.Assignments
@@ -146,8 +135,18 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     await propertyAssignment.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-
                     propertyWorkers.Add(propertyAssignment);
+                    var documents = await caseTemplatePnDbContext.DocumentProperties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.PropertyId == propertyAssignment.PropertyId)
+                        .ToListAsync();
+                    foreach (var document in documents)
+                    {
+                        if (!documentIds.Contains(document.DocumentId))
+                        {
+                            documentIds.Add(document.DocumentId);
+                        }
+                    }
                 }
 
                 var assignmentsForDelete = assignments
