@@ -721,13 +721,24 @@ namespace BackendConfiguration.Pn.Services.WordService
 
                     foreach (var imagesName in reportEformModel.ImageNames)
                     {
-                        itemsHtml.Append($@"<p style='font-size: 7pt; page-break-before:always'>{_localizationService.GetString("Id")}: {imagesName.Key[1]}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
-
-                        itemsHtml = await InsertImage(imagesName.Value[0], itemsHtml, 600, 650, core, basePicturePath);
-
-                        if (!string.IsNullOrEmpty(imagesName.Value[1]))
+                        try
                         {
-                            itemsHtml.Append($@"<p style='font-size: 7pt;'>{_localizationService.GetString("Position")}:<a href=""{imagesName.Value[1]}"">{imagesName.Value[1]}</a></p>"); // TODO change to Position : URL
+                            itemsHtml.Append(
+                                $@"<p style='font-size: 7pt; page-break-before:always'>{_localizationService.GetString("Id")}: {imagesName.Key[1]}</p>"); // TODO change to ID: {id}; imagesName.Key[1]
+
+                            itemsHtml = await InsertImage(imagesName.Value[0], itemsHtml, 600, 650, core,
+                                basePicturePath);
+
+                            if (!string.IsNullOrEmpty(imagesName.Value[1]))
+                            {
+                                itemsHtml.Append(
+                                    $@"<p style='font-size: 7pt;'>{_localizationService.GetString("Position")}:<a href=""{imagesName.Value[1]}"">{imagesName.Value[1]}</a></p>"); // TODO change to Position : URL
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Trace.TraceError(e.Message);
+                            _logger.LogError(e.Message);
                         }
                     }
                 }
@@ -927,47 +938,59 @@ namespace BackendConfiguration.Pn.Services.WordService
 
         private async Task<StringBuilder> InsertImage(string imageName, StringBuilder itemsHtml, int imageSize, int imageWidth, Core core, string basePicturePath)
 		{
-			var filePath = Path.Combine(basePicturePath, imageName);
-			Stream stream;
-			if (_s3Enabled)
-			{
-				Console.WriteLine("Getting file from S3 " + imageName);
-				var storageResult = await core.GetFileFromS3Storage(imageName);
-				stream = storageResult.ResponseStream;
-			}
-			else if (!System.IO.File.Exists(filePath))
-			{
-				return itemsHtml;
-				// return new OperationDataResult<Stream>(
-				//     false,
-				//     _localizationService.GetString($"{imagesName} not found"));
-			}
-			else
-			{
-				stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-			}
+            try
+            {
+                var filePath = Path.Combine(basePicturePath, imageName);
+                Stream stream;
+                if (_s3Enabled)
+                {
+                    Console.WriteLine("Getting file from S3 " + imageName);
+                    var storageResult = await core.GetFileFromS3Storage(imageName);
+                    stream = storageResult.ResponseStream;
+                }
+                else if (!System.IO.File.Exists(filePath))
+                {
+                    return itemsHtml;
+                    // return new OperationDataResult<Stream>(
+                    //     false,
+                    //     _localizationService.GetString($"{imagesName} not found"));
+                }
+                else
+                {
+                    stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                }
 
-			using (var image = new MagickImage(stream))
-			{
-				Console.WriteLine("Opening file from stream " + imageName);
-				decimal currentRation = image.Height / (decimal)image.Width;
-				int newWidth = imageSize;
-				int newHeight = (int)Math.Round((currentRation * newWidth));
+                using (var image = new MagickImage(stream))
+                {
+                    Console.WriteLine("Opening file from stream " + imageName);
+                    decimal currentRation = image.Height / (decimal)image.Width;
+                    int newWidth = imageSize;
+                    int newHeight = (int)Math.Round((currentRation * newWidth));
 
-				Console.WriteLine("Resizing file from stream " + imageName);
-				image.Resize(newWidth, newHeight);
-				Console.WriteLine("Cropping file from stream " + imageName);
-				image.Crop(newWidth, newHeight);
+                    Console.WriteLine("Resizing file from stream " + imageName);
+                    image.Resize(newWidth, newHeight);
+                    Console.WriteLine("Cropping file from stream " + imageName);
+                    image.Crop(newWidth, newHeight);
 
-				Console.WriteLine("converting to base64 " + imageName);
-				var base64String = image.ToBase64();
-				Console.WriteLine("Appending to itemsHtml file from stream " + imageName);
-				itemsHtml.Append($@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>");
-			}
+                    Console.WriteLine("converting to base64 " + imageName);
+                    var base64String = image.ToBase64();
+                    Console.WriteLine("Appending to itemsHtml file from stream " + imageName);
+                    itemsHtml.Append(
+                        $@"<p><img src=""data:image/png;base64,{base64String}"" width=""{imageWidth}px"" alt="""" /></p>");
+                }
 
-			await stream.DisposeAsync();
+                await stream.DisposeAsync();
 
-			return itemsHtml;
+                return itemsHtml;
+            }
+            catch (Exception e)
+            {
+                Trace.TraceError(e.Message);
+                Trace.TraceError(e.StackTrace);
+                _logger.LogError(e.StackTrace);
+                _logger.LogError(e.Message);
+                return itemsHtml;
+            }
 		}
 	}
 }
