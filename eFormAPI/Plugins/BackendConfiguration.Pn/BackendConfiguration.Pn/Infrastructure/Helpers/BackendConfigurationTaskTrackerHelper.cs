@@ -270,7 +270,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					AreaRuleId = areaRulePlanning!.AreaRuleId,
                     AreaRulePlanId = areaRulePlanning.Id,
                     Weeks = weeksThisCompliance,
-                    SdkFolderName = folderTranslations.First(x => x.FolderId == planning.SdkFolderId).Name,
+                    SdkFolderName = folderTranslations.FirstOrDefault(x => x.FolderId == planning.SdkFolderId)?.Name,
 				};
 
 				if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)
