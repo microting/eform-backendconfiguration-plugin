@@ -95,6 +95,7 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(x => {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;
+        this.updateTable();
         // let currentFilters: any;
         // this.selectTaskManagementFilters$.subscribe((filters) => {
         //   currentFilters = filters;

@@ -193,7 +193,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
               areaName: null,
               dateFrom: null,
               dateTo: null,
-              status: null,
+              status: 1,
               createdBy: null,
               lastAssignedTo: null,
               priority: event,
@@ -241,7 +241,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
         {type: '[TaskManagement] Update filters',
           payload: {
             filters: {
-              propertyId: this.selectedPropertyId || null,
+              propertyId: this.selectedPropertyId || -1,
               areaName: null,
               dateFrom: null,
               dateTo: null,

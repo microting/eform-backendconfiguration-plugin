@@ -111,12 +111,25 @@ public static class BackendConfigurationTaskTrackerHelper
 			// 	localCurrentDate = localCurrentDate.AddDays(weekRange);
 			// }
 
+			var properties = await backendConfigurationPnDbContext.Properties
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.ToListAsync();
+
+			var sites = await sdkDbContext.Sites
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.ToListAsync();
+
+			var folderTranslations = sdkDbContext.FolderTranslations
+				.Where(x => x.LanguageId == userLanguageId)
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.ToList();
+
 			foreach (var compliance in complianceList)
 			{
-				var propertyName = await backendConfigurationPnDbContext.Properties
+				var propertyName = properties
 					.Where(x => x.Id == compliance.PropertyId)
 					.Select(x => x.Name)
-					.FirstOrDefaultAsync();
+					.FirstOrDefault();
 
 				var planning = await itemsPlanningPnDbContext.Plannings
 					.Where(x => x.Id == compliance.PlanningId)
@@ -137,10 +150,10 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Distinct()
 					.ToListAsync();
 
-				var sitesWithNames = await sdkDbContext.Sites
+				var sitesWithNames = sites
 					.Where(x => planningSiteIds.Contains(x.Id))
 					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
-					.ToListAsync();
+					.ToList();
 
 				if (filtersModel.WorkerIds.Any() /* && !filtersModel.WorkerIds.Contains(-1)*/) // filtration by workers
 				{
@@ -256,7 +269,8 @@ public static class BackendConfigurationTaskTrackerHelper
 					AreaId = compliance.AreaId,
 					AreaRuleId = areaRulePlanning!.AreaRuleId,
                     AreaRulePlanId = areaRulePlanning.Id,
-                    Weeks = weeksThisCompliance
+                    Weeks = weeksThisCompliance,
+                    SdkFolderName = folderTranslations.First(x => x.FolderId == planning.SdkFolderId).Name,
 				};
 
 				if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)

@@ -20,6 +20,7 @@ export interface TaskModel {
   areaRuleId: number;
   areaRulePlanId: number;
   weeks: WeekListModel[];
+  sdkFolderName: string;
 }
 
 export interface WeekListModel {
