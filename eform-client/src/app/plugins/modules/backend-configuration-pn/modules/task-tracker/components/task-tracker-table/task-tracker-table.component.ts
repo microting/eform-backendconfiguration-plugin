@@ -13,8 +13,7 @@ import * as R from 'ramda';
 import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
-import {AbstractControl} from "@angular/forms";
-import {Store} from "@ngrx/store";
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -38,6 +37,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     {header: this.translateService.stream('Id'), field: 'complianceId', sortProp: {id: 'Id'}, sortable: false},
     {header: this.translateService.stream('CaseId'), field: 'sdkCaseId', sortProp: {id: 'CaseId'}, sortable: false},
     {header: this.translateService.stream('Property'), sortProp: {id: 'Property'}, field: 'property', sortable: false},
+    {header: this.translateService.stream('Folder'), sortProp: {id: 'sdkFolderName'}, field: 'sdkFolderName', sortable: false},
     {header: this.translateService.stream('Task'), field: 'taskName', sortable: false},
     {header: this.translateService.stream('Tags'), sortProp: {id: 'Tags'}, field: 'tags', sortable: false},
     {header: this.translateService.stream('Workers'), sortProp: {id: 'Workers'}, field: 'workers', sortable: false},
