@@ -48,12 +48,9 @@ export class DocumentsStateService {
       _pagination = pagination;
     }).unsubscribe();
     return this.backendConfigurationPnDocumentsService.getAllDocuments({
-        documentId: _filters.documentId,
-        expiration: _filters.expiration,
-        propertyId: _filters.propertyId,
-        folderId: _filters.folderId,
-      sort: _pagination.sort,
-      isSortDsc: _pagination.isSortDsc,
+      ..._filters,
+      propertyId: _filters.propertyId === null ? -1 : _filters.propertyId,
+      ..._pagination,
     });
   }
 
