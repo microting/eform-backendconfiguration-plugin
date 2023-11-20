@@ -71,10 +71,17 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
             expiration: new FormControl(filters.expiration),
           });
           if (filters.propertyId === null) {
+            let currentFilters: DocumentsFiltrationModel;
+            this.selectDocumentsFilters$.subscribe((filters) => {
+              currentFilters = filters;
+            }).unsubscribe();
             this.store.dispatch({
               type: '[Documents] Update filters',
               payload: {
-                propertyId: -1,
+                filters: {
+                  ...currentFilters,
+                  propertyId: -1,
+                }
               }
             });
           }
