@@ -76,8 +76,8 @@ public static class BackendConfigurationTaskTrackerHelper
 
 
 			var newDate = DateTime.Now;
-			var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
-			var endDate = currentDate.AddDays(28);
+			// var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
+			// var endDate = currentDate.AddDays(28);
 			var weeks = new List<TaskTrackerWeeksListModel>();
 			// var localCurrentDate = currentDate;
 			// while (localCurrentDate < endDate) // get week numbers
@@ -196,27 +196,27 @@ public static class BackendConfigurationTaskTrackerHelper
 				var startDate = areaRulePlanning.StartDate ?? planning.StartDate;
 				var deadlineDate = compliance.Deadline.AddDays(-1);
 
-				var listWithDateTasks = planning.RepeatType switch
-				{
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day => GetDaysBetween(deadlineDate, planning.RepeatEvery),
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week => GetWeeksBetween(deadlineDate, planning.RepeatEvery),
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month => GetMonthsBetween(deadlineDate, planning.RepeatEvery),
-					_ => throw new ArgumentOutOfRangeException($"{planning.RepeatType} is not support")
-				};
+				// var listWithDateTasks = planning.RepeatType switch
+				// {
+				// 	Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day => GetDaysBetween(deadlineDate, planning.RepeatEvery),
+				// 	Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week => GetWeeksBetween(deadlineDate, planning.RepeatEvery),
+				// 	Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month => GetMonthsBetween(deadlineDate, planning.RepeatEvery),
+				// 	_ => throw new ArgumentOutOfRangeException($"{planning.RepeatType} is not support")
+				// };
 
-				var weeksThisCompliance = weeks
-					.Select(week => new TaskTrackerWeeksListModel
-					{
-						WeekRange = week.WeekRange,
-						WeekNumber = week.WeekNumber,
-						DateList = week.DateList
-							.Select(date => new TaskTrackerDateListModel
-							{
-								Date = date.Date,
-								IsTask = listWithDateTasks
-									.Exists(dateTask => dateTask.ToString("d") == date.Date.ToString("d"))
-							}).ToList()
-					}).ToList();
+				// var weeksThisCompliance = weeks
+				// 	.Select(week => new TaskTrackerWeeksListModel
+				// 	{
+				// 		WeekRange = week.WeekRange,
+				// 		WeekNumber = week.WeekNumber,
+				// 		DateList = week.DateList
+				// 			.Select(date => new TaskTrackerDateListModel
+				// 			{
+				// 				Date = date.Date,
+				// 				IsTask = listWithDateTasks
+				// 					.Exists(dateTask => dateTask.ToString("d") == date.Date.ToString("d"))
+				// 			}).ToList()
+				// 	}).ToList();
 
 				var itemPlanningTagIds = await areaRulePlanningQuery
 					.SelectMany(x => x.AreaRulePlanningTags
@@ -269,7 +269,7 @@ public static class BackendConfigurationTaskTrackerHelper
 					AreaId = compliance.AreaId,
 					AreaRuleId = areaRulePlanning!.AreaRuleId,
                     AreaRulePlanId = areaRulePlanning.Id,
-                    Weeks = weeksThisCompliance,
+                    //Weeks = weeksThisCompliance,
                     SdkFolderName = folderTranslations.FirstOrDefault(x => x.FolderId == planning.SdkFolderId)?.Name,
 				};
 
