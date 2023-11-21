@@ -685,7 +685,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 								}
 
 								// Delete planning case
-								await planningCase.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+								//await planningCase.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
 							}
 
 							planning.UpdatedByUserId = _userService.UserId;

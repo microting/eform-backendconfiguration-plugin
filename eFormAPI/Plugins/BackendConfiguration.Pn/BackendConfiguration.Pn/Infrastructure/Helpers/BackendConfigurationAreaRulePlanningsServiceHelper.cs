@@ -294,7 +294,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             {
                                                 PlanningId = planning.Id,
                                                 Status = 66,
-                                                MicrotingSdkeFormId = planning.RelatedEFormId
+                                                MicrotingSdkeFormId = planning.RelatedEFormId,
+                                                CreatedByUserId = userId
                                             };
                                             await planningCase.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                                         }
@@ -343,7 +344,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             MicrotingSdkeFormId = planning.RelatedEFormId,
                                             Status = 66,
                                             PlanningId = planning.Id,
-                                            PlanningCaseId = planningCase.Id
+                                            PlanningCaseId = planningCase.Id,
+                                            CreatedByUserId = userId
                                         };
 
                                         await planningCaseSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -2518,7 +2520,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             {
                 PlanningId = planning.Id,
                 Status = 66,
-                MicrotingSdkeFormId = (int)areaRule.EformId
+                MicrotingSdkeFormId = (int)areaRule.EformId,
+                CreatedByUserId = userId
             };
             await planningCase.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
             var checkListSite = await sdkDbContext.CheckListSites.SingleAsync(x => x.MicrotingUid == caseId)
@@ -2531,7 +2534,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 PlanningId = planning.Id,
                 PlanningCaseId = planningCase.Id,
                 MicrotingSdkCaseId = (int)caseId!,
-                MicrotingCheckListSitId = checkListSite.Id
+                MicrotingCheckListSitId = checkListSite.Id,
+                CreatedByUserId = userId
             };
 
             await planningCaseSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
