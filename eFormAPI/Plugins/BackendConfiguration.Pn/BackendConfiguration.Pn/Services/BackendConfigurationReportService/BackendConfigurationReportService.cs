@@ -455,6 +455,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                             case Constants.FieldTypes.Date:
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("date", caseField.Value));
                                                 break;
+                                            case Constants.FieldTypes.CheckBox:
+                                                if (caseField.Value is "true" or "false")
+                                                {
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string",
+                                                        caseField.Value == "true" ? "checked" : "unchecked"));
+                                                }
+                                                else
+                                                {
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
+                                                }
+                                                break;
                                             default:
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
                                                 break;
@@ -835,6 +846,17 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                                 break;
                                             case Constants.FieldTypes.Date:
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("date", caseField.Value));
+                                                break;
+                                            case Constants.FieldTypes.CheckBox:
+                                                if (caseField.Value is "true" or "false")
+                                                {
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string",
+                                                        caseField.Value == "true" ? "checked" : "unchecked"));
+                                                }
+                                                else
+                                                {
+                                                    item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
+                                                }
                                                 break;
                                             default:
                                                 item.CaseFields.Add(new KeyValuePair<string, string>("string", caseField.Value));
