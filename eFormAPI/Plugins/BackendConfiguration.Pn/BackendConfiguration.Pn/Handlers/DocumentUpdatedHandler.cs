@@ -70,7 +70,8 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
                 await documentSite.Create(documentDbContext);
                 //}
 
-                var clt = await sdkDbContext.CheckListTranslations.FirstAsync(x => x.Text == "00. Info boks");
+                // Old text "00. Info boks"
+                var clt = await sdkDbContext.CheckLists.FirstAsync(x => x.OriginalId == "142657");
                 var folderProperty = await documentDbContext.FolderProperties.FirstOrDefaultAsync(x => x.FolderId == document.FolderId && x.PropertyId == documentProperty.PropertyId);
 
                 int folderId;
@@ -152,7 +153,7 @@ public class DocumentUpdatedHandler : IHandleMessages<DocumentUpdated>
 
                 if (!string.IsNullOrEmpty(document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name) && document.DocumentUploadedDatas.First(x => x.LanguageId == language.Id && x.Extension == "pdf").Hash != null)
                 {
-                    var mainElement = await _sdkCore.ReadeForm(clt.CheckListId, language);
+                    var mainElement = await _sdkCore.ReadeForm(clt.Id, language);
                     mainElement.CheckListFolderName = sdkFolder.MicrotingUid.ToString();
                     mainElement.EndDate = DateTime.Now.AddYears(20).ToUniversalTime();
                     mainElement.Label = document.DocumentTranslations.First(x => x.LanguageId == language.Id).Name;
