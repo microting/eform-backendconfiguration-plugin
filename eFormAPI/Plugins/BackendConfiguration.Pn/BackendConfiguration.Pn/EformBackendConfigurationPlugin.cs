@@ -227,25 +227,19 @@ namespace BackendConfiguration.Pn
                             contents = await sr.ReadToEndAsync().ConfigureAwait(false);
                         }
 
-                        if (eformName == "05. Halebid og risikovurdering")
+                        switch (eformName)
                         {
-                            contents = contents.Replace("SOURCE_REPLACE_ME", "123");
-                        }
-
-                        if (eformName == "01. Aflæsninger")
-                        {
-                            contents = contents.Replace("REPLACE_ME", "123");
-                        }
-
-                        if (eformName == "02. Fækale uheld")
-                        {
-                            contents = contents.Replace("REPLACE_ME", "123");
-                        }
-
-                        if (eformName == "25.01 Registrer produkter")
-                        {
-                            contents = contents.Replace("SOURCE_REPLACE_ME_2", "123");
-                            contents = contents.Replace("SOURCE_REPLACE_ME", "456");
+                            case "05. Halebid og risikovurdering":
+                                contents = contents.Replace("SOURCE_REPLACE_ME", "123");
+                                break;
+                            case "01. Aflæsninger":
+                            case "02. Fækale uheld":
+                                contents = contents.Replace("REPLACE_ME", "123");
+                                break;
+                            case "25.01 Registrer produkter":
+                                contents = contents.Replace("SOURCE_REPLACE_ME_2", "123");
+                                contents = contents.Replace("SOURCE_REPLACE_ME", "456");
+                                break;
                         }
 
                         var newTemplate = await core.TemplateFromXml(contents).ConfigureAwait(false);
