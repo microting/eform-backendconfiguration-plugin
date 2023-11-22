@@ -123,4 +123,6 @@ public class TaskTrackerModel
 
     public List<TaskTrackerWeeksListModel> Weeks { get; set; }
 		= new();
+
+    public string SdkFolderName { get; set; }
 }

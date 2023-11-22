@@ -1,12 +1,12 @@
 <eform-new-subheader [title]="'Task management' | translate" forceStaticTitle="true">
   <button
-    mat-icon-button
+    mat-raised-button
     id="createNewTaskBtn"
     color="accent"
     matTooltip="{{ 'Create new task' | translate }}"
     (click)="openCreateModal()"
   >
-    <mat-icon>add_task</mat-icon>
+    {{ 'Create new task' | translate }}
   </button>
 </eform-new-subheader>
 
@@ -31,26 +31,26 @@
       mat-raised-button
       id="showReportBtn"
       color="accent"
-      [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
+      [disabled]="selectTaskManagementPropertyIdIsNullOrUndefined$ | async"
       (click)="updateTable()"
     >
       {{ 'Show' | translate }}
     </button>
     <button
-      *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
+      *ngIf="(selectTaskManagementPropertyId$ | async) !== -1"
       mat-icon-button
       id="wordBtn"
-      [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
+      [disabled]="selectTaskManagementPropertyIdIsNullOrUndefined$ | async"
       (click)="onDownloadWordReport()"
       matTooltip="{{ 'Word report' | translate }}"
     >
       <mat-icon svgIcon="file-word"></mat-icon>
     </button>
     <button
-      *ngIf="taskManagementStateService.store.getValue().filters.propertyId !== -1"
+      *ngIf="(selectTaskManagementPropertyId$ | async) !== -1"
       mat-icon-button
       id="excelBtn"
-      [disabled]="taskManagementStateService.getDisabledButtonsAsync() | async"
+      [disabled]="selectTaskManagementPropertyIdIsNullOrUndefined$ | async"
       (click)="onDownloadExcelReport()"
       matTooltip="{{ 'Excel report' | translate }}"
     >
@@ -61,7 +61,7 @@
   <app-task-management-table
   [workOrderCases]="workOrderCases"
   (openViewModal)="openViewModal($event)"
-  (updateTable)="taskManagementStateService.getDisabledButtons ? updateTable() : undefined"
+  (updateTable)="(selectTaskManagementPropertyIdIsNullOrUndefined$ ? updateTable() : undefined)"
   (openDeleteModal)="openDeleteModal($event)">
   </app-task-management-table>
 </div>

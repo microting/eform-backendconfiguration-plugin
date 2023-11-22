@@ -7,9 +7,10 @@
   [rowStriped]="true"
   [showToolbar]="false"
   [showColumnMenuButton]="false"
-  [sortActive]="taskWizardStateService.getActiveSort() | async"
-  [sortDirection]="taskWizardStateService.getActiveSortDirection() | async"
+  [sortActive]="selectTaskWizardPaginationSort$ | async"
+  [sortDirection]="selectTaskWizardPaginationIsSortDsc$ | async"
   (sortChange)="onSortTable($event)"
+  noResultText="{{'No tasks found' | translate}}"
 />
 
 <ng-template #tagsTpl let-row>

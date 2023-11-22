@@ -49,8 +49,8 @@
     [rowStriped]="true"
     [showToolbar]="false"
     [showColumnMenuButton]="false"
-    [sortActive]="areaRulesStateService.getActiveSort() | async"
-    [sortDirection]="areaRulesStateService.getActiveSortDirection() | async"
+    [sortActive]="selectAreaRulesPaginationSort$ | async"
+    [sortDirection]="selectAreaRulesPaginationIsSortDsc$ | async"
     (sortChange)="onSortTable($event)"
   >
   </mtx-grid>
@@ -74,7 +74,8 @@
     (click)="onShowPlanAreaRule(row)">
     <mat-icon>assignment</mat-icon>
   </button>
-  <ng-container *ngIf="!row.isDefault">
+<!--  <ng-container *ngIf="!row.isDefault">-->
+  <ng-container>
     <button
       mat-icon-button
       *ngIf="selectedArea.type !== 9"

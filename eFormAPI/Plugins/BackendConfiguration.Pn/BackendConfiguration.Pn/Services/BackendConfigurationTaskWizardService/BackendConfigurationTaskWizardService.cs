@@ -61,7 +61,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Include(x => x.AreaRule.AreaRuleTranslations)
                 .Include(x => x.AreaRulePlanningTags)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.AreaId == areaId);
+                .Where(x => x.AreaRule.CreatedInGuide)
+                .Where(x => x.AreaId == areaId)
+                .AsNoTracking();
 
             // filtration
             if (request.Filters.PropertyIds.Any())
@@ -143,15 +145,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     .Select(y => new CommonTagModel
                     {
                         Id = y.ItemPlanningTagId,
-                        Name = itemPlanningTagNames.ContainsKey(y.ItemPlanningTagId) ? itemPlanningTagNames[y.ItemPlanningTagId] : "",
+                        Name = itemPlanningTagNames.ContainsKey(y.ItemPlanningTagId) ? itemPlanningTagNames[y.ItemPlanningTagId] : ""
                     })
                     .ToList(),
                 // add report tag to all tags
                 TagReport = x.ItemPlanningTagId.HasValue ? new CommonTagModel
                 {
                     Id = x.ItemPlanningTagId.Value,
-                    Name = itemPlanningTagNames.ContainsKey(x.ItemPlanningTagId.Value) ? itemPlanningTagNames[x.ItemPlanningTagId.Value] : "",
-                } : null,
+                    Name = itemPlanningTagNames.ContainsKey(x.ItemPlanningTagId.Value) ? itemPlanningTagNames[x.ItemPlanningTagId.Value] : ""
+                } : null
             }).ToList();
 
             // add eForm names, folder names and site names
@@ -194,7 +196,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .FirstOrDefault(),
                     Folder = folderNamesQuery.Where(x => x.FolderId == areaRule.FolderId).Select(x => x.Name)
                         .FirstOrDefault(),
-                    CreatedInGuide = areaRule.CreatedInGuide,
+                    CreatedInGuide = areaRule.CreatedInGuide
                 })
                 .AsQueryable();
 
@@ -228,7 +230,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     Id = x.Id,
                     Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
                     Description = ""
-                }).ToListAsync().ConfigureAwait(false);
+                }).AsNoTracking().ToListAsync().ConfigureAwait(false);
             return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
         }
         catch (Exception ex)
@@ -253,7 +255,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Include(x => x.AreaRule.AreaRuleTranslations)
                 .Include(x => x.AreaRulePlanningTags)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.Id == id);
+                .Where(x => x.Id == id)
+                .AsNoTracking();
 
             if (!await query.Select(x => x.Id).AnyAsync())
             {
@@ -285,7 +288,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
                         .Select(y => y.ItemPlanningTagId)
                         // .Where(y => !x.ItemPlanningTagId.HasValue || y != x.ItemPlanningTagId) // delete report tag from all tags
-                        .ToList(),
+                        .ToList()
                 })
                 .FirstOrDefaultAsync();
 
@@ -317,6 +320,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 _localizationService.GetString("ReportTableHeaderTagIsRequired"));
         }
 
+        if (createModel.FolderId == null)
+        {
+            return new OperationResult(false,
+                _localizationService.GetString("FolderIsRequired"));
+        }
+
         try
         {
             var core = await _coreHelper.GetCore();
@@ -332,6 +341,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.Name)
                 .FirstOrDefault();
+
+            if (createModel.Status == TaskWizardStatuses.Active && createModel.Sites.Count == 0)
+            {
+             createModel.Status = TaskWizardStatuses.NotActive;
+            }
 
             if (createModel.StartDate != null)
             {
@@ -373,7 +387,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 CreatedAt = DateTime.UtcNow,
                 IsEditable = false,
-                Enabled = true,
+                Enabled = createModel.Status == TaskWizardStatuses.Active,
                 IsLocked = true,
                 IsHidden = false,
                 StartDate = (DateTime)createModel.StartDate,
@@ -383,6 +397,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 RepeatEvery = createModel.RepeatEvery,
                 SdkFolderId = createModel.FolderId,
                 SdkFolderName = folderName,
+                ShowExpireDate = true,
                 DayOfWeek = dayOfWeek,
                 DayOfMonth = dayOfMonth,
                 UpdatedByUserId = _userService.UserId,
@@ -472,13 +487,13 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         Name = t.Name,
                         LanguageId = t.LanguageId,
                         UpdatedByUserId = _userService.UserId,
-                        CreatedByUserId = _userService.UserId,
+                        CreatedByUserId = _userService.UserId
                     })
                     .ToList(),
                 EformId = createModel.EformId,
                 EformName = eformName,
                 PropertyId = createModel.PropertyId,
-                FolderId = createModel.FolderId,
+                FolderId = (int) createModel.FolderId,
                 FolderName = folderName,
                 RepeatEvery = createModel.RepeatEvery,
                 RepeatType = (int?)createModel.RepeatType,
@@ -490,7 +505,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     new()
                     {
                         AreaId = areaId,
-                        FolderId = createModel.FolderId,
+                        FolderId = (int) createModel.FolderId,
                         ItemPlanningId = planning.Id,
                         ComplianceEnabled = true,
                         PlanningSites = createModel.Sites
@@ -501,7 +516,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                     SiteId = x,
                                     Status = 0,
                                     UpdatedByUserId = _userService.UserId,
-                                    CreatedByUserId = _userService.UserId,
+                                    CreatedByUserId = _userService.UserId
                                 })
                             .ToList(),
                         Status = createModel.Status == TaskWizardStatuses.Active,
@@ -528,11 +543,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             };
             await areRule.Create(_backendConfigurationPnDbContext);
 
-            await PairItemWithSiteHelper.Pair(
-                createModel.Sites,
-                createModel.EformId,
-                planning.Id,
-                createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
+            if (createModel.Status == TaskWizardStatuses.Active && createModel.StartDate <= DateTime.UtcNow)
+            {
+                await PairItemWithSiteHelper.Pair(
+                    createModel.Sites,
+                    createModel.EformId,
+                    planning.Id,
+                    (int) createModel.FolderId, core, _itemsPlanningPnDbContext, true, _localizationService);
+            }
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));
         }
         catch (Exception e)
@@ -566,15 +584,37 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             var areaRulePlanning = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Where(x => x.Id == updateModel.Id)
-                .Include(x => x.AreaRule)
+                .Include(z => z.AreaRule)
                 .ThenInclude(x => x.AreaRuleTranslations)
-                .Include(x => x.PlanningSites)
+                .Include(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
                 .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
             if (areaRulePlanning == null)
             {
                 return new OperationResult(false,
                     _localizationService.GetString("TaskNotFound"));
+            }
+
+            if (updateModel.Status == TaskWizardStatuses.Active && updateModel.Sites.Count == 0)
+            {
+                updateModel.Status = TaskWizardStatuses.NotActive;
+            }
+
+            if (updateModel.StartDate != null)
+            {
+                if (updateModel.StartDate!.Value.Hour != 0)
+                {
+                    updateModel.StartDate = updateModel.StartDate.Value.AddHours(24 - updateModel.StartDate.Value.Hour);
+                }
+            }
+            else
+            {
+                updateModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
+            }
+
+            if (updateModel.RepeatType == RepeatType.Day && updateModel.RepeatEvery == 1)
+            {
+                updateModel.RepeatEvery = 0;
             }
 
             var currentSiteIds = areaRulePlanning.PlanningSites.Select(ps => ps.SiteId).ToList();
@@ -585,7 +625,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             // update area rule plannings and area rule with translations
             var oldStatus = areaRulePlanning.Status;
-            areaRulePlanning.FolderId = updateModel.FolderId;
+            areaRulePlanning.FolderId = (int) updateModel.FolderId;
             areaRulePlanning.Status = updateModel.Status == TaskWizardStatuses.Active;
             areaRulePlanning.StartDate = updateModel.StartDate;
             areaRulePlanning.RepeatEvery = updateModel.RepeatEvery;
@@ -594,8 +634,16 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var oldItemPlanningTagId = areaRulePlanning.ItemPlanningTagId;
             areaRulePlanning.ItemPlanningTagId = updateModel.ItemPlanningTagId;
             areaRulePlanning.UpdatedByUserId = _userService.UserId;
+            areaRulePlanning.ComplianceEnabled = true;
+            areaRulePlanning.SendNotifications = true;
             await areaRulePlanning.Update(_backendConfigurationPnDbContext);
 
+            var planning = await _itemsPlanningPnDbContext.Plannings
+                .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                .Include(x => x.NameTranslations)
+                .Include(x => x.PlanningsTags)
+                .Include(x => x.PlanningSites)
+                .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
             foreach (var site in sitesToAdd
                          .Select(x =>
                              new Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite
@@ -605,7 +653,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                  AreaId = areaId,
                                  AreaRuleId = areaRulePlanning.AreaId,
                                  CreatedByUserId = _userService.UserId,
-                                 UpdatedByUserId = _userService.UserId,
+                                 UpdatedByUserId = _userService.UserId
                              }))
             {
                 await site.Create(_backendConfigurationPnDbContext);
@@ -622,11 +670,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             areaRulePlanning.AreaRule.EformId = updateModel.EformId;
             areaRulePlanning.AreaRule.EformName = eformName;
             areaRulePlanning.AreaRule.PropertyId = updateModel.PropertyId;
-            areaRulePlanning.AreaRule.FolderId = updateModel.FolderId;
+            areaRulePlanning.AreaRule.FolderId = (int) updateModel.FolderId;
             areaRulePlanning.AreaRule.FolderName = folderName;
             areaRulePlanning.AreaRule.RepeatEvery = updateModel.RepeatEvery;
             areaRulePlanning.AreaRule.RepeatType = (int?)updateModel.RepeatType;
             areaRulePlanning.AreaRule.UpdatedByUserId = _userService.UserId;
+            if (!oldStatus && areaRulePlanning.Status)
+            {
+                areaRulePlanning.StartDate = updateModel.StartDate;
+            }
             await areaRulePlanning.AreaRule.Update(_backendConfigurationPnDbContext);
 
             // update area rule translations
@@ -651,7 +703,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                              LanguageId = t.LanguageId,
                              AreaRuleId = areaRulePlanning.AreaRuleId,
                              CreatedByUserId = _userService.UserId,
-                             UpdatedByUserId = _userService.UserId,
+                             UpdatedByUserId = _userService.UserId
                          })
                          .ToList())
             {
@@ -663,55 +715,31 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 // create item planning
                 case false when areaRulePlanning.Status:
                 {
-                    // if (areaRulePlanning.AreaRule.FolderId == 0)
-                    // {
-                    //     var folderId = await _backendConfigurationPnDbContext
-                    //         .ProperyAreaFolders
-                    //         .Include(x => x.AreaProperty)
-                    //         .Where(x => x.AreaProperty.PropertyId ==
-                    //                     areaRulePlanning.PropertyId)
-                    //         .Where(x => x.AreaProperty.AreaId == areaRulePlanning.AreaId)
-                    //         .Select(x => x.FolderId)
-                    //         .FirstOrDefaultAsync().ConfigureAwait(false);
-                    //     if (folderId != 0)
-                    //     {
-                    //         areaRulePlanning.AreaRule.FolderId = folderId;
-                    //         areaRulePlanning.AreaRule.FolderName = await sdkDbContext.FolderTranslations
-                    //             .Where(x => x.FolderId == folderId)
-                    //             .Where(x => x.LanguageId == 1) // danish
-                    //             .Select(x => x.Name)
-                    //             .FirstAsync().ConfigureAwait(false);
-                    //         await areaRulePlanning.AreaRule.Update(_backendConfigurationPnDbContext)
-                    //             .ConfigureAwait(false);
-                    //     }
-                    // }
-
-                    var planning = await _itemsPlanningPnDbContext.Plannings.Include(x => x.NameTranslations).FirstAsync(x => x.Id == areaRulePlanning.ItemPlanningId);
-
-                    // var planning = await CreateItemPlanningObject(updateModel.EformId,
-                    //     areaRulePlanning.AreaRule.EformName, areaRulePlanning.AreaRule.FolderId, updateModel,
-                    //     areaRulePlanning.AreaRule.Id, areaRulePlanning.Id);
-                    // planning.NameTranslations = areaRulePlanning.AreaRule.AreaRuleTranslations.Select(
-                    //     areaRuleAreaRuleTranslation => new PlanningNameTranslation
-                    //     {
-                    //         LanguageId = areaRuleAreaRuleTranslation.LanguageId,
-                    //         Name = areaRuleAreaRuleTranslation.Name
-                    //     }).ToList();
                     planning.DayOfMonth = 1;
+                    planning.StartDate = updateModel.StartDate!.Value;
+                    planning.Enabled = true;
                     planning.DayOfWeek = DayOfWeek.Monday;
                     planning.RepeatEvery = updateModel.RepeatEvery;
                     planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
                     planning.RepeatType =
                         (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)updateModel.RepeatType;
 
-                    foreach (var planningSite in areaRulePlanning.PlanningSites.Where(x => x.Status == 0))
+                    areaRulePlanning = _backendConfigurationPnDbContext.AreaRulePlannings
+                        .Where(x => x.Id == updateModel.Id)
+                        .Include(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
+                        .FirstOrDefault(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                    foreach (var planningSite in areaRulePlanning.PlanningSites
+                                 .Where(x => x.Status == 0)
+                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         planningSite.Status = 33;
                         planningSite.WorkflowState = Constants.WorkflowStates.Created;
                         await planningSite.Update(_backendConfigurationPnDbContext);
                     }
 
-                    foreach (var planningSite in areaRulePlanning.PlanningSites)
+                    foreach (var planningSite in areaRulePlanning.PlanningSites
+                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         var itemsPlanningSite = await _itemsPlanningPnDbContext.PlanningSites.FirstOrDefaultAsync(x =>
                             x.PlanningId == planning.Id && x.SiteId == planningSite.SiteId);
@@ -720,6 +748,15 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         {
                             itemsPlanningSite.WorkflowState = Constants.WorkflowStates.Created;
                             await itemsPlanningSite.Update(_itemsPlanningPnDbContext);
+                        } else
+                        {
+                            await new Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningSite
+                            {
+                                PlanningId = planning.Id,
+                                SiteId = planningSite.SiteId,
+                                CreatedByUserId = _userService.UserId,
+                                UpdatedByUserId = _userService.UserId
+                            }.Create(_itemsPlanningPnDbContext);
                         }
                     }
 
@@ -755,15 +792,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 case true when !areaRulePlanning.Status:
                     //if (areaRulePlanning.ItemPlanningId != 0)
                     {
-                    //     // update planning tags
-                    var planning = await _itemsPlanningPnDbContext.Plannings
-                        .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
-                        .Include(x => x.NameTranslations)
-                        .Include(x => x.PlanningsTags)
-                        .Include(x => x.PlanningSites)
-                        .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-                    await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId);
+                    await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId).ConfigureAwait(false);
+                    planning.Enabled = false;
+                    await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                     var complianceList = await _backendConfigurationPnDbContext.Compliances
                         .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
@@ -848,12 +880,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     // TODO, this is not possible to do, since the web interface does not allow to update active plannings
                     //if (areaRulePlanning.ItemPlanningId != 0) // Since ItemPlanningId is not 0, we already have a planning and therefore just update it
                     {
-                        var planning = await _itemsPlanningPnDbContext.Plannings
-                            .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
-                            .Include(x => x.NameTranslations)
-                            .Include(x => x.PlanningsTags)
-                            .Include(x => x.PlanningSites)
-                            .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
                         planning.Enabled = areaRulePlanning.Status;
                         planning.PushMessageOnDeployment = areaRulePlanning.SendNotifications;
                         planning.StartDate = new DateTime((int)(areaRulePlanning.StartDate?.Year),
@@ -893,7 +919,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                          LanguageId = t.LanguageId,
                                          PlanningId = planning.Id,
                                          CreatedByUserId = _userService.UserId,
-                                         UpdatedByUserId = _userService.UserId,
+                                         UpdatedByUserId = _userService.UserId
                                      })
                                      .ToList())
                         {
@@ -904,7 +930,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId);
 
                         // update planning sites
-                        currentSiteIds = planning.PlanningSites.Select(ps => ps.SiteId).ToList();
+                        currentSiteIds = planning.PlanningSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed).Select(ps => ps.SiteId).ToList();
 
                         sitesToAdd = updateModel.Sites.Except(currentSiteIds).ToList();
                         foreach (var site in sitesToAdd
@@ -914,7 +940,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                              SiteId = x,
                                              PlanningId = planning.Id,
                                              CreatedByUserId = _userService.UserId,
-                                             UpdatedByUserId = _userService.UserId,
+                                             UpdatedByUserId = _userService.UserId
                                          }))
                         {
                             await site.Create(_itemsPlanningPnDbContext);
@@ -1012,7 +1038,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     break;
                 // nothing to do, but update tags
                 case false when !areaRulePlanning.Status:
-                    //await UpdateTags(0, updateModel, areaRulePlanning.Id, oldItemPlanningTagId, false);
+                {
+                    await UpdateTags(areaRulePlanning.ItemPlanningId, updateModel, areaRulePlanning.Id, oldItemPlanningTagId, true);
+                }
                     break;
             }
 
@@ -1247,7 +1275,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 PlanningTagId = tagId,
                 PlanningId = planningId,
                 CreatedByUserId = _userService.UserId,
-                UpdatedByUserId = _userService.UserId,
+                UpdatedByUserId = _userService.UserId
             })
             .ToList();
 
@@ -1274,7 +1302,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         {
             if (updateItemPlanningTags)
             {
-                await tags.Create(_itemsPlanningPnDbContext);
+                PlanningsTags planningTagsTags = new()
+                {
+                    PlanningId = tags.PlanningId,
+                    PlanningTagId = tags.PlanningTagId,
+                    CreatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
+                };
+                await planningTagsTags.Create(_itemsPlanningPnDbContext);
             }
 
             var areaRulePlanningTag = new AreaRulePlanningTag
@@ -1301,7 +1336,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     PlanningTagId = updateModel.ItemPlanningTagId.Value,
                     PlanningId = planningId,
                     CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
                 };
 
                 if (tagForDelete != null)
@@ -1318,7 +1353,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     PlanningTagId = updateModel.ItemPlanningTagId.Value,
                     PlanningId = planningId,
                     CreatedByUserId = _userService.UserId,
-                    UpdatedByUserId = _userService.UserId,
+                    UpdatedByUserId = _userService.UserId
                 };
                 await tagForCreate.Create(_itemsPlanningPnDbContext);
             }

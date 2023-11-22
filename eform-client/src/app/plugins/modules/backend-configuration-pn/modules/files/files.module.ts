@@ -31,7 +31,6 @@ import {MatCardModule} from '@angular/material/card';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {EformSharedTagsModule} from 'src/app/common/modules/eform-shared-tags/eform-shared-tags.module';
-import {filesPersistProvider} from './store';
 import {MatChipsModule} from '@angular/material/chips';
 import {PdfViewerModule} from 'ng2-pdf-viewer';
 import {DragulaModule} from 'ng2-dragula';
@@ -79,9 +78,6 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
         MtxProgressModule,
         MatDatepickerModule,
     ],
-  providers: [
-    filesPersistProvider,
-  ],
 })
 
 export class FilesModule {

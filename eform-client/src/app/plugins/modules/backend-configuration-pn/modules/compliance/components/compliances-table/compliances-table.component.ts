@@ -14,6 +14,8 @@ import {
   ComplianceDeleteComponent
 } from '../compliance-delete/compliance-delete.component';
 import {Subscription} from 'rxjs';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-compliances-table',
@@ -126,8 +128,11 @@ export class CompliancesTableComponent implements OnInit {
   @Input() propertyId: number;
   @Input() isComplianceThirtyDays: boolean;
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
+  public isAuth$ = this.store.select(selectAuthIsAuth);
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
   constructor(
+    private store: Store,
     public compliancesStateService: CompliancesStateService,
     public authStateService: AuthStateService,
     private translateService: TranslateService,
@@ -139,7 +144,9 @@ export class CompliancesTableComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.authStateService.isAdmin) {
+    let isAdmin = false;
+    this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+    if (isAdmin) {
       this.mergedTableHeaders = this.adminTableHeaders;
     } else {
       this.mergedTableHeaders = this.tableHeaders;

@@ -12,6 +12,13 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {WordIcon} from 'src/app/common/const';
 import { ThemePalette } from '@angular/material/core';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
+import {
+  selectPropertiesNameFilters,
+  selectPropertiesPaginationIsSortDsc,
+  selectPropertiesPaginationSort
+} from '../../../../state/properties/properties.selector';
 
 @Component({
   selector: 'app-properties-table',
@@ -39,12 +46,18 @@ export class PropertiesTableComponent implements OnInit {
   showDocxReportModal: EventEmitter<number> = new EventEmitter<number>();
   @Output()
   showEditEntityListModal: EventEmitter<PropertyModel> = new EventEmitter<PropertyModel>();
+  public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
+  public selectPropertiesPaginationSort$ = this.store.select(selectPropertiesPaginationSort);
+  public selectPropertiesPaginationIsSortDsc$ = this.store.select(selectPropertiesPaginationIsSortDsc);
+  public selectPropertiesNameFilters$ = this.store.select(selectPropertiesNameFilters);
 
   get propertyCompliancesColorBadgesEnum() {
     return PropertyCompliancesColorBadgesEnum;
   }
 
   constructor(
+    private store: Store,
     public propertiesStateService: PropertiesStateService,
     private entitySelectService: EntitySelectService,
     public authStateService: AuthStateService,

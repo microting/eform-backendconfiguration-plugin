@@ -23,7 +23,12 @@ export let BackendConfigurationPnDocumentsMethods = {
 export class BackendConfigurationPnDocumentsService {
   constructor(private apiBaseService: ApiBaseService) {}
 
-  getAllDocuments(model: { documentId?: string; expiration?: DocumentsExpirationFilterEnum; propertyId: number; folderId?: string }):
+  getAllDocuments(model: { documentId?: string;
+    expiration?: DocumentsExpirationFilterEnum;
+    propertyId: number;
+    folderId?: string,
+    sort: string,
+    isSortDsc: boolean }):
     Observable<OperationDataResult<Paged<DocumentModel>>> {
     return this.apiBaseService.post(BackendConfigurationPnDocumentsMethods.Documents, model);
   }

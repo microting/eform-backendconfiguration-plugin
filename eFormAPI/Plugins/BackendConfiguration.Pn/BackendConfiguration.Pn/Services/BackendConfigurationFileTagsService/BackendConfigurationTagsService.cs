@@ -131,9 +131,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 
 				foreach (var fileTags in fileTagsList)
 				{
+					fileTags.UpdatedByUserId = _userService.UserId;
 					await fileTags.Delete(_dbContext);
 				}
 
+				tag.UpdatedByUserId = _userService.UserId;
 				await tag.Delete(_dbContext);
 
 				return new OperationResult(true, _localizationService.GetString("FileTagRemovedSuccessfully"));
@@ -148,6 +150,20 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
 
 		public async Task<OperationResult> CreateTag(CommonTagModel requestModel)
 		{
+			var currentTag = await _dbContext.FileTags
+				.FirstOrDefaultAsync(x => x.Name == requestModel.Name);
+
+			if (currentTag != null)
+			{
+				if (currentTag.WorkflowState != Constants.WorkflowStates.Removed)
+				{
+					return new OperationResult(true, _localizationService.GetString("FileTagCreatedSuccessfully"));
+				}
+				currentTag.WorkflowState = Constants.WorkflowStates.Created;
+				currentTag.UpdatedByUserId = _userService.UserId;
+				await currentTag.Update(_dbContext);
+				return new OperationResult(true, _localizationService.GetString("FileTagCreatedSuccessfully"));
+			}
 			try
 			{
 				var tag = new FileTag

@@ -19,6 +19,8 @@ import {BackendConfigurationPnCompliancesService} from '../../../../../services'
 import {parseISO} from 'date-fns';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import * as R from 'ramda';
+import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-installation-case-page',
@@ -41,13 +43,11 @@ export class ComplianceCasePageComponent implements OnInit {
   requestModels: Array<CaseEditRequest> = [];
   replyRequest: ReplyRequest = new ReplyRequest();
   maxDate: Date;
-
-  get userClaims() {
-    return this.authStateService.currentUserClaims;
-  }
+  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
+    private authStore: Store,
     private activateRoute: ActivatedRoute,
     private backendConfigurationPnCompliancesService: BackendConfigurationPnCompliancesService,
     private eFormService: EFormService,
@@ -61,7 +61,9 @@ export class ComplianceCasePageComponent implements OnInit {
       this.deadline = params['deadline'];
       this.thirtyDays = params['thirtyDays'];
       this.complianceId = +params['complianceId'];
-      dateTimeAdapter.setLocale(authStateService.currentUserLocale);
+      this.selectCurrentUserLocale$.subscribe((locale) => {
+        dateTimeAdapter.setLocale(locale);
+      });
     });
     activateRoute.queryParams.subscribe((params) => {
       this.reverseRoute = params['reverseRoute'];

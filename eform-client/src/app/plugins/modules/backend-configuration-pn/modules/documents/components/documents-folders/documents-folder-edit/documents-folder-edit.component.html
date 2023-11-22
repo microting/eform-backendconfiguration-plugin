@@ -10,7 +10,7 @@
           [clearable]="false"
           [bindLabel]="'text'"
           [bindValue]="'id'"
-          [(ngModel)]="selectedLanguage"
+          [(ngModel)]="selectedLanguageId"
           id="editLanguageSelector"
           [items]="languages">
         </mtx-select>
@@ -19,7 +19,7 @@
   </mat-card>
 
   <ng-container *ngFor=" let translation of folderUpdateModel.documentFolderTranslations; let translationIndex = index">
-    <mat-card *ngIf="selectedLanguage === translation.languageId" class="mb-2">
+    <mat-card *ngIf="selectedLanguageId === translation.languageId" class="mb-2">
       <mat-card-content>
         <div class="d-flex flex-column">
           <mat-form-field class="mb-3">

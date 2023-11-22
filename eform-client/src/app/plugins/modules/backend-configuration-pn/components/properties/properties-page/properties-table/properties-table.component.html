@@ -7,7 +7,7 @@
           matInput
           type="text"
           (ngModelChange)="onNameFilterChanged($event)"
-          [ngModel]="propertiesStateService.getNameFilter() | async"
+          [ngModel]="selectPropertiesNameFilters$ | async"
           id="nameInput"
         />
       </mat-form-field>
@@ -17,7 +17,7 @@
 
 <mtx-grid
   [data]="propertiesModel.entities"
-  [columns]="authStateService.isAdmin ?  adminTableHeaders : tableHeaders"
+  [columns]="(selectAuthIsAdmin$ | async) ?  adminTableHeaders : tableHeaders"
   [cellTemplate]="{id: idTpl, name: propertyNameTpl, cvr: cvrTpl, chr: chrTpl, address: addressTpl, actions: actionsTpl, compliance: complianceTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
@@ -25,8 +25,8 @@
   [showToolbar]="true"
   [showColumnMenuButton]="false"
   [toolbarTemplate]="toolbarTpl"
-  [sortActive]="propertiesStateService.getActiveSort() | async"
-  [sortDirection]="propertiesStateService.getActiveSortDirection() | async"
+  [sortActive]="selectPropertiesPaginationSort$ | async"
+  [sortDirection]="selectPropertiesPaginationIsSortDsc$ | async"
   (sortChange)="sortTable($event)">
 </mtx-grid>
 <ng-template #idTpl let-row let-i="index">
@@ -96,7 +96,7 @@
     id="editPropertyBtn-{{i}}"
     matTooltip="{{ 'Edit property' | translate }}"
     (click)="onShowEditPropertyModal(row)"
-    [disabled]="!authStateService.checkClaim('property_edit') && !authStateService.isAdmin"
+    [disabled]="!authStateService.checkClaim('property_edit') && (selectAuthIsAdmin$ | async) !== true"
   >
     <mat-icon>edit</mat-icon>
   </button>
@@ -106,7 +106,7 @@
     id="deletePropertyBtn-{{i}}"
     matTooltip="{{ 'Delete property' | translate }}"
     (click)="onShowDeletePropertyModal(row)"
-    [disabled]="!authStateService.checkClaim('property_delete') && !authStateService.isAdmin"
+    [disabled]="!authStateService.checkClaim('property_delete') && (selectAuthIsAdmin$ | async) !== true"
   >
     <mat-icon>delete</mat-icon>
   </button>

@@ -20,7 +20,6 @@ import {
   ReportHeaderComponent,
   ReportTableComponent
 } from './components';
-import {planningsReportPersistProvider} from './components/store';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 
 
@@ -50,7 +49,6 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     ReportHeaderComponent,
     ReportTableComponent
   ],
-  providers: [planningsReportPersistProvider],
 })
 export class ReportsModule {
 }

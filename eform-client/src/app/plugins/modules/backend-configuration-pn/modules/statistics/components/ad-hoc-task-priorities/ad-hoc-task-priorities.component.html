@@ -1,5 +1,5 @@
 <mat-card class="d-flex flex-column">
-  <mat-card-title (click)="clickOnDiagram.emit()" class="cursor-pointer">
+  <mat-card-title (click)="onClickOnDiagram()" class="cursor-pointer">
     {{'Ad-hoc tasks per' | translate}} {{currentDate}}
     <br/>
     <span>{{'Property' | translate}}: {{(selectedPropertyName || 'All') | translate}}</span>
@@ -24,7 +24,9 @@
       [barPadding]="8"
       [animations]="true"
       [roundEdges]="true"
-      (click)="clickOnDiagram.emit()"
+      [xAxisTickFormatting]="axisFormat"
+      [xAxisTicks]="xAxisTicks"
+      (select)="onClickOnDiagram($event)"
     />
   </mat-card-content>
 </mat-card>

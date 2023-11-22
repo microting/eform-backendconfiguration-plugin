@@ -120,6 +120,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyWorker.Property.WorkorderEnable)
                 .Where(x => x.LeadingCase)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
 
             if (propertyId.HasValue)
@@ -217,7 +218,10 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 // .ThenInclude(x => x.AreaRule)
                 // .ThenInclude(x => x.Area)
                 // .ThenInclude(x => x.AreaProperties)
-                .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0);
+                .Where(x => x.AreaRulePlanning.RepeatEvery > 0)
+                .Where(x => x.AreaRulePlanning.AreaRule.CreatedInGuide)
+                .Where(x => x.AreaRulePlanning.Status && x.AreaRulePlanning.ItemPlanningId != 0)
+                .AsNoTracking();
 
             if (propertyId.HasValue)
             {
@@ -255,7 +259,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .Where(y => y.Value == x.SiteId)
                         .Select(y => y.Key)
                         .FirstOrDefault(),
-                    WorkerId = x.SiteId,
+                    WorkerId = x.SiteId
                 })
                 .ToList();
 
@@ -278,48 +282,66 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var result = new AdHocTaskWorkers();
-            var query = _backendConfigurationPnDbContext.PropertyWorkers
+            var query = _backendConfigurationPnDbContext.WorkorderCases
+                .Include(x => x.PropertyWorker)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Include(x => x.WorkorderCases)
-                .Include(x => x.Property)
-                .Where(x => x.Property.WorkorderEnable);
-
+                .Where(x => x.LeadingCase == true)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+            // var query = _backendConfigurationPnDbContext.PropertyWorkers
+            //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            //     .Include(x => x.WorkorderCases)
+            //     .Include(x => x.Property)
+            //     .Where(x => x.Property.WorkorderEnable);
+            //
             if (propertyId.HasValue)
             {
                 query = query
-                    .Where(x => x.PropertyId == propertyId.Value);
+                    .Where(x => x.PropertyWorker.PropertyId == propertyId.Value);
             }
 
-            var groupedData = await query
-                .GroupBy(x => x.WorkerId)
+            var groupedData = await query.GroupBy(x => x.LastAssignedToName)
                 .Select(x => new
                 {
-                    SiteId = x.Key,
-                    Count = x
-                        .SelectMany(y => y.WorkorderCases)
-                        .Count(z => z.PropertyWorker.Property.WorkorderEnable &&
-                                    z.WorkflowState != Constants.WorkflowStates.Removed &&
-                                    z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                })
-                .ToListAsync();
+                    // SiteId = x.Where(y => y.LastAssignedToName == x.Key)
+                    //     .Select(y => y.PropertyWorker.WorkerId)
+                    //     .FirstOrDefault(),
+                    SiteName = x.Key,
+                    Count = x.Count(y => y.LastAssignedToName == x.Key)
+                }).ToListAsync();
 
-            var siteIds = groupedData
-                .Select(x => x.SiteId)
+            //
+            // var groupedData = await query
+            //     .GroupBy(x => x.WorkerId)
+            //     .Select(x => new
+            //     {
+            //         SiteId = x.Key,
+            //         Count = x
+            //             .SelectMany(y => y.WorkorderCases)
+            //             .Count(z => z.PropertyWorker.Property.WorkorderEnable &&
+            //                         z.WorkflowState != Constants.WorkflowStates.Removed &&
+            //                         z.LeadingCase && z.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            //     })
+            //     .ToListAsync();
+            //
+            var names = query
+                .Select(x => x.LastAssignedToName)
                 .ToList();
-
+            // //
             var siteNames = await sdkDbContext.Sites
-                .Where(x => siteIds.Contains(x.Id))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => names.Contains(x.Name))
                 .ToDictionaryAsync(x => x.Name, x => x.Id);
-
+            //
             result.TaskWorkers = groupedData
                 .Select(x => new AdHocTaskWorker()
                 {
                     StatValue = x.Count,
-                    WorkerName = siteNames
-                        .Where(y => y.Value == x.SiteId)
-                        .Select(y => y.Key)
-                        .FirstOrDefault(),
-                    WorkerId = x.SiteId,
+                    WorkerName = x.SiteName,
+                    WorkerId = siteNames
+                        .Where(y => y.Key == x.SiteName)
+                        .Select(y => y.Value)
+                        .FirstOrDefault()
                 })
                 .ToList();
 

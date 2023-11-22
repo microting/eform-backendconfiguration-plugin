@@ -27,6 +27,8 @@ import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
 import {PlanningTagsComponent} from 'src/app/plugins/modules/items-planning-pn/modules/plannings/components';
 import {AuthStateService} from 'src/app/common/store';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -56,7 +58,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   templatesModel: TemplateListModel = new TemplateListModel();
   tableHeaders: MtxGridColumn[] = [
     {field: 'id', header: this.translateService.stream('Id')},
-    {field: 'name', header: this.translateService.stream('Name'),},
+    {field: 'name', header: this.translateService.stream('Task solver'),},
     {field: 'select', header: this.translateService.stream('Select'),},
   ];
   public model: TaskWizardCreateModel = {
@@ -72,6 +74,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
     tagIds: [],
     translates: []
   };
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   private folderSelectedSub$: Subscription;
 
@@ -80,6 +83,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private store: Store,
     private translateService: TranslateService,
     public dialogRef: MatDialogRef<TaskWizardCreateModalComponent>,
     private eFormService: EFormService,
@@ -274,7 +278,7 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
   }
 
   openTagsModal() {
-    this.planningTagsModal.show(this.authStateService.isAdmin);
+    this.planningTagsModal.show();
   }
 
   hide() {

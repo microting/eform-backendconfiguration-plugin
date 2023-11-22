@@ -19,6 +19,7 @@ import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -32,6 +33,7 @@ export class DocumentsFoldersComponent implements OnInit, OnDestroy {
   folderCreateSub$: any;
 
   constructor(
+    private store: Store,
     public dialogRef: MatDialogRef<DocumentsFoldersComponent>,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     public dialog: MatDialog,

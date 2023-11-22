@@ -5,21 +5,27 @@ import {
   CommonDictionaryModel,
 } from 'src/app/common/models';
 import {AuthStateService} from 'src/app/common/store';
-import {PropertyAssignWorkersModel, DeviceUserModel,} from '../../../../models';
+import {PropertyAssignWorkersModel, DeviceUserModel, TaskWizardModel,} from '../../../../models';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {
-  PropertyWorkerDeleteModalComponent,
-  PropertyWorkerOtpModalComponent,
   PropertyWorkerCreateEditModalComponent
 } from '../';
 import {PropertyWorkersStateService} from '../store';
 import {Sort} from '@angular/material/sort';
-import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
+import {tap} from 'rxjs/operators';
+import * as R from 'ramda';
+import {
+  selectCurrentUserClaimsDeviceUsersCreate
+} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
+import {
+  selectPropertyWorkersFilters
+} from '../../../../state/property-workers/property-workers.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -30,94 +36,48 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
   sitesDto: Array<DeviceUserModel>;
   availableProperties: CommonDictionaryModel[];
   workersAssignments: PropertyAssignWorkersModel[];
-  tableHeaders: MtxGridColumn[] = [
-    {
-      header: this.translateService.stream('ID'),
-      field: 'siteId',
-      sortProp: {id: 'Id'},
-      sortable: true,
-    },
-    {
-      header: this.translateService.stream('Name'),
-      sortProp: {id: 'Name'},
-      field: 'siteName',
-      sortable: true,
-      formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
-    },
-    {
-      header: this.translateService.stream('Language'),
-      field: 'language',
-      sortable: true,
-      sortProp: {id: 'LanguageId'},
-    },
-    {
-      header: this.translateService.stream('Property'),
-      field: 'property',
-      // formatter: (rowData: DeviceUserModel) => this.getWorkerPropertyNames(rowData.siteId),
-    },
-    {
-      header: this.translateService.stream('Customer no & OTP'),
-      field: 'customerOtp',
-    },
-    {
-      header: this.translateService.stream('Actions'),
-      field: 'actions',
-      disabled: this.authStateService.currentUserClaims.deviceUsersDelete || this.authStateService.currentUserClaims.deviceUsersDelete,
-      // type: 'button',
-      // buttons: [
-      //   {
-      //     type: 'icon',
-      //     click: (rowData: DeviceUserModel) => this.router
-      //       .navigate(['/plugins/backend-configuration-pn/task-worker-assignments/', rowData.siteId], {relativeTo: this.route}),
-      //     icon: 'visibility',
-      //     tooltip: this.translateService.stream('Edit assignments'),
-      //   },
-      //   {
-      //     type: 'icon',
-      //     color: 'accent',
-      //     icon: 'edit',
-      //     click: (rowData: DeviceUserModel) => this.openEditModal(rowData),
-      //     tooltip: this.translateService.stream('Edit Device User'),
-      //     iif: () => this.userClaims.deviceUsersUpdate,
-      //   },
-      //   {
-      //     type: 'icon',
-      //     color: 'warn',
-      //     icon: 'delete',
-      //     click: (rowData: DeviceUserModel) => this.openDeleteDeviceUserModal(rowData),
-      //     tooltip: this.translateService.stream('Delete Device User'),
-      //     iif: (rowData: DeviceUserModel) => this.userClaims.deviceUsersDelete && !rowData.isLocked,
-      //   },
-      // ],
-    },
-  ];
 
   getSites$: Subscription;
   getPropertiesDictionary$: Subscription;
   deviceUserAssignments$: Subscription;
-  propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
   propertyWorkerCreateModalComponentAfterClosedSub$: Subscription;
-
-  get userClaims() {
-    return this.authStateService.currentUserClaims;
-  }
+  getFiltersAsyncSub$: Subscription;
+  public selectCurrentUserClaimsDeviceUsersCreate$ = this.store.select(selectCurrentUserClaimsDeviceUsersCreate);
+  private selectPropertyWorkersFilters$ = this.store.select(selectPropertyWorkersFilters);
 
   constructor(
-    private authStateService: AuthStateService,
+    private store: Store,
     private propertiesService: BackendConfigurationPnPropertiesService,
     public propertyWorkersStateService: PropertyWorkersStateService,
-    private translateService: TranslateService,
-    private router: Router,
-    private route: ActivatedRoute,
     private dialog: MatDialog,
     private overlay: Overlay,
   ) {
   }
 
   ngOnInit() {
-    this.getDeviceUsersFiltered();
-    this.getPropertiesDictionary();
+    let propertyIds: number[] = [];
+    this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
+      .pipe(
+        tap(filters => {
+          if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
+            propertyIds = filters.propertyIds;
+          }
+          this.updateTable();
+          // else {
+          //   propertyIds = [];
+          //   this.updateTable();
+          // }
+        },),
+        tap(_ => {
+          // if (this.showDiagram) {
+          //   this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+          //   this.getPlannedTaskWorkers();
+          // }
+        })
+      )
+      .subscribe();
+    this.getWorkerPropertiesAssignments();
   }
 
   openEditModal(simpleSiteDto: DeviceUserModel) {
@@ -145,7 +105,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           availableProperties: this.availableProperties,
         }), minWidth: 500
       })
-      .afterClosed().subscribe(data => data ? this.getDeviceUsersFiltered() : undefined);
+      .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
   }
 
   openCreateModal() {
@@ -157,22 +117,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           availableProperties: this.availableProperties,
         }), minWidth: 500
       })
-      .afterClosed().subscribe(data => data ? this.getDeviceUsersFiltered() : undefined);
-  }
-
-  openOtpModal(siteDto: DeviceUserModel) {
-    if (!siteDto.unitId) {
-      return;
-    }
-    this.propertyWorkerOtpModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerOtpModalComponent,
-      {...dialogConfigHelper(this.overlay, siteDto)})
-      .afterClosed().subscribe(data => data ? this.getDeviceUsersFiltered() : undefined);
-  }
-
-  openDeleteDeviceUserModal(simpleSiteDto: DeviceUserModel) {
-    this.propertyWorkerOtpModalComponentAfterClosedSub$ = this.dialog.open(PropertyWorkerDeleteModalComponent,
-      {...dialogConfigHelper(this.overlay, simpleSiteDto)})
-      .afterClosed().subscribe(data => data ? this.getDeviceUsersFiltered() : undefined);
+      .afterClosed().subscribe(data => data ? this.updateTable() : undefined);
   }
 
   getPropertiesDictionary() {
@@ -235,9 +180,17 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       .subscribe((data) => {
         if (data && data.model) {
           this.sitesDto = data.model;
-          this.getWorkerPropertiesAssignments();
+          //this.getWorkerPropertiesAssignments();
         }
       });
+  }
+
+
+
+  updateTable() {
+    this.getPropertiesDictionary();
+    this.getDeviceUsersFiltered();
+    this.getWorkerPropertiesAssignments();
   }
 
   ngOnDestroy(): void {

@@ -15,6 +15,8 @@ import {LocaleService} from 'src/app/common/services';
 import {Subscription} from 'rxjs';
 import {applicationLanguages2 } from 'src/app/common/const';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -25,17 +27,19 @@ import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
   name = '';
   selectedParentFolder: FolderDto;
-  selectedLanguage: number;
+  selectedLanguageId: number;
   folderUpdate: EventEmitter<void> = new EventEmitter<void>();
   folderUpdateModel: DocumentFolderModel = new DocumentFolderModel();
   updateFolderSub$: Subscription;
   getFolderSub$: Subscription;
+  private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
 
   get languages() {
     return applicationLanguages2;
   }
 
   constructor(
+    private authStore: Store,
     public backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     private toastrService: ToastrService,
     private translateService: TranslateService,
@@ -44,9 +48,13 @@ export class DocumentsFolderEditComponent implements OnInit, OnDestroy {
     @Inject(MAT_DIALOG_DATA) selectedFolder: DocumentFolderModel,
   ) {
     this.getFolder(selectedFolder.id);
-    this.selectedLanguage = applicationLanguages2.find(
-      (x) => x.locale === localeService.getCurrentUserLocale()
-    ).id;
+
+    this.selectCurrentUserLanguageId$.subscribe((languageId) => {
+      this.selectedLanguageId = languageId;
+    });
+    // this.selectedLanguage = applicationLanguages2.find(
+    //   (x) => x.locale === localeService.getCurrentUserLocale()
+    // ).id;
   }
 
   ngOnInit() {

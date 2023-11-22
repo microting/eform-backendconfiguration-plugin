@@ -52,7 +52,6 @@ export class BackendConfigurationPnReportService {
     );
   }
 
-
   deleteCase(planningCaseId: number): Observable<OperationResult> {
     return this.apiBaseService.delete(
       BackendConfigurationPnReportsMethods.DeleteCase,

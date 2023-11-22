@@ -1,4 +1,4 @@
-export const enUS = {
+export const enUS= {
   Actions: 'Actions',
   areas: 'areas',
   Area: 'Area',
@@ -280,4 +280,18 @@ export const enUS = {
   'Exceeded or today': 'Exceeded or today',
   'Under 30 days': 'Under 30 days',
   'Generate report': 'Generate report',
+  'Grouping tags': 'Grouping tags',
+  'Task description': 'Task description',
+  'Task solver': 'Task solver',
+  'Description of task': 'Description of task',
+  'None found': 'None found',
+  'No tasks found': 'No tasks found',
+  'No employees found': 'No employees found',
+  'No documents found': 'No documents found',
+  'No files found': 'No files found',
+  'Create new employee': 'Create new employee',
+  'New employee': 'New employee',
+  'Edit employee': 'Edit employee',
+  'Timeregistration': 'Time registration',
+  'Submitted date': 'Submitted date',
 };

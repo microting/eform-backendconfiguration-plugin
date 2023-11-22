@@ -1,21 +1,22 @@
 <eform-new-subheader>
+<!--  <button-->
+<!--    mat-icon-button-->
+<!--    color="primary"-->
+<!--    id="planningManageTagsBtn"-->
+<!--    (click)="openTagsModal()"-->
+<!--    matTooltip="{{ 'Manage tags' | translate }}"-->
+<!--    *ngIf="authStateService.isAdmin"-->
+<!--  >-->
+<!--    <mat-icon>discount</mat-icon>-->
+<!--  </button>-->
   <button
-    mat-icon-button
-    color="primary"
-    id="planningManageTagsBtn"
-    (click)="openTagsModal()"
-    matTooltip="{{ 'Manage tags' | translate }}"
-  >
-    <mat-icon>discount</mat-icon>
-  </button>
-  <button
-    mat-icon-button
+    mat-raised-button
     color="accent"
-    [matTooltip]="'Add new task' | translate"
+    [matTooltip]="'Create new task' | translate"
     (click)="onCreateTask()"
     id="createNewTaskBtn"
   >
-    <mat-icon>add</mat-icon>
+    {{ 'Create new task' | translate }}
   </button>
 </eform-new-subheader>
 

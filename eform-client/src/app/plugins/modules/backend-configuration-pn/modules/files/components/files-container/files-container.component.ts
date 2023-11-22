@@ -16,6 +16,7 @@ import {DeleteModalComponent} from 'src/app/common/modules/eform-shared/componen
 import {TranslateService} from '@ngx-translate/core';
 import {saveAs} from 'file-saver';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -38,6 +39,7 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   clickDownloadFilesSub$: Subscription;
 
   constructor(
+    private store: Store,
     public dialog: MatDialog,
     private overlay: Overlay,
     public filesStateService: FilesStateService,
@@ -124,12 +126,12 @@ export class FilesContainerComponent implements OnInit, OnDestroy {
   }
 
   addTagToFilter(tagId: number) {
-    const filters = {...this.filesStateService.store.getValue().filters};
-    if (!filters.tagIds.some(x => x === tagId)) {
-      filters.tagIds = [...filters.tagIds, tagId];
-      this.filesStateService.updateFilters(filters);
-      this.updateTable();
-    }
+    // const filters = {...this.filesStateService.store.getValue().filters};
+    // if (!filters.tagIds.some(x => x === tagId)) {
+    //   filters.tagIds = [...filters.tagIds, tagId];
+    //   this.filesStateService.updateFilters(filters);
+    //   this.updateTable();
+    // }
   }
 
   showEditTagsModal(model: FilesModel) {

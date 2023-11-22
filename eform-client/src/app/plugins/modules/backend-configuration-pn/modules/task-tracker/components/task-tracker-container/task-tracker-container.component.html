@@ -1,12 +1,12 @@
 <eform-new-subheader>
   <button
-    mat-icon-button
+    mat-raised-button
     id="createNewTaskBtn"
     color="accent"
     matTooltip="{{ 'Create new task' | translate }}"
     (click)="openCreateTaskModal()"
   >
-    <mat-icon>add_task</mat-icon>
+    {{ 'Create new task' | translate }}
   </button>
 </eform-new-subheader>
 
@@ -24,13 +24,13 @@
     [tags]="tags"
   />
   <div class="d-flex flex-row justify-content-start mb-2">
-    <button
-      mat-raised-button
-      id="changeColumnsBtn"
-      (click)="openColumnsModal()"
-      color="primary">
-      {{'Show/hide columns' | translate}}
-    </button>
+<!--    <button-->
+<!--      mat-raised-button-->
+<!--      id="changeColumnsBtn"-->
+<!--      (click)="openColumnsModal()"-->
+<!--      color="primary">-->
+<!--      {{'Show/hide columns' | translate}}-->
+<!--    </button>-->
 
     <button
       mat-icon-button

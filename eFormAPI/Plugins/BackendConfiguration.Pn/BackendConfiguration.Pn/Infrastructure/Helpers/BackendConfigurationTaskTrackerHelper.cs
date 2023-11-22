@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 using Models.TaskTracker;
@@ -74,47 +76,60 @@ public static class BackendConfigurationTaskTrackerHelper
 
 
 			var newDate = DateTime.Now;
-			var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
-			var endDate = currentDate.AddDays(28);
+			// var currentDate = new DateTime(newDate.Year, newDate.Month, newDate.Day, 0, 0, 0);
+			// var endDate = currentDate.AddDays(28);
 			var weeks = new List<TaskTrackerWeeksListModel>();
-			var localCurrentDate = currentDate;
-			while (localCurrentDate < endDate) // get week numbers
-			{
-				var weekNumber = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(localCurrentDate,
-					CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
-				var weekRange = 8 - (int)localCurrentDate.DayOfWeek;
-				if (weekRange == 8) // if current day of week - sunday
-				{
-					weekRange = 1;
-				}
+			// var localCurrentDate = currentDate;
+			// while (localCurrentDate < endDate) // get week numbers
+			// {
+			// 	var weekNumber = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(localCurrentDate,
+			// 		CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+			// 	var weekRange = 8 - (int)localCurrentDate.DayOfWeek;
+			// 	if (weekRange == 8) // if current day of week - sunday
+			// 	{
+			// 		weekRange = 1;
+			// 	}
+			//
+			// 	var dateList = new List<TaskTrackerDateListModel>();
+			//
+			// 	for (var i = 0; i < weekRange; i++)
+			// 	{
+			// 		var date = localCurrentDate.AddDays(i);
+			// 		if (date < endDate)
+			// 		{
+			// 			dateList.Add(new TaskTrackerDateListModel
+			// 				{ Date = date, IsTask = false }); // IsTask = false is default value
+			// 		}
+			// 		else
+			// 		{
+			// 			break;
+			// 		}
+			// 	}
+			//
+			// 	weeks.Add(new TaskTrackerWeeksListModel
+			// 		{ WeekNumber = weekNumber, DateList = dateList, WeekRange = dateList.Count });
+			// 	localCurrentDate = localCurrentDate.AddDays(weekRange);
+			// }
 
-				var dateList = new List<TaskTrackerDateListModel>();
+			var properties = await backendConfigurationPnDbContext.Properties
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.ToListAsync();
 
-				for (var i = 0; i < weekRange; i++)
-				{
-					var date = localCurrentDate.AddDays(i);
-					if (date < endDate)
-					{
-						dateList.Add(new TaskTrackerDateListModel
-							{ Date = date, IsTask = false }); // IsTask = false is default value
-					}
-					else
-					{
-						break;
-					}
-				}
+			var sites = await sdkDbContext.Sites
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.ToListAsync();
 
-				weeks.Add(new TaskTrackerWeeksListModel
-					{ WeekNumber = weekNumber, DateList = dateList, WeekRange = dateList.Count });
-				localCurrentDate = localCurrentDate.AddDays(weekRange);
-			}
+			var folderTranslations = sdkDbContext.FolderTranslations
+				.Where(x => x.LanguageId == userLanguageId)
+				.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+				.ToList();
 
 			foreach (var compliance in complianceList)
 			{
-				var propertyName = await backendConfigurationPnDbContext.Properties
+				var propertyName = properties
 					.Where(x => x.Id == compliance.PropertyId)
 					.Select(x => x.Name)
-					.FirstOrDefaultAsync();
+					.FirstOrDefault();
 
 				var planning = await itemsPlanningPnDbContext.Plannings
 					.Where(x => x.Id == compliance.PlanningId)
@@ -135,10 +150,10 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Distinct()
 					.ToListAsync();
 
-				var sitesWithNames = await sdkDbContext.Sites
+				var sitesWithNames = sites
 					.Where(x => planningSiteIds.Contains(x.Id))
 					.Select(site => new KeyValuePair<int, string>(site.Id, site.Name))
-					.ToListAsync();
+					.ToList();
 
 				if (filtersModel.WorkerIds.Any() /* && !filtersModel.WorkerIds.Contains(-1)*/) // filtration by workers
 				{
@@ -167,9 +182,12 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
 					.ToList();
 
-				var areaRulePlanning = await backendConfigurationPnDbContext.AreaRulePlannings
+				var areaRulePlanningQuery = backendConfigurationPnDbContext.AreaRulePlannings
+					.Include(x => x.AreaRulePlanningTags)
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-					.Where(x => x.ItemPlanningId == compliance.PlanningId)
+					.Where(x => x.ItemPlanningId == compliance.PlanningId);
+
+				var areaRulePlanning = await areaRulePlanningQuery
 					.Select(x => new { x.AreaRuleId, x.StartDate, x.Id })
 					.FirstOrDefaultAsync();
 
@@ -178,32 +196,64 @@ public static class BackendConfigurationTaskTrackerHelper
 				var startDate = areaRulePlanning.StartDate ?? planning.StartDate;
 				var deadlineDate = compliance.Deadline.AddDays(-1);
 
-				var listWithDateTasks = planning.RepeatType switch
-				{
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day => GetDaysBetween(deadlineDate, planning.RepeatEvery),
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week => GetWeeksBetween(deadlineDate, planning.RepeatEvery),
-					Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month => GetMonthsBetween(deadlineDate, planning.RepeatEvery),
-					_ => throw new ArgumentOutOfRangeException($"{planning.RepeatType} is not support")
-				};
+				// var listWithDateTasks = planning.RepeatType switch
+				// {
+				// 	Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Day => GetDaysBetween(deadlineDate, planning.RepeatEvery),
+				// 	Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Week => GetWeeksBetween(deadlineDate, planning.RepeatEvery),
+				// 	Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType.Month => GetMonthsBetween(deadlineDate, planning.RepeatEvery),
+				// 	_ => throw new ArgumentOutOfRangeException($"{planning.RepeatType} is not support")
+				// };
 
-				var weeksThisCompliance = weeks
-					.Select(week => new TaskTrackerWeeksListModel
+				// var weeksThisCompliance = weeks
+				// 	.Select(week => new TaskTrackerWeeksListModel
+				// 	{
+				// 		WeekRange = week.WeekRange,
+				// 		WeekNumber = week.WeekNumber,
+				// 		DateList = week.DateList
+				// 			.Select(date => new TaskTrackerDateListModel
+				// 			{
+				// 				Date = date.Date,
+				// 				IsTask = listWithDateTasks
+				// 					.Exists(dateTask => dateTask.ToString("d") == date.Date.ToString("d"))
+				// 			}).ToList()
+				// 	}).ToList();
+
+				var itemPlanningTagIds = await areaRulePlanningQuery
+					.SelectMany(x => x.AreaRulePlanningTags
+						.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+						.Select(y => y.ItemPlanningTagId))
+					.Distinct()
+					.ToListAsync();
+				itemPlanningTagIds.AddRange(await areaRulePlanningQuery
+					.Where(x => x.ItemPlanningTagId.HasValue)
+					.Select(x => x.ItemPlanningTagId.Value)
+					.Distinct()
+					.ToListAsync());
+
+				var itemPlanningTags = await itemsPlanningPnDbContext.PlanningTags
+					.Where(x => itemPlanningTagIds.Contains(x.Id))
+					.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+					.Select(x => new CommonTagModel
 					{
-						WeekRange = week.WeekRange,
-						WeekNumber = week.WeekNumber,
-						DateList = week.DateList
-							.Select(date => new TaskTrackerDateListModel
-							{
-								Date = date.Date,
-								IsTask = listWithDateTasks
-									.Exists(dateTask => dateTask.ToString("d") == date.Date.ToString("d"))
-							}).ToList(),
-					}).ToList();
+						Id = x.Id,
+						Name = x.Name
+					})
+					.ToListAsync();
+				// var itemPlanningTagNames = itemPlanningTags.ToDictionary(x => x.Id, x => x.Name);
+				//
+				//
+				// var itemPlanningTags = await itemsPlanningPnDbContext.PlanningsTags.Where(x => x.PlanningId == planning.Id).ToListAsync();
+
+				// var tags = await itemsPlanningPnDbContext.PlanningTags.Where(x => itemPlanningTags.Select(y => y.PlanningTagId).Contains(x.Id)).Select(x => new CommonTagModel()
+				// {
+				// 	Id = x.Id,
+				// 	Name = x.Name
+				// }).ToListAsync();
 
 				var complianceModel = new TaskTrackerModel
 				{
 					Property = propertyName,
-					Tags = new(), //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
+					Tags = itemPlanningTags, //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
 					DeadlineTask = deadlineDate,
 					Workers = workerNames,
 					StartTask = startDate,
@@ -219,7 +269,8 @@ public static class BackendConfigurationTaskTrackerHelper
 					AreaId = compliance.AreaId,
 					AreaRuleId = areaRulePlanning!.AreaRuleId,
                     AreaRulePlanId = areaRulePlanning.Id,
-                    Weeks = weeksThisCompliance
+                    //Weeks = weeksThisCompliance,
+                    SdkFolderName = folderTranslations.FirstOrDefault(x => x.FolderId == planning.SdkFolderId)?.Name,
 				};
 
 				if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)

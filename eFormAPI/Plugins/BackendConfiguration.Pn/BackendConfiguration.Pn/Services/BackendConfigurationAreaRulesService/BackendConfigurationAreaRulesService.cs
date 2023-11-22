@@ -95,6 +95,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 					.Where(x => x.AreaId == areaProperty.AreaId)
 					.Where(x => x.PropertyId == areaProperty.PropertyId)
 					.Where(x => x.Area.AreaProperties.Select(y => y.Id).Contains(propertyAreaId))
+					.Where(x => x.CreatedInGuide == false)
 					.Include(x => x.AreaRuleTranslations)
 					.Include(x => x.AreaRuleInitialField)
 					.Include(x => x.AreaRulesPlannings)
@@ -590,11 +591,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 						_backendConfigurationLocalizationService.GetString("AreaRuleNotFound"));
 				}
 
-				if (areaRule.IsDefault)
-				{
-					return new OperationDataResult<AreaRuleModel>(false,
-						_backendConfigurationLocalizationService.GetString("AreaRuleCantBeDeleted"));
-				}
+				// if (areaRule.IsDefault)
+				// {
+				// 	return new OperationDataResult<AreaRuleModel>(false,
+				// 		_backendConfigurationLocalizationService.GetString("AreaRuleCantBeDeleted"));
+				// }
 
 
 				//if (areaRule.Area.Type is AreaTypesEnum.Type3 && areaRule.GroupItemId != 0)
@@ -684,7 +685,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
 								}
 
 								// Delete planning case
-								await planningCase.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+								//await planningCase.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
 							}
 
 							planning.UpdatedByUserId = _userService.UserId;

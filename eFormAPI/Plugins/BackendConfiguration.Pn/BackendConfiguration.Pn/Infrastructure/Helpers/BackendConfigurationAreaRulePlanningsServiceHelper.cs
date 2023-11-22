@@ -294,7 +294,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             {
                                                 PlanningId = planning.Id,
                                                 Status = 66,
-                                                MicrotingSdkeFormId = planning.RelatedEFormId
+                                                MicrotingSdkeFormId = planning.RelatedEFormId,
+                                                CreatedByUserId = userId
                                             };
                                             await planningCase.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                                         }
@@ -343,7 +344,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             MicrotingSdkeFormId = planning.RelatedEFormId,
                                             Status = 66,
                                             PlanningId = planning.Id,
-                                            PlanningCaseId = planningCase.Id
+                                            PlanningCaseId = planningCase.Id,
+                                            CreatedByUserId = userId
                                         };
 
                                         await planningCaseSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -1221,6 +1223,18 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     LanguageId = areaRuleAreaRuleTranslation.LanguageId,
                                                     Name = areaRuleAreaRuleTranslation.Name
                                                 }).ToList();
+                                            if (planning.NameTranslations.Any(x => x.Name == "01. Registrer halebid"))
+                                            {
+                                                var itemPlanningTag =
+                                                    await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(x =>
+                                                        x.Name == "Halebid");
+                                                if (itemPlanningTag != null)
+                                                {
+                                                    planning.ReportGroupPlanningTagId = itemPlanningTag.Id;
+                                                    await planning.Update(itemsPlanningPnDbContext)
+                                                        .ConfigureAwait(false);
+                                                }
+                                            }
                                             if (areaRulePlanningModel.TypeSpecificFields is not null)
                                             {
                                                 planning.DayOfMonth =
@@ -1674,14 +1688,17 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             await planningSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
         }
 
-        var planningsTags = new PlanningsTags
+        if (areaRule.Area.ItemPlanningTagId != 0)
         {
-            PlanningId = planning.Id,
-            PlanningTagId = areaRule.Area.ItemPlanningTagId,
-            CreatedByUserId = userId,
-            UpdatedByUserId = userId
-        };
-        await planningsTags.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            var planningsTags = new PlanningsTags
+            {
+                PlanningId = planning.Id,
+                PlanningTagId = areaRule.Area.ItemPlanningTagId,
+                CreatedByUserId = userId,
+                UpdatedByUserId = userId
+            };
+            await planningsTags.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+        }
 
         var planningsTags2 = new PlanningsTags
         {
@@ -2503,7 +2520,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             {
                 PlanningId = planning.Id,
                 Status = 66,
-                MicrotingSdkeFormId = (int)areaRule.EformId
+                MicrotingSdkeFormId = (int)areaRule.EformId,
+                CreatedByUserId = userId
             };
             await planningCase.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
             var checkListSite = await sdkDbContext.CheckListSites.SingleAsync(x => x.MicrotingUid == caseId)
@@ -2516,7 +2534,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 PlanningId = planning.Id,
                 PlanningCaseId = planningCase.Id,
                 MicrotingSdkCaseId = (int)caseId!,
-                MicrotingCheckListSitId = checkListSite.Id
+                MicrotingCheckListSitId = checkListSite.Id,
+                CreatedByUserId = userId
             };
 
             await planningCaseSite.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -2758,92 +2777,96 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 .Where(x => x.Id == itemPlanningId)
                 .Include(x => x.PlanningSites)
                 .Include(x => x.NameTranslations)
-                .FirstAsync().ConfigureAwait(false);
-            planning.UpdatedByUserId = userId;
-            foreach (var planningSite in planning.PlanningSites
-                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
+                .FirstOrDefaultAsync().ConfigureAwait(false);
+            if (planning != null)
             {
-                planningSite.UpdatedByUserId = userId;
-                await planningSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
-
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var planningCases = await itemsPlanningPnDbContext.PlanningCases
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Where(x => x.PlanningId == planning.Id)
-                .ToListAsync().ConfigureAwait(false);
-
-            foreach (var planningCase in planningCases)
-            {
-                var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
-                    .Where(x => x.PlanningCaseId == planningCase.Id)
-                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
-                                               planningCaseSite.MicrotingCheckListSitId != 0)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToListAsync().ConfigureAwait(false);
-                foreach (var planningCaseSite in planningCaseSites)
+                planning.UpdatedByUserId = userId;
+                foreach (var planningSite in planning.PlanningSites
+                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                 {
-                    var result =
-                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
-                            .ConfigureAwait(false);
-                    if (result is { MicrotingUid: { } })
-                    {
-                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
-                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                        await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
-                    }
+                    planningSite.UpdatedByUserId = userId;
+                    await planningSite.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
                 }
-            }
 
-            var nameTranslationsPlanning =
-                planning.NameTranslations
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var planningCases = await itemsPlanningPnDbContext.PlanningCases
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .ToList();
+                    .Where(x => x.PlanningId == planning.Id)
+                    .ToListAsync().ConfigureAwait(false);
 
-            foreach (var translation in nameTranslationsPlanning)
-            {
-                await translation.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
-            }
-
-            await planning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
-
-
-            if (!itemsPlanningPnDbContext.PlanningSites.AsNoTracking().Any(x =>
-                    x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
-            {
-                var complianceList = await backendConfigurationPnDbContext.Compliances
-                    .Where(x => x.PlanningId == planning.Id).AsNoTracking().ToListAsync().ConfigureAwait(false);
-                foreach (var compliance in complianceList)
+                foreach (var planningCase in planningCases)
                 {
-                    var dbCompliacne =
-                        await backendConfigurationPnDbContext.Compliances.SingleAsync(x => x.Id == compliance.Id)
-                            .ConfigureAwait(false);
-                    await dbCompliacne.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
-                    var property = await backendConfigurationPnDbContext.Properties
-                        .SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
-                    if (backendConfigurationPnDbContext.Compliances.Any(x =>
-                            x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow &&
-                            x.WorkflowState != Constants.WorkflowStates.Removed))
+                    var planningCaseSites = await itemsPlanningPnDbContext.PlanningCaseSites
+                        .Where(x => x.PlanningCaseId == planningCase.Id)
+                        .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
+                                                   planningCaseSite.MicrotingCheckListSitId != 0)
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToListAsync().ConfigureAwait(false);
+                    foreach (var planningCaseSite in planningCaseSites)
                     {
-                        property.ComplianceStatusThirty = 2;
-                        property.ComplianceStatus = 2;
-                    }
-                    else
-                    {
-                        if (!backendConfigurationPnDbContext.Compliances.Any(x =>
-                                x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                        var result =
+                            await sdkDbContext.Cases
+                                .SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
+                                .ConfigureAwait(false);
+                        if (result is { MicrotingUid: { } })
                         {
-                            property.ComplianceStatusThirty = 0;
-                            property.ComplianceStatus = 0;
+                            await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                                x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+
+                            await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
                         }
                     }
+                }
 
-                    await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                var nameTranslationsPlanning =
+                    planning.NameTranslations
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .ToList();
+
+                foreach (var translation in nameTranslationsPlanning)
+                {
+                    await translation.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+                }
+
+                await planning.Delete(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+
+                if (!itemsPlanningPnDbContext.PlanningSites.AsNoTracking().Any(x =>
+                        x.PlanningId == planning.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                {
+                    var complianceList = await backendConfigurationPnDbContext.Compliances
+                        .Where(x => x.PlanningId == planning.Id).AsNoTracking().ToListAsync().ConfigureAwait(false);
+                    foreach (var compliance in complianceList)
+                    {
+                        var dbCompliacne =
+                            await backendConfigurationPnDbContext.Compliances.SingleAsync(x => x.Id == compliance.Id)
+                                .ConfigureAwait(false);
+                        await dbCompliacne.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
+                        var property = await backendConfigurationPnDbContext.Properties
+                            .SingleAsync(x => x.Id == compliance.PropertyId).ConfigureAwait(false);
+                        if (backendConfigurationPnDbContext.Compliances.Any(x =>
+                                x.PropertyId == property.Id && x.Deadline < DateTime.UtcNow &&
+                                x.WorkflowState != Constants.WorkflowStates.Removed))
+                        {
+                            property.ComplianceStatusThirty = 2;
+                            property.ComplianceStatus = 2;
+                        }
+                        else
+                        {
+                            if (!backendConfigurationPnDbContext.Compliances.Any(x =>
+                                    x.PropertyId == property.Id && x.WorkflowState != Constants.WorkflowStates.Removed))
+                            {
+                                property.ComplianceStatusThirty = 0;
+                                property.ComplianceStatus = 0;
+                            }
+                        }
+
+                        await property.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                    }
                 }
             }
         }

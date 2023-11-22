@@ -4,6 +4,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {applicationLanguages} from 'src/app/common/const';
 import {BackendConfigurationPnDocumentsService} from '../../../../../services';
 import {DocumentFolderModel} from '../../../../../models';
+import {selectCurrentUserLanguageId} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
 
 @Component({
   selector: 'app-folder-delete',
@@ -12,8 +14,10 @@ import {DocumentFolderModel} from '../../../../../models';
 })
 export class DocumentsFolderDeleteComponent implements OnInit {
   folderDelete: EventEmitter<void> = new EventEmitter<void>();
+  private selectCurrentUserLanguageId$ = this.authStore.select(selectCurrentUserLanguageId);
 
   constructor(
+    private authStore: Store,
     private backendConfigurationPnDocumentsService: BackendConfigurationPnDocumentsService,
     private authStateService: AuthStateService,
     public dialogRef: MatDialogRef<DocumentsFolderDeleteComponent>,
@@ -40,7 +44,11 @@ export class DocumentsFolderDeleteComponent implements OnInit {
 
   get nameFolder() {
     if (this.folder) {
-      const languageId = applicationLanguages.find(x => x.locale === this.authStateService.currentUserLocale).id;
+      let languageId = 0;
+      this.selectCurrentUserLanguageId$.subscribe((x) => {
+        languageId = x;
+      });
+      // const languageId = applicationLanguages.find(x => x.locale === this.authStateService.currentUserLocale).id;
       const filteredTranslations = this.folder.documentFolderTranslations.filter(x => x.languageId === languageId);
       if (filteredTranslations.length) {
         return filteredTranslations[0].name;
@@ -51,7 +59,10 @@ export class DocumentsFolderDeleteComponent implements OnInit {
 
   get descriptionFolder() {
     if (this.folder) {
-      const languageId = applicationLanguages.find(x => x.locale === this.authStateService.currentUserLocale).id;
+      let languageId = 0;
+      this.selectCurrentUserLanguageId$.subscribe((x) => {
+        languageId = x;
+      });
       const filteredTranslations = this.folder.documentFolderTranslations.filter(x => x.languageId === languageId);
       if (filteredTranslations.length) {
         return filteredTranslations[0].description;

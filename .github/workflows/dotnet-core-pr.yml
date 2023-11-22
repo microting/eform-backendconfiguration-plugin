@@ -88,7 +88,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 'lts/*'
+        node-version: 18
     - name: 'Preparing Frontend checkout'
       uses: actions/checkout@v3
       with:
@@ -120,6 +120,9 @@ jobs:
       run: mkdir eform-angular-frontend/eform-client/errorShots
     - name: Pretest changes to work with Docker container
       run: sed -i 's/localhost/mariadbtest/g' eform-angular-frontend/eform-client/e2e/Constants/DatabaseConfigurationConstants.ts
+    - name: Get standard output
+      run: |
+        cat docker_run_log
     - name: DB Configuration
       uses: cypress-io/github-action@v4
       with:
@@ -133,6 +136,9 @@ jobs:
         working-directory: eform-angular-frontend/eform-client
     - name: Change rabbitmq hostname
       run: docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
+    - name: Get standard output
+      run: |
+        cat docker_run_log
     - name: Plugin testing
       run: cd eform-angular-frontend/eform-client && npm run testheadlessplugin2${{matrix.test}}
     - name: Load DB dump
@@ -141,15 +147,25 @@ jobs:
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_Angular.EformPlugins set Status = 2'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_SDK`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_SDK`'
-        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK < eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_SDK.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e "use 420_SDK; show tables"
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_SDK.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_SDK -e "use 420_SDK; show tables"
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_eform-backend-configuration-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_eform-backend-configuration-plugin`'
-        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-backend-configuration-plugin < eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-backend-configuration-plugin.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-backend-configuration-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-backend-configuration-plugin.sql
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'drop database `420_eform-angular-items-planning-plugin`'
         docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'create database `420_eform-angular-items-planning-plugin`'
-        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-angular-items-planning-plugin < eform-backendconfiguration-plugin/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-angular-items-planning-plugin.sql
-    - name: Change rabbitmq hostname
-      run: docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
+        docker exec -i mariadbtest mysql -u root --password=secretpassword 420_eform-angular-items-planning-plugin < eform-angular-frontend/eform-client/cypress/e2e/plugins/backend-configuration-pn/a/420_eform-angular-items-planning-plugin.sql
+        docker exec -i mariadbtest mysql -u root --password=secretpassword -e 'update 420_SDK.Settings set Value = "my-rabbit" where Name = "rabbitMqHost"'
+    - name: Restart the Docker container
+      if: matrix.test == 'a'
+      run: docker restart my-container
+    - name: Sleep 15
+      if: matrix.test == 'a'
+      run: sleep 15
+    - name: Get standard output
+      run: |
+        cat docker_run_log
     - name: ${{matrix.test}} test
       uses: cypress-io/github-action@v4
       with:

@@ -56,7 +56,7 @@ public static class BackendConfigurationPropertiesServiceHelper
 
                 var planningTag = new PlanningTag
                 {
-                    Name = propertyCreateModel.FullName()
+                    Name = $"0. {propertyCreateModel.FullName()}"
                 };
                 await planningTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
                 var newProperty = new Property

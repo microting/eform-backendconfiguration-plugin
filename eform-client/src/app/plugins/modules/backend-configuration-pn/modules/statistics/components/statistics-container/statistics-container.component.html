@@ -9,7 +9,7 @@
         [items]="properties"
         [bindLabel]="'name'"
         [bindValue]="'id'"
-        [value]="statisticsStateService.getPropertyIdAsync() | async"
+        [value]="selectStatisticsPropertyId$ | async"
         (change)="changeProperty($event)"
         [clearable]="true"
       />
@@ -26,7 +26,7 @@
         [adHocTaskPrioritiesModel]="adHocTaskPrioritiesModel"
         [selectedPropertyName]="propertyName"
         [view]="viewTopLine"
-        (clickOnDiagram)="clickOnAdHocTaskPriorities()"
+        (clickOnDiagram)="clickOnAdHocTaskPriorities($event)"
         class="ml-2"
       />
       <app-document-updated-days

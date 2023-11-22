@@ -27,6 +27,9 @@ import {Overlay} from '@angular/cdk/overlay';
 import {TaskWizardFoldersModalComponent} from '../';
 import {PlanningTagsComponent} from '../../../../../../items-planning-pn/modules/plannings/components';
 import {AuthStateService} from 'src/app/common/store';
+import {selectAuthIsAuth, selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
+import {DateTimeAdapter} from "@danielmoncada/angular-datetime-picker";
 
 @AutoUnsubscribe()
 @Component({
@@ -56,7 +59,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   templatesModel: TemplateListModel = new TemplateListModel();
   tableHeaders: MtxGridColumn[] = [
     {field: 'id', header: this.translateService.stream('Id')},
-    {field: 'name', header: this.translateService.stream('Name'),},
+    {field: 'name', header: this.translateService.stream('Task solver'),},
     {field: 'select', header: this.translateService.stream('Select'),},
   ];
   private copyModel: TaskWizardCreateModel;
@@ -75,6 +78,8 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   };
 
   folderSelectedSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
+  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;
@@ -85,6 +90,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    private store: Store,
     private translateService: TranslateService,
     public dialogRef: MatDialogRef<TaskWizardUpdateModalComponent>,
     private eFormService: EFormService,
@@ -92,6 +98,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     public dialog: MatDialog,
     private overlay: Overlay,
     private authStateService: AuthStateService,
+    dateTimeAdapter: DateTimeAdapter<any>,
   ) {
     this.typeahead
       .pipe(
@@ -105,6 +112,9 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
         this.templatesModel = items.model;
         this.cd.markForCheck();
       });
+    this.selectCurrentUserLocale$.subscribe((locale) => {
+      dateTimeAdapter.setLocale(locale);
+    });
   }
 
   ngOnInit(): void {
@@ -277,7 +287,7 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
   }
 
   openTagsModal() {
-    this.planningTagsModal.show(this.authStateService.isAdmin);
+    this.planningTagsModal.show();
   }
 
   hide() {

@@ -1378,7 +1378,10 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         var nextExecutionTime =
             new DateTime(now.Year, 4, 12);
 
-        nextExecutionTime = nextExecutionTime.AddMonths(6);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddMonths(6);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(6));

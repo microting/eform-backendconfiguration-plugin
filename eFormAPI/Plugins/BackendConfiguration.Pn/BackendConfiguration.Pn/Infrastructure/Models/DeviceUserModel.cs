@@ -21,6 +21,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
+using System.Collections.Generic;
+
 namespace BackendConfiguration.Pn.Infrastructure.Models
 {
     public class DeviceUserModel
@@ -29,6 +32,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models
         public int SiteId { get; set; }
         public int? SiteUid { get; set; }
         public string SiteName { get; set; }
+        public string PropertyNames { get; set; }
+        public List<int> PropertyIds { get; set; }
         public string UserFirstName { get; set; }
         public string UserLastName { get; set; }
         public int LanguageId { get; set; }

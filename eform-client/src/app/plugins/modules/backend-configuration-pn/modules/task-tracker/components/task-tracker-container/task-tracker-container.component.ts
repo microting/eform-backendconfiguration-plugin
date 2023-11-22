@@ -43,6 +43,13 @@ import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/servi
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
 import {StatisticsStateService} from '../../../statistics/store';
 import {ActivatedRoute} from '@angular/router';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskTrackerFilters
+} from '../../../../state/task-tracker/task-tracker.selector';
+import {
+  selectStatisticsPropertyId
+} from "src/app/plugins/modules/backend-configuration-pn/state/statistics/statistics.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -100,8 +107,11 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     }
     return '';
   }
+  private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
+  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
   constructor(
+    private store: Store,
     private loaderService: LoaderService,
     public taskTrackerStateService: TaskTrackerStateService,
     public taskTrackerService: BackendConfigurationPnTaskTrackerService,
@@ -122,13 +132,22 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
-        this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;
+        this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+          if (propertyId) {
+            this.selectedPropertyId = propertyId;
+            this.store.dispatch({
+              type: '[TaskTracker] Update filters',
+              payload: {propertyIds: [this.selectedPropertyId], tagIds: [], workerIds: []}
+            });
+          }
+        });
+        // this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;
         this.getPlannedTaskDays();
       } else {
         this.showDiagram = false;
       }
     });
-    this.getPropertyIdAsyncSub$ = taskTrackerStateService.getFiltersAsync()
+    this.getPropertyIdAsyncSub$ = this.selectTaskTrackerFilters$
       .pipe(skip(1))
       .subscribe(filters => {
         if (filters.propertyIds[0] && filters.propertyIds[0] !== this.selectedPropertyId && this.showDiagram) {
@@ -318,9 +337,13 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   }
 
   onDownloadExcelReport() {
-    const filters = this.taskTrackerStateService.store.getValue().filters;
+    let currentFilters: any;
+    this.selectTaskTrackerFilters$.subscribe((filters) => {
+      currentFilters = filters;
+    }).unsubscribe();
+    // const filters = this.taskTrackerStateService.store.getValue().filters;
     this.downloadExcelReportSub$ = this.taskTrackerService
-      .downloadExcelReport(filters)
+      .downloadExcelReport(currentFilters)
       .pipe(
         tap((data) => {
           saveAs(data, `TT_${format(new Date(), 'yyyy/MM/dd')}_report.xlsx`);
@@ -335,7 +358,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
 
   getProperties() {
     this.getAllPropertiesDictionarySub$ = this.propertyService
-      .getAllPropertiesDictionary(true)
+      .getAllPropertiesDictionary(false)
       .subscribe((data) => {
         if (data && data.success && data.model) {
           this.properties = [...data.model];

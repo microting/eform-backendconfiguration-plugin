@@ -12,6 +12,12 @@ import {Paged, SharedTagModel} from 'src/app/common/models';
 import {FilesStateService} from '../../store';
 import {Sort} from '@angular/material/sort';
 import {BackendConfigurationPnFilesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
+import {Store} from "@ngrx/store";
+import {
+  selectFilesNameFilters,
+  selectFilesPaginationIsSortDsc,
+  selectFilesPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/files/files.selector";
 
 @Component({
   selector: 'app-files-table',
@@ -98,8 +104,12 @@ export class FilesTableComponent implements OnInit {
   get getIntermediateSelectedFiles() {
     return this.selectedFiles.length > 0 && this.selectedFiles.length !== this._files.total;
   }
+  public selectFilesPaginationSort$ = this.store.select(selectFilesPaginationSort);
+  public selectFilesPaginationIsSortDsc$ = this.store.select(selectFilesPaginationIsSortDsc);
+  public selectFilesNameFilters$ = this.store.select(selectFilesNameFilters);
 
   constructor(
+    private store: Store,
     public filesStateService: FilesStateService,
     private translateService: TranslateService,
     private filesService: BackendConfigurationPnFilesService,

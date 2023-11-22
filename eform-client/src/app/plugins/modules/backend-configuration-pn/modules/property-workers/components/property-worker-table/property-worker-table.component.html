@@ -1,0 +1,104 @@
+<mtx-grid
+  [data]="sitesDto"
+  [columns]="tableHeaders"
+  [cellTemplate]="{siteId: deviceUserIdTpl, siteName: fullNameTpl, language: languageTpl, customerOtp: customerOtpTpl, actions: actionsTpl}"
+  [showPaginator]="false"
+  [pageOnFront]="false"
+  [rowStriped]="true"
+  [showToolbar]="true"
+  [showColumnMenuButton]="false"
+  [toolbarTemplate]="toolbarTpl"
+  [sortActive]="selectPropertyWorkersPaginationSort$ | async"
+  [sortDirection]="selectPropertyWorkersPaginationIsSortDsc$ | async"
+  (sortChange)="onSortTable($event)"
+  style="max-height: 80vh;"
+  noResultText="{{'No employees found' | translate}}"
+>
+</mtx-grid>
+
+<!-- (sortChange)="sortTable($event)" -->
+
+<ng-template #toolbarTpl>
+  <div class="d-flex flex-row justify-content-start flex-nowrap">
+    <div class="d-flex flex-column mr-2 ml-2">
+      <mat-form-field>
+        <mat-label>{{ 'Search' | translate }}</mat-label>
+        <input
+          matInput
+          type="text"
+          (ngModelChange)="onSearchChanged($event)"
+          [ngModel]="selectPropertyWorkersNameFilters$ | async"
+          id="labelInput"
+        />
+      </mat-form-field>
+    </div>
+  </div>
+</ng-template>
+
+
+
+<ng-template #deviceUserIdTpl let-row let-i="index">
+  <div class="deviceUserId" id="deviceUserId-{{i}}">{{row.siteId}}</div>
+</ng-template>
+
+<ng-template #fullNameTpl let-row let-i="index">
+  <div class="deviceUserFullName" id="deviceUserFullName-{{i}}">{{row.siteName}}</div>
+</ng-template>
+
+<ng-template #languageTpl let-row let-i="index">
+  <div class="deviceUserLanguage" id="deviceUserLanguage-{{i}}">{{row.language | translate}}</div>
+</ng-template>
+
+<ng-template #customerOtpTpl let-row>
+  <ng-container *ngIf="row.customerNo && row.otpCode">
+    {{ row.customerNo }} / {{ row.otpCode }}
+  </ng-container>
+  <ng-container *ngIf="row.otpCode == 0">
+    <button
+      mat-icon-button
+      color="warn"
+      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
+      matTooltip="{{ 'New OTP' | translate }}"
+      (click)="openOtpModal(row)"
+    >
+      <mat-icon>key</mat-icon>
+    </button>
+  </ng-container>
+  <ng-container *ngIf="!row.unitId"> N/A</ng-container>
+</ng-template>
+
+<!--<ng-template #propertyTpl let-row>-->
+<!--  <div [innerHTML]="this.getWorkerPropertyNames(row.siteId)"></div>-->
+<!--</ng-template>-->
+<ng-template #actionsTpl let-row let-i="index">
+  <div class="">
+    <button
+      mat-icon-button
+      matTooltip="{{ 'Show assignments' | translate }}"
+      id="editAssignmentsBtn-{{i}}"
+      [routerLink]="['/plugins/backend-configuration-pn/task-worker-assignments/' + row.siteId]"
+    >
+      <mat-icon>visibility</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      *ngIf="selectCurrentUserClaimsDeviceUsersUpdate$ | async"
+      matTooltip="{{ 'Edit Device User' | translate }}"
+      id="editDeviceUserBtn-{{i}}"
+      (click)="openEditModal(row)"
+    >
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      color="warn"
+      *ngIf="(selectCurrentUserClaimsDeviceUsersDelete$ | async) && !row.isLocked"
+      matTooltip="{{ 'Delete Device User' | translate }}"
+      id="deleteDeviceUserBtn-{{i}}"
+      (click)="openDeleteDeviceUserModal(row)"
+    >
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+</ng-template>
+

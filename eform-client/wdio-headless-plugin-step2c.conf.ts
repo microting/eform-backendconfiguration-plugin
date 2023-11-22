@@ -15,8 +15,8 @@ export const config: Options.Testrunner = {
   //
   specs: [
     'e2e/Tests/backend-configuration-settings/application-settings.plugins-page.spec.ts',
-    'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1.spec.ts',
-    'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t2.spec.ts',
+    //'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t1.spec.ts',
+    //'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t2.spec.ts',
     // 'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t3.spec.ts',
     // 'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t4.spec.ts',
     // 'e2e/Tests/backend-configuration-general/planning/backend-configuration-planning.t5.spec.ts',

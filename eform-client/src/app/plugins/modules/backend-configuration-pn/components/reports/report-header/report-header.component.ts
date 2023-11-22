@@ -9,15 +9,21 @@ import {
 import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../models/report';
 import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
-import {SharedTagModel} from 'src/app/common/models';
+import {FiltrationStateModel, SharedTagModel} from 'src/app/common/models';
 import {AuthStateService} from 'src/app/common/store';
-import {ReportQuery, ReportStateService} from '../store';
+import {ReportStateService} from '../store';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
+import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
+import {
+  selectReportsV1Filters,
+  selectReportsV1DateRange
+} from 'src/app/plugins/modules/backend-configuration-pn/state/reports-v1/reports-v1.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -34,12 +40,15 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
+  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
+  private selectReportsV1Filters$ = this.authStore.select(selectReportsV1Filters);
+  private selectReportsV1DateRange$ = this.authStore.select(selectReportsV1DateRange);
 
   constructor(
     dateTimeAdapter: DateTimeAdapter<any>,
     private formBuilder: FormBuilder,
+    private authStore: Store,
     private reportStateService: ReportStateService,
-    private reportQuery: ReportQuery,
     authStateService: AuthStateService,
     iconRegistry: MatIconRegistry,
     sanitizer: DomSanitizer,
@@ -47,20 +56,30 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-    dateTimeAdapter.setLocale(authStateService.currentUserLocale);
+    this.selectCurrentUserLocale$.subscribe((locale) => {
+      dateTimeAdapter.setLocale(locale);
+    });
   }
 
   ngOnInit() {
+    let _filters: FiltrationStateModel;
+    this.selectReportsV1Filters$.subscribe((filters) => {
+      _filters = filters;
+    }).unsubscribe();
+    let dateRange: { startDate: string, endDate: string };
+    this.selectReportsV1DateRange$.subscribe((range) => {
+      dateRange = range;
+    }).unsubscribe();
     this.generateForm = new FormGroup(
       {
-        tagIds: new FormControl(this.reportQuery.pageSetting.filters.tagIds),
+        tagIds: new FormControl(_filters.tagIds),
         dateRange: new FormGroup({
           dateFrom: new FormControl(
-            this.reportQuery.pageSetting.dateRange.startDate &&
-            parse(this.reportQuery.pageSetting.dateRange.startDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
+            dateRange.startDate &&
+            parse(dateRange.startDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
           dateTo: new FormControl(
-            this.reportQuery.pageSetting.dateRange.endDate &&
-            parse(this.reportQuery.pageSetting.dateRange.endDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
+            dateRange.endDate &&
+            parse(dateRange.endDate, PARSING_DATE_FORMAT, new Date()), [Validators.required]),
         },),
       });
     this.valueChangesSub$ = this.generateForm.valueChanges.subscribe(
@@ -99,10 +118,18 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   }
 
   private extractData(): ReportPnGenerateModel {
+    let _filters: FiltrationStateModel;
+    this.selectReportsV1Filters$.subscribe((filters) => {
+      _filters = filters;
+    }).unsubscribe();
+    let dateRange: { startDate: string, endDate: string };
+    this.selectReportsV1DateRange$.subscribe((range) => {
+      dateRange = range;
+    }).unsubscribe();
     return new ReportPnGenerateModel({
-      dateFrom: this.reportQuery.pageSetting.dateRange.startDate,
-      dateTo: this.reportQuery.pageSetting.dateRange.endDate,
-      tagIds: [...this.reportQuery.pageSetting.filters.tagIds],
+      dateFrom: dateRange.startDate,
+      dateTo: dateRange.endDate,
+      tagIds: [..._filters.tagIds],
     });
   }
 

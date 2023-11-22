@@ -19,6 +19,14 @@ import {AuthStateService} from 'src/app/common/store';
 import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
 import * as R from 'ramda';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskWizardFilters, selectTaskWizardPropertyIds
+} from '../../../../state/task-wizard/task-wizard.selector';
+import {
+  selectStatisticsPropertyId
+} from "src/app/plugins/modules/backend-configuration-pn/state/statistics/statistics.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -57,6 +65,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   getFiltersAsyncSub$: Subscription;
   changePropertySub$: Subscription;
   getPlannedTaskWorkersSub$: Subscription;
+  public isAuth$ = this.store.select(selectAuthIsAuth);
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -67,8 +76,12 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     }
     return '';
   }
+  private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
+  private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
+  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
   constructor(
+    private store: Store,
     private propertyService: BackendConfigurationPnPropertiesService,
     private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
     private taskWizardStateService: TaskWizardStateService,
@@ -77,14 +90,31 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     private overlay: Overlay,
     private backendConfigurationPnTaskWizardService: BackendConfigurationPnTaskWizardService,
     private appSettingsStateService: AppSettingsStateService,
-    private authStateService: AuthStateService,
+    public authStateService: AuthStateService,
     private route: ActivatedRoute,
     private statisticsStateService: StatisticsStateService,
   ) {
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
-        this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+        // this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+        //   if (propertyId) {
+        //     this.selectedPropertyId = propertyId;
+        //     // this.store.dispatch({
+        //     //   type: '[TaskWizard] Update filters',
+        //     //   payload: {
+        //     //     filters: {
+        //     //       propertyIds: [propertyId],
+        //     //       tagIds: [],
+        //     //       folderIds: [],
+        //     //       assignToIds: [],
+        //     //       status: null,
+        //     //     }
+        //     //   }
+        //     // });
+        //   }
+        // });
+        // this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
         this.getPlannedTaskWorkers();
       } else {
         this.showDiagram = false;
@@ -98,18 +128,18 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTags();
     this.getTasks();
     this.getEnabledLanguages();
-    this.getFiltersAsyncSub$ = this.taskWizardStateService.getFiltersAsync()
+    this.getFiltersAsyncSub$ = this.selectTaskWizardPropertyIds$
       .pipe(
         tap(filters => {
-          if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
-            propertyIds = filters.propertyIds;
+          if (filters.length !== 0 && !R.equals(propertyIds, filters)) {
+            propertyIds = filters;
             this.getFolders();
             this.getSites();
           }
         },),
         tap(_ => {
           if (this.showDiagram) {
-            this.selectedPropertyId = this.taskWizardStateService.store.getValue().filters.propertyIds[0] || null;
+            this.selectedPropertyId = _[0] || null;
             this.getPlannedTaskWorkers();
           }
         })
@@ -118,7 +148,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getProperties() {
-    this.getPropertiesSub$ = this.backendConfigurationPnTaskWizardService.getAllPropertiesDictionary()
+    this.getPropertiesSub$ = this.backendConfigurationPnTaskWizardService.getAllPropertiesDictionary(false)
       .pipe(tap(data => {
         if (data && data.success && data.model) {
           this.properties = data.model;
@@ -128,19 +158,37 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getFolders() {
+    let propertyIds: number[] = [];
+    this.selectTaskWizardPropertyIds$.subscribe(x => propertyIds = x);
+    if (propertyIds.length === 0) {
+      return;
+    }
     this.getFoldersSub$ = this.propertyService
-      .getLinkedFolderListByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
+      .getLinkedFolderListByMultipleProperties(propertyIds)
       .pipe(tap(data => {
         if (data && data.success && data.model) {
           this.folders = data.model;
         }
       }))
       .subscribe();
+    // this.getFoldersSub$ = this.propertyService
+    //   .getLinkedFolderListByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
+    //   .pipe(tap(data => {
+    //     if (data && data.success && data.model) {
+    //       this.folders = data.model;
+    //     }
+    //   }))
+    //   .subscribe();
   }
 
   getSites() {
+    let propertyIds: number[] = [];
+    this.selectTaskWizardPropertyIds$.subscribe(x => propertyIds = x);
+    if (propertyIds.length === 0) {
+      return;
+    }
     this.getSitesSub$ = this.propertyService
-      .getLinkedSitesByMultipleProperties(this.taskWizardStateService.store.getValue().filters.propertyIds)
+      .getLinkedSitesByMultipleProperties(propertyIds)
       .pipe(tap(result => {
         if (result && result.success && result.success) {
           this.sites = result.model;
@@ -186,12 +234,12 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
           this.updateModal.componentInstance.fillModelAndCopyModel({
             eformId: data.model.eformId,
             folderId: data.model.folderId,
             propertyId: data.model.propertyId,
-            repeatEvery: data.model.repeatEvery,
+            repeatEvery: data.model.repeatEvery === 0 ? 1 : data.model.repeatEvery,
             repeatType: data.model.repeatType,
             sites: data.model.assignedTo,
             startDate: data.model.startDate,
@@ -252,7 +300,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
           this.createModal.componentInstance.model = {
             eformId: data.model.eformId,
             folderId: data.model.folderId,
@@ -302,7 +350,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onCreateTask() {
-    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
+    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
     this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
     this.createModal.componentInstance.properties = this.properties;
     this.createModal.componentInstance.tags = this.tags;
@@ -396,7 +444,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   openTagsModal() {
-    this.planningTagsModal.show(this.authStateService.isAdmin);
+    this.planningTagsModal.show();
   }
 
   ngAfterViewInit() {

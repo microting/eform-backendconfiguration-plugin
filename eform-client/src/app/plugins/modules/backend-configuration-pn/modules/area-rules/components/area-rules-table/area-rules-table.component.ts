@@ -24,6 +24,12 @@ import {AuthStateService} from 'src/app/common/store';
 import {AreaRulesStateService} from '../store';
 import {Sort} from '@angular/material/sort';
 import * as R from 'ramda';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
+import {Store} from '@ngrx/store';
+import {
+  selectAreaRulesPaginationIsSortDsc,
+  selectAreaRulesPaginationSort
+} from "src/app/plugins/modules/backend-configuration-pn/state/area-rules/area-rules.selector";
 
 @Component({
   selector: 'app-area-rules-table',
@@ -448,9 +454,12 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
   repeatEveryTypeWeek: { id: number; name: string; }[] = [];
   repeatEveryTypeMonth: { id: number; name: string; }[] = [];
   repeatEveryTypeDay: { id: number; name: string; }[] = [];
+  private selectAuthIsAdmin$ = this.store.select(selectAuthIsAuth);
 
   getColumns(): MtxGridColumn[] {
-    if (!this.authStateService.isAdmin) {
+    let isAdmin = false;
+    this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
+    if (!isAdmin) {
       this.tableHeaderAdmin = [];
     }
 
@@ -479,8 +488,12 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
         return [];
     }
   }
+  public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectAreaRulesPaginationSort$ = this.store.select(selectAreaRulesPaginationSort);
+  public selectAreaRulesPaginationIsSortDsc$ = this.store.select(selectAreaRulesPaginationIsSortDsc);
 
   constructor(
+    private store: Store,
     private authStateService: AuthStateService,
     private templateFilesService: TemplateFilesService,
     private translateService: TranslateService,

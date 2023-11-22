@@ -85,7 +85,7 @@ public class BackendConfigurationTaskTrackerService : IBackendConfigurationTaskT
 				.Select(p => new TaskTrackerColumn
 				{
 					ColumnName = p.ColumnName,
-					isColumnEnabled = p.isColumnEnabled,
+					isColumnEnabled = p.isColumnEnabled
 				})
 				.ToListAsync();
 			return new OperationDataResult<List<TaskTrackerColumn>>(true, columns);

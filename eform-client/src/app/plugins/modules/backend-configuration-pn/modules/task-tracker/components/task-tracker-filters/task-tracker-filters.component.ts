@@ -15,6 +15,10 @@ import {
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {tap} from 'rxjs/operators';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskTrackerFilters
+} from '../../../../state/task-tracker/task-tracker.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -38,8 +42,10 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   getFiltersAsyncSub$: Subscription;
   filtersFormChangesSub$: Subscription;
   getSitesSub$: Subscription;
+  private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
 
   constructor(
+    private store: Store,
     private translate: TranslateService,
     private taskTrackerStateService: TaskTrackerStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
@@ -47,6 +53,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.subToFormChanges();
     this.propertyIdValueChangesSub$ = this.filtersForm
       .get('propertyIds')
       .valueChanges.subscribe((value: any) => {
@@ -57,7 +64,6 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
           }
         }
       );
-    this.subToFormChanges();
   }
 
   getSites(propertyIds: number[]) {
@@ -71,7 +77,7 @@ export class TaskTrackerFiltersComponent implements OnInit, OnDestroy {
   }
 
   subToFormChanges() {
-    this.getFiltersAsyncSub$ = this.taskTrackerStateService.getFiltersAsync().pipe(take(1)) // get values FIRST time
+    this.getFiltersAsyncSub$ = this.selectTaskTrackerFilters$.pipe(take(1)) // get values FIRST time
       .subscribe(filters => {
         this.filtersForm.patchValue({
           propertyIds: filters.propertyIds ?? [],

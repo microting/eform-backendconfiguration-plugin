@@ -15,6 +15,11 @@ import {TranslateService} from '@ngx-translate/core';
 import {
   TaskManagementPrioritiesEnum
 } from '../../../../enums';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskManagementPaginationIsSortDsc,
+  selectTaskManagementPaginationSort
+} from '../../../../state/task-management/task-management.selector';
 
 @Component({
   selector: 'app-task-management-table',
@@ -30,7 +35,7 @@ export class TaskManagementTableComponent implements OnInit {
       sortProp: {id: 'CaseInitiated'},
       sortable: true,
       type: 'date',
-      typeParameter: {format: 'dd.MM.yyyy HH:mm'},
+      typeParameter: {format: 'dd.MM.yyyy HH:mm', timezone: 'utc'},
       class: 'createdDate'
     },
     {header: this.translateService.stream('Property'), field: 'propertyName', sortProp: {id: 'PropertyName'}, sortable: true, class: 'propertyName'},
@@ -50,7 +55,7 @@ export class TaskManagementTableComponent implements OnInit {
       sortProp: {id: 'UpdatedAt'},
       sortable: true,
       type: 'date',
-      typeParameter: {format: 'dd.MM.yyyy HH:mm'},
+      typeParameter: {format: 'dd.MM.yyyy HH:mm', timezone: 'utc'},
       class: 'lastUpdateDate'
     },
     {header: this.translateService.stream('Last update by'), field: 'lastUpdatedBy', sortProp: {id: 'LastUpdatedByName'}, sortable: true, class: 'lastUpdatedBy'},
@@ -96,8 +101,11 @@ export class TaskManagementTableComponent implements OnInit {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openViewModal: EventEmitter<number> = new EventEmitter<number>();
   @Output() openDeleteModal: EventEmitter<WorkOrderCaseModel> = new EventEmitter<WorkOrderCaseModel>();
+  public selectTaskManagementPaginationSort$ = this.store.select(selectTaskManagementPaginationSort);
+  public selectTaskManagementPaginationIsSortDsc$ = this.store.select(selectTaskManagementPaginationIsSortDsc);
 
   constructor(
+    private store: Store,
     public taskManagementStateService: TaskManagementStateService,
     private translateService: TranslateService,
   ) {

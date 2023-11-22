@@ -47,7 +47,9 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     propertyAssignment.TaskManagementEnabled = createModel.TaskManagementEnabled;
                     await propertyAssignment.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
-                    var documents = await caseTemplatePnDbContext.DocumentProperties.Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
+                    var documents = await caseTemplatePnDbContext.DocumentProperties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.PropertyId == propertyAssignment.PropertyId).ToListAsync();
                     foreach (var document in documents)
                     {
                         if (!documentIds.Contains(document.DocumentId))
@@ -62,7 +64,11 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     var document = await caseTemplatePnDbContext.Documents
                         .Include(x => x.DocumentSites)
-                        .FirstAsync(x => x.Id == documentId).ConfigureAwait(false);
+                        .FirstOrDefaultAsync(x => x.Id == documentId).ConfigureAwait(false);
+                    if (document == null)
+                    {
+                        continue;
+                    }
                     foreach (var documentSite in document.DocumentSites.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed))
                     {
                         if (documentSite.SdkCaseId != 0)
@@ -80,8 +86,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                 return new OperationResult(true,"SuccessfullyAssignmentsCreatingProperties");
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 // Log.LogException(e.Message);
                 // Log.LogException(e.StackTrace);
                 return new OperationResult(false, "ErrorWhileAssignmentsCreatingProperties");
@@ -107,17 +115,6 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     propertyWorker.TaskManagementEnabled = updateModel.TaskManagementEnabled;
                     await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
-                    var documents = await caseTemplatePnDbContext.DocumentProperties
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Where(x => x.PropertyId == propertyWorker.PropertyId)
-                        .ToListAsync();
-                    foreach (var document in documents)
-                    {
-                        if (!documentIds.Contains(document.DocumentId))
-                        {
-                            documentIds.Add(document.DocumentId);
-                        }
-                    }
                 }
 
                 var assignmentsForCreate = updateModel.Assignments
@@ -138,8 +135,18 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 {
                     await propertyAssignment.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
 
-
                     propertyWorkers.Add(propertyAssignment);
+                    var documents = await caseTemplatePnDbContext.DocumentProperties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Where(x => x.PropertyId == propertyAssignment.PropertyId)
+                        .ToListAsync();
+                    foreach (var document in documents)
+                    {
+                        if (!documentIds.Contains(document.DocumentId))
+                        {
+                            documentIds.Add(document.DocumentId);
+                        }
+                    }
                 }
 
                 var assignmentsForDelete = assignments

@@ -1,6 +1,6 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, WorkOrderCaseModel} from '../../../../models';
+import {AdHocTaskPrioritiesModel, AdHocTaskWorkers, PropertyModel, WorkOrderCaseModel} from '../../../../models';
 import {TaskManagementStateService} from '../store';
 import {
   TaskManagementCreateShowModalComponent,
@@ -13,17 +13,27 @@ import {
 import {saveAs} from 'file-saver';
 import {ToastrService} from 'ngx-toastr';
 import {Subscription} from 'rxjs';
-import {CommonDictionaryModel} from 'src/app/common/models';
+import {CommonDictionaryModel, EntityItemModel} from 'src/app/common/models';
 import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, WordIcon} from 'src/app/common/const';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {LoaderService} from 'src/app/common/services';
+import {EntitySelectService, LoaderService} from 'src/app/common/services';
 import {catchError, skip, tap} from 'rxjs/operators';
 import {StatisticsStateService} from '../../../statistics/store';
 import {ActivatedRoute} from '@angular/router';
+import {AreaRuleEntityListModalComponent} from 'src/app/plugins/modules/backend-configuration-pn/components';
+import {Store} from '@ngrx/store';
+import {
+  selectTaskManagementFilters,
+  selectTaskManagementPropertyId,
+  selectTaskManagementPropertyIdIsNullOrUndefined
+} from '../../../../state/task-management/task-management.selector';
+import {
+  selectStatisticsPropertyId
+} from '../../../../state/statistics/statistics.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -61,8 +71,13 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     }
     return '';
   }
+  public selectTaskManagementPropertyIdIsNullOrUndefined$ = this.store.select(selectTaskManagementPropertyIdIsNullOrUndefined);
+  public selectTaskManagementPropertyId$ = this.store.select(selectTaskManagementPropertyId);
+  private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
+  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
 
   constructor(
+    private store: Store,
     private loaderService: LoaderService,
     public taskManagementStateService: TaskManagementStateService,
     public taskManagementService: BackendConfigurationPnTaskManagementService,
@@ -80,14 +95,28 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(x => {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;
-        const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
-        this.selectedPropertyId = propertyId !== -1 ? propertyId : null;
+        this.updateTable();
+        // let currentFilters: any;
+        // this.selectTaskManagementFilters$.subscribe((filters) => {
+        //   currentFilters = filters;
+        // }).unsubscribe();
+        // //     const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
+        // this.selectedPropertyId = currentFilters.propertyId !== -1 ? currentFilters.propertyId : null;
+        // this.selectStatisticsPropertyId$.subscribe((propertyId) => {
+        //   if (propertyId) {
+        //     this.selectedPropertyId = propertyId;
+        //     // this.store.dispatch({
+        //     //   type: '[TaskManagement] Update filters',
+        //     //   payload: {propertyId: this.selectedPropertyId}
+        //     // });
+        //   }
+        // });
         this.getStats();
       } else {
         this.diagramForShow = '';
       }
     });
-    this.getPropertyIdAsyncSub$ = taskManagementStateService.getFiltersAsync()
+    this.getPropertyIdAsyncSub$ = this.selectTaskManagementFilters$
       .pipe(skip(1))
       .subscribe(filters => {
         if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
@@ -165,12 +194,16 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   }
 
   onDownloadWordReport() {
-    const filters = this.taskManagementStateService.store.getValue().filters;
+    let currentFilters: any;
+    this.selectTaskManagementFilters$.subscribe((filters) => {
+      currentFilters = filters;
+    }).unsubscribe();
     this.downloadWordReportSub$ = this.taskManagementStateService
       .downloadWordReport()
       .pipe(
         tap((data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.docx`);
+          saveAs(data, `${this.properties.find(x =>
+          x.id === currentFilters.propertyId).name}${currentFilters.areaName ? '_' + currentFilters.areaName : ''}_report.docx`);
         }),
         catchError((err, caught) => {
           this.toasterService.error('Error downloading report');
@@ -181,12 +214,16 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   }
 
   onDownloadExcelReport() {
-    const filters = this.taskManagementStateService.store.getValue().filters;
+    let currentFilters: any;
+    this.selectTaskManagementFilters$.subscribe((filters) => {
+      currentFilters = filters;
+    }).unsubscribe();
     this.downloadExcelReportSub$ = this.taskManagementStateService
       .downloadExcelReport()
       .pipe(
         tap((data) => {
-          saveAs(data, `${this.properties.find(x => x.id === filters.propertyId).name}${filters.areaName ? '_' + filters.areaName : ''}_report.xlsx`);
+          saveAs(data, `${this.properties.find(x =>
+          x.id === currentFilters.propertyId).name}${currentFilters.areaName ? '_' + currentFilters.areaName : ''}_report.xlsx`);
         }),
         catchError((_, caught) => {
           this.toasterService.error('Error downloading report');
@@ -223,4 +260,6 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       this.getAdHocTaskWorkers();
     }
   }
+
+
 }

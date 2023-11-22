@@ -35,6 +35,8 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Report
         public string ToDate { get; set; }
 
         public string GroupTagName { get; set; }
+
+        public List<string> NameTagsInEndPage { get; set; } = new();
     }
 
     public class ReportEformGroupModel

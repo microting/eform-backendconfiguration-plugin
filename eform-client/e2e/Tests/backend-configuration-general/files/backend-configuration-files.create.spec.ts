@@ -40,7 +40,8 @@ describe('Backend Configuration Files Create', function () {
   it('should not create file', async () => {
     const testFile: BackendFileCreate = {
       files: ['test.pdf'],
-      propertiesForCreate: [`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`],
+      //propertiesForCreate: [`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`],
+      propertiesForCreate: [`${properties[0].name}`],
       tags: [],
       propertyNamesForExpect: [],
     }
@@ -52,7 +53,8 @@ describe('Backend Configuration Files Create', function () {
   it('should create 1 file with 1 tag and 1 property', async () => {
     const testFile: BackendFileCreate = {
       files: ['test.pdf'],
-      propertiesForCreate: [`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`],
+      //propertiesForCreate: [`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`],
+      propertiesForCreate: [`${properties[0].name}`],
       tags: [tags[0]],
       propertyNamesForExpect: [properties[0].name],
     }
@@ -70,7 +72,8 @@ describe('Backend Configuration Files Create', function () {
   it('should create 1 file with 2 tag and 2 property', async () => {
     const testFile: BackendFileCreate = {
       files: ['test.pdf'],
-      propertiesForCreate: properties.map(x => `${x.cvrNumber} - ${x.chrNumber} - ${x.name}`),
+      //propertiesForCreate: properties.map(x => `${x.cvrNumber} - ${x.chrNumber} - ${x.name}`),
+      propertiesForCreate: properties.map(x => `${x.name}`),
       tags: tags,
       propertyNamesForExpect: properties.map(x => x.name),
     }
@@ -88,7 +91,8 @@ describe('Backend Configuration Files Create', function () {
   it('should create 2 file with 0 tag and 2 property ', async () => {
     const testFile: BackendFileCreate = {
       files: ['attachment-english.pdf', 'test.pdf'],
-      propertiesForCreate: properties.map(x => `${x.cvrNumber} - ${x.chrNumber} - ${x.name}`),
+      //propertiesForCreate: properties.map(x => `${x.cvrNumber} - ${x.chrNumber} - ${x.name}`),
+      propertiesForCreate: properties.map(x => `${x.name}`),
       tags: [],
       propertyNamesForExpect: properties.map(x => x.name),
     }
@@ -108,7 +112,8 @@ describe('Backend Configuration Files Create', function () {
   it('should create 2 file with 1 tag and 1 property', async () => {
     const testFile: BackendFileCreate = {
       files: ['attachment-english.pdf', 'test.pdf'],
-      propertiesForCreate: [`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`],
+      //propertiesForCreate: [`${properties[0].cvrNumber} - ${properties[0].chrNumber} - ${properties[0].name}`],
+      propertiesForCreate: [`${properties[0].name}`],
       tags: [tags[0]],
       propertyNamesForExpect: [properties[0].name],
     }

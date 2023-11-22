@@ -21,6 +21,14 @@
       >
       </mtx-select>
     </mat-form-field>
+    <button
+      mat-icon-button
+      id="updateEntityList"
+      (click)="onShowEditEntityListModal()"
+      matTooltip="{{ 'Edit list of areas for task management' | translate }}"
+    >
+      <mat-icon>list</mat-icon>
+    </button>
   </div>
   <div class="d-flex flex-row need-wrapper">
     <mat-form-field>
@@ -50,10 +58,10 @@
       <mtx-select
         [items]="[
           {id: -1, name: ('All' | translate)},
-          {id: 1, name: ('In progress' | translate)},
-          {id: 2, name: ('Done' | translate)},
+          {id: 1, name: ('Ongoing' | translate)},
+          {id: 2, name: ('Completed' | translate)},
           {id: 3, name: ('Ordered' | translate)},
-          {id: 4, name: ('Waiting' | translate)},
+          {id: 4, name: ('Awaiting' | translate)},
         ]"
         bindLabel="name"
         bindValue="id"

@@ -7,6 +7,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
+import {Store} from "@ngrx/store";
+import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
 
 @AutoUnsubscribe()
 @Component({
@@ -20,6 +22,7 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
   @Input() view: number[] = [];
   @Output() clickOnDiagram: EventEmitter<number | null> = new EventEmitter<number | null>();
   chartData: { name: string, value: number }[] = [];
+  xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#0000ff']
   };
@@ -49,12 +52,33 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
     }
   }
 
+  axisFormat(val) {
+    if (val % 1 === 0) {
+      return val.toLocaleString();
+    } else {
+      return '';
+    }
+  }
+
+  getxAxisTicks() {
+    // loop through the data and find the biggest value, then create an array from 0 to that value
+    if (this.chartData.length > 0) {
+      const max = Math.max.apply(Math, this.chartData.map(o => o.value)) + 1;
+      this.xAxisTicks = Array.from(Array(max).keys());
+    }
+  }
+  private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
+
   constructor(
+    private store: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {
-    this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
-      .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
+    this.selectIsDarkMode$.subscribe((isDarkMode) => {
+      this.isDarkTheme = isDarkMode;
+    });
+    // this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
+    //   .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -64,6 +88,7 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
       this.chartData = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: x.statValue}));
       this.customColorsDark = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
       this.customColorsLight = this.plannedTaskWorkers.taskWorkers.map(x => ({name: x.workerName, value: '#0000ff'}));
+      this.getxAxisTicks();
     }
   }
 

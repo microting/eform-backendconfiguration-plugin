@@ -18,12 +18,14 @@
       [showXAxisLabel]="true"
       [showGridLines]="true"
       [trimXAxisTicks]="true"
-      [trimYAxisTicks]="true"
+      [trimYAxisTicks]="false"
       [maxXAxisTickLength]="4"
       [maxYAxisTickLength]="18"
       [barPadding]="8"
       [animations]="true"
       [roundEdges]="true"
+      [xAxisTickFormatting]="axisFormat"
+      [xAxisTicks]="xAxisTicks"
       (select)="onClickOnDiagram($event)"
     />
   </mat-card-content>

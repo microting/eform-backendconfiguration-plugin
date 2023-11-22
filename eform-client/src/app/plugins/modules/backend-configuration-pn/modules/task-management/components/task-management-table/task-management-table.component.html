@@ -1,12 +1,18 @@
-<mtx-grid
-  [data]="workOrderCases"
-  [columns]="tableHeaders"
-  [showPaginator]="false"
-  [pageOnFront]="false"
-  [rowStriped]="true"
-  [showToolbar]="false"
-  [showColumnMenuButton]="false"
-  [sortActive]="taskManagementStateService.getActiveSort() | async"
-  [sortDirection]="taskManagementStateService.getActiveSortDirection() | async"
-  (sortChange)="sortTable($event)">
-</mtx-grid>
+<div>
+  <mtx-grid
+    [data]="workOrderCases"
+    [columns]="tableHeaders"
+    [showPaginator]="false"
+    [pageOnFront]="false"
+    [rowStriped]="true"
+    [showToolbar]="false"
+    [showColumnMenuButton]="false"
+    [sortActive]="selectTaskManagementPaginationSort$ | async"
+    [sortDirection]="selectTaskManagementPaginationIsSortDsc$ | async"
+    (sortChange)="sortTable($event)"
+    style="max-height: 60vh;"
+    noResultText="{{'No tasks found' | translate}}"
+  >
+  </mtx-grid>
+
+</div>

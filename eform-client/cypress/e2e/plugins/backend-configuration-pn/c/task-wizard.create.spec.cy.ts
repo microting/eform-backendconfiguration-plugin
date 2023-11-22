@@ -28,7 +28,7 @@ const task = {
     generateRandmString(12),
     generateRandmString(12),
   ],
-  eformName: '00. Info boks',
+  eformName: 'Kvittering',
   startFrom: {
     year: 2023,
     month: 7,
@@ -61,7 +61,8 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.get('#createProperty').click();
-    selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    //selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    selectValueInNgSelectorNoSelector(`${property.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(500);
     cy.get('#createFolder').click({force: true});
@@ -71,10 +72,10 @@ describe('Area rules type 1', () => {
     cy.contains('.folder-tree-name', bindArea).first().click();
     cy.get('#createTableTags').click();
     cy.wait(500);
-    selectValueInNgSelectorNoSelector(`03. Flydelag`);
+    selectValueInNgSelectorNoSelector('0. '+property.name + ' - '+property.address);
     cy.get('#createTags').click();
     cy.wait(500);
-    selectValueInNgSelectorNoSelector(bindArea);
+    selectValueInNgSelectorNoSelector('0. '+property.name + ' - '+property.address);
     cy.wait(500);
     for (let i = 0; i < task.translations.length; i++) {
       cy.get(`#createName${i}`).type(task.translations[i]);

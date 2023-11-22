@@ -3,5 +3,5 @@
 public enum TaskWizardStatuses
 {
     Active = 1,
-    NotActive,
+    NotActive
 }

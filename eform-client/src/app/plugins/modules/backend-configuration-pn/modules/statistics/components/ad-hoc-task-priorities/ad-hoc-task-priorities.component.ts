@@ -7,6 +7,8 @@ import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
+import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
+import {Store} from "@ngrx/store";
 
 @AutoUnsubscribe()
 @Component({
@@ -18,9 +20,16 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   @Input() adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;
   @Input() selectedPropertyName: string = '';
   @Input() view: number[] = [];
-  @Output() clickOnDiagram: EventEmitter<void> = new EventEmitter<void>();
+  @Output() clickOnDiagram: EventEmitter<number | null> = new EventEmitter<number | null>();
   currentDate = format(new Date(), 'P', {locale: this.authStateService.dateFnsLocale});
   chartData: { name: string, value: number }[] = [];
+  priorityNames: string[] = [
+    this.translateService.instant('Urgent'),
+    this.translateService.instant('High'),
+    this.translateService.instant('Middle'),
+    this.translateService.instant('Low'),
+  ];
+  xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa']
   };
@@ -83,12 +92,33 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
     }
   }
 
+  axisFormat(val) {
+    if (val % 1 === 0) {
+      return val.toLocaleString();
+    } else {
+      return '';
+    }
+  }
+
+  getxAxisTicks() {
+    // loop through the data and find the biggest value, then create an array from 0 to that value
+    if (this.chartData.length > 0) {
+      const max = Math.max.apply(Math, this.chartData.map(o => o.value)) + 1;
+      this.xAxisTicks = Array.from(Array(max).keys());
+    }
+  }
+  private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
+
   constructor(
+    private store: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {
-    this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
-      .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
+    this.selectIsDarkMode$.subscribe((isDarkMode) => {
+      this.isDarkTheme = isDarkMode;
+    });
+    // this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
+    //   .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -113,6 +143,17 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
           value: this.adHocTaskPrioritiesModel.low,
         },
       ];
+      this.getxAxisTicks();
+    }
+  }
+
+  onClickOnDiagram(chartData: { name: string, value: number } = null) {
+    if(!chartData){
+      this.clickOnDiagram.emit();
+    } else {
+      // lookup the chartData.name in the priorityNames array and get the index
+      const priorityIndex = this.priorityNames.indexOf(chartData.name);
+      this.clickOnDiagram.emit(priorityIndex + 1);
     }
   }
 

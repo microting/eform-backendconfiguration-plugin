@@ -34,7 +34,7 @@ const task = {
     generateRandmString(12),
     generateRandmString(12),
   ],
-  eformName: '00. Info boks',
+  eformName: 'Kvittering',
   startFrom: {
     year: 2023,
     month: 7,
@@ -51,7 +51,7 @@ const editedTask = {
     generateRandmString(12),
     generateRandmString(12),
   ],
-  eformName: '00. Arbejdstid',
+  eformName: '2.3 Gyllekøling: Driftsstop',
   startFrom: {
     year: 2022,
     month: 6,
@@ -84,20 +84,23 @@ describe('Area rules type 1', () => {
     cy.wait(500);
     // fill and create task
     cy.get('#createProperty').click();
-    selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
-    cy.wait(500);
+    cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
+    //selectValueInNgSelectorNoSelector(`${property.cvrNumber} - ${property.chrNumber} - ${property.name}`);
+    selectValueInNgSelectorNoSelector(`${property.name}`);
+    cy.wait('@getFolders', { timeout: 60000 });
+    cy.wait(1000);
     cy.get('#createFolder').click({force: true});
-    cy.wait(500);
+    cy.wait(1000);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
     cy.contains('.folder-tree-name', `00. Logbøger`).first().click();
     cy.wait(500);
     cy.get('#createTableTags').click();
     cy.wait(500);
-    selectValueInNgSelectorNoSelector(`03. Flydelag`);
+    selectValueInNgSelectorNoSelector('0. '+property.name + ' - '+property.address);
     cy.get('#createTags').click();
     cy.wait(500);
-    selectValueInNgSelectorNoSelector(`00. Logbøger`);
+    selectValueInNgSelectorNoSelector('0. '+property.name + ' - '+property.address);
     cy.wait(500);
     for (let i = 0; i < task.translations.length; i++) {
       cy.get(`#createName${i}`).type(task.translations[i]);
@@ -146,11 +149,12 @@ describe('Area rules type 1', () => {
     // change task
     cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
     cy.get('#updateProperty').click();
-    selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
+    //selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
+    selectValueInNgSelectorNoSelector(`${property2.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
     cy.get('app-task-wizard-update-modal button#updateFolder').click();
-    cy.wait(500);
+    cy.wait(1000);
     cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
     cy.wait(500);
     cy.contains('.folder-tree-name', newFolderName).click();
