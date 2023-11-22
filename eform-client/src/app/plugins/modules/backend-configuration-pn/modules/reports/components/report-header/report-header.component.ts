@@ -6,11 +6,9 @@ import {
   Output,
   OnDestroy,
 } from '@angular/core';
-import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
+import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../../models';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {FiltrationStateModel, SharedTagModel} from 'src/app/common/models';
-import {AuthStateService} from 'src/app/common/store';
 import {ReportStateService} from '../store';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
@@ -18,7 +16,6 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
-import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
   selectReportsV2DateRange,
@@ -41,25 +38,18 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
-  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
   private selectReportsV2Filters$ = this.store.select(selectReportsV2Filters);
   private selectReportsV2DateRange$ = this.store.select(selectReportsV2DateRange);
 
   constructor(
-    dateTimeAdapter: DateTimeAdapter<any>,
     private store: Store,
-    private formBuilder: FormBuilder,
     private reportStateService: ReportStateService,
-    authStateService: AuthStateService,
     iconRegistry: MatIconRegistry,
     sanitizer: DomSanitizer,
   ) {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-    this.selectCurrentUserLocale$.subscribe((locale) => {
-      dateTimeAdapter.setLocale(locale);
-    });
   }
 
   ngOnInit() {

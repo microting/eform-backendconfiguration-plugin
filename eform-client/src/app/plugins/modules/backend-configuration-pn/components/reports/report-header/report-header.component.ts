@@ -6,11 +6,9 @@ import {
   Output,
   OnDestroy,
 } from '@angular/core';
-import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
+import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {ReportPnGenerateModel} from '../../../models/report';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {FiltrationStateModel, SharedTagModel} from 'src/app/common/models';
-import {AuthStateService} from 'src/app/common/store';
 import {ReportStateService} from '../store';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
@@ -18,12 +16,11 @@ import {MatIconRegistry} from '@angular/material/icon';
 import {DomSanitizer} from '@angular/platform-browser';
 import {ExcelIcon, PARSING_DATE_FORMAT, WordIcon, PdfIcon} from 'src/app/common/const';
 import {format, parse} from 'date-fns';
-import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
   selectReportsV1Filters,
   selectReportsV1DateRange
-} from 'src/app/plugins/modules/backend-configuration-pn/state/reports-v1/reports-v1.selector';
+} from '../../../state/reports-v1/reports-v1.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -40,25 +37,18 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
-  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
   private selectReportsV1Filters$ = this.authStore.select(selectReportsV1Filters);
   private selectReportsV1DateRange$ = this.authStore.select(selectReportsV1DateRange);
 
   constructor(
-    dateTimeAdapter: DateTimeAdapter<any>,
-    private formBuilder: FormBuilder,
     private authStore: Store,
     private reportStateService: ReportStateService,
-    authStateService: AuthStateService,
     iconRegistry: MatIconRegistry,
     sanitizer: DomSanitizer,
   ) {
     iconRegistry.addSvgIconLiteral('file-word', sanitizer.bypassSecurityTrustHtml(WordIcon));
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     iconRegistry.addSvgIconLiteral('file-pdf', sanitizer.bypassSecurityTrustHtml(PdfIcon));
-    this.selectCurrentUserLocale$.subscribe((locale) => {
-      dateTimeAdapter.setLocale(locale);
-    });
   }
 
   ngOnInit() {

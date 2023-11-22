@@ -10,7 +10,6 @@ import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import {DocumentSimpleFolderModel, DocumentSimpleModel} from '../../../../models';
 import {applicationLanguagesTranslated} from 'src/app/common/const';
 import {DocumentsStateService} from '../../store';
@@ -47,13 +46,9 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   private selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
 
   constructor(
-    dateTimeAdapter: DateTimeAdapter<any>,
     private store: Store,
-    private translate: TranslateService,
-    public documentsStateService: DocumentsStateService,
   ) {
     this.selectCurrentUserLocale$.subscribe((locale) => {
-      dateTimeAdapter.setLocale(locale);
       this.selectedLanguage = applicationLanguagesTranslated.find(
         (x) => x.locale === locale
       ).id;

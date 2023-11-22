@@ -5,22 +5,19 @@ import {
   ViewChild,
   ViewChildren,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { EFormService, CasesService } from 'src/app/common/services';
+import {ActivatedRoute, Router} from '@angular/router';
+import {EFormService, CasesService} from 'src/app/common/services';
 import {
   TemplateDto,
   CaseEditRequest,
   ReplyElementDto,
   ReplyRequest, ElementDto, DataItemDto,
 } from 'src/app/common/models';
-import { AuthStateService } from 'src/app/common/store';
-import { CaseEditElementComponent } from 'src/app/common/modules/eform-cases/components';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
+import {CaseEditElementComponent} from 'src/app/common/modules/eform-cases/components';
 import * as R from 'ramda';
 import {
   BackendConfigurationPnCasesService
-} from 'src/app/plugins/modules/backend-configuration-pn/services/backend-configuration-pn-cases.service';
-import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+} from '../../../services';
 import {Store} from '@ngrx/store';
 
 @Component({
@@ -44,16 +41,13 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   replyRequest: ReplyRequest = new ReplyRequest();
   maxDate: Date;
   initialDate: Date;
-  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
 
   constructor(
-    dateTimeAdapter: DateTimeAdapter<any>,
     private activateRoute: ActivatedRoute,
     private casesService: CasesService,
     private authStore: Store,
     private eFormService: EFormService,
     private router: Router,
-    private authStateService: AuthStateService,
     private backendConfigurationPnCasesService: BackendConfigurationPnCasesService
   ) {
     this.activateRoute.params.subscribe((params) => {
@@ -62,9 +56,6 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       this.eFormId = +params['templateId'];
       this.dateFrom = params['dateFrom'];
       this.dateTo = params['dateTo'];
-      this.selectCurrentUserLocale$.subscribe((locale) => {
-        dateTimeAdapter.setLocale(locale);
-      });
     });
     this.activateRoute.queryParams.subscribe((queryParams) => {
       this.reverseRoute = queryParams['reverseRoute'];
