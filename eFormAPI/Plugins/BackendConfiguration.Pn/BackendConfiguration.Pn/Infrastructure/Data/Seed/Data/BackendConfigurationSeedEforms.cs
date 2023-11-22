@@ -961,7 +961,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			{
 				"","",""
 			};
-			item = new KeyValuePair<string, List<string>>("Gyllebeholder: Aktivitet i beholder", headers);
+			item = new KeyValuePair<string, List<string>>("Gyllebeholder - Aktivitet i beholder", headers);
 			theList.Add(item);
 
 			return theList;
