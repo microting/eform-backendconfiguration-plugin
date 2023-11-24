@@ -211,12 +211,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// };
 			// item = new KeyValuePair<string, List<string>>("12. Motor- og spildolie", headers);
 			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"",""
-			// };
-			// item = new KeyValuePair<string, List<string>>("13. APV Handlingsplan", headers);
-			// theList.Add(item);
+			headers = new List<string>
+			{
+				"",""
+			};
+			item = new KeyValuePair<string, List<string>>("13. APV Handlingsplan", headers);
+			theList.Add(item);
 			headers = new List<string>
 			{
 				"APV Medarbejder",""
