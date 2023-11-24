@@ -199,6 +199,7 @@ public class ExcelService : IExcelService
 				worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString(priorityText);
 				worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString(workOrderCaseModel.Status);
 			}
+			worksheet.RangeUsed().SetAutoFilter();
 
 			// worksheet.Columns(startColumnForDataTable, currentColumn).AdjustToContents(); // This does not work inside Docker container
 
