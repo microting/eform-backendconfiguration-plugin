@@ -208,6 +208,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 var propertyWorkers = await _backendConfigurationPnDbContext.PropertyWorkers
                     .Where(x => x.WorkerId == deviceUserId)
                     .ToListAsync().ConfigureAwait(false);
+                var site = await sdkDbContext.Sites
+                    .Where(x => x.Id == deviceUserId)
+                    .SingleOrDefaultAsync().ConfigureAwait(false);
 
                 foreach (var propertyAssignment in propertyWorkers)
                 {
@@ -248,6 +251,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 foreach (var assignment in propertyWorkers)
                 {
                     await assignment.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+
+                if (_timePlanningDbContext.AssignedSites.Any(x => x.SiteId == site.MicrotingUid && x.WorkflowState != Constants.WorkflowStates.Removed))
+                {
+                    var assignmentForDeletes = await _timePlanningDbContext.AssignedSites.Where(x =>
+                        x.SiteId == site.MicrotingUid && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+
+                    foreach (var assignmentForDelete in assignmentForDeletes)
+                    {
+                        await assignmentForDelete.Delete(_timePlanningDbContext).ConfigureAwait(false);
+                        if (assignmentForDelete.CaseMicrotingUid != null)
+                        {
+                            await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                        }
+                    }
                 }
 
                 return new OperationResult(true,
