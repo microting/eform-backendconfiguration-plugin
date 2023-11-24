@@ -73,12 +73,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// };
 			// item = new KeyValuePair<string, List<string>>("03. Kontrol alarmanlæg gyllebeholder", headers);
 			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"03.Gyllebeholdere","03.01Flydelag"
-			// };
-			// item = new KeyValuePair<string, List<string>>("03. Kontrol flydelag", headers);
-			// theList.Add(item);
+			var headers = new List<string>
+			{
+				"03.Gyllebeholdere","03.01Flydelag"
+			};
+			var item = new KeyValuePair<string, List<string>>("03. Kontrol flydelag", headers);
+			theList.Add(item);
 			// headers = new List<string>
 			// {
 			// 	"03.Gyllebeholdere","03.03Konstruktion"
@@ -97,11 +97,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             //  };
             // item = new KeyValuePair<string, List<string>>("05.01 Halebid", headers);
             // theList.Add(item);
-            var headers = new List<string>
+            headers = new List<string>
              {
                  "05.Halebid",""
              };
-            var item = new KeyValuePair<string, List<string>>("05. Halebid og risikovurdering", headers);
+            item = new KeyValuePair<string, List<string>>("05. Halebid og risikovurdering", headers);
             theList.Add(item);
    //          headers = new List<string>
 			// {
