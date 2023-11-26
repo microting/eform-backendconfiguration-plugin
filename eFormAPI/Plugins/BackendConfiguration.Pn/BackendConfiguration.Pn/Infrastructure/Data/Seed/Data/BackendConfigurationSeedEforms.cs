@@ -801,12 +801,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// };
 			// item = new KeyValuePair<string, List<string>>("02. Fækale uheld", headers);
 			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"","",""
-			// };
-			// item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
-			// theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
+			theList.Add(item);
 			// headers = new List<string>
 			// {
 			// 	"26.Kornlager","",""
