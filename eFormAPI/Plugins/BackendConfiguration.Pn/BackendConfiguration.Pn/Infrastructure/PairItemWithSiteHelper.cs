@@ -147,6 +147,12 @@ namespace BackendConfiguration.Pn.Infrastructure
                 {
                     var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id)
                         .ConfigureAwait(false);
+                    if (dbPlanning.StartDate > DateTime.Now)
+                    {
+                        dbPlanning.LastExecutedTime = null;
+                        await dbPlanning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        continue;
+                    }
 
                     var now = DateTime.UtcNow;
                     var startDate = dbPlanning.StartDate;
@@ -272,6 +278,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                             mainElement.ElementList[0].Description.InderValue +=
                                 $"<br><strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
                         }
+
                         mainElement.EndDate = (DateTime)dbPlanning.NextExecutionTime;
                     }
                     else
