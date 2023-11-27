@@ -212,14 +212,16 @@ namespace BackendConfiguration.Pn
                     }
                     else
                     {
-	                    List<string> hiddenIds = new List<string>
-	                    {
-		                    "1412",
-		                    "142663new2",
-		                    "142664new2",
-		                    "142665",
-		                    "8756",
-		                    "142720",
+                        List<string> hiddenIds = new List<string>
+                        {
+                            "1412",
+                            "142663new",
+                            "142663new2",
+                            "142664new",
+                            "142664new2",
+                            "142665",
+                            "8756",
+                            "142720",
                             "142663",
                             "142352",
                             "142664",
@@ -366,8 +368,8 @@ namespace BackendConfiguration.Pn
                             "142721",
                             "1412",
                             "142802"
-	                    };
-	                    string contents;
+                        };
+                        string contents;
                         using (var sr = new StreamReader(resourceStream))
                         {
                             contents = await sr.ReadToEndAsync().ConfigureAwait(false);
@@ -391,7 +393,8 @@ namespace BackendConfiguration.Pn
                         var newTemplate = await core.TemplateFromXml(contents).ConfigureAwait(false);
                         if (!await sdkDbContext.CheckLists
                                 .AnyAsync(x => x.OriginalId == newTemplate.OriginalId
-                                               && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ConfigureAwait(false))
+                                               && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants
+                                                   .WorkflowStates.Removed).ConfigureAwait(false))
                         {
                             var clId = await core.TemplateCreate(newTemplate).ConfigureAwait(false);
                             var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId).ConfigureAwait(false);
@@ -405,7 +408,8 @@ namespace BackendConfiguration.Pn
                             cl.IsDoneAtEditable = true;
                             cl.QuickSyncEnabled = 1;
                             await cl.Update(sdkDbContext).ConfigureAwait(false);
-                            var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
+                            var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id)
+                                .ConfigureAwait(false);
                             subCl.QuickSyncEnabled = 1;
                             await subCl.Update(sdkDbContext).ConfigureAwait(false);
                         }
@@ -415,7 +419,8 @@ namespace BackendConfiguration.Pn
                             {
                                 var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
                                     x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
-                                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates
+                                        .Removed).ConfigureAwait(false);
                                 cl.IsHidden = hiddenIds.Contains(cl.OriginalId);
                                 cl.IsLocked = true;
                                 cl.IsEditable = false;
@@ -426,7 +431,8 @@ namespace BackendConfiguration.Pn
                                 cl.IsDoneAtEditable = true;
                                 cl.QuickSyncEnabled = 1;
                                 await cl.Update(sdkDbContext).ConfigureAwait(false);
-                                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
+                                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id)
+                                    .ConfigureAwait(false);
                                 subCl.QuickSyncEnabled = 1;
                                 await subCl.Update(sdkDbContext).ConfigureAwait(false);
                             }
@@ -446,6 +452,27 @@ namespace BackendConfiguration.Pn
                                 {
                                     hiddenCl.IsHidden = true;
                                     await hiddenCl.Update(sdkDbContext).ConfigureAwait(false);
+                                }
+                            }
+                        }
+
+                        var clsToHide = new List<string>
+                        {
+                            "eform-angular-work-orders-plugin-tasklist",
+                            "eform-angular-work-orders-plugin-newtask"
+                        };
+
+                        foreach (var hiddenId in clsToHide)
+                        {
+                            var hiddenClts = await sdkDbContext.CheckListTranslations.Where(x =>
+                                x.Text == hiddenId ).ToListAsync();
+                            foreach (var hiddenCl in hiddenClts)
+                            {
+                                var cl = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == hiddenCl.CheckListId);
+                                if (cl != null)
+                                {
+                                    cl.IsHidden = true;
+                                    await cl.Update(sdkDbContext).ConfigureAwait(false);
                                 }
                             }
                         }
