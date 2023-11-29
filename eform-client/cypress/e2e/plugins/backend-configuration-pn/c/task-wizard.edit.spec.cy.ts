@@ -51,7 +51,7 @@ const editedTask = {
     generateRandmString(12),
     generateRandmString(12),
   ],
-  eformName: '03. Kontrol flydelag',
+  eformName: 'Kontrol flydelag',
   startFrom: {
     year: 2022,
     month: 6,
