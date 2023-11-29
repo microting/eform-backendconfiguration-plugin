@@ -46,7 +46,7 @@
         </DataItem>
         <DataItem type="CheckBox">
           <Id>377770</Id>
-          <Label>KÃ¦der OK|Chains OK</Label>
+          <Label>Kæder OK|Chains OK</Label>
           <Description><![CDATA[Ingen løs befæstning, ikke itu, mv.|No loose fastening, not broken, etc.]]></Description>
           <DisplayOrder>2</DisplayOrder>
           <Selected>false</Selected>

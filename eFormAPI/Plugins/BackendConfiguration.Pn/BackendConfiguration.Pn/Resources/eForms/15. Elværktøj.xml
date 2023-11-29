@@ -55,7 +55,7 @@
         </DataItem>
         <DataItem type="CheckBox">
           <Id>375207</Id>
-          <Label>VÃ¦rktÃ¸jshus og hÃ¥ndtag OK|Tool house and handle OK</Label>
+          <Label>Værktøjshus og håndtag OK|Tool house and handle OK</Label>
           <Description><![CDATA[Tjek for skader, revner, brud mv.|Check for damage, cracks, fractures, etc.]]></Description>
           <DisplayOrder>3</DisplayOrder>
           <Selected>false</Selected>

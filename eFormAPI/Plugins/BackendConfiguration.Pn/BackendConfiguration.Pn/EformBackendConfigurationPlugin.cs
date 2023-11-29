@@ -500,6 +500,20 @@ namespace BackendConfiguration.Pn
                 }
             }
 
+            var fieldLabels = await sdkDbContext.FieldTranslations.Where(x => x.Text == "VÃ¦rktÃ¸jshus og hÃ¥ndtag OK").ToListAsync();
+            foreach (var fieldLabel in fieldLabels)
+            {
+                fieldLabel.Text = "Værktøjshus og håndtag OK";
+                await fieldLabel.Update(sdkDbContext);
+            }
+
+            fieldLabels = await sdkDbContext.FieldTranslations.Where(x => x.Text == "KÃ¦der OK").ToListAsync();
+            foreach (var fieldLabel in fieldLabels)
+            {
+                fieldLabel.Text = "Kæder OK";
+                await fieldLabel.Update(sdkDbContext);
+            }
+
             // Seed areas
             foreach (var newArea in BackendConfigurationSeedAreas.AreasSeed
 	                     .Where(newArea => !context.Areas.Any(x => x.Id == newArea.Id))
