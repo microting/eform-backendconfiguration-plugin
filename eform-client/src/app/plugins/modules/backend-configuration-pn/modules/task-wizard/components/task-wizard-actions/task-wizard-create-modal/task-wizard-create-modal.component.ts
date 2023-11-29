@@ -161,6 +161,13 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
       {id: 6, name: this.translateService.instant('Saturday')},
       {id: 0, name: this.translateService.instant('Sunday')}
     ];
+    let templateRequestModel = new TemplateRequestModel();
+    templateRequestModel.nameFilter = 'Kvittering';
+    this.eFormService.getAll(templateRequestModel).subscribe((data) => {
+      let templatesModel = data.model;
+      this.templatesModel = templatesModel;
+      this.model.eformId = templatesModel.templates[0].id;
+    });
   }
 
   changePropertyId(property: CommonDictionaryModel) {
