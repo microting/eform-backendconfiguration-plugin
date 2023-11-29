@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142593</Id>
+  <Id>142593new</Id>
   <Repeated>0</Repeated>
-  <Label>15. Elværktøj|15. Power tools</Label>
+  <Label>Elvætktøj|Power tools</Label>
   <StartDate>2021-09-08</StartDate>
   <EndDate>2031-09-08</EndDate>
   <Language>da</Language>
@@ -13,8 +13,8 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142593</Id>
-      <Label>15. Elværktøj|15. Power tools</Label>
+      <Id>142593new</Id>
+      <Label>Elvætktøj|Power tools</Label>
       <Description><![CDATA[]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
@@ -23,6 +23,18 @@
       <DoneButtonDisabled>true</DoneButtonDisabled>
       <ApprovalEnabled>false</ApprovalEnabled>
       <DataItemList>
+        <DataItem type="Date">
+          <Id>377780</Id>
+          <Label>Dato|Date</Label>
+          <Description><![CDATA[]]></Description>
+          <DisplayOrder>0</DisplayOrder>
+          <MinValue>2023-11-29</MinValue>
+          <MaxValue>2033-11-29</MaxValue>
+          <Value/>
+          <Mandatory>true</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
         <DataItem type="CheckBox">
           <Id>375210</Id>
           <Label>Ledninger OK|Wires OK</Label>
@@ -43,7 +55,7 @@
         </DataItem>
         <DataItem type="CheckBox">
           <Id>375207</Id>
-          <Label>Værktøjshus og håndtag OK|Tool house and handle OK</Label>
+          <Label>VÃ¦rktÃ¸jshus og hÃ¥ndtag OK|Tool house and handle OK</Label>
           <Description><![CDATA[Tjek for skader, revner, brud mv.|Check for damage, cracks, fractures, etc.]]></Description>
           <DisplayOrder>3</DisplayOrder>
           <Selected>false</Selected>
@@ -128,10 +140,10 @@
         </DataItem>
         <DataItem type="SaveButton">
           <Id>375206</Id>
-          <Label>Gem registrering|Save registration</Label>
+          <Label>Gem og indsend|Save and send</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>10</DisplayOrder>
-          <Value>GEM|SAVE</Value>
+          <Value>INDSEND|SEND</Value>
           <Color>f0f8db</Color>
         </DataItem>
       </DataItemList>

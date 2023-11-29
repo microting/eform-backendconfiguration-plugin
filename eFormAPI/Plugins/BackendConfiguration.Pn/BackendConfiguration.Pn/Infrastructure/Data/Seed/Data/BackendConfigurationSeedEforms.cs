@@ -79,12 +79,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			};
 			var item = new KeyValuePair<string, List<string>>("03. Kontrol flydelag", headers);
 			theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"03.Gyllebeholdere","03.03Konstruktion"
-			// };
-			// item = new KeyValuePair<string, List<string>>("03. Kontrol konstruktion", headers);
-			// theList.Add(item);
+			headers = new List<string>
+			{
+				"03.Gyllebeholdere","03.03Konstruktion"
+			};
+			item = new KeyValuePair<string, List<string>>("03. Kontrol konstruktion", headers);
+			theList.Add(item);
 			// headers = new List<string>
 			// {
 			// 	"04.Foderindlægssedler",""
