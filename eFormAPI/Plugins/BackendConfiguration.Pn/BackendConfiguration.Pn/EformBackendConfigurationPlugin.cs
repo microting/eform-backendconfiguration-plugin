@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 
+using Microting.EformAngularFrontendBase.Infrastructure.Data.Factories;
+
 namespace BackendConfiguration.Pn
 {
     using ChemicalsBase.Infrastructure;
@@ -1326,6 +1328,43 @@ namespace BackendConfiguration.Pn
             using var context = contextFactory.CreateDbContext(new[] { connectionString });
             // Seed configuration
             BackendConfigurationPluginSeed.SeedData(context);
+
+            var angularDbConnectionString = connectionString.Replace(
+                "eform-backend-configuration-plugin",
+                "Angular");
+            var baseDbContext = new BaseDbContextFactory();
+            using var baseDb = baseDbContext.CreateDbContext(new[] { angularDbConnectionString });
+
+            // lookup the user role
+            var userRole = baseDb.Roles.Single(x => x.Name == "user");
+            // lookup "Access BackendConfiguration Plugin" permission for the plugin and give the user role access
+            var permissionsToEnable = new List<string>
+            {
+                "Access BackendConfiguration Plugin",
+                "Get properties",
+                "Enable document management",
+                "Enable task management",
+                "Enable time registration"
+            };
+            foreach (var permissionToEnable in permissionsToEnable)
+            {
+                var backendConfigurationPluginPermission =
+                    context.PluginPermissions.SingleOrDefault(x =>
+                        x.PermissionName == permissionToEnable);
+                if (backendConfigurationPluginPermission != null)
+                {
+                    // set PluginGroupPermissions to enabled for the user role
+                    var userRolePluginPermissions = context.PluginGroupPermissions.FirstOrDefault(x =>
+                        x.PermissionId == backendConfigurationPluginPermission.Id &&
+                        x.GroupId == userRole.Id);
+                    if (userRolePluginPermissions != null)
+                    {
+                        userRolePluginPermissions.IsEnabled = true;
+                        context.SaveChanges();
+                    }
+                }
+            }
+
         }
 
         public PluginPermissionsManager GetPermissionsManager(string connectionString)
