@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142060new</Id>
+  <Id>142060new1</Id>
   <Repeated>0</Repeated>
-  <Label>03. Kontrol konstruktion|03. Control construction</Label>
+  <Label>Kontrol konstruktion|Control construction</Label>
   <StartDate>2020-08-07</StartDate>
   <EndDate>2030-08-07</EndDate>
   <Language>da</Language>
@@ -13,8 +13,8 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142060new</Id>
-      <Label>03. Kontrol konstruktion|03. Control construction</Label>
+      <Id>142060new1</Id>
+      <Label>Kontrol konstruktion|Control construction</Label>
       <Description><![CDATA[Tjek for skader på kablerne, kabelomslutningen og fugemassen.|Check for damage to the cables, cable enclosure and sealant.]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
