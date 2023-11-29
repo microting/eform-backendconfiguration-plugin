@@ -361,8 +361,10 @@ public class ExcelService : IExcelService
 
 						x++;
 					}
+					worksheet.RangeUsed().SetAutoFilter();
 				}
 			}
+
 			wb.SaveAs(resultDocument);
 
 			Stream result = File.Open(resultDocument, FileMode.Open);
@@ -522,6 +524,7 @@ public class ExcelService : IExcelService
 
 							x++;
 						}
+						worksheet.RangeUsed().SetAutoFilter();
 					}
 
 				}
