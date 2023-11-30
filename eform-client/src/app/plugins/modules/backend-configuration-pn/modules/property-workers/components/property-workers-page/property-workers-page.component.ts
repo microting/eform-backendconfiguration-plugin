@@ -77,7 +77,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe();
-    this.getWorkerPropertiesAssignments();
+    //this.getWorkerPropertiesAssignments();
   }
 
   openEditModal(simpleSiteDto: DeviceUserModel) {

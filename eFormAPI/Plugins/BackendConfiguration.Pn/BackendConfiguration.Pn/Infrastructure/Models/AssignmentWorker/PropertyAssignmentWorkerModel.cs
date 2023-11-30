@@ -31,5 +31,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
         public bool IsChecked { get; set; }
 
         public bool IsLocked { get; set; }
+
+        public int NUmberOfWorkOrderCasesAssigned { get; set; }
+
+        public int NumberOfTasksAssigned { get; set; }
     }
 }
