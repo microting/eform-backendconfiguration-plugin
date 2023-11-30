@@ -86,7 +86,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 query = query
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-                if (query.Any())
+                if (query.Count() > 0)
                 {
                     var listWorkerId = await query.Select(x => new PropertyWorker
                     {
@@ -112,6 +112,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                 .CountAsync().ConfigureAwait(false);
 
                             assignmentWorkerModel.IsLocked = numberOfAssignements > 0;
+                            assignmentWorkerModel.NumberOfTasksAssigned = numberOfAssignements;
 
                             // var siteName = await sdkDbContext.Sites
                             //     .Where(x => x.Id == workerId.WorkerId)
@@ -130,6 +131,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     propertyWorker => propertyWorker.Id,
                                     (workorderCase, propertyWorker) => new
                                     {
+                                        workorderCase.Id,
+                                        workorderCase.LeadingCase,
                                         workorderCase.WorkflowState,
                                         workorderCase.LastAssignedToName,
                                         workorderCase.CaseStatusesEnum,
@@ -137,12 +140,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     })
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                                .Where(x => x.LeadingCase == true)
                                 .Where(x => x.LastAssignedToName == siteName)
                                 .Where(x => x.PropertyId == assignmentWorkerModel.PropertyId)
                                 //.Where(x => x.LastAssignedToName == siteName)
-                                .CountAsync();
+                                .ToListAsync();
 
-                            assignmentWorkerModel.IsLocked = assignmentWorkerModel.IsLocked ? assignmentWorkerModel.IsLocked : numberOfWorkOrderCases > 0;
+                            assignmentWorkerModel.IsLocked = assignmentWorkerModel.IsLocked ? assignmentWorkerModel.IsLocked : numberOfWorkOrderCases.Count() > 0;
+                            assignmentWorkerModel.NUmberOfWorkOrderCasesAssigned = numberOfWorkOrderCases.Count();
 
                         }
 
@@ -380,6 +385,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     var numberOfWorkOrderCases = await _backendConfigurationPnDbContext.WorkorderCases
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                        .Where(x => x.LeadingCase == true)
                         .Where(x => x.LastAssignedToName == deviceUserModel.SiteName)
                         .CountAsync();
 
