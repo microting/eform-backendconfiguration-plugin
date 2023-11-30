@@ -369,7 +369,8 @@ namespace BackendConfiguration.Pn
                             "142700",
                             "142721",
                             "1412",
-                            "142802"
+                            "142802",
+                            "142142"
                         };
                         string contents;
                         using (var sr = new StreamReader(resourceStream))
