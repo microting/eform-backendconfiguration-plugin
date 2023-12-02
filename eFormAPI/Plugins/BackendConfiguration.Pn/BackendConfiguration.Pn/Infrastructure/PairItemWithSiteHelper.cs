@@ -102,12 +102,15 @@ namespace BackendConfiguration.Pn.Infrastructure
                 {
                     try
                     {
-                        var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId)
-                            .ConfigureAwait(false);
-                        if (caseDto.MicrotingUId != null)
-                            await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
-                        caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
-                        await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        if (caseToDelete.MicrotingSdkCaseId != 0)
+                        {
+                            var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId)
+                                .ConfigureAwait(false);
+                            if (caseDto.MicrotingUId != null)
+                                await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
+                            caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
+                            await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        }
                     }
                     catch (Exception e)
                     {
@@ -268,18 +271,25 @@ namespace BackendConfiguration.Pn.Infrastructure
                         mainElement.DisplayOrder = ((DateTime)dbPlanning.NextExecutionTime - beginningOfTime).Days;
                         Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
 
-                        if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
+                        if (dbPlanning.RepeatEvery == 0 && dbPlanning.RepeatType == RepeatType.Day)
                         {
-                            mainElement.ElementList[0].Description.InderValue =
-                                $"<strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
-                        }
-                        else
+                            mainElement.EndDate = DateTime.UtcNow.AddYears(10);
+                        } else
                         {
-                            mainElement.ElementList[0].Description.InderValue +=
-                                $"<br><strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
-                        }
 
-                        mainElement.EndDate = (DateTime)dbPlanning.NextExecutionTime;
+                            if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
+                            {
+                                mainElement.ElementList[0].Description.InderValue =
+                                    $"<strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                            }
+                            else
+                            {
+                                mainElement.ElementList[0].Description.InderValue +=
+                                    $"<br><strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                            }
+
+                            mainElement.EndDate = (DateTime)dbPlanning.NextExecutionTime;
+                        }
                     }
                     else
                     {
