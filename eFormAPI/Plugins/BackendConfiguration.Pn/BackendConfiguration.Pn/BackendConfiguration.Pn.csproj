@@ -560,6 +560,7 @@
       <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.67" />
       <PackageReference Include="ClosedXML" Version="0.102.1" />
       <PackageReference Include="Microting.TimePlanningBase" Version="7.0.58" />
+      <PackageReference Include="Sentry" Version="3.41.3" />
     </ItemGroup>
 
     <ItemGroup>
