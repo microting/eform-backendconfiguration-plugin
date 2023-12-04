@@ -192,6 +192,10 @@ public static class BackendConfigurationTaskTrackerHelper
 					.FirstOrDefaultAsync();
 
 				if (areaRulePlanning == null) continue;
+				var areaRuleCreatedInWizard = await backendConfigurationPnDbContext.AreaRules
+					.Where(x => x.Id == areaRulePlanning.AreaRuleId)
+					.Select(x => x.CreatedInGuide)
+					.FirstOrDefaultAsync();
 
 				var startDate = areaRulePlanning.StartDate ?? planning.StartDate;
 				var deadlineDate = compliance.Deadline.AddDays(-1);
@@ -271,6 +275,7 @@ public static class BackendConfigurationTaskTrackerHelper
                     AreaRulePlanId = areaRulePlanning.Id,
                     //Weeks = weeksThisCompliance,
                     SdkFolderName = folderTranslations.FirstOrDefault(x => x.FolderId == planning.SdkFolderId)?.Name,
+                    CreatedInWizard = areaRuleCreatedInWizard,
 				};
 
 				if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)

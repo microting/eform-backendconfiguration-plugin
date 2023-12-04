@@ -125,4 +125,6 @@ public class TaskTrackerModel
 		= new();
 
     public string SdkFolderName { get; set; }
+
+    public bool CreatedInWizard { get; set; }
 }
