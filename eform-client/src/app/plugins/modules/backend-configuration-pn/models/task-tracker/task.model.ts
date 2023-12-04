@@ -21,6 +21,7 @@ export interface TaskModel {
   areaRulePlanId: number;
   weeks: WeekListModel[];
   sdkFolderName: string;
+  createdInWizard: boolean;
 }
 
 export interface WeekListModel {
