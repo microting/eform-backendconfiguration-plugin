@@ -118,7 +118,7 @@
         [multiple]="false"
       />
     </mat-form-field>
-    <mat-form-field class="p-2">
+    <mat-form-field class="p-2" *ngIf="model.repeatType !== 0">
       <mat-label>{{ 'Repeat every' | translate }}</mat-label>
       <mtx-select
         [items]="repeatTypeMass()"
@@ -129,6 +129,8 @@
         (change)="changeRepeatEvery($event)"
         [clearable]="false"
         [multiple]="false"
+        [disabled]="model.repeatType === 0"
+        [readonly]="model.repeatType === 0"
       />
     </mat-form-field>
   </div>

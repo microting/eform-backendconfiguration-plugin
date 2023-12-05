@@ -359,11 +359,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 createModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
             }
 
-            if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
-            {
-                createModel.RepeatEvery = 0;
-            }
-
             var dayOfWeek = DayOfWeek.Monday;
             if (createModel.RepeatType == RepeatType.Week)
             {

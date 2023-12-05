@@ -277,4 +277,5 @@ export const nlNL = {
   'Edit employee': 'Werknemer bewerken',
   Timeregistration: 'Tijdregistratie',
   'Submitted date': 'Datum ingediend',
+  Always: 'Altijd',
 };

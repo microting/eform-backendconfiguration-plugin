@@ -277,4 +277,5 @@ export const ltLT = {
   'Edit employee': 'Redaguoti darbuotoją',
   Timeregistration: 'Laiko registracija',
   'Submitted date': 'Pateikimo data',
+  Always: 'Visada',
 };

@@ -277,4 +277,5 @@ export const plPL = {
   'Edit employee': 'Edytuj pracownika',
   Timeregistration: 'Rejestracja czasu',
   'Submitted date': 'Zaakceptowana Data',
+  Always: 'Zawsze',
 };

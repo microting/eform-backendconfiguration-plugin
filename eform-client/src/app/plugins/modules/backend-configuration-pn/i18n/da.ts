@@ -277,4 +277,5 @@ export const da = {
   Timeregistration: 'Tidsregistrering',
   'Submitted date': 'Indsendt dato',
   'Edit employee': 'Rediger medarbejder',
+  Always: 'Altid',
 };

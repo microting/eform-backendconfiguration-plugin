@@ -377,6 +377,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       this.createTaskInModalSub$.unsubscribe();
     }
     this.createTaskInModalSub$ = this.createModal.componentInstance.createTask.subscribe(createModel => {
+      if (createModel.repeatType === 0) {
+        createModel.repeatType = 1;
+        createModel.repeatEvery = 0;
+      }
       this.createTask(createModel, this.createModal);
     });
   }
