@@ -277,4 +277,5 @@ export const noNO = {
   'Edit employee': 'Rediger ansatt',
   Timeregistration: 'Tidsregistrering',
   'Submitted date': 'Innsendt dato',
+  Always: 'Alltid',
 };

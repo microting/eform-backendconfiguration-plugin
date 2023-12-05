@@ -277,4 +277,5 @@ export const ptBR = {
   'Edit employee': 'Editar funcionário',
   Timeregistration: 'Registro de horário',
   'Submitted date': 'Data de envio',
+  Always: 'Sempre',
 };

@@ -277,4 +277,5 @@ export const roRO = {
   'Edit employee': 'Editați angajatul',
   Timeregistration: 'Înregistrarea timpului',
   'Submitted date': 'Data depunerii',
+  Always: 'Mereu',
 };

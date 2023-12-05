@@ -277,4 +277,5 @@ export const skSK = {
   'Edit employee': 'Upraviť zamestnanca',
   Timeregistration: 'Registrácia času',
   'Submitted date': 'Dátum odoslania',
+  Always: 'Vždy',
 };

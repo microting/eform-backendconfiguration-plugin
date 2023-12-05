@@ -294,4 +294,6 @@ export class TaskWizardCreateModalComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
   }
+
+  protected readonly RepeatTypeEnum = RepeatTypeEnum;
 }

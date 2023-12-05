@@ -340,4 +340,5 @@ export const deDE = {
   'Edit employee': 'Mitarbeiter bearbeiten',
   Timeregistration: 'Zeiterfassung',
   'Submitted date': 'Datum der Einreichung',
+  Always: 'Immer',
 };

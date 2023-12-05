@@ -277,4 +277,5 @@ export const isIS = {
   'Edit employee': 'Breyta starfsmanni',
   Timeregistration: 'Tímaskráning',
   'Submitted date': 'Lögð fram dagsetning',
+  Always: 'Alltaf',
 };

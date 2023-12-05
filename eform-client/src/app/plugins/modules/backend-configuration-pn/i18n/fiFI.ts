@@ -277,4 +277,5 @@ export const fiFI = {
   'Edit employee': 'Muokkaa työntekijää',
   Timeregistration: 'Ajan rekisteröinti',
   'Submitted date': 'Lähetyspäivämäärä',
+  Always: 'Aina',
 };

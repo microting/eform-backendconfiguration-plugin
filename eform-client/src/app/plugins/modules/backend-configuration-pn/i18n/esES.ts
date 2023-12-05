@@ -277,4 +277,5 @@ export const esES = {
   'Edit employee': 'Editar empleado',
   Timeregistration: 'Registro de tiempo',
   'Submitted date': 'Fecha de envío',
+  Always: 'Siempre',
 };

@@ -277,4 +277,5 @@ export const hrHR = {
   'Edit employee': 'Uredi zaposlenika',
   Timeregistration: 'Registracija vremena',
   'Submitted date': 'Datum predaje',
+  Always: 'Stalno',
 };

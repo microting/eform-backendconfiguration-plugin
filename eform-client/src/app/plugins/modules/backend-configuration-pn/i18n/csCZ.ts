@@ -277,4 +277,5 @@ export const csCZ = {
   'Edit employee': 'Upravit zaměstnance',
   Timeregistration: 'Registrace času',
   'Submitted date': 'Datum odevzdání',
+  Always: 'Vždy',
 };

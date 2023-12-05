@@ -277,4 +277,5 @@ export const ptPT = {
   'Edit employee': 'Editar funcionário',
   Timeregistration: 'Registro de horário',
   'Submitted date': 'Data de envio',
+  Always: 'Sempre',
 };
