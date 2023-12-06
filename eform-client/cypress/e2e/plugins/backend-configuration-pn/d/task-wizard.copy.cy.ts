@@ -66,7 +66,7 @@ describe('Area rules type 1', () => {
     cy.visit('http://localhost:4200');
     loginPage.login();
   });
-  it('should edit task', () => {
+  it('should copy task', () => {
     backendConfigurationPropertiesPage.goToProperties();
     backendConfigurationPropertiesPage.createProperty(property);
     backendConfigurationPropertiesPage.createProperty(property2);
@@ -105,7 +105,6 @@ describe('Area rules type 1', () => {
     for (let i = 0; i < task.translations.length; i++) {
       cy.get(`#createName${i}`).type(task.translations[i]);
     }
-    //selectValueInNgSelector('#createTemplateSelector', task.eformName, true);
     cy.get('#createStartFrom').click();
     selectDateOnNewDatePicker(task.startFrom.year, task.startFrom.month, task.startFrom.day);
     selectValueInNgSelector('#createRepeatType', task.repeatType, true);
@@ -127,91 +126,56 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${task.repeatEvery} ${task.repeatType}`);
     cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
-    // edit task
-    cy.get('#advanced').click();
-    cy.get('#folders').click();
-    cy.contains(property.name)
-      .parent() // div
-      .parent() // mat-tree-node
-      .find('button')
-      .last()
-      .click();
-    cy.get('#createFolderChildBtn').click();
-    const newFolderName = generateRandmString(10);
-    cy.wait(2000);
-    cy.get('#createFolderNameTranslation_0').type(newFolderName);
-    cy.get('#createFolderDescriptionTranslation_0 .NgxEditor__Content').type(generateRandmString());
-    cy.wait(500);
-    cy.get('#folderSaveBtn').click();
-    cy.wait(1000);
-    cy.get('#backend-configuration-pn-task-wizard').scrollIntoView().click();
-    cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
-    // // change task
-    cy.get('#updateTaskStatusToggle').click();
-    cy.get('#updateTaskBtn').click();
-    cy.wait(500);
-    // check table
-    cy.get('.cdk-row').should('have.length', 1);
-    cy.get('.cdk-row .cdk-column-property span').should('have.text', task.property);
-    cy.get('.cdk-row .cdk-column-folder span').should('have.text', '00. Logbøger');
-    cy.get('.cdk-row .cdk-column-taskName span').should('have.text', task.translations[0]);
-    cy.get('.cdk-row .cdk-column-eform span').should('have.text', task.eformName);
-    cy.get('.cdk-row .cdk-column-startDate span')
-      .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
-    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${task.repeatEvery} ${task.repeatType}`);
-    cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Ikke aktiv');
-    cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
 
-    cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
-    cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
-    // cy.get('#updateProperty').click();
-    // //selectValueInNgSelectorNoSelector(`${property2.cvrNumber} - ${property2.chrNumber} - ${property2.name}`);
-    // selectValueInNgSelectorNoSelector(`${property2.name}`);
-    cy.wait('@getFolders', { timeout: 60000 });
-    cy.wait(1000);
-    cy.get('app-task-wizard-update-modal button#updateFolder').click();
-    cy.wait(1000);
-    cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
-    cy.wait(500);
-    cy.contains('.folder-tree-name', newFolderName).click();
-    /*cy.wait(500);
-    cy.get('#updateTableTags').find('.ng-clear-wrapper').click();
-    selectValueInNgSelector('#updateTableTags', `03. Flydelag`, true);
-    cy.wait(500);
-    selectValueInNgSelector('#updateTags', `00. Logbøger`, true);*/
-    /*selectValueInNgSelectorNoSelector(`03. Flydelag`);
-    cy.get('#updateTags').click();
-    cy.wait(500);
-    selectValueInNgSelectorNoSelector(`00. Logbøger`);*/
-    cy.wait(500);
-    // disable task for enable edit names
-    //cy.get('#updateTaskStatusToggle').click();
-    for (let i = 0; i < editedTask.translations.length; i++) {
-      cy.get(`#updateName${i}`).clear().type(editedTask.translations[i]);
-    }
-    selectValueInNgSelector('#updateTemplateSelector', editedTask.eformName, true);
-    cy.get('#updateStartFrom').click();
-    selectDateOnNewDatePicker(editedTask.startFrom.year, editedTask.startFrom.month, editedTask.startFrom.day);
-    selectValueInNgSelector('#updateRepeatType', editedTask.repeatType, true);
-    cy.get('#updateRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(editedTask.repeatEvery);
-    cy.get(`.ng-option`).first().should('have.text', editedTask.repeatEvery).should('be.visible').click();
-    //cy.get('mat-checkbox#checkboxUpdateAssignment0').click();
-    // enable task
-    cy.get('#updateTaskStatusToggle').click();
-    cy.wait(500);
-    cy.get('#updateTaskBtn').click();
+    // Copy task
+    cy.get('.cdk-row .cdk-column-actions .copyBtn').first().click();
+    cy.intercept('POST', '**/api/backend-configuration-pn/task-wizard').as('createTask');
+    cy.get('#createTaskBtn').click();
+    cy.wait('@createTask', { timeout: 60000 });
     cy.wait(500);
     // check table
-    cy.get('.cdk-row').should('have.length', 1);
-    cy.get('.cdk-row .cdk-column-property span').should('have.text', task.property);
-    cy.get('.cdk-row .cdk-column-folder span').should('have.text', newFolderName);
-    cy.get('.cdk-row .cdk-column-taskName span').should('have.text', editedTask.translations[0]);
-    cy.get('.cdk-row .cdk-column-eform span').should('have.text', editedTask.eformName);
-    cy.get('.cdk-row .cdk-column-startDate span')
-      .should('have.text', `${editedTask.startFrom.day}.${editedTask.startFrom.month >= 10 ? '' : '0'}${editedTask.startFrom.month}.${editedTask.startFrom.year}`);
-    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${editedTask.repeatEvery} ${editedTask.repeatType}`);
-    cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
-    cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+    cy.get('.cdk-row').should('have.length', 2);
+    cy.get('.cdk-row .cdk-column-property span').eq(0).should('have.text', task.property);
+    cy.get('.cdk-row .cdk-column-property span').eq(1).should('have.text', task.property);
+    cy.get('.cdk-row .cdk-column-folder span').eq(0).should('have.text', '00. Logbøger');
+    cy.get('.cdk-row .cdk-column-folder span').eq(1).should('have.text', '00. Logbøger');
+    cy.get('.cdk-row .cdk-column-taskName span').eq(0).should('have.text', task.translations[0]);
+    cy.get('.cdk-row .cdk-column-taskName span').eq(1).should('have.text', task.translations[0]);
+    cy.get('.cdk-row .cdk-column-eform span').eq(0).should('have.text', task.eformName);
+    cy.get('.cdk-row .cdk-column-eform span').eq(1).should('have.text', task.eformName);
+    cy.get('.cdk-row .cdk-column-startDate span').eq(0)
+      .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
+    cy.get('.cdk-row .cdk-column-startDate span').eq(1)
+      .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
+    cy.get('.cdk-row .cdk-column-repeat span').eq(0).should('have.text', `${task.repeatEvery} ${task.repeatType}`);
+    cy.get('.cdk-row .cdk-column-repeat span').eq(1).should('have.text', `${task.repeatEvery} ${task.repeatType}`);
+    cy.get('.cdk-row .cdk-column-status span').eq(0).should('have.text', 'Aktiv');
+    cy.get('.cdk-row .cdk-column-status span').eq(1).should('have.text', 'Aktiv');
+    cy.get('.cdk-row .cdk-column-assignedTo span').eq(0).should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+    cy.get('.cdk-row .cdk-column-assignedTo span').eq(1).should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
+
+    // Copy and set new eform
+    cy.intercept('GET', '**/api/backend-configuration-pn/properties/get-folder-dtos?**').as('getFolders');
+    cy.get('.cdk-row .cdk-column-actions .copyBtn').first().click();
+    cy.intercept('POST', '**/api/backend-configuration-pn/task-wizard').as('createTask');
+    selectValueInNgSelector('#createTemplateSelector', editedTask.eformName, true);
+    cy.get('#createTaskBtn').click();
+    cy.wait('@createTask', { timeout: 60000 });
+    cy.wait(500);
+    // check table
+    cy.get('.cdk-row').should('have.length', 3);
+    cy.get('.cdk-row .cdk-column-property span').eq(0).should('have.text', task.property);
+    cy.get('.cdk-row .cdk-column-property span').eq(1).should('have.text', task.property);
+    cy.get('.cdk-row .cdk-column-property span').eq(2).should('have.text', task.property);
+    cy.get('.cdk-row .cdk-column-folder span').eq(0).should('have.text', '00. Logbøger');
+    cy.get('.cdk-row .cdk-column-folder span').eq(1).should('have.text', '00. Logbøger');
+    cy.get('.cdk-row .cdk-column-folder span').eq(2).should('have.text', '00. Logbøger');
+    cy.get('.cdk-row .cdk-column-taskName span').eq(0).should('have.text', task.translations[0]);
+    cy.get('.cdk-row .cdk-column-taskName span').eq(1).should('have.text', task.translations[0]);
+    cy.get('.cdk-row .cdk-column-taskName span').eq(2).should('have.text', task.translations[0]);
+    cy.get('.cdk-row .cdk-column-eform span').eq(0).should('have.text', task.eformName);
+    cy.get('.cdk-row .cdk-column-eform span').eq(1).should('have.text', task.eformName);
+    cy.get('.cdk-row .cdk-column-eform span').eq(2).should('have.text', editedTask.eformName);
   });
   after(() => {
     backendConfigurationPropertiesPage.goToProperties();
