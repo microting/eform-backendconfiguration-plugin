@@ -489,6 +489,14 @@ namespace BackendConfiguration.Pn
                     Console.WriteLine(exception.Message);
                 }
             }
+
+            var powerToolCheckList = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "Elvætktøj");
+            if (powerToolCheckList != null)
+            {
+                powerToolCheckList.Text = "Elværktøj";
+                await powerToolCheckList.Update(sdkDbContext);
+            }
+
             var cls = await sdkDbContext.CheckLists.Where(x =>
                 x.OriginalId == "142719" && x.WorkflowState != Microting.eForm.Infrastructure.Constants
                     .Constants.WorkflowStates.Removed).ToListAsync();
