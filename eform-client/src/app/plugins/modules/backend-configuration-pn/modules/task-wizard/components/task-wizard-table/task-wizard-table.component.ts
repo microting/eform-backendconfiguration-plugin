@@ -57,7 +57,11 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
     {
       field: 'repeat',
       header: this.translateService.stream('Repeat'),
-      formatter: (model: TaskWizardModel) => `${model.repeatEvery} ${this.translateService.instant(RepeatTypeEnum[model.repeatType])}`
+      formatter: (model: TaskWizardModel) => {
+        return (model.repeatEvery === 0 && model.repeatType === RepeatTypeEnum.Day)
+          ? `${this.translateService.instant(RepeatTypeEnum[0])}`
+          : `${model.repeatEvery} ${this.translateService.instant(RepeatTypeEnum[model.repeatType])}`;
+      }
     },
     {
       field: 'status',
