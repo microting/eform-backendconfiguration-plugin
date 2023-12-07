@@ -276,6 +276,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.updateTaskInModalSub$.unsubscribe();
           }
           this.updateTaskInModalSub$ = this.updateModal.componentInstance.updateTask.subscribe(updateModel => {
+            if (updateModel.repeatType === 0) {
+              updateModel.repeatType = 1;
+              updateModel.repeatEvery = 0;
+            }
             this.updateTask({
               id: model.id,
               eformId: updateModel.eformId,
@@ -342,6 +346,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.createTaskInModalSub$.unsubscribe();
           }
           this.createTaskInModalSub$ = this.createModal.componentInstance.createTask.subscribe(createModel => {
+            if (createModel.repeatType === 0) {
+              createModel.repeatType = 1;
+              createModel.repeatEvery = 0;
+            }
             this.createTask(createModel, this.createModal);
           });
         }
