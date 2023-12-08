@@ -78,7 +78,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             if (request.Filters.AssignToIds.Any())
             {
-                query = query.Where(x => x.PlanningSites.Any(y => request.Filters.AssignToIds.Contains(y.SiteId)));
+                query = query.Where(x => x.PlanningSites.Where(z => z.WorkflowState != Constants.WorkflowStates.Removed).Any(y => request.Filters.AssignToIds.Contains(y.SiteId)));
             }
 
             if (request.Filters.Status != null)
