@@ -26,6 +26,7 @@ SOFTWARE.
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Microting.EformAngularFrontendBase.Infrastructure.Data.Factories;
+using QuestPDF.Infrastructure;
 using Sentry;
 
 namespace BackendConfiguration.Pn
@@ -127,6 +128,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IWordService, WordService>();
             services.AddControllers();
             SeedEForms(services);
+            QuestPDF.Settings.License = LicenseType.Community;
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
