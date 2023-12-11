@@ -607,11 +607,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 updateModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
             }
 
-            if (updateModel.RepeatType == RepeatType.Day && updateModel.RepeatEvery == 1)
-            {
-                updateModel.RepeatEvery = 0;
-            }
-
             var currentSiteIds = areaRulePlanning.PlanningSites.Select(ps => ps.SiteId).ToList();
             var sitesToAdd = updateModel.Sites.Except(currentSiteIds).ToList();
             var sitesToRemove = currentSiteIds.Except(updateModel.Sites).ToList();
