@@ -164,7 +164,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     switch (dbPlanning.RepeatType)
                     {
                         case RepeatType.Day:
-                            if (dbPlanning.RepeatEvery > 1)
+                            if (dbPlanning.RepeatEvery > 0)
                             {
                                 var diff = (now - startDate).TotalDays;
                                 var multiplier = (int)(diff / planning.RepeatEvery);
