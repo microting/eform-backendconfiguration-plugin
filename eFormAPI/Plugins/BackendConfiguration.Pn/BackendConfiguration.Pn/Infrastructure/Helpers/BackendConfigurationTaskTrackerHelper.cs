@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Sentry;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -254,52 +255,65 @@ public static class BackendConfigurationTaskTrackerHelper
 				// 	Name = x.Name
 				// }).ToListAsync();
 
-				var complianceModel = new TaskTrackerModel
+				try
 				{
-					Property = propertyName,
-					Tags = itemPlanningTags, //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
-					DeadlineTask = deadlineDate,
-					Workers = workerNames,
-					StartTask = startDate,
-					RepeatEvery = planning.RepeatEvery,
-					RepeatType = (RepeatType)planning.RepeatType,
-					NextExecutionTime = (DateTime)planning.NextExecutionTime,
-					TaskName = taskName,
-					TaskIsExpired = dateTimeNow > compliance.Deadline,
-					PropertyId = compliance.PropertyId,
-					SdkCaseId = compliance.MicrotingSdkCaseId,
-					TemplateId = compliance.MicrotingSdkeFormId,
-					ComplianceId = compliance.Id,
-					AreaId = compliance.AreaId,
-					AreaRuleId = areaRulePlanning!.AreaRuleId,
-                    AreaRulePlanId = areaRulePlanning.Id,
-                    //Weeks = weeksThisCompliance,
-                    SdkFolderName = folderTranslations.FirstOrDefault(x => x.FolderId == planning.SdkFolderId)?.Name,
-                    CreatedInWizard = areaRuleCreatedInWizard,
-				};
-
-				if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)
-				{
-					Console.WriteLine("complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow");
-					var dbCompliance = backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
-					if (dbCompliance.MicrotingSdkeFormId == 0)
+					var complianceModel = new TaskTrackerModel
 					{
-						var thePlanning = await itemsPlanningPnDbContext.Plannings
-							.SingleAsync(x => x.Id == compliance.PlanningId).ConfigureAwait(false);
-						dbCompliance.MicrotingSdkeFormId = thePlanning.RelatedEFormId;
+						Property = propertyName,
+						Tags = itemPlanningTags, //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
+						DeadlineTask = deadlineDate,
+						Workers = workerNames,
+						StartTask = startDate,
+						RepeatEvery = planning.RepeatEvery,
+						RepeatType = (RepeatType)planning.RepeatType,
+						NextExecutionTime = (DateTime)planning.NextExecutionTime,
+						TaskName = taskName,
+						TaskIsExpired = dateTimeNow > compliance.Deadline,
+						PropertyId = compliance.PropertyId,
+						SdkCaseId = compliance.MicrotingSdkCaseId,
+						TemplateId = compliance.MicrotingSdkeFormId,
+						ComplianceId = compliance.Id,
+						AreaId = compliance.AreaId,
+						AreaRuleId = areaRulePlanning!.AreaRuleId,
+						AreaRulePlanId = areaRulePlanning.Id,
+						//Weeks = weeksThisCompliance,
+						SdkFolderName =
+							folderTranslations.FirstOrDefault(x => x.FolderId == planning.SdkFolderId) == null ? "" : folderTranslations.First(x => x.FolderId == planning.SdkFolderId).Name,
+						CreatedInWizard = areaRuleCreatedInWizard,
+					};
+
+					if (complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow)
+					{
+						Console.WriteLine(
+							"complianceModel.SdkCaseId == 0 && complianceModel.DeadlineTask < dateTimeNow");
+						var dbCompliance =
+							backendConfigurationPnDbContext.Compliances.Single(x => x.Id == compliance.Id);
+						if (dbCompliance.MicrotingSdkeFormId == 0)
+						{
+							var thePlanning = await itemsPlanningPnDbContext.Plannings
+								.SingleAsync(x => x.Id == compliance.PlanningId).ConfigureAwait(false);
+							dbCompliance.MicrotingSdkeFormId = thePlanning.RelatedEFormId;
+						}
+
+						var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
+							.FirstOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
+						if (planningCaseSite != null)
+						{
+							complianceModel.SdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+							dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
+							await dbCompliance.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+						}
 					}
 
-					var planningCaseSite = await itemsPlanningPnDbContext.PlanningCaseSites
-						.FirstOrDefaultAsync(x => x.Id == compliance.PlanningCaseSiteId).ConfigureAwait(false);
-					if (planningCaseSite != null)
-					{
-						complianceModel.SdkCaseId = planningCaseSite.MicrotingSdkCaseId;
-						dbCompliance.MicrotingSdkCaseId = planningCaseSite.MicrotingSdkCaseId;
-						await dbCompliance.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
-					}
+					result.Add(complianceModel);
 				}
-
-				result.Add(complianceModel);
+				catch (Exception ex)
+				{
+					// log exception in Sentry
+					SentrySdk.CaptureException(ex);
+					Console.WriteLine(ex.Message);
+					Console.WriteLine(ex.StackTrace);
+				}
 			}
 
 			//if (filtersModel.TagIds.Any() && !filtersModel.TagIds.Contains(-1))
