@@ -2815,10 +2815,12 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         }
                         else
                         {
-                            var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                            var clSites = await sdkDbContext.CheckListSites.FirstOrDefaultAsync(x =>
                                 x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
-
-                            await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                            if (clSites is not null)
+                            {
+                                await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                            }
                         }
                     }
                 }
