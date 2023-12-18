@@ -841,16 +841,21 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             container.Page(page =>
             {
                 page.Content()
-                    .Padding(2, Unit.Centimetre)
+                    .Padding(1, Unit.Centimetre)
                     .Column(x =>
                     {
-                        x.Spacing(20);
                         // loop over all images and add them to the document
+                        var i = 0;
                         foreach (var imageName in picturesOfTasks)
                         {
                             var storageResult = sdkCore.GetFileFromS3Storage(imageName).GetAwaiter().GetResult();
                             x.Item().Image(storageResult.ResponseStream)
-                                .FitWidth();
+                                .FitArea();
+                            if (i < picturesOfTasks.Count - 1)
+                            {
+                                x.Item().PageBreak();
+                            }
+                            i++;
                         }
                     });
             });
