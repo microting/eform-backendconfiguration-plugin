@@ -230,7 +230,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     Id = x.Id,
                     Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
                     Description = ""
-                }).AsNoTracking().ToListAsync().ConfigureAwait(false);
+                }).OrderBy(x => x.Name).AsNoTracking().ToListAsync().ConfigureAwait(false);
             return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
         }
         catch (Exception ex)
