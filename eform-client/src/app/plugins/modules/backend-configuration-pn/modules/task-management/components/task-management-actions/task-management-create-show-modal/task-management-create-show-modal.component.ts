@@ -171,7 +171,7 @@ export class TaskManagementCreateShowModalComponent
   getProperties() {
     this.propertyService.getAllProperties({
       nameFilter: '',
-      sort: 'Id',
+      sort: 'Name',
       isSortDsc: false,
       pageSize: 100000,
       offset: 0,
@@ -198,7 +198,9 @@ export class TaskManagementCreateShowModalComponent
               const site = sites.find((y) => y.id === x.siteId)
               return {id: x.siteId, name: site ? site.name : '', description: '',};
             });
-            this.assignedSitesToProperty = this.assignedSitesToProperty.filter((x) => x !== null);
+            this.assignedSitesToProperty = this.assignedSitesToProperty.filter((x) => x !== null).sort((a, b) => {
+              return a.name.localeCompare(b.name);
+            });
             if (this.currentWorkOrderCase) {
               this.workOrderCaseForm.patchValue(
                 {
