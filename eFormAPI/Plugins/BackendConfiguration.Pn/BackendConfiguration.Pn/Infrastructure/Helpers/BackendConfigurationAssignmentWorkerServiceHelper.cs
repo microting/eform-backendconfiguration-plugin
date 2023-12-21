@@ -287,6 +287,28 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                         if (isUpdated)
                         {
+                            if (deviceUserModel.TaskManagementEnabled == true)
+                            {
+                                var tasksAssigned = await backendConfigurationPnDbContext.WorkorderCases
+                                    .Where(x => x.LastAssignedToName == siteDto.SiteName)
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToListAsync().ConfigureAwait(false);
+                                foreach (var taskAssigned in tasksAssigned)
+                                {
+                                    taskAssigned.LastAssignedToName = fullName;
+                                    await taskAssigned.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                }
+                                var createdByTasks = await backendConfigurationPnDbContext.WorkorderCases
+                                    .Where(x => x.CreatedByName == siteDto.SiteName)
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToListAsync().ConfigureAwait(false);
+                                foreach (var createdByTask in createdByTasks)
+                                {
+                                    createdByTask.CreatedByName = fullName;
+                                    await createdByTask.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                }
+                            }
+
                             var propertyWorkers = await backendConfigurationPnDbContext.PropertyWorkers
                                 .Where(x => x.WorkerId == worker.Id)
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
