@@ -87,13 +87,23 @@ public static class WorkOrderHelper
             var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
                 .FirstAsync().ConfigureAwait(false);
 
-            if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
+            if (propertyWorker.EntityItemId != null) {
+                var entityItem = await sdkDbContext.EntityItems
+                    .Where(x => x.Id == propertyWorker.EntityItemId)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                await core.EntityItemUpdate(entityItem.Id, site.Name, entityItem.Description,
+                    entityItem.EntityItemUid, nextItemUid).ConfigureAwait(false);
+            } else
             {
-                var entityItem = await core
-                    .EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString())
-                    .ConfigureAwait(false);
-                propertyWorker.EntityItemId = entityItem.Id;
-                await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
+                {
+                    var entityItem = await core
+                        .EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString())
+                        .ConfigureAwait(false);
+                    propertyWorker.EntityItemId = entityItem.Id;
+                    await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
             }
 
             var entityItems = await sdkDbContext.EntityItems
