@@ -24,8 +24,10 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
+using BackendConfiguration.Pn.Services.RebusService;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
 {
@@ -54,6 +56,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         private readonly BackendConfigurationPnDbContext _backendConfigurationPnDbContext;
         private readonly ItemsPlanningPnDbContext _itemsPlanningPnDbContext;
         private readonly IPluginDbOptions<BackendConfigurationBaseSettings> _options;
+        private readonly IBus _bus;
 
         public BackendConfigurationPropertiesService(
             IEFormCoreService coreHelper,
@@ -61,7 +64,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
             ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-            IPluginDbOptions<BackendConfigurationBaseSettings> options)
+            IPluginDbOptions<BackendConfigurationBaseSettings> options,
+            IRebusService rebusService)
         {
             _coreHelper = coreHelper;
             _userService = userService;
@@ -69,6 +73,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
             _backendConfigurationPnDbContext = backendConfigurationPnDbContext;
             _itemsPlanningPnDbContext = itemsPlanningPnDbContext;
             _options = options;
+            _bus = rebusService.GetBus();
         }
 
         public async Task<OperationDataResult<Paged<PropertiesModel>>> Index(PropertiesRequestModel request)
@@ -191,8 +196,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
         public async Task<OperationResult> Update(PropertiesUpdateModel updateModel)
         {
             var result = await BackendConfigurationPropertiesServiceHelper.Update(updateModel,
-                await _coreHelper.GetCore(), _userService.UserId, _backendConfigurationPnDbContext,
-                _itemsPlanningPnDbContext, _backendConfigurationLocalizationService).ConfigureAwait(false);
+                await _coreHelper.GetCore(), _userService, _backendConfigurationPnDbContext,
+                _itemsPlanningPnDbContext, _backendConfigurationLocalizationService, _bus).ConfigureAwait(false);
 
             return new OperationResult(result.Success,
                 _backendConfigurationLocalizationService.GetString(result.Message));
@@ -658,7 +663,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 return new OperationDataResult<List<PropertyFolderModel>>(false, e.Message);
             }
         }
-        
+
         public async Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(List<int> propertyIds)
         {
             try
@@ -684,7 +689,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 var folders = await sdkDbContext.Folders
                     .Include(x => x.FolderTranslations)
                     .ToListAsync();
-                
+
                 var folderModels = folders
                     .Where(f => f.ParentId == null)
                     .Select(f => MapFolder(f, folders, userLanguage))

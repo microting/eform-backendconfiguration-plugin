@@ -10,11 +10,13 @@ using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.ItemsPlanningBase.Infrastructure.Data;
 using Microting.ItemsPlanningBase.Infrastructure.Data.Entities;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
@@ -128,10 +130,10 @@ public static class BackendConfigurationPropertiesServiceHelper
     }
 
 
-    public static async Task<OperationResult> Update(PropertiesUpdateModel updateModel, Core core, int userId,
+    public static async Task<OperationResult> Update(PropertiesUpdateModel updateModel, Core core, IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         ItemsPlanningPnDbContext itemsPlanningPnDbContext,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService, IBus bus)
     {
         try
         {
@@ -196,7 +198,7 @@ public static class BackendConfigurationPropertiesServiceHelper
             if (planningTag != null)
             {
                 planningTag.Name = updateModel.FullName();
-                planningTag.UpdatedByUserId = userId;
+                planningTag.UpdatedByUserId = userService.UserId;
                 await planningTag.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
             }
 
@@ -228,7 +230,7 @@ public static class BackendConfigurationPropertiesServiceHelper
             property.CHR = updateModel.Chr;
             property.CVR = updateModel.Cvr;
             property.Name = updateModel.Name;
-            property.UpdatedByUserId = userId;
+            property.UpdatedByUserId = userService.UserId;
             property.MainMailAddress = updateModel.MainMailAddress;
 
             property = await CreateTaskManagementFolders(property,
@@ -320,7 +322,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                             await WorkOrderHelper.DeployEform(propertyWorker, eformId, property,
                                 localizationService,
                                 int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid), core,
-                                userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                                userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
                         }
 
                         var entityItems = await sdkDbContext.EntityItems
@@ -348,13 +350,13 @@ public static class BackendConfigurationPropertiesServiceHelper
                             .ToList();
 
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, true, core, userId, backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkerIds, true, core, userService.UserId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, false, core, userId, backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkerIds, false, core, userService.UserId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                         await WorkOrderHelper
-                            .RetractEform(propertyWorkerIds, false, core, userId, backendConfigurationPnDbContext)
+                            .RetractEform(propertyWorkerIds, false, core, userService.UserId, backendConfigurationPnDbContext)
                             .ConfigureAwait(false);
                         break;
                     }
@@ -385,22 +387,22 @@ public static class BackendConfigurationPropertiesServiceHelper
                 {
                     LanguageId = x,
                     PropertyId = property.Id,
-                    CreatedByUserId = userId,
-                    UpdatedByUserId = userId
+                    CreatedByUserId = userService.UserId,
+                    UpdatedByUserId = userService.UserId
                 })
                 .ToList();
 
             foreach (var selectedLanguageForDelete in selectedLanguagesForDelete)
             {
-                selectedLanguageForDelete.UpdatedByUserId = userId;
+                selectedLanguageForDelete.UpdatedByUserId = userService.UserId;
                 await selectedLanguageForDelete.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
 
             foreach (var selectedLanguageForCreate in selectedLanguagesForCreate)
             {
-                selectedLanguageForCreate.UpdatedByUserId = userId;
-                selectedLanguageForCreate.CreatedByUserId = userId;
+                selectedLanguageForCreate.UpdatedByUserId = userService.UserId;
+                selectedLanguageForCreate.CreatedByUserId = userService.UserId;
                 await selectedLanguageForCreate.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
             }
 
