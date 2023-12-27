@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+using eFormCore;
 using Microsoft.EntityFrameworkCore;
+using Microting.eForm;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
@@ -23,12 +25,12 @@ public static class BackendConfigurationTaskManagementHelper
 {
     public static async Task<OperationResult> UpdateTask(WorkOrderCaseUpdateModel updateModel,
         IBackendConfigurationLocalizationService localizationService,
-        IEFormCoreService coreHelper,
+        Core core,
         IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         IBus bus)
     {
-        var core = await coreHelper.GetCore().ConfigureAwait(false);
+        // var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -61,7 +63,7 @@ public static class BackendConfigurationTaskManagementHelper
         }
 
         var property = workOrderCase.PropertyWorker.Property;
-        var hash = await GeneratePdf(picturesOfTasks, site.Id, coreHelper);
+        var hash = await GeneratePdf(picturesOfTasks, site.Id, core);
 
         var label = $"<strong>{localizationService.GetString("AssignedTo")}:</strong> {site.Name}<br>";
 
@@ -131,7 +133,7 @@ public static class BackendConfigurationTaskManagementHelper
                  $"<strong>{localizationService.GetString("LastUpdatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                  $"<strong>{localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
         // retract eform
-        await RetractEform(workOrderCase, coreHelper, backendConfigurationPnDbContext);
+        await RetractEform(workOrderCase, core, backendConfigurationPnDbContext);
         // deploy eform to ongoing status
 
         //_bus.Send(new WorkOrderUpdated(propertyWorkers, eformIdForOngoingTasks, property))
@@ -153,9 +155,9 @@ public static class BackendConfigurationTaskManagementHelper
         return new OperationResult(true, localizationService.GetString("TaskUpdatedSuccessful"));
     }
 
-        private static async Task<string> GeneratePdf(List<string> picturesOfTasks, int sitId, IEFormCoreService coreHelper)
+        private static async Task<string> GeneratePdf(List<string> picturesOfTasks, int sitId, Core core)
     {
-        var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
+        // var sdkCore = await coreHelper.GetCore().ConfigureAwait(false);
         picturesOfTasks.Reverse();
         var downloadPath = Path.Combine(Path.GetTempPath(), "reports", "results");
         Directory.CreateDirectory(downloadPath);
@@ -174,7 +176,7 @@ public static class BackendConfigurationTaskManagementHelper
                         // loop over all images and add them to the document
                         foreach (var imageName in picturesOfTasks)
                         {
-                            var storageResult = sdkCore.GetFileFromS3Storage(imageName).GetAwaiter().GetResult();
+                            var storageResult = core.GetFileFromS3Storage(imageName).GetAwaiter().GetResult();
                             x.Item().Image(storageResult.ResponseStream)
                                 .FitWidth();
                         }
@@ -189,14 +191,14 @@ public static class BackendConfigurationTaskManagementHelper
 
         // Upload PDF
         // string pdfFileName = null;
-        string hash = await sdkCore.PdfUpload(tempPdfFilePath);
+        string hash = await core.PdfUpload(tempPdfFilePath);
         if (hash != null)
         {
             //rename local file
             FileInfo fileInfo = new FileInfo(tempPdfFilePath);
             fileInfo.CopyTo(downloadPath + "/" + hash + ".pdf", true);
             fileInfo.Delete();
-            await sdkCore.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf");
+            await core.PutFileToStorageSystem(Path.Combine(downloadPath, $"{hash}.pdf"), $"{hash}.pdf");
 
             // TODO Remove from file storage?
         }
@@ -204,9 +206,9 @@ public static class BackendConfigurationTaskManagementHelper
         return hash;
     }
 
-    private static async Task RetractEform(WorkorderCase workOrderCase, IEFormCoreService _coreHelper, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
+    private static async Task RetractEform(WorkorderCase workOrderCase, Core core, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
     {
-        var core = await _coreHelper.GetCore().ConfigureAwait(false);
+        // var core = await _coreHelper.GetCore().ConfigureAwait(false);
         await using var sdkDbContext = core.DbContextHelper.GetDbContext();
 
         var workOrdersToRetract = await _backendConfigurationPnDbContext.WorkorderCases

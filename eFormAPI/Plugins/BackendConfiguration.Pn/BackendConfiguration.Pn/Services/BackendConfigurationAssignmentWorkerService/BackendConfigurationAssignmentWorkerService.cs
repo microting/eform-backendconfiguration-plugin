@@ -63,7 +63,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext, TimePlanningPnDbContext timePlanningDbContext, CaseTemplatePnDbContext caseTemplatePnDbContext, IRebusService rebusService)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+            TimePlanningPnDbContext timePlanningDbContext,
+            CaseTemplatePnDbContext caseTemplatePnDbContext,
+            IRebusService rebusService)
         {
             _coreHelper = coreHelper;
             _userService = userService;
@@ -186,7 +190,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             var core = await _coreHelper.GetCore();
 
             var result = await BackendConfigurationAssignmentWorkerServiceHelper
-                .Create(createModel, core, _userService.UserId, _backendConfigurationPnDbContext,
+                .Create(createModel, core, _userService, _backendConfigurationPnDbContext,
                     _caseTemplatePnDbContext, _backendConfigurationLocalizationService, _bus)
                 .ConfigureAwait(false);
 
@@ -197,7 +201,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         {
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var result = await BackendConfigurationAssignmentWorkerServiceHelper
-                .Update(updateModel, core, _userService.UserId, _backendConfigurationPnDbContext, _caseTemplatePnDbContext,
+                .Update(updateModel, core, _userService, _backendConfigurationPnDbContext, _caseTemplatePnDbContext,
                     _backendConfigurationLocalizationService, _bus, _itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
 
