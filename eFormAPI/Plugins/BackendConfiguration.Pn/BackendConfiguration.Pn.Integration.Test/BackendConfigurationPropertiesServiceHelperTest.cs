@@ -521,9 +521,8 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         // Act
         var userService = Substitute.For<IUserService>();
         userService.UserId.Returns(1);
-        var bus = Substitute.For<IBus>();
         var result = await BackendConfigurationPropertiesServiceHelper.Update(propertyUpdateModel, core, userService,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null, bus);
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null, Bus);
 
         properties = await BackendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
         var entityGroups = await MicrotingDbContext!.EntityGroups.ToListAsync();

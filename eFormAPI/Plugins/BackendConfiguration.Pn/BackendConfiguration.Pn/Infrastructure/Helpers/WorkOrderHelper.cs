@@ -93,7 +93,6 @@ public static class WorkOrderHelper
             if (propertyWorker.EntityItemId != null) {
                 var entityItem = await sdkDbContext.EntityItems
                     .Where(x => x.Id == propertyWorker.EntityItemId)
-                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .FirstOrDefaultAsync().ConfigureAwait(false);
                 await core.EntityItemUpdate(entityItem.Id, site.Name, entityItem.Description,
                     entityItem.EntityItemUid, nextItemUid).ConfigureAwait(false);
