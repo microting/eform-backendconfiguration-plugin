@@ -15,6 +15,7 @@ using ImageMagick;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Helpers;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -52,7 +53,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             message.NewDescription,
             message.DeviceUsersGroupId,
             pdfHash,
-            message.SiteName,
+            message.AssignedToSite,
             message.PushMessageBody,
             message.PushMessageTitle,
             message.AreaName,
@@ -73,15 +74,15 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         string newDescription,
         int? deviceUsersGroupId,
         string pdfHash,
-        string siteName,
+        Site assignedToSite,
         string pushMessageBody,
         string pushMessageTitle,
         string areaNameb,
         int createdByUserId,
         string propertyName,
-        int FolderIdForOngoingTasks,
-        int FolderIdForTasks,
-        int FolderIdForCompletedTasks
+        int folderIdForOngoingTasks,
+        int folderIdForTasks,
+        int folderIdForCompletedTasks
         )
     {
         var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
@@ -136,7 +137,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                     break;
             }
 
-            var assignedTo = site.Name == siteName ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {siteName}<br>";
+            var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
 
             var areaName = !string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
                 ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
@@ -160,18 +161,18 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             mainElement.ElementList[0].Label = " ";
             mainElement.ElementList[0].Description.InderValue = outerDescription.Replace("\n", "<br>");
             mainElement.DisplayOrder = displayOrder; // Lowest value is the top of the list
-            if (site.Name == siteName)
+            if (site.Name == assignedToSite.Name)
             {
-                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workOrderCase.Priority != "1" ? FolderIdForOngoingTasks : FolderIdForTasks))
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workOrderCase.Priority != "1" ? folderIdForOngoingTasks : folderIdForTasks))
                     .MicrotingUid.ToString();
-                folderId = FolderIdForOngoingTasks;
+                folderId = folderIdForOngoingTasks;
                 mainElement.PushMessageTitle = pushMessageTitle;
                 mainElement.PushMessageBody = pushMessageBody;
             }
             else
             {
-                folderId = FolderIdForCompletedTasks;
-                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == FolderIdForCompletedTasks)
+                folderId = folderIdForCompletedTasks;
+                mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == folderIdForCompletedTasks)
                     .MicrotingUid.ToString();
             }
             ((DataElement)mainElement.ElementList[0]).DataItemList[0].Description.InderValue = description.Replace("\r\n", "<br>").Replace("\n", "<br>");
@@ -207,10 +208,10 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             }
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
-            var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId).ConfigureAwait(false);
+            var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, folderId).ConfigureAwait(false);
             var newWorkOrderCase = new WorkorderCase
             {
-                CaseId = (int)caseId,
+                CaseId = (int)caseId!,
                 PropertyWorkerId = propertyWorker.Key,
                 CaseStatusesEnum = status,
                 ParentWorkorderCaseId = workorderCaseId,
@@ -220,6 +221,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
                 Description = newDescription,
                 CaseInitiated = DateTime.UtcNow,
                 LastAssignedToName = site.Name,
+                AssignedToSdkSiteId = site.Id,
                 LastUpdatedByName = "",
                 LeadingCase = false,
                 Priority = workOrderCase.Priority,
