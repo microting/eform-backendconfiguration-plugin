@@ -145,20 +145,52 @@ public static class WorkOrderHelper
         {
             // find all cases that are not removed and assignedTo is equal to site.name and update them with the new name
             var workorderCases = await backendConfigurationPnDbContext.WorkorderCases
-                .Where(x => x.PropertyWorkerId == propertyWorker.Id)
+                .Where(x => x.AssignedToSdkSiteId == propertyWorker.WorkerId)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => x.LeadingCase == true)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .ToListAsync().ConfigureAwait(false);
             foreach (var workorderCase in workorderCases)
             {
-                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = propertyWorker.WorkerId, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
                     localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
-                // var caseDto = await core.CaseLookupMUId(workorderCase.CaseId).ConfigureAwait(false);
-                // if (caseDto.SiteName != property.Name)
-                // {
-                //     await core.CaseUpdateMUId(workorderCase.CaseId, property.Name).ConfigureAwait(false);
-                // }
+            }
+
+            workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+                .Where(x => x.CreatedBySdkSiteId == propertyWorker.WorkerId)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => x.LeadingCase == true)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var workorderCase in workorderCases)
+            {
+                if(workorderCase.AssignedToSdkSiteId == null)
+                {
+                    continue;
+                }
+
+                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+            }
+
+            workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+                .Where(x => x.UpdatedBySdkSiteId == propertyWorker.WorkerId)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => x.LeadingCase == true)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var workorderCase in workorderCases)
+            {
+                if(workorderCase.AssignedToSdkSiteId == null)
+                {
+                    continue;
+                }
+
+                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
             }
 
 
