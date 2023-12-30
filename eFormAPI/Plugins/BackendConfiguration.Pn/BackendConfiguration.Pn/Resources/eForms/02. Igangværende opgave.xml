@@ -95,7 +95,7 @@
                 </DataItem>
                 <DataItem type="SingleSelectSearch">
                     <Id>375733</Id>
-                    <Label>Tildel del|Assaign to|Zuweisen</Label>
+                    <Label>Tildel til|Assaign to|Zuweisen</Label>
                     <Description><![CDATA[]]></Description>
                     <DisplayOrder>5</DisplayOrder>
                     <Source>5497</Source>
