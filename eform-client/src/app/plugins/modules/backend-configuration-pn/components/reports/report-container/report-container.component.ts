@@ -15,15 +15,15 @@ import {
 } from 'src/app/common/models';
 import {EmailRecipientsService, TemplateFilesService} from 'src/app/common/services';
 import {AuthStateService} from 'src/app/common/store';
-import {Gallery, GalleryItem, ImageItem} from '@ngx-gallery/core';
-import {Lightbox} from '@ngx-gallery/lightbox';
 import {ViewportScroller} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../services';
 import {catchError, tap} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {
   selectReportsV1Filters, selectReportsV1ScrollPosition
-} from "src/app/plugins/modules/backend-configuration-pn/state/reports-v1/reports-v1.selector";
+} from 'src/app/plugins/modules/backend-configuration-pn/state/reports-v1/reports-v1.selector';
+import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
+import {Lightbox} from 'ng-gallery/lightbox';
 
 @AutoUnsubscribe()
 @Component({
@@ -199,10 +199,10 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
 
   openPicture(i: any) {
     if (this.galleryImages.length > 1) {
-      this.gallery.ref('lightbox', {counterPosition: 'bottom', loadingMode: 'indeterminate'}).load(this.galleryImages);
+      this.gallery.ref('lightbox', {counterPosition: 'bottom'}).load(this.galleryImages);
       this.lightbox.open(i);
     } else {
-      this.gallery.ref('lightbox', {counter: false, loadingMode: 'indeterminate'}).load(this.galleryImages);
+      this.gallery.ref('lightbox', {counter: false}).load(this.galleryImages);
       this.lightbox.open(i);
     }
   }
