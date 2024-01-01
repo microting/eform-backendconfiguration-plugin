@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ServerGarbageCollection>false</ServerGarbageCollection>
     </PropertyGroup>
 
@@ -550,17 +550,17 @@
     <ItemGroup>
       <PackageReference Include="ChemicalsBase" Version="7.0.4" />
       <PackageReference Include="Ical.Net" Version="4.2.0" />
-      <PackageReference Include="Microting.eForm" Version="7.0.75" />
-      <PackageReference Include="Microting.EformAngularFrontendBase" Version="7.0.60" />
-      <PackageReference Include="Microting.eFormApi.BasePn" Version="7.0.61" />
+      <PackageReference Include="Microting.eForm" Version="8.0.0" />
+      <PackageReference Include="Microting.EformAngularFrontendBase" Version="8.0.0" />
+      <PackageReference Include="Microting.eFormApi.BasePn" Version="8.0.0" />
       <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="7.0.70" />
-      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="7.0.60" />
+      <PackageReference Include="Microting.EformBackendConfigurationBase" Version="8.0.0" />
+      <PackageReference Include="Microting.eFormCaseTemplateBase" Version="8.0.0" />
       <PackageReference Include="Microting.HtmlToOpenXml.dll" Version="2.3.1" />
-      <PackageReference Include="Microting.ItemsPlanningBase" Version="7.0.67" />
+      <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.0" />
       <PackageReference Include="ClosedXML" Version="0.102.1" />
-      <PackageReference Include="Microting.TimePlanningBase" Version="7.0.58" />
-      <PackageReference Include="QuestPDF" Version="2023.12.0" />
+      <PackageReference Include="Microting.TimePlanningBase" Version="8.0.0" />
+      <PackageReference Include="QuestPDF" Version="2023.12.1" />
       <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="7.3.0" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.6" />
       <PackageReference Include="Sentry" Version="3.41.3" />
