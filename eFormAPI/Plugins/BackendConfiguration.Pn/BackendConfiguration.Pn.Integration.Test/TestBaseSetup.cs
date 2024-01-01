@@ -191,6 +191,6 @@ public class TestBaseSetup
         await TimePlanningPnDbContext!.DisposeAsync();
         await MicrotingDbContext!.DisposeAsync();
         await CaseTemplatePnDbContext!.DisposeAsync();
-        Bus!.Dispose();
+        if (Bus != null) Bus.Dispose();
     }
 }

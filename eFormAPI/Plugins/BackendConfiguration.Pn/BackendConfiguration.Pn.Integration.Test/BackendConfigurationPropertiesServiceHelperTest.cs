@@ -1,6 +1,9 @@
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using Microsoft.EntityFrameworkCore;
+using Microting.eFormApi.BasePn.Abstractions;
+using NSubstitute;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -516,8 +519,10 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
         };
 
         // Act
-        var result = await BackendConfigurationPropertiesServiceHelper.Update(propertyUpdateModel, core, 1,
-            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null);
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        var result = await BackendConfigurationPropertiesServiceHelper.Update(propertyUpdateModel, core, userService,
+            BackendConfigurationPnDbContext, ItemsPlanningPnDbContext, null, Bus);
 
         properties = await BackendConfigurationPnDbContext.Properties.AsNoTracking().ToListAsync();
         var entityGroups = await MicrotingDbContext!.EntityGroups.ToListAsync();

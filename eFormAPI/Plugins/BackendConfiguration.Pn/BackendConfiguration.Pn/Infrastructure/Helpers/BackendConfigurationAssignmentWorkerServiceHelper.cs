@@ -254,10 +254,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                 await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService, backendConfigurationPnDbContext, localizationService, bus).ConfigureAwait(false);
                 return new OperationResult(true,"SuccessfullyUpdateAssignmentsProperties");
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                //Log.LogException(e.Message);
-                //Log.LogException(e.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return new OperationResult(false,
                     "ErrorWhileUpdateAssignmentsProperties");
             }

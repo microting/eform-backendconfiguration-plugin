@@ -450,6 +450,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                 CaseInitiated = DateTime.UtcNow,
                 LeadingCase = true,
                 LastAssignedToName = site.Name,
+                AssignedToSdkSiteId = site.Id,
                 Priority = createModel.Priority.ToString()
             };
             await newWorkOrderCase.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
@@ -629,7 +630,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     createModel.AreaName,
                     _userService.UserId,
                     picturesOfTasks,
-                    site.Name,
+                    site,
                     property.Name,
                     (int)property.FolderIdForOngoingTasks!,
                     (int) property.FolderIdForTasks!,

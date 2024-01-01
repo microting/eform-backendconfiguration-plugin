@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 
 namespace BackendConfiguration.Pn.Messages;
@@ -14,12 +15,12 @@ public class WorkOrderUpdated
     public string NewDescription;
     public int? DeviceUsersGroupId;
     public string PdfHash;
-    public string SiteName;
+    public Site AssignedToSite;
     public string PushMessageBody;
     public string PushMessageTitle;
     public string UpdatedByName;
 
-    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int propertyId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pdfHash, string siteName, string pushMessageBody, string pushMessageTitle, string updatedByName)
+    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int propertyId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pdfHash, Site assignedToSite, string pushMessageBody, string pushMessageTitle, string updatedByName)
     {
         PropertyWorkers = propertyWorkers;
         EformId = eformId;
@@ -30,7 +31,7 @@ public class WorkOrderUpdated
         NewDescription = newDescription;
         DeviceUsersGroupId = deviceUsersGroupId;
         PdfHash = pdfHash;
-        SiteName = siteName;
+        AssignedToSite = assignedToSite;
         PushMessageBody = pushMessageBody;
         PushMessageTitle = pushMessageTitle;
         UpdatedByName = updatedByName;
