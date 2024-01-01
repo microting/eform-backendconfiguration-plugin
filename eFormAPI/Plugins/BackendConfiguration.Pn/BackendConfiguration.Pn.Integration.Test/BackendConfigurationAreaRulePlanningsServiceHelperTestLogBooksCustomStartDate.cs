@@ -307,7 +307,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksCusto
         var multiplier = (int) (diff / 2);
         var nextExecutionTime =
             new DateTime(2023, 4, 12).AddDays(multiplier * 2);
-        if (nextExecutionTime < now)
+        while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddDays(2);
         }
