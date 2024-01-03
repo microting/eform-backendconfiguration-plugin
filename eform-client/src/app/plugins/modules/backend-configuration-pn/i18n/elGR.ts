@@ -277,4 +277,5 @@ export const elGR = {
   'Edit employee': 'Υπάλληλος επεξεργασίας',
   Timeregistration: 'Εγγραφή χρόνου',
   'Submitted date': 'Ημερομηνία υποβολής',
+  Always: 'Πάντα',
 };

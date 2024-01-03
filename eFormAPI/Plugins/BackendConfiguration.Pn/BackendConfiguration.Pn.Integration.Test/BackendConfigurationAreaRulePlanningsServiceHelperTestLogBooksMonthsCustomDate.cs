@@ -6,9 +6,11 @@ using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
+using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -77,7 +79,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -436,7 +440,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -794,7 +800,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -1018,7 +1026,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12);
+            new DateTime(2023, 4, 12);
         while (nextExecutionTime < now)
         {
             nextExecutionTime = nextExecutionTime.AddMonths(3);
@@ -1152,7 +1160,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -1511,7 +1521,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -1734,8 +1746,13 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.Not.Null);
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
+
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(1);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(1);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(12));
@@ -1865,7 +1882,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -2089,7 +2108,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(2);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(2);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(24));
@@ -2219,7 +2242,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -2443,7 +2468,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(3);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(3);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(36));
@@ -2573,7 +2602,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -2797,7 +2828,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(4);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(4);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(48));
@@ -2927,7 +2962,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -3151,7 +3188,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(5);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(5);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(60));
@@ -3281,7 +3322,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -3505,7 +3548,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(6);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(6);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(72));
@@ -3635,7 +3682,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -3859,7 +3908,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(7);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(7);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(84));
@@ -3989,7 +4042,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -4213,7 +4268,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(8);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(8);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(96));
@@ -4343,7 +4402,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -4567,7 +4628,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(9);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(9);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(108));
@@ -4697,7 +4762,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "00. Logbøger");
@@ -4921,7 +4988,11 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         Assert.That(plannings[0].LastExecutedTime, Is.EqualTo(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0,0,0)));
         var now = DateTime.UtcNow;
         var nextExecutionTime =
-            new DateTime(now.Year, 4, 12).AddYears(10);
+            new DateTime(2023, 4, 12);
+        while (nextExecutionTime < now)
+        {
+            nextExecutionTime = nextExecutionTime.AddYears(10);
+        }
 
         Assert.That(plannings[0].NextExecutionTime, Is.EqualTo(nextExecutionTime));
         Assert.That(plannings[0].RepeatEvery, Is.EqualTo(120));

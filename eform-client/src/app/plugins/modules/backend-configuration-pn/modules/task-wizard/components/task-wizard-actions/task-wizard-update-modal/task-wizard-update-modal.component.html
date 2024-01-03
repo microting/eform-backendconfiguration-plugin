@@ -19,7 +19,8 @@
       [value]="model.propertyId"
       (change)="changePropertyId($event)"
       [clearable]="false"
-      [disabled]="model.status === TaskWizardStatusesEnum.Active"
+      [disabled]="true"
+      [readonly]="true"
     />
   </mat-form-field>
 
@@ -55,7 +56,7 @@
       id="updateFolder"
       (click)="openFoldersModal()"
       style="margin-left: -10px"
-      [disabled]="!model.propertyId || model.status === TaskWizardStatusesEnum.NotActive"
+      [disabled]="!model.propertyId || model.status === TaskWizardStatusesEnum.Active"
       [matTooltip]="(!model.propertyId ? 'Need to select property': 'Select folder') | translate"
     >
       <mat-icon>folder</mat-icon>
@@ -117,9 +118,10 @@
         [clearable]="false"
         [multiple]="false"
         [disabled]="model.status === TaskWizardStatusesEnum.Active"
+        [readonly]="model.status === TaskWizardStatusesEnum.Active"
       />
     </mat-form-field>
-    <mat-form-field class="p-2">
+    <mat-form-field class="p-2" *ngIf="model.repeatType !== 0">
       <mat-label>{{ 'Repeat every' | translate }}</mat-label>
       <mtx-select
         [items]="repeatTypeMass()"
@@ -131,6 +133,7 @@
         [clearable]="false"
         [multiple]="false"
         [disabled]="model.status === TaskWizardStatusesEnum.Active"
+        [readonly]="model.status === TaskWizardStatusesEnum.Active"
       />
     </mat-form-field>
   </div>
@@ -210,6 +213,7 @@
         id="updateTemplateSelector"
         [clearable]="false"
         [multiple]="false"
+        [readonly]="model.status === TaskWizardStatusesEnum.Active"
         [disabled]="model.status === TaskWizardStatusesEnum.Active"
       ></mtx-select>
     </mat-form-field>

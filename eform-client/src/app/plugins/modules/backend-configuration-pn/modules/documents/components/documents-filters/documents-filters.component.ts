@@ -35,7 +35,6 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   @Input() documents: DocumentSimpleModel[];
   @Input() properties: CommonDictionaryModel[] = [];
   filtersForm: FormGroup;
-  selectedLanguage: number;
 
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
@@ -49,9 +48,7 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
     private store: Store,
   ) {
     this.selectCurrentUserLocale$.subscribe((locale) => {
-      this.selectedLanguage = applicationLanguagesTranslated.find(
-        (x) => x.locale === locale
-      ).id;
+      dateTimeAdapter.setLocale(locale);
     });
   }
 

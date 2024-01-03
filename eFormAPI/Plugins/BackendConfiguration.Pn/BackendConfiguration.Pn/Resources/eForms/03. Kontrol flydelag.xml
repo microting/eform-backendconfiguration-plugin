@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142142</Id>
+  <Id>142142new1</Id>
   <Repeated>0</Repeated>
-  <Label>03. Kontrol flydelag|03. Control floating layer</Label>
+  <Label>Kontrol flydelag|Control floating layer</Label>
   <StartDate>2020-10-06</StartDate>
   <EndDate>2030-10-06</EndDate>
   <Language>da</Language>
@@ -13,8 +13,8 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142142</Id>
-      <Label>03. Kontrol flydelag|03. Control floating layer</Label>
+      <Id>142142new1</Id>
+      <Label>Kontrol flydelag|Control floating layer</Label>
       <Description><![CDATA[Kontrollér flydelag og angiv evt. årsag til manglende flydelag.|Check floating layer and indicate - if necessary - cause of lack of floating layer.<br>]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
@@ -42,6 +42,18 @@
         </DataItemGroup>
       </DataItemGroupList>
       <DataItemList>
+        <DataItem type="Date">
+          <Id>377662</Id>
+          <Label>Dato|Date|Dato</Label>
+          <Description><![CDATA[<i>* Skal udfyldes</i>|<i>* Mandatory</i>|<i>* Muss vervollständigt werden</i>]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2023-05-09</MinValue>
+          <MaxValue>2033-05-09</MaxValue>
+          <Value/>
+          <Mandatory>true</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
         <DataItem type="CheckBox">
           <Id>371625</Id>
           <Label>Flydelag OK|Floating layer OK</Label>
@@ -129,7 +141,7 @@
           <Label>Gem registrering|Save registration</Label>
           <Description><![CDATA[]]></Description>
           <DisplayOrder>6</DisplayOrder>
-          <Value>GEM|SAVE</Value>
+          <Value>INDSEND|SEND</Value>
           <Color>f0f8db</Color>
         </DataItem>
       </DataItemList>

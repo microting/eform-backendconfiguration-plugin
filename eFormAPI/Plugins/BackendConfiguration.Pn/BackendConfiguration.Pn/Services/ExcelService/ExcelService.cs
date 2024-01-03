@@ -199,6 +199,7 @@ public class ExcelService : IExcelService
 				worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString(priorityText);
 				worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString(workOrderCaseModel.Status);
 			}
+			worksheet.RangeUsed().SetAutoFilter();
 
 			// worksheet.Columns(startColumnForDataTable, currentColumn).AdjustToContents(); // This does not work inside Docker container
 
@@ -339,14 +340,19 @@ public class ExcelService : IExcelService
 											Console.WriteLine(e);
 											worksheet.Cell(x + 1, y + 1).SetValue(value);
 										}
-
-										//worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
-										//worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
 										break;
 									default:
-										worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
-										//worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Text;
+									{
+										if (Double.TryParse(value, out var number))
+										{
+											worksheet.Cell(x + 1, y + 1).SetValue(number);
+										}
+										else
+										{
+											worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
+										}
 										break;
+									}
 								}
 							}
 
@@ -355,8 +361,10 @@ public class ExcelService : IExcelService
 
 						x++;
 					}
+					worksheet.RangeUsed().SetAutoFilter();
 				}
 			}
+
 			wb.SaveAs(resultDocument);
 
 			Stream result = File.Open(resultDocument, FileMode.Open);
@@ -495,14 +503,19 @@ public class ExcelService : IExcelService
 												Console.WriteLine(e);
 												worksheet.Cell(x + 1, y + 1).SetValue(value);
 											}
-
-											//worksheet.Cell(x+1, y+1).Style.NumberFormat.Format = "0.00";
-											//worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Number;
 											break;
 										default:
-											worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
-											//worksheet.Cell(x + 1, y + 1).DataType = XLDataType.Text;
+										{
+											if (Double.TryParse(value, out var number))
+											{
+												worksheet.Cell(x + 1, y + 1).SetValue(number);
+											}
+											else
+											{
+												worksheet.Cell(x + 1, y + 1).SetValue("'" + value);
+											}
 											break;
+										}
 									}
 								}
 
@@ -511,6 +524,7 @@ public class ExcelService : IExcelService
 
 							x++;
 						}
+						worksheet.RangeUsed().SetAutoFilter();
 					}
 
 				}

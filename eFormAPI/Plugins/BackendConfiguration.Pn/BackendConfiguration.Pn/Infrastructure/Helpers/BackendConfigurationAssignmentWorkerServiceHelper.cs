@@ -11,6 +11,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -26,7 +27,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 {
     public static async Task<OperationResult> Create(PropertyAssignWorkersModel createModel,
         Core core,
-        int userId,
+        IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
         CaseTemplatePnDbContext caseTemplatePnDbContext,
         [CanBeNull] IBackendConfigurationLocalizationService localizationService,
@@ -41,8 +42,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                              {
                                  WorkerId = createModel.SiteId,
                                  PropertyId = propertyAssignmentWorkerModel.PropertyId,
-                                 CreatedByUserId = userId,
-                                 UpdatedByUserId = userId
+                                 CreatedByUserId = userService.UserId,
+                                 UpdatedByUserId = userService.UserId,
                              }))
                 {
                     propertyAssignment.TaskManagementEnabled = createModel.TaskManagementEnabled;
@@ -82,7 +83,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     await bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userId, backendConfigurationPnDbContext, localizationService).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService, backendConfigurationPnDbContext, localizationService, bus).ConfigureAwait(false);
 
                 return new OperationResult(true,"SuccessfullyAssignmentsCreatingProperties");
             }
@@ -97,7 +98,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         }
 
         public static async Task<OperationResult> Update(PropertyAssignWorkersModel updateModel, Core core,
-            int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+            IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext,
             CaseTemplatePnDbContext caseTemplatePnDbContext, [CanBeNull] IBackendConfigurationLocalizationService localizationService, IBus bus, ItemsPlanningPnDbContext itemsPlanningPnDbContext)
         {
             try
@@ -128,8 +129,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                              {
                                  WorkerId = updateModel.SiteId,
                                  PropertyId = propertyAssignmentWorkerModel,
-                                 CreatedByUserId = userId,
-                                 UpdatedByUserId = userId,
+                                 CreatedByUserId = userService.UserId,
+                                 UpdatedByUserId = userService.UserId,
                                  TaskManagementEnabled = updateModel.TaskManagementEnabled
                              }))
                 {
@@ -155,7 +156,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                 foreach (var propertyAssignment in assignmentsForDelete)
                 {
-                    propertyAssignment.UpdatedByUserId = userId;
+                    propertyAssignment.UpdatedByUserId = userService.UserId;
                     await propertyAssignment.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     if (propertyAssignment.EntityItemId != null)
                     {
@@ -186,8 +187,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                 if(assignmentsForDelete.Any())
                 {
-                    await WorkOrderHelper.RetractEform(assignmentsForDelete, true, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
-                    await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(assignmentsForDelete, true, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await WorkOrderHelper.RetractEform(assignmentsForDelete, false, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
 
                     // foreach (var propertyWorker in assignmentsForDelete)
                     // {
@@ -234,7 +235,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             await WorkOrderHelper.RetractEform(new List<PropertyWorker>
                             {
                                 propertyWorker
-                            }, true, core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                            }, true, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
                     }
                 }
@@ -250,13 +251,13 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     }
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userId, backendConfigurationPnDbContext, localizationService).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService, backendConfigurationPnDbContext, localizationService, bus).ConfigureAwait(false);
                 return new OperationResult(true,"SuccessfullyUpdateAssignmentsProperties");
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                //Log.LogException(e.Message);
-                //Log.LogException(e.StackTrace);
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
                 return new OperationResult(false,
                     "ErrorWhileUpdateAssignmentsProperties");
             }
@@ -287,6 +288,28 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
 
                         if (isUpdated)
                         {
+                            if (deviceUserModel.TaskManagementEnabled == true)
+                            {
+                                var tasksAssigned = await backendConfigurationPnDbContext.WorkorderCases
+                                    .Where(x => x.LastAssignedToName == siteDto.SiteName)
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToListAsync().ConfigureAwait(false);
+                                foreach (var taskAssigned in tasksAssigned)
+                                {
+                                    taskAssigned.LastAssignedToName = fullName;
+                                    await taskAssigned.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                }
+                                var createdByTasks = await backendConfigurationPnDbContext.WorkorderCases
+                                    .Where(x => x.CreatedByName == siteDto.SiteName)
+                                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                                    .ToListAsync().ConfigureAwait(false);
+                                foreach (var createdByTask in createdByTasks)
+                                {
+                                    createdByTask.CreatedByName = fullName;
+                                    await createdByTask.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                                }
+                            }
+
                             var propertyWorkers = await backendConfigurationPnDbContext.PropertyWorkers
                                 .Where(x => x.WorkerId == worker.Id)
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)

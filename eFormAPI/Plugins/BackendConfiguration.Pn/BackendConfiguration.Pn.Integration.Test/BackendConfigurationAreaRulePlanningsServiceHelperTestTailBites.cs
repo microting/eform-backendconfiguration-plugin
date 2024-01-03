@@ -6,7 +6,9 @@ using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
+using NSubstitute;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -69,7 +71,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Stalde: Halebid og klargøring");
@@ -366,7 +370,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Stalde: Halebid og klargøring");
@@ -694,7 +700,9 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestTailBites : T
             SiteId = sites[2].Id
         };
 
-        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, 1,
+        var userService = Substitute.For<IUserService>();
+        userService.UserId.Returns(1);
+        await BackendConfigurationAssignmentWorkerServiceHelper.Create(propertyAssignWorkersModel, core, userService,
             BackendConfigurationPnDbContext, CaseTemplatePnDbContext, null, Bus);
 
         var areaTranslation = await BackendConfigurationPnDbContext!.AreaTranslations.FirstAsync(x => x.Name == "05. Stalde: Halebid og klargøring");

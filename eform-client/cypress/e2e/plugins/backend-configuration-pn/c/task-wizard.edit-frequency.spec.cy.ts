@@ -57,7 +57,7 @@ const editedTask = {
     month: 6,
     day: 24
   },
-  repeatType: 'Uge',
+  repeatType: 'Altid',
   repeatEvery: '5',
 };
 
@@ -66,7 +66,7 @@ describe('Area rules type 1', () => {
     cy.visit('http://localhost:4200');
     loginPage.login();
   });
-  it('should edit task', () => {
+  it('should edit task frequency', () => {
     backendConfigurationPropertiesPage.goToProperties();
     backendConfigurationPropertiesPage.createProperty(property);
     backendConfigurationPropertiesPage.createProperty(property2);
@@ -193,8 +193,8 @@ describe('Area rules type 1', () => {
     cy.get('#updateStartFrom').click();
     selectDateOnNewDatePicker(editedTask.startFrom.year, editedTask.startFrom.month, editedTask.startFrom.day);
     selectValueInNgSelector('#updateRepeatType', editedTask.repeatType, true);
-    cy.get('#updateRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(editedTask.repeatEvery);
-    cy.get(`.ng-option`).first().should('have.text', editedTask.repeatEvery).should('be.visible').click();
+    // cy.get('#updateRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(editedTask.repeatEvery);
+    // cy.get(`.ng-option`).first().should('have.text', editedTask.repeatEvery).should('be.visible').click();
     //cy.get('mat-checkbox#checkboxUpdateAssignment0').click();
     // enable task
     cy.get('#updateTaskStatusToggle').click();
@@ -209,7 +209,7 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', editedTask.eformName);
     cy.get('.cdk-row .cdk-column-startDate span')
       .should('have.text', `${editedTask.startFrom.day}.${editedTask.startFrom.month >= 10 ? '' : '0'}${editedTask.startFrom.month}.${editedTask.startFrom.year}`);
-    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${editedTask.repeatEvery} ${editedTask.repeatType}`);
+    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${editedTask.repeatType}`);
     cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
   });

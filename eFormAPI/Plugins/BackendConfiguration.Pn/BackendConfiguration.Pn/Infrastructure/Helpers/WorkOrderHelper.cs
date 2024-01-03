@@ -4,22 +4,25 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Models;
+using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public static class WorkOrderHelper
 {
-    public static async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers, Core core, int userId,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext, [CanBeNull] IBackendConfigurationLocalizationService localizationService)
+    public static async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers, Core core, IUserService userService,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext, [CanBeNull] IBackendConfigurationLocalizationService localizationService, IBus bus)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         foreach (var propertyWorker in propertyWorkers.Where(x => x.TaskManagementEnabled == true))
@@ -87,13 +90,22 @@ public static class WorkOrderHelper
             var site = await sdkDbContext.Sites.Where(x => x.Id == propertyWorker.WorkerId)
                 .FirstAsync().ConfigureAwait(false);
 
-            if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
+            if (propertyWorker.EntityItemId != null) {
+                var entityItem = await sdkDbContext.EntityItems
+                    .Where(x => x.Id == propertyWorker.EntityItemId)
+                    .FirstOrDefaultAsync().ConfigureAwait(false);
+                await core.EntityItemUpdate(entityItem.Id, site.Name, entityItem.Description,
+                    entityItem.EntityItemUid, nextItemUid).ConfigureAwait(false);
+            } else
             {
-                var entityItem = await core
-                    .EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString())
-                    .ConfigureAwait(false);
-                propertyWorker.EntityItemId = entityItem.Id;
-                await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
+                {
+                    var entityItem = await core
+                        .EntitySelectItemCreate(deviceUsersGroup.Id, site.Name, 0, nextItemUid.ToString())
+                        .ConfigureAwait(false);
+                    propertyWorker.EntityItemId = entityItem.Id;
+                    await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
             }
 
             var entityItems = await sdkDbContext.EntityItems
@@ -116,21 +128,72 @@ public static class WorkOrderHelper
                 if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
                 {
                     await DeployEform(propertyWorker, eformIdForNewTasks, property, localizationService,
-                        int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                        int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
                 }
             }
         }
     }
 
     public static  async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService, int? areasGroupUid, int? deviceUsersGroupId, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService, int? areasGroupUid, int? deviceUsersGroupId, Core core, IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IBus bus)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
-        if (_backendConfigurationPnDbContext.WorkorderCases.Any(x =>
+        if (backendConfigurationPnDbContext.WorkorderCases.Any(x =>
                 x.PropertyWorkerId == propertyWorker.Id
                 && x.CaseStatusesEnum == CaseStatusesEnum.NewTask
                 && x.WorkflowState != Constants.WorkflowStates.Removed))
         {
+            // find all cases that are not removed and assignedTo is equal to site.name and update them with the new name
+            var workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+                .Where(x => x.AssignedToSdkSiteId == propertyWorker.WorkerId)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => x.LeadingCase == true)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var workorderCase in workorderCases)
+            {
+                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+            }
+
+            workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+                .Where(x => x.CreatedBySdkSiteId == propertyWorker.WorkerId)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => x.LeadingCase == true)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var workorderCase in workorderCases)
+            {
+                if(workorderCase.AssignedToSdkSiteId == null)
+                {
+                    continue;
+                }
+
+                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+            }
+
+            workorderCases = await backendConfigurationPnDbContext.WorkorderCases
+                .Where(x => x.UpdatedBySdkSiteId == propertyWorker.WorkerId)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask)
+                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                .Where(x => x.LeadingCase == true)
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var workorderCase in workorderCases)
+            {
+                if(workorderCase.AssignedToSdkSiteId == null)
+                {
+                    continue;
+                }
+
+                await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+            }
+
+
             return;
         }
         var site = await sdkDbContext.Sites.SingleAsync(x => x.Id == propertyWorker.WorkerId).ConfigureAwait(false);
@@ -187,18 +250,18 @@ public static class WorkOrderHelper
             CaseId = (int)caseId,
             PropertyWorkerId = propertyWorker.Id,
             CaseStatusesEnum = CaseStatusesEnum.NewTask,
-            CreatedByUserId = userId,
-            UpdatedByUserId = userId
-        }.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+            CreatedByUserId = userService.UserId,
+            UpdatedByUserId = userService.UserId,
+        }.Create(backendConfigurationPnDbContext).ConfigureAwait(false);
     }
 
-    public static async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder, Core core, int userId, BackendConfigurationPnDbContext _backendConfigurationPnDbContext)
+    public static async Task RetractEform(List<PropertyWorker> propertyWorkers, bool newWorkOrder, Core core, int userId, BackendConfigurationPnDbContext backendConfigurationPnDbContext)
     {
         foreach (var propertyWorker in propertyWorkers)
         {
             if (newWorkOrder)
             {
-                var workOrderCase = await _backendConfigurationPnDbContext.WorkorderCases
+                var workOrderCase = await backendConfigurationPnDbContext.WorkorderCases
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.PropertyWorkerId == propertyWorker.Id)
                     .Where(x => x.CaseStatusesEnum == CaseStatusesEnum.NewTask)
@@ -216,7 +279,7 @@ public static class WorkOrderHelper
                     }
                     // await core.CaseDelete(workorderCase.CaseId);
                     workOrderCase.UpdatedByUserId = userId;
-                    await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                    await workOrderCase.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
 
             }
@@ -229,7 +292,7 @@ public static class WorkOrderHelper
                 //
                 // foreach (var pWorker in pWorkers)
                 // {
-                    var workOrderCases = await _backendConfigurationPnDbContext.WorkorderCases.Where(x =>
+                    var workOrderCases = await backendConfigurationPnDbContext.WorkorderCases.Where(x =>
                             x.PropertyWorkerId == propertyWorker.Id
                             && x.WorkflowState != Constants.WorkflowStates.Removed)
                         .ToListAsync().ConfigureAwait(false);
@@ -244,7 +307,7 @@ public static class WorkOrderHelper
                             Console.WriteLine(e);
                         }
                         workOrderCase.UpdatedByUserId = userId;
-                        await workOrderCase.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                        await workOrderCase.Delete(backendConfigurationPnDbContext).ConfigureAwait(false);
                     }
                 //}
             }

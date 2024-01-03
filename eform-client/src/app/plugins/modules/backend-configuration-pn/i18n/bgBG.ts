@@ -277,4 +277,5 @@ export const bgBG = {
   'Edit employee': 'Редактиране на служител',
   Timeregistration: 'Регистрация на времето',
   'Submitted date': 'Дата на подаване',
+  Always: 'Винаги',
 };

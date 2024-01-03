@@ -56,7 +56,7 @@ describe('Backend Configuration Area Rules Type1', function () {
     const oldAreRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '2.3 Gyllekøling: Driftsstop',
+      eform: 'Kontrol flydelag',
     };
     await oldAreRule.edit(areaRuleForUpdate, true);
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
@@ -70,7 +70,7 @@ describe('Backend Configuration Area Rules Type1', function () {
     let areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     const areaRuleForUpdate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
-      eform: '2.3 Gyllekøling: Driftsstop',
+      eform: 'Kontrol flydelag',
     };
     await areRule.edit(areaRuleForUpdate);
     expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());

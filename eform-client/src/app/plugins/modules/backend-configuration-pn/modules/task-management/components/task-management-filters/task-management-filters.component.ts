@@ -357,8 +357,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
   getProperties() {
     this.propertyService.getAllProperties({
       nameFilter: '',
-      sort: 'Id',
-      isSortDsc: true,
+      sort: 'Name',
+      isSortDsc: false,
       pageSize: 100000,
       offset: 0,
       pageIndex: 0

@@ -102,12 +102,15 @@ namespace BackendConfiguration.Pn.Infrastructure
                 {
                     try
                     {
-                        var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId)
-                            .ConfigureAwait(false);
-                        if (caseDto.MicrotingUId != null)
-                            await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
-                        caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
-                        await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        if (caseToDelete.MicrotingSdkCaseId != 0)
+                        {
+                            var caseDto = await sdkCore.CaseLookupCaseId(caseToDelete.MicrotingSdkCaseId)
+                                .ConfigureAwait(false);
+                            if (caseDto.MicrotingUId != null)
+                                await sdkCore.CaseDelete((int)caseDto.MicrotingUId).ConfigureAwait(false);
+                            caseToDelete.WorkflowState = Constants.WorkflowStates.Retracted;
+                            await caseToDelete.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        }
                     }
                     catch (Exception e)
                     {
@@ -147,6 +150,12 @@ namespace BackendConfiguration.Pn.Infrastructure
                 {
                     var dbPlanning = await _itemsPlanningPnDbContext.Plannings.SingleAsync(x => x.Id == planning.Id)
                         .ConfigureAwait(false);
+                    if (dbPlanning.StartDate > DateTime.Now)
+                    {
+                        dbPlanning.LastExecutedTime = null;
+                        await dbPlanning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+                        continue;
+                    }
 
                     var now = DateTime.UtcNow;
                     var startDate = dbPlanning.StartDate;
@@ -155,7 +164,7 @@ namespace BackendConfiguration.Pn.Infrastructure
                     switch (dbPlanning.RepeatType)
                     {
                         case RepeatType.Day:
-                            if (dbPlanning.RepeatEvery > 1)
+                            if (dbPlanning.RepeatEvery > 0)
                             {
                                 var diff = (now - startDate).TotalDays;
                                 var multiplier = (int)(diff / planning.RepeatEvery);
@@ -262,17 +271,25 @@ namespace BackendConfiguration.Pn.Infrastructure
                         mainElement.DisplayOrder = ((DateTime)dbPlanning.NextExecutionTime - beginningOfTime).Days;
                         Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(language.LanguageCode);
 
-                        if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
+                        if (dbPlanning.RepeatEvery == 0 && dbPlanning.RepeatType == RepeatType.Day)
                         {
-                            mainElement.ElementList[0].Description.InderValue =
-                                $"<strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
-                        }
-                        else
+                            mainElement.EndDate = DateTime.UtcNow.AddYears(10);
+                        } else
                         {
-                            mainElement.ElementList[0].Description.InderValue +=
-                                $"<br><strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+
+                            if (string.IsNullOrEmpty(mainElement.ElementList[0].Description.InderValue))
+                            {
+                                mainElement.ElementList[0].Description.InderValue =
+                                    $"<strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                            }
+                            else
+                            {
+                                mainElement.ElementList[0].Description.InderValue +=
+                                    $"<br><strong>{localizationService.GetString("Deadline")}: {((DateTime)dbPlanning.NextExecutionTime).AddDays(-1).ToString("dd.MM.yyyy")}</strong>";
+                            }
+
+                            mainElement.EndDate = (DateTime)dbPlanning.NextExecutionTime;
                         }
-                        mainElement.EndDate = (DateTime)dbPlanning.NextExecutionTime;
                     }
                     else
                     {

@@ -277,4 +277,5 @@ export const frFR = {
   'Edit employee': 'Modifier un employé',
   Timeregistration: 'Enregistrement du temps',
   'Submitted date': 'Date proposée',
+  Always: 'Toujours',
 };

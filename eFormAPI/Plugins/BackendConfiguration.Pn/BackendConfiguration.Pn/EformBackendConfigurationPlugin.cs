@@ -23,6 +23,12 @@ SOFTWARE.
 */
 
 
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using Microting.EformAngularFrontendBase.Infrastructure.Data.Factories;
+using QuestPDF.Infrastructure;
+using Sentry;
+
 namespace BackendConfiguration.Pn
 {
     using ChemicalsBase.Infrastructure;
@@ -122,6 +128,7 @@ namespace BackendConfiguration.Pn
             services.AddTransient<IWordService, WordService>();
             services.AddControllers();
             SeedEForms(services);
+            QuestPDF.Settings.License = LicenseType.Community;
         }
 
         public void AddPluginConfig(IConfigurationBuilder builder, string connectionString)
@@ -212,16 +219,165 @@ namespace BackendConfiguration.Pn
                     }
                     else
                     {
-	                    List<string> hiddenIds = new List<string>
-	                    {
-		                    "1412",
-		                    "142663new2",
-		                    "142664new2",
-		                    "142665",
-		                    "8756",
-		                    "142720"
-	                    };
-	                    string contents;
+                        List<string> hiddenIds = new List<string>
+                        {
+                            "1412",
+                            "142663new",
+                            "142663new2",
+                            "142664new",
+                            "142664new2",
+                            "142665",
+                            "8756",
+                            "142720",
+                            "142663",
+                            "142352",
+                            "142664",
+                            "142778m",
+                            "142779m",
+                            "22",
+                            "142782m",
+                            "142786m",
+                            "142780m",
+                            "142781m",
+                            "11142660",
+                            "11142661",
+                            "142673",
+                            "111142690",
+                            "142698",
+                            "142674",
+                            "142691",
+                            "142699",
+                            "142675",
+                            "142692",
+                            "142670o",
+                            "142676",
+                            "142693",
+                            "142701",
+                            "142677",
+                            "142694",
+                            "142702",
+                            "142678",
+                            "142695",
+                            "142679",
+                            "142696",
+                            "142704",
+                            "142680",
+                            "142697",
+                            "142705",
+                            "142681",
+                            "142706",
+                            "142682",
+                            "142707",
+                            "142683",
+                            "142708",
+                            "142684",
+                            "142709",
+                            "142685",
+                            "142710",
+                            "142686",
+                            "142711",
+                            "142687",
+                            "142712",
+                            "142688",
+                            "142713",
+                            "11142689",
+                            "142714",
+                            "142715",
+                            "11142716",
+                            "142717",
+                            "142718",
+                            "142703",
+                            "142207",
+                            "142266",
+                            "142798",
+                            "142722",
+                            "142269",
+                            "142267",
+                            "142180",
+                            "142060",
+                            "142799",
+                            "142801",
+                            "142288",
+                            "142803",
+                            "142226",
+                            "142271",
+                            "142804",
+                            "142270",
+                            "142589",
+                            "142237",
+                            "142236",
+                            "142805",
+                            "142590",
+                            "142256",
+                            "142252",
+                            "142806",
+                            "142807",
+                            "142592",
+                            "142591",
+                            "142445",
+                            "142399",
+                            "142809",
+                            "142265",
+                            "142262",
+                            "142264",
+                            "142810",
+                            "142263",
+                            "142811",
+                            "142813",
+                            "142401a",
+                            "142593",
+                            "142594",
+                            "142595",
+                            "142348",
+                            "142425",
+                            "142381",
+                            "142212",
+                            "142243",
+                            "142742",
+                            "142621",
+                            "142622",
+                            "142623",
+                            "142624",
+                            "142625",
+                            "142626",
+                            "142627",
+                            "142628",
+                            "142629",
+                            "142630",
+                            "142631",
+                            "142632",
+                            "142633",
+                            "142634",
+                            "142635",
+                            "142636",
+                            "142637",
+                            "142638",
+                            "142639",
+                            "142640",
+                            "142641",
+                            "142642",
+                            "142660",
+                            "142661",
+                            "A142642",
+                            "B142642",
+                            "C142642",
+                            "D142642",
+                            "E142642",
+                            "F142642",
+                            "G142642",
+                            "H142642",
+                            "I142642",
+                            "142401",
+                            "142401a",
+                            "142244",
+                            "142242",
+                            "142700",
+                            "142721",
+                            "1412",
+                            "142802",
+                            "142142"
+                        };
+                        string contents;
                         using (var sr = new StreamReader(resourceStream))
                         {
                             contents = await sr.ReadToEndAsync().ConfigureAwait(false);
@@ -245,7 +401,8 @@ namespace BackendConfiguration.Pn
                         var newTemplate = await core.TemplateFromXml(contents).ConfigureAwait(false);
                         if (!await sdkDbContext.CheckLists
                                 .AnyAsync(x => x.OriginalId == newTemplate.OriginalId
-                                               && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ConfigureAwait(false))
+                                               && x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants
+                                                   .WorkflowStates.Removed).ConfigureAwait(false))
                         {
                             var clId = await core.TemplateCreate(newTemplate).ConfigureAwait(false);
                             var cl = await sdkDbContext.CheckLists.SingleAsync(x => x.Id == clId).ConfigureAwait(false);
@@ -259,7 +416,8 @@ namespace BackendConfiguration.Pn
                             cl.IsDoneAtEditable = true;
                             cl.QuickSyncEnabled = 1;
                             await cl.Update(sdkDbContext).ConfigureAwait(false);
-                            var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
+                            var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id)
+                                .ConfigureAwait(false);
                             subCl.QuickSyncEnabled = 1;
                             await subCl.Update(sdkDbContext).ConfigureAwait(false);
                         }
@@ -269,7 +427,8 @@ namespace BackendConfiguration.Pn
                             {
                                 var cl = await sdkDbContext.CheckLists.SingleAsync(x =>
                                     x.OriginalId == newTemplate.OriginalId && x.ParentId == null &&
-                                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates.Removed).ConfigureAwait(false);
+                                    x.WorkflowState != Microting.eForm.Infrastructure.Constants.Constants.WorkflowStates
+                                        .Removed).ConfigureAwait(false);
                                 cl.IsHidden = hiddenIds.Contains(cl.OriginalId);
                                 cl.IsLocked = true;
                                 cl.IsEditable = false;
@@ -280,13 +439,49 @@ namespace BackendConfiguration.Pn
                                 cl.IsDoneAtEditable = true;
                                 cl.QuickSyncEnabled = 1;
                                 await cl.Update(sdkDbContext).ConfigureAwait(false);
-                                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id).ConfigureAwait(false);
+                                var subCl = await sdkDbContext.CheckLists.SingleAsync(x => x.ParentId == cl.Id)
+                                    .ConfigureAwait(false);
                                 subCl.QuickSyncEnabled = 1;
                                 await subCl.Update(sdkDbContext).ConfigureAwait(false);
                             }
                             catch (Exception ex)
                             {
                                 Console.WriteLine(ex.Message);
+                            }
+                        }
+
+                        foreach (var hiddenId in hiddenIds)
+                        {
+                            var hiddenCls = await sdkDbContext.CheckLists.Where(x =>
+                                x.OriginalId == hiddenId && x.IsHidden == false).ToListAsync();
+                            foreach (var hiddenCl in hiddenCls)
+                            {
+                                if (hiddenCl != null)
+                                {
+                                    hiddenCl.IsHidden = true;
+                                    await hiddenCl.Update(sdkDbContext).ConfigureAwait(false);
+                                }
+                            }
+                        }
+
+                        var clsToHide = new List<string>
+                        {
+                            "eform-angular-work-orders-plugin-tasklist",
+                            "eform-angular-work-orders-plugin-newtask"
+                        };
+
+                        foreach (var hiddenId in clsToHide)
+                        {
+                            var hiddenClts = await sdkDbContext.CheckListTranslations.Where(x =>
+                                x.Text == hiddenId ).ToListAsync();
+                            foreach (var hiddenCl in hiddenClts)
+                            {
+                                var cl = await sdkDbContext.CheckLists.FirstOrDefaultAsync(x => x.Id == hiddenCl.CheckListId);
+                                if (cl != null)
+                                {
+                                    cl.IsHidden = true;
+                                    await cl.Update(sdkDbContext).ConfigureAwait(false);
+                                }
                             }
                         }
                     }
@@ -296,6 +491,14 @@ namespace BackendConfiguration.Pn
                     Console.WriteLine(exception.Message);
                 }
             }
+
+            var powerToolCheckList = await sdkDbContext.CheckListTranslations.FirstOrDefaultAsync(x => x.Text == "Elvætktøj");
+            if (powerToolCheckList != null)
+            {
+                powerToolCheckList.Text = "Elværktøj";
+                await powerToolCheckList.Update(sdkDbContext);
+            }
+
             var cls = await sdkDbContext.CheckLists.Where(x =>
                 x.OriginalId == "142719" && x.WorkflowState != Microting.eForm.Infrastructure.Constants
                     .Constants.WorkflowStates.Removed).ToListAsync();
@@ -309,6 +512,20 @@ namespace BackendConfiguration.Pn
                 {
                     await clt.Delete(sdkDbContext);
                 }
+            }
+
+            var fieldLabels = await sdkDbContext.FieldTranslations.Where(x => x.Text == "VÃ¦rktÃ¸jshus og hÃ¥ndtag OK").ToListAsync();
+            foreach (var fieldLabel in fieldLabels)
+            {
+                fieldLabel.Text = "Værktøjshus og håndtag OK";
+                await fieldLabel.Update(sdkDbContext);
+            }
+
+            fieldLabels = await sdkDbContext.FieldTranslations.Where(x => x.Text == "KÃ¦der OK").ToListAsync();
+            foreach (var fieldLabel in fieldLabels)
+            {
+                fieldLabel.Text = "Kæder OK";
+                await fieldLabel.Update(sdkDbContext);
             }
 
             // Seed areas
@@ -338,6 +555,50 @@ namespace BackendConfiguration.Pn
 
 		public void ConfigureDbContext(IServiceCollection services, string connectionString)
         {
+            SentrySdk.Init(options =>
+            {
+                // A Sentry Data Source Name (DSN) is required.
+                // See https://docs.sentry.io/product/sentry-basics/dsn-explainer/
+                // You can set it in the SENTRY_DSN environment variable, or you can set it in code here.
+                options.Dsn = "https://d07e105f7f60b749142c7883f0b9f2df@o4506241219428352.ingest.sentry.io/4506285252739072";
+
+                // When debug is enabled, the Sentry client will emit detailed debugging information to the console.
+                // This might be helpful, or might interfere with the normal operation of your application.
+                // We enable it here for demonstration purposes when first trying Sentry.
+                // You shouldn't do this in your applications unless you're troubleshooting issues with Sentry.
+                options.Debug = false;
+
+                // This option is recommended. It enables Sentry's "Release Health" feature.
+                options.AutoSessionTracking = true;
+
+                // This option is recommended for client applications only. It ensures all threads use the same global scope.
+                // If you're writing a background service of any kind, you should remove this.
+                options.IsGlobalModeEnabled = true;
+
+                // This option will enable Sentry's tracing features. You still need to start transactions and spans.
+                options.EnableTracing = true;
+            });
+
+            string pattern = @"Database=(\d+)_eform-backend-configuration-plugin;";
+            Match match = Regex.Match(connectionString!, pattern);
+
+            if (match.Success)
+            {
+                string numberString = match.Groups[1].Value;
+                int number = int.Parse(numberString);
+                SentrySdk.ConfigureScope(scope =>
+                {
+                    scope.SetTag("customerNo", number.ToString());
+                    Console.WriteLine("customerNo: " + number);
+                    scope.SetTag("osVersion", Environment.OSVersion.ToString());
+                    Console.WriteLine("osVersion: " + Environment.OSVersion);
+                    scope.SetTag("osArchitecture", RuntimeInformation.OSArchitecture.ToString());
+                    Console.WriteLine("osArchitecture: " + RuntimeInformation.OSArchitecture);
+                    scope.SetTag("osName", RuntimeInformation.OSDescription);
+                    Console.WriteLine("osName: " + RuntimeInformation.OSDescription);
+                });
+            }
+
             var itemsPlannigConnectionString = connectionString.Replace(
                 "eform-backend-configuration-plugin",
                 "eform-angular-items-planning-plugin");
@@ -425,660 +686,622 @@ namespace BackendConfiguration.Pn
             {
                 new()
                 {
-                    Name = "Dropdown",
-                    E2EId = "backend-configuration-pn",
-                    Link = "",
-                    Type = MenuItemTypeEnum.Dropdown,
-                    Position = 0,
+                    Name = "Properties",
+                    E2EId = "backend-configuration-pn-properties",
+                    Link = "/plugins/backend-configuration-pn/properties",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 8,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Properties",
+                        E2EId = "backend-configuration-pn-properties",
+                        DefaultLink = "/plugins/backend-configuration-pn/properties",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
+                            {
+                                LocaleName = LocaleNames.English,
+                                Name = "Properties",
+                                Language = LanguageNames.English
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Eigenschaften",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Ejendomme",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Властивості",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        }
+                    },
                     Translations = new List<PluginMenuTranslationModel>
                     {
                         new()
                         {
                             LocaleName = LocaleNames.English,
-                            Name = "Backend Configuration",
+                            Name = "Properties",
                             Language = LanguageNames.English
                         },
                         new()
                         {
                             LocaleName = LocaleNames.German,
-                            Name = "Aufbau",
+                            Name = "Eigenschaften",
                             Language = LanguageNames.German
                         },
                         new()
                         {
                             LocaleName = LocaleNames.Danish,
-                            Name = "Konfiguration",
+                            Name = "Ejendomme",
                             Language = LanguageNames.Danish
                         },
                         new()
                         {
                             LocaleName = LocaleNames.Ukrainian,
-                            Name = "Конфігурація серверної частини",
+                            Name = "Властивості",
                             Language = LanguageNames.Ukrainian
                         }
+                    }
+                },
+                new()
+                {
+                    Name = "Workers",
+                    E2EId = "backend-configuration-pn-property-workers",
+                    Link = "/plugins/backend-configuration-pn/property-workers",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 7,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Workers",
+                        E2EId = "backend-configuration-pn-property-workers",
+                        DefaultLink = "/plugins/backend-configuration-pn/property-workers",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
+                            {
+                                LocaleName = LocaleNames.English,
+                                Name = "Workers",
+                                Language = LanguageNames.English
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Mitarbeiter",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Medarbejdere",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Працівники",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        }
                     },
-                    ChildItems = new List<PluginMenuItemModel>
+                    Translations = new List<PluginMenuTranslationModel>
                     {
                         new()
                         {
-                            Name = "Properties",
-                            E2EId = "backend-configuration-pn-properties",
-                            Link = "/plugins/backend-configuration-pn/properties",
-                            Type = MenuItemTypeEnum.Link,
-                            Position = 0,
-                            MenuTemplate = new PluginMenuTemplateModel
-                            {
-                                Name = "Properties",
-                                E2EId = "backend-configuration-pn-properties",
-                                DefaultLink = "/plugins/backend-configuration-pn/properties",
-                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Properties",
-                                        Language = LanguageNames.English
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "Eigenschaften",
-                                        Language = LanguageNames.German
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "Ejendomme",
-                                        Language = LanguageNames.Danish
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Властивості",
-                                        Language = LanguageNames.Ukrainian
-                                    }
-                                }
-                            },
-                            Translations = new List<PluginMenuTranslationModel>
-                            {
-                                new()
-                                {
-                                    LocaleName = LocaleNames.English,
-                                    Name = "Properties",
-                                    Language = LanguageNames.English
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.German,
-                                    Name = "Eigenschaften",
-                                    Language = LanguageNames.German
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Danish,
-                                    Name = "Ejendomme",
-                                    Language = LanguageNames.Danish
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Властивості",
-                                    Language = LanguageNames.Ukrainian
-                                }
-                            }
-                        },
-                        new()
-                        {
+                            LocaleName = LocaleNames.English,
                             Name = "Workers",
-                            E2EId = "backend-configuration-pn-property-workers",
-                            Link = "/plugins/backend-configuration-pn/property-workers",
-                            Type = MenuItemTypeEnum.Link,
-                            Position = 1,
-                            MenuTemplate = new PluginMenuTemplateModel
-                            {
-                                Name = "Workers",
-                                E2EId = "backend-configuration-pn-property-workers",
-                                DefaultLink = "/plugins/backend-configuration-pn/property-workers",
-                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Workers",
-                                        Language = LanguageNames.English
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "Mitarbeiter",
-                                        Language = LanguageNames.German
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "Medarbejdere",
-                                        Language = LanguageNames.Danish
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Працівники",
-                                        Language = LanguageNames.Ukrainian
-                                    }
-                                }
-                            },
-                            Translations = new List<PluginMenuTranslationModel>
-                            {
-                                new()
-                                {
-                                    LocaleName = LocaleNames.English,
-                                    Name = "Workers",
-                                    Language = LanguageNames.English
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.German,
-                                    Name = "Mitarbeiter",
-                                    Language = LanguageNames.German
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Danish,
-                                    Name = "Medarbejdere",
-                                    Language = LanguageNames.Danish
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Працівники",
-                                    Language = LanguageNames.Ukrainian
-                                }
-                            }
+                            Language = LanguageNames.English
                         },
                         new()
                         {
-                            Name = "Task management",
-                            E2EId = "backend-configuration-pn-task-management",
-                            Link = "/plugins/backend-configuration-pn/task-management",
-                            Type = MenuItemTypeEnum.Link,
-                            Position = 2,
-                            MenuTemplate = new PluginMenuTemplateModel
-                            {
-                                Name = "Task management",
-                                E2EId = "backend-configuration-pn-task-management",
-                                DefaultLink = "/plugins/backend-configuration-pn/task-management",
-                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Task management",
-                                        Language = LanguageNames.English
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "Aufgabenverwaltung",
-                                        Language = LanguageNames.German
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "Opgavestyring",
-                                        Language = LanguageNames.Danish
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Управління завданнями",
-                                        Language = LanguageNames.Ukrainian
-                                    }
-                                }
-                            },
-                            Translations = new List<PluginMenuTranslationModel>
-                            {
-                                new()
-                                {
-                                    LocaleName = LocaleNames.English,
-                                    Name = "Task management",
-                                    Language = LanguageNames.English
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.German,
-                                    Name = "Aufgabenverwaltung",
-                                    Language = LanguageNames.German
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Danish,
-                                    Name = "Opgavestyring",
-                                    Language = LanguageNames.Danish
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Управління завданнями",
-                                    Language = LanguageNames.Ukrainian
-                                }
-                            }
+                            LocaleName = LocaleNames.German,
+                            Name = "Mitarbeiter",
+                            Language = LanguageNames.German
                         },
                         new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Medarbejdere",
+                            Language = LanguageNames.Danish
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Працівники",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    }
+                },
+                new()
+                {
+                    Name = "Task management",
+                    E2EId = "backend-configuration-pn-task-management",
+                    Link = "/plugins/backend-configuration-pn/task-management",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 3,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Task management",
+                        E2EId = "backend-configuration-pn-task-management",
+                        DefaultLink = "/plugins/backend-configuration-pn/task-management",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
                             {
+                                LocaleName = LocaleNames.English,
+                                Name = "Ad-hoc-tasks",
+                                Language = LanguageNames.English
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Ad-hoc-Aufgaben",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Ad-hoc-opgaver",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Адміністративні завдання",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        }
+                    },
+                    Translations = new List<PluginMenuTranslationModel>
+                    {
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Ad-hoc-tasks",
+                            Language = LanguageNames.English
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Ad-hoc-Aufgaben",
+                            Language = LanguageNames.German
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Ad-hoc-opgaver",
+                            Language = LanguageNames.Danish
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Адміністративні завдання",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    }
+                },
+                new()
+                {
+                    Name = "Reports",
+                    E2EId = "backend-configuration-pn-reports",
+                    Link = "/plugins/backend-configuration-pn/reports",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 6,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Reports",
+                        E2EId = "backend-configuration-pn-reports",
+                        DefaultLink = "/plugins/backend-configuration-pn/reports",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new PluginMenuTranslationModel
+                            {
+                                LocaleName = LocaleNames.English,
                                 Name = "Reports",
-                                E2EId = "backend-configuration-pn-reports",
-                                Link = "/plugins/backend-configuration-pn/reports",
-                                Type = MenuItemTypeEnum.Link,
-                                Position = 3,
-                                MenuTemplate = new PluginMenuTemplateModel
-                                {
-                                    Name = "Reports",
-                                    E2EId = "backend-configuration-pn-reports",
-                                    DefaultLink = "/plugins/backend-configuration-pn/reports",
-                                    Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                    Translations = new List<PluginMenuTranslationModel>
-                                    {
-                                        new PluginMenuTranslationModel
-                                        {
-                                            LocaleName = LocaleNames.English,
-                                            Name = "Reports",
-                                            Language = LanguageNames.English
-                                        },
-                                        new PluginMenuTranslationModel
-                                        {
-                                            LocaleName = LocaleNames.German,
-                                            Name = "Berichte",
-                                            Language = LanguageNames.German
-                                        },
-                                        new PluginMenuTranslationModel
-                                        {
-                                            LocaleName = LocaleNames.Danish,
-                                            Name = "Rapporter",
-                                            Language = LanguageNames.Danish
-                                        },
-                                        new PluginMenuTranslationModel
-                                        {
-                                            LocaleName = LocaleNames.Ukrainian,
-                                            Name = "Звіти",
-                                            Language = LanguageNames.Ukrainian
-                                        }
-                                    }
-                                },
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Reports",
-                                        Language = LanguageNames.English
-                                    },
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "Berichte",
-                                        Language = LanguageNames.German
-                                    },
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "Rapporter",
-                                        Language = LanguageNames.Danish
-                                    },
-                                    new PluginMenuTranslationModel
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Звіти",
-                                        Language = LanguageNames.Ukrainian
-                                    }
-                                }
+                                Language = LanguageNames.English
                             },
-                        new()
-                        {
-                            Name = "Documents",
-                            E2EId = "backend-configuration-pn-documents",
-                            Link = "/plugins/backend-configuration-pn/documents",
-                            Type = MenuItemTypeEnum.Link,
-                            Position = 4,
-                            MenuTemplate = new PluginMenuTemplateModel
+                            new PluginMenuTranslationModel
                             {
-                                Name = "Documents",
-                                E2EId = "backend-configuration-pn-documents",
-                                DefaultLink = "/plugins/backend-configuration-pn/documents",
-                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Documents",
-                                        Language = LanguageNames.English
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "Unterlagen",
-                                        Language = LanguageNames.German
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "Dokumenter",
-                                        Language = LanguageNames.Danish
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Документи",
-                                        Language = LanguageNames.Ukrainian
-                                    }
-                                }
+                                LocaleName = LocaleNames.German,
+                                Name = "Berichte",
+                                Language = LanguageNames.German
                             },
-                            Translations = new List<PluginMenuTranslationModel>
+                            new PluginMenuTranslationModel
                             {
-                                new()
-                                {
-                                    LocaleName = LocaleNames.English,
-                                    Name = "Documents",
-                                    Language = LanguageNames.English
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.German,
-                                    Name = "Unterlagen",
-                                    Language = LanguageNames.German
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Danish,
-                                    Name = "Dokumenter",
-                                    Language = LanguageNames.Danish
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Документи",
-                                    Language = LanguageNames.Ukrainian
-                                }
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Rapporter",
+                                Language = LanguageNames.Danish
+                            },
+                            new PluginMenuTranslationModel
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Звіти",
+                                Language = LanguageNames.Ukrainian
                             }
+                        }
+                    },
+                    Translations = new List<PluginMenuTranslationModel>
+                    {
+                        new PluginMenuTranslationModel
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Reports",
+                            Language = LanguageNames.English
                         },
-						new()
-						{
-							Name = "Files",
-							E2EId = "backend-configuration-pn-files",
-							Link = "/plugins/backend-configuration-pn/files",
-							Type = MenuItemTypeEnum.Link,
-							Position = 5,
-							MenuTemplate = new PluginMenuTemplateModel
-							{
-								Name = "Files",
-								E2EId = "backend-configuration-pn-files",
-								DefaultLink = "/plugins/backend-configuration-pn/files",
-								Permissions = new List<PluginMenuTemplatePermissionModel>(),
-								Translations = new List<PluginMenuTranslationModel>
-								{
-									new()
-									{
-										LocaleName = LocaleNames.English,
-										Name = "Files",
-										Language = LanguageNames.English
-									},
-									new()
-									{
-										LocaleName = LocaleNames.German,
-										Name = "Datei",
-										Language = LanguageNames.German
-									},
-									new()
-									{
-										LocaleName = LocaleNames.Danish,
-										Name = "Fil",
-										Language = LanguageNames.Danish
-									},
-									new()
-									{
-										LocaleName = LocaleNames.Ukrainian,
-										Name = "Файли",
-										Language = LanguageNames.Ukrainian
-									}
-								}
-							},
-							Translations = new List<PluginMenuTranslationModel>
-							{
-								new()
-								{
-									LocaleName = LocaleNames.English,
-									Name = "Files",
-									Language = LanguageNames.English
-								},
-								new()
-								{
-									LocaleName = LocaleNames.German,
-									Name = "Datei",
-									Language = LanguageNames.German
-								},
-								new()
-								{
-									LocaleName = LocaleNames.Danish,
-									Name = "Fil",
-									Language = LanguageNames.Danish
-								},
-								new()
-								{
-									LocaleName = LocaleNames.Ukrainian,
-									Name = "Файли",
-									Language = LanguageNames.Ukrainian
-								}
-							}
-						},
-						new()
-						{
-							Name = "Task tracker",
-							E2EId = "backend-configuration-pn-task-tracker",
-							Link = "/plugins/backend-configuration-pn/task-tracker",
-							Type = MenuItemTypeEnum.Link,
-							Position = 6,
-							MenuTemplate = new PluginMenuTemplateModel
-							{
-								Name = "Task tracker",
-								E2EId = "backend-configuration-pn-task-tracker",
-								DefaultLink = "/plugins/backend-configuration-pn/task-tracker",
-								Permissions = new List<PluginMenuTemplatePermissionModel>(),
-								Translations = new List<PluginMenuTranslationModel>
-								{
-									new()
-									{
-										LocaleName = LocaleNames.English,
-										Name = "Task tracker",
-										Language = LanguageNames.English
-									},
-									new()
-									{
-										LocaleName = LocaleNames.German,
-										Name = "Aufgabenverfolgung",
-										Language = LanguageNames.German
-									},
-									new()
-									{
-										LocaleName = LocaleNames.Danish,
-										Name = "Medarbejder",
-										Language = LanguageNames.Danish
-									},
-									new()
-									{
-										LocaleName = LocaleNames.Ukrainian,
-										Name = "Відстежувач завдань",
-										Language = LanguageNames.Ukrainian
-									}
-								}
-							},
-							Translations = new List<PluginMenuTranslationModel>
-							{
-								new()
-								{
-									LocaleName = LocaleNames.English,
-									Name = "Task tracker",
-									Language = LanguageNames.English
-								},
-								new()
-								{
-									LocaleName = LocaleNames.German,
-									Name = "Aufgabenverfolgung",
-									Language = LanguageNames.German
-								},
-								new()
-								{
-									LocaleName = LocaleNames.Danish,
-									Name = "Medarbejder",
-									Language = LanguageNames.Danish
-								},
-								new()
-								{
-									LocaleName = LocaleNames.Ukrainian,
-									Name = "Відстежувач завдань",
-									Language = LanguageNames.Ukrainian
-								}
-							}
-						},
+                        new PluginMenuTranslationModel
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Berichte",
+                            Language = LanguageNames.German
+                        },
+                        new PluginMenuTranslationModel
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Rapporter",
+                            Language = LanguageNames.Danish
+                        },
+                        new PluginMenuTranslationModel
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Звіти",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    }
+                },
+                new()
+                {
+                    Name = "Documents",
+                    E2EId = "backend-configuration-pn-documents",
+                    Link = "/plugins/backend-configuration-pn/documents",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 4,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Documents",
+                        E2EId = "backend-configuration-pn-documents",
+                        DefaultLink = "/plugins/backend-configuration-pn/documents",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
+                            {
+                                LocaleName = LocaleNames.English,
+                                Name = "Word-documents",
+                                Language = LanguageNames.English
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Word-dokumente",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Word-dokumenter",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Word-документи",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        }
+                    },
+                    Translations = new List<PluginMenuTranslationModel>
+                    {
                         new()
                         {
-                            Name = "Task wizard",
-                            E2EId = "backend-configuration-pn-task-wizard",
-                            Link = "/plugins/backend-configuration-pn/task-wizard",
-                            Type = MenuItemTypeEnum.Link,
-                            Position = 6,
-                            MenuTemplate = new PluginMenuTemplateModel
-                            {
-                                Name = "Task wizard",
-                                E2EId = "backend-configuration-pn-task-wizard",
-                                DefaultLink = "/plugins/backend-configuration-pn/task-wizard",
-                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Task wizard",
-                                        Language = LanguageNames.English
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "Aufgaben-Assistent",
-                                        Language = LanguageNames.German
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "Opgaveguide",
-                                        Language = LanguageNames.Danish
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Майстер завдань",
-                                        Language = LanguageNames.Ukrainian
-                                    }
-                                }
-                            },
-                            Translations = new List<PluginMenuTranslationModel>
-                            {
-                                new()
-                                {
-                                    LocaleName = LocaleNames.English,
-                                    Name = "Task wizard",
-                                    Language = LanguageNames.English
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.German,
-                                    Name = "Aufgaben-Assistent",
-                                    Language = LanguageNames.German
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Danish,
-                                    Name = "Opgaveguide",
-                                    Language = LanguageNames.Danish
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Майстер завдань",
-                                    Language = LanguageNames.Ukrainian
-                                }
-                            }
+                            LocaleName = LocaleNames.English,
+                            Name = "Word-documents",
+                            Language = LanguageNames.English
                         },
                         new()
                         {
-                            Name = "Statistics",
-                            E2EId = "backend-configuration-pn-statistics",
-                            Link = "/plugins/backend-configuration-pn/statistics",
-                            Type = MenuItemTypeEnum.Link,
-                            Position = 7,
-                            MenuTemplate = new PluginMenuTemplateModel
+                            LocaleName = LocaleNames.German,
+                            Name = "Word-dokumente",
+                            Language = LanguageNames.German
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Word-dokumenter",
+                            Language = LanguageNames.Danish
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Word-документи",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    }
+                },
+                new()
+                {
+                    Name = "PDF-archive",
+                    E2EId = "backend-configuration-pn-files",
+                    Link = "/plugins/backend-configuration-pn/files",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 4,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "PDF-archive",
+                        E2EId = "backend-configuration-pn-files",
+                        DefaultLink = "/plugins/backend-configuration-pn/files",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
                             {
-                                Name = "Statistics",
-                                E2EId = "backend-configuration-pn-statistics",
-                                DefaultLink = "/plugins/backend-configuration-pn/statistics",
-                                Permissions = new List<PluginMenuTemplatePermissionModel>(),
-                                Translations = new List<PluginMenuTranslationModel>
-                                {
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.English,
-                                        Name = "Statistics",
-                                        Language = LanguageNames.English
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.German,
-                                        Name = "Statistik",
-                                        Language = LanguageNames.German
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Danish,
-                                        Name = "Statistik",
-                                        Language = LanguageNames.Danish
-                                    },
-                                    new()
-                                    {
-                                        LocaleName = LocaleNames.Ukrainian,
-                                        Name = "Статистика",
-                                        Language = LanguageNames.Ukrainian
-                                    }
-                                }
+                                LocaleName = LocaleNames.English,
+                                Name = "PDF-archive",
+                                Language = LanguageNames.English
                             },
-                            Translations = new List<PluginMenuTranslationModel>
+                            new()
                             {
-                                new()
-                                {
-                                    LocaleName = LocaleNames.English,
-                                    Name = "Statistics",
-                                    Language = LanguageNames.English
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.German,
-                                    Name = "Statistik",
-                                    Language = LanguageNames.German
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Danish,
-                                    Name = "Statistik",
-                                    Language = LanguageNames.Danish
-                                },
-                                new()
-                                {
-                                    LocaleName = LocaleNames.Ukrainian,
-                                    Name = "Статистика",
-                                    Language = LanguageNames.Ukrainian
-                                }
+                                LocaleName = LocaleNames.German,
+                                Name = "PDF-arkiv",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "PDF-arkiv",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "PDF-архів",
+                                Language = LanguageNames.Ukrainian
                             }
+                        }
+                    },
+                    Translations = new List<PluginMenuTranslationModel>
+                    {
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "PDF-archive",
+                            Language = LanguageNames.English
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "PDF-arkiv",
+                            Language = LanguageNames.German
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "PDF-arkiv",
+                            Language = LanguageNames.Danish
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "PDF-архів",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    }
+                },
+                new()
+                {
+                    Name = "Active planned tasks",
+                    E2EId = "backend-configuration-pn-task-tracker",
+                    Link = "/plugins/backend-configuration-pn/task-tracker",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 2,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Active planned tasks",
+                        E2EId = "backend-configuration-pn-task-tracker",
+                        DefaultLink = "/plugins/backend-configuration-pn/task-tracker",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
+                            {
+                                LocaleName = LocaleNames.English,
+                                Name = "Active planned tasks",
+                                Language = LanguageNames.English
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Aktive geplante Aufgaben",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Aktive planlagte opgaver",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Активні заплановані завдання",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        }
+                    },
+                    Translations = new List<PluginMenuTranslationModel>
+                    {
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Task tracker",
+                            Language = LanguageNames.English
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Aufgabenverfolgung",
+                            Language = LanguageNames.German
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Aktive planlagte opgaver",
+                            Language = LanguageNames.Danish
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Відстежувач завдань",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    }
+                },
+                new()
+                {
+                    Name = "All planned tasks",
+                    E2EId = "backend-configuration-pn-task-wizard",
+                    Link = "/plugins/backend-configuration-pn/task-wizard",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 1,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "All planned tasks",
+                        E2EId = "backend-configuration-pn-task-wizard",
+                        DefaultLink = "/plugins/backend-configuration-pn/task-wizard",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
+                            {
+                                LocaleName = LocaleNames.English,
+                                Name = "All planned tasks",
+                                Language = LanguageNames.English
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Alle geplanten Aufgaben",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Alle planlagte opgaver",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Всі заплановані завдання",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        }
+                    },
+                    Translations = new List<PluginMenuTranslationModel>
+                    {
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "All planned tasks",
+                            Language = LanguageNames.English
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Alle geplanten Aufgaben",
+                            Language = LanguageNames.German
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Alle planlagte opgaver",
+                            Language = LanguageNames.Danish
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Всі заплановані завдання",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    }
+                },
+                new()
+                {
+                    Name = "Dashboard",
+                    E2EId = "backend-configuration-pn-statistics",
+                    Link = "/plugins/backend-configuration-pn/statistics",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 0,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Dashboard",
+                        E2EId = "backend-configuration-pn-statistics",
+                        DefaultLink = "/plugins/backend-configuration-pn/statistics",
+                        Permissions = new List<PluginMenuTemplatePermissionModel>(),
+                        Translations = new List<PluginMenuTranslationModel>
+                        {
+                            new()
+                            {
+                                LocaleName = LocaleNames.English,
+                                Name = "Dashboard",
+                                Language = LanguageNames.English
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Ûberblick",
+                                Language = LanguageNames.German
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Overklik",
+                                Language = LanguageNames.Danish
+                            },
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Дашборд",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        }
+                    },
+                    Translations = new List<PluginMenuTranslationModel>
+                    {
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Dashboard",
+                            Language = LanguageNames.English
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Ûberblick",
+                            Language = LanguageNames.German
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Overklik",
+                            Language = LanguageNames.Danish
+                        },
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Дашборд",
+                            Language = LanguageNames.Ukrainian
                         }
                     }
                 }
@@ -1177,6 +1400,43 @@ namespace BackendConfiguration.Pn
             using var context = contextFactory.CreateDbContext(new[] { connectionString });
             // Seed configuration
             BackendConfigurationPluginSeed.SeedData(context);
+
+            var angularDbConnectionString = connectionString.Replace(
+                "eform-backend-configuration-plugin",
+                "Angular");
+            var baseDbContext = new BaseDbContextFactory();
+            using var baseDb = baseDbContext.CreateDbContext(new[] { angularDbConnectionString });
+
+            // lookup the user role
+            var userRole = baseDb.Roles.Single(x => x.Name == "user");
+            // lookup "Access BackendConfiguration Plugin" permission for the plugin and give the user role access
+            var permissionsToEnable = new List<string>
+            {
+                "Access BackendConfiguration Plugin",
+                "Get properties",
+                "Enable document management",
+                "Enable task management",
+                "Enable time registration"
+            };
+            foreach (var permissionToEnable in permissionsToEnable)
+            {
+                var backendConfigurationPluginPermission =
+                    context.PluginPermissions.SingleOrDefault(x =>
+                        x.PermissionName == permissionToEnable);
+                if (backendConfigurationPluginPermission != null)
+                {
+                    // set PluginGroupPermissions to enabled for the user role
+                    var userRolePluginPermissions = context.PluginGroupPermissions.FirstOrDefault(x =>
+                        x.PermissionId == backendConfigurationPluginPermission.Id &&
+                        x.GroupId == userRole.Id);
+                    if (userRolePluginPermissions != null)
+                    {
+                        userRolePluginPermissions.IsEnabled = true;
+                        context.SaveChanges();
+                    }
+                }
+            }
+
         }
 
         public PluginPermissionsManager GetPermissionsManager(string connectionString)

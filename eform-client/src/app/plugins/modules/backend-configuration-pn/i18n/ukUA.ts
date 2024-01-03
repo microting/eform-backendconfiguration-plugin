@@ -277,4 +277,5 @@ export const ukUA = {
   'Edit employee': 'Редагувати співробітника',
   Timeregistration: 'Реєстрація часу',
   'Submitted date': 'Дата подання',
+  Always: 'Завжди',
 };

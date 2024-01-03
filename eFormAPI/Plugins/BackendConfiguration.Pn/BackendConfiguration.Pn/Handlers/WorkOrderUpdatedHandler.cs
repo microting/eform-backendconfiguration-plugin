@@ -10,6 +10,7 @@ using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using eFormCore;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
+using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eForm.Infrastructure.Models;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -33,7 +34,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
 
     public async Task Handle(WorkOrderUpdated message)
     {
-        await DeployWorkOrderEform(message.PropertyWorkers, message.EformId, message.PropertyId, message.Description,  message.Status, message.WorkorderCaseId, message.NewDescription, message.DeviceUsersGroupId, message.PdfHash, message.SiteName, message.PushMessageBody, message.PushMessageTitle, message.UpdatedByName);
+        await DeployWorkOrderEform(message.PropertyWorkers, message.EformId, message.PropertyId, message.Description,  message.Status, message.WorkorderCaseId, message.NewDescription, message.DeviceUsersGroupId, message.PdfHash, message.AssignedToSite, message.PushMessageBody, message.PushMessageTitle, message.UpdatedByName);
     }
 
     private async Task DeployWorkOrderEform(
@@ -46,7 +47,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
         string newDescription,
         int? deviceUsersGroupId,
         string pdfHash,
-        string siteName,
+        Site assignedToSite,
         string pushMessageBody,
         string pushMessageTitle,
         string updatedByName)
@@ -107,7 +108,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                     break;
             }
 
-            var assignedTo = site.Name == siteName ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {siteName}<br>";
+            var assignedTo = site.Name == assignedToSite.Name ? "" : $"<strong>{_backendConfigurationLocalizationService.GetString("AssignedTo")}:</strong> {assignedToSite.Name}<br>";
 
             var areaName = !string.IsNullOrEmpty(workOrderCase.SelectedAreaName)
                 ? $"<strong>{_backendConfigurationLocalizationService.GetString("Area")}:</strong> {workOrderCase.SelectedAreaName}<br>"
@@ -131,7 +132,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             //     DateTime startDate = new DateTime(2020, 1, 1);
             //     mainElement.DisplayOrder = (int)(startDate - DateTime.UtcNow).TotalSeconds;
             // }
-            if (site.Name == siteName)
+            if (site.Name == assignedToSite.Name)
             {
                 mainElement.CheckListFolderName = sdkDbContext.Folders.First(x => x.Id == (workOrderCase.Priority != "1" ? property.FolderIdForOngoingTasks : property.FolderIdForTasks))
                     .MicrotingUid.ToString();
@@ -196,7 +197,8 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                 CreatedByText = workOrderCase.CreatedByText,
                 Description = newDescription,
                 CaseInitiated = workOrderCase.CaseInitiated,
-                LastAssignedToName = siteName,
+                LastAssignedToName = assignedToSite.Name,
+                AssignedToSdkSiteId = assignedToSite.Id,
                 LastUpdatedByName = updatedByName,
                 LeadingCase = i == 0,
                 Priority = workOrderCase.Priority

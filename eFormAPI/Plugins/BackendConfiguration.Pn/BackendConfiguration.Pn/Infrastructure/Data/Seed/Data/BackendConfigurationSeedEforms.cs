@@ -73,18 +73,18 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// };
 			// item = new KeyValuePair<string, List<string>>("03. Kontrol alarmanlæg gyllebeholder", headers);
 			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"03.Gyllebeholdere","03.01Flydelag"
-			// };
-			// item = new KeyValuePair<string, List<string>>("03. Kontrol flydelag", headers);
-			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"03.Gyllebeholdere","03.03Konstruktion"
-			// };
-			// item = new KeyValuePair<string, List<string>>("03. Kontrol konstruktion", headers);
-			// theList.Add(item);
+			var headers = new List<string>
+			{
+				"03.Gyllebeholdere","03.01Flydelag"
+			};
+			var item = new KeyValuePair<string, List<string>>("03. Kontrol flydelag", headers);
+			theList.Add(item);
+			headers = new List<string>
+			{
+				"03.Gyllebeholdere","03.03Konstruktion"
+			};
+			item = new KeyValuePair<string, List<string>>("03. Kontrol konstruktion", headers);
+			theList.Add(item);
 			// headers = new List<string>
 			// {
 			// 	"04.Foderindlægssedler",""
@@ -97,11 +97,11 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
             //  };
             // item = new KeyValuePair<string, List<string>>("05.01 Halebid", headers);
             // theList.Add(item);
-            var headers = new List<string>
+            headers = new List<string>
              {
                  "05.Halebid",""
              };
-            var item = new KeyValuePair<string, List<string>>("05. Halebid og risikovurdering", headers);
+            item = new KeyValuePair<string, List<string>>("05. Halebid og risikovurdering", headers);
             theList.Add(item);
    //          headers = new List<string>
 			// {
@@ -211,12 +211,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// };
 			// item = new KeyValuePair<string, List<string>>("12. Motor- og spildolie", headers);
 			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"",""
-			// };
-			// item = new KeyValuePair<string, List<string>>("13. APV Handlingsplan", headers);
-			// theList.Add(item);
+			headers = new List<string>
+			{
+				"",""
+			};
+			item = new KeyValuePair<string, List<string>>("13. APV Handlingsplan", headers);
+			theList.Add(item);
 			headers = new List<string>
 			{
 				"APV Medarbejder",""
@@ -801,12 +801,12 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
 			// };
 			// item = new KeyValuePair<string, List<string>>("02. Fækale uheld", headers);
 			// theList.Add(item);
-			// headers = new List<string>
-			// {
-			// 	"","",""
-			// };
-			// item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
-			// theList.Add(item);
+			headers = new List<string>
+			{
+				"","",""
+			};
+			item = new KeyValuePair<string, List<string>>("00. Info boks", headers);
+			theList.Add(item);
 			// headers = new List<string>
 			// {
 			// 	"26.Kornlager","",""

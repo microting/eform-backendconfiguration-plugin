@@ -78,7 +78,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             if (request.Filters.AssignToIds.Any())
             {
-                query = query.Where(x => x.PlanningSites.Any(y => request.Filters.AssignToIds.Contains(y.SiteId)));
+                query = query.Where(x => x.PlanningSites.Where(z => z.WorkflowState != Constants.WorkflowStates.Removed).Any(y => request.Filters.AssignToIds.Contains(y.SiteId)));
             }
 
             if (request.Filters.Status != null)
@@ -230,7 +230,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     Id = x.Id,
                     Name = fullNames ? $"{x.CVR} - {x.CHR} - {x.Name}" : x.Name,
                     Description = ""
-                }).AsNoTracking().ToListAsync().ConfigureAwait(false);
+                }).OrderBy(x => x.Name).AsNoTracking().ToListAsync().ConfigureAwait(false);
             return new OperationDataResult<List<CommonDictionaryModel>>(true, properties);
         }
         catch (Exception ex)
@@ -357,11 +357,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             else
             {
                 createModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
-            }
-
-            if (createModel.RepeatType == RepeatType.Day && createModel.RepeatEvery == 1)
-            {
-                createModel.RepeatEvery = 0;
             }
 
             var dayOfWeek = DayOfWeek.Monday;
@@ -610,11 +605,6 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             else
             {
                 updateModel.StartDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 0, 0, 0);
-            }
-
-            if (updateModel.RepeatType == RepeatType.Day && updateModel.RepeatEvery == 1)
-            {
-                updateModel.RepeatEvery = 0;
             }
 
             var currentSiteIds = areaRulePlanning.PlanningSites.Select(ps => ps.SiteId).ToList();

@@ -277,4 +277,5 @@ export const huHU = {
   'Edit employee': 'Alkalmazott szerkesztése',
   Timeregistration: 'Idő regisztráció',
   'Submitted date': 'Beküldés dátuma',
+  Always: 'Mindig',
 };

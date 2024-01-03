@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Main>
-  <Id>142060</Id>
+  <Id>142060new1</Id>
   <Repeated>0</Repeated>
-  <Label>03. Kontrol konstruktion|03. Control construction</Label>
+  <Label>Kontrol konstruktion|Control construction</Label>
   <StartDate>2020-08-07</StartDate>
   <EndDate>2030-08-07</EndDate>
   <Language>da</Language>
@@ -13,8 +13,8 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142060</Id>
-      <Label>03. Kontrol konstruktion|03. Control construction</Label>
+      <Id>142060new1</Id>
+      <Label>Kontrol konstruktion|Control construction</Label>
       <Description><![CDATA[Tjek for skader på kablerne, kabelomslutningen og fugemassen.|Check for damage to the cables, cable enclosure and sealant.]]></Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
@@ -42,11 +42,23 @@
         </DataItemGroup>
       </DataItemGroupList>
       <DataItemList>
+        <DataItem type="Date">
+          <Id>377662</Id>
+          <Label>Udført dato|Date completed|</Label>
+          <Description><![CDATA[<i>* Skal udfyldes</i>|<i>* Mandatory</i>|<i>* Muss vervollständigt werden</i>]]></Description>
+          <DisplayOrder>1</DisplayOrder>
+          <MinValue>2023-05-09</MinValue>
+          <MaxValue>2033-05-09</MaxValue>
+          <Value/>
+          <Mandatory>true</Mandatory>
+          <ReadOnly>false</ReadOnly>
+          <Color>e8eaf6</Color>
+        </DataItem>
         <DataItem type="CheckBox">
           <Id>371011</Id>
           <Label>Kabler OK|Cables OK</Label>
           <Description><![CDATA[Der må ikke være synlige skader på kablerne.|There must be no visible damage to the cables.]]></Description>
-          <DisplayOrder>1</DisplayOrder>
+          <DisplayOrder>2</DisplayOrder>
           <Selected>false</Selected>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
@@ -55,7 +67,7 @@
           <Id>372047</Id>
           <Label>Kabelomslutning OK|Cable enclosure OK</Label>
           <Description><![CDATA[Huller på kabelomslutning kan oftest ses ved, at fedtet er løbet ud af omslutningen og har skabt mørke pletter på beholderen.|Holes on the cable enclosure can most often be seen by the grease running out of the enclosure and creating dark stains on the container.]]></Description>
-          <DisplayOrder>2</DisplayOrder>
+          <DisplayOrder>3</DisplayOrder>
           <Selected>false</Selected>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
@@ -64,7 +76,7 @@
           <Id>372048</Id>
           <Label>Fugemassen OK|Sealant OK</Label>
           <Description><![CDATA[Fugemassen må ikke være mørnet.|The sealant must not be softened.]]></Description>
-          <DisplayOrder>3</DisplayOrder>
+          <DisplayOrder>4</DisplayOrder>
           <Selected>false</Selected>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
@@ -73,7 +85,7 @@
           <Id>371014</Id>
           <Label>Billede|Picture</Label>
           <Description><![CDATA[]]></Description>
-          <DisplayOrder>4</DisplayOrder>
+          <DisplayOrder>5</DisplayOrder>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
@@ -81,7 +93,7 @@
           <Id>371015</Id>
           <Label>Kommentar|Comment</Label>
           <Description><![CDATA[]]></Description>
-          <DisplayOrder>5</DisplayOrder>
+          <DisplayOrder>6</DisplayOrder>
           <Multi>1</Multi>
           <GeolocationEnabled>false</GeolocationEnabled>
           <Split>false</Split>
@@ -94,8 +106,8 @@
           <Id>371016</Id>
           <Label>Gem registrering|Save registration</Label>
           <Description><![CDATA[]]></Description>
-          <DisplayOrder>6</DisplayOrder>
-          <Value>GEM|SAVE</Value>
+          <DisplayOrder>7</DisplayOrder>
+          <Value>INDSEND|SEND</Value>
           <Color>f0f8db</Color>
         </DataItem>
       </DataItemList>

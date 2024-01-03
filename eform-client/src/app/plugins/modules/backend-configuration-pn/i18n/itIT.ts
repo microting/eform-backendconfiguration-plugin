@@ -277,4 +277,5 @@ export const itIT = {
   'Edit employee': 'Modifica dipendente',
   Timeregistration: 'Registrazione del tempo',
   'Submitted date': 'Data di invio',
+  Always: 'Sempre',
 };

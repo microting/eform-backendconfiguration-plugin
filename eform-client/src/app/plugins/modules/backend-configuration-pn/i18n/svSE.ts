@@ -277,4 +277,5 @@ export const svSE = {
   'Edit employee': 'Redigera medarbetare',
   Timeregistration: 'Tidsregistrering',
   'Submitted date': 'Inlämningsdatum',
+  Always: 'Alltid',
 };

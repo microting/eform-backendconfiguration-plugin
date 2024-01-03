@@ -1905,6 +1905,9 @@ CREATE TABLE `WorkorderCaseVersions` (
   `LastUpdatedByName` longtext DEFAULT NULL,
   `LeadingCase` tinyint(1) NOT NULL DEFAULT 0,
   `Priority` longtext DEFAULT NULL,
+  `CreatedBySdkSiteId` int(11) DEFAULT NULL,
+  `UpdatedBySdkSiteId` int(11) DEFAULT NULL,
+  `AssignedToSdkSiteId` int(11) DEFAULT NULL,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1947,6 +1950,9 @@ CREATE TABLE `WorkorderCases` (
   `LastUpdatedByName` longtext DEFAULT NULL,
   `LeadingCase` tinyint(1) NOT NULL DEFAULT 0,
   `Priority` longtext DEFAULT NULL,
+  `CreatedBySdkSiteId` int(11) DEFAULT NULL,
+  `UpdatedBySdkSiteId` int(11) DEFAULT NULL,
+  `AssignedToSdkSiteId` int(11) DEFAULT NULL,
   PRIMARY KEY (`Id`),
   KEY `IX_WorkorderCases_ParentWorkorderCaseId` (`ParentWorkorderCaseId`),
   KEY `IX_WorkorderCases_PropertyWorkerId` (`PropertyWorkerId`),

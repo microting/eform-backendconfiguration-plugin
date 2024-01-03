@@ -277,4 +277,5 @@ export const slSL = {
   'Edit employee': 'Uredi zaposlenega',
   Timeregistration: 'Registracija časa',
   'Submitted date': 'Datum oddaje',
+  Always: 'Nenehno',
 };

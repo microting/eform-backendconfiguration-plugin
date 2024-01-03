@@ -277,4 +277,5 @@ export const etET = {
   'Edit employee': 'Redigeeri töötajat',
   Timeregistration: 'Aja registreerimine',
   'Submitted date': 'Esitamise kuupäev',
+  Always: 'Alati',
 };

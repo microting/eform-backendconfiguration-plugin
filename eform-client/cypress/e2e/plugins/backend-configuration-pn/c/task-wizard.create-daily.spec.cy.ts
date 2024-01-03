@@ -34,7 +34,7 @@ const task = {
     month: 7,
     day: 21
   },
-  repeatType: 'Altid',
+  repeatType: 'Dag',
   repeatEvery: '2',
 };
 
@@ -43,7 +43,7 @@ describe('Area rules type 1', () => {
     cy.visit('http://localhost:4200');
     loginPage.login();
   });
-  it('should create always task', () => {
+  it('should create daily task', () => {
     backendConfigurationPropertiesPage.goToProperties();
     backendConfigurationPropertiesPage.createProperty(property);
     backendConfigurationPropertyWorkersPage.goToPropertyWorkers();
@@ -84,6 +84,8 @@ describe('Area rules type 1', () => {
     cy.get('#createStartFrom').click();
     selectDateOnNewDatePicker(task.startFrom.year, task.startFrom.month, task.startFrom.day);
     selectValueInNgSelector('#createRepeatType', task.repeatType, true);
+    cy.get('#createRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(task.repeatEvery);
+    cy.get(`.ng-option`).first().should('have.text', task.repeatEvery).should('be.visible').click();
     cy.get('mat-checkbox#checkboxCreateAssignment0').click();
     cy.intercept('POST', '**/api/backend-configuration-pn/task-wizard').as('createTask');
     cy.get('#createTaskBtn').click();
@@ -97,7 +99,7 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', task.eformName);
     cy.get('.cdk-row .cdk-column-startDate span')
       .should('have.text', `${task.startFrom.day}.${task.startFrom.month >= 10 ? '' : '0'}${task.startFrom.month}.${task.startFrom.year}`);
-    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${task.repeatType}`);
+    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${task.repeatEvery} ${task.repeatType}`);
     cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
   });

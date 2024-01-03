@@ -63,7 +63,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             IEFormCoreService coreHelper,
             IUserService userService,
             BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-            IBackendConfigurationLocalizationService backendConfigurationLocalizationService, ItemsPlanningPnDbContext itemsPlanningPnDbContext, TimePlanningPnDbContext timePlanningDbContext, CaseTemplatePnDbContext caseTemplatePnDbContext, IRebusService rebusService)
+            IBackendConfigurationLocalizationService backendConfigurationLocalizationService,
+            ItemsPlanningPnDbContext itemsPlanningPnDbContext,
+            TimePlanningPnDbContext timePlanningDbContext,
+            CaseTemplatePnDbContext caseTemplatePnDbContext,
+            IRebusService rebusService)
         {
             _coreHelper = coreHelper;
             _userService = userService;
@@ -86,7 +90,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 query = query
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
-                if (query.Any())
+                if (query.Count() > 0)
                 {
                     var listWorkerId = await query.Select(x => new PropertyWorker
                     {
@@ -112,6 +116,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                 .CountAsync().ConfigureAwait(false);
 
                             assignmentWorkerModel.IsLocked = numberOfAssignements > 0;
+                            assignmentWorkerModel.NumberOfTasksAssigned = numberOfAssignements;
 
                             // var siteName = await sdkDbContext.Sites
                             //     .Where(x => x.Id == workerId.WorkerId)
@@ -130,6 +135,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     propertyWorker => propertyWorker.Id,
                                     (workorderCase, propertyWorker) => new
                                     {
+                                        workorderCase.Id,
+                                        workorderCase.LeadingCase,
                                         workorderCase.WorkflowState,
                                         workorderCase.LastAssignedToName,
                                         workorderCase.CaseStatusesEnum,
@@ -137,12 +144,14 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                                     })
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                                .Where(x => x.LeadingCase == true)
                                 .Where(x => x.LastAssignedToName == siteName)
                                 .Where(x => x.PropertyId == assignmentWorkerModel.PropertyId)
                                 //.Where(x => x.LastAssignedToName == siteName)
-                                .CountAsync();
+                                .ToListAsync();
 
-                            assignmentWorkerModel.IsLocked = assignmentWorkerModel.IsLocked ? assignmentWorkerModel.IsLocked : numberOfWorkOrderCases > 0;
+                            assignmentWorkerModel.IsLocked = assignmentWorkerModel.IsLocked ? assignmentWorkerModel.IsLocked : numberOfWorkOrderCases.Count() > 0;
+                            assignmentWorkerModel.NUmberOfWorkOrderCasesAssigned = numberOfWorkOrderCases.Count();
 
                         }
 
@@ -181,7 +190,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             var core = await _coreHelper.GetCore();
 
             var result = await BackendConfigurationAssignmentWorkerServiceHelper
-                .Create(createModel, core, _userService.UserId, _backendConfigurationPnDbContext,
+                .Create(createModel, core, _userService, _backendConfigurationPnDbContext,
                     _caseTemplatePnDbContext, _backendConfigurationLocalizationService, _bus)
                 .ConfigureAwait(false);
 
@@ -192,7 +201,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
         {
             var core = await _coreHelper.GetCore().ConfigureAwait(false);
             var result = await BackendConfigurationAssignmentWorkerServiceHelper
-                .Update(updateModel, core, _userService.UserId, _backendConfigurationPnDbContext, _caseTemplatePnDbContext,
+                .Update(updateModel, core, _userService, _backendConfigurationPnDbContext, _caseTemplatePnDbContext,
                     _backendConfigurationLocalizationService, _bus, _itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
 
@@ -208,6 +217,9 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 var propertyWorkers = await _backendConfigurationPnDbContext.PropertyWorkers
                     .Where(x => x.WorkerId == deviceUserId)
                     .ToListAsync().ConfigureAwait(false);
+                var site = await sdkDbContext.Sites
+                    .Where(x => x.Id == deviceUserId)
+                    .SingleOrDefaultAsync().ConfigureAwait(false);
 
                 foreach (var propertyAssignment in propertyWorkers)
                 {
@@ -248,6 +260,21 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 foreach (var assignment in propertyWorkers)
                 {
                     await assignment.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                }
+
+                if (_timePlanningDbContext.AssignedSites.Any(x => x.SiteId == site.MicrotingUid && x.WorkflowState != Constants.WorkflowStates.Removed))
+                {
+                    var assignmentForDeletes = await _timePlanningDbContext.AssignedSites.Where(x =>
+                        x.SiteId == site.MicrotingUid && x.WorkflowState != Constants.WorkflowStates.Removed).ToListAsync().ConfigureAwait(false);
+
+                    foreach (var assignmentForDelete in assignmentForDeletes)
+                    {
+                        await assignmentForDelete.Delete(_timePlanningDbContext).ConfigureAwait(false);
+                        if (assignmentForDelete.CaseMicrotingUid != null)
+                        {
+                            await core.CaseDelete((int) assignmentForDelete.CaseMicrotingUid).ConfigureAwait(false);
+                        }
+                    }
                 }
 
                 return new OperationResult(true,
@@ -362,6 +389,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     var numberOfWorkOrderCases = await _backendConfigurationPnDbContext.WorkorderCases
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                         .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                        .Where(x => x.LeadingCase == true)
                         .Where(x => x.LastAssignedToName == deviceUserModel.SiteName)
                         .CountAsync();
 

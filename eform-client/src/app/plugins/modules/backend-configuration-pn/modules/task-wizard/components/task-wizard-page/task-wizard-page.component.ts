@@ -239,8 +239,8 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             eformId: data.model.eformId,
             folderId: data.model.folderId,
             propertyId: data.model.propertyId,
-            repeatEvery: data.model.repeatEvery === 0 ? 1 : data.model.repeatEvery,
-            repeatType: data.model.repeatType,
+            repeatEvery: data.model.repeatEvery,
+            repeatType: data.model.repeatEvery === 0 ? 0 : data.model.repeatType,
             sites: data.model.assignedTo,
             startDate: data.model.startDate,
             status: data.model.status,
@@ -276,6 +276,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.updateTaskInModalSub$.unsubscribe();
           }
           this.updateTaskInModalSub$ = this.updateModal.componentInstance.updateTask.subscribe(updateModel => {
+            if (updateModel.repeatType === 0) {
+              updateModel.repeatType = 1;
+              updateModel.repeatEvery = 0;
+            }
             this.updateTask({
               id: model.id,
               eformId: updateModel.eformId,
@@ -342,6 +346,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.createTaskInModalSub$.unsubscribe();
           }
           this.createTaskInModalSub$ = this.createModal.componentInstance.createTask.subscribe(createModel => {
+            if (createModel.repeatType === 0) {
+              createModel.repeatType = 1;
+              createModel.repeatEvery = 0;
+            }
             this.createTask(createModel, this.createModal);
           });
         }
@@ -377,6 +385,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       this.createTaskInModalSub$.unsubscribe();
     }
     this.createTaskInModalSub$ = this.createModal.componentInstance.createTask.subscribe(createModel => {
+      if (createModel.repeatType === 0) {
+        createModel.repeatType = 1;
+        createModel.repeatEvery = 0;
+      }
       this.createTask(createModel, this.createModal);
     });
   }

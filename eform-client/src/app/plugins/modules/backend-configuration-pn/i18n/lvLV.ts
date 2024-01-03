@@ -277,4 +277,5 @@ export const lvLV = {
   'Edit employee': 'Rediģēt darbinieku',
   Timeregistration: 'Laika reģistrācija',
   'Submitted date': 'Iesniegšanas datums',
+  Always: 'Vienmēr',
 };
