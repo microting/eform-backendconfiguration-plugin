@@ -445,9 +445,8 @@ export class PropertyRowObject {
       for (let i = 0; i < bindAreas.length; i++) {
         await (await $(`#checkboxAssignmentEdit${bindAreas[i]}`).scrollIntoView());
         await (
-          await $(`#checkboxAssignmentEdit${bindAreas[i]}`).$('..')
-        ).click();
-        await browser.pause(100);
+          await $(`#checkboxAssignmentEdit${bindAreas[i]}`)).click();
+        await browser.pause(5000);
       }
     }
   }
