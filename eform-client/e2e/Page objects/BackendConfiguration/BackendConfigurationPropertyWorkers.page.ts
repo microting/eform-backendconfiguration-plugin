@@ -119,7 +119,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async TaskManagementEnableToggleInput() {
-    const ele = await $('#taskManagementEnabledToggle');
+    const ele = await $(`[for='taskManagementEnabledToggle-button']`);
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
