@@ -300,18 +300,38 @@ export class BackendConfigurationTaskManagementPage extends Page {
     if(filters) {
       if(filters.propertyName){
         await selectValueInNgSelector(await this.propertyIdFilter(), filters.propertyName);
+        await $('#spinner-animation').waitForDisplayed({
+          timeout: 90000,
+          reverse: true,
+        });
       }
       if(filters.areaName){
         await selectValueInNgSelector(await this.areaNameFilter(), filters.areaName);
+        await $('#spinner-animation').waitForDisplayed({
+          timeout: 90000,
+          reverse: true,
+        });
       }
       if(filters.createdBy){
         await selectValueInNgSelector(await this.createdByFilter(), filters.createdBy);
+        await $('#spinner-animation').waitForDisplayed({
+          timeout: 90000,
+          reverse: true,
+        });
       }
       if(filters.lastAssignedTo){
         await selectValueInNgSelector(await this.lastAssignedToFilter(), filters.lastAssignedTo);
+        await $('#spinner-animation').waitForDisplayed({
+          timeout: 90000,
+          reverse: true,
+        });
       }
       if(filters.status){
         await selectValueInNgSelector(await this.statusFilter(), filters.status);
+        await $('#spinner-animation').waitForDisplayed({
+          timeout: 90000,
+          reverse: true,
+        });
       }
       if(filters.date){
         await (await this.dateFilter()).click();
