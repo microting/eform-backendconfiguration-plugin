@@ -1,5 +1,9 @@
 import {PageWithNavbarPage} from '../../PageWithNavbar.page';
-import {selectDateRangeOnDatePicker, selectValueInNgSelector} from '../../helper-functions';
+import {
+  selectDateRangeOnDatePicker,
+  selectDateRangeOnNewDatePicker,
+  selectValueInNgSelector
+} from '../../helper-functions';
 
 class BackendConfigurationReportsPage extends PageWithNavbarPage {
   constructor() {
@@ -58,7 +62,7 @@ class BackendConfigurationReportsPage extends PageWithNavbarPage {
       }
       if(filters.dateRange) {
         this.dateFormInput().click();
-        selectDateRangeOnDatePicker(
+        selectDateRangeOnNewDatePicker(
           filters.dateRange.yearFrom, filters.dateRange.monthFrom,  filters.dateRange.dayFrom,
           filters.dateRange.yearTo, filters.dateRange.monthTo, filters.dateRange.dayTo
         )

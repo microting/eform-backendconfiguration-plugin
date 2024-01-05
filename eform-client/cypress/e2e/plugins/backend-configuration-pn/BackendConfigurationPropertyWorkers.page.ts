@@ -103,11 +103,11 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
   };
 
   public rowNum() {
-    return cy.get('.mat-row').its('length');
+    return cy.get('.mat-mdc-row').its('length');
   };
 
   public getDeviceUser(num) {
-    return cy.get(`.mat-row:nth-child(${num})`);
+    return cy.get(`.mat-mdc-row:nth-child(${num})`);
   };
 
   create(propertyWorker, clickCancel = false) {
@@ -132,7 +132,7 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
       if (propertyWorker.properties) {
         cy.wait(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
-          const row = () => cy.get('.mat-row').contains(propertyWorker.properties[i]).parent().parent().parent().scrollIntoView();
+          const row = () => cy.get('.mat-mdc-row').contains(propertyWorker.properties[i]).parent().parent().parent().scrollIntoView();
           row().find('[id^=checkboxCreateAssignment]mat-checkbox').click();
           cy.wait(500);
         }
@@ -178,7 +178,7 @@ export class WorkerRowObject {
   deleteBtn: Cypress.Chainable<JQuery<HTMLElement>>;
 
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-row').eq(rowNum - 1);
+    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
     this.row = row();
     this.editAssignmentsBtn = row().find('[id^=editAssignmentsBtn]').should('be.visible').should('be.enabled');
     this.editDeviceUserBtn = row().find('[id^=editDeviceUserBtn]').should('be.visible').should('be.enabled');
@@ -188,10 +188,10 @@ export class WorkerRowObject {
 
   // find first row with text
   getRowByName(deviceUserName: string) {
-    const row = () => cy.get('.mat-row')
+    const row = () => cy.get('.mat-mdc-row')
       .contains(deviceUserName) // div
       .parent() // met-cell
-      .parent(); // mat-row
+      .parent(); // mat-mdc-row
     this.row = row();
     this.editAssignmentsBtn = row().find('[id^=editAssignmentsBtn]').should('be.visible').should('be.enabled');
     this.editDeviceUserBtn = row().find('[id^=editDeviceUserBtn]').should('be.visible').should('be.enabled');

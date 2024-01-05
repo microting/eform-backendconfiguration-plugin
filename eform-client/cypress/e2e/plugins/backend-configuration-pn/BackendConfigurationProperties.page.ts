@@ -143,7 +143,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
   };
 
   public rowNum(): Cypress.Chainable<number> {
-    return cy.get('app-properties-table .mat-row').its('length');
+    return cy.get('app-properties-table .mat-mdc-row').its('length');
   }
 
   createProperty(property: PropertyCreateUpdate, clickCancel = false) {
@@ -224,7 +224,7 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
   clearTable() {
     cy.log('**CLEAR PROPERTIES TABLE**');
     cy.get('app-properties-table').should('be.visible');
-    cy.get('app-properties-table .mat-row').then(rows => {
+    cy.get('app-properties-table .mat-mdc-row').then(rows => {
       const rowNum = rows.length;
       cy.log(rowNum.toString());
 
@@ -246,7 +246,7 @@ export class PropertyRowObject {
   deleteBtn: () => Cypress.Chainable<JQuery<HTMLElement>>;
 
   getRow(rowNum: number) {
-    const row = () => cy.get('.mat-row').eq(rowNum - 1);
+    const row = () => cy.get('.mat-mdc-row').eq(rowNum - 1);
     this.row = row();
     this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
     this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
@@ -256,10 +256,10 @@ export class PropertyRowObject {
 
   // find first row with text
   getRowByPropertyName(propertyName: string) {
-    const row = () => cy.get('.mat-row')
+    const row = () => cy.get('.mat-mdc-row')
       .contains(propertyName) // div
-      .parent() // met-cell
-      .parent(); // mat-row
+      .parent() // met-mdc-cell
+      .parent(); // mat-mdc-row
     this.row = row();
     this.viewAreasBtn = () => row().find('[id^=showPropertyAreasBtn]').should('be.visible').should('be.enabled');
     this.editPropertyBtn = () => row().find('[id^=editPropertyBtn]').should('be.visible').should('be.enabled');
@@ -296,7 +296,7 @@ export class PropertyRowObject {
   bindAreasByName(areasName: string[] = [], clickCancel = false, returnToProperties = false) {
     this.openBindAreasModal();
     for (let i = 0; i < areasName.length; i++) {
-      const row = () => cy.get('mat-dialog-container .mat-row').contains(areasName[i]).parent().scrollIntoView();
+      const row = () => cy.get('mat-dialog-container .mat-mdc-row').contains(areasName[i]).parent().scrollIntoView();
       row().find('mat-checkbox').click();
     }
     this.closeBindAreasModal(clickCancel, returnToProperties);
@@ -305,7 +305,7 @@ export class PropertyRowObject {
   bindAreasByNumberInTable(areasName: number[] = [], clickCancel = false, returnToProperties = false) {
     this.openBindAreasModal();
     for (let i = 0; i < areasName.length; i++) {
-      const row = () => cy.get('mat-dialog-container .mat-row').its(areasName[i]).scrollIntoView();
+      const row = () => cy.get('mat-dialog-container .mat-mdc-row').its(areasName[i]).scrollIntoView();
       row().find('mat-checkbox').click();
     }
     this.closeBindAreasModal(clickCancel, returnToProperties);
@@ -313,7 +313,7 @@ export class PropertyRowObject {
 
   bindAllAreas(clickCancel = false, returnToProperties = false) {
     this.openBindAreasModal();
-    const row = () => cy.get('mat-dialog-container .mat-row').parent().parent().parent().scrollIntoView();
+    const row = () => cy.get('mat-dialog-container .mat-mdc-row').parent().parent().parent().scrollIntoView();
     row().find('mat-checkbox').click({force: true});
     this.closeBindAreasModal(clickCancel, returnToProperties);
   }
@@ -343,8 +343,8 @@ export class PropertyRowObject {
     if (needGoToPropertyAreasPage) {
       this.goToAreas();
     }
-    const row = cy.get('.mat-row').contains(nameBindArea);
-    //const row = () => cy.get('.mat-row').contains(nameBindArea).scrollIntoView();
+    const row = cy.get('.mat-mdc-row').contains(nameBindArea);
+    //const row = () => cy.get('.mat-mdc-row').contains(nameBindArea).scrollIntoView();
     row.parent().parent().scrollIntoView();
     const navigateBtn = row.get('.cdk-column-book > div').find('#navigateToPropertyArea');
     navigateBtn.click();

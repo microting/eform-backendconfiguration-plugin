@@ -5,7 +5,7 @@ import {
   selectValueInNgSelector,
   generateRandmString,
   selectValueInNgSelectorNoSelector, selectDateOnNewDatePicker
-} from 'cypress/e2e/helper-functions';
+} from '../../../helper-functions';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
@@ -65,21 +65,26 @@ describe('Area rules type 1', () => {
     selectValueInNgSelectorNoSelector(`${property.name}`);
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(500);
+    for (let i = 0; i < task.translations.length; i++) {
+      cy.get(`[for='createName${i}']`).scrollIntoView();
+      cy.get(`[for='createName${i}']`).should('be.visible');
+      cy.wait(500);
+      cy.get(`[for='createName${i}']`).type(task.translations[i]);
+      //cy.get(`#createName${i}`).click().type(task.translations[i]);
+    }
+    cy.wait(500);
     cy.get('#createFolder').click({force: true});
     cy.wait(500);
-    cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
+    cy.get('mat-tree-node > button').click();
     cy.wait(500);
     cy.contains('.folder-tree-name', bindArea).first().click();
+    cy.wait(500);
     cy.get('#createTableTags').click();
     cy.wait(500);
     selectValueInNgSelectorNoSelector('0. '+property.name + ' - '+property.address);
     cy.get('#createTags').click();
     cy.wait(500);
     selectValueInNgSelectorNoSelector('0. '+property.name + ' - '+property.address);
-    cy.wait(500);
-    for (let i = 0; i < task.translations.length; i++) {
-      cy.get(`#createName${i}`).type(task.translations[i]);
-    }
     selectValueInNgSelector('#createTemplateSelector', task.eformName, true);
     cy.get('#createStartFrom').click();
     selectDateOnNewDatePicker(task.startFrom.year, task.startFrom.month, task.startFrom.day);

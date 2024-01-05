@@ -136,15 +136,15 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async planAreaRuleStatusToggle() {
-    return $(`#planAreaRuleStatusToggle-input`);
+    return $(`#planAreaRuleStatusToggle-button`);
   }
 
   public async planAreaRuleNotificationsToggle() {
-    return $(`#planAreaRuleNotificationsToggle-input`);
+    return $(`#planAreaRuleNotificationsToggle-button`);
   }
 
   public async planAreaRuleComplianceEnableToggle() {
-    return $(`#planAreaRuleComplianceEnableToggle-input`);
+    return $(`#planAreaRuleComplianceEnableToggle-button`);
   }
 
   public async planRepeatEvery() {
@@ -613,7 +613,7 @@ export class AreaRuleRowObject {
           await backendConfigurationAreaRulesPage.planAreaRuleComplianceEnableToggle()
         ).getAttribute('aria-checked') !== areaRulePlanningCreateUpdate.enableCompliance.toString()) {
           await (
-            await $('label[for=planAreaRuleComplianceEnableToggle-input]')
+            await $('label[for=planAreaRuleComplianceEnableToggle-button]')
           ).click();
         }
       }

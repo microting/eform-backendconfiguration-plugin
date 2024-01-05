@@ -399,11 +399,7 @@ export class PropertyWorkerRowObject {
              await $$('.propertyName')
            )[i+1].getText(),
            checked:
-            (await (
-              await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(
-                i
-              )
-            ).getAttribute('aria-checked')) === 'true',
+            (await (await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(i)).getAttribute('class')) === 'mdc-checkbox__native-control mdc-checkbox--selected',
          },
        ];
     }
