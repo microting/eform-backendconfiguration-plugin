@@ -281,4 +281,5 @@ export const hrHR = {
   Completed: 'Završeno',
   Description: 'Opis',
   Date: 'Datum',
+  Location: 'Mjesto',
 };

@@ -281,4 +281,5 @@ export const isIS = {
   Completed: 'Lokið',
   Description: 'Lýsing',
   Date: 'Dagsetning',
+  Location: 'Staðsetning',
 };

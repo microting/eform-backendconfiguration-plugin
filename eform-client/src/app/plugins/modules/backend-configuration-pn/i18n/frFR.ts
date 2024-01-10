@@ -281,4 +281,5 @@ export const frFR = {
   Completed: 'Complété',
   Description: 'Description',
   Date: 'Date',
+  Location: 'Emplacement',
 };

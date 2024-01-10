@@ -281,4 +281,5 @@ export const huHU = {
   Completed: 'Befejezve',
   Description: 'Leírás',
   Date: 'Dátum',
+  Location: 'Elhelyezkedés',
 };

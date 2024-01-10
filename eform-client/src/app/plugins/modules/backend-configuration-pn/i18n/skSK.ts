@@ -281,4 +281,5 @@ export const skSK = {
   Completed: 'Dokončené',
   Description: 'Popis',
   Date: 'Dátum',
+  Location: 'Poloha',
 };

@@ -281,4 +281,5 @@ export const da = {
   Completed: 'Færdiggjort',
   Description: 'Beskrivelse',
   Date: 'Dato',
+  Location: 'Lokation',
 };

@@ -281,4 +281,5 @@ export const fiFI = {
   Completed: 'Valmis',
   Description: 'Kuvaus',
   Date: 'Päivämäärä',
+  Location: 'Sijainti',
 };

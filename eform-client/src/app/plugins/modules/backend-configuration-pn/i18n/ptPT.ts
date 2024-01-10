@@ -281,4 +281,5 @@ export const ptPT = {
   Completed: 'Concluído',
   Description: 'Descrição',
   Date: 'Data',
+  Location: 'Localização',
 };

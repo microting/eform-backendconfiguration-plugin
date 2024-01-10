@@ -281,4 +281,5 @@ export const ltLT = {
   Completed: 'Baigta',
   Description: 'apibūdinimas',
   Date: 'Data',
+  Location: 'Vieta',
 };

@@ -185,8 +185,8 @@ export const enUS= {
   Property: 'Property',
   Tags: 'Tags',
   'Assign to': 'Assign to',
-  Active: 'Active',
-  NotActive: 'Not active',
+  'Active': 'Active',
+  'NotActive': 'Not active',
   'Task name': 'Task name',
   Folder: 'Folder',
   Notification: 'Notification',
@@ -298,4 +298,5 @@ export const enUS= {
   'Completed': 'Completed',
   'Description': 'Description',
   'Date': 'Date',
+  'Location': 'Location',
 };

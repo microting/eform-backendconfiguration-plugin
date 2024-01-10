@@ -281,4 +281,5 @@ export const itIT = {
   Completed: 'Completato',
   Description: 'Descrizione',
   Date: 'Data',
+  Location: 'Posizione',
 };

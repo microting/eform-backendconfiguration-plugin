@@ -281,4 +281,5 @@ export const etET = {
   Completed: 'Lõpetatud',
   Description: 'Kirjeldus',
   Date: 'Kuupäev',
+  Location: 'Asukoht',
 };

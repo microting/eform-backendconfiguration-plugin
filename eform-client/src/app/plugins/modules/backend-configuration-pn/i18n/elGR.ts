@@ -281,4 +281,5 @@ export const elGR = {
   Completed: 'Ολοκληρώθηκε το',
   Description: 'Περιγραφή',
   Date: 'Ημερομηνία',
+  Location: 'Τοποθεσία',
 };

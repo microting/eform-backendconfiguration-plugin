@@ -281,4 +281,5 @@ export const nlNL = {
   Completed: 'Voltooid',
   Description: 'Beschrijving',
   Date: 'Datum',
+  Location: 'Plaats',
 };

@@ -281,4 +281,5 @@ export const esES = {
   Completed: 'Terminado',
   Description: 'Descripción',
   Date: 'Fecha',
+  Location: 'Ubicación',
 };

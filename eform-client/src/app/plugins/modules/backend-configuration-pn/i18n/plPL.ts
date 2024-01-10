@@ -281,4 +281,5 @@ export const plPL = {
   Completed: 'Zakończony',
   Description: 'Opis',
   Date: 'Data',
+  Location: 'Lokalizacja',
 };

@@ -281,4 +281,5 @@ export const lvLV = {
   Completed: 'Pabeigts',
   Description: 'Apraksts',
   Date: 'Datums',
+  Location: 'Atrašanās vieta',
 };

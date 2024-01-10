@@ -342,4 +342,5 @@ export const deDE = {
   'Submitted date': 'Datum der Einreichung',
   Always: 'Immer',
   Description: 'Beschreibung',
+  Location: 'Standort',
 };

@@ -281,4 +281,5 @@ export const bgBG = {
   Completed: 'Завършено',
   Description: 'Описание',
   Date: 'Дата',
+  Location: 'Местоположение',
 };

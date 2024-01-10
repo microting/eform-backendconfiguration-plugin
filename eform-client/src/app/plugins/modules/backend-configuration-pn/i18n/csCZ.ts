@@ -281,4 +281,5 @@ export const csCZ = {
   Completed: 'Dokončeno',
   Description: 'Popis',
   Date: 'datum',
+  Location: 'Umístění',
 };

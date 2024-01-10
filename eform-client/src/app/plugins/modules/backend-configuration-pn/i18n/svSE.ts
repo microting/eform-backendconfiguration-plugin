@@ -281,4 +281,5 @@ export const svSE = {
   Completed: 'Avslutad',
   Description: 'Beskrivning',
   Date: 'Datum',
+  Location: 'Plats',
 };

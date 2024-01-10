@@ -281,4 +281,5 @@ export const slSL = {
   Completed: 'Dokončano',
   Description: 'Opis',
   Date: 'Datum',
+  Location: 'Lokacija',
 };

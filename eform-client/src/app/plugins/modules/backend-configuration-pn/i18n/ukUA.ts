@@ -281,4 +281,5 @@ export const ukUA = {
   Completed: 'Виконано',
   Description: 'опис',
   Date: 'Дата',
+  Location: 'Місцезнаходження',
 };

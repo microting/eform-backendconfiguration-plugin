@@ -281,4 +281,5 @@ export const noNO = {
   Completed: 'Fullført',
   Description: 'Beskrivelse',
   Date: 'Dato',
+  Location: 'plassering',
 };

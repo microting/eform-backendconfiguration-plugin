@@ -281,4 +281,5 @@ export const roRO = {
   Completed: 'Efectuat',
   Description: 'Descriere',
   Date: 'Data',
+  Location: 'Locație',
 };
