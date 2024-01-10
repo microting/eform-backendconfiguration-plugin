@@ -91,9 +91,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             {
                 foreach (var tagId in request.Filters.TagIds)
                 {
-                    query = query.Where(x =>
-                            x.AreaRulePlanningTags.Any(y => y.ItemPlanningTagId == tagId && y.WorkflowState != Constants.WorkflowStates.Removed))
-                        .AsNoTracking();
+                    query = query.Where(x => x.AreaRulePlanningTags
+                                                 .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                                                 .Any(y => y.ItemPlanningTagId == tagId) ||
+                                             x.ItemPlanningTagId.HasValue && tagId == x.ItemPlanningTagId.Value);
                 }
             }
 
