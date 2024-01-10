@@ -275,7 +275,7 @@ export const noNO = {
   'Create new employee': 'Opprett ny medarbeider',
   'New employee': 'Ny ansatt',
   'Edit employee': 'Rediger ansatt',
-  Timeregistration: 'Tidsregistrering',
+  'Timeregistration': 'Timeregistrering',
   'Submitted date': 'Innsendt dato',
   Always: 'Alltid',
 };
