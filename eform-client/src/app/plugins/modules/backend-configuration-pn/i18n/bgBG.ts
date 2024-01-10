@@ -278,4 +278,7 @@ export const bgBG = {
   Timeregistration: 'Регистрация на времето',
   'Submitted date': 'Дата на подаване',
   Always: 'Винаги',
+  Completed: 'Завършено',
+  Description: 'Описание',
+  Date: 'Дата',
 };

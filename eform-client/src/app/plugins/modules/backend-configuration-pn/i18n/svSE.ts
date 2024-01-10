@@ -278,4 +278,7 @@ export const svSE = {
   Timeregistration: 'Tidregistrering',
   'Submitted date': 'Inlämningsdatum',
   Always: 'Alltid',
+  Completed: 'Avslutad',
+  Description: 'Beskrivning',
+  Date: 'Datum',
 };

@@ -278,4 +278,7 @@ export const skSK = {
   Timeregistration: 'Registrácia času',
   'Submitted date': 'Dátum odoslania',
   Always: 'Vždy',
+  Completed: 'Dokončené',
+  Description: 'Popis',
+  Date: 'Dátum',
 };

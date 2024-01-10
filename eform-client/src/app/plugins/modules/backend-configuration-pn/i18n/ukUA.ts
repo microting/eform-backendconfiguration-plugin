@@ -278,4 +278,7 @@ export const ukUA = {
   Timeregistration: 'Реєстрація часу',
   'Submitted date': 'Дата подання',
   Always: 'Завжди',
+  Completed: 'Виконано',
+  Description: 'опис',
+  Date: 'Дата',
 };

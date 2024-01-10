@@ -278,4 +278,7 @@ export const frFR = {
   Timeregistration: 'Enregistrement du temps',
   'Submitted date': 'Date proposée',
   Always: 'Toujours',
+  Completed: 'Complété',
+  Description: 'Description',
+  Date: 'Date',
 };

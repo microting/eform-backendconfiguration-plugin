@@ -294,5 +294,8 @@ export const enUS= {
   'Edit employee': 'Edit employee',
   'Timeregistration': 'Time registration',
   'Submitted date': 'Submitted date',
-  'Always': 'Always'
+  'Always': 'Always',
+  'Completed': 'Completed',
+  'Description': 'Description',
+  'Date': 'Date',
 };

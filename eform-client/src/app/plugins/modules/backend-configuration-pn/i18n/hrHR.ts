@@ -278,4 +278,7 @@ export const hrHR = {
   Timeregistration: 'Registracija vremena',
   'Submitted date': 'Datum predaje',
   Always: 'Stalno',
+  Completed: 'Završeno',
+  Description: 'Opis',
+  Date: 'Datum',
 };

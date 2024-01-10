@@ -278,4 +278,7 @@ export const csCZ = {
   Timeregistration: 'Registrace času',
   'Submitted date': 'Datum odevzdání',
   Always: 'Vždy',
+  Completed: 'Dokončeno',
+  Description: 'Popis',
+  Date: 'datum',
 };

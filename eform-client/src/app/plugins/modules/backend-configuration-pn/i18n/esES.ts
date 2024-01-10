@@ -278,4 +278,7 @@ export const esES = {
   Timeregistration: 'Registro de tiempo',
   'Submitted date': 'Fecha de envío',
   Always: 'Siempre',
+  Completed: 'Terminado',
+  Description: 'Descripción',
+  Date: 'Fecha',
 };

@@ -278,4 +278,7 @@ export const plPL = {
   Timeregistration: 'Rejestracja czasu',
   'Submitted date': 'Zaakceptowana Data',
   Always: 'Zawsze',
+  Completed: 'Zakończony',
+  Description: 'Opis',
+  Date: 'Data',
 };

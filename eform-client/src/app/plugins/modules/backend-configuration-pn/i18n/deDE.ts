@@ -341,4 +341,5 @@ export const deDE = {
   Timeregistration: 'Zeiterfassung',
   'Submitted date': 'Datum der Einreichung',
   Always: 'Immer',
+  Description: 'Beschreibung',
 };

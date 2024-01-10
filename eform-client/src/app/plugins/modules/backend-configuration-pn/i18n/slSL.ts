@@ -278,4 +278,7 @@ export const slSL = {
   Timeregistration: 'Registracija časa',
   'Submitted date': 'Datum oddaje',
   Always: 'Nenehno',
+  Completed: 'Dokončano',
+  Description: 'Opis',
+  Date: 'Datum',
 };

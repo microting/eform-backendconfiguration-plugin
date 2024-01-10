@@ -278,4 +278,7 @@ export const isIS = {
   Timeregistration: 'Tímaskráning',
   'Submitted date': 'Lögð fram dagsetning',
   Always: 'Alltaf',
+  Completed: 'Lokið',
+  Description: 'Lýsing',
+  Date: 'Dagsetning',
 };
