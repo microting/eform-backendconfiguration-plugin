@@ -278,4 +278,8 @@ export const nlNL = {
   Timeregistration: 'Tijdregistratie',
   'Submitted date': 'Datum ingediend',
   Always: 'Altijd',
+  Completed: 'Voltooid',
+  Description: 'Beschrijving',
+  Date: 'Datum',
+  Location: 'Plaats',
 };

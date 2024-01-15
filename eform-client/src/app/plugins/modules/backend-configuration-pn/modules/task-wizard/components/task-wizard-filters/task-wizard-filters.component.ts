@@ -107,8 +107,8 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
                 propertyIds: value,
                 folderIds: [],
                 assignToIds: [],
-                tagIds: [],
-                status: null,
+                tagIds: currentFilters.tagIds,
+                status: currentFilters.status,
               }
             }
           });

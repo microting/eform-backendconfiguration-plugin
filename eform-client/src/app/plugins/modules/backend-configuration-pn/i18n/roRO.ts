@@ -278,4 +278,8 @@ export const roRO = {
   Timeregistration: 'Înregistrarea timpului',
   'Submitted date': 'Data depunerii',
   Always: 'Mereu',
+  Completed: 'Efectuat',
+  Description: 'Descriere',
+  Date: 'Data',
+  Location: 'Locație',
 };

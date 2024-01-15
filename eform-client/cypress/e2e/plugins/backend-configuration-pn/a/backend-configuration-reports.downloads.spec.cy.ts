@@ -1,7 +1,7 @@
 import loginPage from '../../../Login.page';
 import backendConfigurationReportsPage, {ReportFilters} from '../BackendConfigurationReports.page';
-import path from 'path';
-import mammoth from 'mammoth';
+import path = require('path');
+import mammoth = require('mammoth');
 
 const filters: ReportFilters[] = [
   {

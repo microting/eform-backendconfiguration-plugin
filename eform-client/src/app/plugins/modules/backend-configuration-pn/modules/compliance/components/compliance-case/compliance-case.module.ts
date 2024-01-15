@@ -1,9 +1,6 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {TranslateModule} from '@ngx-translate/core';
-import {GallerizeModule} from '@ngx-gallery/gallerize';
-import {LightboxModule} from '@ngx-gallery/lightbox';
-import {GalleryModule} from '@ngx-gallery/core';
 import {FormsModule} from '@angular/forms';
 import {ComplianceCaseRouting} from './compliance-case.routing';
 import {CasesModule} from 'src/app/modules';
@@ -34,9 +31,6 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     ComplianceCaseRouting,
     CommonModule,
     EformImportedModule,
-    GallerizeModule,
-    LightboxModule,
-    GalleryModule,
     FormsModule,
     CasesModule,
     EformCasesModule,

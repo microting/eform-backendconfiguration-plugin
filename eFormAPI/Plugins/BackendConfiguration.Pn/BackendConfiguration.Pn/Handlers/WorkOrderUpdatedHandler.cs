@@ -186,6 +186,13 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             {
                 caseId = (int)await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
             }
+
+            var createdBySite =
+                await sdkDbContext.Sites.FirstOrDefaultAsync(x => x.Id == workOrderCase.CreatedBySdkSiteId);
+            if (createdBySite != null)
+            {
+                workOrderCase.CreatedByName = createdBySite.Name;
+            }
             await new WorkorderCase
             {
                 CaseId = caseId,

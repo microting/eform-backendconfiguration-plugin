@@ -1,9 +1,6 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {TranslateModule} from '@ngx-translate/core';
-import {GallerizeModule} from '@ngx-gallery/gallerize';
-import {LightboxModule} from '@ngx-gallery/lightbox';
-import {GalleryModule} from '@ngx-gallery/core';
 import {FormsModule} from '@angular/forms';
 import {CasesModule} from 'src/app/modules';
 import {EformImportedModule} from 'src/app/common/modules/eform-imported/eform-imported.module';
@@ -23,7 +20,6 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatButtonModule} from '@angular/material/button';
-import {MatDatepickerModule} from "@angular/material/datepicker";
 
 @NgModule({
   declarations: [
@@ -36,9 +32,6 @@ import {MatDatepickerModule} from "@angular/material/datepicker";
         BackendConfigurationCaseRoutingModule,
         CommonModule,
         EformImportedModule,
-        GallerizeModule,
-        LightboxModule,
-        GalleryModule,
         FormsModule,
         CasesModule,
         EformCasesModule,
@@ -47,7 +40,6 @@ import {MatDatepickerModule} from "@angular/material/datepicker";
         MatIconModule,
         MatInputModule,
         MatButtonModule,
-        MatDatepickerModule,
     ]
 })
 export class BackendConfigurationCaseModule {

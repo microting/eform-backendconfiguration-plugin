@@ -119,7 +119,7 @@ class BackendConfigurationPropertyWorkersPage extends Page {
   }
 
   public async TaskManagementEnableToggleInput() {
-    const ele = await $('#taskManagementEnabledToggle');
+    const ele = await $(`[for='taskManagementEnabledToggle-button']`);
     await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -399,11 +399,7 @@ export class PropertyWorkerRowObject {
              await $$('.propertyName')
            )[i+1].getText(),
            checked:
-            (await (
-              await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(
-                i
-              )
-            ).getAttribute('aria-checked')) === 'true',
+            (await (await backendConfigurationPropertyWorkersPage.checkboxEditAssignment(i)).getAttribute('class')) === 'mdc-checkbox__native-control mdc-checkbox--selected',
          },
        ];
     }

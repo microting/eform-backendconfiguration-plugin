@@ -26,7 +26,7 @@ import {
 } from '../../../../state/task-wizard/task-wizard.selector';
 import {
   selectStatisticsPropertyId
-} from "src/app/plugins/modules/backend-configuration-pn/state/statistics/statistics.selector";
+} from '../../../../state/statistics/statistics.selector';
 
 @AutoUnsubscribe()
 @Component({
@@ -305,6 +305,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       tap(data => {
         if (data && data.success && data.model) {
           this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
+          if (data.model.repeatType === 1 && data.model.repeatEvery === 0) {
+            data.model.repeatType = 0;
+            data.model.repeatEvery = 0;
+          }
           this.createModal.componentInstance.model = {
             eformId: data.model.eformId,
             folderId: data.model.folderId,

@@ -67,7 +67,7 @@ export class AreaRuleEntityListModalComponent implements OnInit, OnDestroy {
     // this.modalNameEdit.show(model);
     this.entityItemEditNameComponentAfterClosedSub$ = this.dialog.open(EntityItemEditNameComponent,
       {...dialogConfigHelper(this.overlay, model), minWidth: 500})
-      .afterClosed().subscribe(data => data.result ? this.onItemUpdated(data.data) : undefined);
+      .afterClosed().subscribe(result => result.result ? this.onItemUpdated(result.data) : undefined);
   }
 
   onItemUpdated(model: EntityItemModel) {

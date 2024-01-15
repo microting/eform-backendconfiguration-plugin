@@ -278,4 +278,8 @@ export const huHU = {
   Timeregistration: 'Idő regisztráció',
   'Submitted date': 'Beküldés dátuma',
   Always: 'Mindig',
+  Completed: 'Befejezve',
+  Description: 'Leírás',
+  Date: 'Dátum',
+  Location: 'Elhelyezkedés',
 };

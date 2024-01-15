@@ -275,7 +275,11 @@ export const svSE = {
   'Create new employee': 'Skapa ny medarbetare',
   'New employee': 'Ny anställd',
   'Edit employee': 'Redigera medarbetare',
-  Timeregistration: 'Tidsregistrering',
+  Timeregistration: 'Tidregistrering',
   'Submitted date': 'Inlämningsdatum',
   Always: 'Alltid',
+  Completed: 'Avslutad',
+  Description: 'Beskrivning',
+  Date: 'Datum',
+  Location: 'Plats',
 };

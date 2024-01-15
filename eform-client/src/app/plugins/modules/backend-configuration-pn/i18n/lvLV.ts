@@ -278,4 +278,8 @@ export const lvLV = {
   Timeregistration: 'Laika reģistrācija',
   'Submitted date': 'Iesniegšanas datums',
   Always: 'Vienmēr',
+  Completed: 'Pabeigts',
+  Description: 'Apraksts',
+  Date: 'Datums',
+  Location: 'Atrašanās vieta',
 };

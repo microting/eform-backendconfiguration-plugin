@@ -278,4 +278,8 @@ export const ptPT = {
   Timeregistration: 'Registro de horário',
   'Submitted date': 'Data de envio',
   Always: 'Sempre',
+  Completed: 'Concluído',
+  Description: 'Descrição',
+  Date: 'Data',
+  Location: 'Localização',
 };

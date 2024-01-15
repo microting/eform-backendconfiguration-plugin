@@ -166,7 +166,7 @@ export class BackendConfigurationPropertiesPage extends Page {
   }
 
   public async propertyCreateWorkorderFlowEnableToggle() {
-    const ele = await $(`[for='propertyCreateWorkorderFlowEnableToggle-input']`);
+    const ele = await $(`[for='propertyCreateWorkorderFlowEnableToggle-button']`);
     // await ele.waitForDisplayed({ timeout: 40000 });
     // await ele.waitForClickable({ timeout: 40000 });
     return ele;
@@ -445,9 +445,8 @@ export class PropertyRowObject {
       for (let i = 0; i < bindAreas.length; i++) {
         await (await $(`#checkboxAssignmentEdit${bindAreas[i]}`).scrollIntoView());
         await (
-          await $(`#checkboxAssignmentEdit${bindAreas[i]}`).$('..')
-        ).click();
-        await browser.pause(100);
+          await $(`#checkboxAssignmentEdit${bindAreas[i]}`)).click();
+        await browser.pause(5000);
       }
     }
   }

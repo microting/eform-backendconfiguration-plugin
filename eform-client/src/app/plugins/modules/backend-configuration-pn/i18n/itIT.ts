@@ -278,4 +278,8 @@ export const itIT = {
   Timeregistration: 'Registrazione del tempo',
   'Submitted date': 'Data di invio',
   Always: 'Sempre',
+  Completed: 'Completato',
+  Description: 'Descrizione',
+  Date: 'Data',
+  Location: 'Posizione',
 };

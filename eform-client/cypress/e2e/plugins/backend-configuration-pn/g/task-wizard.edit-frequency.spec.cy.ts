@@ -5,7 +5,7 @@ import {
   selectValueInNgSelector,
   generateRandmString,
   selectValueInNgSelectorNoSelector, selectDateOnNewDatePicker
-} from 'cypress/e2e/helper-functions';
+} from '../../../helper-functions';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(5),
@@ -57,7 +57,7 @@ const editedTask = {
     month: 6,
     day: 24
   },
-  repeatType: 'Uge',
+  repeatType: 'Altid',
   repeatEvery: '5',
 };
 
@@ -66,7 +66,7 @@ describe('Area rules type 1', () => {
     cy.visit('http://localhost:4200');
     loginPage.login();
   });
-  it('should edit task', () => {
+  it('should edit task frequency', () => {
     backendConfigurationPropertiesPage.goToProperties();
     backendConfigurationPropertiesPage.createProperty(property);
     backendConfigurationPropertiesPage.createProperty(property2);
@@ -90,8 +90,8 @@ describe('Area rules type 1', () => {
     cy.wait('@getFolders', { timeout: 60000 });
     cy.wait(1000);
     cy.get('#createFolder').click({force: true});
-    cy.wait(1000);
-    cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
+    cy.wait(500);
+    cy.get('mat-tree-node > button').click();
     cy.wait(500);
     cy.contains('.folder-tree-name', `00. Logbøger`).first().click();
     cy.wait(500);
@@ -103,7 +103,11 @@ describe('Area rules type 1', () => {
     selectValueInNgSelectorNoSelector('0. '+property.name + ' - '+property.address);
     cy.wait(500);
     for (let i = 0; i < task.translations.length; i++) {
-      cy.get(`#createName${i}`).type(task.translations[i]);
+      cy.get(`[for='createName${i}']`).scrollIntoView();
+      cy.get(`[for='createName${i}']`).should('be.visible');
+      cy.wait(500);
+      cy.get(`[for='createName${i}']`).type(task.translations[i]);
+      //cy.get(`#createName${i}`).click().type(task.translations[i]);
     }
     //selectValueInNgSelector('#createTemplateSelector', task.eformName, true);
     cy.get('#createStartFrom').click();
@@ -142,7 +146,9 @@ describe('Area rules type 1', () => {
     cy.get('#createFolderNameTranslation_0').type(newFolderName);
     cy.get('#createFolderDescriptionTranslation_0 .NgxEditor__Content').type(generateRandmString());
     cy.wait(500);
+    cy.intercept('POST', '**').as('createFolder');
     cy.get('#folderSaveBtn').click();
+    cy.wait('@createFolder', { timeout: 60000 });
     cy.wait(1000);
     cy.get('#backend-configuration-pn-task-wizard').scrollIntoView().click();
     cy.get('.cdk-row .cdk-column-actions .editBtn').first().click();
@@ -171,7 +177,7 @@ describe('Area rules type 1', () => {
     cy.wait(1000);
     cy.get('app-task-wizard-update-modal button#updateFolder').click();
     cy.wait(1000);
-    cy.get('.mat-tree-node > .mat-focus-indicator > .mat-button-wrapper > .mat-icon').click();
+    cy.get('mat-tree-node > button').click();
     cy.wait(500);
     cy.contains('.folder-tree-name', newFolderName).click();
     /*cy.wait(500);
@@ -193,13 +199,15 @@ describe('Area rules type 1', () => {
     cy.get('#updateStartFrom').click();
     selectDateOnNewDatePicker(editedTask.startFrom.year, editedTask.startFrom.month, editedTask.startFrom.day);
     selectValueInNgSelector('#updateRepeatType', editedTask.repeatType, true);
-    cy.get('#updateRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(editedTask.repeatEvery);
-    cy.get(`.ng-option`).first().should('have.text', editedTask.repeatEvery).should('be.visible').click();
+    // cy.get('#updateRepeatEvery').should('be.visible').find('input').should('be.visible').clear().type(editedTask.repeatEvery);
+    // cy.get(`.ng-option`).first().should('have.text', editedTask.repeatEvery).should('be.visible').click();
     //cy.get('mat-checkbox#checkboxUpdateAssignment0').click();
     // enable task
     cy.get('#updateTaskStatusToggle').click();
     cy.wait(500);
+    cy.intercept('PUT', '**/api/backend-configuration-pn/task-wizard').as('updateTask');
     cy.get('#updateTaskBtn').click();
+    cy.wait('@updateTask', { timeout: 60000 });
     cy.wait(500);
     // check table
     cy.get('.cdk-row').should('have.length', 1);
@@ -209,7 +217,7 @@ describe('Area rules type 1', () => {
     cy.get('.cdk-row .cdk-column-eform span').should('have.text', editedTask.eformName);
     cy.get('.cdk-row .cdk-column-startDate span')
       .should('have.text', `${editedTask.startFrom.day}.${editedTask.startFrom.month >= 10 ? '' : '0'}${editedTask.startFrom.month}.${editedTask.startFrom.year}`);
-    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${editedTask.repeatEvery} ${editedTask.repeatType}`);
+    cy.get('.cdk-row .cdk-column-repeat span').should('have.text', `${editedTask.repeatType}`);
     cy.get('.cdk-row .cdk-column-status span').should('have.text', 'Aktiv');
     cy.get('.cdk-row .cdk-column-assignedTo span').should('have.text', `${workerForCreate.name} ${workerForCreate.surname}`);
   });

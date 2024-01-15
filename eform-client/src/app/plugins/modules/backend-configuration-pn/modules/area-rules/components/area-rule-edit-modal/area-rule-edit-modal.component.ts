@@ -129,7 +129,13 @@ export class AreaRuleEditModalComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) model: {areaRule: AreaRuleModel, selectedArea: AreaModel, planningStatus: boolean}
   ) {
     this.planningStatus = model.planningStatus;
-    this.selectedAreaRule = R.clone(model.areaRule);
+    //this.selectedAreaRule = R.clone(model.areaRule);
+    this.selectedAreaRule = new AreaRuleUpdateModel();
+    this.selectedAreaRule.id = model.areaRule.id;
+    this.selectedAreaRule.eformId = model.areaRule.eformId;
+    this.selectedAreaRule.eformName = model.areaRule.eformName;
+    this.selectedAreaRule.typeSpecificFields = R.clone(model.areaRule.typeSpecificFields);
+    this.selectedAreaRule.translatedNames = R.clone(model.areaRule.translatedNames);
     this.selectedArea = model.selectedArea;
 
     this.typeahead

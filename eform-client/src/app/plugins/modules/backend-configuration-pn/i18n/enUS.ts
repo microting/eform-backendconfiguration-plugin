@@ -185,8 +185,8 @@ export const enUS= {
   Property: 'Property',
   Tags: 'Tags',
   'Assign to': 'Assign to',
-  Active: 'Active',
-  NotActive: 'Not active',
+  'Active': 'Active',
+  'NotActive': 'Not active',
   'Task name': 'Task name',
   Folder: 'Folder',
   Notification: 'Notification',
@@ -294,5 +294,9 @@ export const enUS= {
   'Edit employee': 'Edit employee',
   'Timeregistration': 'Time registration',
   'Submitted date': 'Submitted date',
-  'Always': 'Always'
+  'Always': 'Always',
+  'Completed': 'Completed',
+  'Description': 'Description',
+  'Date': 'Date',
+  'Location': 'Location',
 };

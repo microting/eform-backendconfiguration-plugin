@@ -278,4 +278,8 @@ export const elGR = {
   Timeregistration: 'Εγγραφή χρόνου',
   'Submitted date': 'Ημερομηνία υποβολής',
   Always: 'Πάντα',
+  Completed: 'Ολοκληρώθηκε το',
+  Description: 'Περιγραφή',
+  Date: 'Ημερομηνία',
+  Location: 'Τοποθεσία',
 };

@@ -12,12 +12,12 @@ import {
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription} from 'rxjs';
 import { AutoUnsubscribe } from 'ngx-auto-unsubscribe';
-import { Gallery, GalleryItem, ImageItem } from '@ngx-gallery/core';
-import { Lightbox } from '@ngx-gallery/lightbox';
 import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {AddPictureDialogComponent} from 'src/app/common/modules/eform-cases/components';
 import {Overlay} from '@angular/cdk/overlay';
+import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
+import {Lightbox} from 'ng-gallery/lightbox';
 
 @AutoUnsubscribe()
 @Component({
@@ -235,7 +235,6 @@ export class TaskManagementCreateShowModalComponent
       this.gallery
         .ref('lightbox', {
           counterPosition: 'bottom',
-          loadingMode: 'indeterminate',
         })
         .load(this.galleryImages);
       this.lightbox.open(i);
@@ -243,7 +242,7 @@ export class TaskManagementCreateShowModalComponent
       // this.gallery.destroyAll();
       // this.gallery.resetAll();
       this.gallery
-        .ref('lightbox', { counter: false, loadingMode: 'indeterminate' })
+        .ref('lightbox', { counter: false })
         .load(this.galleryImages);
       this.lightbox.open(i);
     }

@@ -154,6 +154,7 @@
             type="text"
             matInput
             id="createName{{i}}"
+            name="createName{{i}}"
             [ngModel]="languageModel.name"
             (ngModelChange)="updateName($event, i)"
           >

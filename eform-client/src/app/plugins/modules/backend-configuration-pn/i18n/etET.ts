@@ -278,4 +278,8 @@ export const etET = {
   Timeregistration: 'Aja registreerimine',
   'Submitted date': 'Esitamise kuupäev',
   Always: 'Alati',
+  Completed: 'Lõpetatud',
+  Description: 'Kirjeldus',
+  Date: 'Kuupäev',
+  Location: 'Asukoht',
 };

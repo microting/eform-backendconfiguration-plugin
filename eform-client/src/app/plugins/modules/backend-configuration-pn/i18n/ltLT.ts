@@ -278,4 +278,8 @@ export const ltLT = {
   Timeregistration: 'Laiko registracija',
   'Submitted date': 'Pateikimo data',
   Always: 'Visada',
+  Completed: 'Baigta',
+  Description: 'apibūdinimas',
+  Date: 'Data',
+  Location: 'Vieta',
 };

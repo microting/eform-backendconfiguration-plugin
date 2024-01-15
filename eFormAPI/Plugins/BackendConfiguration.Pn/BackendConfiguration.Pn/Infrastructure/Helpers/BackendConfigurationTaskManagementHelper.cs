@@ -44,6 +44,13 @@ public static class BackendConfigurationTaskManagementHelper
         }
         workOrderCase.Priority = updateModel.Priority.ToString();
 
+        var createdBySite =
+            await sdkDbContext.Sites.FirstOrDefaultAsync(x => x.Id == workOrderCase.CreatedBySdkSiteId);
+        if (createdBySite != null)
+        {
+            workOrderCase.CreatedByName = createdBySite.Name;
+        }
+
         var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == updateModel.AssignedSiteId).ConfigureAwait(false);
         var updatedByName = await userService.GetCurrentUserFullName().ConfigureAwait(false);
 

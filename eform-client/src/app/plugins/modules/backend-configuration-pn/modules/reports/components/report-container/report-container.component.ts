@@ -12,8 +12,6 @@ import {parseISO} from 'date-fns';
 import {FiltrationStateModel, SharedTagModel,} from 'src/app/common/models';
 import {EmailRecipientsService, TemplateFilesService} from 'src/app/common/services';
 import {AuthStateService} from 'src/app/common/store';
-import {Gallery, GalleryItem, ImageItem} from '@ngx-gallery/core';
-import {Lightbox} from '@ngx-gallery/lightbox';
 import {ViewportScroller} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../../services';
 import {catchError, tap} from 'rxjs/operators';
@@ -22,6 +20,8 @@ import {
   selectReportsV2Filters,
   selectReportsV2ScrollPosition
 } from '../../../../state/reports-v2/reports-v2.selector';
+import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
+import {Lightbox} from 'ng-gallery/lightbox';
 
 @AutoUnsubscribe()
 @Component({
@@ -200,10 +200,10 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
 
   openPicture(i: any) {
     if (this.galleryImages.length > 1) {
-      this.gallery.ref('lightbox', {counterPosition: 'bottom', loadingMode: 'indeterminate'}).load(this.galleryImages);
+      this.gallery.ref('lightbox', {counterPosition: 'bottom'}).load(this.galleryImages);
       this.lightbox.open(i);
     } else {
-      this.gallery.ref('lightbox', {counter: false, loadingMode: 'indeterminate'}).load(this.galleryImages);
+      this.gallery.ref('lightbox', {counter: false}).load(this.galleryImages);
       this.lightbox.open(i);
     }
   }

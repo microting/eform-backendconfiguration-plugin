@@ -278,4 +278,8 @@ export const fiFI = {
   Timeregistration: 'Ajan rekisteröinti',
   'Submitted date': 'Lähetyspäivämäärä',
   Always: 'Aina',
+  Completed: 'Valmis',
+  Description: 'Kuvaus',
+  Date: 'Päivämäärä',
+  Location: 'Sijainti',
 };
