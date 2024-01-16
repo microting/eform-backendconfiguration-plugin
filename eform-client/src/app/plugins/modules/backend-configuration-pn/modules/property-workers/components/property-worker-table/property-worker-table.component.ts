@@ -1,32 +1,32 @@
 import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
-import {DeviceUserModel, PropertyAssignWorkersModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
-import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
+import {BackendConfigurationPnPropertiesService} from '../../../../services';
+import {TaskWizardStatusesEnum} from '../../../../enums';
+import {PropertyWorkersStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {AuthStateService} from 'src/app/common/store';
-import {
-  PropertyWorkersStateService
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components/store';
 import {Subject, Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
-import {BackendConfigurationPnPropertiesService} from 'src/app/plugins/modules/backend-configuration-pn/services';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {Sort} from '@angular/material/sort';
 import {debounceTime} from 'rxjs/operators';
 import {
-  PropertyWorkerCreateEditModalComponent, PropertyWorkerDeleteModalComponent, PropertyWorkerOtpModalComponent
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components';
+  PropertyWorkerCreateEditModalComponent,
+  PropertyWorkerDeleteModalComponent,
+  PropertyWorkerOtpModalComponent
+} from '../';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserClaimsDeviceUsersDelete} from 'src/app/state/auth/auth.selector';
+import {selectCurrentUserClaimsDeviceUsersDelete} from 'src/app/state';
 import {
   selectPropertyWorkersNameFilters,
   selectPropertyWorkersPaginationIsSortDsc,
   selectPropertyWorkersPaginationSort
-} from '../../../../state/property-workers/property-workers.selector';
+} from '../../../../state';
 
 @AutoUnsubscribe()
 @Component({
@@ -177,7 +177,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       })
 
       .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
-      //.afterClosed().subscribe(data => data ? this.searchSubject.next('') : undefined);
+    //.afterClosed().subscribe(data => data ? this.searchSubject.next('') : undefined);
   }
 
   openDeleteDeviceUserModal(simpleSiteDto: DeviceUserModel) {

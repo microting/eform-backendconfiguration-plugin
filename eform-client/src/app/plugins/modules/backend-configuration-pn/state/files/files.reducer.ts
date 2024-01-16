@@ -1,11 +1,14 @@
 import {CommonPaginationState, FiltrationStateModel} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
-  filesUpdateDateRange, filesUpdateFilters, filesUpdatePagination, filesUpdatePaginationTotalItemsCount,
+  filesUpdateDateRange,
+  filesUpdateFilters,
+  filesUpdatePagination,
+  filesUpdatePaginationTotalItemsCount,
   filesUpdatePropertyIds
-} from './files.asctions';
+} from './files.actions';
 
-export interface FilesFiltrationModel extends FiltrationStateModel{
+export interface FilesFiltrationModel extends FiltrationStateModel {
   propertyIds: number[],
   dateRange: {
     dateFrom: string,
@@ -19,7 +22,7 @@ export interface FilesState {
   total: number;
 }
 
-export const initialState: FilesState = {
+export const filesInitialState: FilesState = {
   pagination: {
     sort: 'Id',
     isSortDsc: false,
@@ -38,49 +41,46 @@ export const initialState: FilesState = {
     tagIds: [],
   },
   total: 0,
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _filesReducer = createReducer(
+  filesInitialState,
   on(filesUpdateDateRange, (state, {payload}) => ({
-    ...state,
-    filters: {
-      ...state.filters,
-      dateRange: payload,
-    },
+      ...state,
+      filters: {
+        ...state.filters,
+        dateRange: payload,
+      },
     }
   )),
   on(filesUpdatePropertyIds, (state, {payload}) => ({
-    ...state,
-    filters: {
-      ...state.filters,
-      propertyIds: payload,
-    },
+      ...state,
+      filters: {
+        ...state.filters,
+        propertyIds: payload,
+      },
     }
   )),
   on(filesUpdatePagination, (state, {payload}) => ({
-    ...state,
-    pagination: payload,
+      ...state,
+      pagination: payload,
     }
-  )
-  ),
+  )),
   on(filesUpdateFilters, (state, {payload}) => ({
-    ...state,
-    filters: payload,
+      ...state,
+      filters: payload,
     }
-  )
-  ),
-    on(filesUpdatePaginationTotalItemsCount, (state, {payload}) => ({
-        ...state,
-        pagination: {
-          ...state.pagination,
-          total: payload,
-        },
-        }
-    )
-    ),
+  )),
+  on(filesUpdatePaginationTotalItemsCount, (state, {payload}) => ({
+      ...state,
+      pagination: {
+        ...state.pagination,
+        total: payload,
+      },
+    }
+  )),
 );
 
-export function reducer(state: FilesState | undefined, action: Action) {
-  return _reducer(state, action);
+export function filesReducer(state: FilesState | undefined, action: Action) {
+  return _filesReducer(state, action);
 }

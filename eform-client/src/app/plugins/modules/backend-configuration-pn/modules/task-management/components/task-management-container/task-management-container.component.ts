@@ -96,21 +96,6 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;
         this.updateTable();
-        // let currentFilters: any;
-        // this.selectTaskManagementFilters$.subscribe((filters) => {
-        //   currentFilters = filters;
-        // }).unsubscribe();
-        // //     const propertyId = this.taskManagementStateService.store.getValue().filters.propertyId;
-        // this.selectedPropertyId = currentFilters.propertyId !== -1 ? currentFilters.propertyId : null;
-        // this.selectStatisticsPropertyId$.subscribe((propertyId) => {
-        //   if (propertyId) {
-        //     this.selectedPropertyId = propertyId;
-        //     // this.store.dispatch({
-        //     //   type: '[TaskManagement] Update filters',
-        //     //   payload: {propertyId: this.selectedPropertyId}
-        //     // });
-        //   }
-        // });
         this.getStats();
       } else {
         this.diagramForShow = '';

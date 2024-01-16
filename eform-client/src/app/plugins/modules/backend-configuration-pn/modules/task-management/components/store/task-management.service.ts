@@ -1,212 +1,152 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import {Observable, zip} from 'rxjs';
 import {
   CommonPaginationState,
   OperationDataResult,
-  SortModel,
 } from 'src/app/common/models';
-import { updateTableSort } from 'src/app/common/helpers';
-import { getOffset } from 'src/app/common/helpers/pagination.helper';
-import { BackendConfigurationPnTaskManagementService} from '../../../../services';
-import { WorkOrderCaseModel } from '../../../../models';
+import {updateTableSort} from 'src/app/common/helpers';
+import {BackendConfigurationPnTaskManagementService} from '../../../../services';
+import {WorkOrderCaseModel} from '../../../../models';
 import {Store} from '@ngrx/store';
 import {
   selectTaskManagementFilters,
-  selectTaskManagementPagination
-} from '../../../../state/task-management/task-management.selector';
+  selectTaskManagementPagination,
+  TaskManagementFiltrationModel,
+  taskManagementUpdateFilters,
+  taskManagementUpdatePagination
+} from '../../../../state';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class TaskManagementStateService {
   private selectTaskManagementPagination$ = this.store.select(selectTaskManagementPagination);
   private selectTaskManagementFilters$ = this.store.select(selectTaskManagementFilters);
+  currentPagination: CommonPaginationState;
+  currentFilters: TaskManagementFiltrationModel;
+
   constructor(
-      private store: Store,
+    private store: Store,
     private service: BackendConfigurationPnTaskManagementService,
-  ) {}
+  ) {
+    this.selectTaskManagementPagination$.subscribe(x => this.currentPagination = x);
+    this.selectTaskManagementFilters$.subscribe(x => this.currentFilters = x);
+  }
 
-  // getPageSize(): Observable<number> {
-  //   return this.query.selectPageSize$;
-  // }
-
-  // getSort(): Observable<SortModel> {
-  //   return this.query.selectSort$;
-  // }
-
-  // getNameFilter(): Observable<string> {
-  //   return this.query.selectNameFilter$;
-  // }
-
-  // getActiveSort(): Observable<string> {
-  //   return this.query.selectActiveSort$;
-  // }
-  //
-  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
-  //   return this.query.selectActiveSortDirection$;
-  // }
-
-  getAllWorkOrderCases(delayed: boolean):
-    Observable<OperationDataResult<WorkOrderCaseModel[]>> {
-    let _filters:any;
-    zip(this.selectTaskManagementFilters$, this.selectTaskManagementPagination$).subscribe(
-        ([filters, pagination]) => {
-          _filters = {
-            ...filters,
-            ...pagination,
-          };
-        }
-    ).unsubscribe();
+  getAllWorkOrderCases(delayed: boolean): Observable<OperationDataResult<WorkOrderCaseModel[]>> {
     return this.service.getWorkOrderCases({
-      ..._filters,
+      ...this.currentFilters,
+      ...this.currentPagination,
       delayed: delayed,
     });
-    // return this.service
-    //   .getWorkOrderCases({
-    //     ...this.query.pageSetting.pagination,
-    //     ...this.query.pageSetting.filters,
-    //     delayed: delayed,
-    //   });
   }
 
   downloadWordReport() {
-    let currentFilters: any;
-    this.selectTaskManagementFilters$.subscribe((filters) => {
-      currentFilters = filters;
-    }).unsubscribe();
-    let currentPagination: CommonPaginationState;
-    this.selectTaskManagementPagination$.subscribe((x) => currentPagination = x).unsubscribe();
-    return this.service
-      .downloadWordReport({
-        ...currentPagination,
-        ...currentFilters,
-      });
+    return this.service.downloadWordReport({
+      ...this.currentFilters,
+      ...this.currentPagination,
+    });
   }
 
   downloadExcelReport() {
-    let currentFilters: any;
-    this.selectTaskManagementFilters$.subscribe((filters) => {
-      currentFilters = filters;
-    }).unsubscribe();
-    let currentPagination: CommonPaginationState;
     return this.service
       .downloadExcelReport({
-        ...currentPagination,
-        ...currentFilters,
+        ...this.currentFilters,
       });
   }
 
-  // updateNameFilter(nameFilter: string) {
-  //   this.store.update((state) => ({
-  //     filters: {
-  //       ...state.filters,
-  //       nameFilter: nameFilter,
-  //     },
-  //     pagination: {
-  //       ...state.pagination,
-  //       offset: 0,
-  //     },
-  //   }));
-  // }
-
-  // updatePageSize(pageSize: number) {
-  //   this.store.update((state) => ({
-  //     pagination: {
-  //       ...state.pagination,
-  //       pageSize: pageSize,
-  //     },
-  //   }));
-  // this.checkOffset();
-  // }
-
-  // changePage(offset: number) {
-  //   // this.store.update((state) => ({
-  //   //   pagination: {
-  //   //     ...state.pagination,
-  //   //     offset: offset,
-  //   //   },
-  //   // }));
-  // }
-
-  // onDelete() {
-  //   this.store.update((state) => ({
-  //     total: state.total - 1,
-  //   }));
-  //   this.checkOffset();
-  // }
-
   onSortTable(sort: string) {
-    let currentPagination: CommonPaginationState;
-    this.selectTaskManagementPagination$.subscribe((x) => currentPagination = x).unsubscribe();
     const localPageSettings = updateTableSort(
       sort,
-      currentPagination.sort,
-      currentPagination.isSortDsc
+      this.currentPagination.sort,
+      this.currentPagination.isSortDsc
     );
-    this.store.dispatch({
-      type: '[TaskManagement] Update pagination',
-      payload: {
-        ...currentPagination,
-        isSortDsc: localPageSettings.isSortDsc,
-        sort: localPageSettings.sort,
-      }
-    })
-    // const localPageSettings = updateTableSort(
-    //   sort,
-    //   this.query.pageSetting.pagination.sort,
-    //   this.query.pageSetting.pagination.isSortDsc
-    // );
-    // this.store.update((state) => ({
-    //   pagination: {
-    //     ...state.pagination,
-    //     isSortDsc: localPageSettings.isSortDsc,
-    //     sort: localPageSettings.sort,
-    //   },
-    // }));
+    this.store.dispatch(taskManagementUpdatePagination({
+      ...this.currentPagination,
+      ...localPageSettings,
+    }));
   }
 
-  // checkOffset() {
-  //   const newOffset = getOffset(
-  //     this.query.pageSetting.pagination.pageSize,
-  //     this.query.pageSetting.pagination.offset,
-  //     this.query.pageSetting.total
-  //   );
-  //   if (newOffset !== this.query.pageSetting.pagination.offset) {
-  //     this.store.update((state) => ({
-  //       pagination: {
-  //         ...state.pagination,
-  //         offset: newOffset,
-  //       },
-  //     }));
-  //   }
-  // }
+  getCurrentPropertyId() {
+    return this.currentFilters.propertyId;
+  }
 
-  // getFiltersAsync(): Observable<TaskManagementFiltrationModel> {
-  //   return this.query.selectFilters$;
-  // }
+  updatePropertyId(propertyId: number) {
+    if(this.currentFilters.propertyId !== propertyId) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        propertyId: propertyId,
+      }));
+    }
+  }
 
-  /*updateFilters(taskManagementFiltrationModel :TaskManagementFiltrationModel){
-    this.store.update((state) => ({
-      filters: {
-        ...state.filters,
-        propertyId: taskManagementFiltrationModel.propertyId,
-        areaId: taskManagementFiltrationModel.areaId,
-        date: taskManagementFiltrationModel.date,
-        status: taskManagementFiltrationModel.status,
-        createdBy: taskManagementFiltrationModel.createdBy,
-        lastAssignedTo: taskManagementFiltrationModel.lastAssignedTo,
-      },
-    }));
-  }*/
+  updateAreaName(areaName?: string) {
+    if(this.currentFilters.areaName !== areaName) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        areaName: areaName,
+      }));
+    }
+  }
 
-  // getDisabledButtonsAsync() {
-  //   return this.query.selectDisableButtons$;
-  // }
+  updateCreatedBy(createdBy?: string) {
+    if(this.currentFilters.createdBy !== createdBy) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        createdBy: createdBy,
+      }));
+    }
+  }
 
-  // getDisabledButtons() {
-  //   const storeValue = this.store.getValue()
-  //   return !storeValue.filters.propertyId;
-  // }
+  updateLastAssignedTo(lastAssignedTo?: number) {
+    if(this.currentFilters.lastAssignedTo !== lastAssignedTo) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        lastAssignedTo: lastAssignedTo,
+      }));
+    }
+  }
 
-  // getPagination(): Observable<PaginationModel> {
-  //   return this.query.selectPagination$;
-  // }
+  updateStatus(status?: number) {
+    if(this.currentFilters.status !== status) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        status: status,
+      }));
+    }
+  }
+
+  updateDateFrom(dateFrom?: string | Date) {
+    if(this.currentFilters.dateFrom !== dateFrom) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        dateFrom: dateFrom,
+      }));
+    }
+  }
+
+  updateDateTo(dateTo?: string | Date) {
+    if(this.currentFilters.dateTo !== dateTo) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        dateTo: dateTo,
+      }));
+    }
+  }
+
+  updatePriority(priority?: number) {
+    if(this.currentFilters.priority !== priority) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        priority: priority,
+      }));
+    }
+  }
+
+  updateDelayed(delayed: boolean) {
+    if(this.currentFilters.delayed !== delayed) {
+      this.store.dispatch(taskManagementUpdateFilters({
+        ...this.currentFilters,
+        delayed: delayed,
+      }));
+    }
+  }
 }

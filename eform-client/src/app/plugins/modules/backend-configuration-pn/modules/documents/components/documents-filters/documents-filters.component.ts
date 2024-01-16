@@ -9,19 +9,14 @@ import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
 import {CommonDictionaryModel} from 'src/app/common/models';
-import {TranslateService} from '@ngx-translate/core';
 import {DocumentSimpleFolderModel, DocumentSimpleModel} from '../../../../models';
-import {applicationLanguagesTranslated} from 'src/app/common/const';
-import {DocumentsStateService} from '../../store';
 import {DocumentsExpirationFilterEnum} from '../../../../enums';
-import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 import {
-  selectDocumentsFilters
-} from '../../../../state/documents/documents.selector';
-import {
-  DocumentsFiltrationModel
-} from '../../../../state/documents/documents.reducer';
+  selectDocumentsFilters,
+  DocumentsFiltrationModel,
+  updateDocumentsFilters
+} from '../../../../state';
 
 @AutoUnsubscribe()
 @Component({
@@ -35,26 +30,24 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
   @Input() documents: DocumentSimpleModel[];
   @Input() properties: CommonDictionaryModel[] = [];
   filtersForm: FormGroup;
+  currentFilters: DocumentsFiltrationModel;
 
   selectFiltersSub$: Subscription;
   propertyIdValueChangesSub$: Subscription;
   folderNameChangesSub$: Subscription;
   documentChangesSub$: Subscription;
   expireChangesSub$: Subscription;
-  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
-  private selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
+  selectDocumentsFilters$ = this.store.select(selectDocumentsFilters);
 
   constructor(
     private store: Store,
   ) {
-    this.selectCurrentUserLocale$.subscribe((locale) => {
-      dateTimeAdapter.setLocale(locale);
-    });
   }
 
   ngOnInit(): void {
     this.selectFiltersSub$ = this.selectDocumentsFilters$
       .subscribe((filters) => {
+        this.currentFilters = filters;
         if (!this.filtersForm) {
           this.filtersForm = new FormGroup({
             propertyId: new FormControl(filters.propertyId || -1),
@@ -63,19 +56,10 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
             expiration: new FormControl(filters.expiration),
           });
           if (filters.propertyId === null) {
-            let currentFilters: DocumentsFiltrationModel;
-            this.selectDocumentsFilters$.subscribe((filters) => {
-              currentFilters = filters;
-            }).unsubscribe();
-            this.store.dispatch({
-              type: '[Documents] Update filters',
-              payload: {
-                filters: {
-                  ...currentFilters,
-                  propertyId: -1,
-                }
-              }
-            });
+            this.store.dispatch(updateDocumentsFilters({
+              ...filters,
+              propertyId: -1,
+            }));
           }
           if (filters.propertyId && filters.propertyId !== -1) {
             //this.getDocuments(filters.propertyId);
@@ -86,77 +70,41 @@ export class DocumentsFiltersComponent implements OnInit, OnDestroy {
     this.propertyIdValueChangesSub$ = this.filtersForm
       .get('propertyId')
       .valueChanges.subscribe((value: number) => {
-        let currentFilters: DocumentsFiltrationModel;
-        this.selectDocumentsFilters$.subscribe((filters) => {
-          currentFilters = filters;
-        }).unsubscribe();
-        if (currentFilters.propertyId !== value) {
-          this.store.dispatch({
-            type: '[Documents] Update filters',
-            payload: {
-              filters: {
-                ...currentFilters,
-                propertyId: value,
-              }
-            }
-          });
+        if (this.currentFilters.propertyId !== value) {
+          this.store.dispatch(updateDocumentsFilters({
+            ...this.currentFilters,
+            propertyId: value,
+          }));
         }
       });
     this.folderNameChangesSub$ = this.filtersForm
       .get('folderId')
       .valueChanges.subscribe((value: string) => {
-        let currentFilters: DocumentsFiltrationModel;
-        this.selectDocumentsFilters$.subscribe((filters) => {
-          currentFilters = filters;
-        }).unsubscribe();
-        if (currentFilters.folderId !== value) {
-          this.store.dispatch({
-            type: '[Documents] Update filters',
-            payload: {
-              filters: {
-                ...currentFilters,
-                folderId: value,
-              }
-            }
-          });
+        if (this.currentFilters.folderId !== value) {
+          this.store.dispatch(updateDocumentsFilters({
+            ...this.currentFilters,
+            folderId: value,
+          }));
         }
       });
     this.documentChangesSub$ = this.filtersForm
       .get('documentId')
       .valueChanges.subscribe((value: string) => {
-        let currentFilters: DocumentsFiltrationModel;
-        this.selectDocumentsFilters$.subscribe((filters) => {
-          currentFilters = filters;
-        }).unsubscribe();
-        if (currentFilters.documentId !== value) {
-          this.store.dispatch({
-            type: '[Documents] Update filters',
-            payload: {
-              filters: {
-                ...currentFilters,
-                documentId: value,
-              }
-            }
-          });
+        if (this.currentFilters.documentId !== value) {
+          this.store.dispatch(updateDocumentsFilters({
+            ...this.currentFilters,
+            documentId: value,
+          }));
         }
       });
     this.expireChangesSub$ = this.filtersForm
       .get('expiration')
       .valueChanges.subscribe((value: DocumentsExpirationFilterEnum) => {
-        let currentFilters: DocumentsFiltrationModel;
-        this.selectDocumentsFilters$.subscribe((filters) => {
-          currentFilters = filters;
-        }).unsubscribe();
-        if (currentFilters.expiration !== value) {
-          this.store.dispatch({
-            type: '[Documents] Update filters',
-            payload: {
-              filters: {
-                ...currentFilters,
-                expiration: value,
-              }
-            }
-          });
+        if (this.currentFilters.expiration !== value) {
+          this.store.dispatch(updateDocumentsFilters({
+            ...this.currentFilters,
+            expiration: value,
+          }));
         }
       });
   }

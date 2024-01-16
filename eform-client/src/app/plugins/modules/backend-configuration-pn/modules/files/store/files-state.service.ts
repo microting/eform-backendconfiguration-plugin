@@ -1,141 +1,61 @@
-import { Injectable } from '@angular/core';
-import {Observable, zip} from 'rxjs';
+import {Injectable} from '@angular/core';
+import {Observable, tap} from 'rxjs';
 import {
-    CommonPaginationState,
+  CommonPaginationState,
   OperationDataResult,
   Paged,
 } from 'src/app/common/models';
 import {updateTableSort} from 'src/app/common/helpers';
-import {
-  FilesModel,
-  FilesRequestModel,
-} from '../../../models';
-import {
-  BackendConfigurationPnFilesService,
-} from '../../../services';
-import {tap} from 'rxjs/operators';
+import {FilesModel,} from '../../../models';
+import {BackendConfigurationPnFilesService,} from '../../../services';
 import {Store} from '@ngrx/store';
-import {FilesFiltrationModel} from '../../../state/files/files.reducer';
 import {
+  FilesFiltrationModel,
   selectFilesFilters,
-  selectFilesPagination
-} from '../../../state/files/files.selector';
+  selectFilesPagination,
+  filesUpdatePaginationTotalItemsCount,
+  filesUpdatePagination
+} from '../../../state';
 
 @Injectable({providedIn: 'root'})
 export class FilesStateService {
   private selectFilesFilters$ = this.store.select(selectFilesFilters);
   private selectFilesPagination$ = this.store.select(selectFilesPagination);
+  currentPagination: CommonPaginationState;
+  currentFilters: FilesFiltrationModel;
 
   constructor(
     private store: Store,
     private service: BackendConfigurationPnFilesService,
   ) {
+    this.selectFilesPagination$.subscribe(x => this.currentPagination = x);
+    this.selectFilesFilters$.subscribe(x => this.currentFilters = x);
   }
 
   getFiles(): Observable<OperationDataResult<Paged<FilesModel>>> {
-    let _filters: FilesRequestModel;
-    zip(this.selectFilesFilters$, this.selectFilesPagination$).subscribe(
-      ([filters, pagination]) => {
-        _filters = {
-          ..._filters,
-          ...filters,
-          ...pagination,
-        };
-      }
-    ).unsubscribe();
-    return this.service.getAllFiles(_filters).pipe(
+    return this.service.getAllFiles({
+      propertyIds: this.currentFilters.propertyIds,
+      nameFilter: this.currentFilters.nameFilter,
+      tagIds: this.currentFilters.tagIds,
+      dateFrom: this.currentFilters.dateRange.dateFrom,
+      dateTo: this.currentFilters.dateRange.dateTo,
+      sort: this.currentPagination.sort,
+      isSortDsc: this.currentPagination.isSortDsc,
+    }).pipe(
       tap((data) => {
         if (data && data.success) {
-          this.store.dispatch(
-            {type: '[Files] Update Pagination Total Items Count', total: data.model.total ?? ''}
-          )
-          // this.store.update((state) => ({
-          //   total: data.model.total,
-          // }));
+          this.store.dispatch(filesUpdatePaginationTotalItemsCount(data.model.total || 0));
         }
       })
     );
-    // this.selectFilesFilters$.subscribe((filters) => {
-    //   _filters = ;
-    // }).unsubscribe();
-    //  FilesRequestModel = {
-    //   sort: this.query.pageSetting.pagination.sort,
-    //   isSortDsc: this.query.pageSetting.pagination.isSortDsc,
-    //   nameFilter: this.query.pageSetting.filters.nameFilter ?? '',
-    //   propertyIds: this.query.pageSetting.filters.propertyIds ?? null,
-    //   tagIds: this.query.pageSetting.filters.tagIds ?? null,
-    //   dateFrom: this.query.pageSetting.filters.dateRange.dateFrom,
-    //   dateTo: this.query.pageSetting.filters.dateRange.dateTo,
-    // };
-    //
-    // return this.service.getAllFiles(filters)
-    //   .pipe(tap(model => {
-    //     if(model.success && model.model) {
-    //       this.store.update(() => ({
-    //         total: model.model.total,
-    //       }));
-    //     }
-    //   }));
-  }
-
-  // getFiltersAsync(): Observable<FilesFiltrationModel> {
-  //   return this.query.selectFilters$;
-  // }
-  //
-  // getActiveSort(): Observable<string> {
-  //   return this.query.selectActiveSort$;
-  // }
-  //
-  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
-  //   return this.query.selectActiveSortDirection$;
-  // }
-
-  updateFilters(filters: FilesFiltrationModel) {
-    // this.store.update((state) => ({
-    //   filters: {
-    //     ...state.filters,
-    //     ...filters,
-    //   },
-    //   pagination: {
-    //     ...state.pagination,
-    //     offset: 0,
-    //   },
-    // }));
-  }
-
-  changePage(offset: number) {
-    // this.store.update((state) => ({
-    //   pagination: {
-    //     ...state.pagination,
-    //     offset: offset,
-    //   },
-    // }));
   }
 
   onSortTable(sort: string) {
-    let currentPagination: CommonPaginationState;
-    this.selectFilesPagination$.subscribe((pagination) => {
-      currentPagination = pagination;
-    }).unsubscribe();
     const localPageSettings = updateTableSort(
-        sort,
-        currentPagination.sort,
-        currentPagination.isSortDsc
+      sort,
+      this.currentPagination.sort,
+      this.currentPagination.isSortDsc
     );
-    this.store.dispatch(
-        {type: '[Files] Update Pagination', payload: localPageSettings}
-    )
-    // const localPageSettings = updateTableSort(
-    //   sort,
-    //   this.query.pageSetting.pagination.sort,
-    //   this.query.pageSetting.pagination.isSortDsc
-    // );
-    // this.store.update((state) => ({
-    //   pagination: {
-    //     ...state.pagination,
-    //     isSortDsc: localPageSettings.isSortDsc,
-    //     sort: localPageSettings.sort,
-    //   },
-    // }));
+    this.store.dispatch(filesUpdatePagination({...this.currentPagination, ...localPageSettings}));
   }
 }

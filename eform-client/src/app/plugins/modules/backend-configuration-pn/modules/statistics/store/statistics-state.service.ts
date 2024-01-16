@@ -11,16 +11,20 @@ import {
 } from '../../../models';
 import {Store} from '@ngrx/store';
 import {
-  selectStatisticsPropertyId
-} from '../../../state/statistics/statistics.selector';
+  selectStatisticsPropertyId,
+  statisticsUpdateFilters
+} from '../../../state';
 
 @Injectable({providedIn: 'root'})
 export class StatisticsStateService {
-  public selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
+  private selectStatisticsPropertyId$ = this.store.select(selectStatisticsPropertyId);
+  propertyId: number | null;
+
   constructor(
-      private store: Store,
+    private store: Store,
     private service: BackendConfigurationPnStatisticsService,
   ) {
+    this.selectStatisticsPropertyId$.subscribe((id) => this.propertyId = id);
   }
 
   getPlannedTaskDays(propertyId: number | null = undefined): Observable<OperationDataResult<PlannedTaskDaysModel>> {
@@ -43,31 +47,11 @@ export class StatisticsStateService {
     return this.service.getAdHocTaskWorkers({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
   }
 
-  // getPropertyIdAsync(): Observable<number> {
-  //   return this.query.selectPropertyId$;
-  // }
-
   getPropertyId(): number | null {
-    let propertyId: number | null = null;
-    this.selectStatisticsPropertyId$.subscribe((id) => {
-      propertyId = id;
-    }).unsubscribe();
-    return propertyId;
-    // return this.store.getValue().filters.propertyId;
+    return this.propertyId;
   }
 
   updatePropertyId(propertyId: number | null) {
-    this.store.dispatch({
-      type: '[Statistics] Update filters',
-      payload: {propertyId: propertyId}
-    })
-    // this.store.update((state) => ({
-    //   filters: {
-    //     ...state.filters,
-    //     ...{
-    //       propertyId: propertyId
-    //     }
-    //   }
-    // }));
+    this.store.dispatch(statisticsUpdateFilters({propertyId: propertyId}));
   }
 }

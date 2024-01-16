@@ -13,26 +13,23 @@ export interface TaskTrackerState {
   filters: TaskTrackerFiltrationModel;
 }
 
-export const initialState: TaskTrackerState = {
+export const taskTrackerInitialState: TaskTrackerState = {
   filters: {
     propertyIds: [],
     tagIds: [],
     workerIds: [],
   }
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _taskTrackerReducer = createReducer(
+  taskTrackerInitialState,
   on(taskTrackerUpdateFilters, (state, {payload}) => ({
       ...state,
-      filters: {
-        ...state.filters,
-        ...payload,
-      },
+      filters: {...state.filters, ...payload,},
     }
   ))
-)
+);
 
-export function reducer(state: TaskTrackerState | undefined, action: any) {
-  return _reducer(state, action);
+export function taskTrackerReducer(state: TaskTrackerState | undefined, action: any) {
+  return _taskTrackerReducer(state, action);
 }

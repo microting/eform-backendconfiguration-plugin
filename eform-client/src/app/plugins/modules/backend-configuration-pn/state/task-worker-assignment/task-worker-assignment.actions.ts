@@ -1,11 +1,12 @@
 import {createAction} from '@ngrx/store';
+import {CommonPaginationState} from 'src/app/common/models';
 
 export const taskWorkerAssignmentUpdatePagination = createAction(
   '[TaskWorkerAssignment] Update pagination',
-  (payload) => ({payload})
+  (payload: CommonPaginationState) => ({payload})
 );
 
 export const taskWorkerAssignmentUpdateTotalProperties = createAction(
   '[TaskWorkerAssignment] Update total properties',
-  (payload) => ({payload})
+  (payload: number) => ({payload})
 );

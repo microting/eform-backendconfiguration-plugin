@@ -17,7 +17,7 @@ export interface DocumentsState {
   filters: DocumentsFiltrationModel;
 }
 
-export const initialState: DocumentsState = {
+export const documentsInitialState: DocumentsState = {
   filters: {
     propertyId: -1,
     folderId: null,
@@ -32,27 +32,22 @@ export const initialState: DocumentsState = {
     total: 0,
     pageIndex: 0,
   }
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _documentsReducer = createReducer(
+  documentsInitialState,
   on(updateDocumentsFilters, (state, {payload}) => ({
-    ...state,
-    filters: {
-      propertyId: payload.filters.propertyId,
-      folderId: payload.filters.folderId,
-      documentId: payload.filters.documentId,
-      expiration: payload.filters.expiration,
-    }
+      ...state,
+      filters: {...state.filters, ...payload,}
     }
   )),
   on(updateDocumentsPagination, (state, {payload}) => ({
-    ...state,
-    pagination: {...state.pagination, ...payload}
+      ...state,
+      pagination: {...state.pagination, ...payload}
     }
   )),
 );
 
-export function reducer(state: DocumentsState | undefined, action: Action) {
-  return _reducer(state, action);
+export function documentsReducer(state: DocumentsState | undefined, action: Action) {
+  return _documentsReducer(state, action);
 }

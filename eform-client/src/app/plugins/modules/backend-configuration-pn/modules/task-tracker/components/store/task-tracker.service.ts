@@ -1,58 +1,31 @@
 import {Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
-import {
-  OperationDataResult,
-} from 'src/app/common/models';
 import {BackendConfigurationPnTaskTrackerService} from '../../../../services';
-import {TaskModel} from '../../../../models';
 import {Store} from '@ngrx/store';
 import {
+  taskTrackerUpdateFilters,
+  selectTaskTrackerFilters,
   TaskTrackerFiltrationModel
-} from '../../../../state/task-tracker/task-tracker.reducer';
-import {
-  selectTaskTrackerFilters
-} from '../../../../state/task-tracker/task-tracker.selector';
+} from '../../../../state';
 
 @Injectable({providedIn: 'root'})
 export class TaskTrackerStateService {
   private selectTaskTrackerFilters$ = this.store.select(selectTaskTrackerFilters);
+  currentFilters: TaskTrackerFiltrationModel;
+
   constructor(
-      private store: Store,
+    private store: Store,
     private service: BackendConfigurationPnTaskTrackerService,
   ) {
+    this.selectTaskTrackerFilters$.subscribe(x => this.currentFilters = x);
   }
 
-  getAllTasks():
-    Observable<OperationDataResult<TaskModel[]>> {
-    let _filters: TaskTrackerFiltrationModel;
-    this.selectTaskTrackerFilters$.subscribe((filters) => {
-      _filters = filters;
-    }).unsubscribe();
+  getAllTasks() {
     return this.service.getTasks({
-      ..._filters,
+      ...this.currentFilters,
     });
-    // return this.service
-    //   .getTasks({
-    //     ...this.query.pageSetting.filters,
-    //   });
   }
 
-  // getFiltersAsync(): Observable<TaskTrackerFiltrationModel> {
-  //   return this.query.selectFilters$;
-  // }
-
-  updateFilters(taskManagementFiltrationModel: TaskTrackerFiltrationModel){
-    this.store.dispatch({
-      type: '[TaskTracker] Update filters',
-      payload: taskManagementFiltrationModel,
-    })
-    // this.store.update((state) => ({
-    //   filters: {
-    //     ...state.filters,
-    //     propertyIds: taskManagementFiltrationModel.propertyIds,
-    //     tagIds: taskManagementFiltrationModel.tagIds,
-    //     workerIds: taskManagementFiltrationModel.workerIds,
-    //   },
-    // }));
+  updateFilters(taskManagementFiltrationModel: TaskTrackerFiltrationModel) {
+    this.store.dispatch(taskTrackerUpdateFilters(taskManagementFiltrationModel));
   }
 }

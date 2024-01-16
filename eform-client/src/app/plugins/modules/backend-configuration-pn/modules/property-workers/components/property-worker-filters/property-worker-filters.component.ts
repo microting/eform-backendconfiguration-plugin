@@ -2,17 +2,15 @@ import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angula
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {FormControl, FormGroup} from '@angular/forms';
-import {DeviceUserModel} from 'src/app/plugins/modules/backend-configuration-pn/models';
-import {interval, Subscription} from 'rxjs';
+import {Subscription, take, tap} from 'rxjs';
 import {
   PropertyWorkersStateService
-} from 'src/app/plugins/modules/backend-configuration-pn/modules/property-workers/components/store';
-import {debounce, filter, tap} from 'rxjs/operators';
-import * as R from 'ramda';
+} from '../store';
 import {Store} from '@ngrx/store';
 import {
-  selectPropertyWorkersFilters
-} from "src/app/plugins/modules/backend-configuration-pn/state/property-workers/property-workers.selector";
+  selectPropertyWorkersFilters,
+  propertyWorkersUpdateFilters
+} from '../../../../state';
 
 @AutoUnsubscribe()
 @Component({
@@ -45,29 +43,20 @@ export class PropertyWorkerFiltersComponent implements OnInit, OnDestroy  {
   }
 
   ngOnInit(): void {
-    // this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
-    //   .pipe(
-    //     debounce(x => interval(200)),
-    //     filter(value => !R.equals(value, this.filtersForm.getRawValue())),
-    //     tap(filters => {
-    //       this.propertyIdsChange(filters.propertyIds);
-    //       // this.propertyIdsChange(filters.propertyIds);
-    //       // this.folderIdsChange(filters.folderIds);
-    //       // this.tagIdsChange(filters.tagIds);
-    //       // this.statusChange(filters.status);
-    //       // this.assignToIdsChange(filters.assignToIds);
-    //     })).subscribe();
+    this.getFiltersAsyncSub$ = this.selectPropertyWorkersFilters$
+      .pipe(
+        take(1),
+        tap(filters => {
+          this.filtersForm.get('propertyIds').patchValue(filters.propertyIds);
+          // this.propertyIdsChange(filters.propertyIds);
+          // this.folderIdsChange(filters.folderIds);
+          // this.tagIdsChange(filters.tagIds);
+          // this.statusChange(filters.status);
+          // this.assignToIdsChange(filters.assignToIds);
+        })).subscribe();
     this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
       .subscribe((value: number[]) => {
-        this.store.dispatch({
-          type: '[PropertyWorkers] Update filters',
-          payload: {
-          filters: {
-            propertyIds: value,
-          },
-          }
-        }
-        );
+        this.propertyWorkersStateService.updatePropertyIds(value);
         this.updateTable.emit();
       });
     // .pipe(

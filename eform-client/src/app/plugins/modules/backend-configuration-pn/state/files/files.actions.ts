@@ -1,26 +1,28 @@
 import {createAction} from '@ngrx/store';
+import {CommonPaginationState} from 'src/app/common/models';
+import {FilesFiltrationModel} from './';
 
 export const filesUpdateDateRange = createAction(
   '[Files] Update Date Range',
-  (payload) => ({payload})
+  (payload: { dateFrom: '', dateTo: '', }) => ({payload})
 );
 
 export const filesUpdatePropertyIds = createAction(
   '[Files] Update Property Ids',
-  (payload) => ({payload})
+  (payload: number[]) => ({payload})
 );
 
 export const filesUpdateFilters = createAction(
   '[Files] Update Filters',
-  (payload) => ({payload})
+  (payload: FilesFiltrationModel) => ({payload})
 );
 
 export const filesUpdatePagination = createAction(
   '[Files] Update Pagination',
-  (payload) => ({payload})
+  (payload: CommonPaginationState) => ({payload})
 );
 
 export const filesUpdatePaginationTotalItemsCount = createAction(
-    '[Files] Update Pagination Total Items Count',
-    (payload) => ({payload})
+  '[Files] Update Pagination Total Items Count',
+  (payload: number) => ({payload})
 );

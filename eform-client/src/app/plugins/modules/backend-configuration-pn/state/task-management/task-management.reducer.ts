@@ -1,7 +1,8 @@
 import {CommonPaginationState} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
-  taskManagementUpdateFilters, taskManagementUpdatePagination
+  taskManagementUpdateFilters,
+  taskManagementUpdatePagination
 } from './task-management.actions';
 
 export interface TaskManagementFiltrationModel {
@@ -22,7 +23,7 @@ export interface TaskManagementState {
   // total: number;
 }
 
-export const initialState: TaskManagementState = {
+export const taskManagementInitialState: TaskManagementState = {
   pagination: {
     pageSize: 10,
     sort: 'Id',
@@ -42,33 +43,22 @@ export const initialState: TaskManagementState = {
     lastAssignedTo: null,
     priority: null,
   },
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+export const _taskManagementReducer = createReducer(
+  taskManagementInitialState,
   on(taskManagementUpdateFilters, (state, {payload}) => ({
-    ...state,
-    filters: {
-      ...state.filters,
-      propertyId: payload.filters.propertyId,
-      areaName: payload.filters.areaName,
-      createdBy: payload.filters.createdBy,
-      lastAssignedTo: payload.filters.lastAssignedTo,
-      status: payload.filters.status,
-      dateFrom: payload.filters.dateFrom,
-      dateTo: payload.filters.dateTo,
-      priority: payload.filters.priority,
-      delayed: payload.filters.delayed,
-    },
+      ...state,
+      filters: {...state.filters, ...payload},
     }
   )),
   on(taskManagementUpdatePagination, (state, {payload}) => ({
-    ...state,
+      ...state,
       pagination: {...state.pagination, ...payload},
     }
   )),
 );
 
-export function reducer(state: TaskManagementState | undefined, action: Action) {
-  return _reducer(state, action);
+export function taskManagementReducer(state: TaskManagementState | undefined, action: Action) {
+  return _taskManagementReducer(state, action);
 }

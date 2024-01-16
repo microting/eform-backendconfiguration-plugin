@@ -45,11 +45,9 @@ import {StatisticsStateService} from '../../../statistics/store';
 import {ActivatedRoute} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {
-  selectTaskTrackerFilters
-} from '../../../../state/task-tracker/task-tracker.selector';
-import {
+  selectTaskTrackerFilters,
   selectStatisticsPropertyId
-} from "src/app/plugins/modules/backend-configuration-pn/state/statistics/statistics.selector";
+} from '../../../../state';
 
 @AutoUnsubscribe()
 @Component({
@@ -135,10 +133,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
         this.selectStatisticsPropertyId$.subscribe((propertyId) => {
           if (propertyId) {
             this.selectedPropertyId = propertyId;
-            this.store.dispatch({
-              type: '[TaskTracker] Update filters',
-              payload: {propertyIds: [this.selectedPropertyId], tagIds: [], workerIds: []}
-            });
+            this.taskTrackerStateService.updateFilters({propertyIds: [this.selectedPropertyId], tagIds: [], workerIds: []})
           }
         });
         // this.selectedPropertyId = this.taskTrackerStateService.store.getValue().filters.propertyIds[0] || null;

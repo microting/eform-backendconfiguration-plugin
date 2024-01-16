@@ -1,12 +1,12 @@
 import {
-    BackendConfigurationState
-} from '../backend-configuration.state';
+  BackendConfigurationState,
+} from '../';
 import {createSelector} from '@ngrx/store';
 
-export const selectBackendConfigurationPn =
-    (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;
+const selectBackendConfigurationPn =
+  (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;
 export const selectFiles =
-    createSelector(selectBackendConfigurationPn, (state: BackendConfigurationState) => state.filesState);
+    createSelector(selectBackendConfigurationPn, (state) => state.filesState);
 export const selectFilesFilters =
     createSelector(selectFiles, (state) => state.filters);
 export const selectFilesPagination =

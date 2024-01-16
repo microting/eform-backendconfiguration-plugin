@@ -1,16 +1,18 @@
 import {createAction} from '@ngrx/store';
+import {CommonPaginationState} from 'src/app/common/models';
+import {PropertiesFiltrationModel} from './';
 
 export const propertiesUpdateFilters = createAction(
   '[Properties] Update Filters',
-  (payload) => ({payload})
+  (payload: PropertiesFiltrationModel) => ({payload})
 );
 
 export const propertiesUpdatePagination = createAction(
   '[Properties] Update Pagination',
-  (payload) => ({payload})
+  (payload: CommonPaginationState) => ({payload})
 );
 
 export const propertiesUpdateTotalProperties = createAction(
   '[Properties] Update Total Properties',
-  (payload) => ({payload})
+  (payload: number) => ({payload})
 );
