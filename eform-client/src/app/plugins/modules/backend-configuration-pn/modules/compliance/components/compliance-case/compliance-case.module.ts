@@ -13,12 +13,12 @@ import {
 import {
   ComplianceCasePageComponent
 } from '../compliance-case/compliance-case-page/compliance-case-page.component';
-import {OwlDateTimeModule} from '@danielmoncada/angular-datetime-picker';
 import {MatButtonModule} from '@angular/material/button';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
+import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @NgModule({
   declarations: [
@@ -34,12 +34,12 @@ import {MatInputModule} from '@angular/material/input';
     FormsModule,
     CasesModule,
     EformCasesModule,
-    OwlDateTimeModule,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
     MatIconModule,
-    MatInputModule
+    MatInputModule,
+    MatDatepickerModule
   ]
 })
 export class ComplianceCaseModule {

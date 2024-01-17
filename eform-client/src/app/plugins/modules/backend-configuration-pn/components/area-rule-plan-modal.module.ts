@@ -19,22 +19,22 @@ import {MatCardModule} from '@angular/material/card';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @NgModule({
-    imports: [
-        CommonModule,
-        FormsModule,
-        TranslateModule,
-        EformSharedModule,
-        MatDialogModule,
-        MatButtonModule,
-        MatIconModule,
-        MatInputModule,
-        MatSlideToggleModule,
-        MtxSelectModule,
-        MtxGridModule,
-        MatCheckboxModule,
-        MatCardModule,
-        MatDatepickerModule,
-    ],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    EformSharedModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatInputModule,
+    MatSlideToggleModule,
+    MtxSelectModule,
+    MtxGridModule,
+    MatCheckboxModule,
+    MatCardModule,
+    MatDatepickerModule,
+  ],
   declarations: [
     AreaRulePlanModalComponent,
     AreaRuleEntityListModalComponent,
@@ -43,8 +43,7 @@ import {MatDatepickerModule} from '@angular/material/datepicker';
     AreaRulePlanModalComponent,
     AreaRuleEntityListModalComponent,
   ],
-  providers: [
-  ],
+  providers: [],
 })
 export class AreaRulePlanModalModule {
 }

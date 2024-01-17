@@ -11,21 +11,21 @@ export interface StatisticsState {
   filters: StatisticsModel;
 }
 
-export const initialState: StatisticsState = {
+export const statisticsInitialState: StatisticsState = {
   filters: {
     propertyId: null,
   }
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _statisticsReducer = createReducer(
+  statisticsInitialState,
   on(statisticsUpdateFilters, (state, {payload}) => ({
-    ...state,
-    filters: {...payload},
+      ...state,
+      filters: {...state.filters, ...payload},
     }
   )),
-)
+);
 
-export function reducer(state: StatisticsState | undefined, action: any) {
-  return _reducer(state, action);
+export function statisticsReducer(state: StatisticsState | undefined, action: any) {
+  return _statisticsReducer(state, action);
 }

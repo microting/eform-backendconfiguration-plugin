@@ -1,12 +1,12 @@
 import {
-  BackendConfigurationState
-} from '../backend-configuration.state';
+  BackendConfigurationState,
+} from '../';
 import {createSelector} from '@ngrx/store';
 
-export const selectBackendConfigurationPn =
+const selectBackendConfigurationPn =
   (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;
 export const selectAreaRules =
-  createSelector(selectBackendConfigurationPn, (state: BackendConfigurationState) => state.areaRulesState);
+  createSelector(selectBackendConfigurationPn, (state) => state.areaRulesState);
 export const selectAreaRulesPagination =
   createSelector(selectAreaRules, (state) => state.pagination);
 export const selectAreaRulesPaginationSort =

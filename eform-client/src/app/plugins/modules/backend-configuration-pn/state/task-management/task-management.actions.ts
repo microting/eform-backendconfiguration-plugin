@@ -1,11 +1,13 @@
 import {createAction} from '@ngrx/store';
+import {TaskManagementFiltrationModel} from './';
+import {CommonPaginationState} from 'src/app/common/models';
 
 export const taskManagementUpdateFilters = createAction(
   '[TaskManagement] Update filters',
-  (payload: any) => ({payload})
+  (payload: TaskManagementFiltrationModel) => ({payload})
 )
 
 export const taskManagementUpdatePagination = createAction(
   '[TaskManagement] Update pagination',
-  (payload: any) => ({payload})
+  (payload: CommonPaginationState) => ({payload})
 )

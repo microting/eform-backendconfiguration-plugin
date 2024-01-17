@@ -1,7 +1,8 @@
 import {CommonPaginationState, FiltrationStateModel} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
-  propertyWorkersUpdateFilters, propertyWorkersUpdatePagination
+  propertyWorkersUpdateFilters,
+  propertyWorkersUpdatePagination
 } from './property-workers.actions';
 
 export interface PropertyWorkersFiltrationModel extends FiltrationStateModel {
@@ -13,7 +14,7 @@ export interface PropertyWorkersState {
   filters: PropertyWorkersFiltrationModel;
 }
 
-export const initialState: PropertyWorkersState = {
+export const propertyWorkersInitialState: PropertyWorkersState = {
   pagination: {
     sort: 'MicrotingUid',
     isSortDsc: false,
@@ -29,24 +30,23 @@ export const initialState: PropertyWorkersState = {
   }
 };
 
-export const _reducer = createReducer(
-  initialState,
+const _propertyWorkersReducer = createReducer(
+  propertyWorkersInitialState,
   on(propertyWorkersUpdateFilters, (state, {payload}) => ({
-    ...state,
+      ...state,
       filters: {
-        propertyIds: payload.filters.propertyIds,
-        nameFilter: payload.filters.nameFilter,
-        tagIds: payload.filters.tagIds,
-    }
+        ...state.filters,
+        ...payload,
+      }
     }
   )),
-  on(propertyWorkersUpdatePagination, (state, {pagination}) => ({
-    ...state,
-    pagination: {...state.pagination, ...pagination}
+  on(propertyWorkersUpdatePagination, (state, {payload}) => ({
+      ...state,
+      pagination: {...state.pagination, ...payload}
     }
   ))
 );
 
-export function reducer(state: PropertyWorkersState | undefined, action: Action) {
-  return _reducer(state, action);
+export function propertyWorkersReducer(state: PropertyWorkersState | undefined, action: Action) {
+  return _propertyWorkersReducer(state, action);
 }

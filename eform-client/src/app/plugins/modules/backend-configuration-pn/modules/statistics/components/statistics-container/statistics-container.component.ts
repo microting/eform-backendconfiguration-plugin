@@ -15,11 +15,13 @@ import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {Router} from '@angular/router';
 import {TaskTrackerStateService} from '../../../task-tracker/components/store';
 import {DocumentsExpirationFilterEnum, TaskWizardStatusesEnum} from '../../../../enums';
-import {selectSideMenuOpened} from 'src/app/state/auth/auth.selector';
+import {selectSideMenuOpened} from 'src/app/state';
 import {Store} from '@ngrx/store';
 import {
-  selectStatisticsPropertyId
-} from '../../../../state/statistics/statistics.selector';
+  selectStatisticsPropertyId,
+  taskManagementUpdateFilters, taskWizardUpdateFilters,
+  updateDocumentsFilters
+} from '../../../../state';
 
 @AutoUnsubscribe()
 @Component({
@@ -185,73 +187,53 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   }
 
   clickOnAdHocTaskPriorities(event: any) {
-    this.store.dispatch(
-        {type: '[TaskManagement] Update filters',
-          payload: {
-            filters: {
-              propertyId: this.selectedPropertyId || -1,
-              areaName: null,
-              dateFrom: null,
-              dateTo: null,
-              status: 1,
-              createdBy: null,
-              lastAssignedTo: null,
-              priority: event,
-            }
-          }
-        });
+    this.store.dispatch(taskManagementUpdateFilters({
+      propertyId: this.selectedPropertyId || -1,
+      areaName: null,
+      dateFrom: null,
+      dateTo: null,
+      status: 1,
+      createdBy: null,
+      lastAssignedTo: null,
+      priority: event,
+      delayed: false,
+    }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-management'], {queryParams: {diagramForShow: 'ad-hoc-task-priorities'}}).then();
   }
 
   clickOnDocumentUpdatedDays(filter?: DocumentsExpirationFilterEnum) {
-    this.store.dispatch(
-        {type: '[Documents] Update filters',
-          payload: {
-            filters: {
-              propertyId: this.selectedPropertyId || null,
-              expiration: filter,
-              documentId: null,
-              folderId: null,
-            }
-          }
-        }
-    );
+    this.store.dispatch(updateDocumentsFilters({
+      propertyId: this.selectedPropertyId || null,
+      expiration: filter,
+      documentId: null,
+      folderId: null,
+    }));
     this.router.navigate(['/plugins/backend-configuration-pn/documents'], {queryParams: {showDiagram: true}}).then();
   }
 
   clickOnPlannedTaskWorkers(workerId: number | null) {
-    this.store.dispatch(
-        {type: '[TaskWizard] Update filters',
-          payload: {
-            filters: {
-              propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
-              assignToIds: this.selectedPropertyId && workerId ? [workerId] : [],
-              tagIds: [],
-              status: this.selectedPropertyId && workerId ? TaskWizardStatusesEnum.Active : null,
-              folderIds: [],
-            }
-          }
-        }
-    );
+    this.store.dispatch(taskWizardUpdateFilters({
+      propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
+      assignToIds: this.selectedPropertyId && workerId ? [workerId] : [],
+      tagIds: [],
+      status: this.selectedPropertyId && workerId ? TaskWizardStatusesEnum.Active : null,
+      folderIds: [],
+    }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-wizard'], {queryParams: {showDiagram: true}}).then();
   }
 
   clickOnAdHocTaskWorkers(workerId: number | null) {
-    this.store.dispatch(
-        {type: '[TaskManagement] Update filters',
-          payload: {
-            filters: {
-              propertyId: this.selectedPropertyId || -1,
-              areaName: null,
-              dateFrom: null,
-              dateTo: null,
-              status: 1,
-              createdBy: null,
-              lastAssignedTo: this.selectedPropertyId && workerId ? workerId : null,
-            }
-          }
-        }
-    );
+    this.store.dispatch(taskManagementUpdateFilters({
+      propertyId: this.selectedPropertyId || -1,
+      areaName: null,
+      dateFrom: null,
+      dateTo: null,
+      status: 1,
+      createdBy: null,
+      lastAssignedTo: this.selectedPropertyId && workerId ? workerId : null,
+      priority: null,
+      delayed: false,
+    }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-management'], {queryParams: {diagramForShow: 'ad-hoc-task-workers'}}).then();
   }
 

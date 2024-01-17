@@ -2,7 +2,8 @@ import {FiltrationStateModel} from 'src/app/common/models';
 import {createReducer, on} from '@ngrx/store';
 import {
   reportsV2UpdateDateRange,
-  reportsV2UpdateFilters, reportsV2UpdateScrollPosition
+  reportsV2UpdateFilters,
+  reportsV2UpdateScrollPosition
 } from './reports-v2.actions';
 
 export interface ReportStateV2 {
@@ -14,7 +15,7 @@ export interface ReportStateV2 {
   scrollPosition: [number, number];
 }
 
-export const initialState: ReportStateV2 = {
+export const reportV2InitialState: ReportStateV2 = {
   filters: {
     tagIds: [],
     nameFilter: '',
@@ -24,27 +25,30 @@ export const initialState: ReportStateV2 = {
     endDate: null,
   },
   scrollPosition: [0, 0],
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _reportV2Reducer = createReducer(
+  reportV2InitialState,
   on(reportsV2UpdateFilters, (state, {payload}) => ({
-    ...state,
-      filters: payload.filters,
+      ...state,
+      filters: {
+        ...state.filters,
+        ...payload
+      },
     }
   )),
   on(reportsV2UpdateDateRange, (state, {payload}) => ({
-    ...state,
-      dateRange: payload.dateRange,
+      ...state,
+      dateRange: payload,
     }
   )),
   on(reportsV2UpdateScrollPosition, (state, {payload}) => ({
-    ...state,
-      scrollPosition: payload.scrollPosition,
+      ...state,
+      scrollPosition: payload,
     }
   )),
-)
+);
 
-export function reducer(state: ReportStateV2 | undefined, action: any) {
-  return _reducer(state, action);
+export function reportV2Reducer(state: ReportStateV2 | undefined, action: any) {
+  return _reportV2Reducer(state, action);
 }

@@ -1,16 +1,22 @@
-import {CommonPaginationState, FiltrationStateModel} from 'src/app/common/models';
+import {CommonPaginationState} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
-  propertiesUpdateFilters, propertiesUpdatePagination, propertiesUpdateTotalProperties
+  propertiesUpdateFilters,
+  propertiesUpdatePagination,
+  propertiesUpdateTotalProperties
 } from './properties.actions';
+
+export interface PropertiesFiltrationModel {
+  nameFilter: string;
+}
 
 export interface PropertiesState {
   pagination: CommonPaginationState;
-  filters: FiltrationStateModel;
+  filters: PropertiesFiltrationModel;
   total: number;
 }
 
-export const initialState: PropertiesState = {
+export const propertiesInitialState: PropertiesState = {
   pagination: {
     pageSize: 10,
     sort: 'Id',
@@ -21,39 +27,34 @@ export const initialState: PropertiesState = {
   },
   filters: {
     nameFilter: '',
-    tagIds: [],
   },
   total: 0,
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+export const _propertiesReducer = createReducer(
+  propertiesInitialState,
   on(propertiesUpdateFilters, (state, {payload}) => ({
     ...state,
     filters: {
-      nameFilter: payload.filters.nameFilter,
-      tagIds: payload.filters.tagIds,
+      ...state.filters,
+      ...payload,
     },
   })),
   on(propertiesUpdatePagination, (state, {payload}) => ({
     ...state,
-    pagination: {
-      offset: payload.pagination.offset,
-      pageSize: payload.pagination.pageSize,
-      pageIndex: payload.pagination.pageIndex,
-      sort: payload.pagination.sort,
-      isSortDsc: payload.pagination.isSortDsc,
-      total: payload.pagination.total,
-    },
+    pagination: { ...state, ...payload, },
   })),
   on(propertiesUpdateTotalProperties, (state, {payload}) => ({
-    ...state,
-    totalProperties: payload,
+      ...state,
+      pagination: {
+        ...state.pagination,
+        total: payload,
+      },
+      total: payload,
     }
-  )
-  ),
+  )),
 );
 
-export function reducer(state: PropertiesState | undefined, action: Action) {
-  return _reducer(state, action);
+export function propertiesReducer(state: PropertiesState | undefined, action: Action) {
+  return _propertiesReducer(state, action);
 }

@@ -11,15 +11,14 @@ import {
   TemplateDto,
   CaseEditRequest,
   ReplyElementDto,
-  ReplyRequest, ElementDto, DataItemDto,
+  ReplyRequest,
+  ElementDto,
+  DataItemDto,
 } from 'src/app/common/models';
-import {AuthStateService} from 'src/app/common/store';
 import {CaseEditElementComponent} from 'src/app/common/modules/eform-cases/components';
 import {BackendConfigurationPnCompliancesService} from '../../../../../services';
 import {parseISO} from 'date-fns';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
 import * as R from 'ramda';
-import {selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
 
 @Component({
@@ -43,16 +42,13 @@ export class ComplianceCasePageComponent implements OnInit {
   requestModels: Array<CaseEditRequest> = [];
   replyRequest: ReplyRequest = new ReplyRequest();
   maxDate: Date;
-  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
 
   constructor(
-    dateTimeAdapter: DateTimeAdapter<any>,
     private authStore: Store,
     private activateRoute: ActivatedRoute,
     private backendConfigurationPnCompliancesService: BackendConfigurationPnCompliancesService,
     private eFormService: EFormService,
     private router: Router,
-    private authStateService: AuthStateService
   ) {
     this.activateRoute.params.subscribe((params) => {
       this.id = +params['sdkCaseId'];
@@ -61,9 +57,6 @@ export class ComplianceCasePageComponent implements OnInit {
       this.deadline = params['deadline'];
       this.thirtyDays = params['thirtyDays'];
       this.complianceId = +params['complianceId'];
-      this.selectCurrentUserLocale$.subscribe((locale) => {
-        dateTimeAdapter.setLocale(locale);
-      });
     });
     activateRoute.queryParams.subscribe((params) => {
       this.reverseRoute = params['reverseRoute'];

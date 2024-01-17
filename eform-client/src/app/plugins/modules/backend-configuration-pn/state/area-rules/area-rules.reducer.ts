@@ -1,33 +1,29 @@
-import {CommonPaginationState} from 'src/app/common/models';
+import {SortModel} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
   updateAreaRulesPagination
 } from './area-rules.actions';
 
 export interface AreaRulesState {
-  pagination: CommonPaginationState;
+  pagination: SortModel;
 }
 
-export const initialState: AreaRulesState = {
+export const areaRulesInitialState: AreaRulesState = {
   pagination: {
     sort: 'Id',
     isSortDsc: false,
-    offset: 0,
-    pageSize: 10,
-    total: 0,
-    pageIndex: 0,
   }
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _areaRulesReducer = createReducer(
+  areaRulesInitialState,
   on(updateAreaRulesPagination, (state, {payload}) => ({
-    ...state,
+      ...state,
       pagination: {...state.pagination, ...payload}
     }
   )),
 );
 
-export function reducer(state: AreaRulesState | undefined, action: Action) {
-  return _reducer(state, action);
+export function areaRulesReducer(state: AreaRulesState | undefined, action: Action) {
+  return _areaRulesReducer(state, action);
 }

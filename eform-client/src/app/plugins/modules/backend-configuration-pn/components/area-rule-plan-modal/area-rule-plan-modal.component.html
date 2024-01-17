@@ -1,5 +1,5 @@
 <h3 mat-dialog-title>{{ 'Plan rule' | translate }}</h3>
-<h4>{{ 'Area' | translate }}: {{ selectedArea.name }}</h4>
+<h4 mat-dialog-title>{{ 'Area' | translate }}: {{ selectedArea.name }}</h4>
 <div mat-dialog-content>
   <div class="d-flex flex-column">
     <mat-slide-toggle
@@ -236,55 +236,53 @@
     >
     </mtx-grid>-->
     <mat-card *ngIf="selectedArea.type !== 9">
-      <mat-card-title>
-        <h4>{{ 'Select worker' | translate}}</h4>
-      </mat-card-title>
-    <mat-card-content>
-      <div class="mtx-grid">
-        <div class="mtx-grid-main mtx-grid-layout">
-          <div class="mtx-grid-content mtx-grid-layout">
-            <div class="mat-table-container mat-table-with-data">
-              <table class="mat-table cdk-table mat-table-striped" style="width: 100%">
-                <thead>
-                <tr role="rowgroup" class="mat-header-row cdk-header-row" mat-header-row>
-                  <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">Microting ID</th>
-                  <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Device user' | translate }}</th>
-                  <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Select' | translate }}</th>
-                  <th role="columnheader" class="mat-header-cell cdk-header-cell cdk-column-id mat-column-id mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Status' | translate }}</th>
-                </tr>
-                </thead>
-                <tbody id="pairingModalTableBody" role="rowgroup">
-                <ng-container *ngFor="let worker of selectedArea.availableWorkers; let i = index">
-                  <tr class="mat-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
-                    <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id" id="microtingId">{{worker.siteId}}</td>
-                    <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id" id="deviceUserFullName">{{worker.siteName}}</td>
-                    <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id">
-                      <div class="mat-checkbox">
-                        <mat-checkbox class="mat-checkbox"
-                          id="checkboxCreateAssignment{{ i }}"
-                          (change)="addToArray($event, worker.siteId)"
-                          [checked]="getAssignmentBySiteId(worker.siteId) === 'true'"
-                          [value]="getAssignmentBySiteId(worker.siteId)"
-                          [disabled]="!selectedAreaRulePlanning.status"
-                        >
-                        </mat-checkbox>
-                        <label for="checkboxCreateAssignment{{ i }}"></label>
-                      </div>
-                    </td>
-                    <td role="cell" class="mat-cell cdk-cell cdk-column-id mat-column-id">
-                      <status-bar-compact *ngIf="getAssignmentBySiteId(worker.siteId) === 'true'"
-                        [status]="getLatestCaseStatus(worker.siteId)"
-                      ></status-bar-compact>
-                    </td>
+      <h4>{{ 'Select worker' | translate}}</h4>
+      <mat-card-content>
+        <div class="mtx-grid">
+          <div class="mtx-grid-main mtx-grid-layout">
+            <div class="mtx-grid-content mtx-grid-layout">
+              <div class="mat-table-container mat-table-with-data">
+                <table class="mat-table cdk-table mat-table-striped" style="width: 100%">
+                  <thead>
+                  <tr role="rowgroup" class="mat-mdc-header-row cdk-header-row">
+                    <th role="columnheader" class="mat-mdc-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">Microting ID</th>
+                    <th role="columnheader" class="mat-mdc-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Device user' | translate }}</th>
+                    <th role="columnheader" class="mat-mdc-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Select' | translate }}</th>
+                    <th role="columnheader" class="mat-mdc-header-cell cdk-header-cell mat-table-sticky mat-table-sticky-border-elem-top">{{ 'Status' | translate }}</th>
                   </tr>
-                </ng-container>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody id="pairingModalTableBody" role="rowgroup">
+                  <ng-container *ngFor="let worker of selectedArea.availableWorkers; let i = index">
+                    <tr class="mat-mdc-row cdk-row {{i%2 ? 'mat-row-odd' : ''}}">
+                      <td role="cell" class="mat-mdc-cell cdk-cell" id="microtingId">{{worker.siteId}}</td>
+                      <td role="cell" class="mat-mdc-cell cdk-cell" id="deviceUserFullName">{{worker.siteName}}</td>
+                      <td role="cell" class="mat-mdc-cell cdk-cell">
+                        <div class="mat-checkbox">
+                          <mat-checkbox class="mat-checkbox"
+                            id="checkboxCreateAssignment{{ i }}"
+                            (change)="addToArray($event, worker.siteId)"
+                            [checked]="getAssignmentBySiteId(worker.siteId) === 'true'"
+                            [value]="getAssignmentBySiteId(worker.siteId)"
+                            [disabled]="!selectedAreaRulePlanning.status"
+                          >
+                          </mat-checkbox>
+                          <label for="checkboxCreateAssignment{{ i }}"></label>
+                        </div>
+                      </td>
+                      <td role="cell" class="mat-mdc-cell cdk-cell">
+                        <status-bar-compact *ngIf="getAssignmentBySiteId(worker.siteId) === 'true'"
+                          [status]="getLatestCaseStatus(worker.siteId)"
+                        ></status-bar-compact>
+                      </td>
+                    </tr>
+                  </ng-container>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </mat-card-content>
+      </mat-card-content>
     </mat-card>
     <mat-form-field *ngIf="selectedArea.type === 9 && !selectedSite.siteName">
       <mat-label>{{ 'Assigned worker' | translate }}</mat-label>

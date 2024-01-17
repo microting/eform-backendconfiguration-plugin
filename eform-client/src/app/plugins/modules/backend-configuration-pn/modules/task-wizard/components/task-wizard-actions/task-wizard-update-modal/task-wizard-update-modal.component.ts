@@ -26,10 +26,8 @@ import {Subscription, take} from 'rxjs';
 import {Overlay} from '@angular/cdk/overlay';
 import {TaskWizardFoldersModalComponent} from '../';
 import {PlanningTagsComponent} from '../../../../../../items-planning-pn/modules/plannings/components';
-import {AuthStateService} from 'src/app/common/store';
-import {selectAuthIsAuth, selectCurrentUserLocale} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAuth} from 'src/app/state/auth/auth.selector';
 import {Store} from '@ngrx/store';
-import {DateTimeAdapter} from "@danielmoncada/angular-datetime-picker";
 
 @AutoUnsubscribe()
 @Component({
@@ -79,7 +77,6 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
 
   folderSelectedSub$: Subscription;
   public isAuth$ = this.store.select(selectAuthIsAuth);
-  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;
@@ -97,8 +94,6 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
     private cd: ChangeDetectorRef,
     public dialog: MatDialog,
     private overlay: Overlay,
-    private authStateService: AuthStateService,
-    dateTimeAdapter: DateTimeAdapter<any>,
   ) {
     this.typeahead
       .pipe(
@@ -112,9 +107,6 @@ export class TaskWizardUpdateModalComponent implements OnInit, OnDestroy {
         this.templatesModel = items.model;
         this.cd.markForCheck();
       });
-    this.selectCurrentUserLocale$.subscribe((locale) => {
-      dateTimeAdapter.setLocale(locale);
-    });
   }
 
   ngOnInit(): void {

@@ -8,20 +8,17 @@ import {
 import {FormControl, FormGroup} from '@angular/forms';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription, take} from 'rxjs';
-import {
-  BackendConfigurationPnPropertiesService,
-} from '../../../../services';
+import {BackendConfigurationPnPropertiesService,} from '../../../../services';
 import {CommonDictionaryModel, SharedTagModel} from 'src/app/common/models';
 import {TranslateService} from '@ngx-translate/core';
 import {FilesStateService} from '../../store';
-import {Moment} from 'moment';
 import {format, parse} from 'date-fns';
 import {debounceTime, skip} from 'rxjs/operators';
-import moment from 'moment';
-import * as R from 'ramda';
 import {Store} from '@ngrx/store';
-import {selectFilesFilters} from '../../../../state/files/files.selector';
-import {FilesFiltrationModel} from '../../../../state/files/files.reducer';
+import {
+  selectFilesFilters,
+  FilesFiltrationModel, filesUpdateFilters
+} from '../../../../state';
 
 @AutoUnsubscribe()
 @Component({
@@ -31,6 +28,16 @@ import {FilesFiltrationModel} from '../../../../state/files/files.reducer';
 })
 export class FilesFiltersComponent implements OnInit, OnDestroy {
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
+  private _availableTags: SharedTagModel[] = [];
+  filtersForm: FormGroup;
+  properties: CommonDictionaryModel[] = [];
+  dateFormat = 'yyyy-MM-dd';
+  currentFilters: FilesFiltrationModel;
+  private selectFilesFilters$ = this.store.select(selectFilesFilters);
+
+  selectFiltersSub$: Subscription;
+  filterChangesSub$: Subscription;
+  getAllPropertiesSub$: Subscription;
   @Input()
   get availableTags(): SharedTagModel[] {
     return this._availableTags;
@@ -41,27 +48,13 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     if (this.filtersForm && this.filtersForm.controls) {
       // delete from filter deleted tags
       const newTagIdsWithoutDeletedTags = this.filtersForm.value.tagIds.filter((x: number) => this._availableTags.some(y => y.id === x));
-      let currentFilters: FilesFiltrationModel;
-      this.selectFilesFilters$.subscribe((filters) => {
-        currentFilters = filters;
-      }).unsubscribe();
-      if (newTagIdsWithoutDeletedTags.length !== currentFilters.tagIds.length) {
+      if (newTagIdsWithoutDeletedTags.length !== this.currentFilters.tagIds.length) {
         this.filtersForm.patchValue({
           tagIds: newTagIdsWithoutDeletedTags,
         });
       }
     }
   }
-
-  private _availableTags: SharedTagModel[] = [];
-
-  filtersForm: FormGroup;
-  properties: CommonDictionaryModel[] = [];
-  dateFormat = 'yyyy-MM-dd';
-
-  selectFiltersSub$: Subscription;
-  filterChangesSub$: Subscription;
-  getAllPropertiesSub$: Subscription;
 
   get dateRangeFilterControl() {
     if (this.filtersForm && this.filtersForm.controls) {
@@ -81,20 +74,18 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     }
   }
 
-  private selectFilesFilters$ = this.store.select(selectFilesFilters);
-
   constructor(
     private store: Store,
     private translate: TranslateService,
     public filesStateService: FilesStateService,
     private propertyService: BackendConfigurationPnPropertiesService,
   ) {
+    this.selectFiltersSub$ = this.selectFilesFilters$.subscribe((filters) => this.currentFilters = filters)
   }
 
   ngOnInit(): void {
     this.getProperties();
-    this.selectFiltersSub$ = this.selectFilesFilters$
-      // .getFiltersAsync()
+    this.selectFilesFilters$
       .pipe(take(1))
       .subscribe((filters) => {
         this.filtersForm = new FormGroup({
@@ -111,12 +102,8 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
     this.filterChangesSub$ = this.filtersForm.valueChanges
       .pipe(debounceTime(500), skip(1))
       .subscribe((value: { propertyIds: number[], dateRange: { dateFrom: Date, dateTo: Date }, nameFilter: string, tagIds: number[] }) => {
-        let currentFilters: FilesFiltrationModel;
-        this.selectFilesFilters$.subscribe((filters) => {
-          currentFilters = filters;
-        }).unsubscribe();
         const filters: FilesFiltrationModel = {
-          ...currentFilters,
+          ...this.currentFilters,
           ...value,
           dateRange: {
             dateFrom: value.dateRange.dateFrom && format(value.dateRange.dateFrom, this.dateFormat),
@@ -127,10 +114,7 @@ export class FilesFiltersComponent implements OnInit, OnDestroy {
         if (filters.dateRange.dateFrom && !filters.dateRange.dateTo) {
           return; // no update store and table if date range not fulfilled
         }
-        this.store.dispatch(
-          {type: '[Files] Update Filters', payload: filters}
-        )
-        // this.filesStateService.updateFilters(filters);
+        this.store.dispatch(filesUpdateFilters(filters))
         this.updateTable.emit();
       });
   }

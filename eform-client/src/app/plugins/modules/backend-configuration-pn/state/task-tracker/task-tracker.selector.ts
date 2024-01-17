@@ -1,11 +1,11 @@
 import {
-    BackendConfigurationState
-} from '../backend-configuration.state';
+  BackendConfigurationState,
+} from '../';
 import {createSelector} from '@ngrx/store';
 
-export const selectBackendConfigurationPn =
-    (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;
+const selectBackendConfigurationPn =
+  (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;
 export const selectTaskTracker =
-    createSelector(selectBackendConfigurationPn, (state: BackendConfigurationState) => state.taskTrackerState);
+    createSelector(selectBackendConfigurationPn, (state) => state.taskTrackerState);
 export const selectTaskTrackerFilters =
     createSelector(selectTaskTracker, (state) => state.filters);

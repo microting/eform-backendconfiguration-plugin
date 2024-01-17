@@ -1,8 +1,9 @@
-import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {TaskWizardStatusesEnum} from '../../enums';
 import {SortState} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
-  taskWizardUpdateFilters, taskWizardUpdatePagination
+  taskWizardUpdateFilters,
+  taskWizardUpdatePagination
 } from './task-wizard.actions';
 
 export interface TaskWizardFiltrationModel {
@@ -21,7 +22,7 @@ export interface TaskWizardState {
   pagination: TaskWizardPaginationModel;
 }
 
-export const initialState: TaskWizardState = {
+export const taskWizardInitialState: TaskWizardState = {
   filters: {
     propertyIds: [],
     tagIds: [],
@@ -33,28 +34,22 @@ export const initialState: TaskWizardState = {
     sort: 'Id',
     isSortDsc: false,
   },
-}
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _taskWizardReducer = createReducer(
+  taskWizardInitialState,
   on(taskWizardUpdateFilters, (state, {payload}) => ({
-    ...state,
-    filters: {
-      propertyIds: payload.filters.propertyIds,
-      tagIds: payload.filters.tagIds,
-      folderIds: payload.filters.folderIds,
-      assignToIds: payload.filters.assignToIds,
-      status: payload.filters.status,
-    },
+      ...state,
+      filters: {...state.filters, ...payload,},
     }
   )),
   on(taskWizardUpdatePagination, (state, {payload}) => ({
-    ...state,
-    pagination: {...state.pagination, ...payload},
+      ...state,
+      pagination: {...state.pagination, ...payload},
     }
   )),
 );
 
-export function reducer(state: TaskWizardState | undefined, action: Action) {
-  return _reducer(state, action);
+export function taskWizardReducer(state: TaskWizardState | undefined, action: Action) {
+  return _taskWizardReducer(state, action);
 }

@@ -1,12 +1,12 @@
 import {
-  BackendConfigurationState
-} from '../backend-configuration.state';
+  BackendConfigurationState,
+} from '../';
 import {createSelector} from '@ngrx/store';
 
-export const selectBackendConfigurationPn =
+const selectBackendConfigurationPn =
   (state: {backendConfigurationPn: BackendConfigurationState}) => state.backendConfigurationPn;
 export const selectTaskWizard =
-  createSelector(selectBackendConfigurationPn, (state: BackendConfigurationState) => state.taskWizardState);
+  createSelector(selectBackendConfigurationPn, (state) => state.taskWizardState);
 export const selectTaskWizardPagination =
   createSelector(selectTaskWizard, (state) => state.pagination);
 export const selectTaskWizardPaginationSort =

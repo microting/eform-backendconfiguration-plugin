@@ -1,16 +1,17 @@
 import {CommonPaginationState} from 'src/app/common/models';
 import {Action, createReducer, on} from '@ngrx/store';
 import {
-  taskWorkerAssignmentUpdatePagination, taskWorkerAssignmentUpdateTotalProperties
+  taskWorkerAssignmentUpdatePagination,
+  taskWorkerAssignmentUpdateTotalProperties
 } from './task-worker-assignment.actions';
 
 export interface TaskWorkerAssignmentState {
   pagination: CommonPaginationState;
   // filters: FiltrationStateModel;
-  totalProperties: number;
+  total: number;
 }
 
-export const initialState: TaskWorkerAssignmentState = {
+export const taskWorkerAssignmentInitialState: TaskWorkerAssignmentState = {
   pagination: {
     pageSize: 10,
     sort: 'Id',
@@ -19,23 +20,27 @@ export const initialState: TaskWorkerAssignmentState = {
     pageIndex: 0,
     total: 0,
   },
-  totalProperties: 0,
-}
+  total: 0,
+};
 
-export const _reducer = createReducer(
-  initialState,
+const _taskWorkerAssignmentReducer = createReducer(
+  taskWorkerAssignmentInitialState,
   on(taskWorkerAssignmentUpdatePagination, (state, {payload}) => ({
-    ...state,
+      ...state,
       pagination: {...state.pagination, ...payload},
     }
   )),
   on(taskWorkerAssignmentUpdateTotalProperties, (state, {payload}) => ({
-    ...state,
-      payload,
+      ...state,
+      pagination: {
+        ...state.pagination,
+        total: payload
+      },
+      total: payload,
     }
   )),
 );
 
-export function reducer(state: TaskWorkerAssignmentState | undefined, action: Action) {
-  return _reducer(state, action);
+export function taskWorkerAssignmentReducer(state: TaskWorkerAssignmentState | undefined, action: Action) {
+  return _taskWorkerAssignmentReducer(state, action);
 }

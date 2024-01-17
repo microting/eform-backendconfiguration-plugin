@@ -1,150 +1,118 @@
 import {Injectable} from '@angular/core';
-import {Observable, filter} from 'rxjs';
+import {filter} from 'rxjs';
 import {BackendConfigurationPnTaskWizardService} from '../../../../services';
-import {CommonDictionaryModel, CommonPaginationState} from 'src/app/common/models';
+import {CommonDictionaryModel} from 'src/app/common/models';
 import {updateTableSort} from 'src/app/common/helpers';
-import * as R from 'ramda';
-import {TaskWizardStatusesEnum} from 'src/app/plugins/modules/backend-configuration-pn/enums';
+import {TaskWizardStatusesEnum} from '../../../../enums';
 import {Store} from '@ngrx/store';
+import * as R from 'ramda';
 import {
-  TaskWizardFiltrationModel, TaskWizardPaginationModel
-} from '../../../../state/task-wizard/task-wizard.reducer';
-import {
-  selectTaskWizardFilters, selectTaskWizardPagination
-} from '../../../../state/task-wizard/task-wizard.selector';
+  selectTaskWizardFilters,
+  selectTaskWizardPagination,
+  taskWizardUpdateFilters,
+  taskWizardUpdatePagination,
+  TaskWizardFiltrationModel,
+  TaskWizardPaginationModel,
+} from '../../../../state';
 
 @Injectable({providedIn: 'root'})
 export class TaskWizardStateService {
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
-  private selectTaskWizardPagination$  = this.store.select(selectTaskWizardPagination);
+  private selectTaskWizardPagination$ = this.store.select(selectTaskWizardPagination);
+  currentPagination: TaskWizardPaginationModel;
+  currentFilters: TaskWizardFiltrationModel;
+
   constructor(
-      private store: Store,
+    private store: Store,
     private service: BackendConfigurationPnTaskWizardService,
   ) {
+    this.selectTaskWizardFilters$.subscribe((x) => this.currentFilters = x);
+    this.selectTaskWizardPagination$.subscribe((x) => this.currentPagination = x);
   }
 
   getAllTasks() {
-    let filters: TaskWizardFiltrationModel;
-    let pagination: any;
-    this.selectTaskWizardFilters$.subscribe((x) => filters = x);
-    this.selectTaskWizardPagination$.subscribe((x) => pagination = x);
     return this.service
       .getTasks({
-        filters: {...filters},
-        pagination: {...pagination},
+        filters: {...this.currentFilters},
+        pagination: {...this.currentPagination},
       }).pipe(
         filter(data => !!(data && data.success && data.model)),
       );
   }
 
-  // getFiltersAsync(): Observable<TaskWizardFiltrationModel> {
-  //   return this.query.selectFilters$;
-  // }
-
   updatePropertyIds(propertyIds: number[]) {
-    // if(!R.equals(this.store.getValue().filters.propertyIds, propertyIds)) {
-    //   this.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       propertyIds: propertyIds,
-    //     },
-    //   }));
-    // }
+    if (!R.equals(this.currentFilters.propertyIds, propertyIds)) {
+      this.store.dispatch(taskWizardUpdateFilters({
+        ...this.currentFilters,
+        propertyIds: propertyIds
+      }));
+      return true;
+    }
+    return false;
   }
 
   updateFolderIds(folderIds: number[]) {
-    // if(!R.equals(this.store.getValue().filters.folderIds, folderIds)) {
-    //   this.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       folderIds: folderIds,
-    //     },
-    //   }));
-    // }
+    if (!R.equals(this.currentFilters.folderIds, folderIds)) {
+      this.store.dispatch(taskWizardUpdateFilters({
+        ...this.currentFilters,
+        folderIds: folderIds
+      }));
+      return true;
+    }
+    return false;
   }
 
   updateTagIds(tagIds: number[]) {
-    // if(!R.equals(this.store.getValue().filters.tagIds, tagIds)) {
-    //   this.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       tagIds: tagIds,
-    //     },
-    //   }));
-    // }
+    if (!R.equals(this.currentFilters.tagIds, tagIds)) {
+      this.store.dispatch(taskWizardUpdateFilters({
+        ...this.currentFilters,
+        tagIds: tagIds
+      }));
+      return true;
+    }
+    return false;
   }
 
   updateStatus(status: TaskWizardStatusesEnum) {
-    // if(!R.equals(this.store.getValue().filters.status, status)) {
-    //   this.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       status: status,
-    //     },
-    //   }));
-    // }
+    if (!R.equals(this.currentFilters.status, status)) {
+      this.store.dispatch(taskWizardUpdateFilters({
+        ...this.currentFilters,
+        status: status
+      }));
+      return true;
+    }
+    return false;
   }
 
   updateAssignToIds(assignToIds: number[]) {
-    // if(!R.equals(this.store.getValue().filters.assignToIds, assignToIds)) {
-    //   this.store.update((state) => ({
-    //     filters: {
-    //       ...state.filters,
-    //       assignToIds: assignToIds,
-    //     },
-    //   }));
-    // }
+    if (!R.equals(this.currentFilters.assignToIds, assignToIds)) {
+      this.store.dispatch(taskWizardUpdateFilters({
+        ...this.currentFilters,
+        assignToIds: assignToIds
+      }));
+      return true;
+    }
+    return false;
   }
 
   addTagToFilters(tag: CommonDictionaryModel) {
-    let currentFilters: TaskWizardFiltrationModel;
-    this.selectTaskWizardFilters$.subscribe((x) => currentFilters = x);
-    const newTagIds = currentFilters.tagIds
-      .findIndex(tagId => tagId === tag.id) === -1 ? [...currentFilters.tagIds, tag.id] : currentFilters.tagIds;
-    this.store.dispatch({
-      type: '[TaskWizard] Update filters',
-      payload: {
-        filters: {
-          tagIds: newTagIds,
-          folderIds: currentFilters.folderIds,
-          propertyIds: currentFilters.propertyIds,
-          assignToIds: currentFilters.assignToIds,
-          status: currentFilters.status,
-        }
-      },
-    });
-    // this.store.update((state) => ({
-    //   filters: {
-    //     ...state.filters,
-    //     tagIds: state.filters.tagIds
-    //     .findIndex(tagId => tagId === tag.id) === -1 ? [...state.filters.tagIds, tag.id] : state.filters.tagIds,
-    //   },
-    // }));
+    const newTagIds = this.currentFilters.tagIds
+      .findIndex(tagId => tagId === tag.id) === -1 ? [...this.currentFilters.tagIds, tag.id] : this.currentFilters.tagIds;
+    this.store.dispatch(taskWizardUpdateFilters({
+      ...this.currentFilters,
+      tagIds: newTagIds
+    }));
   }
 
-  // getActiveSort(): Observable<string> {
-  //   return this.query.selectActiveSort$;
-  // }
-  //
-  // getActiveSortDirection(): Observable<'asc' | 'desc'> {
-  //   return this.query.selectActiveSortDirection$;
-  // }
-
   onSortTable(sort: string) {
-    let currentPagination: TaskWizardPaginationModel;
-    this.selectTaskWizardPagination$.subscribe((x) => currentPagination = x);
     const localPageSettings = updateTableSort(
       sort,
-      currentPagination.sort,
-      currentPagination.isSortDsc
+      this.currentPagination.sort,
+      this.currentPagination.isSortDsc
     );
-    this.store.dispatch({
-      type: '[TaskWizard] Update pagination',
-      payload: {
-        ...currentPagination,
-        isSortDsc: localPageSettings.isSortDsc,
-        sort: localPageSettings.sort,
-      },
-    })
+    this.store.dispatch(taskWizardUpdatePagination({
+      ...this.currentPagination,
+      ...localPageSettings,
+    }));
   }
 }

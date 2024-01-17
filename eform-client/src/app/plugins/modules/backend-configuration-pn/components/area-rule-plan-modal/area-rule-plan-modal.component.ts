@@ -17,8 +17,6 @@ import {
 } from '../../models';
 import {add, set} from 'date-fns';
 import * as R from 'ramda';
-import {DateTimeAdapter} from '@danielmoncada/angular-datetime-picker';
-import {AuthStateService} from 'src/app/common/store';
 import {TranslateService} from '@ngx-translate/core';
 import {SiteDto} from 'src/app/common/models';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
@@ -26,8 +24,6 @@ import {MtxGridColumn, MtxGridRowSelectionFormatter} from '@ng-matero/extensions
 import {MatDatepickerInputEvent} from '@angular/material/datepicker';
 import {PARSING_DATE_FORMAT} from 'src/app/common/const';
 import {generateWeeksList} from '../../helpers';
-import {selectCurrentUserLocale} from "src/app/state/auth/auth.selector";
-import {Store} from "@ngrx/store";
 
 @Component({
   selector: 'app-area-rule-plan-modal',
@@ -79,7 +75,6 @@ export class AreaRulePlanModalComponent implements OnInit {
     disabled: () => !this.selectedAreaRulePlanning.status,
     hideCheckbox: () => false,
   };
-  private selectCurrentUserLocale$ = this.authStore.select(selectCurrentUserLocale);
 
   get currentDate() {
     return set(new Date(), {
@@ -110,9 +105,6 @@ export class AreaRulePlanModalComponent implements OnInit {
 
   constructor(
     private translate: TranslateService,
-    private authStore: Store,
-    dateTimeAdapter: DateTimeAdapter<any>,
-    private authStateService: AuthStateService,
     public dialogRef: MatDialogRef<AreaRulePlanModalComponent>,
     @Inject(MAT_DIALOG_DATA) model: {
       areaRule: AreaRuleSimpleModel | AreaRuleNameAndTypeSpecificFields,
@@ -122,9 +114,6 @@ export class AreaRulePlanModalComponent implements OnInit {
     },
   ) {
     this.setData(model.areaRule, model.propertyId, model.area, model.areaRulePlan);
-    this.selectCurrentUserLocale$.subscribe((locale) => {
-      dateTimeAdapter.setLocale(locale);
-    });
   }
 
   ngOnInit() {

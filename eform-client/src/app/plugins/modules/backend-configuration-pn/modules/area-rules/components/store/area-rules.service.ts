@@ -1,16 +1,17 @@
 import {Injectable} from '@angular/core';
 import {Observable} from 'rxjs';
 import {
-  CommonPaginationState,
   OperationDataResult,
+  SortModel,
 } from 'src/app/common/models';
 import {BackendConfigurationPnAreasService} from '../../../../services';
 import {AreaRuleSimpleModel} from '../../../../models';
 import {updateTableSort} from 'src/app/common/helpers';
 import {Store} from '@ngrx/store';
 import {
-  selectAreaRulesPagination
-} from '../../../../state/area-rules/area-rules.selector';
+  selectAreaRulesPagination,
+  updateAreaRulesPagination
+} from '../../../../state';
 
 @Injectable({providedIn: 'root'})
 export class AreaRulesStateService {
@@ -19,9 +20,11 @@ export class AreaRulesStateService {
     private store: Store,
     private service: BackendConfigurationPnAreasService,
   ) {
+    this.selectAreaRulesPagination$.subscribe(x => this.currentPagination = x);
   }
 
   private propertyAreaId: number;
+  currentPagination: SortModel;
 
   setPropertyAreaId(propertyAreaId: number) {
     this.propertyAreaId = propertyAreaId;
@@ -29,34 +32,25 @@ export class AreaRulesStateService {
 
   getAllAreaRules():
     Observable<OperationDataResult<AreaRuleSimpleModel[]>> {
-    let pagination = new CommonPaginationState();
-    this.selectAreaRulesPagination$.subscribe((x) => (pagination = x));
     return this.service
       .getAreaRules(
         {
-        sort: pagination.sort,
-        isSortDsc: pagination.isSortDsc,
+        sort: this.currentPagination.sort,
+        isSortDsc: this.currentPagination.isSortDsc,
         propertyAreaId: this.propertyAreaId,
       });
   }
 
   onSortTable(sort: string) {
-    let currentPagination: CommonPaginationState;
-    this.selectAreaRulesPagination$.subscribe((x) => (currentPagination = x));
     const localPageSetting = updateTableSort(
       sort,
-      currentPagination.sort,
-      currentPagination.isSortDsc
+      this.currentPagination.sort,
+      this.currentPagination.isSortDsc
     );
-    this.store.dispatch({
-      type: '[AreaRules] Update pagination',
-      payload: {
-        sort: localPageSetting.sort,
-        isSortDsc: localPageSetting.isSortDsc,
-        pageIndex: 0,
-        offset: 0,
-        propertyAreaId: this.propertyAreaId,
-      },
-    })
+    this.store.dispatch(updateAreaRulesPagination({
+      ...this.currentPagination,
+      sort: localPageSetting.sort,
+      isSortDsc: localPageSetting.isSortDsc,
+    }));
   }
 }

@@ -15,8 +15,9 @@ import {TaskWizardStateService} from '../store';
 import {Sort} from '@angular/material/sort';
 import {Store} from '@ngrx/store';
 import {
-  selectTaskWizardPaginationIsSortDsc, selectTaskWizardPaginationSort
-} from '../../../../state/task-wizard/task-wizard.selector';
+  selectTaskWizardPaginationIsSortDsc,
+  selectTaskWizardPaginationSort
+} from '../../../../state';
 
 @AutoUnsubscribe()
 @Component({
