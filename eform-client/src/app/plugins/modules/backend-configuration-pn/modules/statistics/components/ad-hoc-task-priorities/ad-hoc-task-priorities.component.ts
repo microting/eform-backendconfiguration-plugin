@@ -113,6 +113,9 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
         this.xAxisTicks = Array.from(Array(max + 1).keys()).filter(x => x % 20 === 0);
       }
     }
+    else {
+      this.xAxisTicks = [0];
+    }
   }
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
 
