@@ -1,5 +1,6 @@
 import Page from '../Page';
 import {selectDateOnDatePicker, selectValueInNgSelector} from '../../Helpers/helper-functions';
+import path from "path";
 
 export class BackendConfigurationAreaRulesPage extends Page {
   constructor() {
@@ -279,13 +280,38 @@ export class BackendConfigurationAreaRulesPage extends Page {
     await this.closeCreateAreaRuleModal(clickCancel);
   }
 
+  public async takeScreenshot() {
+    const timestamp = new Date().toLocaleString('iso', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).replace(/[ ]/g, '--').replace(':', '-');
+
+    // get current test title and clean it, to use it as file name
+    const filename = encodeURIComponent(
+      `chrome-${timestamp}`.replace(/[/]/g, '__')
+    ).replace(/%../, '.');
+
+    const filePath = path.resolve('./', `${filename}.png`);
+
+    console.log('Saving screenshot to:', filePath);
+    await browser.saveScreenshot(filePath);
+    console.log('Saved screenshot to:', filePath);
+  }
+
   public async editEntityList(itemsForCreate?: string[], clickCancel = false) {
     await this.openEntityListModal(itemsForCreate);
     await this.closeEntityListModal(clickCancel);
   }
 
   public async openEntityListModal(newItems?: string[]) {
-    await (await this.updateEntityList()).click()
+    await this.takeScreenshot();
+    await (await this.updateEntityList()).click();
+    await browser.pause(1000);
+    await this.takeScreenshot();
     await (await this.entityListSaveCancelBtn()).waitForDisplayed({ timeout: 40000 })
     if(newItems) {
       const count = await this.getCountEntityListItems();
@@ -299,6 +325,8 @@ export class BackendConfigurationAreaRulesPage extends Page {
   }
 
   public async closeEntityListModal(clickCancel = false) {
+    await browser.pause(1000);
+    await this.takeScreenshot();
     if(clickCancel) {
       await (await this.entityListSaveCancelBtn()).click();
     } else {
