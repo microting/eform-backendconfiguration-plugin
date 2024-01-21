@@ -59,6 +59,7 @@ describe('Backend Configuration Area Rules Type3', function () {
     await backendConfigurationAreaRulesPage.closeEntityListModal(true);
   });
   it('should create items entity list', async () => {
+    await browser.pause(1000);
     const entityList = [generateRandmString(), generateRandmString()];
     await backendConfigurationAreaRulesPage.editEntityList(entityList);
     await backendConfigurationAreaRulesPage.openEntityListModal();
