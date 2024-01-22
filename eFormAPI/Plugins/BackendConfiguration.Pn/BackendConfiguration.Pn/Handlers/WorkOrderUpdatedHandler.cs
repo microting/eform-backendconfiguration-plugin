@@ -34,7 +34,20 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
 
     public async Task Handle(WorkOrderUpdated message)
     {
-        await DeployWorkOrderEform(message.PropertyWorkers, message.EformId, message.PropertyId, message.Description,  message.Status, message.WorkorderCaseId, message.NewDescription, message.DeviceUsersGroupId, message.PdfHash, message.AssignedToSite, message.PushMessageBody, message.PushMessageTitle, message.UpdatedByName);
+        await DeployWorkOrderEform(message.PropertyWorkers,
+            message.EformId,
+            message.PropertyId,
+            message.Description,
+            message.Status,
+            message.WorkorderCaseId,
+            message.NewDescription,
+            message.DeviceUsersGroupId,
+            message.PdfHash,
+            message.AssignedToSite,
+            message.PushMessageBody,
+            message.PushMessageTitle,
+            message.UpdatedByName,
+            message.HasImages);
     }
 
     private async Task DeployWorkOrderEform(
@@ -50,7 +63,8 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
         Site assignedToSite,
         string pushMessageBody,
         string pushMessageTitle,
-        string updatedByName)
+        string updatedByName,
+        bool hasImages)
     {
 
 
@@ -181,6 +195,10 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
             }
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
+            if (hasImages == false)
+            {
+                ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            }
             int caseId = 0;
             if (workOrderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
             {

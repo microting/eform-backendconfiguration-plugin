@@ -24,8 +24,9 @@ public class WorkOrderCreated
     public int FolderIdForOngoingTasks { get; set; }
     public int FolderIdForTasks { get; set; }
     public int FolderIdForCompletedTasks { get; set; }
+    public bool HasImages { get; set; }
 
-    public WorkOrderCreated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int folderId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pushMessageBody, string pushMessageTitle, string areaName, int createdByUserId, List<string> picturesOfTasks, Site assignedToSite, string propertyName, int idForOngoingTasks, int idForTasks, int idForCompletedTasks)
+    public WorkOrderCreated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int folderId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pushMessageBody, string pushMessageTitle, string areaName, int createdByUserId, List<string> picturesOfTasks, Site assignedToSite, string propertyName, int idForOngoingTasks, int idForTasks, int idForCompletedTasks, bool hasImages)
     {
         PropertyWorkers = propertyWorkers;
         EformId = eformId;
@@ -45,5 +46,6 @@ public class WorkOrderCreated
         FolderIdForOngoingTasks = idForOngoingTasks;
         FolderIdForTasks = idForTasks;
         FolderIdForCompletedTasks = idForCompletedTasks;
+        HasImages = hasImages;
     }
 }

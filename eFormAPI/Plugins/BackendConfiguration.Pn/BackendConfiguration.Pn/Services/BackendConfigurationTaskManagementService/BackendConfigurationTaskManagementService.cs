@@ -456,6 +456,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
             await newWorkOrderCase.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
             var picturesOfTasks = new List<string>();
+            var hasImages = false;
             if (createModel.Files.Any())
             {
                 foreach (var picture in createModel.Files)
@@ -533,6 +534,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     picturesOfTasks.Add($"{uploadData.Id}_700_{uploadData.Checksum}{uploadData.Extension}");
                     await workOrderCaseImage.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
                 }
+                hasImages = true;
             }
 
             var eformIdForOngoingTasks = await sdkDbContext.CheckLists
@@ -634,7 +636,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     property.Name,
                     (int)property.FolderIdForOngoingTasks!,
                     (int) property.FolderIdForTasks!,
-                    (int) property.FolderIdForCompletedTasks!)).ConfigureAwait(false);
+                    (int) property.FolderIdForCompletedTasks!, hasImages)).ConfigureAwait(false);
             }
 
             return new OperationResult(true, _localizationService.GetString("TaskCreatedSuccessful"));

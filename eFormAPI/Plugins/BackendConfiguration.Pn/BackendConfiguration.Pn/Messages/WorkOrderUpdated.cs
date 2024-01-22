@@ -19,8 +19,9 @@ public class WorkOrderUpdated
     public string PushMessageBody;
     public string PushMessageTitle;
     public string UpdatedByName;
+    public bool HasImages { get; set; }
 
-    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int propertyId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pdfHash, Site assignedToSite, string pushMessageBody, string pushMessageTitle, string updatedByName)
+    public WorkOrderUpdated(List<KeyValuePair<int, int>> propertyWorkers, int eformId, int propertyId, string description, CaseStatusesEnum status, int workorderCaseId, string newDescription, int? deviceUsersGroupId, string pdfHash, Site assignedToSite, string pushMessageBody, string pushMessageTitle, string updatedByName, bool hasImages)
     {
         PropertyWorkers = propertyWorkers;
         EformId = eformId;
@@ -35,5 +36,6 @@ public class WorkOrderUpdated
         PushMessageBody = pushMessageBody;
         PushMessageTitle = pushMessageTitle;
         UpdatedByName = updatedByName;
+        HasImages = hasImages;
     }
 }
