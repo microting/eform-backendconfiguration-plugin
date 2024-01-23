@@ -29,7 +29,6 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   generateReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
   @Output()
   downloadReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
-  @Input() range: Date[];
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup;
   valueChangesSub$: Subscription;
@@ -67,33 +66,26 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
         }
       }
     );
-    if (!!this.range[0].getDate()) {
-      this.generateForm.get('dateRange.dateFrom').setValue(this.range[0]);
-      this.generateForm.get('dateRange.dateTo').setValue(this.range[1]);
-    }
   }
 
   onSubmit() {
     const model = this.reportStateService.extractData();
-    this.generateReport.emit(model);
+    this.generateReport.emit({...model, version2: true});
   }
 
   onWordSave() {
     const model = this.reportStateService.extractData();
-    model.type = 'docx';
-    this.downloadReport.emit(model);
+    this.downloadReport.emit({...model, type: 'docx',version2: true});
   }
 
   onExcelSave() {
     const model = this.reportStateService.extractData();
-    model.type = 'xlsx';
-    this.downloadReport.emit(model);
+    this.downloadReport.emit({...model, type: 'xlsx',version2: true});
   }
 
   onPdfSave() {
     const model = this.reportStateService.extractData();
-    model.type = 'pdf';
-    this.downloadReport.emit(model);
+    this.downloadReport.emit({...model, type: 'pdf',version2: true});
   }
 
   addOrDeleteTagId(tag: SharedTagModel) {

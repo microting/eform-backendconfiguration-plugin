@@ -11,19 +11,15 @@ import {
 } from '@angular/core';
 import {ReportEformItemModel} from '../../../models/report';
 import {CaseDeleteComponent} from '../../../components';
-import {AuthStateService} from 'src/app/common/store';
-import {ViewportScroller} from '@angular/common';
-import {Router} from '@angular/router';
-import {ReportStateService} from './../store';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {dialogConfigHelper} from 'src/app/common/helpers';
-import {Subscription} from 'rxjs';
+import {Subscription, take} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {format, parseISO} from 'date-fns';
-import {selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state/auth/auth.selector';
+import {selectAuthIsAuth, selectCurrentUserFullName} from 'src/app/state';
 import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
@@ -36,18 +32,22 @@ import {Store} from '@ngrx/store';
 export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   @Input() items: ReportEformItemModel[] = [];
   @Input() reportIndex: number;
-  @Input() dateFrom: any;
-  @Input() dateTo: any;
   @Input() itemHeaders: { key: string; value: string }[] = [];
   @Input() newPostModal: any;
   @Output() planningCaseDeleted: EventEmitter<void> = new EventEmitter<void>();
-  @Output() btnViewPicturesClicked: EventEmitter<{ reportIndex: number, caseId: number }>
-    = new EventEmitter<{ reportIndex: number, caseId: number }>();
+  @Output() btnViewPicturesClicked: EventEmitter<{ reportIndex: number, caseId: number }> = new EventEmitter();
+  @Output() editCaseClicked: EventEmitter<{ microtingSdkCaseId: number, eFormId: number, id: number }> = new EventEmitter();
+  isAdmin: boolean = false;
 
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
-    {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y'}},
+    {
+      header: this.translateService.stream('Submitted date'),
+      field: 'microtingSdkCaseDoneAt',
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y'}
+    },
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Name'), field: 'itemName'},
     {
@@ -83,7 +83,12 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
     {header: this.translateService.stream('Planning Id'), field: 'itemId'},
     {header: this.translateService.stream('eForm Id'), field: 'eFormId'},
     {header: this.translateService.stream('Property name'), field: 'propertyName'},
-    {header: this.translateService.stream('Submitted date'), field: 'microtingSdkCaseDoneAt', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
+    {
+      header: this.translateService.stream('Submitted date'),
+      field: 'microtingSdkCaseDoneAt',
+      type: 'date',
+      typeParameter: {format: 'dd.MM.y HH:mm'}
+    },
     {header: this.translateService.stream('Server time'), field: 'serverTime', type: 'date', typeParameter: {format: 'dd.MM.y HH:mm'}},
     {header: this.translateService.stream('Done by'), field: 'doneBy'},
     {header: this.translateService.stream('Area'), field: 'itemName'},
@@ -124,14 +129,11 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   constructor(
     private store: Store,
-    private authStateService: AuthStateService,
-    private viewportScroller: ViewportScroller,
-    private router: Router,
-    private planningsReportStateService: ReportStateService,
     private translateService: TranslateService,
     private dialog: MatDialog,
     private overlay: Overlay,
   ) {
+    this.selectAuthIsAdmin$.pipe(take(1)).subscribe((selectAuthIsAdmin) => this.isAdmin = selectAuthIsAdmin);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -165,11 +167,13 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
           },
         };
       });
-      let isAdmin = false;
-      this.selectAuthIsAdmin$.subscribe((selectAuthIsAdmin$) => isAdmin = selectAuthIsAdmin$);
-      if (isAdmin) {
+      if (this.isAdmin) {
+        this.adminTableHeaders.find(x => x.field === 'actions').class = ((record: ReportEformItemModel, _) =>
+          record ? `id-${record.id}` : '');//microtingSdkCaseId${record.microtingSdkCaseId}-eFormId${record.eFormId}-
         this.mergedTableHeaders = [...this.adminTableHeaders, ...itemHeaders];
       } else {
+        this.tableHeaders.find(x => x.field === 'actions').class = ((record: ReportEformItemModel, _) =>
+          record ? `id-${record.id}` : '');//microtingSdkCaseId${record.microtingSdkCaseId}-eFormId${record.eFormId}-
         this.mergedTableHeaders = [...this.tableHeaders, ...itemHeaders];
       }
     }
@@ -206,10 +210,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onClickEditCase(microtingSdkCaseId: number, eFormId: number, id: number) {
-    this.planningsReportStateService.updateScrollPosition(this.viewportScroller.getScrollPosition());
-    this.router.navigate([`/plugins/backend-configuration-pn/case/`, microtingSdkCaseId, eFormId, id, this.dateFrom, this.dateTo],
-      {queryParams: {reverseRoute: this.router.url}})
-      .then();
+    this.editCaseClicked.emit({microtingSdkCaseId, eFormId, id});
   }
 
   ngOnDestroy(): void {

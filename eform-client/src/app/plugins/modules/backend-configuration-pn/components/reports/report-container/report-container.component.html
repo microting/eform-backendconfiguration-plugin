@@ -1,7 +1,6 @@
 <eform-new-subheader/>
 
 <app-backend-pn-report-header
-  [range]="range"
   [availableTags]="availableTags"
   (downloadReport)="onDownloadReport($event)"
   (generateReport)="onGenerateReport($event)"
@@ -50,10 +49,9 @@
         [items]="report.items"
         [reportIndex]="i"
         [itemHeaders]="report.itemHeaders"
-        [dateFrom]="dateFrom"
-        [dateTo]="dateTo"
         (planningCaseDeleted)="onPlanningCaseDeleted()"
         (btnViewPicturesClicked)="onClickViewPicture($event)"
+        (editCaseClicked)="onClickEditCase($event)"
       ></app-report-table>
     </ng-container>
   </div>

@@ -11,10 +11,6 @@ import {
 } from '@angular/core';
 import {ReportEformItemModel} from '../../../../models';
 import {CaseDeleteComponent} from '../';
-import {AuthStateService} from 'src/app/common/store';
-import {ViewportScroller} from '@angular/common';
-import {Router} from '@angular/router';
-import {ReportStateService} from '../store';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {TranslateService} from '@ngx-translate/core';
 import {MatDialog} from '@angular/material/dialog';
@@ -36,13 +32,12 @@ import {Store} from '@ngrx/store';
 export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   @Input() items: ReportEformItemModel[] = [];
   @Input() reportIndex: number;
-  @Input() dateFrom: any;
-  @Input() dateTo: any;
   @Input() itemHeaders: { key: string; value: string }[] = [];
   @Input() newPostModal: any;
   @Output() planningCaseDeleted: EventEmitter<void> = new EventEmitter<void>();
   @Output() btnViewPicturesClicked: EventEmitter<{ reportIndex: number, caseId: number }>
     = new EventEmitter<{ reportIndex: number, caseId: number }>();
+  @Output() editCaseClicked: EventEmitter<{ microtingSdkCaseId: number, eFormId: number, id: number }> = new EventEmitter();
 
   tableHeaders: MtxGridColumn[] = [
     {header: this.translateService.stream('Id'), field: 'microtingSdkCaseId'},
@@ -124,10 +119,6 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
 
   constructor(
     private store: Store,
-    private authStateService: AuthStateService,
-    private viewportScroller: ViewportScroller,
-    private router: Router,
-    private planningsReportStateService: ReportStateService,
     private translateService: TranslateService,
     private dialog: MatDialog,
     private overlay: Overlay,
@@ -209,10 +200,7 @@ export class ReportTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onClickEditCase(microtingSdkCaseId: number, eFormId: number, id: number) {
-    this.planningsReportStateService.updateScrollPosition(this.viewportScroller.getScrollPosition());
-    this.router.navigate([`/plugins/backend-configuration-pn/case/`, microtingSdkCaseId, eFormId, id, this.dateFrom, this.dateTo],
-      {queryParams: {reverseRoute: this.router.url}})
-      .then();
+    this.editCaseClicked.emit({microtingSdkCaseId, eFormId, id});
   }
 
   ngOnDestroy(): void {
