@@ -55,6 +55,7 @@ public static class BackendConfigurationTaskManagementHelper
         var updatedByName = await userService.GetCurrentUserFullName().ConfigureAwait(false);
 
         var picturesOfTasks = new List<string>();
+        var hasImages = false;
         var parentCaseImages = await backendConfigurationPnDbContext.WorkorderCaseImages.Where(x => x.WorkorderCaseId == workOrderCase.ParentWorkorderCaseId).ToListAsync();
 
         foreach (var workorderCaseImage in parentCaseImages)
@@ -67,6 +68,7 @@ public static class BackendConfigurationTaskManagementHelper
                 UploadedDataId = uploadedData.Id
             };
             await workOrderCaseImage.Create(backendConfigurationPnDbContext);
+            hasImages = true;
         }
 
         var property = workOrderCase.PropertyWorker.Property;
@@ -157,7 +159,7 @@ public static class BackendConfigurationTaskManagementHelper
 
         await bus.SendLocal(new WorkOrderUpdated(propertyWorkerKvpList, eformIdForOngoingTasks, property.Id, label,
             workOrderCase.CaseStatusesEnum, workOrderCase.Id, updateModel.Description, int.Parse(deviceUsersGroupUid),
-            hash, site, pushMessageBody, pushMessageTitle, updatedByName)).ConfigureAwait(false);
+            hash, site, pushMessageBody, pushMessageTitle, updatedByName, hasImages)).ConfigureAwait(false);
 
         return new OperationResult(true, localizationService.GetString("TaskUpdatedSuccessful"));
     }

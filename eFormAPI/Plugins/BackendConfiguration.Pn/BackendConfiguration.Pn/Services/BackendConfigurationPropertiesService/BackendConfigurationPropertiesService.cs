@@ -789,6 +789,8 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService
                 propertyFolderModel.Children.Add(MapFolder(childFolder, allFolders, userLanguage));
             }
 
+            propertyFolderModel.Children = propertyFolderModel.Children.OrderBy(x => x.Name).ToList();
+
             return propertyFolderModel;
         }
         private static List<CommonDictionaryModel> MapFolder(PropertyFolderModel folder, string rootFolderName = "")

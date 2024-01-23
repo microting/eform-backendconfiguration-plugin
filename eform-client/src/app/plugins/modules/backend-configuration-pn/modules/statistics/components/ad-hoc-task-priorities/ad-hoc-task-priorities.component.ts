@@ -101,10 +101,20 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   }
 
   getxAxisTicks() {
-    // loop through the data and find the biggest value, then create an array from 0 to that value
     if (this.chartData.length > 0) {
       const max = Math.max.apply(Math, this.chartData.map(o => o.value)) + 1;
-      this.xAxisTicks = Array.from(Array(max).keys());
+      if (max < 11) {
+        this.xAxisTicks = Array.from(Array(max).keys());
+      } else if (max >= 11 && max <= 20) {
+        this.xAxisTicks = Array.from(Array(max + 1).keys()).filter(x => x % 5 === 0);
+      } else if (max >= 21 && max <= 100) {
+        this.xAxisTicks = Array.from(Array(max + 1).keys()).filter(x => x % 10 === 0);
+      } else {
+        this.xAxisTicks = Array.from(Array(max + 1).keys()).filter(x => x % 20 === 0);
+      }
+    }
+    else {
+      this.xAxisTicks = [0];
     }
   }
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);

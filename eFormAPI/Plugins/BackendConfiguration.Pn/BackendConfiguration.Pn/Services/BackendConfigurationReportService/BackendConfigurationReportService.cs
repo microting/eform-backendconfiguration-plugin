@@ -493,7 +493,6 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                                 reportModel.Items.Add(item);
                             }
                         }
-
                         result.Add(reportModel);
                     }
 
@@ -686,7 +685,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
                             .OrderBy(x => x.CaseId)
                             .ToListAsync();
 
-                        foreach (var planningCase in eformIdAndCases.cases)
+                        foreach (var planningCase in eformIdAndCases.cases.OrderBy(x => x.MicrotingSdkCaseDoneAt).ToList())
                         {
                             var planningNameTranslation =
                                 await _itemsPlanningPnDbContext.PlanningNameTranslation.FirstOrDefaultAsync(x =>

@@ -61,7 +61,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             message.PropertyName,
             message.FolderIdForOngoingTasks,
             message.FolderIdForTasks,
-            message.FolderIdForCompletedTasks).ConfigureAwait(false);
+            message.FolderIdForCompletedTasks,
+            message.HasImages).ConfigureAwait(false);
     }
 
     private async Task DeployEform(
@@ -82,7 +83,8 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
         string propertyName,
         int folderIdForOngoingTasks,
         int folderIdForTasks,
-        int folderIdForCompletedTasks
+        int folderIdForCompletedTasks,
+        bool hasImages
         )
     {
         var backendConfigurationPnDbContext = _backendConfigurationDbContextHelper.GetDbContext();
@@ -208,6 +210,10 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
             }
 
             mainElement.StartDate = DateTime.Now.ToUniversalTime();
+            if (hasImages == false)
+            {
+                ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
+            }
             var caseId = await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid!, folderId).ConfigureAwait(false);
             var newWorkOrderCase = new WorkorderCase
             {
