@@ -37,6 +37,7 @@ export class ReportStateService {
   }
 
   updateDateRange(dateRange: { startDate?: string, endDate?: string, }) {
+    // eslint-disable-next-line eqeqeq
     if (dateRange.startDate != this.currentDateRange.startDate || dateRange.endDate != this.currentDateRange.endDate) {
       this.store.dispatch(reportsV1UpdateDateRange({
         startDate: dateRange.startDate || this.currentDateRange.startDate,

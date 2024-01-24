@@ -6,22 +6,21 @@ import {
   ReportPnGenerateModel,
 } from '../../../../models';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {BehaviorSubject, forkJoin, Observable, Subscription, asyncScheduler, of} from 'rxjs';
-import {ActivatedRoute, Router} from '@angular/router';
-import {parseISO} from 'date-fns';
-import {FiltrationStateModel, SharedTagModel,} from 'src/app/common/models';
-import {EmailRecipientsService, TemplateFilesService} from 'src/app/common/services';
+import {forkJoin, Observable, Subscription, asyncScheduler, of, take} from 'rxjs';
+import {Router} from '@angular/router';
+import {SharedTagModel,} from 'src/app/common/models';
+import {TemplateFilesService} from 'src/app/common/services';
 import {AuthStateService} from 'src/app/common/store';
 import {ViewportScroller} from '@angular/common';
 import {BackendConfigurationPnReportService} from '../../../../services';
 import {catchError, tap} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {
-  selectReportsV2Filters,
   selectReportsV2ScrollPosition
 } from '../../../../state/reports-v2/reports-v2.selector';
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
+import {ReportStateService} from '../store';
 
 @AutoUnsubscribe()
 @Component({
@@ -31,16 +30,12 @@ import {Lightbox} from 'ng-gallery/lightbox';
 })
 export class ReportContainerComponent implements OnInit, OnDestroy {
   reportsModel: NewReportEformPnModel[] = [];
-  range: Date[] = [];
   availableTags: SharedTagModel[] = [];
   currentUserFullName: string;
   images: { key: number, value: any }[] = [];
   galleryImages: GalleryItem[] = [];
-  dateFrom: any;
-  dateTo: any;
   startWithParams = false;
-  private observableReportsModel = new BehaviorSubject<NewReportEformPnModel[]>([]);
-  private selectReportsV2Filters$ = this.store.select(selectReportsV2Filters);
+  scrollPosition: [number, number] = [0, 0];
   private selectReportsV2ScrollPosition$ = this.store.select(selectReportsV2ScrollPosition);
 
   getTagsSub$: Subscription;
@@ -50,8 +45,6 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
 
   constructor(
     private store: Store,
-    private emailRecipientsService: EmailRecipientsService,
-    private activateRoute: ActivatedRoute,
     private reportService: BackendConfigurationPnReportService,
     private toastrService: ToastrService,
     private router: Router,
@@ -59,40 +52,24 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
     public gallery: Gallery,
     public lightbox: Lightbox,
     private imageService: TemplateFilesService,
-    private viewportScroller: ViewportScroller
+    private viewportScroller: ViewportScroller,
+    private reportStateService: ReportStateService,
   ) {
-    this.activateRoute.params.subscribe((params) => {
-      this.dateFrom = params['dateFrom'];
-      this.dateTo = params['dateTo'];
-      this.range.push(parseISO(params['dateFrom']));
-      this.range.push(parseISO(params['dateTo']));
-      this.startWithParams = !!(this.dateTo && this.dateFrom);
-      let _filters: FiltrationStateModel;
-      this.selectReportsV2Filters$.subscribe((filters) => {
-        _filters = filters;
-      }).unsubscribe();
-      const model = {
-        dateFrom: params['dateFrom'],
-        dateTo: params['dateTo'],
-        tagIds: _filters.tagIds,
-        type: '',
-        version2: false
-      };
-      if (model.dateFrom !== undefined) {
-        this.onGenerateReport(model);
-      }
-    });
-    this.observableReportsModel.subscribe(x => {
-      if (x.length && this.startWithParams) {
-        const task = _ => this.selectReportsV2ScrollPosition$
-          .subscribe(value => this.viewportScroller.scrollToPosition(value));
-        asyncScheduler.schedule(task, 1000);
-        this.startWithParams = false;
-      }
-    });
+    this.selectReportsV2ScrollPosition$
+      .pipe(take(1))
+      .subscribe(scrollPosition => this.scrollPosition = scrollPosition);
   }
 
   ngOnInit() {
+    let reportPnGenerateModel: ReportPnGenerateModel = {
+      ...this.reportStateService.extractData(),
+      type: '',
+      version2: true
+    };
+    if (reportPnGenerateModel.dateFrom !== null) {
+      this.startWithParams = true;
+      this.onGenerateReport(reportPnGenerateModel);
+    }
     this.getTags();
   }
 
@@ -105,30 +82,24 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   }
 
   onGenerateReport(model: ReportPnGenerateModel) {
-    this.dateFrom = model.dateFrom;
-    this.dateTo = model.dateTo;
-    let _filters: FiltrationStateModel;
-    this.selectReportsV2Filters$.subscribe((filters) => {
-      _filters = filters;
-    }).unsubscribe();
     this.generateReportSub$ = this.reportService
       .generateNewReport({
-        dateFrom: model.dateFrom,
-        dateTo: model.dateTo,
-        tagIds: _filters.tagIds,
+        ...model,
         type: '',
-        version2: false
+        version2: true
       })
       .subscribe((data) => {
         if (data && data.success) {
           this.reportsModel = data.model;
-          this.observableReportsModel.next(data.model);
+          if (this.startWithParams) {
+            asyncScheduler.schedule(() => this.viewportScroller.scrollToPosition(this.scrollPosition), 1000);
+            this.startWithParams = false;
+          }
         }
       });
   }
 
   onDownloadReport(model: ReportPnGenerateModel) {
-    model.version2 = true;
     this.downloadReportSub$ = this.reportService
       .downloadFileReport(model)
       .pipe(
@@ -143,11 +114,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
 
   onPlanningCaseDeleted() {
     const model = {
-      dateFrom: this.dateFrom,
-      dateTo: this.dateTo,
-      tagIds: [],
-      type: '',
-      version2: true
+      ...this.reportStateService.extractData()
     };
     if (model.dateFrom !== undefined) {
       this.onGenerateReport(model);
@@ -211,6 +178,13 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   onClickViewPicture(model: {/*reportIndex: number, */caseId: number }) {
     // const reportEformPnModel = this.reportsModel[model.reportIndex];
     this.getImages(/*reportEformPnModel, */model.caseId);
+  }
+
+  onClickEditCase(model: { microtingSdkCaseId: number, eFormId: number, id: number }) {
+    this.reportStateService.updateScrollPosition(this.viewportScroller.getScrollPosition()); // TODO currently not work. return [0, 0]
+    this.router.navigate([`/plugins/backend-configuration-pn/case/`, model.microtingSdkCaseId, model.eFormId, model.id],
+      {queryParams: {reverseRoute: this.router.url}})
+      .then();
   }
 
   ngOnDestroy(): void {

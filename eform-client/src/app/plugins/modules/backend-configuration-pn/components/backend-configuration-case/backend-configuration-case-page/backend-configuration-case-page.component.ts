@@ -32,8 +32,6 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   id: number;
   planningId: number;
   eFormId: number;
-  dateFrom: string;
-  dateTo: string;
   currentTemplate: TemplateDto = new TemplateDto();
   replyElement: ReplyElementDto = new ReplyElementDto();
   reverseRoute: string;
@@ -45,7 +43,7 @@ export class BackendConfigurationCasePageComponent implements OnInit {
   constructor(
     private activateRoute: ActivatedRoute,
     private casesService: CasesService,
-    private authStore: Store,
+    private store: Store,
     private eFormService: EFormService,
     private router: Router,
     private backendConfigurationPnCasesService: BackendConfigurationPnCasesService
@@ -54,8 +52,6 @@ export class BackendConfigurationCasePageComponent implements OnInit {
       this.id = +params['id'];
       this.planningId = +params['planningId'];
       this.eFormId = +params['templateId'];
-      this.dateFrom = params['dateFrom'];
-      this.dateTo = params['dateTo'];
     });
     this.activateRoute.queryParams.subscribe((queryParams) => {
       this.reverseRoute = queryParams['reverseRoute'];

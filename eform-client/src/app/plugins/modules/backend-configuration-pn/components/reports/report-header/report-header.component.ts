@@ -28,7 +28,6 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
   generateReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
   @Output()
   downloadReport: EventEmitter<ReportPnGenerateModel> = new EventEmitter();
-  @Input() range: Date[];
   @Input() availableTags: SharedTagModel[] = [];
   generateForm: FormGroup<{
     tagIds: FormControl<number[]>,
@@ -70,10 +69,6 @@ export class ReportHeaderComponent implements OnInit, OnDestroy {
         }
       }
     );
-    if (!!this.range[0].getDate()) {
-      this.generateForm.get('dateRange.dateFrom').setValue(this.range[0]);
-      this.generateForm.get('dateRange.dateTo').setValue(this.range[1]);
-    }
   }
 
   onSubmit() {
