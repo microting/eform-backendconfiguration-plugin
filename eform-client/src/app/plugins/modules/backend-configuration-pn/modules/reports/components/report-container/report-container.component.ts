@@ -21,6 +21,7 @@ import {
 import {Gallery, GalleryItem, ImageItem} from 'ng-gallery';
 import {Lightbox} from 'ng-gallery/lightbox';
 import {ReportStateService} from '../store';
+import {TranslateService} from '@ngx-translate/core';
 
 @AutoUnsubscribe()
 @Component({
@@ -44,6 +45,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
   imageSub$: Subscription[] = [];
 
   constructor(
+    private translateService: TranslateService,
     private store: Store,
     private reportService: BackendConfigurationPnReportService,
     private toastrService: ToastrService,
@@ -105,7 +107,7 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
       .pipe(
         tap((data) => saveAs(data, `${model.dateFrom}_${model.dateTo}_report.${model.type}`)),
         catchError((_) => {
-          this.toastrService.error('Error downloading report');
+          this.toastrService.info(this.translateService.instant('No data in selected period'));
           return of(null);
         })
       )
