@@ -912,15 +912,15 @@ namespace BackendConfiguration.Pn
                 new()
                 {
                     Name = "Reports",
-                    E2EId = "backend-configuration-pn-reports",
-                    Link = "/plugins/backend-configuration-pn/reports",
+                    E2EId = "backend-configuration-pn-reportsv2",
+                    Link = "/plugins/backend-configuration-pn/reportsv2",
                     Type = MenuItemTypeEnum.Link,
                     Position = 1,
                     MenuTemplate = new PluginMenuTemplateModel
                     {
                         Name = "Reports",
-                        E2EId = "backend-configuration-pn-reports",
-                        DefaultLink = "/plugins/backend-configuration-pn/reports",
+                        E2EId = "backend-configuration-pn-reportsv2",
+                        DefaultLink = "/plugins/backend-configuration-pn/reportsv2",
                         Permissions = [],
                         Translations =
                         [
@@ -1355,6 +1355,81 @@ namespace BackendConfiguration.Pn
                         {
                             LocaleName = LocaleNames.Ukrainian,
                             Name = "Дашборд",
+                            Language = LanguageNames.Ukrainian
+                        }
+                    ]
+                },
+                new()
+                {
+                    Name = "Reports v1",
+                    E2EId = "backend-configuration-pn-reports",
+                    Link = "/plugins/backend-configuration-pn/reports",
+                    Type = MenuItemTypeEnum.Link,
+                    Position = 8,
+                    MenuTemplate = new PluginMenuTemplateModel
+                    {
+                        Name = "Reports v1",
+                        E2EId = "backend-configuration-pn-reports",
+                        DefaultLink = "/plugins/backend-configuration-pn/reports",
+                        Permissions = [],
+                        Translations =
+                        [
+                            new()
+                            {
+                                LocaleName = LocaleNames.English,
+                                Name = "Reports v1",
+                                Language = LanguageNames.English
+                            },
+
+                            new()
+                            {
+                                LocaleName = LocaleNames.German,
+                                Name = "Berichte v1",
+                                Language = LanguageNames.German
+                            },
+
+                            new()
+                            {
+                                LocaleName = LocaleNames.Danish,
+                                Name = "Rapporter v1",
+                                Language = LanguageNames.Danish
+                            },
+
+                            new()
+                            {
+                                LocaleName = LocaleNames.Ukrainian,
+                                Name = "Звіти v1",
+                                Language = LanguageNames.Ukrainian
+                            }
+                        ]
+                    },
+                    Translations =
+                    [
+                        new()
+                        {
+                            LocaleName = LocaleNames.English,
+                            Name = "Reports v1",
+                            Language = LanguageNames.English
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.German,
+                            Name = "Berichte v1",
+                            Language = LanguageNames.German
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Danish,
+                            Name = "Rapporter v1",
+                            Language = LanguageNames.Danish
+                        },
+
+                        new()
+                        {
+                            LocaleName = LocaleNames.Ukrainian,
+                            Name = "Звіти v1",
                             Language = LanguageNames.Ukrainian
                         }
                     ]
