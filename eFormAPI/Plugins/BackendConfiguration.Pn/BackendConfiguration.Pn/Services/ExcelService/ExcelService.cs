@@ -393,6 +393,8 @@ public class ExcelService : IExcelService
 				$"{timeStamp}_.xlsx");
 
 			IXLWorkbook wb = new XLWorkbook();
+			var worksheetNames = new List<string>();
+			var douplicateNumber = 0;
 
 			foreach (var eformModel in reportModel)
 			{
@@ -418,6 +420,17 @@ public class ExcelService : IExcelService
 						if (sheetName.Length > 30)
 						{
 							sheetName = sheetName.Substring(0, 30);
+						}
+
+						if (worksheetNames.Contains(sheetName))
+						{
+							worksheetNames.Add(sheetName);
+							douplicateNumber++;
+							sheetName = $"({douplicateNumber}){sheetName}";
+							sheetName = sheetName.Substring(0, 30);
+						} else
+						{
+							worksheetNames.Add(sheetName);
 						}
 
 						var worksheet = wb.Worksheets.Add(sheetName);
