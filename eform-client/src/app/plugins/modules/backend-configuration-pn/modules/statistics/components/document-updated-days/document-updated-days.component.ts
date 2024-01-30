@@ -6,8 +6,8 @@ import {format} from 'date-fns';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {DocumentsExpirationFilterEnum} from '../../../../enums';
-import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
-import {Store} from "@ngrx/store";
+import {selectCurrentUserLocale, selectIsDarkMode} from 'src/app/state';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -22,20 +22,22 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
   @Output() clickOnDiagram: EventEmitter<DocumentsExpirationFilterEnum | null> = new EventEmitter<DocumentsExpirationFilterEnum | null>();
   chartData: { name: string, value: number }[] = [];
   xAxisTicks: any[] = [];
+  labels: string[] = ['Exceeded or today', 'Under 30 days', 'Over 30 days'];
+  labelsTranslated: string[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#0000ff', '#0000ff']
   };
   customColorsLight = [
     {
-      name: this.translateService.instant('Exceeded or today'),
+      name: this.labels[0],
       value: '#ff0000',
     },
     {
-      name: this.translateService.instant('Under 30 days'),
+      name: this.labels[1],
       value: '#0000ff',
     },
     {
-      name: this.translateService.instant('Over 30 days'),
+      name: this.labels[2],
       value: '#0000ff',
     },
   ];
@@ -44,15 +46,15 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
   };
   customColorsDark = [
     {
-      name: this.translateService.instant('Exceeded or today'),
+      name: this.labels[0],
       value: '#ff0000',
     },
     {
-      name: this.translateService.instant('Under 30 days'),
+      name: this.labels[1],
       value: '#0000ff',
     },
     {
-      name: this.translateService.instant('Over 30 days'),
+      name: this.labels[2],
       value: '#0000ff',
     },
   ];
@@ -60,6 +62,7 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
   currentDate = format(new Date(), 'P', {locale: this.authStateService.dateFnsLocale});
 
   isDarkThemeAsyncSub$: Subscription;
+  selectCurrentUserLocaleSub$: Subscription;
 
   get customColors(): { name: any, value: string }[] {
     if (this.isDarkTheme) {
@@ -97,69 +100,113 @@ export class DocumentUpdatedDaysComponent implements OnChanges, OnDestroy {
       } else {
         this.xAxisTicks = Array.from(Array(max + 1).keys()).filter(x => x % 20 === 0);
       }
-    }
-    else {
+    } else {
       this.xAxisTicks = [0];
     }
   }
+
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
+  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
   constructor(
     private store: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {
-    this.selectIsDarkMode$.subscribe((isDarkMode) => {
+    this.isDarkThemeAsyncSub$ = this.selectIsDarkMode$.subscribe((isDarkMode) => {
       this.isDarkTheme = isDarkMode;
     });
-    // this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
-    //   .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes.documentUpdatedDaysModel &&
       !changes.documentUpdatedDaysModel.isFirstChange() &&
       changes.documentUpdatedDaysModel.currentValue) {
-      this.chartData = [
-        {
-          name: this.translateService.instant('Exceeded or today'),
-          value: this.documentUpdatedDaysModel.exceededOrToday,
-        },
-        {
-          name: this.translateService.instant('Under 30 days'),
-          value: this.documentUpdatedDaysModel.underThirtiethDays,
-        },
-        {
-          name: this.translateService.instant('Over 30 days'),
-          value: this.documentUpdatedDaysModel.overThirtiethDays,
-        },
-      ];
+      this.changeData(this.labelsTranslated.length ? this.labelsTranslated : this.labels, this.documentUpdatedDaysModel);
+      this.subToGetTranslates();
       this.getxAxisTicks();
     }
   }
 
-  ngOnDestroy(): void {
-  }
-
   onClickOnDiagram(chartData: { name: string, value: number } = null) {
-    if(!chartData){
-      this.clickOnDiagram.emit()
+    if (!chartData) {
+      this.clickOnDiagram.emit();
     } else {
       switch (chartData.name) {
-        case this.translateService.instant('Exceeded or today'):{
-          this.clickOnDiagram.emit(DocumentsExpirationFilterEnum.exceededOrToday)
+        case this.translateService.instant('Exceeded or today'): {
+          this.clickOnDiagram.emit(DocumentsExpirationFilterEnum.exceededOrToday);
           break;
         }
-        case this.translateService.instant('Under 30 days'):{
-          this.clickOnDiagram.emit(DocumentsExpirationFilterEnum.underThirtiethDays)
+        case this.translateService.instant('Under 30 days'): {
+          this.clickOnDiagram.emit(DocumentsExpirationFilterEnum.underThirtiethDays);
           break;
         }
-        case this.translateService.instant('Over 30 days'):{
-          this.clickOnDiagram.emit(DocumentsExpirationFilterEnum.overThirtiethDays)
+        case this.translateService.instant('Over 30 days'): {
+          this.clickOnDiagram.emit(DocumentsExpirationFilterEnum.overThirtiethDays);
           break;
         }
-        default: this.clickOnDiagram.emit();
+        default:
+          this.clickOnDiagram.emit();
       }
     }
+  }
+
+  changeData(labelsTranslated: string[], documentUpdatedDaysModel: DocumentUpdatedDaysModel) {
+    this.chartData = [
+      {
+        name: labelsTranslated[0],
+        value: documentUpdatedDaysModel.exceededOrToday,
+      },
+      {
+        name: labelsTranslated[1],
+        value: documentUpdatedDaysModel.underThirtiethDays,
+      },
+      {
+        name: labelsTranslated[2],
+        value: documentUpdatedDaysModel.overThirtiethDays,
+      },
+    ];
+    this.customColorsDark = [
+      {
+        name: labelsTranslated[0],
+        value: this.customColorsDark[0].value,
+      },
+      {
+        name: labelsTranslated[1],
+        value: this.customColorsDark[1].value,
+      },
+      {
+        name: labelsTranslated[2],
+        value: this.customColorsDark[2].value,
+      },
+    ];
+    this.customColorsLight = [
+      {
+        name: labelsTranslated[0],
+        value: this.customColorsLight[0].value,
+      },
+      {
+        name: labelsTranslated[1],
+        value: this.customColorsLight[1].value,
+      },
+      {
+        name: labelsTranslated[2],
+        value: this.customColorsLight[2].value,
+      },
+    ];
+  }
+
+  subToGetTranslates() {
+    if (!this.selectCurrentUserLocaleSub$) {
+      this.selectCurrentUserLocaleSub$ = this.selectCurrentUserLocale$.subscribe(() => {
+        const x = this.translateService.instant(this.labels);
+        this.labelsTranslated = Object.values(x);
+        this.changeData(this.labelsTranslated, this.documentUpdatedDaysModel
+          || {exceededOrToday: 0, overThirtiethDays: 0, underThirtiethDays: 0});
+      });
+    }
+  }
+
+  ngOnDestroy(): void {
   }
 }

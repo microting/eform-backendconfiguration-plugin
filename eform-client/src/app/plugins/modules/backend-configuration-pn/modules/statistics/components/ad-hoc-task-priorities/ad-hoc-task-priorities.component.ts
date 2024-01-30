@@ -1,14 +1,12 @@
 import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
-import {
-  AdHocTaskPrioritiesModel,
-} from '../../../../models';
+import {AdHocTaskPrioritiesModel,} from '../../../../models';
 import {TranslateService} from '@ngx-translate/core';
 import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {Subscription} from 'rxjs';
-import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
-import {Store} from "@ngrx/store";
+import {selectCurrentUserLocale, selectIsDarkMode} from 'src/app/state';
+import {Store} from '@ngrx/store';
 
 @AutoUnsubscribe()
 @Component({
@@ -23,31 +21,27 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   @Output() clickOnDiagram: EventEmitter<number | null> = new EventEmitter<number | null>();
   currentDate = format(new Date(), 'P', {locale: this.authStateService.dateFnsLocale});
   chartData: { name: string, value: number }[] = [];
-  priorityNames: string[] = [
-    this.translateService.instant('Urgent'),
-    this.translateService.instant('High'),
-    this.translateService.instant('Middle'),
-    this.translateService.instant('Low'),
-  ];
+  priorityNames: string[] = ['Urgent', 'High', 'Middle', 'Low'];
+  priorityNamesTranslated: string[] = [];
   xAxisTicks: any[] = [];
   colorSchemeLight = {
     domain: ['#ff0000', '#ffbb33', '#0000ff', '#1414fa']
   };
   customColorsLight = [
     {
-      name: this.translateService.instant('Urgent'),
+      name: this.priorityNames[0],
       value: '#ff0000',
     },
     {
-      name: this.translateService.instant('High'),
+      name: this.priorityNames[1],
       value: '#ffbb33',
     },
     {
-      name: this.translateService.instant('Middle'),
+      name: this.priorityNames[2],
       value: '#0000ff',
     },
     {
-      name: this.translateService.instant('Low'),
+      name: this.priorityNames[3],
       value: '#1414fa',
     },
   ];
@@ -56,25 +50,26 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
   };
   customColorsDark = [
     {
-      name: this.translateService.instant('Urgent'),
+      name: this.priorityNames[0],
       value: '#ff0000',
     },
     {
-      name: this.translateService.instant('High'),
+      name: this.priorityNames[1],
       value: '#ffbb33',
     },
     {
-      name: this.translateService.instant('Middle'),
+      name: this.priorityNames[2],
       value: '#0000ff',
     },
     {
-      name: this.translateService.instant('Low'),
+      name: this.priorityNames[3],
       value: '#1414fa',
     },
   ];
   isDarkTheme = true;
 
   isDarkThemeAsyncSub$: Subscription;
+  selectCurrentUserLocaleSub$: Subscription;
 
   get customColors(): { name: any, value: string }[] {
     if (this.isDarkTheme) {
@@ -112,53 +107,104 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
       } else {
         this.xAxisTicks = Array.from(Array(max + 1).keys()).filter(x => x % 20 === 0);
       }
-    }
-    else {
+    } else {
       this.xAxisTicks = [0];
     }
   }
+
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
+  private selectCurrentUserLocale$ = this.store.select(selectCurrentUserLocale);
 
   constructor(
     private store: Store,
     private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {
-    this.selectIsDarkMode$.subscribe((isDarkMode) => {
+    this.isDarkThemeAsyncSub$ = this.selectIsDarkMode$.subscribe((isDarkMode) => {
       this.isDarkTheme = isDarkMode;
     });
-    // this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
-    //   .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
+  }
+
+  changeData(labelsTranslated: string[], adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel) {
+    this.chartData = [
+      {
+        name: labelsTranslated[0],
+        value: adHocTaskPrioritiesModel.urgent,
+      },
+      {
+        name: labelsTranslated[1],
+        value: adHocTaskPrioritiesModel.high,
+      },
+      {
+        name: labelsTranslated[2],
+        value: adHocTaskPrioritiesModel.middle,
+      },
+      {
+        name: labelsTranslated[3],
+        value: adHocTaskPrioritiesModel.low,
+      },
+    ];
+    this.customColorsDark = [
+      {
+        name: labelsTranslated[0],
+        value: this.customColorsDark[0].value,
+      },
+      {
+        name: labelsTranslated[1],
+        value: this.customColorsDark[1].value,
+      },
+      {
+        name: labelsTranslated[2],
+        value: this.customColorsDark[2].value,
+      },
+      {
+        name: labelsTranslated[3],
+        value: this.customColorsDark[3].value,
+      },
+    ];
+    this.customColorsLight = [
+      {
+        name: labelsTranslated[0],
+        value: this.customColorsLight[0].value,
+      },
+      {
+        name: labelsTranslated[1],
+        value: this.customColorsLight[1].value,
+      },
+      {
+        name: labelsTranslated[2],
+        value: this.customColorsLight[2].value,
+      },
+      {
+        name: labelsTranslated[3],
+        value: this.customColorsLight[3].value,
+      },
+    ];
+  }
+
+  subToGetTranslates() {
+    if (!this.selectCurrentUserLocaleSub$) {
+      this.selectCurrentUserLocaleSub$ = this.selectCurrentUserLocale$.subscribe(() => {
+        const x = this.translateService.instant(this.priorityNames);
+        this.priorityNamesTranslated = Object.values(x);
+        this.changeData(this.priorityNamesTranslated, this.adHocTaskPrioritiesModel || {urgent: 0, high: 0, middle: 0, low: 0});
+      });
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes.adHocTaskPrioritiesModel &&
       !changes.adHocTaskPrioritiesModel.isFirstChange() &&
       changes.adHocTaskPrioritiesModel.currentValue) {
-      this.chartData = [
-        {
-          name: this.translateService.instant('Urgent'),
-          value: this.adHocTaskPrioritiesModel.urgent,
-        },
-        {
-          name: this.translateService.instant('High'),
-          value: this.adHocTaskPrioritiesModel.high,
-        },
-        {
-          name: this.translateService.instant('Middle'),
-          value: this.adHocTaskPrioritiesModel.middle,
-        },
-        {
-          name: this.translateService.instant('Low'),
-          value: this.adHocTaskPrioritiesModel.low,
-        },
-      ];
+      this.changeData(this.priorityNamesTranslated.length ?
+        this.priorityNamesTranslated : this.priorityNames, this.adHocTaskPrioritiesModel);
+      this.subToGetTranslates();
       this.getxAxisTicks();
     }
   }
 
   onClickOnDiagram(chartData: { name: string, value: number } = null) {
-    if(!chartData){
+    if (!chartData) {
       this.clickOnDiagram.emit();
     } else {
       // lookup the chartData.name in the priorityNames array and get the index
