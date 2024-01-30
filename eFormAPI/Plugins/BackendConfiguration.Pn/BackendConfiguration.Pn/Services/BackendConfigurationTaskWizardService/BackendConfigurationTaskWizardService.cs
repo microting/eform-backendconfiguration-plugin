@@ -939,29 +939,20 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                             await site.Create(_itemsPlanningPnDbContext);
                         }
 
-                        if (sitesToAdd.Count > 0)
-                        {
-                            await PairItemWithSiteHelper.Pair(
-                                sitesToAdd,
-                                updateModel.EformId,
-                                planning.Id,
-                                (int)planning.SdkFolderId, core, _itemsPlanningPnDbContext,
-                                areaRulePlanning.UseStartDateAsStartOfPeriod, _localizationService);
-                        }
-
                         sitesToRemove = currentSiteIds.Except(updateModel.Sites).ToList();
-                        foreach (var site in sitesToRemove.Select(siteId =>
-                                     planning.PlanningSites.First(x => x.SiteId == siteId)))
+                        var planningSitesToRemove =
+                            await _itemsPlanningPnDbContext.PlanningSites.Where(x => sitesToRemove.Contains(x.SiteId) && x.PlanningId == planning.Id).ToListAsync().ConfigureAwait(false);
+                        foreach (var planningSite in planningSitesToRemove)
                         {
-                            site.UpdatedByUserId = _userService.UserId;
-                            await site.Delete(_itemsPlanningPnDbContext);
-                            var someList = await _itemsPlanningPnDbContext.PlanningCaseSites
+                            planningSite.UpdatedByUserId = _userService.UserId;
+                            await planningSite.Delete(_itemsPlanningPnDbContext);
+                            var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
                                 .Where(x => x.PlanningId == planning.Id)
-                                .Where(x => x.MicrotingSdkSiteId == site.SiteId)
+                                .Where(x => x.MicrotingSdkSiteId == planningSite.SiteId)
                                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                                 .ToListAsync();
 
-                            foreach (var planningCaseSite in someList)
+                            foreach (var planningCaseSite in planningCaseSites)
                             {
                                 var result =
                                     await sdkDbContext.Cases.SingleOrDefaultAsync(x =>
@@ -987,6 +978,18 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                     }
                                 }
                             }
+                        }
+
+                        await planning.Update(_itemsPlanningPnDbContext);
+
+                        if (sitesToAdd.Count > 0)
+                        {
+                            await PairItemWithSiteHelper.Pair(
+                                sitesToAdd,
+                                updateModel.EformId,
+                                planning.Id,
+                                (int)planning.SdkFolderId, core, _itemsPlanningPnDbContext,
+                                areaRulePlanning.UseStartDateAsStartOfPeriod, _localizationService);
                         }
 
                         await planning.Update(_itemsPlanningPnDbContext);
