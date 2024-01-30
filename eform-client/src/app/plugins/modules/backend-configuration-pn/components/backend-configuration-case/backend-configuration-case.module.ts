@@ -20,27 +20,29 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 import {MatButtonModule} from '@angular/material/button';
+import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @NgModule({
   declarations: [
     // BackendConfigurationCaseHeaderComponent,
     BackendConfigurationCasePageComponent
   ],
-    imports: [
-        TranslateModule,
-        EformSharedModule,
-        BackendConfigurationCaseRoutingModule,
-        CommonModule,
-        EformImportedModule,
-        FormsModule,
-        CasesModule,
-        EformCasesModule,
-        MatCardModule,
-        MatFormFieldModule,
-        MatIconModule,
-        MatInputModule,
-        MatButtonModule,
-    ]
+  imports: [
+    TranslateModule,
+    EformSharedModule,
+    BackendConfigurationCaseRoutingModule,
+    CommonModule,
+    EformImportedModule,
+    FormsModule,
+    CasesModule,
+    EformCasesModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatButtonModule,
+    MatDatepickerModule,
+  ]
 })
 export class BackendConfigurationCaseModule {
 }
