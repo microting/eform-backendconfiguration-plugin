@@ -161,7 +161,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     this.getProperties();
     this.getEnabledLanguages();
     this.getTags();
-    this.getPlannedTaskDays();
+    // this.getPlannedTaskDays();
   }
 
   ngOnDestroy(): void {

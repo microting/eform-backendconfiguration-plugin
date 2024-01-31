@@ -1,9 +1,9 @@
-<mat-card class="d-flex flex-column">
-  <mat-card-title (click)="onClickOnDiagram()" class="cursor-pointer">
-    <span>{{'Task allocation, planned tasks per' | translate}} {{currentDate}}</span>
-    <br/>
-    <span>{{'Property' | translate}}: {{(selectedPropertyName || 'All') | translate}}</span>
-  </mat-card-title>
+<mat-card class="d-flex flex-column mb-2">
+  <div (click)="onClickOnDiagram()" class="cursor-pointer pt-2 pl-2">
+    <span matCardTitle>{{'Task allocation, planned tasks per' | translate}} {{currentDate}}</span>
+<!--    <br/>-->
+    <span matCardSubtitle>{{'Property' | translate}}: {{(selectedPropertyName || 'All') | translate}}</span>
+  </div>
   <mat-card-content>
     <ngx-charts-bar-horizontal
       [view]="view"

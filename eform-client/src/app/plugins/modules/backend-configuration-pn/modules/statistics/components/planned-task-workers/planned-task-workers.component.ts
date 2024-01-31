@@ -1,14 +1,11 @@
 import {Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges} from '@angular/core';
-import {
-  PlannedTaskWorkers,
-} from '../../../../models';
-import {TranslateService} from '@ngx-translate/core';
+import {PlannedTaskWorkers,} from '../../../../models';
 import {AuthStateService} from 'src/app/common/store';
 import {format} from 'date-fns';
 import {Subscription} from 'rxjs';
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
-import {Store} from "@ngrx/store";
-import {selectIsDarkMode} from "src/app/state/auth/auth.selector";
+import {Store} from '@ngrx/store';
+import {selectIsDarkMode} from 'src/app/state';
 
 @AutoUnsubscribe()
 @Component({
@@ -72,23 +69,20 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
       } else {
         this.xAxisTicks = Array.from(Array(max + 1).keys()).filter(x => x % 20 === 0);
       }
-    }
-    else {
+    } else {
       this.xAxisTicks = [0];
     }
   }
+
   private selectIsDarkMode$ = this.store.select(selectIsDarkMode);
 
   constructor(
     private store: Store,
-    private translateService: TranslateService,
     private authStateService: AuthStateService
   ) {
-    this.selectIsDarkMode$.subscribe((isDarkMode) => {
+    this.isDarkThemeAsyncSub$ = this.selectIsDarkMode$.subscribe((isDarkMode) => {
       this.isDarkTheme = isDarkMode;
     });
-    // this.isDarkThemeAsyncSub$ = authStateService.isDarkThemeAsync
-    //   .subscribe(isDarkTheme => this.isDarkTheme = isDarkTheme);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -106,7 +100,7 @@ export class PlannedTaskWorkersComponent implements OnChanges, OnDestroy {
   }
 
   onClickOnDiagram(chartData: { name: string, value: number } = null) {
-    if(!chartData){
+    if (!chartData) {
       this.clickOnDiagram.emit();
     } else {
       const workerId = this.plannedTaskWorkers.taskWorkers.find(x => x.workerName === chartData.name).workerId;
