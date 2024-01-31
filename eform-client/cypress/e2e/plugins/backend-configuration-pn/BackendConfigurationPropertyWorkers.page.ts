@@ -132,8 +132,8 @@ class BackendConfigurationPropertyWorkersPage extends PageWithNavbarPage {
       if (propertyWorker.properties) {
         cy.wait(500);
         for (let i = 0; i < propertyWorker.properties.length; i++) {
-          const row = () => cy.get('.mat-mdc-row').contains(propertyWorker.properties[i]).parent().parent().parent().scrollIntoView();
-          row().find('[id^=checkboxCreateAssignment]mat-checkbox').click();
+          const row = () => cy.get('#pairingModalTableBody > div > div > div > table > tbody > .mat-mdc-row').contains(propertyWorker.properties[i]).parent().parent().parent().scrollIntoView();
+          row().find('mat-checkbox').click();
           cy.wait(500);
         }
       }
