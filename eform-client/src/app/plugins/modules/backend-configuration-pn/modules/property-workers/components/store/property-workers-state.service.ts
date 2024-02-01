@@ -30,6 +30,7 @@ export class PropertyWorkersStateService {
 
   getDeviceUsersFiltered(): Observable<OperationDataResult<DeviceUserModel[]>> {
     return this.service.getDeviceUsersFiltered({
+      propertyIds: this.currentFilters.propertyIds,
       nameFilter: this.currentFilters.nameFilter,
       sort: this.currentPagination.sort,
       isSortDsc: this.currentPagination.isSortDsc

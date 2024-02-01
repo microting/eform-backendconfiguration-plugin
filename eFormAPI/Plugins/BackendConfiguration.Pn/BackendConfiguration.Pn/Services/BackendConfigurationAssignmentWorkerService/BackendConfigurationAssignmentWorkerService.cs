@@ -79,7 +79,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
             _bus = rebusService.GetBus();
         }
 
-        public async Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment()
+        public async Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment(List<int> propertyIds)
         {
             try
             {
@@ -89,6 +89,11 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                 var query = _backendConfigurationPnDbContext.PropertyWorkers.AsQueryable();
                 query = query
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                if (propertyIds != null && propertyIds.Any())
+                {
+                    query = query.Where(x => propertyIds.Contains(x.PropertyId));
+                }
 
                 if (query.Count() > 0)
                 {

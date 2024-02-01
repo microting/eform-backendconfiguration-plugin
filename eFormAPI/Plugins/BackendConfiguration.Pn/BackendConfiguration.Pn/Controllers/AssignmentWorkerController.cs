@@ -47,9 +47,9 @@ namespace BackendConfiguration.Pn.Controllers
         }
 
         [HttpGet]
-        public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment()
+        public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment([FromQuery] List<int> propertyIds)
         {
-            return _backendConfigurationAssignmentWorkerService.GetPropertiesAssignment();
+            return _backendConfigurationAssignmentWorkerService.GetPropertiesAssignment(propertyIds);
         }
 
         [HttpPost]
