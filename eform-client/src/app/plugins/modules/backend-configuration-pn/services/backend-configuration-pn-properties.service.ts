@@ -109,11 +109,11 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getPropertiesAssignments(): Observable<
+  getPropertiesAssignments(propertyIds?: number[]): Observable<
     OperationDataResult<PropertyAssignWorkersModel[]>
   > {
     return this.apiBaseService.get(
-      `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}`
+      `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}`, { propertyIds: propertyIds }
     );
   }
 

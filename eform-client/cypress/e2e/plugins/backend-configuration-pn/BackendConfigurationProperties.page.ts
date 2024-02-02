@@ -234,6 +234,26 @@ class BackendConfigurationPropertiesPage extends PageWithNavbarPage {
       }
     });
   }
+  goToPlanningPage() {
+    this.planningsButton().then(($ele) => {
+      if (!$ele.is(':visible')) {
+        this.itemPlanningButton().click();
+      }
+    });
+    this.planningsButton().click();
+    this.planningCreateBtn().should('be.visible').should('be.enabled');
+  }
+  public planningsButton() {
+    return cy.get('#items-planning-pn-plannings');
+  }
+
+  public itemPlanningButton() {
+    return cy.get('#items-planning-pn');
+  }
+
+  public planningCreateBtn() {
+    return cy.get('#planningCreateBtn');
+  }
 }
 
 const backendConfigurationPropertiesPage = new BackendConfigurationPropertiesPage();

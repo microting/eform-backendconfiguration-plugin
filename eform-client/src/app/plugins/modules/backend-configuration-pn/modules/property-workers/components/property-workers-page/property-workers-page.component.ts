@@ -63,7 +63,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
           if (filters.propertyIds.length !== 0 && !R.equals(propertyIds, filters.propertyIds)) {
             propertyIds = filters.propertyIds;
           }
-          this.updateTable();
+          this.updateTable(propertyIds);
           // else {
           //   propertyIds = [];
           //   this.updateTable();
@@ -130,9 +130,9 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
       });
   }
 
-  getWorkerPropertiesAssignments() {
+  getWorkerPropertiesAssignments(propertyIds?: number[]) {
     this.deviceUserAssignments$ = this.propertiesService
-      .getPropertiesAssignments()
+      .getPropertiesAssignments(propertyIds)
       .subscribe((operation) => {
         if (operation && operation.success) {
           this.workersAssignments = [...operation.model];
@@ -174,7 +174,7 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
     this.getDeviceUsersFiltered();
   }
 
-  getDeviceUsersFiltered() {
+  getDeviceUsersFiltered(propertyIds?: number[]) {
     this.getSites$ = this.propertyWorkersStateService
       .getDeviceUsersFiltered()
       .subscribe((data) => {
@@ -187,10 +187,10 @@ export class PropertyWorkersPageComponent implements OnInit, OnDestroy {
 
 
 
-  updateTable() {
+  updateTable(propertyIds?: number[]) {
     this.getPropertiesDictionary();
-    this.getDeviceUsersFiltered();
-    this.getWorkerPropertiesAssignments();
+    this.getDeviceUsersFiltered(propertyIds);
+    this.getWorkerPropertiesAssignments(propertyIds);
   }
 
   ngOnDestroy(): void {
