@@ -21,7 +21,7 @@ import {
 } from '../';
 import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserClaimsDeviceUsersDelete} from 'src/app/state';
+import {selectCurrentUserClaimsDeviceUsersDelete, selectCurrentUserClaimsDeviceUsersUpdate} from 'src/app/state';
 import {
   selectPropertyWorkersNameFilters,
   selectPropertyWorkersPaginationIsSortDsc,
@@ -49,7 +49,7 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   deviceUsersDelete: boolean = false;
   deviceUsersUpdate: boolean = false;
   public selectCurrentUserClaimsDeviceUsersDelete$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
-  public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
+  public selectCurrentUserClaimsDeviceUsersUpdate$ = this.store.select(selectCurrentUserClaimsDeviceUsersUpdate);
   public selectPropertyWorkersPaginationSort$ = this.store.select(selectPropertyWorkersPaginationSort);
   public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
