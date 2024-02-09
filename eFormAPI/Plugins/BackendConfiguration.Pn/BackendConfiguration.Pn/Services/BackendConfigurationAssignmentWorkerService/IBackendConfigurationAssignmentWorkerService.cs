@@ -35,6 +35,7 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
     public interface IBackendConfigurationAssignmentWorkerService
     {
         Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment(List<int> propertyIds);
+        Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetSimplePropertiesAssignment(List<int> propertyIds);
 
         Task<OperationResult> Create(PropertyAssignWorkersModel createModel);
 

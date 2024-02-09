@@ -189,6 +189,67 @@ namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerS
                     $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAssignmentsProperties")}: {ex.Message}");
             }
         }
+        public async Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetSimplePropertiesAssignment(List<int> propertyIds)
+        {
+            try
+            {
+                var core = await _coreHelper.GetCore().ConfigureAwait(false);
+                var sdkDbContext = core.DbContextHelper.GetDbContext();
+                var assignWorkersModels = new List<PropertyAssignWorkersModel>();
+                var query = _backendConfigurationPnDbContext.PropertyWorkers.AsQueryable();
+                query = query
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+                if (propertyIds != null && propertyIds.Any())
+                {
+                    query = query.Where(x => propertyIds.Contains(x.PropertyId));
+                }
+
+                if (query.Count() > 0)
+                {
+                    var listWorkerId = await query.Select(x => new PropertyWorker
+                    {
+                        WorkerId = x.WorkerId,
+                        TaskManagementEnabled = x.TaskManagementEnabled
+                    }).Distinct().ToListAsync().ConfigureAwait(false);
+
+                    foreach (var workerId in listWorkerId)
+                    {
+                        var assignments = await query
+                            .Where(x => x.WorkerId == workerId.WorkerId)
+                            .Select(x => new PropertyAssignmentWorkerModel
+                                { PropertyId = x.PropertyId, IsChecked = true })
+                            .ToListAsync().ConfigureAwait(false);
+
+                        assignWorkersModels.Add(new PropertyAssignWorkersModel
+                            { SiteId = workerId.WorkerId, Assignments = assignments, TaskManagementEnabled = workerId.TaskManagementEnabled });
+                    }
+
+                    var properties = await _backendConfigurationPnDbContext.Properties
+                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                        .Select(x => new PropertyAssignmentWorkerModel { PropertyId = x.Id, IsChecked = false })
+                        .ToListAsync().ConfigureAwait(false);
+
+                    foreach (var propertyAssignWorkersModel in assignWorkersModels)
+                    {
+                        var missingProperties = properties
+                            .Where(x => !propertyAssignWorkersModel.Assignments.Select(y => y.PropertyId)
+                                .Contains(x.PropertyId))
+                            .ToList();
+                        propertyAssignWorkersModel.Assignments.AddRange(missingProperties);
+                    }
+                }
+
+                return new OperationDataResult<List<PropertyAssignWorkersModel>>(true, assignWorkersModels);
+            }
+            catch (Exception ex)
+            {
+                Log.LogException(ex.Message);
+                Log.LogException(ex.StackTrace);
+                return new OperationDataResult<List<PropertyAssignWorkersModel>>(false,
+                    $"{_backendConfigurationLocalizationService.GetString("ErrorWhileObtainingAssignmentsProperties")}: {ex.Message}");
+            }
+        }
 
         public async Task<OperationResult> Create(PropertyAssignWorkersModel createModel)
         {

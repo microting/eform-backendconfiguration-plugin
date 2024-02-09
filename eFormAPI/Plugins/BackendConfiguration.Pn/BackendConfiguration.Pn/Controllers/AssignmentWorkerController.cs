@@ -52,6 +52,13 @@ namespace BackendConfiguration.Pn.Controllers
             return _backendConfigurationAssignmentWorkerService.GetPropertiesAssignment(propertyIds);
         }
 
+        [HttpGet]
+        [Route("simple")]
+        public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetSimplePropertiesAssignment([FromQuery] List<int> propertyIds)
+        {
+            return _backendConfigurationAssignmentWorkerService.GetSimplePropertiesAssignment(propertyIds);
+        }
+
         [HttpPost]
         public Task<OperationResult> Create([FromBody] PropertyAssignWorkersModel createModel)
         {
