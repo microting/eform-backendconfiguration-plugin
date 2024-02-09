@@ -343,4 +343,6 @@ export const deDE = {
   Always: 'Immer',
   Description: 'Beschreibung',
   Location: 'Standort',
+  'Select date range': 'Wählen Sie den Datumsbereich aus',
+  'Manage tags': 'Tags verwalten',
 };

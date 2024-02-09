@@ -282,4 +282,6 @@ export const huHU = {
   Description: 'Leírás',
   Date: 'Dátum',
   Location: 'Elhelyezkedés',
+  'Select date range': 'Válassza ki a dátumtartományt',
+  'Manage tags': 'Címkék kezelése',
 };

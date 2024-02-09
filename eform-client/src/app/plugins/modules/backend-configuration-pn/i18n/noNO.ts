@@ -282,4 +282,6 @@ export const noNO = {
   Description: 'Beskrivelse',
   Date: 'Dato',
   Location: 'plassering',
+  'Select date range': 'Velg datoperiode',
+  'Manage tags': 'Administrer tagger',
 };

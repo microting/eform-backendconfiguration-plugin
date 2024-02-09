@@ -282,4 +282,6 @@ export const roRO = {
   Description: 'Descriere',
   Date: 'Data',
   Location: 'Locație',
+  'Select date range': 'Selectați intervalul de date',
+  'Manage tags': 'Gestionați etichetele',
 };

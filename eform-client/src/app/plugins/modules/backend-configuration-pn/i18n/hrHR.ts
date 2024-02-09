@@ -282,4 +282,6 @@ export const hrHR = {
   Description: 'Opis',
   Date: 'Datum',
   Location: 'Mjesto',
+  'Select date range': 'Odaberite razdoblje',
+  'Manage tags': 'Upravljanje oznakama',
 };

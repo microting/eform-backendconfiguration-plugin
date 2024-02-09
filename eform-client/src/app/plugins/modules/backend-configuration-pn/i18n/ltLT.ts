@@ -282,4 +282,6 @@ export const ltLT = {
   Description: 'apibūdinimas',
   Date: 'Data',
   Location: 'Vieta',
+  'Select date range': 'Pasirinkite dienų seką',
+  'Manage tags': 'Tvarkyti žymas',
 };

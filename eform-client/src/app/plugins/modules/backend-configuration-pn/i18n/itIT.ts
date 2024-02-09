@@ -282,4 +282,6 @@ export const itIT = {
   Description: 'Descrizione',
   Date: 'Data',
   Location: 'Posizione',
+  'Select date range': 'Seleziona l&#39;intervallo di date',
+  'Manage tags': 'Gestisci i tag',
 };

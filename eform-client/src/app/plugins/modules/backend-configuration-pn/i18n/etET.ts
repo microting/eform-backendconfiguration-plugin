@@ -282,4 +282,6 @@ export const etET = {
   Description: 'Kirjeldus',
   Date: 'Kuupäev',
   Location: 'Asukoht',
+  'Select date range': 'Valige kuupäevavahemik',
+  'Manage tags': 'Hallake silte',
 };

@@ -282,4 +282,6 @@ export const esES = {
   Description: 'Descripción',
   Date: 'Fecha',
   Location: 'Ubicación',
+  'Select date range': 'Seleccionar rango de fechas',
+  'Manage tags': 'Administrar etiquetas',
 };

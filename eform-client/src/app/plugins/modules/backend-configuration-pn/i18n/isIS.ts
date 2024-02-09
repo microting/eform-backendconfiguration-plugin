@@ -282,4 +282,6 @@ export const isIS = {
   Description: 'Lýsing',
   Date: 'Dagsetning',
   Location: 'Staðsetning',
+  'Select date range': 'Veldu tímabil',
+  'Manage tags': 'Stjórna merkjum',
 };
