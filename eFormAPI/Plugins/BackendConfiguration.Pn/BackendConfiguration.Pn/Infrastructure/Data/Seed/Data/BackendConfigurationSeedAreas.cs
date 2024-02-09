@@ -131,7 +131,7 @@ public static class BackendConfigurationSeedAreas
         {
             Id = 3,
             Type = AreaTypesEnum.Type2,
-            IsDisabled = true,
+            IsDisabled = false,
             AreaTranslations =
             [
                 new()
