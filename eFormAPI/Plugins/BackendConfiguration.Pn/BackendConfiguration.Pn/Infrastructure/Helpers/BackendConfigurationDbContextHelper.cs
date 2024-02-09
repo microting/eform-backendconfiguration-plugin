@@ -25,22 +25,21 @@ SOFTWARE.
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
 
-namespace BackendConfiguration.Pn.Infrastructure.Helpers
+namespace BackendConfiguration.Pn.Infrastructure.Helpers;
+
+public class BackendConfigurationDbContextHelper
 {
-    public class BackendConfigurationDbContextHelper
+    private string ConnectionString { get;}
+
+    public BackendConfigurationDbContextHelper(string connectionString)
     {
-        private string ConnectionString { get;}
+        ConnectionString = connectionString;
+    }
 
-        public BackendConfigurationDbContextHelper(string connectionString)
-        {
-            ConnectionString = connectionString;
-        }
+    public BackendConfigurationPnDbContext GetDbContext()
+    {
+        BackendConfigurationPnContextFactory contextFactory = new BackendConfigurationPnContextFactory();
 
-        public BackendConfigurationPnDbContext GetDbContext()
-        {
-            BackendConfigurationPnContextFactory contextFactory = new BackendConfigurationPnContextFactory();
-
-            return contextFactory.CreateDbContext(new[] { ConnectionString });
-        }
+        return contextFactory.CreateDbContext([ConnectionString]);
     }
 }

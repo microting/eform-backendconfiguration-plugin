@@ -22,35 +22,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+
+using System.Collections.Generic;
+using Microting.eForm.Dto;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
+public class AreaModel
 {
-    using System.Collections.Generic;
-    using Microting.eForm.Dto;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    public int Id { get; set; }
 
-    public class AreaModel
-    {
-        public int Id { get; set; }
+    public string Name { get; set; }
 
-        public string Name { get; set; }
+    public AreaTypesEnum Type { get; set; }
 
-        public AreaTypesEnum Type { get; set; }
+    public List<CommonDictionaryModel> Languages { get; set; }
+        = [];
 
-        public List<CommonDictionaryModel> Languages { get; set; }
-            = new();
+    public List<SiteDto> AvailableWorkers { get; set; }
+        = [];
 
-        public List<SiteDto> AvailableWorkers { get; set; }
-            = new();
+    public AreaInitialFields InitialFields { get; set; }
 
-        public AreaInitialFields InitialFields { get; set; }
+    public string InfoBox { get; set; }
 
-        public string InfoBox { get; set; }
+    public string Placeholder { get; set; }
 
-        public string Placeholder { get; set; }
+    public string NewItemName { get; set; }
 
-        public string NewItemName { get; set; }
-
-        public int GroupId { get; set; }
-    }
+    public int GroupId { get; set; }
 }

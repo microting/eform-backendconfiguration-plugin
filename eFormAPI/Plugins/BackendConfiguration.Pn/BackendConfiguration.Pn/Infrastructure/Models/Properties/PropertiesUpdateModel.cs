@@ -22,31 +22,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
+namespace BackendConfiguration.Pn.Infrastructure.Models.Properties;
+
+using System.Collections.Generic;
+
+public class PropertiesUpdateModel
 {
-    using System.Collections.Generic;
+    public int Id { get; set; }
 
-    public class PropertiesUpdateModel
+    public string Name { get; set; }
+
+    public string Chr { get; set; }
+
+    public string Address { get; set; }
+
+    public string Cvr { get; set; }
+
+    public List<int> LanguagesIds { get; set; }
+
+    public bool WorkorderEnable { get; set; }
+
+    public string MainMailAddress { get; set; }
+
+    public string FullName()
     {
-        public int Id { get; set; }
-
-        public string Name { get; set; }
-
-        public string Chr { get; set; }
-
-        public string Address { get; set; }
-
-        public string Cvr { get; set; }
-
-        public List<int> LanguagesIds { get; set; }
-
-        public bool WorkorderEnable { get; set; }
-
-        public string MainMailAddress { get; set; }
-
-        public string FullName()
-        {
-            return $"0. {Name} - {Address}";
-        }
+        return $"0. {Name} - {Address}";
     }
 }

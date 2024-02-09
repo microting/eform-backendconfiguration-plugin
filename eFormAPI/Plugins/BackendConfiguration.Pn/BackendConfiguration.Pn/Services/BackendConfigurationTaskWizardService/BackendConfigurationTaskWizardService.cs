@@ -1,6 +1,5 @@
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskWizardService;
 
-using Infrastructure.Helpers;
 using BackendConfigurationLocalizationService;
 using Infrastructure;
 using Infrastructure.Enums;
@@ -498,12 +497,12 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 Notifications = true,
                 NotificationsModifiable = false,
                 ComplianceEnabled = true,
-                AreaRulesPlannings = new List<AreaRulePlanning>
-                {
+                AreaRulesPlannings =
+                [
                     new()
                     {
                         AreaId = areaId,
-                        FolderId = (int) createModel.FolderId,
+                        FolderId = (int)createModel.FolderId,
                         ItemPlanningId = planning.Id,
                         ComplianceEnabled = true,
                         PlanningSites = createModel.Sites
@@ -526,7 +525,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         ItemPlanningTagId = createModel.ItemPlanningTagId, // This is the report table header tag
                         UpdatedByUserId = _userService.UserId,
                         CreatedByUserId = _userService.UserId,
-                        AreaRulePlanningTags = createModel.TagIds.Distinct().ToList() // These are the tags for filtering
+                        AreaRulePlanningTags = createModel.TagIds.Distinct()
+                            .ToList() // These are the tags for filtering
                             .Select(x => new AreaRulePlanningTag
                             {
                                 ItemPlanningTagId = x,
@@ -535,7 +535,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                             })
                             .ToList()
                     }
-                },
+                ],
                 UpdatedByUserId = _userService.UserId,
                 CreatedByUserId = _userService.UserId
             };

@@ -30,10 +30,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -61,14 +58,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -83,14 +80,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -100,15 +97,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestAcidification
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
 
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,

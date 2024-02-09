@@ -22,12 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Enums
+namespace BackendConfiguration.Pn.Infrastructure.Enums;
+
+public enum RepeatType
 {
-    public enum RepeatType
-    {
-        Day = 1,
-        Week,
-        Month
-    }
+    Day = 1,
+    Week,
+    Month
 }

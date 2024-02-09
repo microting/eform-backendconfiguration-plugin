@@ -23,83 +23,81 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Models;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-namespace BackendConfiguration.Pn.Controllers
+namespace BackendConfiguration.Pn.Controllers;
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Infrastructure.Models.AssignmentWorker;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Services.BackendConfigurationAssignmentWorkerService;
+
+[Authorize]
+[Route("api/backend-configuration-pn/properties/assignment")]
+public class AssignmentWorkerController : Controller
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.AssignmentWorker;
-    using Microsoft.AspNetCore.Authorization;
-    using Microsoft.AspNetCore.Mvc;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Services.BackendConfigurationAssignmentWorkerService;
+    private readonly IBackendConfigurationAssignmentWorkerService _backendConfigurationAssignmentWorkerService;
 
-    [Authorize]
-    [Route("api/backend-configuration-pn/properties/assignment")]
-    public class AssignmentWorkerController : Controller
+    public AssignmentWorkerController(IBackendConfigurationAssignmentWorkerService backendConfigurationAssignmentWorkerService)
     {
-        private readonly IBackendConfigurationAssignmentWorkerService _backendConfigurationAssignmentWorkerService;
+        _backendConfigurationAssignmentWorkerService = backendConfigurationAssignmentWorkerService;
+    }
 
-        public AssignmentWorkerController(IBackendConfigurationAssignmentWorkerService backendConfigurationAssignmentWorkerService)
-        {
-            _backendConfigurationAssignmentWorkerService = backendConfigurationAssignmentWorkerService;
-        }
+    [HttpGet]
+    public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment([FromQuery] List<int> propertyIds)
+    {
+        return _backendConfigurationAssignmentWorkerService.GetPropertiesAssignment(propertyIds);
+    }
 
-        [HttpGet]
-        public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment([FromQuery] List<int> propertyIds)
-        {
-            return _backendConfigurationAssignmentWorkerService.GetPropertiesAssignment(propertyIds);
-        }
+    [HttpGet]
+    [Route("simple")]
+    public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetSimplePropertiesAssignment([FromQuery] List<int> propertyIds)
+    {
+        return _backendConfigurationAssignmentWorkerService.GetSimplePropertiesAssignment(propertyIds);
+    }
 
-        [HttpGet]
-        [Route("simple")]
-        public Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetSimplePropertiesAssignment([FromQuery] List<int> propertyIds)
-        {
-            return _backendConfigurationAssignmentWorkerService.GetSimplePropertiesAssignment(propertyIds);
-        }
+    [HttpPost]
+    public Task<OperationResult> Create([FromBody] PropertyAssignWorkersModel createModel)
+    {
+        return _backendConfigurationAssignmentWorkerService.Create(createModel);
+    }
 
-        [HttpPost]
-        public Task<OperationResult> Create([FromBody] PropertyAssignWorkersModel createModel)
-        {
-            return _backendConfigurationAssignmentWorkerService.Create(createModel);
-        }
+    [HttpPut]
+    public Task<OperationResult> Update([FromBody] PropertyAssignWorkersModel updateModel)
+    {
+        return _backendConfigurationAssignmentWorkerService.Update(updateModel);
+    }
 
-        [HttpPut]
-        public Task<OperationResult> Update([FromBody] PropertyAssignWorkersModel updateModel)
-        {
-            return _backendConfigurationAssignmentWorkerService.Update(updateModel);
-        }
-
-        [HttpDelete]
-        public Task<OperationResult> Delete(int deviceUserId)
-        {
-            return _backendConfigurationAssignmentWorkerService.Delete(deviceUserId);
-        }
+    [HttpDelete]
+    public Task<OperationResult> Delete(int deviceUserId)
+    {
+        return _backendConfigurationAssignmentWorkerService.Delete(deviceUserId);
+    }
         
-        [HttpPost]
-        [Route("index-device-user")]
-        public async Task<OperationDataResult<List<DeviceUserModel>>> Index([FromBody] PropertyWorkersFiltrationModel requestModel)
-        {
-            return await _backendConfigurationAssignmentWorkerService.IndexDeviceUser(requestModel).ConfigureAwait(false);
-        }
+    [HttpPost]
+    [Route("index-device-user")]
+    public async Task<OperationDataResult<List<DeviceUserModel>>> Index([FromBody] PropertyWorkersFiltrationModel requestModel)
+    {
+        return await _backendConfigurationAssignmentWorkerService.IndexDeviceUser(requestModel).ConfigureAwait(false);
+    }
 
-        [HttpPost]
-        [Route("update-device-user")]
-        public async Task<OperationResult> UpdateDeviceUser([FromBody] DeviceUserModel deviceUserModel)
-        {
-            return await _backendConfigurationAssignmentWorkerService.UpdateDeviceUser(deviceUserModel).ConfigureAwait(false);
-        }
+    [HttpPost]
+    [Route("update-device-user")]
+    public async Task<OperationResult> UpdateDeviceUser([FromBody] DeviceUserModel deviceUserModel)
+    {
+        return await _backendConfigurationAssignmentWorkerService.UpdateDeviceUser(deviceUserModel).ConfigureAwait(false);
+    }
 
-        [HttpPut]
-        [Route("create-device-user")]
-        public async Task<OperationDataResult<int>> Create([FromBody] DeviceUserModel deviceUserModel)
-        {
-            // if (!ModelState.IsValid)
-            //     return new OperationDataResult<int>(false,
-            //         _localizationService.GetString("DeviceUserCouldNotBeCreated"));
+    [HttpPut]
+    [Route("create-device-user")]
+    public async Task<OperationDataResult<int>> Create([FromBody] DeviceUserModel deviceUserModel)
+    {
+        // if (!ModelState.IsValid)
+        //     return new OperationDataResult<int>(false,
+        //         _localizationService.GetString("DeviceUserCouldNotBeCreated"));
 
-            return await _backendConfigurationAssignmentWorkerService.CreateDeviceUser(deviceUserModel).ConfigureAwait(false);
-        }
+        return await _backendConfigurationAssignmentWorkerService.CreateDeviceUser(deviceUserModel).ConfigureAwait(false);
     }
 }

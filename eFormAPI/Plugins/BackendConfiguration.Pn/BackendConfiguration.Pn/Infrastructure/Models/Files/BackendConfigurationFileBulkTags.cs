@@ -29,5 +29,5 @@ using System.Collections.Generic;
 public class BackendConfigurationFileBulkTags
 {
 	public List<string> TagNames { set; get; }
-		= new();
+		= [];
 }

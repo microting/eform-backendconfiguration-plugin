@@ -21,10 +21,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -39,14 +36,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -317,10 +314,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -335,14 +329,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -444,10 +438,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -462,14 +453,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -571,10 +562,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -589,14 +577,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -714,10 +702,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -732,14 +717,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -841,10 +826,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -859,14 +841,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -980,10 +962,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -998,14 +977,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -1125,10 +1104,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1143,14 +1119,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -1280,10 +1256,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1298,14 +1271,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -1407,10 +1380,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1425,14 +1395,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -1534,10 +1504,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1552,14 +1519,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -1698,10 +1665,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1716,14 +1680,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -1835,10 +1799,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1853,14 +1814,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -1962,10 +1923,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1980,14 +1938,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -2089,10 +2047,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2107,14 +2062,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -2216,10 +2171,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2234,14 +2186,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -2343,10 +2295,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2361,14 +2310,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -2470,10 +2419,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2488,14 +2434,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -2597,10 +2543,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2615,14 +2558,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -2766,10 +2709,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2784,14 +2724,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -2902,10 +2842,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2920,14 +2857,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -3029,10 +2966,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -3047,14 +2981,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -3306,10 +3240,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -3324,14 +3255,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 
@@ -3436,10 +3367,7 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -3454,14 +3382,14 @@ public class BackendConfigurationPropertyAreasServiceHelperTest : TestBaseSetup
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = property.Id
         };
 

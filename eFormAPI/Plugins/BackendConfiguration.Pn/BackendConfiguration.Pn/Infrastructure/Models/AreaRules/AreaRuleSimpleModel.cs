@@ -24,32 +24,31 @@ SOFTWARE.
 
 using System;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+public class AreaRuleSimpleModel: AreaRuleNameAndTypeSpecificFields
 {
-    public class AreaRuleSimpleModel: AreaRuleNameAndTypeSpecificFields
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string EformName { get; set; }
+    public string EformName { get; set; }
 
-        public bool IsDefault { get; set; }
+    public bool IsDefault { get; set; }
 
-        public bool PlanningStatus { get; set; }
+    public bool PlanningStatus { get; set; }
 
-        public AreaRuleInitialFields InitialFields { get; set; }
+    public AreaRuleInitialFields InitialFields { get; set; }
 
-        public int SecondaryeFormId { get; set; }
+    public int SecondaryeFormId { get; set; }
 
-        public string SecondaryeFormName { get; set; }
+    public string SecondaryeFormName { get; set; }
 
-        public int? RepeatType { get; set; }
+    public int? RepeatType { get; set; }
 
-        public int? RepeatEvery { get; set; }
+    public int? RepeatEvery { get; set; }
 
-        public DateTime? StartDate { get; set; }
+    public DateTime? StartDate { get; set; }
 
-		public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        public DateTime? UpdatedAt { get; set; }
-    }
+    public DateTime? UpdatedAt { get; set; }
 }

@@ -22,76 +22,74 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Controllers
+namespace BackendConfiguration.Pn.Controllers;
+
+using Infrastructure.Models.Compliances.Index;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using Services.BackendConfigurationCompliancesService;
+using System.Threading.Tasks;
+
+[Authorize]
+[Route("api/backend-configuration-pn/compliances")]
+public class CompliancesController : Controller
 {
-	using Infrastructure.Models.Compliances.Index;
-	using Microsoft.AspNetCore.Authorization;
-	using Microsoft.AspNetCore.Mvc;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-	using Services.BackendConfigurationCompliancesService;
-	using System.Net.Http;
-	using System.Threading.Tasks;
+    private readonly IBackendConfigurationCompliancesService _backendConfigurationCompliancesService;
 
-	[Authorize]
-    [Route("api/backend-configuration-pn/compliances")]
-    public class CompliancesController : Controller
+    public CompliancesController(IBackendConfigurationCompliancesService backendConfigurationCompliancesService)
     {
-        private readonly IBackendConfigurationCompliancesService _backendConfigurationCompliancesService;
+        _backendConfigurationCompliancesService = backendConfigurationCompliancesService;
+    }
 
-        public CompliancesController(IBackendConfigurationCompliancesService backendConfigurationCompliancesService)
-        {
-            _backendConfigurationCompliancesService = backendConfigurationCompliancesService;
-        }
+    [HttpPost]
+    [Route("index")]
+    public Task<OperationDataResult<Paged<CompliancesModel>>> Index([FromBody] CompliancesRequestModel request)
+    {
+        return _backendConfigurationCompliancesService.Index(request);
+    }
 
-        [HttpPost]
-        [Route("index")]
-        public Task<OperationDataResult<Paged<CompliancesModel>>> Index([FromBody] CompliancesRequestModel request)
-        {
-            return _backendConfigurationCompliancesService.Index(request);
-        }
+    [HttpGet]
+    [Route("compliance")]
+    public Task<OperationDataResult<int>> Compliance(int propertyId)
+    {
+        return _backendConfigurationCompliancesService.ComplianceStatus(propertyId);
+    }
 
-        [HttpGet]
-        [Route("compliance")]
-        public Task<OperationDataResult<int>> Compliance(int propertyId)
-        {
-            return _backendConfigurationCompliancesService.ComplianceStatus(propertyId);
-        }
+    [HttpDelete]
+    [Route("delete/{id}")]
+    public Task<OperationResult> Delete(int id)
+    {
+        return _backendConfigurationCompliancesService.Delete(id);
+    }
 
-        [HttpDelete]
-        [Route("delete/{id}")]
-        public Task<OperationResult> Delete(int id)
-        {
-            return _backendConfigurationCompliancesService.Delete(id);
-        }
+    [HttpGet]
+    // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseRead)]
+    [Route("cases")]
+    public async Task<IActionResult> Read(int id, int templateId)
+    {
+        // if (! await _permissionsService.CheckEform(templateId,
+        // AuthConsts.EformClaims.CasesClaims.CaseRead))
+        // {
+        // return Forbid();
+        // }
 
-        [HttpGet]
-        // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseRead)]
-        [Route("cases")]
-        public async Task<IActionResult> Read(int id, int templateId)
-        {
-            // if (! await _permissionsService.CheckEform(templateId,
-                    // AuthConsts.EformClaims.CasesClaims.CaseRead))
-            // {
-                // return Forbid();
-            // }
+        return Ok(await _backendConfigurationCompliancesService.Read(id).ConfigureAwait(false));
+    }
 
-            return Ok(await _backendConfigurationCompliancesService.Read(id).ConfigureAwait(false));
-        }
+    [HttpPut]
+    [Route("cases")]
+    // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseUpdate)]
+    public async Task<IActionResult> Update([FromBody] ReplyRequest model)
+    {
+        // if (!await _permissionsService.CheckEform(templateId,
+        //         AuthConsts.EformClaims.CasesClaims.CaseUpdate))
+        // {
+        //     return Forbid();
+        // }
 
-        [HttpPut]
-        [Route("cases")]
-        // [Authorize(Policy = AuthConsts.EformPolicies.Cases.CaseUpdate)]
-        public async Task<IActionResult> Update([FromBody] ReplyRequest model)
-        {
-            // if (!await _permissionsService.CheckEform(templateId,
-            //         AuthConsts.EformClaims.CasesClaims.CaseUpdate))
-            // {
-            //     return Forbid();
-            // }
-
-            return Ok(await _backendConfigurationCompliancesService.Update(model).ConfigureAwait(false));
-        }
+        return Ok(await _backendConfigurationCompliancesService.Update(model).ConfigureAwait(false));
     }
 }

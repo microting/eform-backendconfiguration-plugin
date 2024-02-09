@@ -22,14 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Report
+namespace BackendConfiguration.Pn.Infrastructure.Models.Report;
+
+public class ReportEformTextHeaderModel
 {
-    public class ReportEformTextHeaderModel
-    {
-        public string Header1 { get; set; }
-        public string Header2 { get; set; }
-        public string Header3 { get; set; }
-        public string Header4 { get; set; }
-        public string Header5 { get; set; }
-    }
+    public string Header1 { get; set; }
+    public string Header2 { get; set; }
+    public string Header3 { get; set; }
+    public string Header4 { get; set; }
+    public string Header5 { get; set; }
 }

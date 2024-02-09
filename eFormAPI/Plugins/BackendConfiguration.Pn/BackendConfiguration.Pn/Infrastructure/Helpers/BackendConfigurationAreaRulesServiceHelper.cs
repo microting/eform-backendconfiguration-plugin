@@ -234,153 +234,160 @@ public static class BackendConfigurationAreaRulesServiceHelper
 
                     var folderIds = new List<int>
                         {
-                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
-                            {
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = 1, // da
                                     Name = "7. Søn",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "7. Sun",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "7. Son",
                                     Description = ""
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = 1, // da
                                     Name = "1. Man",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "1. Mon",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "1. Mon",
                                     Description = ""
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = 1, // da
                                     Name = "2. Tir",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "2. Tue",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "2. Die",
                                     Description = ""
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = 1, // da
                                     Name = "3. Ons",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "3. Wed",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "3. Mit",
                                     Description = ""
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = 1, // da
                                     Name = "4. Tor",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "4. Thu",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "4. Don",
                                     Description = ""
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = 1, // da
                                     Name = "5. Fre",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "5. Fri",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "5. Fre",
                                     Description = ""
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<Microting.eForm.Infrastructure.Models.CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = 1, // da
                                     Name = "6. Lør",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 2, // en
                                     Name = "6. Sat",
                                     Description = ""
                                 },
+
                                 new()
                                 {
                                     LanguageId = 3, // ge
                                     Name = "6. Sam",
                                     Description = ""
                                 }
-                            }, folderId).ConfigureAwait(false)
+                            ], folderId).ConfigureAwait(false)
                         };
 
 

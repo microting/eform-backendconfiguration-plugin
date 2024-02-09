@@ -16,6 +16,6 @@ public class DocumentDbContextHelper
     {
         CaseTemplatePnContextFactory contextFactory = new CaseTemplatePnContextFactory();
 
-        return contextFactory.CreateDbContext(new[] { ConnectionString });
+        return contextFactory.CreateDbContext([ConnectionString]);
     }
 }

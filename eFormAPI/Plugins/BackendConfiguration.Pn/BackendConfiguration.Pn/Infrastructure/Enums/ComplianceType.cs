@@ -22,13 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Enums
-{
+namespace BackendConfiguration.Pn.Infrastructure.Enums;
 
-    public enum ComplianceType
-    {
-        Success = 1,
-        Warning,
-        Danger
-    }
+public enum ComplianceType
+{
+    Success = 1,
+    Warning,
+    Danger
 }

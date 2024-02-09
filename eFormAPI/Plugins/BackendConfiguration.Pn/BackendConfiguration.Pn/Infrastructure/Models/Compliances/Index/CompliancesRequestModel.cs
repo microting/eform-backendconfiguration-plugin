@@ -21,19 +21,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-namespace BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index
+namespace BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
+
+public class CompliancesRequestModel
 {
+    public int PropertyId { get; set; }
 
-    public class CompliancesRequestModel
-    {
-        public int PropertyId { get; set; }
+    public int PageIndex { get; set; }
 
-        public int PageIndex { get; set; }
+    public int PageSize { get; set; }
 
-        public int PageSize { get; set; }
+    public int Offset { get; set; }
 
-        public int Offset { get; set; }
-
-        public int Days { get; set; }
-    }
+    public int Days { get; set; }
 }

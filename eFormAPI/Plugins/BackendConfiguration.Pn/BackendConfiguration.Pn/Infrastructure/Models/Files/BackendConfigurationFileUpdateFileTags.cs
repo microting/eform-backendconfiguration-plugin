@@ -31,5 +31,5 @@ public class BackendConfigurationFileUpdateFileTags
 	public int Id { get; set; }
 
 	public List<int> Tags { get; set; }
-		= new List<int>();
+		= [];
 }

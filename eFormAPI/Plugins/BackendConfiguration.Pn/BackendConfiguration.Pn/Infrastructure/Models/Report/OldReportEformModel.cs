@@ -24,32 +24,31 @@ SOFTWARE.
 
 using System.Collections.Generic;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Report
+namespace BackendConfiguration.Pn.Infrastructure.Models.Report;
+
+public class OldReportEformModel
 {
-    public class OldReportEformModel
-    {
-        public int CheckListId { get; set; }
+    public int CheckListId { get; set; }
 
-        public string CheckListName { get; set; }
+    public string CheckListName { get; set; }
 
-        public string FromDate { get; set; }
+    public string FromDate { get; set; }
 
-        public string ToDate { get; set; }
+    public string ToDate { get; set; }
 
-        public string TableName { get; set; }
+    public string TableName { get; set; }
 
-        public List<string> DescriptionBlocks { get; set; } = new();
+    public List<string> DescriptionBlocks { get; set; } = [];
 
-        public List<KeyValuePair<List<string>, List<string>>> ImageNames { get; set; } = new();
+    public List<KeyValuePair<List<string>, List<string>>> ImageNames { get; set; } = [];
 
-        public List<KeyValuePair<int, string>> ItemHeaders { get; set; } = new();
+    public List<KeyValuePair<int, string>> ItemHeaders { get; set; } = [];
 
-        public List<ReportEformItemModel> Items { get; set; } = new();
+    public List<ReportEformItemModel> Items { get; set; } = [];
 
-        public List<ReportEformPostModel> Posts { get; set; } = new();
+    public List<ReportEformPostModel> Posts { get; set; } = [];
 
-        public ReportEformTextHeaderModel TextHeaders { get; set; }
+    public ReportEformTextHeaderModel TextHeaders { get; set; }
 
-        public List<string> NameTagsInEndPage { get; set; } = new();
-    }
+    public List<string> NameTagsInEndPage { get; set; } = [];
 }

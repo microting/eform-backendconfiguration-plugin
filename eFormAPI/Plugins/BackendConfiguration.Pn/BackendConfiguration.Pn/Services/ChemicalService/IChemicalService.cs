@@ -28,10 +28,9 @@ using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using System.Threading.Tasks;
 
-namespace BackendConfiguration.Pn.Services.ChemicalService
+namespace BackendConfiguration.Pn.Services.ChemicalService;
+
+public interface IChemicalService
 {
-	public interface IChemicalService
-    {
-        Task<OperationDataResult<Paged<ChemicalPnModel>>> Index(ChemicalsRequestModel requestModel);
-    }
+    Task<OperationDataResult<Paged<ChemicalPnModel>>> Index(ChemicalsRequestModel requestModel);
 }

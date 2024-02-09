@@ -21,61 +21,60 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-namespace BackendConfiguration.Pn.Services.WordService
+namespace BackendConfiguration.Pn.Services.WordService;
+
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using HtmlToOpenXml;
+using System;
+using System.IO;
+
+public class WordProcessor : IDisposable
 {
-	using DocumentFormat.OpenXml.Packaging;
-	using DocumentFormat.OpenXml.Wordprocessing;
-	using HtmlToOpenXml;
-	using System;
-	using System.IO;
+    // Document
+    private readonly WordprocessingDocument _wordProcessingDocument;
 
-	public class WordProcessor : IDisposable
+    public WordProcessor(string filepath)
     {
-        // Document
-        private readonly WordprocessingDocument _wordProcessingDocument;
+        _wordProcessingDocument = WordprocessingDocument.Open(filepath, true);
+    }
 
-        public WordProcessor(string filepath)
+    public WordProcessor(Stream stream)
+    {
+        _wordProcessingDocument = WordprocessingDocument.Open(stream, true);
+    }
+
+    /// <summary>
+    /// Adds the HTML.
+    /// </summary>
+    /// <param name="html">The HTML.</param>
+    /// <param name="margin">the margin in number. if you need in 5 mm margin, you need 5 multiply 56.8 and get 284. take 284 in this variable</param>
+    public void AddHtml(string html, int? margin = null)
+    {
+        var mainPart = _wordProcessingDocument.MainDocumentPart;
+        if (mainPart == null)
         {
-            _wordProcessingDocument = WordprocessingDocument.Open(filepath, true);
+            mainPart = _wordProcessingDocument.AddMainDocumentPart();
+            new Document(new Body()).Save(mainPart);
         }
 
-        public WordProcessor(Stream stream)
+        var converter = new HtmlConverter(mainPart);
+        converter.ParseHtml(html);
+        if (margin != null)
         {
-            _wordProcessingDocument = WordprocessingDocument.Open(stream, true);
+            SectionProperties sectionProps = new SectionProperties();
+            var marginUint = uint.Parse(margin.Value.ToString());
+            PageMargin pageMargin = new PageMargin { Top = margin, Right = marginUint, Bottom = margin, Left = marginUint, Header = 720U, Footer = 720U, Gutter = 0U };
+            sectionProps.Append(pageMargin);
+            mainPart.Document.Body.Append(sectionProps);
         }
+        mainPart.Document.Save();
+    }
 
-        /// <summary>
-        /// Adds the HTML.
-        /// </summary>
-        /// <param name="html">The HTML.</param>
-        /// <param name="margin">the margin in number. if you need in 5 mm margin, you need 5 multiply 56.8 and get 284. take 284 in this variable</param>
-        public void AddHtml(string html, int? margin = null)
-        {
-            var mainPart = _wordProcessingDocument.MainDocumentPart;
-            if (mainPart == null)
-            {
-                mainPart = _wordProcessingDocument.AddMainDocumentPart();
-                new Document(new Body()).Save(mainPart);
-            }
-
-            var converter = new HtmlConverter(mainPart);
-            converter.ParseHtml(html);
-            if (margin != null)
-            {
-                SectionProperties sectionProps = new SectionProperties();
-                var marginUint = uint.Parse(margin.Value.ToString());
-                PageMargin pageMargin = new PageMargin { Top = margin, Right = marginUint, Bottom = margin, Left = marginUint, Header = 720U, Footer = 720U, Gutter = 0U };
-                sectionProps.Append(pageMargin);
-                mainPart.Document.Body.Append(sectionProps);
-            }
-            mainPart.Document.Save();
-        }
-
-        public void Dispose()
-        {
-            _wordProcessingDocument.Save();
-            //_wordProcessingDocument.Close();
-            _wordProcessingDocument.Dispose();
-        }
+    public void Dispose()
+    {
+        _wordProcessingDocument.Save();
+        //_wordProcessingDocument.Close();
+        _wordProcessingDocument.Dispose();
     }
 }

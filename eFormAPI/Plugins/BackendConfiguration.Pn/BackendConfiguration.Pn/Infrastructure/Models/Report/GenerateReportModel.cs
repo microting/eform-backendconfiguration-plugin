@@ -25,13 +25,12 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Report
+namespace BackendConfiguration.Pn.Infrastructure.Models.Report;
+
+public class GenerateReportModel
 {
-    public class GenerateReportModel
-    {
-        public DateTime? DateFrom { get; set; }
-        public DateTime? DateTo { get; set; }
-        public List<int> TagIds { get; set; } = new List<int>();
-        public string Type { get; set; }
-    }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
+    public List<int> TagIds { get; set; } = [];
+    public string Type { get; set; }
 }

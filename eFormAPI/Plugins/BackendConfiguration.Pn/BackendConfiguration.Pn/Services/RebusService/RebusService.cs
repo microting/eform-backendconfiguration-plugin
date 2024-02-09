@@ -28,82 +28,81 @@ using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 using Microting.eForm.Dto;
 
-namespace BackendConfiguration.Pn.Services.RebusService
+namespace BackendConfiguration.Pn.Services.RebusService;
+
+using System.Threading.Tasks;
+using Castle.MicroKernel.Registration;
+using Castle.Windsor;
+using eFormCore;
+using Installers;
+using Microting.eFormApi.BasePn.Abstractions;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
+using Rebus.Bus;
+
+public class RebusService : IRebusService
 {
-    using System.Threading.Tasks;
-    using Castle.MicroKernel.Registration;
-    using Castle.Windsor;
-    using eFormCore;
-    using Installers;
-    using Microting.eFormApi.BasePn.Abstractions;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data.Factories;
-    using Rebus.Bus;
+    private IBus _bus;
+    private IWindsorContainer _container;
+    private string _connectionString;
+    private readonly IEFormCoreService _coreHelper;
+    private BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
+    private ChemicalDbContextHelper _chemicalDbContextHelper;
+    private DocumentDbContextHelper _documentDbContextHelper;
+    private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
 
-    public class RebusService : IRebusService
+    public RebusService(IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
     {
-        private IBus _bus;
-        private IWindsorContainer _container;
-        private string _connectionString;
-        private readonly IEFormCoreService _coreHelper;
-        private BackendConfigurationDbContextHelper _backendConfigurationDbContextHelper;
-        private ChemicalDbContextHelper _chemicalDbContextHelper;
-        private DocumentDbContextHelper _documentDbContextHelper;
-        private readonly IBackendConfigurationLocalizationService _backendConfigurationLocalizationService;
+        _coreHelper = coreHelper;
+        _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
+        _container = new WindsorContainer();
+    }
 
-        public RebusService(IEFormCoreService coreHelper, IBackendConfigurationLocalizationService backendConfigurationLocalizationService)
-        {
-            _coreHelper = coreHelper;
-            _backendConfigurationLocalizationService = backendConfigurationLocalizationService;
-            _container = new WindsorContainer();
-        }
+    public async Task Start(string connectionString)
+    {
+        Core core = await _coreHelper.GetCore();
+        _connectionString = connectionString;
+        var dbPrefix = Regex.Match(_connectionString, @"Database=(\d*)_").Groups[1].Value;
+        var rabbitmqHost = core.GetSdkSetting(Settings.rabbitMqHost).GetAwaiter().GetResult();
+        Console.WriteLine($"rabbitmqHost: {rabbitmqHost}");
+        var rabbitMqUser = core.GetSdkSetting(Settings.rabbitMqUser).GetAwaiter().GetResult();
+        Console.WriteLine($"rabbitMqUser: {rabbitMqUser}");
+        var rabbitMqPassword = core.GetSdkSetting(Settings.rabbitMqPassword).GetAwaiter().GetResult();
+        Console.WriteLine($"rabbitMqPassword: {rabbitMqPassword}");
 
-        public async Task Start(string connectionString)
-        {
-            Core core = await _coreHelper.GetCore();
-            _connectionString = connectionString;
-            var dbPrefix = Regex.Match(_connectionString, @"Database=(\d*)_").Groups[1].Value;
-            var rabbitmqHost = core.GetSdkSetting(Settings.rabbitMqHost).GetAwaiter().GetResult();
-            Console.WriteLine($"rabbitmqHost: {rabbitmqHost}");
-            var rabbitMqUser = core.GetSdkSetting(Settings.rabbitMqUser).GetAwaiter().GetResult();
-            Console.WriteLine($"rabbitMqUser: {rabbitMqUser}");
-            var rabbitMqPassword = core.GetSdkSetting(Settings.rabbitMqPassword).GetAwaiter().GetResult();
-            Console.WriteLine($"rabbitMqPassword: {rabbitMqPassword}");
+        _backendConfigurationDbContextHelper = new BackendConfigurationDbContextHelper(connectionString);
+        var chemicalBaseConnectionString = connectionString.Replace(
+            "eform-backend-configuration-plugin",
+            "chemical-base-plugin");
+        var documentBaseConnectionString = connectionString.Replace(
+            "eform-backend-configuration-plugin",
+            "eform-angular-case-template-plugin");
+        _chemicalDbContextHelper = new ChemicalDbContextHelper(chemicalBaseConnectionString);
+        _documentDbContextHelper = new DocumentDbContextHelper(documentBaseConnectionString);
+        _container.Register(Component.For<Core>().Instance(core));
+        _container.Register(Component.For<BackendConfigurationDbContextHelper>().Instance(_backendConfigurationDbContextHelper));
+        _container.Register(Component.For<ChemicalDbContextHelper>().Instance(_chemicalDbContextHelper));
+        _container.Register(Component.For<DocumentDbContextHelper>().Instance(_documentDbContextHelper));
+        _container.Register(Component.For<IBackendConfigurationLocalizationService>().Instance(_backendConfigurationLocalizationService));
+        _container.Install(
+            new RebusHandlerInstaller()
+            , new RebusInstaller(dbPrefix, connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitmqHost)
+        );
 
-            _backendConfigurationDbContextHelper = new BackendConfigurationDbContextHelper(connectionString);
-            var chemicalBaseConnectionString = connectionString.Replace(
-                "eform-backend-configuration-plugin",
-                "chemical-base-plugin");
-            var documentBaseConnectionString = connectionString.Replace(
-                "eform-backend-configuration-plugin",
-                "eform-angular-case-template-plugin");
-            _chemicalDbContextHelper = new ChemicalDbContextHelper(chemicalBaseConnectionString);
-            _documentDbContextHelper = new DocumentDbContextHelper(documentBaseConnectionString);
-            _container.Register(Component.For<Core>().Instance(core));
-            _container.Register(Component.For<BackendConfigurationDbContextHelper>().Instance(_backendConfigurationDbContextHelper));
-            _container.Register(Component.For<ChemicalDbContextHelper>().Instance(_chemicalDbContextHelper));
-            _container.Register(Component.For<DocumentDbContextHelper>().Instance(_documentDbContextHelper));
-            _container.Register(Component.For<IBackendConfigurationLocalizationService>().Instance(_backendConfigurationLocalizationService));
-            _container.Install(
-                new RebusHandlerInstaller()
-                , new RebusInstaller(dbPrefix, connectionString, 1, 1, rabbitMqUser, rabbitMqPassword, rabbitmqHost)
-            );
+        _bus = _container.Resolve<IBus>();
+    }
 
-            _bus = _container.Resolve<IBus>();
-        }
-
-        public IBus GetBus()
-        {
-            return _bus;
-        }
-        private BackendConfigurationPnDbContext GetContext()
-        {
-            var contextFactory = new BackendConfigurationPnContextFactory();
-            return contextFactory.CreateDbContext(new[] {_connectionString});
-        }
-        public WindsorContainer GetContainer()
-        {
-            return (WindsorContainer)_container;
-        }
+    public IBus GetBus()
+    {
+        return _bus;
+    }
+    private BackendConfigurationPnDbContext GetContext()
+    {
+        var contextFactory = new BackendConfigurationPnContextFactory();
+        return contextFactory.CreateDbContext([_connectionString]);
+    }
+    public WindsorContainer GetContainer()
+    {
+        return (WindsorContainer)_container;
     }
 }

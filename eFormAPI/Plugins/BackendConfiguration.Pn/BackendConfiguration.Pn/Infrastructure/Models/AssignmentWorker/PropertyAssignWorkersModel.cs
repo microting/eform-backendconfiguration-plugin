@@ -22,19 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
+namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
+
+using System.Collections.Generic;
+
+public class PropertyAssignWorkersModel
 {
-    using System.Collections.Generic;
+    public int SiteId { get; set; }
 
-    public class PropertyAssignWorkersModel
-    {
-        public int SiteId { get; set; }
+    public List<PropertyAssignmentWorkerModel> Assignments { get; set; }
+        = [];
 
-        public List<PropertyAssignmentWorkerModel> Assignments { get; set; }
-            = new List<PropertyAssignmentWorkerModel>();
+    public bool? TimeRegistrationEnabled { get; set; }
 
-        public bool? TimeRegistrationEnabled { get; set; }
-
-        public bool? TaskManagementEnabled { get; set; }
-    }
+    public bool? TaskManagementEnabled { get; set; }
 }

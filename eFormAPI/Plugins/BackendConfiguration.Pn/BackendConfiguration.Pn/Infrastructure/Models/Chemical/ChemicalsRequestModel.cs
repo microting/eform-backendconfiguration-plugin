@@ -22,24 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Chemical
+namespace BackendConfiguration.Pn.Infrastructure.Models.Chemical;
+
+public class ChemicalsRequestModel
 {
-    public class ChemicalsRequestModel
-    {
-        public string NameFilter { get; set; }
+    public string NameFilter { get; set; }
 
-        public string DescriptionFilter { get; set; }
+    public string DescriptionFilter { get; set; }
 
-        public string Sort { get; set; }
+    public string Sort { get; set; }
 
-        public int PageIndex { get; set; }
+    public int PageIndex { get; set; }
 
-        public int Offset { get; set; }
+    public int Offset { get; set; }
 
-        public bool IsSortDsc { get; set; }
+    public bool IsSortDsc { get; set; }
 
-        public int PageSize { get; set; }
+    public int PageSize { get; set; }
         
-        public int PropertyId { get; set; }
-    }
+    public int PropertyId { get; set; }
 }

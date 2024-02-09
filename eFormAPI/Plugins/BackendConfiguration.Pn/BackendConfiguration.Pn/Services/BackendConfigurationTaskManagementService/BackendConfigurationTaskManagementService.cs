@@ -22,16 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Reflection;
 using System.Threading;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Messages;
 using BackendConfiguration.Pn.Services.RebusService;
-using BackendConfiguration.Pn.Services.WordService;
 using ImageMagick;
-using Microting.eForm.Helpers;
-using QuestPDF.Fluent;
-using QuestPDF.Infrastructure;
 using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Services.BackendConfigurationTaskManagementService;

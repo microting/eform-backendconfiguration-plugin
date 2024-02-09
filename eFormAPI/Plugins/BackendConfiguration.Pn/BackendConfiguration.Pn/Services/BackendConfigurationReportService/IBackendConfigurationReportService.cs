@@ -29,13 +29,12 @@ using BackendConfiguration.Pn.Infrastructure.Models.Report;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationReportService;
+
+public interface IBackendConfigurationReportService
 {
-    public interface IBackendConfigurationReportService
-    {
-        Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx);
-        Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model, bool isDocx);
-        Task<OperationDataResult<Stream>> GenerateReportFile(GenerateReportModel model, bool version2);
-        Task<OperationResult> Update(ReplyRequest model);
-    }
+    Task<OperationDataResult<List<OldReportEformModel>>> GenerateReport(GenerateReportModel model, bool isDocx);
+    Task<OperationDataResult<List<ReportEformModel>>> GenerateReportV2(GenerateReportModel model, bool isDocx);
+    Task<OperationDataResult<Stream>> GenerateReportFile(GenerateReportModel model, bool version2);
+    Task<OperationResult> Update(ReplyRequest model);
 }

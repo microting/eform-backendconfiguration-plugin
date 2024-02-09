@@ -24,24 +24,23 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Models.Pools;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
+public class TypeSpecificFields
 {
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    public int? EformId { get; set; }
 
-    public class TypeSpecificFields
-    {
-        public int? EformId { get; set; }
+    public AreaRuleT2TypesEnum? Type { get; set; }
 
-        public AreaRuleT2TypesEnum? Type { get; set; }
+    public AreaRuleT2AlarmsEnum? Alarm { get; set; }
 
-        public AreaRuleT2AlarmsEnum? Alarm { get; set; }
+    public int? DayOfWeek { get; set; }
 
-        public int? DayOfWeek { get; set; }
+    public bool HoursAndEnergyEnabled { get; set; }
 
-        public bool HoursAndEnergyEnabled { get; set; }
+    public int? RepeatEvery { get; set; }
 
-        public int? RepeatEvery { get; set; }
-
-        public PoolHoursModel PoolHoursModel { get; set; }
-    }
+    public PoolHoursModel PoolHoursModel { get; set; }
 }

@@ -39,8 +39,8 @@ public class BackendConfigurationFilesModel
 	public string FileExtension { get; set; }
 
 	public List<string> Properties { get; set; }
-		= new ();
+		= [];
 
 	public List<CommonTagModel> Tags { get; set; }
-		= new List<CommonTagModel>();
+		= [];
 }

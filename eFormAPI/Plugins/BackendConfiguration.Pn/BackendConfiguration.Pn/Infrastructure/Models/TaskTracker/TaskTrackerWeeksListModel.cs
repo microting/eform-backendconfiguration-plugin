@@ -33,5 +33,5 @@ public class TaskTrackerWeeksListModel
 	public int WeekRange { get; set; }
 
 	public List<TaskTrackerDateListModel> DateList { get; set; }
-		= new();
+		= [];
 }

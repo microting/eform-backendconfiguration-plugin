@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class AdHocTaskWorkers
 {
-    public List<AdHocTaskWorker> TaskWorkers { get; set; } = new();
+    public List<AdHocTaskWorker> TaskWorkers { get; set; } = [];
 }
 
 public class AdHocTaskWorker

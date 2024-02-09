@@ -24,50 +24,49 @@ SOFTWARE.
 
 using Rebus.Serialization.Json;
 
-namespace BackendConfiguration.Pn.Installers
+namespace BackendConfiguration.Pn.Installers;
+
+using System;
+using Castle.MicroKernel.Registration;
+using Castle.MicroKernel.SubSystems.Configuration;
+using Castle.Windsor;
+using Rebus.Config;
+using Rebus.Logging;
+
+public class RebusInstaller : IWindsorInstaller
 {
-    using System;
-    using Castle.MicroKernel.Registration;
-    using Castle.MicroKernel.SubSystems.Configuration;
-    using Castle.Windsor;
-    using Rebus.Config;
-    using Rebus.Logging;
+    private readonly string _connectionString;
+    private readonly int _maxParallelism;
+    private readonly int _numberOfWorkers;
+    private readonly string _rabbitMqUser;
+    private readonly string _rabbitMqPassword;
+    private readonly string _rabbitMqHost;
+    private readonly string _customerNo;
 
-    public class RebusInstaller : IWindsorInstaller
+    public RebusInstaller(string customerNo, string connectionString, int maxParallelism, int numberOfWorkers, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
     {
-        private readonly string _connectionString;
-        private readonly int _maxParallelism;
-        private readonly int _numberOfWorkers;
-        private readonly string _rabbitMqUser;
-        private readonly string _rabbitMqPassword;
-        private readonly string _rabbitMqHost;
-        private readonly string _customerNo;
+        if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
+        _connectionString = connectionString;
+        _maxParallelism = maxParallelism;
+        _numberOfWorkers = numberOfWorkers;
+        _rabbitMqHost = rabbitMqHost;
+        _rabbitMqUser = rabbitMqUser;
+        _rabbitMqPassword = rabbitMqPassword;
+        _customerNo = customerNo;
+    }
 
-        public RebusInstaller(string customerNo, string connectionString, int maxParallelism, int numberOfWorkers, string rabbitMqUser, string rabbitMqPassword, string rabbitMqHost)
-        {
-            if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
-            _connectionString = connectionString;
-            _maxParallelism = maxParallelism;
-            _numberOfWorkers = numberOfWorkers;
-            _rabbitMqHost = rabbitMqHost;
-            _rabbitMqUser = rabbitMqUser;
-            _rabbitMqPassword = rabbitMqPassword;
-            _customerNo = customerNo;
-        }
-
-        public void Install(IWindsorContainer container, IConfigurationStore store)
-        {
-            Configure.With(new CastleWindsorContainerAdapter(container))
-                .Serialization(s => s.UseNewtonsoftJson())
-                .Logging(l => l.ColoredConsole(LogLevel.Info))
-                .Transport(t => t.UseRabbitMq($"amqp://{_rabbitMqUser}:{_rabbitMqPassword}@{_rabbitMqHost}",
-                    $"{_customerNo}-eform-angular-backend-configuration-plugin"))
-                .Options(o =>
-                {
-                    o.SetMaxParallelism(_maxParallelism);
-                    o.SetNumberOfWorkers(_numberOfWorkers);
-                })
-                .Start();
-        }
+    public void Install(IWindsorContainer container, IConfigurationStore store)
+    {
+        Configure.With(new CastleWindsorContainerAdapter(container))
+            .Serialization(s => s.UseNewtonsoftJson())
+            .Logging(l => l.ColoredConsole(LogLevel.Info))
+            .Transport(t => t.UseRabbitMq($"amqp://{_rabbitMqUser}:{_rabbitMqPassword}@{_rabbitMqHost}",
+                $"{_customerNo}-eform-angular-backend-configuration-plugin"))
+            .Options(o =>
+            {
+                o.SetMaxParallelism(_maxParallelism);
+                o.SetNumberOfWorkers(_numberOfWorkers);
+            })
+            .Start();
     }
 }

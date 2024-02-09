@@ -28,7 +28,7 @@ using System.Collections.Generic;
 
 public class BackendConfigurationArchiveFile
 {
-	public List<int> FileIds { get; set; } = new();
+	public List<int> FileIds { get; set; } = [];
 
 	public string ArchiveName { get; set; }
 }

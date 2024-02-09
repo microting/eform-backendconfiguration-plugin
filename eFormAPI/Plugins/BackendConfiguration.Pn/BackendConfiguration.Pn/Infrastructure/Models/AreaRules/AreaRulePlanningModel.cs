@@ -22,35 +22,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+using System;
+using System.Collections.Generic;
+
+public class AreaRulePlanningModel
 {
-    using System;
-    using System.Collections.Generic;
+    public int? Id { get; set; }
 
-    public class AreaRulePlanningModel
-    {
-        public int? Id { get; set; }
+    public int RuleId { get; set; }
 
-        public int RuleId { get; set; }
+    public bool Status { get; set; }
 
-        public bool Status { get; set; }
+    public bool ServerStatus { get; set; }
 
-        public bool ServerStatus { get; set; }
+    public bool SendNotifications { get; set; }
 
-        public bool SendNotifications { get; set; }
+    public DateTime StartDate { get; set; }
 
-        public DateTime StartDate { get; set; }
+    // bool to check if start date is custom or not and default should be false
+    public bool UseStartDateAsStartOfPeriod { get; set; } = false;
 
-        // bool to check if start date is custom or not and default should be false
-        public bool UseStartDateAsStartOfPeriod { get; set; } = false;
+    public int PropertyId { get; set; }
 
-        public int PropertyId { get; set; }
+    public AreaRuleTypePlanningModel TypeSpecificFields { get; set; }
 
-        public AreaRuleTypePlanningModel TypeSpecificFields { get; set; }
+    public List<AreaRuleAssignedSitesModel> AssignedSites { get; set; }
+        = [];
 
-        public List<AreaRuleAssignedSitesModel> AssignedSites { get; set; }
-            = new ();
-
-        public bool ComplianceEnabled { get; set; }
-    }
+    public bool ComplianceEnabled { get; set; }
 }

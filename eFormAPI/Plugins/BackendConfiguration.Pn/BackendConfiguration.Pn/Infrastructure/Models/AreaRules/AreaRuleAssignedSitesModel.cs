@@ -22,16 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+public class AreaRuleAssignedSitesModel
 {
-    public class AreaRuleAssignedSitesModel
-    {
-        public int SiteId { get; set; }
+    public int SiteId { get; set; }
 
-        public bool Checked { get; set; }
+    public bool Checked { get; set; }
 
-        public int Status { get; set; }
+    public int Status { get; set; }
 
-        public int PlanningSiteId { get; set; }
-    }
+    public int PlanningSiteId { get; set; }
 }

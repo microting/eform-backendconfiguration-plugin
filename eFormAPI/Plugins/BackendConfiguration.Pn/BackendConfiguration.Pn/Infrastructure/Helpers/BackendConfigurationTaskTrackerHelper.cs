@@ -40,7 +40,6 @@ using Enums;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers;
-using System.Globalization;
 
 public static class BackendConfigurationTaskTrackerHelper
 {
