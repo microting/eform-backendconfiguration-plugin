@@ -114,7 +114,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                         Alarm = AreaRuleT2AlarmsEnum.No,
                         DayOfWeek = 1,
                         EformId = checkListTranslation.CheckListId,
-                        Type = AreaRuleT2TypesEnum.Closed
+                        Type = AreaRuleT2TypesEnum.Open
                     }
                 }
             ],
@@ -150,7 +150,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                 HoursAndEnergyEnabled = false,
                 RepeatEvery = 0,
                 RepeatType = 1,
-                Type = AreaRuleT2TypesEnum.Closed
+                Type = AreaRuleT2TypesEnum.Open
             }
 
         };

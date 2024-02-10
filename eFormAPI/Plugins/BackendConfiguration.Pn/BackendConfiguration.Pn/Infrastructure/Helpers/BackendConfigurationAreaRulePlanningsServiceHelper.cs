@@ -1827,10 +1827,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         var planningForType2TypeTankOpenId = 0;
         // if (areaRule.Type == AreaRuleT2TypesEnum.Open)
         // {
-            const string eformName = "03. Kontrol flydelag";
-            var eformId = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text == eformName)
-                .Select(x => x.CheckListId)
+            const string eformName = "Kontrol flydelag";
+            var eformId = await sdkDbContext.CheckLists
+                .Where(x => x.OriginalId == "142142new1")
+                .Select(x => x.Id)
                 .FirstAsync().ConfigureAwait(false);
 
             if (areaRulePlanningModel.Status)
