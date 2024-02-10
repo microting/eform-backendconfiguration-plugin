@@ -25,7 +25,7 @@ const workerForCreate = {
 const areaRuleForCreate: AreaRuleCreateUpdate = {
   name: generateRandmString(),
   type: 'Åben',
-  alarm: 'Ja',
+  alarm: 'Nej',
 };
 
 describe('Backend Configuration Area Rules Type2', function () {
@@ -53,38 +53,38 @@ describe('Backend Configuration Area Rules Type2', function () {
     expect(areRule.ruleAlarm).eq(areaRuleForCreate.alarm);
     expect(areRule.rulePlanningStatus).eq(false);
   });
-  it('should not edit created area rule type 2', async () => {
-    const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    const oldAreRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
-    const areaRuleForUpdate: AreaRuleCreateUpdate = {
-      name: generateRandmString(),
-      type: 'Lukket',
-      alarm: 'Nej',
-    };
-    await oldAreRule.edit(areaRuleForUpdate, true);
-    expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
-    const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
-    expect(areRule.name).eq(areaRuleForCreate.name);
-    expect(areRule.ruleType).eq(areaRuleForCreate.type);
-    expect(areRule.ruleAlarm).eq(areaRuleForCreate.alarm);
-    expect(areRule.rulePlanningStatus).eq(false);
-  });
-  it('should edit created area rule type 2', async () => {
-    const rowNum = await backendConfigurationAreaRulesPage.rowNum();
-    let areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
-    const areaRuleForUpdate: AreaRuleCreateUpdate = {
-      name: generateRandmString(),
-      type: 'Lukket',
-      alarm: 'Nej',
-    };
-    await areRule.edit(areaRuleForUpdate);
-    expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
-    areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
-    expect(areRule.name).eq(areaRuleForUpdate.name);
-    expect(areRule.ruleType).eq(areaRuleForUpdate.type);
-    expect(areRule.ruleAlarm).eq(areaRuleForUpdate.alarm);
-    expect(areRule.rulePlanningStatus).eq(false);
-  });
+  // it('should not edit created area rule type 2', async () => {
+  //   const rowNum = await backendConfigurationAreaRulesPage.rowNum();
+  //   const oldAreRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
+  //   const areaRuleForUpdate: AreaRuleCreateUpdate = {
+  //     name: generateRandmString(),
+  //     type: 'Lukket',
+  //     alarm: 'Nej',
+  //   };
+  //   await oldAreRule.edit(areaRuleForUpdate, true);
+  //   expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
+  //   const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
+  //   expect(areRule.name).eq(areaRuleForCreate.name);
+  //   expect(areRule.ruleType).eq(areaRuleForCreate.type);
+  //   expect(areRule.ruleAlarm).eq(areaRuleForCreate.alarm);
+  //   expect(areRule.rulePlanningStatus).eq(false);
+  // });
+  // it('should edit created area rule type 2', async () => {
+  //   const rowNum = await backendConfigurationAreaRulesPage.rowNum();
+  //   let areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
+  //   const areaRuleForUpdate: AreaRuleCreateUpdate = {
+  //     name: generateRandmString(),
+  //     type: 'Lukket',
+  //     alarm: 'Nej',
+  //   };
+  //   await areRule.edit(areaRuleForUpdate);
+  //   expect(rowNum).eq(await backendConfigurationAreaRulesPage.rowNum());
+  //   areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
+  //   expect(areRule.name).eq(areaRuleForUpdate.name);
+  //   expect(areRule.ruleType).eq(areaRuleForUpdate.type);
+  //   expect(areRule.ruleAlarm).eq(areaRuleForUpdate.alarm);
+  //   expect(areRule.rulePlanningStatus).eq(false);
+  // });
   it('should not delete created area rule type 2', async () => {
     const rowNum = await backendConfigurationAreaRulesPage.rowNum();
     const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();

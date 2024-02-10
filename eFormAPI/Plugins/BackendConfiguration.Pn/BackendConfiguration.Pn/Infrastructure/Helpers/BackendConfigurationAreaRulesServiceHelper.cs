@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Data.Seed.Data;
+using BackendConfiguration.Pn.Infrastructure.Enums;
 using BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
@@ -51,11 +52,12 @@ public static class BackendConfigurationAreaRulesServiceHelper
                             .Contains(areaRuleCreateModel.TranslatedNames[0].Name));
                 }
                 var eformId = areaRuleCreateModel.TypeSpecificFields.EformId;
-                if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7 or AreaTypesEnum.Type8 or AreaTypesEnum.Type10)
+                //if (areaProperty.Area.Type is AreaTypesEnum.Type2 or AreaTypesEnum.Type6 or AreaTypesEnum.Type7 or AreaTypesEnum.Type8 or AreaTypesEnum.Type10)
+                if (areaProperty.Area.Type is AreaTypesEnum.Type6 or AreaTypesEnum.Type7 or AreaTypesEnum.Type8 or AreaTypesEnum.Type10)
                 {
                     var eformName = areaProperty.Area.Type switch
                     {
-                        AreaTypesEnum.Type2 => "03. Kontrol konstruktion",
+                        //AreaTypesEnum.Type2 => "03. Kontrol konstruktion",
                         AreaTypesEnum.Type6 => "10. Varmepumpe serviceaftale",
                         AreaTypesEnum.Type7 => areaRuleType7.EformName,
                         AreaTypesEnum.Type8 => areaRuleType8.EformName,
@@ -92,19 +94,34 @@ public static class BackendConfigurationAreaRulesServiceHelper
                     areaRule.FolderId = parentFolderId;
                 }
 
-                if (areaRuleCreateModel.TypeSpecificFields != null)
-                {
-                    areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
-                    //areaRule.Type = AreaRuleT2TypesEnum.Open;
-                    areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek ?? 0;
-                    areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
-                    //areaRule.Alarm = AreaRuleT2AlarmsEnum.No;
-                    areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery ?? 0;
-                }
                 areaRule.ComplianceEnabled = true;
                 areaRule.ComplianceModifiable = true;
                 areaRule.Notifications = true;
                 areaRule.NotificationsModifiable = true;
+                if (areaRuleCreateModel.TypeSpecificFields != null)
+                {
+                    if (areaProperty.Area.Type is AreaTypesEnum.Type2)
+                    {
+                        areaRule.Type = AreaRuleT2TypesEnum.Open;
+                        //areaRule.Type = AreaRuleT2TypesEnum.Open;
+                        areaRule.DayOfWeek = 0;
+                        areaRule.Alarm = AreaRuleT2AlarmsEnum.No;
+                        areaRule.RepeatType = 2;
+                        //areaRule.Alarm = AreaRuleT2AlarmsEnum.No;
+                        areaRule.RepeatEvery = 1;
+                        areaRule.ComplianceModifiable = false;
+                        areaRule.NotificationsModifiable = false;
+                    }
+                    else
+                    {
+                        areaRule.Type = areaRuleCreateModel.TypeSpecificFields.Type;
+                        //areaRule.Type = AreaRuleT2TypesEnum.Open;
+                        areaRule.DayOfWeek = areaRuleCreateModel.TypeSpecificFields.DayOfWeek ?? 0;
+                        areaRule.Alarm = areaRuleCreateModel.TypeSpecificFields.Alarm;
+                        //areaRule.Alarm = AreaRuleT2AlarmsEnum.No;
+                        areaRule.RepeatEvery = areaRuleCreateModel.TypeSpecificFields.RepeatEvery ?? 0;
+                    }
+                }
 
                 if (areaProperty.Area.Type is AreaTypesEnum.Type8)
                 {
@@ -132,7 +149,7 @@ public static class BackendConfigurationAreaRulesServiceHelper
                 }
 
 
-                if (eformId != 0)
+                if (eformId != 0 && eformId != null)
                 {
                     areaRule.EformName = await sdkDbContext.CheckListTranslations
                         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
