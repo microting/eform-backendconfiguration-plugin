@@ -2,12 +2,9 @@ import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angula
 import {AutoUnsubscribe} from 'ngx-auto-unsubscribe';
 import {MtxGridColumn} from '@ng-matero/extensions/grid';
 import {DeviceUserModel, PropertyAssignWorkersModel} from '../../../../models';
-import {BackendConfigurationPnPropertiesService} from '../../../../services';
 import {TaskWizardStatusesEnum} from '../../../../enums';
 import {PropertyWorkersStateService} from '../store';
 import {TranslateService} from '@ngx-translate/core';
-import {ActivatedRoute, Router} from '@angular/router';
-import {AuthStateService} from 'src/app/common/store';
 import {Subject, Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
@@ -42,10 +39,8 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   @Input() workersAssignments: PropertyAssignWorkersModel[] = [];
   propertyWorkerOtpModalComponentAfterClosedSub$: Subscription;
   propertyWorkerEditModalComponentAfterClosedSub$: Subscription;
-  getSites$: Subscription;
-  deviceUserAssignments$: Subscription;
   //availableProperties: CommonDictionaryModel[];
-  searchSubject = new Subject();
+  searchSubject: Subject<string> = new Subject();
   deviceUsersDelete: boolean = false;
   deviceUsersUpdate: boolean = false;
   public selectCurrentUserClaimsDeviceUsersDelete$ = this.store.select(selectCurrentUserClaimsDeviceUsersDelete);
@@ -54,18 +49,17 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
   public selectPropertyWorkersPaginationIsSortDsc$ = this.store.select(selectPropertyWorkersPaginationIsSortDsc);
   public selectPropertyWorkersNameFilters$ = this.store.select(selectPropertyWorkersNameFilters);
 
+  get TaskWizardStatusesEnum() {
+    return TaskWizardStatusesEnum;
+  }
+
   constructor(
     private store: Store,
-    private authStateService: AuthStateService,
     private translateService: TranslateService,
     public propertyWorkersStateService: PropertyWorkersStateService,
-    private propertiesService: BackendConfigurationPnPropertiesService,
-    private router: Router,
     private dialog: MatDialog,
-    private overlay: Overlay,
-    private route: ActivatedRoute,) {
+    private overlay: Overlay,) {
     this.searchSubject.pipe(debounceTime(500)).subscribe((val) => {
-      // @ts-ignore
       this.propertyWorkersStateService.updateNameFilter(val);
     });
     this.selectCurrentUserClaimsDeviceUsersDelete$.subscribe((data) => {
@@ -101,7 +95,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       sortProp: {id: 'TaskManagementEnabled'},
       field: 'taskManagementEnabled',
       sortable: false,
-      formatter: (model: DeviceUserModel) => this.translateService.instant(TaskWizardStatusesEnum[model.taskManagementEnabled ? 1 : 2]),
       //formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
     },
     {
@@ -109,7 +102,6 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       sortProp: {id: 'TimeRegistrationEnabled'},
       field: 'timeRegistrationEnabled',
       sortable: false,
-      formatter: (model: DeviceUserModel) => this.translateService.instant(TaskWizardStatusesEnum[model.timeRegistrationEnabled ? 1 : 2]),
       //formatter: (rowData: DeviceUserModel) => rowData.siteName ? `${rowData.siteName}` : `N/A`,
     },
     {

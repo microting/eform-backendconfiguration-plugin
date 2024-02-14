@@ -1,7 +1,15 @@
 <mtx-grid
   [data]="sitesDto"
   [columns]="tableHeaders"
-  [cellTemplate]="{siteId: deviceUserIdTpl, siteName: fullNameTpl, language: languageTpl, customerOtp: customerOtpTpl, actions: actionsTpl}"
+  [cellTemplate]="{
+    siteId: deviceUserIdTpl,
+    siteName: fullNameTpl,
+    language: languageTpl,
+    customerOtp: customerOtpTpl,
+    actions: actionsTpl,
+    taskManagementEnabled: taskManagementEnabledTpl,
+    timeRegistrationEnabled: timeRegistrationEnabledTpl,
+    }"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -34,8 +42,6 @@
     </div>
   </div>
 </ng-template>
-
-
 
 <ng-template #deviceUserIdTpl let-row let-i="index">
   <div class="deviceUserId" id="deviceUserId-{{i}}">{{row.siteId}}</div>
@@ -102,3 +108,10 @@
   </div>
 </ng-template>
 
+<ng-template #taskManagementEnabledTpl let-row>
+  <span title="{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.taskManagementEnabled ? 1 : 2] | translate}}</span>
+</ng-template>
+
+<ng-template #timeRegistrationEnabledTpl let-row>
+  <span title="{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}">{{TaskWizardStatusesEnum[row.timeRegistrationEnabled ? 1 : 2] | translate}}</span>
+</ng-template>
