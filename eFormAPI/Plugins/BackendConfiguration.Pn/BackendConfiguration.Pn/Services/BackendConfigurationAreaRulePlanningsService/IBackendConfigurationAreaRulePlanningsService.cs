@@ -22,21 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulePlanningsService;
+
+using System.Threading.Tasks;
+using Infrastructure.Models.AreaRules;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+public interface IBackendConfigurationAreaRulePlanningsService
 {
-    using System.Threading.Tasks;
-    using Infrastructure.Models.AreaRules;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel);
 
-    public interface IBackendConfigurationAreaRulePlanningsService
-    {
-        Task<OperationResult> UpdatePlanning(AreaRulePlanningModel areaRulePlanningModel);
+    Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId);
 
-        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningByRuleId(int ruleId);
+    Task<OperationDataResult<Paged<TaskWorkerModel>>> GetPlanningsBySiteId(int siteId, FilterAndSortModel filterAndSortModel);
 
-        Task<OperationDataResult<Paged<TaskWorkerModel>>> GetPlanningsBySiteId(int siteId, FilterAndSortModel filterAndSortModel);
-
-        Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningById(int planningId);
-    }
+    Task<OperationDataResult<AreaRulePlanningModel>> GetPlanningById(int planningId);
 }

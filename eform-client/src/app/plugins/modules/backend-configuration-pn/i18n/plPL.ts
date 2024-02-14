@@ -282,4 +282,6 @@ export const plPL = {
   Description: 'Opis',
   Date: 'Data',
   Location: 'Lokalizacja',
+  'Select date range': 'Wybierz zakres dat',
+  'Manage tags': 'Zarządzaj tagami',
 };

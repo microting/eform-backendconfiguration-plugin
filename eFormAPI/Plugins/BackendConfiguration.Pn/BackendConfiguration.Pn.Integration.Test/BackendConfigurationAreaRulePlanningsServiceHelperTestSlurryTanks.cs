@@ -7,7 +7,6 @@ using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
@@ -31,10 +30,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -62,14 +58,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -84,14 +80,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -104,24 +100,24 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                             { Name = "Beholeder 1", Description = "00. Logbøger", Id = danishLanguage.Id }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.No,
                         DayOfWeek = 1,
                         EformId = checkListTranslation.CheckListId,
-                        Type = AreaRuleT2TypesEnum.Closed
+                        Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = propertyArea.Id
         };
 
@@ -131,15 +127,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
 
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -154,7 +150,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                 HoursAndEnergyEnabled = false,
                 RepeatEvery = 0,
                 RepeatType = 1,
-                Type = AreaRuleT2TypesEnum.Closed
+                Type = AreaRuleT2TypesEnum.Open
             }
 
         };
@@ -380,10 +376,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -411,14 +404,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -433,14 +426,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -453,15 +446,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                             { Name = "Beholeder 1", Description = "00. Logbøger", Id = danishLanguage.Id }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -470,7 +463,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                         Type = AreaRuleT2TypesEnum.Closed
                     }
                 }
-            },
+            ],
             PropertyAreaId = propertyArea.Id
         };
 
@@ -480,15 +473,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
 
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -778,10 +771,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -809,14 +799,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -831,14 +821,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -851,15 +841,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                             { Name = "Beholeder 1", Description = "00. Logbøger", Id = danishLanguage.Id }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -868,7 +858,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = propertyArea.Id
         };
 
@@ -878,15 +868,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
 
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1210,10 +1200,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1256,14 +1243,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -1274,14 +1261,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[3].Id
         };
 
@@ -1295,14 +1282,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -1315,15 +1302,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                             { Name = "Beholeder 1", Description = "00. Logbøger", Id = danishLanguage.Id }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -1332,7 +1319,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = propertyArea.Id
         };
 
@@ -1342,15 +1329,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
 
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1378,19 +1365,20 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         var areaRulePlanningModel2 = new AreaRulePlanningModel
         {
             Id = areaRulePlannings.First().Id,
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
                 },
+
                 new()
                 {
                     Checked = true,
                     SiteId = sites[3].Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1777,10 +1765,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1823,14 +1808,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -1841,14 +1826,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[3].Id
         };
 
@@ -1862,14 +1847,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -1882,15 +1867,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                             { Name = "Beholeder 1", Description = "00. Logbøger", Id = danishLanguage.Id }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -1899,7 +1884,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = propertyArea.Id
         };
 
@@ -1909,15 +1894,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
 
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1945,19 +1930,20 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         var areaRulePlanningModel2 = new AreaRulePlanningModel
         {
             Id = areaRulePlannings.First().Id,
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
                 },
+
                 new()
                 {
                     Checked = true,
                     SiteId = sites[3].Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1982,19 +1968,20 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         var areaRulePlanningModel3 = new AreaRulePlanningModel
         {
             Id = areaRulePlannings.First().Id,
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
                 },
+
                 new()
                 {
                     Checked = true,
                     SiteId = sites[3].Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -2381,10 +2368,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2427,14 +2411,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -2445,14 +2429,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[3].Id
         };
 
@@ -2464,14 +2448,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -2484,15 +2468,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                             { Name = "Beholeder 1", Description = "00. Logbøger", Id = danishLanguage.Id }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -2501,7 +2485,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = propertyArea.Id
         };
 
@@ -2512,15 +2496,15 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
 
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -2547,19 +2531,20 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         var areaRulePlanningModel2 = new AreaRulePlanningModel
         {
             Id = areaRulePlannings.First().Id,
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
                 },
+
                 new()
                 {
                     Checked = true,
                     SiteId = sites[3].Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -2585,19 +2570,20 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperSlurryTanks : Tes
         var areaRulePlanningModel3 = new AreaRulePlanningModel
         {
             Id = areaRulePlannings.First().Id,
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = sites[2].Id
                 },
+
                 new()
                 {
                     Checked = true,
                     SiteId = sites[3].Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,

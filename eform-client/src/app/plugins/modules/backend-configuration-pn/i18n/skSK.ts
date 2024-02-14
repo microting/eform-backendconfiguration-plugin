@@ -282,4 +282,6 @@ export const skSK = {
   Description: 'Popis',
   Date: 'Dátum',
   Location: 'Poloha',
+  'Select date range': 'Vyberte rozsah dátumov',
+  'Manage tags': 'Spravovať značky',
 };

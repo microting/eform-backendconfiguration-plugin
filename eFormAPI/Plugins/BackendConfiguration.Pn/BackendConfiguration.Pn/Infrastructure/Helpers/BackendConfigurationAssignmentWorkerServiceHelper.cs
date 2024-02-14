@@ -35,8 +35,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         {
             try
             {
-                List<PropertyWorker> propertyWorkers = new List<PropertyWorker>();
-                List<int> documentIds = new List<int>();
+                List<PropertyWorker> propertyWorkers = [];
+                List<int> documentIds = [];
                 foreach (var propertyAssignment in createModel.Assignments
                              .Select(propertyAssignmentWorkerModel => new PropertyWorker
                              {
@@ -105,7 +105,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             {
                 var sdkDbContext = core.DbContextHelper.GetDbContext();
                 updateModel.Assignments = updateModel.Assignments.Where(x => x.IsChecked).ToList();
-                List<int> documentIds = new List<int>();
+                List<int> documentIds = [];
 
                 var assignments = await backendConfigurationPnDbContext.PropertyWorkers
                     .Where(x => x.WorkerId == updateModel.SiteId)
@@ -122,7 +122,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     .Select(x => x.PropertyId)
                     .Where(x => !assignments.Select(y => y.PropertyId).Contains(x))
                     .ToList();
-                List<PropertyWorker> propertyWorkers = new List<PropertyWorker>();
+                List<PropertyWorker> propertyWorkers = [];
 
                 foreach (var propertyAssignment in assignmentsForCreate
                              .Select(propertyAssignmentWorkerModel => new PropertyWorker
@@ -232,10 +232,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         {
                             await core.EntityItemDelete((int)propertyWorker.EntityItemId).ConfigureAwait(false);
 
-                            await WorkOrderHelper.RetractEform(new List<PropertyWorker>
-                            {
-                                propertyWorker
-                            }, true, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                            await WorkOrderHelper.RetractEform([propertyWorker], true, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
                     }
                 }

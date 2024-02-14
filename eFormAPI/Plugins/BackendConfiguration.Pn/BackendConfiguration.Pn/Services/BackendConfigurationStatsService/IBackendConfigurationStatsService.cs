@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Stats;
 using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 

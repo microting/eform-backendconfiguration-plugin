@@ -22,56 +22,55 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
-{
-    using System.Collections.Generic;
-    using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Const;
+namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data;
 
-    public static class BackendConfigurationPermissionsSeedData
+using System.Collections.Generic;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Const;
+
+public static class BackendConfigurationPermissionsSeedData
+{
+    public static IEnumerable<PluginPermission> Data => new[]
     {
-        public static IEnumerable<PluginPermission> Data => new[]
+        new PluginPermission
         {
-            new PluginPermission
-            {
-                PermissionName = "Access BackendConfiguration Plugin",
-                ClaimName = BackendConfigurationClaims.AccessBackendConfigurationPlugin
-            },
-            new PluginPermission
-            {
-                PermissionName = "Create property",
-                ClaimName = BackendConfigurationClaims.CreateProperties
-            },
-            new PluginPermission
-            {
-                PermissionName = "Get properties",
-                ClaimName = BackendConfigurationClaims.GetProperties
-            },
-            new PluginPermission
-            {
-                PermissionName = "Edit property",
-                ClaimName = BackendConfigurationClaims.EditProperties
-            },
-            new PluginPermission
-            {
-                PermissionName = "Enable chemical management",
-                ClaimName = BackendConfigurationClaims.EnableChemicalManagement
-            },
-            new PluginPermission
-            {
-                PermissionName = "Enable document management",
-                ClaimName = BackendConfigurationClaims.EnableDocumentManagement
-            },
-            new PluginPermission
-            {
-                PermissionName = "Enable task management",
-                ClaimName = BackendConfigurationClaims.EnableTaskManagement
-            },
-            new PluginPermission
-            {
-                PermissionName = "Enable time registration",
-                ClaimName = BackendConfigurationClaims.EnableTimeRegistration
-            }
-        };
-    }
+            PermissionName = "Access BackendConfiguration Plugin",
+            ClaimName = BackendConfigurationClaims.AccessBackendConfigurationPlugin
+        },
+        new PluginPermission
+        {
+            PermissionName = "Create property",
+            ClaimName = BackendConfigurationClaims.CreateProperties
+        },
+        new PluginPermission
+        {
+            PermissionName = "Get properties",
+            ClaimName = BackendConfigurationClaims.GetProperties
+        },
+        new PluginPermission
+        {
+            PermissionName = "Edit property",
+            ClaimName = BackendConfigurationClaims.EditProperties
+        },
+        new PluginPermission
+        {
+            PermissionName = "Enable chemical management",
+            ClaimName = BackendConfigurationClaims.EnableChemicalManagement
+        },
+        new PluginPermission
+        {
+            PermissionName = "Enable document management",
+            ClaimName = BackendConfigurationClaims.EnableDocumentManagement
+        },
+        new PluginPermission
+        {
+            PermissionName = "Enable task management",
+            ClaimName = BackendConfigurationClaims.EnableTaskManagement
+        },
+        new PluginPermission
+        {
+            PermissionName = "Enable time registration",
+            ClaimName = BackendConfigurationClaims.EnableTimeRegistration
+        }
+    };
 }

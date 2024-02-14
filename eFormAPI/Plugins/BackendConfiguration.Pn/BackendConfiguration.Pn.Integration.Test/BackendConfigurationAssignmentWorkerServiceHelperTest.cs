@@ -133,10 +133,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -225,10 +222,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -319,10 +313,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -417,10 +408,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -449,14 +437,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -515,10 +503,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -547,14 +532,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -565,14 +550,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = false
                 }
-            },
+            ],
             TaskManagementEnabled = false,
             SiteId = sites[2].Id
         };
@@ -632,10 +617,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = true
@@ -664,14 +646,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             TaskManagementEnabled = false,
             TimeRegistrationEnabled = false,
             SiteId = sites[2].Id
@@ -684,14 +666,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             TaskManagementEnabled = true,
             TimeRegistrationEnabled = false,
             SiteId = sites[2].Id
@@ -769,10 +751,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = true
@@ -789,10 +768,7 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = true
@@ -822,14 +798,14 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             TaskManagementEnabled = true,
             TimeRegistrationEnabled = false,
             SiteId = sites[2].Id
@@ -845,19 +821,20 @@ public class BackendConfigurationAssignmentWorkerServiceHelperTest : TestBaseSet
 
         var propertyAssignWorkersModel2 = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = false
                 },
+
                 new()
                 {
                     PropertyId = properties[1].Id,
                     IsChecked = true
                 }
-            },
+            ],
             TaskManagementEnabled = true,
             TimeRegistrationEnabled = false,
             SiteId = sites[2].Id

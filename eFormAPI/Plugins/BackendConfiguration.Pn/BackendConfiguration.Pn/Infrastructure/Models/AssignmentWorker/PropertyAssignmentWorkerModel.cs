@@ -22,18 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker
+namespace BackendConfiguration.Pn.Infrastructure.Models.AssignmentWorker;
+
+public class PropertyAssignmentWorkerModel
 {
-    public class PropertyAssignmentWorkerModel
-    {
-        public int PropertyId { get; set; }
+    public int PropertyId { get; set; }
 
-        public bool IsChecked { get; set; }
+    public bool IsChecked { get; set; }
 
-        public bool IsLocked { get; set; }
+    public bool IsLocked { get; set; }
 
-        public int NUmberOfWorkOrderCasesAssigned { get; set; }
+    public int NUmberOfWorkOrderCasesAssigned { get; set; }
 
-        public int NumberOfTasksAssigned { get; set; }
-    }
+    public int NumberOfTasksAssigned { get; set; }
 }

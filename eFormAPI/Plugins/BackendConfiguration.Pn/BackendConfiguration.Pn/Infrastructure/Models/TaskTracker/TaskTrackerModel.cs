@@ -48,13 +48,13 @@ public class TaskTrackerModel
 	/// Gets or sets the tags of the task tracker model.
 	/// </summary>
 	public List<CommonTagModel> Tags { get; set; } 
-		= new ();
+		= [];
 
 	/// <summary>
 	/// Gets or sets the workers of the task tracker model.
 	/// </summary>
 	public List<string> Workers { get; set; }
-		= new ();
+		= [];
 
 	/// <summary>
 	/// Gets or sets the start time of the task tracker model.
@@ -122,7 +122,7 @@ public class TaskTrackerModel
     public int AreaRulePlanId { get; set; }
 
     public List<TaskTrackerWeeksListModel> Weeks { get; set; }
-		= new();
+		= [];
 
     public string SdkFolderName { get; set; }
 

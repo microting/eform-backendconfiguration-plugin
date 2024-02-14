@@ -190,7 +190,7 @@ export class TaskManagementCreateShowModalComponent
     this.getAllSitesDictionarySub$ = this.sitesService.getAllSitesDictionary().subscribe(result => {
       if (result && result.success && result.success) {
         const sites = result.model;
-        this.getPropertiesAssignmentsSub$ = this.propertyService.getPropertiesAssignments().subscribe(data => {
+        this.getPropertiesAssignmentsSub$ = this.propertyService.getSimplePropertiesAssignments().subscribe(data => {
           if (data && data.success && data.model) {
             data.model.forEach(x => x.assignments = x.assignments.filter(y => y.isChecked && y.propertyId === propertyId));
             data.model = data.model.filter((x) => x.assignments.length > 0 && x.taskManagementEnabled);

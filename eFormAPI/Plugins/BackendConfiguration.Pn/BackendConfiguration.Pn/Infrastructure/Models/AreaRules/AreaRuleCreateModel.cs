@@ -22,17 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
-{
-    using System.Collections.Generic;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-    using PropertyAreas;
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
 
-    public class AreaRuleCreateModel
-    {
-        public List<CommonDictionaryModel> TranslatedNames { get; set; }
-            = new();
+using System.Collections.Generic;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using PropertyAreas;
+
+public class AreaRuleCreateModel
+{
+    public List<CommonDictionaryModel> TranslatedNames { get; set; }
+        = [];
         
-        public TypeSpecificFields TypeSpecificFields { get; set; }
-    }
+    public TypeSpecificFields TypeSpecificFields { get; set; }
 }

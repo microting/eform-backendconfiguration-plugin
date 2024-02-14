@@ -282,4 +282,6 @@ export const nlNL = {
   Description: 'Beschrijving',
   Date: 'Datum',
   Location: 'Plaats',
+  'Select date range': 'Selecteer een datumbereik',
+  'Manage tags': 'Beheer tags',
 };

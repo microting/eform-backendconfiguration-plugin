@@ -26,20 +26,19 @@ using BackendConfiguration.Pn.Handlers;
 using BackendConfiguration.Pn.Messages;
 using Rebus.Handlers;
 
-namespace BackendConfiguration.Pn.Installers
-{
-    using Castle.MicroKernel.Registration;
-    using Castle.MicroKernel.SubSystems.Configuration;
-    using Castle.Windsor;
+namespace BackendConfiguration.Pn.Installers;
 
-    public class RebusHandlerInstaller : IWindsorInstaller
+using Castle.MicroKernel.Registration;
+using Castle.MicroKernel.SubSystems.Configuration;
+using Castle.Windsor;
+
+public class RebusHandlerInstaller : IWindsorInstaller
+{
+    public void Install(IWindsorContainer container, IConfigurationStore store)
     {
-        public void Install(IWindsorContainer container, IConfigurationStore store)
-        {
-            container.Register(Component.For<IHandleMessages<ChemicalAreaCreated>>().ImplementedBy<ChemicalAreaCreatedHandler>().LifestyleTransient());
-            container.Register(Component.For<IHandleMessages<WorkOrderCreated>>().ImplementedBy<WorkOrderCreatedHandler>().LifestyleTransient());
-            container.Register(Component.For<IHandleMessages<WorkOrderUpdated>>().ImplementedBy<WorkOrderUpdatedHandler>().LifestyleTransient());
-            container.Register(Component.For<IHandleMessages<DocumentUpdated>>().ImplementedBy<DocumentUpdatedHandler>().LifestyleTransient());
-        }
+        container.Register(Component.For<IHandleMessages<ChemicalAreaCreated>>().ImplementedBy<ChemicalAreaCreatedHandler>().LifestyleTransient());
+        container.Register(Component.For<IHandleMessages<WorkOrderCreated>>().ImplementedBy<WorkOrderCreatedHandler>().LifestyleTransient());
+        container.Register(Component.For<IHandleMessages<WorkOrderUpdated>>().ImplementedBy<WorkOrderUpdatedHandler>().LifestyleTransient());
+        container.Register(Component.For<IHandleMessages<DocumentUpdated>>().ImplementedBy<DocumentUpdatedHandler>().LifestyleTransient());
     }
 }

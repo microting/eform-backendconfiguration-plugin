@@ -22,27 +22,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationFileTagsService;
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using BackendConfiguration.Pn.Infrastructure.Models.Files;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+public interface IBackendConfigurationTagsService
 {
-	using System.Collections.Generic;
-	using System.Threading.Tasks;
-	using BackendConfiguration.Pn.Infrastructure.Models.Files;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-	using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+	Task<OperationDataResult<List<CommonTagModel>>> GetTags();
 
-	public interface IBackendConfigurationTagsService
-    {
-        Task<OperationDataResult<List<CommonTagModel>>> GetTags();
+	Task<OperationResult> UpdateTag(CommonTagModel requestModel);
 
-        Task<OperationResult> UpdateTag(CommonTagModel requestModel);
+	Task<OperationResult> DeleteTag(int id);
 
-        Task<OperationResult> DeleteTag(int id);
+	Task<OperationResult> CreateTag(CommonTagModel requestModel);
 
-        Task<OperationResult> CreateTag(CommonTagModel requestModel);
+	Task<OperationDataResult<CommonTagModel>> GetById(int id);
 
-        Task<OperationDataResult<CommonTagModel>> GetById(int id);
+	public Task<OperationResult> BulkFileTags(BackendConfigurationFileBulkTags requestModel);
 
-        public Task<OperationResult> BulkFileTags(BackendConfigurationFileBulkTags requestModel);
-
-    }
 }

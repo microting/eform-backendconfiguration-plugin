@@ -282,4 +282,6 @@ export const slSL = {
   Description: 'Opis',
   Date: 'Datum',
   Location: 'Lokacija',
+  'Select date range': 'Izberite časovno obdobje',
+  'Manage tags': 'Upravljanje oznak',
 };

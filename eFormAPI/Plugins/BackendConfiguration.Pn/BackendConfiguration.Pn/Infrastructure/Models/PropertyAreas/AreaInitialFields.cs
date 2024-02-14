@@ -22,31 +22,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+
+using System;
+using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+
+public class AreaInitialFields
 {
-    using System;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
+    public string EformName { get; set; }
 
-    public class AreaInitialFields
-    {
-        public string EformName { get; set; }
+    public int EformId { get; set; }
 
-        public int EformId { get; set; }
+    public bool SendNotifications { get; set; }
 
-        public bool SendNotifications { get; set; }
+    public int? RepeatEvery { get; set; }
 
-        public int? RepeatEvery { get; set; }
+    public int? RepeatType { get; set; }
 
-        public int? RepeatType { get; set; }
+    public int? DayOfWeek { get; set; }
 
-        public int? DayOfWeek { get; set; }
+    public AreaRuleT2TypesEnum? Type { get; set; }
 
-        public AreaRuleT2TypesEnum? Type { get; set; }
+    public AreaRuleT2AlarmsEnum? Alarm { get; set; }
 
-        public AreaRuleT2AlarmsEnum? Alarm { get; set; }
+    public DateTime? EndDate { get; set; }
 
-        public DateTime? EndDate { get; set; }
-
-        public bool ComplianceEnabled { get; set; }
-    }
+    public bool ComplianceEnabled { get; set; }
 }

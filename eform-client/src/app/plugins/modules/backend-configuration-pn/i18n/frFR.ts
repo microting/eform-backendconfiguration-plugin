@@ -282,4 +282,6 @@ export const frFR = {
   Description: 'Description',
   Date: 'Date',
   Location: 'Emplacement',
+  'Select date range': 'Sélectionnez une plage de dates',
+  'Manage tags': 'Gérer les balises',
 };

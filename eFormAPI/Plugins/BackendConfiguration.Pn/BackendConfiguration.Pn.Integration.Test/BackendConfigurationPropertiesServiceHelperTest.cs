@@ -3,7 +3,6 @@ using BackendConfiguration.Pn.Infrastructure.Models.Properties;
 using Microsoft.EntityFrameworkCore;
 using Microting.eFormApi.BasePn.Abstractions;
 using NSubstitute;
-using Rebus.Bus;
 
 namespace BackendConfiguration.Pn.Integration.Test;
 
@@ -23,10 +22,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -174,10 +170,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -194,10 +187,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -225,10 +215,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -245,10 +232,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = propertyCreateModel.Cvr,
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = propertyCreateModel.Name,
             WorkorderEnable = false
@@ -278,10 +262,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -298,10 +279,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = propertyCreateModel.Cvr,
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = propertyCreateModel.Name,
             WorkorderEnable = false
@@ -330,10 +308,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -350,10 +325,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = propertyCreateModel.Name,
             WorkorderEnable = false
@@ -382,10 +354,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -402,10 +371,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -435,10 +401,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -455,10 +418,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -488,10 +448,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -509,10 +466,7 @@ public class BackendConfigurationPropertiesServiceHelperTest : TestBaseSetup
             Address = Guid.NewGuid().ToString(),
             Chr = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false

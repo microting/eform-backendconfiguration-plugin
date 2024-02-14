@@ -11,12 +11,12 @@ public class TaskWizardCreateModel
     public int PropertyId { get; set; }
     public int? FolderId { get; set; }
     public int? ItemPlanningTagId { get; set; }
-    public List<int> TagIds { get; set; } = new();
-    public List<CommonTranslationsModel> Translates { get; set; } = new();
+    public List<int> TagIds { get; set; } = [];
+    public List<CommonTranslationsModel> Translates { get; set; } = [];
     public int EformId { get; set; }
     public DateTime? StartDate { get; set; }
     public RepeatType RepeatType { get; set; }
     public int RepeatEvery { get; set; }
     public TaskWizardStatuses Status { get; set; }
-    public List<int> Sites { get; set; } = new();
+    public List<int> Sites { get; set; } = [];
 }

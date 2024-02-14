@@ -282,4 +282,6 @@ export const csCZ = {
   Description: 'Popis',
   Date: 'datum',
   Location: 'Umístění',
+  'Select date range': 'Vyberte časové období',
+  'Manage tags': 'Správa značek',
 };

@@ -22,16 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
+namespace BackendConfiguration.Pn.Infrastructure.Models.Properties;
+
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+public class PropertiesRequestModel : FilterAndSortModel
 {
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    public int PageIndex { get; set; }
 
-    public class PropertiesRequestModel : FilterAndSortModel
-    {
-        public int PageIndex { get; set; }
+    public int PageSize { get; set; }
 
-        public int PageSize { get; set; }
-
-        public int Offset { get; set; }
-    }
+    public int Offset { get; set; }
 }

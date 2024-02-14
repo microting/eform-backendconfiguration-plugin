@@ -22,6 +22,7 @@ export let BackendConfigurationPnPropertiesMethods = {
   Properties: 'api/backend-configuration-pn/properties',
   PropertyAreas: 'api/backend-configuration-pn/property-areas',
   PropertiesAssignment: 'api/backend-configuration-pn/properties/assignment',
+  SimplePropertiesAssignment: 'api/backend-configuration-pn/properties/assignment/simple',
   PropertiesIndex: 'api/backend-configuration-pn/properties/index',
   UpdateDeviceUser: 'api/backend-configuration-pn/properties/assignment/update-device-user',
   CreateEntityList: 'api/backend-configuration-pn/property-areas/create-entity-list/',
@@ -114,6 +115,13 @@ export class BackendConfigurationPnPropertiesService {
   > {
     return this.apiBaseService.get(
       `${BackendConfigurationPnPropertiesMethods.PropertiesAssignment}`, { propertyIds: propertyIds }
+    );
+  }
+  getSimplePropertiesAssignments(propertyIds?: number[]): Observable<
+    OperationDataResult<PropertyAssignWorkersModel[]>
+  > {
+    return this.apiBaseService.get(
+      `${BackendConfigurationPnPropertiesMethods.SimplePropertiesAssignment}`, { propertyIds: propertyIds }
     );
   }
 

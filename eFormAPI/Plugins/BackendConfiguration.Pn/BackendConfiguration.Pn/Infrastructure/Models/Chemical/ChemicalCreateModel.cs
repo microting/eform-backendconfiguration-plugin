@@ -24,21 +24,20 @@ SOFTWARE.
 
 using System.Collections.Generic;
 
-namespace Chemicals.Pn.Infrastructure.Models.Planning
+namespace Chemicals.Pn.Infrastructure.Models.Planning;
+
+public class ChemicalCreateModel
 {
-    public class ChemicalCreateModel
-    {
-        public string Description { get; set; }
+    public string Description { get; set; }
 
-        public string PlanningNumber { get; set; }
+    public string PlanningNumber { get; set; }
 
-        public string LocationCode { get; set; }
+    public string LocationCode { get; set; }
 
-        public string BuildYear { get; set; }
+    public string BuildYear { get; set; }
 
-        public string Type { get; set; }
+    public string Type { get; set; }
 
-        public List<int> TagsIds { get; set; }
-            = new List<int>();
-    }
+    public List<int> TagsIds { get; set; }
+        = [];
 }

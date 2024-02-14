@@ -25,20 +25,19 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Report
+namespace BackendConfiguration.Pn.Infrastructure.Models.Report;
+
+public class ReportEformPostModel
 {
-    public class ReportEformPostModel
-    {
-        public int PostId { get; set; }
-        public int CaseId { get; set; }
-        public string Comment { get; set; }
+    public int PostId { get; set; }
+    public int CaseId { get; set; }
+    public string Comment { get; set; }
 
-        public List<string> SentTo { get; set; }
-            = new List<string>();
+    public List<string> SentTo { get; set; }
+        = [];
 
-        public List<string> SentToTags { get; set; }
-            = new List<string>();
+    public List<string> SentToTags { get; set; }
+        = [];
 
-        public DateTime? PostDate { get; set; }
-    }
+    public DateTime? PostDate { get; set; }
 }

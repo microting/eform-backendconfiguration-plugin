@@ -24,15 +24,14 @@ SOFTWARE.
 
 using Castle.Windsor;
 
-namespace BackendConfiguration.Pn.Services.RebusService
-{
-    using System.Threading.Tasks;
-    using Rebus.Bus;
+namespace BackendConfiguration.Pn.Services.RebusService;
 
-    public interface IRebusService
-    {
-        Task Start(string connectionString);
-        IBus GetBus();
-        WindsorContainer GetContainer();
-    }
+using System.Threading.Tasks;
+using Rebus.Bus;
+
+public interface IRebusService
+{
+    Task Start(string connectionString);
+    IBus GetBus();
+    WindsorContainer GetContainer();
 }

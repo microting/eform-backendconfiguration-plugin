@@ -24,42 +24,41 @@ SOFTWARE.
 
 using System.Collections.Generic;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Report
+namespace BackendConfiguration.Pn.Infrastructure.Models.Report;
+
+public class ReportEformModel
 {
-    public class ReportEformModel
-    {
-        public List<ReportEformGroupModel> GroupEform { get; set; } = new();
+    public List<ReportEformGroupModel> GroupEform { get; set; } = [];
 
-        public string FromDate { get; set; }
+    public string FromDate { get; set; }
 
-        public string ToDate { get; set; }
+    public string ToDate { get; set; }
 
-        public string GroupTagName { get; set; }
+    public string GroupTagName { get; set; }
 
-        public List<string> NameTagsInEndPage { get; set; } = new();
-    }
+    public List<string> NameTagsInEndPage { get; set; } = [];
+}
 
-    public class ReportEformGroupModel
-    {
-        public int CheckListId { get; set; }
+public class ReportEformGroupModel
+{
+    public int CheckListId { get; set; }
 
-        public string CheckListName { get; set; }
+    public string CheckListName { get; set; }
 
-        public List<ReportImages> ImageNames { get; set; } = new();
+    public List<ReportImages> ImageNames { get; set; } = [];
 
-        public List<KeyValuePair<int, string>> ItemHeaders { get; set; } = new();
+    public List<KeyValuePair<int, string>> ItemHeaders { get; set; } = [];
 
-        public List<ReportEformItemModel> Items { get; set; } = new();
-    }
+    public List<ReportEformItemModel> Items { get; set; } = [];
+}
 
-    public class ReportImages
-    {
-        public string GeoLink { get; set; }
+public class ReportImages
+{
+    public string GeoLink { get; set; }
 
-        public string ImageName { get; set; }
+    public string ImageName { get; set; }
 
-        public string Label { get; set; }
+    public string Label { get; set; }
 
-        public int CaseId { get; set; }
-    }
+    public int CaseId { get; set; }
 }

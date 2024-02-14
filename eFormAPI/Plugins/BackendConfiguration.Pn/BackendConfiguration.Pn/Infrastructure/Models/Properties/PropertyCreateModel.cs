@@ -24,33 +24,32 @@ SOFTWARE.
 
 using JetBrains.Annotations;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
+namespace BackendConfiguration.Pn.Infrastructure.Models.Properties;
+
+using System.Collections.Generic;
+
+public class PropertyCreateModel
 {
-    using System.Collections.Generic;
+    public string Name { get; set; }
 
-    public class PropertyCreateModel
+    public string Chr { get; set; }
+
+    public string Address { get; set; }
+
+    public List<int> LanguagesIds { get; set; }
+
+    public string Cvr { get; set; }
+
+    public bool WorkorderEnable { get; set; }
+
+    [CanBeNull] public string IndustryCode { get; set; }
+
+    public bool IsFarm { get; set; }
+
+    public string MainMailAddress { get; set; }
+
+    public string FullName()
     {
-        public string Name { get; set; }
-
-        public string Chr { get; set; }
-
-        public string Address { get; set; }
-
-        public List<int> LanguagesIds { get; set; }
-
-        public string Cvr { get; set; }
-
-        public bool WorkorderEnable { get; set; }
-
-        [CanBeNull] public string IndustryCode { get; set; }
-
-        public bool IsFarm { get; set; }
-
-        public string MainMailAddress { get; set; }
-
-        public string FullName()
-        {
-            return string.IsNullOrEmpty(Address) ? Name : $"{Name} - {Address}";
-        }
+        return string.IsNullOrEmpty(Address) ? Name : $"{Name} - {Address}";
     }
 }

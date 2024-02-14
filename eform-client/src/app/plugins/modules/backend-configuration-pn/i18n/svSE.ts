@@ -282,4 +282,6 @@ export const svSE = {
   Description: 'Beskrivning',
   Date: 'Datum',
   Location: 'Plats',
+  'Select date range': 'Välj datumintervall',
+  'Manage tags': 'Hantera taggar',
 };

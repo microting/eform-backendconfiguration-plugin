@@ -578,27 +578,29 @@ public static class BackendConfigurationPropertiesServiceHelper
             parentFolderId = parentFolderTranslation.Id;
         }
 
-        translateFolderForNewTask = new List<CommonTranslationsModel>
-        {
+        translateFolderForNewTask =
+        [
             new()
             {
                 Name = property.Name,
                 LanguageId = danishLanguage.Id,
                 Description = ""
             },
+
             new()
             {
                 Name = property.Name,
                 LanguageId = englishLanguage.Id,
                 Description = ""
             },
+
             new()
             {
                 Name = property.Name,
                 LanguageId = germanLanguage.Id,
                 Description = ""
             }
-        };
+        ];
 
         if (!sdkDbContext.Folders
                 .Where(x => x.ParentId == parentFolderId)
@@ -652,27 +654,29 @@ public static class BackendConfigurationPropertiesServiceHelper
             parentFolderId = parentFolderTranslation.Id;
         }
 
-        translateFolderForNewTask = new List<CommonTranslationsModel>
-        {
+        translateFolderForNewTask =
+        [
             new()
             {
                 Name = property.Name,
                 LanguageId = danishLanguage.Id,
                 Description = ""
             },
+
             new()
             {
                 Name = property.Name,
                 LanguageId = englishLanguage.Id,
                 Description = ""
             },
+
             new()
             {
                 Name = property.Name,
                 LanguageId = germanLanguage.Id,
                 Description = ""
             }
-        };
+        ];
 
         if (!sdkDbContext.Folders
                 .Where(x => x.ParentId == parentFolderId)

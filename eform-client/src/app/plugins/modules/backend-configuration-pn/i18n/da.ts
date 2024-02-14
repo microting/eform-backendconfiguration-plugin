@@ -282,4 +282,6 @@ export const da = {
   Description: 'Beskrivelse',
   Date: 'Dato',
   Location: 'Lokation',
+  'Select date range': 'Vælg periode',
+  'Manage tags': 'Redigér etiketter',
 };

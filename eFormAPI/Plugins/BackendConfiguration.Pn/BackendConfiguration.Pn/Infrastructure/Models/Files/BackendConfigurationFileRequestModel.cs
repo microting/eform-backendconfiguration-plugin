@@ -31,10 +31,10 @@ using System.Collections.Generic;
 public class BackendConfigurationFileRequestModel : FilterAndSortModel
 {
 	public List<int> PropertyIds { get; set; }
-		= new List<int>();
+		= [];
 
 	public List<int> TagIds { get; set; }
-		= new List<int>();
+		= [];
 
 	public DateTime? DateFrom { get; set; }
 

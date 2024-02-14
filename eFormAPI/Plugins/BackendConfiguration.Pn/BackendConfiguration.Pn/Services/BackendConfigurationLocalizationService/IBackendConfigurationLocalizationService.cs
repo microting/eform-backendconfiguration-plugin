@@ -22,14 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService
-{
-    public interface IBackendConfigurationLocalizationService
-    {
-        string GetString(string key);
-        string GetString(string format, params object[] args);
+namespace BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
 
-        string GetStringWithFormat(string format,
-            params object[] args);
-    }
+public interface IBackendConfigurationLocalizationService
+{
+    string GetString(string key);
+    string GetString(string format, params object[] args);
+
+    string GetStringWithFormat(string format,
+        params object[] args);
 }

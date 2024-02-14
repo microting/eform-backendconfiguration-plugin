@@ -251,7 +251,7 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     this.sitesService.getAllSitesDictionary().subscribe((result) => {
       if (result && result.success && result.success) {
         const sites = result.model;
-        this.propertyService.getPropertiesAssignments().subscribe((data) => {
+        this.propertyService.getSimplePropertiesAssignments().subscribe((data) => {
           if (data && data.success && data.model) {
             data.model.forEach(
               (x) =>

@@ -10,5 +10,5 @@ public class PropertyFolderModel
     public int? ParentId { get; set; }
     public int? MicrotingUId { get; set; }
     public List<PropertyFolderModel> Children { get; set; }
-        = new ();
+        = [];
 }

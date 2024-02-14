@@ -23,29 +23,28 @@ SOFTWARE.
 */
 
 using BackendConfiguration.Pn.Infrastructure.Models;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationAssignmentWorkerService;
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Infrastructure.Models.AssignmentWorker;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+
+public interface IBackendConfigurationAssignmentWorkerService
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.AssignmentWorker;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment(List<int> propertyIds);
+    Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetSimplePropertiesAssignment(List<int> propertyIds);
 
-    public interface IBackendConfigurationAssignmentWorkerService
-    {
-        Task<OperationDataResult<List<PropertyAssignWorkersModel>>> GetPropertiesAssignment(List<int> propertyIds);
+    Task<OperationResult> Create(PropertyAssignWorkersModel createModel);
 
-        Task<OperationResult> Create(PropertyAssignWorkersModel createModel);
+    Task<OperationResult> Update(PropertyAssignWorkersModel updateModel);
 
-        Task<OperationResult> Update(PropertyAssignWorkersModel updateModel);
-
-        Task<OperationResult> Delete(int deviceUserId);
+    Task<OperationResult> Delete(int deviceUserId);
         
-        Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(PropertyWorkersFiltrationModel requestModel);
+    Task<OperationDataResult<List<DeviceUserModel>>> IndexDeviceUser(PropertyWorkersFiltrationModel requestModel);
 
-        Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel);
+    Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel);
         
-        Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel);
-    }
+    Task<OperationDataResult<int>> CreateDeviceUser(DeviceUserModel deviceUserModel);
 }

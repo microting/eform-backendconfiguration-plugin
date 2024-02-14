@@ -28,5 +28,5 @@ using System.Collections.Generic;
 
 public class BackendConfigurationFileCreateList
 {
-	public List<BackendConfigurationFileCreate> FilesForCreate { get; set; } = new();
+	public List<BackendConfigurationFileCreate> FilesForCreate { get; set; } = [];
 }

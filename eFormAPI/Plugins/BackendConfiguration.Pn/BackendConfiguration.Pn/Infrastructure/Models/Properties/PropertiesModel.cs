@@ -24,39 +24,38 @@ SOFTWARE.
 
 using JetBrains.Annotations;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Properties
+namespace BackendConfiguration.Pn.Infrastructure.Models.Properties;
+
+using System.Collections.Generic;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+public class PropertiesModel
 {
-    using System.Collections.Generic;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    public int Id { get; set; }
 
-    public class PropertiesModel
-    {
-        public int Id { get; set; }
+    public string Name { get; set; }
 
-        public string Name { get; set; }
+    public string Chr { get; set; }
 
-        public string Chr { get; set; }
+    public string Address { get; set; }
 
-        public string Address { get; set; }
+    public List<CommonDictionaryModel> Languages { get; set; }
 
-        public List<CommonDictionaryModel> Languages { get; set; }
+    public bool IsWorkersAssigned { get; set; }
 
-        public bool IsWorkersAssigned { get; set; }
+    public string Cvr { get; set; }
 
-        public string Cvr { get; set; }
+    public int ComplianceStatus { get; set; }
 
-        public int ComplianceStatus { get; set; }
+    public int ComplianceStatusThirty { get; set; }
 
-        public int ComplianceStatusThirty { get; set; }
+    public bool WorkorderEnable { get; set; }
 
-        public bool WorkorderEnable { get; set; }
+    public int? WorkorderEntityListId { get; set; }
 
-        public int? WorkorderEntityListId { get; set; }
+    [CanBeNull] public string IndustryCode { get; set; }
 
-        [CanBeNull] public string IndustryCode { get; set; }
+    public bool IsFarm { get; set; }
 
-        public bool IsFarm { get; set; }
-
-        public string MainMailAddress { get; set; }
-    }
+    public string MainMailAddress { get; set; }
 }

@@ -282,4 +282,6 @@ export const fiFI = {
   Description: 'Kuvaus',
   Date: 'Päivämäärä',
   Location: 'Sijainti',
+  'Select date range': 'Valitse ajanjakso',
+  'Manage tags': 'Hallitse tunnisteita',
 };

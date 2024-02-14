@@ -4,7 +4,7 @@ namespace BackendConfiguration.Pn.Infrastructure.Models.Stats;
 
 public class PlannedTaskWorkers
 {
-    public List<PlannedTaskWorker> TaskWorkers { get; set; } = new();
+    public List<PlannedTaskWorker> TaskWorkers { get; set; } = [];
 }
 
 public class PlannedTaskWorker

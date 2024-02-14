@@ -75,8 +75,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                 {
                     case AreaTypesEnum.Type9:
                     {
-                        var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
-                        {
+                        var folderId = await core.FolderCreate([
                             new()
                             {
                                 LanguageId = danishLanguage.Id,
@@ -84,6 +83,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 Name = "25. KemiKontrol",
                                 Description = ""
                             },
+
                             new()
                             {
                                 LanguageId = englishLanguage.Id,
@@ -91,6 +91,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 Name = "25. Chemistry Control",
                                 Description = ""
                             },
+
                             new()
                             {
                                 LanguageId = germanLanguage.Id,
@@ -98,7 +99,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 Name = "25. Chemiekontrolle",
                                 Description = ""
                             }
-                        }, property.FolderId).ConfigureAwait(false);
+                        ], property.FolderId).ConfigureAwait(false);
                         var assignmentWithOneFolder = new ProperyAreaFolder
                         {
                             FolderId = folderId,
@@ -108,153 +109,160 @@ public static class BackendConfigurationPropertyAreasServiceHelper
 
                         var folderIds = new List<int>
                         {
-                            await core.FolderCreate(new List<CommonTranslationsModel>
-                            {
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = danishLanguage.Id,
                                     Name = "25.01 Opret kemiprodukt",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = englishLanguage.Id,
                                     Name = "25.01 Create chemical product",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = germanLanguage.Id,
                                     Name = "25.01 Chemisches Produkt herstellen",
                                     Description = property.Name
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = danishLanguage.Id,
                                     Name = "25.02 Udløber i dag eller er udløbet",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = englishLanguage.Id,
                                     Name = "25.02 Expires today or has expired",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = germanLanguage.Id,
                                     Name = "25.02 Läuft heute ab oder ist abgelaufen",
                                     Description = property.Name
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = danishLanguage.Id,
                                     Name = "25.03 Udløber om senest 1 mdr.",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = englishLanguage.Id,
                                     Name = "25.03 Expires in 1 month at the latest",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = germanLanguage.Id,
                                     Name = "25.03 Läuft spätestens in 1 Monat ab",
                                     Description = property.Name
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = danishLanguage.Id,
                                     Name = "25.04 Udløber om senest 3 mdr.",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = englishLanguage.Id,
                                     Name = "25.04 Expires in 3 months at the latest",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = germanLanguage.Id,
                                     Name = "25.04 Läuft spätestens in 3 Monaten ab",
                                     Description = property.Name
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = danishLanguage.Id,
                                     Name = "25.05 Udløber om senest 6 mdr.",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = englishLanguage.Id,
                                     Name = "25.05 Expires in 6 months at the latest",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = germanLanguage.Id,
                                     Name = "25.05 Läuft spätestens in 6 Monaten ab",
                                     Description = property.Name
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = danishLanguage.Id,
                                     Name = "25.06 Udløber om senest 12 mdr.",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = englishLanguage.Id,
                                     Name = "25.06 Expires in 12 months at the latest",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = germanLanguage.Id,
                                     Name = "25.06 Läuft spätestens in 12 Monaten ab",
                                     Description = property.Name
                                 }
-                            }, folderId).ConfigureAwait(false),
-                            await core.FolderCreate(new List<CommonTranslationsModel>
-                            {
+                            ], folderId).ConfigureAwait(false),
+                            await core.FolderCreate([
                                 new()
                                 {
                                     LanguageId = danishLanguage.Id,
                                     Name = "25.07 Udløber om mere end 12 mdr.",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = englishLanguage.Id,
                                     Name = "25.07 Expires in more than 12 months.",
                                     Description = property.Name
                                 },
+
                                 new()
                                 {
                                     LanguageId = germanLanguage.Id,
                                     Name = "25.07 Läuft in mehr als 12 Monaten ab.",
                                     Description = property.Name
                                 }
-                            }, folderId).ConfigureAwait(false)
+                            ], folderId).ConfigureAwait(false)
                         };
 
                         foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
@@ -307,8 +315,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                     }
                     case AreaTypesEnum.Type3:
                     {
-                        var folderId = await core.FolderCreate(new List<CommonTranslationsModel>
-                        {
+                        var folderId = await core.FolderCreate([
                             new()
                             {
                                 LanguageId = danishLanguage.Id,
@@ -316,6 +323,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 Name = "Halebid",
                                 Description = ""
                             },
+
                             new()
                             {
                                 LanguageId = englishLanguage.Id,
@@ -323,6 +331,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 Name = "Tail biting",
                                 Description = ""
                             },
+
                             new()
                             {
                                 LanguageId = germanLanguage.Id,
@@ -330,7 +339,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                                 Name = "Schwanzbeißen",
                                 Description = ""
                             }
-                        }, property.FolderId).ConfigureAwait(false);
+                        ], property.FolderId).ConfigureAwait(false);
                         var assignmentWithOneFolder = new ProperyAreaFolder
                         {
                             FolderId = folderId,

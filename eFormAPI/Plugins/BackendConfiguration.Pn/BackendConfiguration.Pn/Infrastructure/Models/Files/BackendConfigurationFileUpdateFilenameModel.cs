@@ -33,5 +33,5 @@ public class BackendConfigurationFileUpdateFilenameModel
 	public string NewName { get; set; }
 
 	public List<int> PropertyIds { get; set; }
-		= new List<int>();
+		= [];
 }

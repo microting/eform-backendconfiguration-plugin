@@ -54,10 +54,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			IndustryCode = Guid.NewGuid().ToString(),
 			Cvr = Guid.NewGuid().ToString(),
 			IsFarm = false,
-			LanguagesIds = new List<int>
-			{
-				1
-			},
+			LanguagesIds = [1],
 			MainMailAddress = Guid.NewGuid().ToString(),
 			Name = Guid.NewGuid().ToString(),
 			WorkorderEnable = true
@@ -148,9 +145,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		var filters = new TaskTrackerFiltrationModel
 		{
-			PropertyIds = new List<int>(),
-			TagIds = new List<int>(),
-			WorkerIds = new List<int>()
+			PropertyIds = [],
+			TagIds = [],
+			WorkerIds = []
 		};
 
 		// Assert
@@ -186,10 +183,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			IndustryCode = Guid.NewGuid().ToString(),
 			Cvr = Guid.NewGuid().ToString(),
 			IsFarm = false,
-			LanguagesIds = new List<int>
-			{
-				1
-			},
+			LanguagesIds = [1],
 			MainMailAddress = Guid.NewGuid().ToString(),
 			Name = Guid.NewGuid().ToString(),
 			WorkorderEnable = true
@@ -280,9 +274,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		var filters = new TaskTrackerFiltrationModel
 		{
-			PropertyIds = new List<int> (),
-			TagIds = new List<int> (),
-			WorkerIds = new List<int> { sites.Last().Id, }
+			PropertyIds = [],
+			TagIds = [],
+			WorkerIds = [sites.Last().Id]
 		};
 
 		// Assert
@@ -318,10 +312,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			IndustryCode = Guid.NewGuid().ToString(),
 			Cvr = Guid.NewGuid().ToString(),
 			IsFarm = false,
-			LanguagesIds = new List<int>
-			{
-				1
-			},
+			LanguagesIds = [1],
 			MainMailAddress = Guid.NewGuid().ToString(),
 			Name = Guid.NewGuid().ToString(),
 			WorkorderEnable = true
@@ -412,9 +403,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		var filters = new TaskTrackerFiltrationModel
 		{
-			PropertyIds = new List<int> { property.Id, },
-			TagIds = new List<int>(),
-			WorkerIds = new List<int>()
+			PropertyIds = [property.Id],
+			TagIds = [],
+			WorkerIds = []
 		};
 
 		// Assert
@@ -450,10 +441,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 			IndustryCode = Guid.NewGuid().ToString(),
 			Cvr = Guid.NewGuid().ToString(),
 			IsFarm = false,
-			LanguagesIds = new List<int>
-			{
-				1
-			},
+			LanguagesIds = [1],
 			MainMailAddress = Guid.NewGuid().ToString(),
 			Name = Guid.NewGuid().ToString(),
 			WorkorderEnable = true
@@ -544,9 +532,9 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 
 		var filters = new TaskTrackerFiltrationModel
 		{
-			PropertyIds = new List<int> { property.Id, },
-			TagIds = new List<int> (),
-			WorkerIds = new List<int> { sites.Last().Id, }
+			PropertyIds = [property.Id],
+			TagIds = [],
+			WorkerIds = [sites.Last().Id]
 		};
 
 		// Assert

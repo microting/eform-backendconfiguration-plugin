@@ -282,4 +282,6 @@ export const elGR = {
   Description: 'Περιγραφή',
   Date: 'Ημερομηνία',
   Location: 'Τοποθεσία',
+  'Select date range': 'Επιλέξτε εύρος ημερομηνιών',
+  'Manage tags': 'Διαχείριση ετικετών',
 };

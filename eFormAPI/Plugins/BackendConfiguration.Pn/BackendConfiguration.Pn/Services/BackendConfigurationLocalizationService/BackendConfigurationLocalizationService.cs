@@ -22,59 +22,58 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationLocalizationService;
+
+using Microsoft.Extensions.Localization;
+using System.Linq;
+using Microting.eFormApi.BasePn.Localization.Abstractions;
+
+public class BackendConfigurationLocalizationService : IBackendConfigurationLocalizationService
 {
-    using Microsoft.Extensions.Localization;
-    using System.Linq;
-    using Microting.eFormApi.BasePn.Localization.Abstractions;
+    private readonly IStringLocalizer _localizer;
 
-    public class BackendConfigurationLocalizationService : IBackendConfigurationLocalizationService
+    // ReSharper disable once SuggestBaseTypeForParameter
+    public BackendConfigurationLocalizationService(IEformLocalizerFactory factory)
     {
-        private readonly IStringLocalizer _localizer;
+        _localizer = factory.Create(typeof(EformBackendConfigurationPlugin));
+    }
 
-        // ReSharper disable once SuggestBaseTypeForParameter
-        public BackendConfigurationLocalizationService(IEformLocalizerFactory factory)
+    public string GetString(string key)
+    {
+        var str = _localizer[key];
+        return str.Value;
+    }
+
+    public string GetString(string format, params object[] args)
+    {
+        var message = _localizer[format];
+        if (message?.Value == null)
         {
-            _localizer = factory.Create(typeof(EformBackendConfigurationPlugin));
+            return null;
         }
 
-        public string GetString(string key)
+        return string.Format(message.Value, args);
+    }
+
+    public string GetStringWithFormat(string format,
+        params object[] args)
+    {
+        if (string.IsNullOrEmpty(format))
         {
-            var str = _localizer[key];
-            return str.Value;
+            return format;
         }
 
-        public string GetString(string format, params object[] args)
+        var message = _localizer[format];
+        if (message?.Value == null)
         {
-            var message = _localizer[format];
-            if (message?.Value == null)
-            {
-                return null;
-            }
+            return null;
+        }
 
+        if (args != null && args.Any())
+        {
             return string.Format(message.Value, args);
         }
 
-        public string GetStringWithFormat(string format,
-            params object[] args)
-        {
-            if (string.IsNullOrEmpty(format))
-            {
-                return format;
-            }
-
-            var message = _localizer[format];
-            if (message?.Value == null)
-            {
-                return null;
-            }
-
-            if (args != null && args.Any())
-            {
-                return string.Format(message.Value, args);
-            }
-
-            return message.Value;
-        }
+        return message.Value;
     }
 }

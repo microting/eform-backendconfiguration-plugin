@@ -22,44 +22,44 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Data.Seed
+namespace BackendConfiguration.Pn.Infrastructure.Data.Seed;
+
+using System;
+using System.Linq;
+using Data;
+using Microting.eForm.Infrastructure.Constants;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
+
+public static class BackendConfigurationPluginSeed
 {
-    using System;
-    using System.Linq;
-    using Data;
-    using Microting.eForm.Infrastructure.Constants;
-    using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
-    using Microting.EformBackendConfigurationBase.Infrastructure.Data;
-
-    public static class BackendConfigurationPluginSeed
+    public static void SeedData(BackendConfigurationPnDbContext dbContext)
     {
-        public static void SeedData(BackendConfigurationPnDbContext dbContext)
+        var seedData = new BackendConfigurationSeedData();
+        var configurationList = seedData.Data;
+        foreach (var configurationItem in configurationList)
         {
-            var seedData = new BackendConfigurationSeedData();
-            var configurationList = seedData.Data;
-            foreach (var configurationItem in configurationList)
+            if (!dbContext.PluginConfigurationValues.Any(x=> x.Name == configurationItem.Name))
             {
-                if (!dbContext.PluginConfigurationValues.Any(x=> x.Name == configurationItem.Name))
+                var newConfigValue = new PluginConfigurationValue
                 {
-                    var newConfigValue = new PluginConfigurationValue
-                    {
-                        Name = configurationItem.Name,
-                        Value = configurationItem.Value,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
-                        Version = 1,
-                        WorkflowState = Constants.WorkflowStates.Created,
-                        CreatedByUserId = 1
-                    };
-                    dbContext.PluginConfigurationValues.Add(newConfigValue);
-                    dbContext.SaveChanges();
-                }
+                    Name = configurationItem.Name,
+                    Value = configurationItem.Value,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Version = 1,
+                    WorkflowState = Constants.WorkflowStates.Created,
+                    CreatedByUserId = 1
+                };
+                dbContext.PluginConfigurationValues.Add(newConfigValue);
+                dbContext.SaveChanges();
             }
+        }
 
-            // Seed plugin permissions
-            var newPermissions = BackendConfigurationPermissionsSeedData.Data
-                .Where(p => dbContext.PluginPermissions.All(x => x.ClaimName != p.ClaimName))
-                .Select(p => new PluginPermission
+        // Seed plugin permissions
+        var newPermissions = BackendConfigurationPermissionsSeedData.Data
+            .Where(p => dbContext.PluginPermissions.All(x => x.ClaimName != p.ClaimName))
+            .Select(p => new PluginPermission
                 {
                     PermissionName = p.PermissionName,
                     ClaimName = p.ClaimName,
@@ -68,10 +68,9 @@ namespace BackendConfiguration.Pn.Infrastructure.Data.Seed
                     WorkflowState = Constants.WorkflowStates.Created,
                     CreatedByUserId = 1
                 }
-                );
-            dbContext.PluginPermissions.AddRange(newPermissions);
+            );
+        dbContext.PluginPermissions.AddRange(newPermissions);
 
-            dbContext.SaveChanges();
-        }
+        dbContext.SaveChanges();
     }
 }

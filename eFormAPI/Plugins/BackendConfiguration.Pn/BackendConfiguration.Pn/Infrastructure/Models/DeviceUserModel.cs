@@ -24,55 +24,54 @@ SOFTWARE.
 
 using System.Collections.Generic;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models
+namespace BackendConfiguration.Pn.Infrastructure.Models;
+
+public class DeviceUserModel
 {
-    public class DeviceUserModel
+    public int SiteMicrotingUid { get; set; }
+    public int SiteId { get; set; }
+    public int? SiteUid { get; set; }
+    public string SiteName { get; set; }
+    public string PropertyNames { get; set; }
+    public List<int> PropertyIds { get; set; }
+    public string UserFirstName { get; set; }
+    public string UserLastName { get; set; }
+    public int LanguageId { get; set; }
+    public string Language { get; set; }
+    public string LanguageCode { get; set; }
+    public bool? TimeRegistrationEnabled { get; set; }
+    public bool? TaskManagementEnabled { get; set; }
+    public int? CustomerNo { get; set; }
+    public int? OtpCode { get; set; }
+    public int? UnitId { get; set; }
+    public int? WorkerUid { get; set; }
+    public bool IsLocked { get; set; }
+    public bool IsBackendUser { get; set; }
+    public bool HasWorkOrdersAssigned { get; set; }
+
+    public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {
-        public int SiteMicrotingUid { get; set; }
-        public int SiteId { get; set; }
-        public int? SiteUid { get; set; }
-        public string SiteName { get; set; }
-        public string PropertyNames { get; set; }
-        public List<int> PropertyIds { get; set; }
-        public string UserFirstName { get; set; }
-        public string UserLastName { get; set; }
-        public int LanguageId { get; set; }
-        public string Language { get; set; }
-        public string LanguageCode { get; set; }
-        public bool? TimeRegistrationEnabled { get; set; }
-        public bool? TaskManagementEnabled { get; set; }
-        public int? CustomerNo { get; set; }
-        public int? OtpCode { get; set; }
-        public int? UnitId { get; set; }
-        public int? WorkerUid { get; set; }
-        public bool IsLocked { get; set; }
-        public bool IsBackendUser { get; set; }
-        public bool HasWorkOrdersAssigned { get; set; }
-
-        public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
+        return new DeviceUserModel
         {
-            return new DeviceUserModel
-            {
-                SiteMicrotingUid = model.Id,
-                LanguageId = model.Language,
-                LanguageCode = model.LanguageCode,
-                TimeRegistrationEnabled = null,
-                UserFirstName = model.UserFirstName,
-                UserLastName = model.UserLastName
-            };
-        }
+            SiteMicrotingUid = model.Id,
+            LanguageId = model.Language,
+            LanguageCode = model.LanguageCode,
+            TimeRegistrationEnabled = null,
+            UserFirstName = model.UserFirstName,
+            UserLastName = model.UserLastName
+        };
+    }
 
-        public static implicit operator Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel(DeviceUserModel model)
+    public static implicit operator Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel(DeviceUserModel model)
+    {
+
+        return new Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel
         {
-
-            return new Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel
-            {
-                Id = model.SiteMicrotingUid,
-                Language = model.LanguageId,
-                LanguageCode = model.LanguageCode,
-                UserFirstName = model.UserFirstName,
-                UserLastName = model.UserLastName
-            };
-        }
+            Id = model.SiteMicrotingUid,
+            Language = model.LanguageId,
+            LanguageCode = model.LanguageCode,
+            UserFirstName = model.UserFirstName,
+            UserLastName = model.UserLastName
+        };
     }
 }

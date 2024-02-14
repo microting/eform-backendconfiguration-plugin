@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -581,38 +580,34 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                                                     .ConfigureAwait(false);
                                                 planningForType2TypeTankOpen.NameTranslations =
-                                                    new List<PlanningNameTranslation>
+                                                [
+                                                    new()
                                                     {
-                                                        new()
-                                                        {
-                                                            LanguageId = 1, // da
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 1)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Flydelag"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 2, // en
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 2)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Floating layer"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 3, // ge
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 2)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Schwimmende Ebene"
-                                                        }
-                                                        // new PlanningNameTranslation
-                                                        // {
-                                                        //     LanguageId = 4,// uk-ua
-                                                        //     Name = "Перевірте плаваючий шар",
-                                                        // },
-                                                    };
+                                                        LanguageId = 1, // da
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 1)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Flydelag"
+                                                    },
+
+                                                    new()
+                                                    {
+                                                        LanguageId = 2, // en
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 2)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Floating layer"
+                                                    },
+
+                                                    new()
+                                                    {
+                                                        LanguageId = 3, // ge
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 2)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Schwimmende Ebene"
+                                                    }
+                                                ];
                                                 planningForType2TypeTankOpen.RepeatEvery = 1;
                                                 planningForType2TypeTankOpen.RepeatType =
                                                     (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)
@@ -931,33 +926,34 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                             areaRule, userId, backendConfigurationPnDbContext,
                                                             itemsPlanningPnDbContext).ConfigureAwait(false);
                                                     planningForType6HoursAndEnergyEnabled.NameTranslations =
-                                                        new List<PlanningNameTranslation>
+                                                    [
+                                                        new()
                                                         {
-                                                            new()
-                                                            {
-                                                                LanguageId = 1, // da
-                                                                Name = areaRule.AreaRuleTranslations
-                                                                    .Where(x => x.LanguageId == 1)
-                                                                    .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Timer og energi"
-                                                            },
-                                                            new()
-                                                            {
-                                                                LanguageId = 2, // en
-                                                                Name = areaRule.AreaRuleTranslations
-                                                                    .Where(x => x.LanguageId == 2)
-                                                                    .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Hours and energy"
-                                                            },
-                                                            new()
-                                                            {
-                                                                LanguageId = 3, // ge
-                                                                Name = areaRule.AreaRuleTranslations
-                                                                    .Where(x => x.LanguageId == 3)
-                                                                    .Select(x => x.Name)
-                                                                    .FirstOrDefault() + ": Stunden und Energie"
-                                                            }
-                                                        };
+                                                            LanguageId = 1, // da
+                                                            Name = areaRule.AreaRuleTranslations
+                                                                .Where(x => x.LanguageId == 1)
+                                                                .Select(x => x.Name)
+                                                                .FirstOrDefault() + ": Timer og energi"
+                                                        },
+
+                                                        new()
+                                                        {
+                                                            LanguageId = 2, // en
+                                                            Name = areaRule.AreaRuleTranslations
+                                                                .Where(x => x.LanguageId == 2)
+                                                                .Select(x => x.Name)
+                                                                .FirstOrDefault() + ": Hours and energy"
+                                                        },
+
+                                                        new()
+                                                        {
+                                                            LanguageId = 3, // ge
+                                                            Name = areaRule.AreaRuleTranslations
+                                                                .Where(x => x.LanguageId == 3)
+                                                                .Select(x => x.Name)
+                                                                .FirstOrDefault() + ": Stunden und Energie"
+                                                        }
+                                                    ];
                                                     if (areaRulePlanningModel.TypeSpecificFields is not null)
                                                     {
                                                         if (areaRulePlanningModel.TypeSpecificFields.RepeatType !=
@@ -1034,33 +1030,34 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                                                     .ConfigureAwait(false);
                                                 planningForType6One.NameTranslations =
-                                                    new List<PlanningNameTranslation>
+                                                [
+                                                    new()
                                                     {
-                                                        new()
-                                                        {
-                                                            LanguageId = 1, // da
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 1)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Service"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 2, // en
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 2)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Service"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 3, // ge
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 3)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Service"
-                                                        }
-                                                    };
+                                                        LanguageId = 1, // da
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 1)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Service"
+                                                    },
+
+                                                    new()
+                                                    {
+                                                        LanguageId = 2, // en
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 2)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Service"
+                                                    },
+
+                                                    new()
+                                                    {
+                                                        LanguageId = 3, // ge
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 3)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Service"
+                                                    }
+                                                ];
                                                 planningForType6One.RepeatEvery = 12;
                                                 planningForType6One.RepeatType =
                                                     (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)
@@ -1071,33 +1068,34 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                                                     .ConfigureAwait(false);
                                                 planningForType6Two.NameTranslations =
-                                                    new List<PlanningNameTranslation>
+                                                [
+                                                    new()
                                                     {
-                                                        new()
-                                                        {
-                                                            LanguageId = 1, // da
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 1)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Logbog"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 2, // en
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 2)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Logbook"
-                                                        },
-                                                        new()
-                                                        {
-                                                            LanguageId = 3, // ge
-                                                            Name = areaRule.AreaRuleTranslations
-                                                                .Where(x => x.LanguageId == 3)
-                                                                .Select(x => x.Name)
-                                                                .FirstOrDefault() + ": Logbook"
-                                                        }
-                                                    };
+                                                        LanguageId = 1, // da
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 1)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Logbog"
+                                                    },
+
+                                                    new()
+                                                    {
+                                                        LanguageId = 2, // en
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 2)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Logbook"
+                                                    },
+
+                                                    new()
+                                                    {
+                                                        LanguageId = 3, // ge
+                                                        Name = areaRule.AreaRuleTranslations
+                                                            .Where(x => x.LanguageId == 3)
+                                                            .Select(x => x.Name)
+                                                            .FirstOrDefault() + ": Logbook"
+                                                    }
+                                                ];
                                                 planningForType6Two.RepeatEvery = 12;
                                                 planningForType6Two.RepeatType =
                                                     (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)
@@ -1829,10 +1827,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         var planningForType2TypeTankOpenId = 0;
         // if (areaRule.Type == AreaRuleT2TypesEnum.Open)
         // {
-            const string eformName = "03. Kontrol flydelag";
-            var eformId = await sdkDbContext.CheckListTranslations
-                .Where(x => x.Text == eformName)
-                .Select(x => x.CheckListId)
+            const string eformName = "Kontrol flydelag";
+            var eformId = await sdkDbContext.CheckLists
+                .Where(x => x.OriginalId == "142142new1")
+                .Select(x => x.Id)
                 .FirstAsync().ConfigureAwait(false);
 
             if (areaRulePlanningModel.Status)
@@ -1841,41 +1839,34 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                     .ConfigureAwait(false);
                 planningForType2TypeTankOpen.NameTranslations =
-                    new List<PlanningNameTranslation>
+                [
+                    new()
                     {
-                        new()
-                        {
-                            LanguageId = danishLanguage.Id, // da
-                            Name = areaRule.AreaRuleTranslations
-                                .Where(x => x.LanguageId == 1)
-                                .Select(x => x.Name)
-                                .FirstOrDefault() + ": Flydelag"
-                        },
-                        new()
-                        {
-                            LanguageId = englishLanguage.Id, // en
-                            Name = areaRule.AreaRuleTranslations
-                                .Where(x => x.LanguageId == 2)
-                                .Select(x => x.Name)
-                                .FirstOrDefault() + ": Floating layer"
-                        },
-                        new()
-                        {
-                            LanguageId = germanLanguage.Id, // ge
-                            Name = areaRule.AreaRuleTranslations
-                                .Where(x => x.LanguageId == 3)
-                                .Select(x => x.Name)
-                                .FirstOrDefault() + ": Schwimmende Ebene"
-                        }
-                        // new PlanningNameTranslation
-                        // {
-                        //     LanguageId = 4,// uk-ua
-                        //     Name = areaRule.AreaRuleTranslations
-                        //         .Where(x => x.LanguageId == 4)
-                        //         .Select(x => x.Name)
-                        //         .FirstOrDefault() + "Перевірте плаваючий шар",
-                        // },
-                    };
+                        LanguageId = danishLanguage.Id, // da
+                        Name = areaRule.AreaRuleTranslations
+                            .Where(x => x.LanguageId == 1)
+                            .Select(x => x.Name)
+                            .FirstOrDefault() + ": Flydelag"
+                    },
+
+                    new()
+                    {
+                        LanguageId = englishLanguage.Id, // en
+                        Name = areaRule.AreaRuleTranslations
+                            .Where(x => x.LanguageId == 2)
+                            .Select(x => x.Name)
+                            .FirstOrDefault() + ": Floating layer"
+                    },
+
+                    new()
+                    {
+                        LanguageId = germanLanguage.Id, // ge
+                        Name = areaRule.AreaRuleTranslations
+                            .Where(x => x.LanguageId == 3)
+                            .Select(x => x.Name)
+                            .FirstOrDefault() + ": Schwimmende Ebene"
+                    }
+                ];
                 planningForType2TypeTankOpen.RepeatEvery = 1;
                 planningForType2TypeTankOpen.RepeatType =
                     (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
@@ -2211,8 +2202,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             var planningForType6HoursAndEnergyEnabled = await CreateItemPlanningObject(eformId, eformName,
                     folderId, areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext)
                 .ConfigureAwait(false);
-            planningForType6HoursAndEnergyEnabled.NameTranslations = new List<PlanningNameTranslation>
-            {
+            planningForType6HoursAndEnergyEnabled.NameTranslations =
+            [
                 new()
                 {
                     LanguageId = danishLanguage.Id, // da
@@ -2221,6 +2212,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Timer og energi"
                 },
+
                 new()
                 {
                     LanguageId = englishLanguage.Id, // en
@@ -2229,6 +2221,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Hours and energy"
                 },
+
                 new()
                 {
                     LanguageId = germanLanguage.Id, // ge
@@ -2237,7 +2230,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Stunden und Energie"
                 }
-            };
+            ];
             planningForType6HoursAndEnergyEnabled.RepeatEvery = 12;
             planningForType6HoursAndEnergyEnabled.RepeatType =
                 (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
@@ -2275,8 +2268,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 .FirstAsync().ConfigureAwait(false);
             var planningForType6One = await CreateItemPlanningObject(eformIdOne, eformNameOne, folderId,
                 areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
-            planningForType6One.NameTranslations = new List<PlanningNameTranslation>
-            {
+            planningForType6One.NameTranslations =
+            [
                 new()
                 {
                     LanguageId = danishLanguage.Id, // da
@@ -2285,6 +2278,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Service"
                 },
+
                 new()
                 {
                     LanguageId = englishLanguage.Id, // en
@@ -2293,6 +2287,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Service"
                 },
+
                 new()
                 {
                     LanguageId = germanLanguage.Id, // ge
@@ -2301,14 +2296,14 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Service"
                 }
-            };
+            ];
             planningForType6One.RepeatEvery = 12;
             planningForType6One.RepeatType =
                 (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Month;
             var planningForType6Two = await CreateItemPlanningObject(eformIdTwo, eformNameTwo, folderId,
                 areaRulePlanningModel, areaRule, userId, backendConfigurationPnDbContext, itemsPlanningPnDbContext).ConfigureAwait(false);
-            planningForType6Two.NameTranslations = new List<PlanningNameTranslation>
-            {
+            planningForType6Two.NameTranslations =
+            [
                 new()
                 {
                     LanguageId = danishLanguage.Id, // da
@@ -2317,6 +2312,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Logbog"
                 },
+
                 new()
                 {
                     LanguageId = englishLanguage.Id, // en
@@ -2325,6 +2321,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Logbook"
                 },
+
                 new()
                 {
                     LanguageId = germanLanguage.Id, // ge
@@ -2333,7 +2330,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                         .Select(x => x.Name)
                         .FirstOrDefault() + ": Logbook"
                 }
-            };
+            ];
             planningForType6Two.RepeatEvery = 0;
             planningForType6Two.RepeatType =
                 (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)RepeatType.Day;
@@ -2486,7 +2483,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
             ((DataElement)mainElement.ElementList[0]).DataItemList.RemoveAt(1);
             ((DataElement)mainElement.ElementList[0]).DataItemGroupList.Add(new FieldGroup("0",
                 "Hvordan opretter jeg produkter",
-                "", Constants.FieldColors.Yellow, -1, "", new List<DataItem>()));
+                "", Constants.FieldColors.Yellow, -1, "", []));
 
             var description = $"<br><strong>Placering</strong><br>Ejendom: {areaRule.Property.Name}<br><br>" +
                               "I Bekæmpelsesmiddeldatabasen (BMD) som vedligeholdes af Miljøstyrelsen, kan du finde alle godkendte sprøjtemidler og biocider.<br>" +

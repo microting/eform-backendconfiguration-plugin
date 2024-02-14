@@ -22,21 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+using System.Collections.Generic;
+
+public class AreaRulesForType7
 {
-    using System.Collections.Generic;
+    public string FolderName { get; set; }
 
-    public class AreaRulesForType7
-    {
-        public string FolderName { get; set; }
+    public List<string> AreaRuleNames { get; set; }
+}
 
-        public List<string> AreaRuleNames { get; set; }
-    }
+public class AreaRulesForType8
+{
+    public string FolderName { get; set; }
 
-    public class AreaRulesForType8
-    {
-        public string FolderName { get; set; }
-
-        public List<string> AreaRuleNames { get; set; }
-    }
+    public List<string> AreaRuleNames { get; set; }
 }

@@ -29,11 +29,11 @@ using System.Collections.Generic;
 public class TaskTrackerFiltrationModel
 {
 	public List<int> PropertyIds { get; set; }
-		= new();
+		= [];
 
 	public List<int> TagIds { get; set; }
-		= new();
+		= [];
 
 	public List<int> WorkerIds { get; set; }
-		= new();
+		= [];
 }

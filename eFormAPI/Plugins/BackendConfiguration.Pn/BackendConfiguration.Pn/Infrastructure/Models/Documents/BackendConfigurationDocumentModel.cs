@@ -17,7 +17,7 @@ public class BackendConfigurationDocumentModel
     [CanBeNull] public string PropertyNames { get; set; }
     public List<BackendConfigurationDocumentProperty> DocumentProperties { get; set; }
     public List<BackendConfigurationDocumentUploadedData> DocumentUploadedDatas { get; set; }
-        = new();
+        = [];
     public bool Status { get; set; }
     public bool IsLocked { get; set; }
     public DateTime CreatedAt { get; set; }

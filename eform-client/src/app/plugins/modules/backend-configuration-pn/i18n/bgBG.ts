@@ -282,4 +282,6 @@ export const bgBG = {
   Description: 'Описание',
   Date: 'Дата',
   Location: 'Местоположение',
+  'Select date range': 'Изберете период от време',
+  'Manage tags': 'Управление на етикети',
 };

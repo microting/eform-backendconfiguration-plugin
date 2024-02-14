@@ -22,36 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data
-{
-    using Microting.eFormApi.BasePn.Abstractions;
-    using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+namespace BackendConfiguration.Pn.Infrastructure.Data.Seed.Data;
 
-    public class BackendConfigurationSeedData : IPluginConfigurationSeedData
-    {
-        private const string TagBackendConfigurationSettingsName = "BackendConfigurationSettings";
-        public PluginConfigurationValue[] Data => new[]
+using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
+
+public class BackendConfigurationSeedData : IPluginConfigurationSeedData
+{
+    private const string TagBackendConfigurationSettingsName = "BackendConfigurationSettings";
+    public PluginConfigurationValue[] Data =>
+    [
+        new PluginConfigurationValue
         {
-            new PluginConfigurationValue
-            {
-                Name = $"{TagBackendConfigurationSettingsName}:ReportSubHeaderName",
-                Value = ""
-            },
-            new PluginConfigurationValue
-            {
-                Name = $"{TagBackendConfigurationSettingsName}:ReportHeaderName",
-                Value = ""
-            },
-            new PluginConfigurationValue
-            {
-                Name = $"{TagBackendConfigurationSettingsName}:MaxChrNumbers",
-                Value = "1000"
-            },
-            new PluginConfigurationValue
-            {
-                Name = $"{TagBackendConfigurationSettingsName}:MaxCvrNumbers",
-                Value = "1000"
-            }
-        };
-    }
+            Name = $"{TagBackendConfigurationSettingsName}:ReportSubHeaderName",
+            Value = ""
+        },
+        new PluginConfigurationValue
+        {
+            Name = $"{TagBackendConfigurationSettingsName}:ReportHeaderName",
+            Value = ""
+        },
+        new PluginConfigurationValue
+        {
+            Name = $"{TagBackendConfigurationSettingsName}:MaxChrNumbers",
+            Value = "1000"
+        },
+        new PluginConfigurationValue
+        {
+            Name = $"{TagBackendConfigurationSettingsName}:MaxCvrNumbers",
+            Value = "1000"
+        }
+    ];
 }

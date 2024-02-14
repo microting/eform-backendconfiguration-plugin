@@ -45,7 +45,7 @@ describe('Backend Configuration Area Rules Planning Type2', function () {
     const areaRuleForCreate: AreaRuleCreateUpdate = {
       name: generateRandmString(),
       type: 'Åben',
-      alarm: 'Ja',
+      alarm: 'Nej',
     };
     await backendConfigurationAreaRulesPage.createAreaRule(areaRuleForCreate);
 
@@ -74,7 +74,7 @@ describe('Backend Configuration Area Rules Planning Type2', function () {
     ).eq(1);
     const itemPlannings = await itemsPlanningPlanningPage.getAllPlannings();
     // first planning
-    expect(itemPlannings[0].eFormName).eq('03. Kontrol flydelag');
+    expect(itemPlannings[0].eFormName).eq('Kontrol flydelag');
     expect(itemPlannings[0].name).eq(areaRule.name + ': Flydelag');
     expect(itemPlannings[0].folderName).eq(
       `${property.name} - 03. Flydelag - ${areaRule.name}`

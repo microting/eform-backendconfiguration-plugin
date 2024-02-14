@@ -22,23 +22,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System.Net.Http;
 using Microting.eForm.Infrastructure.Models;
 using Microting.eFormApi.BasePn.Infrastructure.Models.Application.Case.CaseEdit;
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService
-{
-    using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
-    using System.Threading.Tasks;
+namespace BackendConfiguration.Pn.Services.BackendConfigurationCompliancesService;
 
-    public interface IBackendConfigurationCompliancesService
-    {
-        Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request);
-        Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
-        Task<OperationDataResult<ReplyElement>> Read(int id);
-        Task<OperationResult> Update(ReplyRequest model);
-        Task<OperationResult> Delete(int id);
-    }
+using BackendConfiguration.Pn.Infrastructure.Models.Compliances.Index;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+using System.Threading.Tasks;
+
+public interface IBackendConfigurationCompliancesService
+{
+    Task<OperationDataResult<Paged<CompliancesModel>>> Index(CompliancesRequestModel request);
+    Task<OperationDataResult<int>> ComplianceStatus(int propertyId);
+    Task<OperationDataResult<ReplyElement>> Read(int id);
+    Task<OperationResult> Update(ReplyRequest model);
+    Task<OperationResult> Delete(int id);
 }

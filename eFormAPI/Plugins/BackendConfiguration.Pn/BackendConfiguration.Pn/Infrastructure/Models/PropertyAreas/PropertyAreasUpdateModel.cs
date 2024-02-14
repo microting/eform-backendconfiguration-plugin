@@ -22,15 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas
+namespace BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
+
+using System.Collections.Generic;
+
+public class PropertyAreasUpdateModel
 {
-    using System.Collections.Generic;
+    public int PropertyId { get; set; }
 
-    public class PropertyAreasUpdateModel
-    {
-        public int PropertyId { get; set; }
-
-        public List<PropertyAreaModel> Areas { get; set; }
-             = new();
-    }
+    public List<PropertyAreaModel> Areas { get; set; }
+        = [];
 }

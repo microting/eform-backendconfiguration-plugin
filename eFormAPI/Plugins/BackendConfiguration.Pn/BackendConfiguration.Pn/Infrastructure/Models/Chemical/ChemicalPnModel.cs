@@ -24,46 +24,45 @@ SOFTWARE.
 
 using System;
 
-namespace Chemicals.Pn.Infrastructure.Models.Chemical
+namespace Chemicals.Pn.Infrastructure.Models.Chemical;
+
+public class ChemicalPnModel
 {
-    public class ChemicalPnModel
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string Name { get; set; }
+    public string Name { get; set; }
 
-        public string RegistrationNo { get; set; }
+    public string RegistrationNo { get; set; }
 
-        public int? Status { get; set; }
+    public int? Status { get; set; }
 
-        public DateTime? AuthorisationDate { get; set; }
+    public DateTime? AuthorisationDate { get; set; }
 
-        public DateTime? AuthorisationExpirationDate { get; set; }
+    public DateTime? AuthorisationExpirationDate { get; set; }
 
-        public DateTime? AuthorisationTerminationDate { get; set; }
+    public DateTime? AuthorisationTerminationDate { get; set; }
 
-        public DateTime? SalesDeadline { get; set; }
+    public DateTime? SalesDeadline { get; set; }
 
-        public DateTime? UseAndPossesionDeadline { get; set; }
+    public DateTime? UseAndPossesionDeadline { get; set; }
 
-        public DateTime? PossessionDeadline { get; set; }
+    public DateTime? PossessionDeadline { get; set; }
 
-        public bool Verified { get; set; }
+    public bool Verified { get; set; }
 
-        public string Barcode { get; set; }
+    public string Barcode { get; set; }
 
-        public string FileName { get; set; }
+    public string FileName { get; set; }
 
-        public string ProductName { get; set; }
+    public string ProductName { get; set; }
 
-        public int ProductId { get; set; }
+    public int ProductId { get; set; }
 
-        public string Locations { get; set; }
+    public string Locations { get; set; }
 
-        public string PropertyName { get; set; }
+    public string PropertyName { get; set; }
 
-        public string ExpiredState { get; set; }
+    public string ExpiredState { get; set; }
 
-        public DateTime? ExpiredDate { get; set; }
-    }
+    public DateTime? ExpiredDate { get; set; }
 }

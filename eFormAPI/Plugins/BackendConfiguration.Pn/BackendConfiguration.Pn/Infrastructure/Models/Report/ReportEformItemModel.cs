@@ -25,22 +25,21 @@ SOFTWARE.
 using System;
 using System.Collections.Generic;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.Report
+namespace BackendConfiguration.Pn.Infrastructure.Models.Report;
+
+public class ReportEformItemModel
 {
-    public class ReportEformItemModel
-    {
-        public int Id { get; set; }
-        public int ItemId { get; set; }
-        public DateTime? MicrotingSdkCaseDoneAt { get; set; }
-        public DateTime ServerTime { get; set; }
-        public int MicrotingSdkCaseId { get; set; }
-        public int eFormId { get; set; }
-        public string ItemName { get; set; }
-        public string ItemDescription { get; set; }
-        public string DoneBy { get; set; } // worker name
-        public int PostsCount { get; set; }
-        public int ImagesCount { get; set; }
-        public string PropertyName { get; set; }
-        public List<KeyValuePair<string, string>> CaseFields { get; set; } = new();
-    }
+    public int Id { get; set; }
+    public int ItemId { get; set; }
+    public DateTime? MicrotingSdkCaseDoneAt { get; set; }
+    public DateTime ServerTime { get; set; }
+    public int MicrotingSdkCaseId { get; set; }
+    public int eFormId { get; set; }
+    public string ItemName { get; set; }
+    public string ItemDescription { get; set; }
+    public string DoneBy { get; set; } // worker name
+    public int PostsCount { get; set; }
+    public int ImagesCount { get; set; }
+    public string PropertyName { get; set; }
+    public List<KeyValuePair<string, string>> CaseFields { get; set; } = [];
 }

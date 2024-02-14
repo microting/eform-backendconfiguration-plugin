@@ -282,4 +282,6 @@ export const lvLV = {
   Description: 'Apraksts',
   Date: 'Datums',
   Location: 'Atrašanās vieta',
+  'Select date range': 'Atlasiet datumu diapazonu',
+  'Manage tags': 'Pārvaldīt tagus',
 };

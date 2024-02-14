@@ -299,4 +299,6 @@ export const enUS= {
   'Description': 'Description',
   'Date': 'Date',
   'Location': 'Location',
+  'Select date range': 'Select date range',
+  'Manage tags': 'Manage tags',
 };

@@ -7,7 +7,6 @@ using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
-using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
 using Microting.ItemsPlanningBase.Infrastructure.Enums;
 using NSubstitute;
@@ -37,10 +36,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -68,14 +64,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -90,14 +86,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -107,28 +103,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -137,7 +135,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -149,14 +147,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -398,10 +396,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -429,14 +424,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -451,14 +446,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -468,28 +463,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -498,7 +495,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -510,14 +507,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -758,10 +755,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -789,14 +783,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -811,14 +805,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -828,28 +822,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -858,7 +854,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -870,14 +866,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1118,10 +1114,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1149,14 +1142,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -1171,14 +1164,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -1188,28 +1181,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -1218,7 +1213,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -1230,14 +1225,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1479,10 +1474,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1510,14 +1502,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -1532,14 +1524,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -1549,28 +1541,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -1579,7 +1573,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -1591,14 +1585,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -1840,10 +1834,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -1871,14 +1862,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -1893,14 +1884,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -1910,28 +1901,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -1940,7 +1933,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -1952,14 +1945,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -2200,10 +2193,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2231,14 +2221,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -2253,14 +2243,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -2270,28 +2260,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -2300,7 +2292,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -2312,14 +2304,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -2560,10 +2552,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2591,14 +2580,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -2613,14 +2602,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -2630,28 +2619,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -2660,7 +2651,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -2672,14 +2663,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -2920,10 +2911,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -2951,14 +2939,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -2973,14 +2961,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -2990,28 +2978,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -3020,7 +3010,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -3032,14 +3022,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -3280,10 +3270,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -3311,14 +3298,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -3333,14 +3320,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -3350,28 +3337,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -3380,7 +3369,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -3392,14 +3381,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -3640,10 +3629,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -3671,14 +3657,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -3693,14 +3679,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -3710,28 +3696,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -3740,7 +3728,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -3752,14 +3740,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -4000,10 +3988,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -4031,14 +4016,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -4053,14 +4038,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -4070,28 +4055,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -4100,7 +4087,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -4112,14 +4099,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -4360,10 +4347,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -4391,14 +4375,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -4413,14 +4397,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -4430,28 +4414,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -4460,7 +4446,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -4472,14 +4458,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,
@@ -4720,10 +4706,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
             IndustryCode = Guid.NewGuid().ToString(),
             Cvr = Guid.NewGuid().ToString(),
             IsFarm = false,
-            LanguagesIds = new List<int>
-            {
-                1
-            },
+            LanguagesIds = [1],
             MainMailAddress = Guid.NewGuid().ToString(),
             Name = Guid.NewGuid().ToString(),
             WorkorderEnable = false
@@ -4751,14 +4734,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAssignWorkersModel = new PropertyAssignWorkersModel
         {
-            Assignments = new List<PropertyAssignmentWorkerModel>
-            {
+            Assignments =
+            [
                 new()
                 {
                     PropertyId = properties[0].Id,
                     IsChecked = true
                 }
-            },
+            ],
             SiteId = sites[2].Id
         };
 
@@ -4773,14 +4756,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         var propertyAreasUpdateModel = new PropertyAreasUpdateModel
         {
-            Areas = new List<PropertyAreaModel>
-            {
+            Areas =
+            [
                 new()
                 {
                     AreaId = areaTranslation.AreaId,
                     Activated = true
                 }
-            },
+            ],
             PropertyId = properties[0].Id
         };
 
@@ -4790,28 +4773,30 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
 
         AreaRulesCreateModel areaRulesCreateModel = new AreaRulesCreateModel
         {
-            AreaRules = new List<AreaRuleCreateModel>
-            {
+            AreaRules =
+            [
                 new()
                 {
-                    TranslatedNames = new List<CommonDictionaryModel>
-                    {
+                    TranslatedNames =
+                    [
                         new()
                         {
                             Name = danishName, Description = "00. Logbøger",
                             Id = danishLanguage.Id
                         },
+
                         new()
                         {
                             Name = englishName, Description = "00. Logbooks",
                             Id = englishLanguage.Id
                         },
+
                         new()
                         {
                             Name = germanName, Description = "00. Logbücher",
                             Id = germanLanguage.Id
                         }
-                    },
+                    ],
                     TypeSpecificFields = new TypeSpecificFields
                     {
                         Alarm = AreaRuleT2AlarmsEnum.Yes,
@@ -4820,7 +4805,7 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
                         Type = AreaRuleT2TypesEnum.Open
                     }
                 }
-            },
+            ],
             PropertyAreaId = properties[0].Id
         };
 
@@ -4832,14 +4817,14 @@ public class BackendConfigurationAreaRulePlanningsServiceHelperTestLogBooksMonth
         // should create AreaRulePlanningModel for areaId
         var areaRulePlanningModel = new AreaRulePlanningModel
         {
-            AssignedSites = new List<AreaRuleAssignedSitesModel>
-            {
+            AssignedSites =
+            [
                 new()
                 {
                     Checked = true,
                     SiteId = currentSite.Id
                 }
-            },
+            ],
             RuleId = areaRules[0].Id,
             ComplianceEnabled = true,
             PropertyId = properties[0].Id,

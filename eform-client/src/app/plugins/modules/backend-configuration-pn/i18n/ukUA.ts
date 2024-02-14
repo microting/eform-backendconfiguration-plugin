@@ -282,4 +282,6 @@ export const ukUA = {
   Description: 'опис',
   Date: 'Дата',
   Location: 'Місцезнаходження',
+  'Select date range': 'Виберіть діапазон дат',
+  'Manage tags': 'Керуйте тегами',
 };

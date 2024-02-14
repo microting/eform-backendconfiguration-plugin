@@ -87,11 +87,12 @@
   <div class="d-flex flex-row flex-wrap justify-content-between">
     <mat-card
       *ngFor="let image of images; let i = index"
-      style="width: 200px;"
+      style="width: 500px;"
       class="d-flex flex-column justify-content-between m-1"
     >
       <mat-card-content>
         <img
+          style="max-height: 300px; max-width: 300px; object-fit: cover;"
           mat-card-image
           (click)="openPicture(i)"
           [src]="image.src | authImage | async"

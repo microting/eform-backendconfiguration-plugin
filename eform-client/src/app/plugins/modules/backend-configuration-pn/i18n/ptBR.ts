@@ -282,4 +282,6 @@ export const ptBR = {
   Description: 'Descrição',
   Date: 'Data',
   Location: 'Localização',
+  'Select date range': 'Selecione o período',
+  'Manage tags': 'Gerenciar tags',
 };

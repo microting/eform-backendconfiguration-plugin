@@ -22,31 +22,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationAreaRulesService;
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Infrastructure.Models.AreaRules;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+
+public interface IBackendConfigurationAreaRulesService
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.AreaRules;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+	Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId, string sort, bool isSortDsc);
 
-    public interface IBackendConfigurationAreaRulesService
-	{
-		Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyAreaId, string sort, bool isSortDsc);
+	Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyId, int areaId);
 
-		Task<OperationDataResult<List<AreaRuleSimpleModel>>> Index(int propertyId, int areaId);
+	Task<OperationDataResult<AreaRuleModel>> Read(int ruleId);
 
-        Task<OperationDataResult<AreaRuleModel>> Read(int ruleId);
+	Task<OperationResult> Update(AreaRuleUpdateModel updateModel);
 
-        Task<OperationResult> Update(AreaRuleUpdateModel updateModel);
+	Task<OperationResult> Delete(int areaId);
 
-        Task<OperationResult> Delete(int areaId);
+	Task<OperationResult> Create(AreaRulesCreateModel createModel);
 
-        Task<OperationResult> Create(AreaRulesCreateModel createModel);
+	Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7();
 
-        Task<OperationDataResult<List<AreaRulesForType7>>> GetAreaRulesForType7();
+	Task<OperationDataResult<List<AreaRulesForType8>>> GetAreaRulesForType8();
 
-        Task<OperationDataResult<List<AreaRulesForType8>>> GetAreaRulesForType8();
-
-        Task<OperationResult> Delete(List<int> areaRuleIds);
-    }
+	Task<OperationResult> Delete(List<int> areaRuleIds);
 }

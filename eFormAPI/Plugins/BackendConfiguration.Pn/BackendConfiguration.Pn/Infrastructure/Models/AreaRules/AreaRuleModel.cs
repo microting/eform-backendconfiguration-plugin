@@ -24,31 +24,30 @@ SOFTWARE.
 
 using BackendConfiguration.Pn.Infrastructure.Models.PropertyAreas;
 
-namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules
+namespace BackendConfiguration.Pn.Infrastructure.Models.AreaRules;
+
+using System.Collections.Generic;
+using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+
+public class AreaRuleModel
 {
-    using System.Collections.Generic;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.Common;
+    public int Id { get; set; }
 
-    public class AreaRuleModel
-    {
-        public int Id { get; set; }
+    public int? EformId { get; set; }
 
-        public int? EformId { get; set; }
+    public string EformName { get; set; }
 
-        public string EformName { get; set; }
+    public bool IsDefault { get; set; }
 
-        public bool IsDefault { get; set; }
+    public List<CommonDictionaryModel> TranslatedNames { get; set; }
+        = [];
 
-        public List<CommonDictionaryModel> TranslatedNames { get; set; }
-            = new();
+    // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
+    public TypeSpecificFields TypeSpecificFields { get; set; }
 
-        // AreaRuleT1Model | AreaRuleT2Model | AreaRuleT3Model | AreaRuleT5Model
-        public TypeSpecificFields TypeSpecificFields { get; set; }
+    public AreaRulePlanningModel Planning { get; set; }
 
-        public AreaRulePlanningModel Planning { get; set; }
+    public int SecondaryeFormId { get; set; }
 
-        public int SecondaryeFormId { get; set; }
-
-        public string SecondaryeFormName { get; set; }
-    }
+    public string SecondaryeFormName { get; set; }
 }

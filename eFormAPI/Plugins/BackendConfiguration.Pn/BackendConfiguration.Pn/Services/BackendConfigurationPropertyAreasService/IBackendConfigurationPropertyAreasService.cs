@@ -22,24 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService
+namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertyAreasService;
+
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Infrastructure.Models.PropertyAreas;
+using Microting.eForm.Infrastructure.Models;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+
+public interface IBackendConfigurationPropertyAreasService
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Infrastructure.Models.PropertyAreas;
-    using Microting.eForm.Infrastructure.Models;
-    using Microting.eFormApi.BasePn.Infrastructure.Models.API;
+    Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId);
 
-    public interface IBackendConfigurationPropertyAreasService
-    {
-        Task<OperationDataResult<List<PropertyAreaModel>>> Read(int propertyId);
+    Task<OperationResult> Update(PropertyAreasUpdateModel updateModel);
 
-        Task<OperationResult> Update(PropertyAreasUpdateModel updateModel);
+    Task<OperationDataResult<AreaModel>> ReadAreaByPropertyAreaId(int propertyAreaId);
 
-        Task<OperationDataResult<AreaModel>> ReadAreaByPropertyAreaId(int propertyAreaId);
+    Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId);
 
-        Task<OperationDataResult<AreaModel>> ReadAreaByAreaRuleId(int areaRuleId);
-
-        Task<OperationResult> CreateEntityList(List<EntityItem> entityItemsListForCreate, int propertyAreaId);
-    }
+    Task<OperationResult> CreateEntityList(List<EntityItem> entityItemsListForCreate, int propertyAreaId);
 }
