@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
-  [cellTemplate]="{tags: tagsTpl}"
+  [cellTemplate]="{tags: tagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -22,4 +22,21 @@
       </mat-chip>
     </mat-chip-list>
   </div>
+</ng-template>
+
+<ng-template #startDateTpl let-row>
+  <span title="{{getFormattedStartDate(row)}}">{{getFormattedStartDate(row)}}</span>
+</ng-template>
+
+<ng-template #repeatTpl let-row>
+  <ng-container *ngIf="row.repeatEvery === 0 && row.repeatType === RepeatTypeEnum.Day; else elseRepeatEveryTpl">
+    <span title="{{RepeatTypeEnum[0] | translate}}">{{RepeatTypeEnum[0] | translate}}</span>
+  </ng-container>
+  <ng-template #elseRepeatEveryTpl>
+    <span title="{{ row.repeatEvery }} {{RepeatTypeEnum[row.repeatType] | translate}}">{{ row.repeatEvery }} {{RepeatTypeEnum[row.repeatType] | translate}}</span>
+  </ng-template>
+</ng-template>
+
+<ng-template #statusTpl let-row>
+  <span title="{{TaskWizardStatusesEnum[row.status] | translate}}">{{TaskWizardStatusesEnum[row.status] | translate}}</span>
 </ng-template>

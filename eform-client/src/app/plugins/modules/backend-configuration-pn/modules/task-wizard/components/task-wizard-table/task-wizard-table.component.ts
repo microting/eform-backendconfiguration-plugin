@@ -53,23 +53,16 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
       header: this.translateService.stream('Start date'),
       sortable: true,
       sortProp: {id: 'StartDate'},
-      formatter: (model: TaskWizardModel) => format(model.startDate, 'P', {locale: this.authStateService.dateFnsLocale})
     },
     {
       field: 'repeat',
       header: this.translateService.stream('Repeat'),
-      formatter: (model: TaskWizardModel) => {
-        return (model.repeatEvery === 0 && model.repeatType === RepeatTypeEnum.Day)
-          ? `${this.translateService.instant(RepeatTypeEnum[0])}`
-          : `${model.repeatEvery} ${this.translateService.instant(RepeatTypeEnum[model.repeatType])}`;
-      }
     },
     {
       field: 'status',
       header: this.translateService.stream('Status'),
       sortable: true,
       sortProp: {id: 'Status'},
-      formatter: (model: TaskWizardModel) => this.translateService.instant(TaskWizardStatusesEnum[model.status]),
     },
     {
       field: 'assignedTo',
@@ -119,6 +112,14 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   public selectTaskWizardPaginationSort$ = this.store.select(selectTaskWizardPaginationSort);
   public selectTaskWizardPaginationIsSortDsc$ = this.store.select(selectTaskWizardPaginationIsSortDsc);
 
+  get TaskWizardStatusesEnum() {
+    return TaskWizardStatusesEnum;
+  }
+
+  get RepeatTypeEnum() {
+    return RepeatTypeEnum;
+  }
+
   constructor(
     private store: Store,
     private translateService: TranslateService,
@@ -131,6 +132,10 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  }
+
+  getFormattedStartDate(row: TaskWizardModel) {
+    return format(row.startDate, 'P', {locale: this.authStateService.dateFnsLocale});
   }
 
   onClickTag(tag: CommonDictionaryModel) {
