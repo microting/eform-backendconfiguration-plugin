@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <Main>
-  <Id>142142new1</Id>
+  <Id>142142new2</Id>
   <Repeated>0</Repeated>
-  <Label>Kontrol flydelag|Control floating layer</Label>
+  <Label>Kontrol flydelag|Control floating layer|Schwimmschicht prüfen</Label>
   <StartDate>2020-10-06</StartDate>
   <EndDate>2030-10-06</EndDate>
   <Language>da</Language>
@@ -13,9 +13,9 @@
   <DisplayOrder>0</DisplayOrder>
   <ElementList>
     <Element type="DataElement">
-      <Id>142142new1</Id>
-      <Label>Kontrol flydelag|Control floating layer</Label>
-      <Description><![CDATA[Kontrollér flydelag og angiv evt. årsag til manglende flydelag.|Check floating layer and indicate - if necessary - cause of lack of floating layer.<br>]]></Description>
+      <Id>142142new2</Id>
+      <Label>Kontrol flydelag|Control floating layer|Schwimmschicht prüfen</Label>
+      <Description>Kontrollér flydelag og angiv evt. årsag til manglende flydelag.|Check floating layer and indicate - if necessary - cause of lack of floating layer.&lt;br&gt;|Schwimmschicht prüfen und ggf. spezifizieren. Ursache für fehlende Schwimmschicht.</Description>
       <DisplayOrder>0</DisplayOrder>
       <ReviewEnabled>false</ReviewEnabled>
       <ManualSync>false</ManualSync>
@@ -25,16 +25,16 @@
       <DataItemGroupList>
         <DataItemGroup type="FieldGroup">
           <Id>372222</Id>
-          <Label>LÆS MERE|READ MORE</Label>
-          <Description><![CDATA[]]></Description>
+          <Label>LÆS MERE|READ MORE|MEHR LESEN</Label>
+          <Description />
           <DisplayOrder>0</DisplayOrder>
-          <Value>Closed</Value>
+          <Value>Closed|Closed|Geschlossen</Value>
           <Color>fff6df</Color>
           <DataItemList>
             <DataItem type="None">
               <Id>372223</Id>
-              <Label>INFO|INFO</Label>
-              <Description><![CDATA[Hvis der ikke er fast overdækning på en gyllebeholder, skal der etableres flydelag på gylleoverfladen.&nbsp;<br><br>Det skal altid sikres, at der er et tæt flydelag. Flydelaget begrænser ammoniakfordampningen, hvilket giver en bedre gødningsværdi i gyllen.<br><br>Flydelaget skal dække hele beholderens overflade, dog må der gerne være en brudflade op til 3 m2 ved det dykkede indløb.&nbsp;<br><br>Flydelaget kan etableres med en fast gødning eller fx snittet halm.<br><br>Hvis kommunen konstaterer mangelfuldt flydelag ved to tilsyn indenfor 3 år, skal overdækning påbydes, undtagen i særlige tilfælde, hvis kommunen ud fra en konkret vurdering finder, at overtrædelsen er undskyldelig.<br>|<br>If there is no fixed cover on a slurry tank, floating layers must be established on the slurry surface.<br><br>It must always be ensured that there is a tight floating layer. The floating layer limits the ammonia evaporation, which gives a better fertilizer value in the manure.<br><br>The floating layer must cover the entire surface of the container, however, there may be a breaking surface up to 3 m2 at the submerged inlet.<br><br>The floating layer can be established with a solid fertilizer or, for example, cut straw.<br><br>If the municipality finds a defective floating layer during two inspections within 3 years, cover must be imposed, except in special cases if the municipality, based on a specific assessment, finds that the violation is excusable.]]></Description>
+              <Label>INFO|INFO|DIE INFO</Label>
+              <Description>Hvis der ikke er fast overdækning på en gyllebeholder, skal der etableres flydelag på gylleoverfladen.&amp;nbsp;&lt;br&gt;&lt;br&gt;Det skal altid sikres, at der er et tæt flydelag. Flydelaget begrænser ammoniakfordampningen, hvilket giver en bedre gødningsværdi i gyllen.&lt;br&gt;&lt;br&gt;Flydelaget skal dække hele beholderens overflade, dog må der gerne være en brudflade op til 3 m2 ved det dykkede indløb.&amp;nbsp;&lt;br&gt;&lt;br&gt;Flydelaget kan etableres med en fast gødning eller fx snittet halm.&lt;br&gt;&lt;br&gt;Hvis kommunen konstaterer mangelfuldt flydelag ved to tilsyn indenfor 3 år, skal overdækning påbydes, undtagen i særlige tilfælde, hvis kommunen ud fra en konkret vurdering finder, at overtrædelsen er undskyldelig.&lt;br&gt;|&lt;br&gt;If there is no fixed cover on a slurry tank, floating layers must be established on the slurry surface.&lt;br&gt;&lt;br&gt;It must always be ensured that there is a tight floating layer. The floating layer limits the ammonia evaporation, which gives a better fertilizer value in the manure.&lt;br&gt;&lt;br&gt;The floating layer must cover the entire surface of the container, however, there may be a breaking surface up to 3 m2 at the submerged inlet.&lt;br&gt;&lt;br&gt;The floating layer can be established with a solid fertilizer or, for example, cut straw.&lt;br&gt;&lt;br&gt;If the municipality finds a defective floating layer during two inspections within 3 years, cover must be imposed, except in special cases if the municipality, based on a specific assessment, finds that the violation is excusable.|Wenn bei einem Güllebehälter keine feste Abdeckung vorhanden ist, muss eine Schwimmschicht auf der Gülleoberfläche aufgebaut werden.&lt;br&gt;&lt;br&gt; Es muss stets darauf geachtet werden, dass eine dichte Schwimmschicht vorhanden ist. Die Schwimmschicht begrenzt die Ammoniakverdunstung, was zu einem besseren Düngemittelwert in der Gülle führt.&lt;br&gt;&lt;br&gt; Die Schwimmschicht muss die gesamte Oberfläche des Behälters bedecken, jedoch darf am Taucheinlauf eine Bruchfläche von bis zu 3 m2 vorhanden sein.&lt;br&gt;&lt;br&gt; Die Schwimmschicht kann mit einem festen Dünger oder beispielsweise gehäckseltem Stroh hergestellt werden.&lt;br&gt;&lt;br&gt; Stellt die Gemeinde bei zwei Kontrollen innerhalb von 3 Jahren eine fehlerhafte Schwimmschicht fest, ist eine Deckung anzuordnen, außer in besonderen Fällen, wenn die Gemeinde aufgrund einer konkreten Beurteilung feststellt, dass der Verstoß entschuldbar ist.&lt;br&gt;</Description>
               <DisplayOrder>0</DisplayOrder>
               <Color>fff6df</Color>
             </DataItem>
@@ -43,21 +43,21 @@
       </DataItemGroupList>
       <DataItemList>
         <DataItem type="Date">
-          <Id>377662</Id>
-          <Label>Dato|Date|Dato</Label>
-          <Description><![CDATA[<i>* Skal udfyldes</i>|<i>* Mandatory</i>|<i>* Muss vervollständigt werden</i>]]></Description>
+          <Id>377794</Id>
+          <Label>Dato|Date|Gegeben</Label>
+          <Description>* Skal udfyldes|* Mandatory|* Muss vervollständigt werden</Description>
           <DisplayOrder>1</DisplayOrder>
-          <MinValue>2023-05-09</MinValue>
-          <MaxValue>2033-05-09</MaxValue>
-          <Value/>
+          <MinValue>2024-02-12</MinValue>
+          <MaxValue>2034-02-12</MaxValue>
+          <Value />
           <Mandatory>true</Mandatory>
           <ReadOnly>false</ReadOnly>
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="CheckBox">
           <Id>371625</Id>
-          <Label>Flydelag OK|Floating layer OK</Label>
-          <Description><![CDATA[]]></Description>
+          <Label>Flydelag OK|Floating layer OK|Flugbesatzung OK</Label>
+          <Description />
           <DisplayOrder>2</DisplayOrder>
           <Selected>false</Selected>
           <Mandatory>false</Mandatory>
@@ -65,50 +65,44 @@
         </DataItem>
         <DataItem type="SingleSelect">
           <Id>371900</Id>
-          <Label>Vælg årsag til manglende flydelag|Select reason for lack of floating layer</Label>
-          <Description><![CDATA[]]></Description>
+          <Label>Vælg årsag til manglende flydelag|Select reason for lack of floating layer|Wählen Sie den Grund für das Fehlen einer schwebenden Schicht aus</Label>
+          <Description />
           <DisplayOrder>3</DisplayOrder>
           <Mandatory>false</Mandatory>
           <KeyValuePairList>
             <KeyValuePair>
-              <Key>0</Key>
-              <Value><![CDATA[ - | - ]]></Value>
-              <Selected>false</Selected>
-              <DisplayOrder>0</DisplayOrder>
-            </KeyValuePair>
-            <KeyValuePair>
               <Key>1</Key>
-              <Value><![CDATA[Beholder omrørt|Slurry tank stirred]]></Value>
+              <Value>Beholder omrørt|Slurry tank stirred|Behälter gerührt</Value>
               <Selected>false</Selected>
               <DisplayOrder>1</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>2</Key>
-              <Value><![CDATA[Gylle udbragt|Slurry delivered]]></Value>
+              <Value>Gylle udbragt|Slurry delivered|Gülleausbringung</Value>
               <Selected>false</Selected>
               <DisplayOrder>2</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>3</Key>
-              <Value><![CDATA[Beholder tom|Slurry tank empty]]></Value>
+              <Value>Beholder tom|Slurry tank empty|Betrachter Tom</Value>
               <Selected>false</Selected>
               <DisplayOrder>3</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>4</Key>
-              <Value><![CDATA[Halm tilført|Straw added]]></Value>
+              <Value>Halm tilført|Straw added|Stroh wird mitgeliefert</Value>
               <Selected>false</Selected>
               <DisplayOrder>4</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>5</Key>
-              <Value><![CDATA[Flyttet til anden beholder|Moved to another slurry tank]]></Value>
+              <Value>Flyttet til anden beholder|Moved to another slurry tank|In einen anderen Container verschoben</Value>
               <Selected>false</Selected>
               <DisplayOrder>5</DisplayOrder>
             </KeyValuePair>
             <KeyValuePair>
               <Key>6</Key>
-              <Value><![CDATA[Modtaget biogas-gylle|Biogas slurry received]]></Value>
+              <Value>Modtaget biogas-gylle|Biogas slurry received|Biogas-Gülle erhalten</Value>
               <Selected>false</Selected>
               <DisplayOrder>6</DisplayOrder>
             </KeyValuePair>
@@ -117,31 +111,31 @@
         </DataItem>
         <DataItem type="Picture">
           <Id>371627</Id>
-          <Label>Billede|Picture</Label>
-          <Description><![CDATA[]]></Description>
+          <Label>Billede|Picture|Bild</Label>
+          <Description />
           <DisplayOrder>4</DisplayOrder>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="Comment">
           <Id>371628</Id>
-          <Label>Kommentar|Comment</Label>
-          <Description><![CDATA[]]></Description>
+          <Label>Kommentar|Comment|Kommentar</Label>
+          <Description />
           <DisplayOrder>5</DisplayOrder>
           <Multi>1</Multi>
           <GeolocationEnabled>false</GeolocationEnabled>
           <Split>false</Split>
-          <Value/>
+          <Value />
           <ReadOnly>false</ReadOnly>
           <Mandatory>false</Mandatory>
           <Color>e8eaf6</Color>
         </DataItem>
         <DataItem type="SaveButton">
           <Id>371629</Id>
-          <Label>Gem registrering|Save registration</Label>
-          <Description><![CDATA[]]></Description>
+          <Label>Gem registrering|Save registration|Registrierung speichern</Label>
+          <Description />
           <DisplayOrder>6</DisplayOrder>
-          <Value>INDSEND|SEND</Value>
+          <Value>GEM|SAVE|JUWEL</Value>
           <Color>f0f8db</Color>
         </DataItem>
       </DataItemList>
