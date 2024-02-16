@@ -365,12 +365,12 @@ export class BackendConfigurationAreaRulesPage extends Page {
         await browser.pause(500);
         await (await this.areaRulesGenerateBtn()).click();
         await browser.pause(500);
-        if (areaRule.type) {
-          await selectValueInNgSelector(await this.createRuleType(0), areaRule.type)
-        }
-        if (areaRule.alarm) {
-          await selectValueInNgSelector(await this.createRuleAlarm(0), areaRule.alarm);
-        }
+        // if (areaRule.type) {
+        //   await selectValueInNgSelector(await this.createRuleType(0), areaRule.type)
+        // }
+        // if (areaRule.alarm) {
+        //   await selectValueInNgSelector(await this.createRuleAlarm(0), areaRule.alarm);
+        // }
         // if (areaRule.dayOfWeek) {
         //   await (await (await this.createAreaDayOfWeek(0)).$('input')).setValue(
         //     areaRule.dayOfWeek
@@ -435,20 +435,20 @@ export class AreaRuleRowObject {
         this.eform = await ele3.getText();
       }
     } catch (e) {}
-    try {
-      const ele = await (await $$('td.ruleType')[rowNum]).$('mtx-grid-cell > span');
-      //console.log('ele', JSON.stringify(ele));
-      //if (ele && (await ele.isDisplayed())) {
-        this.ruleType = await ele.getText();
-      //}
-    } catch (e) {
-    }
-    try {
-      const ele = await (await $$('td.alarm')[rowNum]).$('mtx-grid-cell > span');
-      //if (ele && (await ele.isDisplayed())) {
-        this.ruleAlarm = await ele.getText();
-      //}
-    } catch (e) {}
+    // try {
+    //   const ele = await (await $$('td.ruleType')[rowNum]).$('mtx-grid-cell > span');
+    //   //console.log('ele', JSON.stringify(ele));
+    //   //if (ele && (await ele.isDisplayed())) {
+    //     this.ruleType = await ele.getText();
+    //   //}
+    // } catch (e) {
+    // }
+    // try {
+    //   const ele = await (await $$('td.alarm')[rowNum]).$('mtx-grid-cell > span');
+    //   //if (ele && (await ele.isDisplayed())) {
+    //     this.ruleAlarm = await ele.getText();
+    //   //}
+    // } catch (e) {}
     try {
       const ele = await (await $$('td.ruleWeekDay')[rowNum]).$('mtx-grid-cell > span');
       //if (ele && (await ele.isDisplayed())) {

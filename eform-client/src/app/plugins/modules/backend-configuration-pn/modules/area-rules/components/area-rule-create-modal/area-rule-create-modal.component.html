@@ -118,37 +118,37 @@
             </mat-form-field>
           </ng-container>
           <!-- Rule type 2 -->
-          <ng-container *ngIf="selectedArea.type === 2">
-            <mat-form-field>
-              <mat-label>{{'Type' | translate}}</mat-label>
-              <mtx-select
-                [items]="[
-                    { id: 1, name: 'Open' | translate },
-                    { id: 2, name: 'Closed' | translate }
-                  ]"
-                bindLabel="name"
-                bindValue="id"
-                [(ngModel)]="newAreaRule.typeSpecificFields.type"
-                id="createRuleType{{ i }}"
-                [clearable]="false"
-              ></mtx-select>
-            </mat-form-field>
-            <mat-form-field>
-              <mat-label>{{'Alarm' | translate}}</mat-label>
-              <mtx-select
-                [items]="[
-                    { id: 1, name: 'Yes' | translate },
-                    { id: 2, name: 'No' | translate }
-                  ]"
-                bindLabel="name"
-                [placeholder]="'Alarm' | translate"
-                bindValue="id"
-                [(ngModel)]="newAreaRule.typeSpecificFields.alarm"
-                id="createRuleAlarm{{ i }}"
-                [clearable]="false"
-              ></mtx-select>
-            </mat-form-field>
-          </ng-container>
+<!--          <ng-container *ngIf="selectedArea.type === 2">-->
+<!--            <mat-form-field>-->
+<!--              <mat-label>{{'Type' | translate}}</mat-label>-->
+<!--              <mtx-select-->
+<!--                [items]="[-->
+<!--                    { id: 1, name: 'Open' | translate },-->
+<!--                    { id: 2, name: 'Closed' | translate }-->
+<!--                  ]"-->
+<!--                bindLabel="name"-->
+<!--                bindValue="id"-->
+<!--                [(ngModel)]="newAreaRule.typeSpecificFields.type"-->
+<!--                id="createRuleType{{ i }}"-->
+<!--                [clearable]="false"-->
+<!--              ></mtx-select>-->
+<!--            </mat-form-field>-->
+<!--            <mat-form-field>-->
+<!--              <mat-label>{{'Alarm' | translate}}</mat-label>-->
+<!--              <mtx-select-->
+<!--                [items]="[-->
+<!--                    { id: 1, name: 'Yes' | translate },-->
+<!--                    { id: 2, name: 'No' | translate }-->
+<!--                  ]"-->
+<!--                bindLabel="name"-->
+<!--                [placeholder]="'Alarm' | translate"-->
+<!--                bindValue="id"-->
+<!--                [(ngModel)]="newAreaRule.typeSpecificFields.alarm"-->
+<!--                id="createRuleAlarm{{ i }}"-->
+<!--                [clearable]="false"-->
+<!--              ></mtx-select>-->
+<!--            </mat-form-field>-->
+<!--          </ng-container>-->
           <!-- Rule type 5 -->
           <ng-container *ngIf="selectedArea.type === 5">
             <div class="d-flex flex-row">

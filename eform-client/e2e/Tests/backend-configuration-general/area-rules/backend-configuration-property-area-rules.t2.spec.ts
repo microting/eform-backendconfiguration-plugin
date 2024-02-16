@@ -49,8 +49,8 @@ describe('Backend Configuration Area Rules Type2', function () {
     expect(rowNum + 1).eq(await backendConfigurationAreaRulesPage.rowNum());
     const areRule = await backendConfigurationAreaRulesPage.getLastAreaRuleRowObject();
     expect(areRule.name).eq(areaRuleForCreate.name);
-    expect(areRule.ruleType).eq(areaRuleForCreate.type);
-    expect(areRule.ruleAlarm).eq(areaRuleForCreate.alarm);
+    //expect(areRule.ruleType).eq(areaRuleForCreate.type);
+    //expect(areRule.ruleAlarm).eq(areaRuleForCreate.alarm);
     expect(areRule.rulePlanningStatus).eq(false);
   });
   // it('should not edit created area rule type 2', async () => {
