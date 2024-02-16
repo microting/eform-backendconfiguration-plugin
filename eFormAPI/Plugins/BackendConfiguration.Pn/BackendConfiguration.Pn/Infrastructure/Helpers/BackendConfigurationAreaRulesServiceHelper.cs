@@ -219,204 +219,204 @@ public static class BackendConfigurationAreaRulesServiceHelper
                         }).ToList();
                 }
 
-                if (areaProperty.Area.Type is AreaTypesEnum.Type10)
-                {
-                    foreach (var poolHourModel in areaRuleCreateModel.TypeSpecificFields.PoolHoursModel.Parrings)
-                    {
-                        var poolHour = new PoolHour
-                        {
-                            AreaRuleId = areaRule.Id,
-                            DayOfWeek = (DayOfWeekEnum)(poolHourModel.DayOfWeek + 1),
-                            Index = poolHourModel.Index,
-                            IsActive = poolHourModel.IsActive,
-                            CreatedByUserId = userId,
-                            UpdatedByUserId = userId,
-                            Name = poolHourModel.Name
-                        };
-                        await poolHour.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                    }
-
-                    var folderId = await core.FolderCreate(
-                        areaRuleCreateModel.TranslatedNames.Select(x =>
-                        {
-                            var model = new Microting.eForm.Infrastructure.Models.CommonTranslationsModel
-                            {
-                                Name = x.Name,
-                                LanguageId = (int)x.Id,
-                                Description = ""
-                            };
-                            return model;
-                        }).ToList(),
-                        areaRule.FolderId).ConfigureAwait(false);
-
-                    var folderIds = new List<int>
-                        {
-                            await core.FolderCreate([
-                                new()
-                                {
-                                    LanguageId = 1, // da
-                                    Name = "7. Søn",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 2, // en
-                                    Name = "7. Sun",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 3, // ge
-                                    Name = "7. Son",
-                                    Description = ""
-                                }
-                            ], folderId).ConfigureAwait(false),
-                            await core.FolderCreate([
-                                new()
-                                {
-                                    LanguageId = 1, // da
-                                    Name = "1. Man",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 2, // en
-                                    Name = "1. Mon",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 3, // ge
-                                    Name = "1. Mon",
-                                    Description = ""
-                                }
-                            ], folderId).ConfigureAwait(false),
-                            await core.FolderCreate([
-                                new()
-                                {
-                                    LanguageId = 1, // da
-                                    Name = "2. Tir",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 2, // en
-                                    Name = "2. Tue",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 3, // ge
-                                    Name = "2. Die",
-                                    Description = ""
-                                }
-                            ], folderId).ConfigureAwait(false),
-                            await core.FolderCreate([
-                                new()
-                                {
-                                    LanguageId = 1, // da
-                                    Name = "3. Ons",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 2, // en
-                                    Name = "3. Wed",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 3, // ge
-                                    Name = "3. Mit",
-                                    Description = ""
-                                }
-                            ], folderId).ConfigureAwait(false),
-                            await core.FolderCreate([
-                                new()
-                                {
-                                    LanguageId = 1, // da
-                                    Name = "4. Tor",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 2, // en
-                                    Name = "4. Thu",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 3, // ge
-                                    Name = "4. Don",
-                                    Description = ""
-                                }
-                            ], folderId).ConfigureAwait(false),
-                            await core.FolderCreate([
-                                new()
-                                {
-                                    LanguageId = 1, // da
-                                    Name = "5. Fre",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 2, // en
-                                    Name = "5. Fri",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 3, // ge
-                                    Name = "5. Fre",
-                                    Description = ""
-                                }
-                            ], folderId).ConfigureAwait(false),
-                            await core.FolderCreate([
-                                new()
-                                {
-                                    LanguageId = 1, // da
-                                    Name = "6. Lør",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 2, // en
-                                    Name = "6. Sat",
-                                    Description = ""
-                                },
-
-                                new()
-                                {
-                                    LanguageId = 3, // ge
-                                    Name = "6. Sam",
-                                    Description = ""
-                                }
-                            ], folderId).ConfigureAwait(false)
-                        };
-
-
-                    foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
-                    {
-                        FolderId = folderIdLocal,
-                        ProperyAreaAsignmentId = areaProperty.Id
-                    }))
-                    {
-                        await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
-                    }
-                }
+                // if (areaProperty.Area.Type is AreaTypesEnum.Type10)
+                // {
+                //     foreach (var poolHourModel in areaRuleCreateModel.TypeSpecificFields.PoolHoursModel.Parrings)
+                //     {
+                //         var poolHour = new PoolHour
+                //         {
+                //             AreaRuleId = areaRule.Id,
+                //             DayOfWeek = (DayOfWeekEnum)(poolHourModel.DayOfWeek + 1),
+                //             Index = poolHourModel.Index,
+                //             IsActive = poolHourModel.IsActive,
+                //             CreatedByUserId = userId,
+                //             UpdatedByUserId = userId,
+                //             Name = poolHourModel.Name
+                //         };
+                //         await poolHour.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                //     }
+                //
+                //     var folderId = await core.FolderCreate(
+                //         areaRuleCreateModel.TranslatedNames.Select(x =>
+                //         {
+                //             var model = new Microting.eForm.Infrastructure.Models.CommonTranslationsModel
+                //             {
+                //                 Name = x.Name,
+                //                 LanguageId = (int)x.Id,
+                //                 Description = ""
+                //             };
+                //             return model;
+                //         }).ToList(),
+                //         areaRule.FolderId).ConfigureAwait(false);
+                //
+                //     var folderIds = new List<int>
+                //         {
+                //             await core.FolderCreate([
+                //                 new()
+                //                 {
+                //                     LanguageId = 1, // da
+                //                     Name = "7. Søn",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 2, // en
+                //                     Name = "7. Sun",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 3, // ge
+                //                     Name = "7. Son",
+                //                     Description = ""
+                //                 }
+                //             ], folderId).ConfigureAwait(false),
+                //             await core.FolderCreate([
+                //                 new()
+                //                 {
+                //                     LanguageId = 1, // da
+                //                     Name = "1. Man",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 2, // en
+                //                     Name = "1. Mon",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 3, // ge
+                //                     Name = "1. Mon",
+                //                     Description = ""
+                //                 }
+                //             ], folderId).ConfigureAwait(false),
+                //             await core.FolderCreate([
+                //                 new()
+                //                 {
+                //                     LanguageId = 1, // da
+                //                     Name = "2. Tir",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 2, // en
+                //                     Name = "2. Tue",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 3, // ge
+                //                     Name = "2. Die",
+                //                     Description = ""
+                //                 }
+                //             ], folderId).ConfigureAwait(false),
+                //             await core.FolderCreate([
+                //                 new()
+                //                 {
+                //                     LanguageId = 1, // da
+                //                     Name = "3. Ons",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 2, // en
+                //                     Name = "3. Wed",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 3, // ge
+                //                     Name = "3. Mit",
+                //                     Description = ""
+                //                 }
+                //             ], folderId).ConfigureAwait(false),
+                //             await core.FolderCreate([
+                //                 new()
+                //                 {
+                //                     LanguageId = 1, // da
+                //                     Name = "4. Tor",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 2, // en
+                //                     Name = "4. Thu",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 3, // ge
+                //                     Name = "4. Don",
+                //                     Description = ""
+                //                 }
+                //             ], folderId).ConfigureAwait(false),
+                //             await core.FolderCreate([
+                //                 new()
+                //                 {
+                //                     LanguageId = 1, // da
+                //                     Name = "5. Fre",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 2, // en
+                //                     Name = "5. Fri",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 3, // ge
+                //                     Name = "5. Fre",
+                //                     Description = ""
+                //                 }
+                //             ], folderId).ConfigureAwait(false),
+                //             await core.FolderCreate([
+                //                 new()
+                //                 {
+                //                     LanguageId = 1, // da
+                //                     Name = "6. Lør",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 2, // en
+                //                     Name = "6. Sat",
+                //                     Description = ""
+                //                 },
+                //
+                //                 new()
+                //                 {
+                //                     LanguageId = 3, // ge
+                //                     Name = "6. Sam",
+                //                     Description = ""
+                //                 }
+                //             ], folderId).ConfigureAwait(false)
+                //         };
+                //
+                //
+                //     foreach (var assignmentWithFolder in folderIds.Select(folderIdLocal => new ProperyAreaFolder
+                //     {
+                //         FolderId = folderIdLocal,
+                //         ProperyAreaAsignmentId = areaProperty.Id
+                //     }))
+                //     {
+                //         await assignmentWithFolder.Create(_backendConfigurationPnDbContext).ConfigureAwait(false);
+                //     }
+                // }
 
                 foreach (var translation in translations)
                 {
