@@ -570,7 +570,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                             {
                                                 const string eformName = "03. Kontrol flydelag";
                                                 var eformId = await sdkDbContext.CheckLists
-                                                    .Where(x => x.OriginalId == "142142new2")
+                                                    .Where(x => x.OriginalId == "142142new1")
                                                     .Select(x => x.Id)
                                                     .FirstAsync().ConfigureAwait(false);
                                                 var planningForType2TypeTankOpen = await CreateItemPlanningObject(
@@ -1347,7 +1347,7 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         // {
             const string eformName = "Kontrol flydelag";
             var eformId = await sdkDbContext.CheckLists
-                .Where(x => x.OriginalId == "142142new2")
+                .Where(x => x.OriginalId == "142142new1")
                 .Select(x => x.Id)
                 .FirstAsync().ConfigureAwait(false);
 
