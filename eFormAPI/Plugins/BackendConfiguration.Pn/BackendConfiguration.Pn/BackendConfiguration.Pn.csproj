@@ -560,7 +560,7 @@
       <PackageReference Include="Microting.ItemsPlanningBase" Version="8.0.5" />
       <PackageReference Include="ClosedXML" Version="0.102.2" />
       <PackageReference Include="Microting.TimePlanningBase" Version="8.0.5" />
-      <PackageReference Include="QuestPDF" Version="2023.12.4" />
+      <PackageReference Include="QuestPDF" Version="2023.12.5" />
       <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="7.3.0.1" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.7" />
       <PackageReference Include="Sentry" Version="3.41.4" />
