@@ -322,7 +322,7 @@ public static class BackendConfigurationPropertiesServiceHelper
                             await WorkOrderHelper.DeployEform(propertyWorker, eformId, property,
                                 localizationService,
                                 int.Parse(areasGroup.MicrotingUid), int.Parse(deviceUsersGroup.MicrotingUid), core,
-                                userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+                                userService, backendConfigurationPnDbContext, bus, false).ConfigureAwait(false);
                         }
 
                         var entityItems = await sdkDbContext.EntityItems
