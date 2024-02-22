@@ -235,14 +235,12 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
     }).subscribe((data) => {
       if (data && data.success && data.model) {
         this.propertiesModel = data.model;
-        this.properties = [{
-          id: -1,
-          name: this.translate.instant('All'),
-          description: ''
-        }, ...data.model.entities.filter((x) => x.workorderEnable)
-          .map((x) => {
-            return {name: `${x.name}`, description: '', id: x.id};
-          })];
+        this.translate.stream('All').subscribe(allTranslate => {
+          this.properties = [{id: -1, name: allTranslate, description: ''}, ...data.model.entities.filter((x) => x.workorderEnable)
+            .map((x) => {
+              return {name: `${x.name}`, description: '', id: x.id};
+            })];
+        })
       }
     });
   }

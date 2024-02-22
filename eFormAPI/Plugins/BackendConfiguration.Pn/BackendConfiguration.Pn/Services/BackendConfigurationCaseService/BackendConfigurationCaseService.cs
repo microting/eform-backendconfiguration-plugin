@@ -83,7 +83,7 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
                 foundCase.Status = 100;
                 await foundCase.Update(sdkDbContext);
                 var planningCase = await _dbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
-                var planningCaseSite = await _dbContext.PlanningCaseSites.SingleOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id);
+                var planningCaseSite = await _dbContext.PlanningCaseSites.FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id && x.Status == 100);
 
                 if (planningCaseSite == null)
                 {
