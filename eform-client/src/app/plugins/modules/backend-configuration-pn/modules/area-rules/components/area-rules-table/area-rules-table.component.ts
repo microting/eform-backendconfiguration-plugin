@@ -152,19 +152,19 @@ export class AreaRulesTableComponent implements OnChanges, OnInit {
       field: 'translatedName',
       header: this.translateService.stream('Name'),
     },
-    {
-      field: 'type',
-      header: this.translateService.stream('Type'),
-      class: 'ruleType',
-      formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(AreaRuleT2TypesEnum[rowData.typeSpecificFields.type]),
-      //formatter: (rowData: AreaRuleSimpleModel) => AreaRuleT2TypesEnum[rowData.typeSpecificFields.type],
-    },
-    {
-      field: 'alarm',
-      header: this.translateService.stream('Alarm'),
-      class: 'alarm',
-      formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(AreaRuleT2AlarmsEnum[rowData.typeSpecificFields.alarm]),
-    },
+    // {
+    //   field: 'type',
+    //   header: this.translateService.stream('Type'),
+    //   class: 'ruleType',
+    //   formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(AreaRuleT2TypesEnum[rowData.typeSpecificFields.type]),
+    //   //formatter: (rowData: AreaRuleSimpleModel) => AreaRuleT2TypesEnum[rowData.typeSpecificFields.type],
+    // },
+    // {
+    //   field: 'alarm',
+    //   header: this.translateService.stream('Alarm'),
+    //   class: 'alarm',
+    //   formatter: (rowData: AreaRuleSimpleModel) => this.translateService.instant(AreaRuleT2AlarmsEnum[rowData.typeSpecificFields.alarm]),
+    // },
     {
       field: 'planningStatus',
       header: this.translateService.stream('Status'),

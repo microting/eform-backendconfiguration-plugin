@@ -220,6 +220,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                         "142663new2",
                         "142664new",
                         "142664new2",
+                        "142142new3",
+                        "142142new2",
                         "142665",
                         "8756",
                         "142720",

@@ -21,8 +21,13 @@ namespace BackendConfiguration.Pn.Infrastructure.Helpers;
 
 public static class WorkOrderHelper
 {
-    public static async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers, Core core, IUserService userService,
-        BackendConfigurationPnDbContext backendConfigurationPnDbContext, [CanBeNull] IBackendConfigurationLocalizationService localizationService, IBus bus)
+    public static async Task WorkorderFlowDeployEform(List<PropertyWorker> propertyWorkers,
+        Core core,
+        IUserService userService,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext,
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService,
+        IBus bus,
+        bool useGetCurrentUserFullName)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         foreach (var propertyWorker in propertyWorkers.Where(x => x.TaskManagementEnabled == true))
@@ -128,14 +133,16 @@ public static class WorkOrderHelper
                 if (propertyWorker.WorkflowState != Constants.WorkflowStates.Removed)
                 {
                     await DeployEform(propertyWorker, eformIdForNewTasks, property, localizationService,
-                        int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+                        int.Parse(areasGroupUid), int.Parse(deviceUsersGroupUid), core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
                 }
             }
         }
     }
 
     public static  async Task DeployEform(PropertyWorker propertyWorker, int eformId, Property property,
-        [CanBeNull] IBackendConfigurationLocalizationService localizationService, int? areasGroupUid, int? deviceUsersGroupId, Core core, IUserService userService, BackendConfigurationPnDbContext backendConfigurationPnDbContext, IBus bus)
+        [CanBeNull] IBackendConfigurationLocalizationService localizationService, int? areasGroupUid,
+        int? deviceUsersGroupId, Core core, IUserService userService,
+        BackendConfigurationPnDbContext backendConfigurationPnDbContext, IBus bus, bool useGetCurrentUserFullName)
     {
         var sdkDbContext = core.DbContextHelper.GetDbContext();
         if (backendConfigurationPnDbContext.WorkorderCases.Any(x =>
@@ -154,7 +161,7 @@ public static class WorkOrderHelper
             foreach (var workorderCase in workorderCases)
             {
                 await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
-                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
             }
 
             workorderCases = await backendConfigurationPnDbContext.WorkorderCases
@@ -172,7 +179,7 @@ public static class WorkOrderHelper
                 }
 
                 await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
-                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
             }
 
             workorderCases = await backendConfigurationPnDbContext.WorkorderCases
@@ -190,7 +197,7 @@ public static class WorkOrderHelper
                 }
 
                 await BackendConfigurationTaskManagementHelper.UpdateTask(new WorkOrderCaseUpdateModel() {Id = workorderCase.Id, AssignedSiteId = (int) workorderCase.AssignedToSdkSiteId!, Description = workorderCase.Description, Priority = int.Parse(workorderCase.Priority)},
-                    localizationService, core, userService, backendConfigurationPnDbContext, bus).ConfigureAwait(false);
+                    localizationService, core, userService, backendConfigurationPnDbContext, bus, useGetCurrentUserFullName).ConfigureAwait(false);
             }
 
 

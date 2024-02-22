@@ -83,7 +83,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     await bus.SendLocal(new DocumentUpdated(documentId)).ConfigureAwait(false);
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService, backendConfigurationPnDbContext, localizationService, bus).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService,
+                    backendConfigurationPnDbContext, localizationService, bus, false).ConfigureAwait(false);
 
                 return new OperationResult(true,"SuccessfullyAssignmentsCreatingProperties");
             }
@@ -248,7 +249,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                     }
                 }
 
-                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService, backendConfigurationPnDbContext, localizationService, bus).ConfigureAwait(false);
+                await WorkOrderHelper.WorkorderFlowDeployEform(propertyWorkers, core, userService,
+                    backendConfigurationPnDbContext, localizationService, bus, false).ConfigureAwait(false);
                 return new OperationResult(true,"SuccessfullyUpdateAssignmentsProperties");
             }
             catch (Exception e)

@@ -27,7 +27,7 @@ public static class BackendConfigurationTaskManagementHelper
         Core core,
         IUserService userService,
         BackendConfigurationPnDbContext backendConfigurationPnDbContext,
-        IBus bus)
+        IBus bus, bool useGetCurrentUserFullName)
     {
         // var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
@@ -52,6 +52,10 @@ public static class BackendConfigurationTaskManagementHelper
 
         var site = await sdkDbContext.Sites.FirstAsync(x => x.Id == updateModel.AssignedSiteId).ConfigureAwait(false);
         var updatedByName = await userService.GetCurrentUserFullName().ConfigureAwait(false);
+        if (!useGetCurrentUserFullName)
+        {
+            updatedByName = workOrderCase.LastUpdatedByName;
+        }
 
         var picturesOfTasks = new List<string>();
         var hasImages = false;
@@ -137,7 +141,7 @@ public static class BackendConfigurationTaskManagementHelper
                      ? $"<strong>{localizationService.GetString("CreatedBy")}:</strong> {workOrderCase.CreatedByText}<br>"
                      : "") +
                  $"<strong>{localizationService.GetString("CreatedDate")}:</strong> {workOrderCase.CaseInitiated: dd.MM.yyyy}<br><br>" +
-                 $"<strong>{localizationService.GetString("LastUpdatedBy")}:</strong> {await userService.GetCurrentUserFullName().ConfigureAwait(false)}<br>" +
+                 $"<strong>{localizationService.GetString("LastUpdatedBy")}:</strong> {updatedByName}<br>" +
                  $"<strong>{localizationService.GetString("LastUpdatedDate")}:</strong> {DateTime.UtcNow: dd.MM.yyyy}<br><br>" +
                  $"<strong>{localizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
         // retract eform

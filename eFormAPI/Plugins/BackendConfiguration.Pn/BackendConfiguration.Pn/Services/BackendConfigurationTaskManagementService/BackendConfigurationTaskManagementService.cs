@@ -648,6 +648,7 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
     public async Task<OperationResult> UpdateTask(WorkOrderCaseUpdateModel updateModel)
     {
         var core = await _coreHelper.GetCore().ConfigureAwait(false);
-        return await BackendConfigurationTaskManagementHelper.UpdateTask(updateModel, _localizationService, core, _userService, _backendConfigurationPnDbContext, _bus);
+        return await BackendConfigurationTaskManagementHelper.UpdateTask(updateModel, _localizationService, core,
+            _userService, _backendConfigurationPnDbContext, _bus, true);
     }
 }
