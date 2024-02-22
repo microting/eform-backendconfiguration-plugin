@@ -24,7 +24,7 @@ export const da = {
   'Selected template': 'Valgt skabelon',
   Open: 'Åben',
   Closed: 'Lukket',
-  Close: 'Lukk',
+  Close: 'Luk',
   Type: 'Type',
   Yes: 'Ja',
   No: 'Nej',
