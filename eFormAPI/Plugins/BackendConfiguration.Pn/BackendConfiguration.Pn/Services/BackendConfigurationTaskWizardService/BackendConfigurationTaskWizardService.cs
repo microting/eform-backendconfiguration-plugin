@@ -714,6 +714,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.DayOfWeek = DayOfWeek.Monday;
                     planning.RepeatEvery = updateModel.RepeatEvery;
                     planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                    planning.SdkFolderName = folderName;
+                    planning.SdkFolderId = updateModel.FolderId;
                     planning.RepeatType =
                         (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)updateModel.RepeatType;
 
@@ -886,6 +888,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         planning.RepeatEvery = updateModel.RepeatEvery;
                         planning.SdkFolderId = updateModel.FolderId;
                         planning.SdkFolderName = folderName;
+                        planning.SdkFolderId = updateModel.FolderId;
                         planning.UpdatedByUserId = _userService.UserId;
                         planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
                         await planning.Update(_itemsPlanningPnDbContext);
