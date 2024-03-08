@@ -286,4 +286,5 @@ export const da = {
   Location: 'Lokation',
   'Select date range': 'Vælg periode',
   'Manage tags': 'Redigér etiketter',
+  'Middle': 'Middel',
 };
