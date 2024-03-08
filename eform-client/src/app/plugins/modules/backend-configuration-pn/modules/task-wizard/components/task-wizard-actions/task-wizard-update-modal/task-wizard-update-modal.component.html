@@ -9,7 +9,7 @@
     {{ 'Status' | translate }}
   </mat-slide-toggle>
   <div class="d-flex flex-row">
-  <mat-form-field class="p-2">
+  <mat-form-field class="p-3">
     <mat-label>{{ 'Location' | translate }}</mat-label>
     <mtx-select
       [items]="properties"
@@ -24,7 +24,7 @@
     />
   </mat-form-field>
 
-    <mat-form-field class="p-2">
+    <mat-form-field class="p-3">
       <mat-label>{{ 'Report tag' | translate }}</mat-label>
       <mtx-select
         [items]="tags"
@@ -36,7 +36,9 @@
         [clearable]="true"
         [multiple]="false"
       />
+    </mat-form-field>
       <button
+        class="p-3"
         matSuffix
         mat-icon-button
         color="primary"
@@ -46,7 +48,6 @@
       >
         <mat-icon>discount</mat-icon>
       </button>
-    </mat-form-field>
   </div>
   <div class="d-flex flex-row">
   <div style="width: 450px" class="p-2">
@@ -66,7 +67,7 @@
   </div>
 
   <div class="d-flex flex-row">
-    <mat-form-field class="p-2">
+    <mat-form-field class="p-3">
       <mat-label>{{'Start from' | translate}}</mat-label>
       <input
         matInput
@@ -80,7 +81,7 @@
       >
       <mat-datepicker #picker></mat-datepicker>
     </mat-form-field>
-    <mat-form-field class="p-2">
+    <mat-form-field class="p-3">
       <mat-label>{{ 'Tags' | translate }}</mat-label>
       <mtx-select
         [items]="tags"
@@ -91,19 +92,19 @@
         (change)="changeTagIds($event)"
         [clearable]="true"
         [multiple]="true"
-        [disabled]="model.status === TaskWizardStatusesEnum.Active"
       />
-      <button
-        matSuffix
-        mat-icon-button
-        color="primary"
-        id="planningManageTagsBtn2"
-        (click)="openTagsModal()"
-        matTooltip="{{ 'Manage tags' | translate }}"
-      >
-        <mat-icon>discount</mat-icon>
-      </button>
     </mat-form-field>
+    <button
+      class="p-3"
+      matSuffix
+      mat-icon-button
+      color="primary"
+      id="planningManageTagsBtn2"
+      (click)="openTagsModal()"
+      matTooltip="{{ 'Manage tags' | translate }}"
+    >
+      <mat-icon>discount</mat-icon>
+    </button>
   </div>
   <div class="d-flex flex-row">
     <mat-form-field class="p-2">
