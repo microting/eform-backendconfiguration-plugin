@@ -265,7 +265,7 @@ export const da = {
   'Under 30 days': '1-30 dage',
   'Exceeded or today': 'Overskredet eller i dag',
   'Grouping tags': 'Gruppering: Vælg etiket(ter)',
-  'Generate report': 'Generer rapport',
+  'Generate report': 'Vis rapport',
   'Task description': 'Opgavebeskrivelse',
   'Task solver': 'Opgaveløser',
   'Description of task': 'Opgavebeskrivelse',
