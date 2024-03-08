@@ -33,17 +33,19 @@
       [clearable]="true"
       [multiple]="false"
     />
-    <button
-      matSuffix
-      mat-icon-button
-      color="primary"
-      id="planningManageTagsBtn1"
-      (click)="openTagsModal()"
-      matTooltip="{{ 'Manage tags' | translate }}"
-    >
-      <mat-icon>discount</mat-icon>
-    </button>
   </mat-form-field>
+    <div class="pt-6">
+      <button
+        matSuffix
+        mat-icon-button
+        color="primary"
+        id="planningManageTagsBtn1"
+        (click)="openTagsModal()"
+        matTooltip="{{ 'Manage tags' | translate }}"
+      >
+        <mat-icon>discount</mat-icon>
+      </button>
+    </div>
   </div>
 
   <div class="d-flex flex-row">
@@ -91,6 +93,8 @@
         [clearable]="true"
         [multiple]="true"
       />
+    </mat-form-field>
+    <div class="pt-6">
       <button
         matSuffix
         mat-icon-button
@@ -101,7 +105,7 @@
       >
         <mat-icon>discount</mat-icon>
       </button>
-    </mat-form-field>
+    </div>
   </div>
 
   <div class="d-flex flex-row">
