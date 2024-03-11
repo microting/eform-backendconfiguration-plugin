@@ -234,6 +234,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                             await core.EntityItemDelete((int)propertyWorker.EntityItemId).ConfigureAwait(false);
 
                             await WorkOrderHelper.RetractEform([propertyWorker], true, core, userService.UserId, backendConfigurationPnDbContext).ConfigureAwait(false);
+                            propertyWorker.EntityItemId = null;
+                            await propertyWorker.Update(backendConfigurationPnDbContext).ConfigureAwait(false);
                         }
                     }
                 }
