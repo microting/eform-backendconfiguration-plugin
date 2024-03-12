@@ -122,6 +122,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             var areaRulePlannings = query.Select(x => new
             {
+                x.CreatedAt,
+                x.UpdatedAt,
                 x.Id,
                 PlanningSites = x.PlanningSites
                     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -181,6 +183,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var fulfilledQuery = areaRulePlannings
                 .Select(areaRule => new TaskWizardModel
                 {
+                    CreatedAt = areaRule.CreatedAt,
+                    UpdatedAt = areaRule.UpdatedAt,
                     StartDate = (DateTime)areaRule.StartDate,
                     RepeatType = (RepeatType)areaRule.RepeatType,
                     RepeatEvery = (int)areaRule.RepeatEvery,
@@ -196,6 +200,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .ToList(),
                     Eform = eformNamesQuery.Where(x => x.CheckListId == areaRule.EformId).Select(x => x.Text)
                         .FirstOrDefault(),
+                    EformId = areaRule.EformId,
+                    PlanningId = areaRule.ItemPlanningId,
                     Folder = folderNamesQuery.Where(x => x.FolderId == areaRule.FolderId).Select(x => x.Name)
                         .FirstOrDefault(),
                     CreatedInGuide = areaRule.CreatedInGuide

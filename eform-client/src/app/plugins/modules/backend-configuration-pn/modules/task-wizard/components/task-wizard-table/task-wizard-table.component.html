@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
-  [cellTemplate]="{tags: tagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
+  [cellTemplate]="{id: idTpl, tags: tagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -39,4 +39,13 @@
 
 <ng-template #statusTpl let-row>
   <span title="{{TaskWizardStatusesEnum[row.status] | translate}}">{{TaskWizardStatusesEnum[row.status] | translate}}</span>
+</ng-template>
+
+<ng-template #idTpl let-row>
+  <ng-container *ngIf="selectAuthIsAdmin$ | async;">
+    <span title="{{row.createdAt}}">{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
+  </ng-container>
+  <ng-container *ngIf="(selectAuthIsAdmin$ | async) !== true;">
+    <span>{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
+  </ng-container>
 </ng-template>

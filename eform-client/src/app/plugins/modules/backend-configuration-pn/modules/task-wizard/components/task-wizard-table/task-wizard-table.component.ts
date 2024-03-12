@@ -18,6 +18,7 @@ import {
   selectTaskWizardPaginationIsSortDsc,
   selectTaskWizardPaginationSort
 } from '../../../../state';
+import {selectAuthIsAdmin} from "src/app/state";
 
 @AutoUnsubscribe()
 @Component({
@@ -32,7 +33,9 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   @Output() copyTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
   @Output() editTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
   tableHeaders: MtxGridColumn[] = [
-    {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'}},
+    {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'},
+      formatter: (model: TaskWizardModel) => model.id + ' <small class="microting-uid">(' + model.planningId + ')</small>',
+    },
     {
       field: 'property',
       header: this.translateService.stream('Location'),
@@ -47,7 +50,10 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
     },
     {field: 'tags', header: this.translateService.stream('Tags')},
     {field: 'taskName', header: this.translateService.stream('Task name'), sortable: true, sortProp: {id: 'TaskName'}},
-    {field: 'eform', header: this.translateService.stream('eForm'), sortable: true, sortProp: {id: 'Eform'}},
+    {field: 'eform', header: this.translateService.stream('eForm'), sortable: true, sortProp: {id: 'Eform'},
+
+      formatter: (model: TaskWizardModel) => model.eform + ' <small class="microting-uid">(' + model.eformId + ')</small>'
+    },
     {
       field: 'startDate',
       header: this.translateService.stream('Start date'),
@@ -111,6 +117,7 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   ];
   public selectTaskWizardPaginationSort$ = this.store.select(selectTaskWizardPaginationSort);
   public selectTaskWizardPaginationIsSortDsc$ = this.store.select(selectTaskWizardPaginationIsSortDsc);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
 
   get TaskWizardStatusesEnum() {
     return TaskWizardStatusesEnum;

@@ -20,4 +20,11 @@ public class TaskWizardModel
     public List<string> AssignedTo { get; set; } = [];
 
     public bool CreatedInGuide { get; set; }
+
+    public int? PlanningId { get; set; }
+
+    public int? EformId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
