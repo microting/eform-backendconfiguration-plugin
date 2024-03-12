@@ -847,6 +847,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                 await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
                             }
                         }
+                        planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
+                        await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
                     areaRulePlanning.Status = false;
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext)
