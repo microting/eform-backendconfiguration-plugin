@@ -19,156 +19,48 @@
 
     <ItemGroup>
       <None Remove="Resources\eForms\01. Miljøledelse_skabelon.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Miljøledelse_skabelon.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\01. Vandforbrug.xml" />
       <None Remove="Resources\eForms\02. Brandudstyr.xml" />
-      <EmbeddedResource Include="Resources\eForms\02. Brandudstyr.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\02. Førstehjælp.xml" />
-      <EmbeddedResource Include="Resources\eForms\02. Førstehjælp.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\02. Sikkerhedsudstyr_værnemidler.xml" />
-      <EmbeddedResource Include="Resources\eForms\02. Sikkerhedsudstyr_værnemidler.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\03. Kontrol alarmanlæg gyllebeholder.xml" />
-      <EmbeddedResource Include="Resources\eForms\03. Kontrol alarmanlæg gyllebeholder.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\03. Kontrol flydelag.xml" />
       <EmbeddedResource Include="Resources\eForms\03. Kontrol flydelag.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <None Remove="Resources\eForms\03. Kontrol konstruktion.xml" />
-      <EmbeddedResource Include="Resources\eForms\03. Kontrol konstruktion.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\04. Foderindlægssedler.xml" />
-      <EmbeddedResource Include="Resources\eForms\04. Foderindlægssedler.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\05. Stald_klargøring.xml" />
-      <EmbeddedResource Include="Resources\eForms\05. Stald_klargøring.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\06. Siloer.xml" />
       <None Remove="Resources\eForms\05.01 Halebid.xml" />
-      <EmbeddedResource Include="Resources\eForms\06. Siloer.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\07. Fluer.xml" />
-      <EmbeddedResource Include="Resources\eForms\07. Fluer.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\07. Rotter.xml" />
-      <EmbeddedResource Include="Resources\eForms\07. Rotter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\08. Luftrensning driftsstop.xml" />
-      <EmbeddedResource Include="Resources\eForms\08. Luftrensning driftsstop.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\08. Luftrensning serviceaftale.xml" />
-      <EmbeddedResource Include="Resources\eForms\08. Luftrensning serviceaftale.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\08. Luftrensning timer.xml" />
-      <EmbeddedResource Include="Resources\eForms\08. Luftrensning timer.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\09. Forsuring driftsstop.xml" />
-      <EmbeddedResource Include="Resources\eForms\09. Forsuring driftsstop.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\09. Forsuring pH værdi.xml" />
-      <EmbeddedResource Include="Resources\eForms\09. Forsuring pH værdi.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\09. Forsuring serviceaftale.xml" />
-      <EmbeddedResource Include="Resources\eForms\09. Forsuring serviceaftale.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\10. Varmepumpe driftsstop.xml" />
-      <EmbeddedResource Include="Resources\eForms\10. Varmepumpe driftsstop.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\10. Varmepumpe serviceaftale.xml" />
-      <EmbeddedResource Include="Resources\eForms\10. Varmepumpe serviceaftale.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\10. Varmepumpe timer og energi.xml" />
-      <EmbeddedResource Include="Resources\eForms\10. Varmepumpe timer og energi.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\11. Pillefyr.xml" />
-      <EmbeddedResource Include="Resources\eForms\11. Pillefyr.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\12. Affald og farligt affald.xml" />
-      <EmbeddedResource Include="Resources\eForms\12. Affald og farligt affald.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\12. Dieseltank.xml" />
-      <EmbeddedResource Include="Resources\eForms\12. Dieseltank.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\12. Kemi.xml" />
-      <EmbeddedResource Include="Resources\eForms\12. Kemi.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\12. Motor- og spildolie.xml" />
-      <EmbeddedResource Include="Resources\eForms\12. Motor- og spildolie.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\13. APV Handlingsplan.xml" />
-      <EmbeddedResource Include="Resources\eForms\13. APV Handlingsplan.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\13. APV Medarbejder.xml" />
-      <EmbeddedResource Include="Resources\eForms\13. APV Medarbejder.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\14. Maskiner.xml" />
-      <EmbeddedResource Include="Resources\eForms\14. Maskiner.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\15. Elværktøj.xml" />
-      <EmbeddedResource Include="Resources\eForms\15. Elværktøj.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\16. Stiger.xml" />
-      <EmbeddedResource Include="Resources\eForms\16. Stiger.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\17. Håndildslukkere.xml" />
       <None Remove="Resources\eForms\18. Alarm.xml" />
-      <EmbeddedResource Include="Resources\eForms\18. Alarm.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\19. Ventilation.xml" />
-      <EmbeddedResource Include="Resources\eForms\19. Ventilation.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\20. Arbejdsopgave udført.xml" />
-      <EmbeddedResource Include="Resources\eForms\20. Arbejdsopgave udført.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\21. DANISH Produktstandard v_1_01.xml" />
-      <EmbeddedResource Include="Resources\eForms\21. DANISH Produktstandard v_1_01.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\22. Sigtetest.xml" />
-      <EmbeddedResource Include="Resources\eForms\22. Sigtetest.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\25. Markvandingsforbrug.xml" />
-      <EmbeddedResource Include="Resources\eForms\25. Markvandingsforbrug.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\23.01.02 Gyllekøling.xml" />
       <None Remove="Resources\eForms\23.01.03 Forsuring.xml" />
       <None Remove="Resources\eForms\23.01.04 Ugentlig udslusning af gylle.xml" />
@@ -218,205 +110,61 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <None Remove="Resources\eForms\03. Afslutted opgave.xml" />
-      <EmbeddedResource Include="Resources\eForms\03. Afslutted opgave.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\05. Halebid og risikovurdering.xml" />
       <EmbeddedResource Include="Resources\eForms\05. Halebid og risikovurdering.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <None Remove="Resources\eForms\24.00.01 Aflæsning vand.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.00.01 Aflæsning vand.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.00.02 Aflæsning el.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.00.02 Aflæsning el.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.01.01 Gyllebeholdere - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.01.01 Gyllebeholdere - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.02.01 Gyllekøling - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.02.01 Gyllekøling - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.02.02 Gyllekøling - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.02.02 Gyllekøling - Drift.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.02.03 Gyllekøling - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.02.03 Gyllekøling - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.03.01 Forsuring - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.03.01 Forsuring - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.03.02 Forsuring - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.03.02 Forsuring - Drift.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.03.03 Forsuring - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.03.03 Forsuring - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.04.01 Ugentlig udslusning af gylle - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.04.01 Ugentlig udslusning af gylle - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift.xml" />
       <None Remove="Resources\eForms\24.01.04.03 Ugentlig udslusning af gylle - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.04.03 Ugentlig udslusning af gylle - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.05.01 Punktudsugning i slagtesvinestalde - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.05.01 Punktudsugning i slagtesvinestalde - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.05.02 Punktudsugning i slagtesvinestalde - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.05.02 Punktudsugning i slagtesvinestalde - Drift.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.05.03 Punktudsugning i slagtesvinestalde - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.05.03 Punktudsugning i slagtesvinestalde - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.06.01 Varmevekslere til traditionelle slagtekyllingestalde - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.06.01 Varmevekslere til traditionelle slagtekyllingestalde - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.06.02 Varmevekslere til traditionelle slagtekyllingestalde - Drift og rengøring.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.06.02 Varmevekslere til traditionelle slagtekyllingestalde - Drift og rengøring.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.06.03 Varmevekslere til traditionelle slagtekyllingestalde - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.06.03 Varmevekslere til traditionelle slagtekyllingestalde - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.07.01 Gødningsbånd til æglæggende høns - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.07.01 Gødningsbånd til æglæggende høns - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.07.02 Gødningsbånd til æglæggende høns - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.07.02 Gødningsbånd til æglæggende høns - Drift.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.07.03 Gødningsbånd til æglæggende høns - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.07.03 Gødningsbånd til æglæggende høns - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.08.01 Biologisk luftrensning - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.08.01 Biologisk luftrensning - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.08.02 Biologisk luftrensning - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.08.02 Biologisk luftrensning - Drift.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.08.03 Biologisk luftrensning - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.08.03 Biologisk luftrensning - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.09.01 Kemisk luftrensning - Logbog.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.09.01 Kemisk luftrensning - Logbog.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.09.02 Kemisk luftrensning - Drift.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.09.02 Kemisk luftrensning - Drift.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.09.03 Kemisk luftrensning - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.09.03 Kemisk luftrensning - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.01.01 Visuel kontrol af tom gyllebeholdere.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.01.01 Visuel kontrol af tom gyllebeholdere.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.01.02 Visuel kontrol af tom gyllebeholdere - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.01.02 Visuel kontrol af tom gyllebeholdere - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.02.01 Gyllepumper.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.02.01 Gyllepumper.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.02.02 Gyllepumper - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.02.02 Gyllepumper - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.03.01 Forsyningssystemer til vand og foder.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.03.01 Forsyningssystemer til vand og foder.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.03.02 Forsyningssystemer til vand og foder - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.03.02 Forsyningssystemer til vand og foder - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.04.01 Varme-, køle- og ventilationssystemer.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.04.01 Varme-, køle- og ventilationssystemer.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.04.02 Varme-, køle- og ventilationssystemer - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.04.02 Varme-, køle- og ventilationssystemer - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.05.01 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv..xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.05.01 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv..xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.05.02 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv. - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.05.02 Siloer og materiel i transportudstyr i forbindelse med foderanlæg - rør, snegle mv. - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.06.01 Luftrensningssystemer.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.06.01 Luftrensningssystemer.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.06.02 Luftrensningssystemer - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.06.02 Luftrensningssystemer - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.07.01 Udstyr til drikkevand.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.07.01 Udstyr til drikkevand.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.07.02 Udstyr til drikkevand - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.07.02 Udstyr til drikkevand - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.08.01 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.08.01 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.02.08.03 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
       <None Remove="Resources\eForms\24.03.01 Evaluering Miljøledelse.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.03.01 Evaluering Miljøledelse.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.03.02 Dokumenter til Miljøledelse.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.03.02 Dokumenter til Miljøledelse.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.04.01 Fasefodring.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.04.01 Fasefodring.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.04.02.01 Reduceret indhold af råprotein.xml" />
       <None Remove="Resources\eForms\24.04.03.01 Tilsætningsstoffer i foder - fytase eller andet.xml" />
       <None Remove="Resources\eForms\24.02.08.02 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.02.08.02 Maskiner til udbringning af husdyrgødning samt doseringsmekanisme - Dokumenter.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.04.02 Reduceret indhold af råprotein.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.04.03 Tilsætningsstoffer i foder - fytase eller andet.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\25.01 Kemisk produkt registrering.xml" />
       <EmbeddedResource Include="Resources\eForms\25.01 Registrer produkter.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -426,120 +174,39 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <None Remove="Resources\eForms\01. Aflæsninger.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Aflæsninger.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\02. Fækale uheld.xml" />
-      <EmbeddedResource Include="Resources\eForms\02. Fækale uheld.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\00. Info boks.xml" />
       <EmbeddedResource Include="Resources\eForms\00. Info boks.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
       <None Remove="Resources\eForms\26. Kornlager.xml" />
-      <EmbeddedResource Include="Resources\eForms\26. Kornlager.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\1.1 Aflæsning vand.xml" />
-      <EmbeddedResource Include="Resources\eForms\1.1 Aflæsning vand.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\1.2 Aflæsning el.xml" />
-      <EmbeddedResource Include="Resources\eForms\1.2 Aflæsning el.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.1 Udslusning af gylle.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.1 Udslusning af gylle.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.2 Gyllekøling Timer og MWh.xml" />
       <None Remove="Resources\eForms\2.3 Gyllekøling Driftsstop.xml" />
       <None Remove="Resources\eForms\2.4 Forsuring pH-værdi.xml" />
       <None Remove="Resources\eForms\2.5 Forsuring Driftsstop.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.5 Forsuring Driftsstop.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.6 Foderindlægssedler.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.6 Foderindlægssedler.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift v2.xml" />
-      <EmbeddedResource Include="Resources\eForms\24.01.04.02 Ugentlig udslusning af gylle - Drift v2.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\01. Gyllekøling.xml" />
-      <EmbeddedResource Include="Resources\eForms\01. Gyllekøling.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\02. Forsuring.xml" />
-      <EmbeddedResource Include="Resources\eForms\02. Forsuring.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\03. Luftrensning.xml" />
-      <EmbeddedResource Include="Resources\eForms\03. Luftrensning.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\04. Beholderkontrol gennemført.xml" />
-      <EmbeddedResource Include="Resources\eForms\04. Beholderkontrol gennemført.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\05. Gyllebeholdere.xml" />
-      <EmbeddedResource Include="Resources\eForms\05. Gyllebeholdere.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\06. Gyllepumper, - miksere, - seperatorer og spredere.xml" />
-      <EmbeddedResource Include="Resources\eForms\06. Gyllepumper, - miksere, - seperatorer og spredere.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\07. Forsyningssystemer til vand og foder.xml" />
-      <EmbeddedResource Include="Resources\eForms\07. Forsyningssystemer til vand og foder.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\08. Varme-, køle- og ventilationssystemer samt temperaturfølere.xml" />
-      <EmbeddedResource Include="Resources\eForms\08. Varme-, køle- og ventilationssystemer samt temperaturfølere.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\09. Siloer og transportudstyr.xml" />
-      <EmbeddedResource Include="Resources\eForms\09. Siloer og transportudstyr.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\10. Luftrensningssystemer.xml" />
-      <EmbeddedResource Include="Resources\eForms\10. Luftrensningssystemer.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\11. Udstyr til drikkevand.xml" />
-      <EmbeddedResource Include="Resources\eForms\11. Udstyr til drikkevand.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse.xml" />
-      <EmbeddedResource Include="Resources\eForms\12. Maskiner til udbringning af husdyrgødning samt doseringsmekanisme- eller dyse.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\13. Miljøledelse.xml" />
-      <EmbeddedResource Include="Resources\eForms\13. Miljøledelse.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\14. Beredskabsplan.xml" />
-      <EmbeddedResource Include="Resources\eForms\14. Beredskabsplan.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\17. Brandslukkere.xml" />
-      <EmbeddedResource Include="Resources\eForms\17. Brandslukkere.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.2 Gyllekøling Timer og MWh.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.2 Gyllekøling Timer og MWh.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.3 Gyllekøling Driftsstop.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.3 Gyllekøling Driftsstop.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\2.4 Forsuring pH-værdi.xml" />
-      <EmbeddedResource Include="Resources\eForms\2.4 Forsuring pH-værdi.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
       <None Remove="Resources\eForms\Kvittering.xml" />
       <EmbeddedResource Include="Resources\eForms\Kvittering.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
