@@ -722,6 +722,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
                     planning.SdkFolderName = folderName;
                     planning.SdkFolderId = updateModel.FolderId;
+                    planning.ShowExpireDate = true;
                     planning.RepeatType =
                         (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)updateModel.RepeatType;
 
@@ -899,6 +900,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         planning.SdkFolderId = updateModel.FolderId;
                         planning.UpdatedByUserId = _userService.UserId;
                         planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                        planning.ShowExpireDate = true;
                         await planning.Update(_itemsPlanningPnDbContext);
 
                         // update planning names
