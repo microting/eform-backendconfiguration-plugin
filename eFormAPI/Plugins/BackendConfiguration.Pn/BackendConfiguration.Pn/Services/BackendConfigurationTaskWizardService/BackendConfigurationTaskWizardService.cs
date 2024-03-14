@@ -855,6 +855,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     }
 
                     await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                    // update planning tags
+                    await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId);
                     foreach (PlanningNameTranslation planningNameTranslation in planning.NameTranslations)
                     {
                         foreach (AreaRuleTranslation areaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations)
