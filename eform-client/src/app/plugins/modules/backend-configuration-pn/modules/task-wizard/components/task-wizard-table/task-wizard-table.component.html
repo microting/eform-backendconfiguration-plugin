@@ -11,16 +11,19 @@
   [sortDirection]="selectTaskWizardPaginationIsSortDsc$ | async"
   (sortChange)="onSortTable($event)"
   noResultText="{{'No tasks found' | translate}}"
+  [rowSelectable]="selectAuthIsAdmin$ | async"
+  [multiSelectable]="selectAuthIsAdmin$ | async"
+  (rowSelectedChange)="updateSelectedPlannings($event)"
 />
 
 <ng-template #tagsTpl let-row>
   <div class="d-flex flex-wrap align-items-center">
-    <mat-chip-list>
+    <mat-chip-listbox>
       <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
         <mat-icon>discount</mat-icon>
         <span>{{ tag.name }}</span>
       </mat-chip>
-    </mat-chip-list>
+    </mat-chip-listbox>
   </div>
 </ng-template>
 

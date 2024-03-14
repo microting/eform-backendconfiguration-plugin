@@ -19,6 +19,7 @@ import {
   selectTaskWizardPaginationSort
 } from '../../../../state';
 import {selectAuthIsAdmin} from "src/app/state";
+import {PlanningModel} from "src/app/plugins/modules/items-planning-pn/models";
 
 @AutoUnsubscribe()
 @Component({
@@ -32,6 +33,8 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   @Output() deleteTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
   @Output() copyTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
   @Output() editTask: EventEmitter<TaskWizardModel> = new EventEmitter<TaskWizardModel>();
+  @Input() selectedColCheckboxes: number[] = [];
+  @Output() selectedPlanningsChanged: EventEmitter<number[]> = new EventEmitter<number[]>();
   tableHeaders: MtxGridColumn[] = [
     {field: 'id', header: this.translateService.stream('Id'), sortable: true, sortProp: {id: 'Id'},
       formatter: (model: TaskWizardModel) => model.id + ' <small class="microting-uid">(' + model.planningId + ')</small>',
@@ -153,5 +156,10 @@ export class TaskWizardTableComponent implements OnInit, OnDestroy {
   onSortTable(sort: Sort) {
     this.taskWizardStateService.onSortTable(sort.active);
     this.updateTable.emit();
+  }
+
+  updateSelectedPlannings(planningModels: TaskWizardModel[]) {
+    this.selectedColCheckboxes = planningModels.map(x => x.id);
+    this.selectedPlanningsChanged.emit(this.selectedColCheckboxes);
   }
 }

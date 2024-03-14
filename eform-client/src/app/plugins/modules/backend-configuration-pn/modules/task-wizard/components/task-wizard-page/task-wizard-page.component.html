@@ -35,13 +35,26 @@
   [tags]="tags"
   (updateTable)="updateTable()"
 />
-
+<button
+  *ngIf="selectAuthIsAdmin$ | async;"
+  mat-raised-button
+  [disabled]="
+    !selectedPlanningsCheckboxes || selectedPlanningsCheckboxes.length === 0
+  "
+  id="deleteMultiplePluginsBtn"
+  color="warn"
+  matTooltip="{{ 'Deactivate selected' | translate }}"
+  (click)="showDeactivateMultipleTasksModal()"
+>
+  {{ 'Deactivate selected' | translate }}
+</button>
 <app-task-wizard-table
   [tasks]="tasks"
   (updateTable)="updateTable()"
   (editTask)="onEditTask($event)"
   (copyTask)="onCopyTask($event)"
   (deleteTask)="onDeleteTask($event)"
+  (selectedPlanningsChanged)="selectedPlanningsChanged($event)"
 />
 
 <app-planning-tags

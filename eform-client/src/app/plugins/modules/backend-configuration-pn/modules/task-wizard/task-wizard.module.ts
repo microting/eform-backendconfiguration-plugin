@@ -5,7 +5,7 @@ import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-share
 import {
   TaskWizardCreateModalComponent,
   TaskWizardFiltersComponent,
-  TaskWizardFoldersModalComponent,
+  TaskWizardFoldersModalComponent, TaskWizardMultipleDeactivateComponent,
   TaskWizardPageComponent,
   TaskWizardTableComponent,
   TaskWizardUpdateModalComponent,
@@ -61,6 +61,7 @@ import {StatisticsModule} from '../statistics/statistics.module';
     TaskWizardCreateModalComponent,
     TaskWizardUpdateModalComponent,
     TaskWizardFoldersModalComponent,
+    TaskWizardMultipleDeactivateComponent,
   ],
 })
 export class TaskWizardModule {
