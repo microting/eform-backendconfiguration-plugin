@@ -280,7 +280,7 @@ export const da = {
   'Submitted date': 'Indsendt dato',
   'Edit employee': 'Rediger medarbejder',
   Always: 'Altid',
-  Completed: 'Færdiggjort',
+  Completed: 'Afsluttet',
   Description: 'Beskrivelse',
   Date: 'Dato',
   Location: 'Lokation',
