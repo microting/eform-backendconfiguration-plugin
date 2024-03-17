@@ -115,6 +115,14 @@ export class PropertyWorkerTableComponent implements OnInit, OnDestroy {
       field: 'customerOtp',
     },
     {
+      header: this.translateService.stream('Model & OS version'),
+      field: 'manufacturer',
+    },
+    {
+      header: this.translateService.stream('Software version'),
+      field: 'version',
+    },
+    {
       header: this.translateService.stream('Actions'),
       field: 'actions',
       disabled: this.deviceUsersDelete || this.deviceUsersUpdate,

@@ -363,9 +363,6 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
             // var deviceUsers = new List<DeviceUser>();
 
             var sitesQuery = sdkDbContext.Sites
-                .Include(x => x.Units)
-                .Include(x => x.SiteWorkers)
-                .ThenInclude(x => x.Worker)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
 
             try
@@ -380,25 +377,17 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
             var deviceUsers = await sitesQuery
                 .Select(x => new DeviceUserModel
                 {
-                    CustomerNo = x.Units
-                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(y => y.CustomerNo)
-                        .FirstOrDefault(),
-                    UserFirstName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.FirstName,
-                    UserLastName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.LastName,
+                    //UserFirstName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.FirstName,
+                    //UserLastName = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.LastName,
                     LanguageId = x.LanguageId,
-                    OtpCode = x.Units
-                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(y => y.OtpCode)
-                        .FirstOrDefault(),
+                    // OtpCode = x.Units
+                    //     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
+                    //     .Select(y => y.OtpCode)
+                    //     .FirstOrDefault(),
                     SiteId = x.Id,
                     SiteUid = x.MicrotingUid,
                     SiteName = x.Name,
-                    UnitId = x.Units
-                        .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
-                        .Select(y => y.MicrotingUid)
-                        .FirstOrDefault(),
-                    WorkerUid = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.MicrotingUid,
+                    //WorkerUid = x.SiteWorkers.FirstOrDefault(y => y.WorkflowState != Constants.WorkflowStates.Removed).Worker.MicrotingUid,
                     Language = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.Name).SingleOrDefault() ?? "Danish",
                     LanguageCode = sdkDbContext.Languages.Where(y => y.Id == x.LanguageId).Select(y => y.LanguageCode).SingleOrDefault() ?? "da",
                     IsLocked = x.IsLocked
@@ -413,6 +402,21 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
 
             foreach (var deviceUserModel in deviceUsers)
             {
+                var unit = await sdkDbContext.Units
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .FirstAsync(x => x.SiteId == deviceUserModel.SiteId);
+                deviceUserModel.Version = unit.eFormVersion;
+                deviceUserModel.OsVersion = unit.OsVersion;
+                deviceUserModel.Model = unit.Model;
+                deviceUserModel.Manufacturer = unit.Manufacturer;
+                deviceUserModel.CustomerNo = unit.CustomerNo;
+                deviceUserModel.OtpCode = unit.OtpCode;
+
+                var siteWorker = await sdkDbContext.SiteWorkers.FirstAsync(x => x.SiteId == deviceUserModel.SiteId);
+                var worker = await sdkDbContext.Workers.FirstAsync(x => x.Id == siteWorker.WorkerId);
+                deviceUserModel.UserFirstName = worker.FirstName;
+                deviceUserModel.UserLastName = worker.LastName;
+                deviceUserModel.WorkerUid = worker.MicrotingUid;
                 deviceUserModel.TimeRegistrationEnabled = timeRegistrationEnabledSites.Any(x =>x == deviceUserModel.SiteUid);
 
                 deviceUserModel.TaskManagementEnabled = _backendConfigurationPnDbContext.PropertyWorkers.Any(x =>

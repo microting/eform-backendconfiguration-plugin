@@ -20,4 +20,8 @@ export class DeviceUserModel {
   hasWorkOrdersAssigned: boolean;
   timeRegistrationEnabled: boolean;
   taskManagementEnabled: boolean;
+  manufacturer: string;
+  model: string;
+  osVersion: string;
+  version: string;
 }

@@ -6,6 +6,7 @@
     siteName: fullNameTpl,
     language: languageTpl,
     customerOtp: customerOtpTpl,
+    manufacturer: manufacturerTpl,
     actions: actionsTpl,
     taskManagementEnabled: taskManagementEnabledTpl,
     timeRegistrationEnabled: timeRegistrationEnabledTpl,
@@ -106,6 +107,14 @@
       <mat-icon>delete</mat-icon>
     </button>
   </div>
+</ng-template>
+
+<ng-template #manufacturerTpl let-row>
+  <ng-container *ngIf="row.osVersion !== null">
+  <div class="manufacturer" id="manufacturer-{{row.id}}">
+    {{row.model}} ({{row.osVersion}})
+  </div>
+  </ng-container>
 </ng-template>
 
 <ng-template #taskManagementEnabledTpl let-row>
