@@ -404,20 +404,32 @@ public class BackendConfigurationAssignmentWorkerService : IBackendConfiguration
             {
                 var unit = await sdkDbContext.Units
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstAsync(x => x.SiteId == deviceUserModel.SiteId);
-                deviceUserModel.Version = unit.eFormVersion;
-                deviceUserModel.OsVersion = unit.OsVersion;
-                deviceUserModel.Model = unit.Model;
-                deviceUserModel.Manufacturer = unit.Manufacturer;
-                deviceUserModel.CustomerNo = unit.CustomerNo;
-                deviceUserModel.OtpCode = unit.OtpCode;
+                    .FirstOrDefaultAsync(x => x.SiteId == deviceUserModel.SiteId);
+                if (unit != null)
+                {
+                    deviceUserModel.Version = unit.eFormVersion;
+                    deviceUserModel.OsVersion = unit.OsVersion;
+                    deviceUserModel.Model = unit.Model;
+                    deviceUserModel.Manufacturer = unit.Manufacturer;
+                    deviceUserModel.CustomerNo = unit.CustomerNo;
+                    deviceUserModel.OtpCode = unit.OtpCode;
+                    deviceUserModel.UnitId = unit.MicrotingUid;
+                }
 
-                var siteWorker = await sdkDbContext.SiteWorkers.FirstAsync(x => x.SiteId == deviceUserModel.SiteId);
-                var worker = await sdkDbContext.Workers.FirstAsync(x => x.Id == siteWorker.WorkerId);
-                deviceUserModel.UserFirstName = worker.FirstName;
-                deviceUserModel.UserLastName = worker.LastName;
-                deviceUserModel.WorkerUid = worker.MicrotingUid;
-                deviceUserModel.TimeRegistrationEnabled = timeRegistrationEnabledSites.Any(x =>x == deviceUserModel.SiteUid);
+                var siteWorker = await sdkDbContext.SiteWorkers.FirstOrDefaultAsync(x => x.SiteId == deviceUserModel.SiteId);
+                if (siteWorker != null)
+                {
+                    var worker = await sdkDbContext.Workers.FirstAsync(x => x.Id == siteWorker.WorkerId);
+                    deviceUserModel.UserFirstName = worker.FirstName;
+                    deviceUserModel.UserLastName = worker.LastName;
+                    deviceUserModel.WorkerUid = worker.MicrotingUid;
+                    deviceUserModel.TimeRegistrationEnabled =
+                        timeRegistrationEnabledSites.Any(x => x == deviceUserModel.SiteUid);
+                }
+                else
+                {
+                    Console.WriteLine(deviceUserModel.SiteId);
+                }
 
                 deviceUserModel.TaskManagementEnabled = _backendConfigurationPnDbContext.PropertyWorkers.Any(x =>
                     x.WorkflowState != Constants.WorkflowStates.Removed
