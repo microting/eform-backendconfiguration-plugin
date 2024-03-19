@@ -69,12 +69,13 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.filtersForm = new FormGroup({
-      propertyIds: new FormControl([]),
-      folderIds: new FormControl({value: [], disabled: true}),
+      propertyIds: new FormControl(this.currentFilters.propertyIds),
+      folderIds: new FormControl(this.currentFilters.folderIds),
       tagIds: new FormControl(this.currentFilters.tagIds),
-      status: new FormControl(null),
-      assignToIds: new FormControl({value: [], disabled: true}),
+      status: new FormControl(this.currentFilters.status),
+      assignToIds: new FormControl(this.currentFilters.assignToIds),
     });
+    this.firstLoad = false;
     this.statuses = Object.keys(TaskWizardStatusesEnum)
       .filter(key => isNaN(Number(key))) // Filter out numeric keys that TypeScript adds to enumerations
       .map(key => {
@@ -84,47 +85,59 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
         };
       });
 
-    this.getFiltersAsyncSub$ = this.selectTaskWizardFilters$
-      .pipe(
-        debounce(() => interval(200)),
-        filter(value => !R.equals(value, this.filtersForm.getRawValue())),
-        tap(filters => {
-          if (this.firstLoad) {
-            this.firstLoad = false;
-            this.filtersForm.get('propertyIds').patchValue(filters.propertyIds);
-            this.filtersForm.get('assignToIds').patchValue(filters.assignToIds);
-          }
-        })).subscribe();
+    // TODO: Implement this logic correctly
+    // this.getFiltersAsyncSub$ = this.selectTaskWizardFilters$
+    //   .pipe(
+    //     debounce(() => interval(200)),
+    //     filter(value => !R.equals(value, this.filtersForm.getRawValue())),
+    //     tap(filters => {
+    //       debugger;
+    //       if (this.firstLoad) {
+    //         this.firstLoad = false;
+    //         this.filtersForm.get('propertyIds').patchValue(filters.propertyIds);
+    //         this.filtersForm.get('assignToIds').patchValue(filters.assignToIds);
+    //       }
+    //     })).subscribe();
 
     this.valueChangesPropertyIdsSub$ = this.filtersForm.get('propertyIds').valueChanges
       .subscribe((value: number[]) => {
         this.taskWizardStateService.updatePropertyIds(value);
         this.propertyIdsChange(value);
-        this.updateTable.emit();
+        if (!this.firstLoad) {
+          this.updateTable.emit();
+        }
       });
 
     this.valueChangesFolderIdsSub$ = this.filtersForm.get('folderIds').valueChanges
       .subscribe((value: number[]) => {
         if (this.taskWizardStateService.updateFolderIds(value)) {
-          this.updateTable.emit();
+          if (!this.firstLoad) {
+            this.updateTable.emit();
+          }
         }
       });
     this.valueChangesTagIdsSub$ = this.filtersForm.get('tagIds').valueChanges
       .subscribe((value: number[]) => {
         if (this.taskWizardStateService.updateTagIds(value)) {
-          this.updateTable.emit();
+          if (!this.firstLoad) {
+            this.updateTable.emit();
+          }
         }
       });
     this.valueChangesAssignToIdsSub$ = this.filtersForm.get('assignToIds').valueChanges
       .subscribe((value: number[]) => {
         if (this.taskWizardStateService.updateAssignToIds(value)) {
-          this.updateTable.emit();
+          if (!this.firstLoad) {
+            this.updateTable.emit();
+          }
         }
       });
     this.valueChangesStatusSub$ = this.filtersForm.get('status').valueChanges
       .subscribe((value: TaskWizardStatusesEnum | null) => {
         if (this.taskWizardStateService.updateStatus(value)) {
-          this.updateTable.emit();
+          if (!this.firstLoad) {
+            this.updateTable.emit();
+          }
         }
       });
   }
