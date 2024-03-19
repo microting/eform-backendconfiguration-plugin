@@ -147,7 +147,7 @@ public class WorkOrderCreatedHandler : IHandleMessages<WorkOrderCreated>
 
             var outerDescription = $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {propertyName}<br>" +
                                    areaName +
-                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Location")}:</strong> {newDescription}<br>" +
+                                   $"<strong>{_backendConfigurationLocalizationService.GetString("Description")}:</strong> {newDescription}<br>" +
                                    priorityText +
                                    assignedTo +
                                    $"<strong>{_backendConfigurationLocalizationService.GetString("Status")}:</strong> {textStatus}<br><br>";
