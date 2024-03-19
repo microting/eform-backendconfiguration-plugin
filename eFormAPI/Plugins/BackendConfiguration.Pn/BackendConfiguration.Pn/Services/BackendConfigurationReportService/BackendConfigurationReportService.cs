@@ -818,7 +818,7 @@ public class BackendConfigurationReportService : IBackendConfigurationReportServ
                                             break;
                                         case Constants.FieldTypes.EntitySearch or
                                             Constants.FieldTypes.EntitySelect:
-                                            if (caseField.Value != null && caseField.Value != "null")
+                                            if (!string.IsNullOrEmpty(caseField.Value) && caseField.Value != "null")
                                             {
                                                 var id = int.Parse(caseField.Value);
                                                 var match =
