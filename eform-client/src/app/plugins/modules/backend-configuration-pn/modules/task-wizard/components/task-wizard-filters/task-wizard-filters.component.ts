@@ -15,7 +15,7 @@ import {interval, Subscription} from 'rxjs';
 import {Store} from '@ngrx/store';
 import * as R from 'ramda';
 import {
-  selectTaskWizardFilters,
+  selectTaskWizardFilters, TaskWizardFiltrationModel,
 } from '../../../../state';
 import {debounce, filter, tap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
@@ -51,6 +51,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   showDiagram: boolean = false;
   firstLoad: boolean = true;
   private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
+  currentFilters: TaskWizardFiltrationModel;
 
   constructor(
     private store: Store,
@@ -58,13 +59,7 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private taskWizardStateService: TaskWizardStateService,
   ) {
-    this.filtersForm = new FormGroup({
-      propertyIds: new FormControl([]),
-      folderIds: new FormControl({value: [], disabled: true}),
-      tagIds: new FormControl([]),
-      status: new FormControl(null),
-      assignToIds: new FormControl({value: [], disabled: true}),
-    });
+    this.selectTaskWizardFilters$.subscribe(x => this.currentFilters = x);
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
@@ -73,6 +68,13 @@ export class TaskWizardFiltersComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.filtersForm = new FormGroup({
+      propertyIds: new FormControl([]),
+      folderIds: new FormControl({value: [], disabled: true}),
+      tagIds: new FormControl(this.currentFilters.tagIds),
+      status: new FormControl(null),
+      assignToIds: new FormControl({value: [], disabled: true}),
+    });
     this.statuses = Object.keys(TaskWizardStatusesEnum)
       .filter(key => isNaN(Number(key))) // Filter out numeric keys that TypeScript adds to enumerations
       .map(key => {
