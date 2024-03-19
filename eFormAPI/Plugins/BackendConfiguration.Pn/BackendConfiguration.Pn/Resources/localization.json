@@ -4653,5 +4653,36 @@
       "el-GR": "Ημερομηνία υποβολής",
       "is-IS": "Dagsetning skilað"
     }
+  },
+  {
+    "Key": "TheEmployeeAlreadyExist",
+    "LocalizedValue": {
+      "da": "Medarbejderen findes allerede",
+      "de": "Der Mitarbeiter existiert bereits",
+      "en-US": "The employee already exist",
+      "uk-UA": "Працівник вже існує",
+      "pl-PL": "Pracownik już istnieje",
+      "no-NO": "Medarbeideren finnes allerede",
+      "sv-SE": "Arbetstagaren finns redan",
+      "es-ES": "El empleado ya existe",
+      "fr-FR": "L'employé existe déjà",
+      "it-IT": "Il dipendente esiste già",
+      "nl-NL": "De werknemer bestaat al",
+      "pt-BR": "O funcionário já existe",
+      "pt-PT": "O funcionário já existe",
+      "fi-FI": "Työntekijä on jo olemassa",
+      "et-ET": "Töötaja on juba olemas",
+      "lv-LV": "Darbinieks jau pastāv",
+      "lt-LT": "Darbuotojas jau egzistuoja",
+      "ro-RO": "Angajatul există deja",
+      "hr-HR": "Zaposlenik već postoji",
+      "sl-SL": "Zaposleni že obstaja",
+      "cs-CZ": "Zaměstnanec již existuje",
+      "sk-SK": "Zamestnanec už existuje",
+      "hu-HU": "A munkavállaló már létezik",
+      "bg-BG": "Служителят вече съществува",
+      "el-GR": "Ο υπάλληλος υπάρχει ήδη",
+      "is-IS": "Starfsmaðurinn er þegar til"
+    }
   }
 ]

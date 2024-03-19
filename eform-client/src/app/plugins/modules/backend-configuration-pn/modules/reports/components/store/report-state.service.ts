@@ -36,7 +36,7 @@ export class ReportStateService {
   }
 
   updateDateRange(dateRange: { startDate?: string, endDate?: string, }) {
-    if (dateRange.startDate != this.currentDateRange.startDate || dateRange.endDate != this.currentDateRange.endDate) {
+    if (dateRange.startDate !== this.currentDateRange.startDate || dateRange.endDate !== this.currentDateRange.endDate) {
       this.store.dispatch(reportsV2UpdateDateRange({
         startDate: dateRange.startDate || this.currentDateRange.startDate,
         endDate: dateRange.endDate || this.currentDateRange.endDate,

@@ -1,7 +1,7 @@
 <mtx-grid
   [data]="tasks"
   [columns]="tableHeaders"
-  [cellTemplate]="{tags: tagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
+  [cellTemplate]="{id: idTpl, tags: tagsTpl, startDate: startDateTpl, repeat: repeatTpl, status: statusTpl}"
   [showPaginator]="false"
   [pageOnFront]="false"
   [rowStriped]="true"
@@ -11,16 +11,19 @@
   [sortDirection]="selectTaskWizardPaginationIsSortDsc$ | async"
   (sortChange)="onSortTable($event)"
   noResultText="{{'No tasks found' | translate}}"
+  [rowSelectable]="selectAuthIsAdmin$ | async"
+  [multiSelectable]="selectAuthIsAdmin$ | async"
+  (rowSelectedChange)="updateSelectedPlannings($event)"
 />
 
 <ng-template #tagsTpl let-row>
   <div class="d-flex flex-wrap align-items-center">
-    <mat-chip-list>
+    <mat-chip-listbox>
       <mat-chip *ngFor="let tag of row.tags" color="primary" (click)="onClickTag(tag)">
         <mat-icon>discount</mat-icon>
         <span>{{ tag.name }}</span>
       </mat-chip>
-    </mat-chip-list>
+    </mat-chip-listbox>
   </div>
 </ng-template>
 
@@ -39,4 +42,13 @@
 
 <ng-template #statusTpl let-row>
   <span title="{{TaskWizardStatusesEnum[row.status] | translate}}">{{TaskWizardStatusesEnum[row.status] | translate}}</span>
+</ng-template>
+
+<ng-template #idTpl let-row>
+  <ng-container *ngIf="selectAuthIsAdmin$ | async;">
+    <span title="{{row.createdAt}}">{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
+  </ng-container>
+  <ng-container *ngIf="(selectAuthIsAdmin$ | async) !== true;">
+    <span>{{row.id}}<small class="microting-uid"> ({{row.planningId}})</small></span>
+  </ng-container>
 </ng-template>

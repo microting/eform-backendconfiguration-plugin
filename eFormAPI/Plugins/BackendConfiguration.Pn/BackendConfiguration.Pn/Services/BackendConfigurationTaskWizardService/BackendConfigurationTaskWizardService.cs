@@ -122,6 +122,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
 
             var areaRulePlannings = query.Select(x => new
             {
+                x.CreatedAt,
+                x.UpdatedAt,
                 x.Id,
                 PlanningSites = x.PlanningSites
                     .Where(y => y.WorkflowState != Constants.WorkflowStates.Removed)
@@ -181,6 +183,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
             var fulfilledQuery = areaRulePlannings
                 .Select(areaRule => new TaskWizardModel
                 {
+                    CreatedAt = areaRule.CreatedAt,
+                    UpdatedAt = areaRule.UpdatedAt,
                     StartDate = (DateTime)areaRule.StartDate,
                     RepeatType = (RepeatType)areaRule.RepeatType,
                     RepeatEvery = (int)areaRule.RepeatEvery,
@@ -196,6 +200,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .ToList(),
                     Eform = eformNamesQuery.Where(x => x.CheckListId == areaRule.EformId).Select(x => x.Text)
                         .FirstOrDefault(),
+                    EformId = areaRule.EformId,
+                    PlanningId = areaRule.ItemPlanningId,
                     Folder = folderNamesQuery.Where(x => x.FolderId == areaRule.FolderId).Select(x => x.Name)
                         .FirstOrDefault(),
                     CreatedInGuide = areaRule.CreatedInGuide
@@ -561,6 +567,98 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
         }
     }
 
+    public async Task<OperationResult> DeactivateList(List<int> ids)
+    {
+        var core = await _coreHelper.GetCore();
+        var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        // update all area rule plannings and plannings in parallel
+
+
+        foreach (var id in ids)
+        {
+            var areaRulePlanning = await _backendConfigurationPnDbContext.AreaRulePlannings
+                .Where(x => x.Id == id)
+                .Include(x => x.PlanningSites.Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
+                .FirstOrDefaultAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            var planning = await _itemsPlanningPnDbContext.Plannings
+                .Where(x => x.Id == areaRulePlanning.ItemPlanningId)
+                .Include(x => x.NameTranslations)
+                .Include(x => x.PlanningsTags)
+                .Include(x => x.PlanningSites)
+                .FirstAsync(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            planning.Enabled = false;
+            await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+            var complianceList = await _backendConfigurationPnDbContext.Compliances
+                .Where(x => x.PlanningId == areaRulePlanning.ItemPlanningId
+                            && x.WorkflowState != Constants.WorkflowStates.Removed)
+                .ToListAsync().ConfigureAwait(false);
+            foreach (var compliance in complianceList)
+            {
+                if (compliance != null)
+                {
+                    await compliance.Delete(_backendConfigurationPnDbContext)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            var planningCases = await _itemsPlanningPnDbContext.PlanningCases
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                .Where(x => x.PlanningId == planning.Id)
+                .ToListAsync().ConfigureAwait(false);
+
+            foreach (var planningCase in planningCases)
+            {
+                var planningCaseSites = await _itemsPlanningPnDbContext.PlanningCaseSites
+                    .Where(x => x.PlanningCaseId == planningCase.Id)
+                    .Where(planningCaseSite => planningCaseSite.MicrotingSdkCaseId != 0 ||
+                                               planningCaseSite.MicrotingCheckListSitId != 0)
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                    .ToListAsync().ConfigureAwait(false);
+                foreach (var planningCaseSite in planningCaseSites)
+                {
+                    var result =
+                        await sdkDbContext.Cases.SingleOrDefaultAsync(x => x.Id == planningCaseSite.MicrotingSdkCaseId)
+                            .ConfigureAwait(false);
+                    if (result is { MicrotingUid: { } })
+                    {
+                        await core.CaseDelete((int)result.MicrotingUid).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        var clSites = await sdkDbContext.CheckListSites.SingleAsync(x =>
+                            x.Id == planningCaseSite.MicrotingCheckListSitId).ConfigureAwait(false);
+
+                        await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
+                    }
+                }
+
+                planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
+                await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            areaRulePlanning.Status = false;
+            await areaRulePlanning.Update(_backendConfigurationPnDbContext)
+                .ConfigureAwait(false);
+
+            var planningSites =
+                await _itemsPlanningPnDbContext.PlanningSites.Where(x => x.PlanningId == planning.Id).ToListAsync()
+                    .ConfigureAwait(false);
+
+            foreach (var planningSite in planningSites)
+            {
+                await planningSite.Delete(_itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            //var result = await UpdateTask(updateModel);
+        }
+
+        return new OperationResult(true, _localizationService.GetString("TasksDeactivatedSuccessful"));
+    }
+
     /// <inheritdoc />
     public async Task<OperationResult> UpdateTask(TaskWizardCreateModel updateModel)
     {
@@ -714,6 +812,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     planning.DayOfWeek = DayOfWeek.Monday;
                     planning.RepeatEvery = updateModel.RepeatEvery;
                     planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                    planning.SdkFolderName = folderName;
+                    planning.SdkFolderId = updateModel.FolderId;
+                    planning.ShowExpireDate = true;
                     planning.RepeatType =
                         (Microting.ItemsPlanningBase.Infrastructure.Enums.RepeatType)updateModel.RepeatType;
 
@@ -754,6 +855,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                     }
 
                     await planning.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                    // update planning tags
+                    await UpdateTags(planning.Id, updateModel, areaRulePlanning.Id, oldItemPlanningTagId);
                     foreach (PlanningNameTranslation planningNameTranslation in planning.NameTranslations)
                     {
                         foreach (AreaRuleTranslation areaRuleTranslation in areaRulePlanning.AreaRule.AreaRuleTranslations)
@@ -839,6 +943,8 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                                 await core.CaseDelete(clSites.MicrotingUid).ConfigureAwait(false);
                             }
                         }
+                        planningCase.WorkflowState = Constants.WorkflowStates.Retracted;
+                        await planningCase.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
                     }
                     areaRulePlanning.Status = false;
                     await areaRulePlanning.Update(_backendConfigurationPnDbContext)
@@ -886,8 +992,10 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         planning.RepeatEvery = updateModel.RepeatEvery;
                         planning.SdkFolderId = updateModel.FolderId;
                         planning.SdkFolderName = folderName;
+                        planning.SdkFolderId = updateModel.FolderId;
                         planning.UpdatedByUserId = _userService.UserId;
                         planning.ReportGroupPlanningTagId = (int)updateModel.ItemPlanningTagId!;
+                        planning.ShowExpireDate = true;
                         await planning.Update(_itemsPlanningPnDbContext);
 
                         // update planning names
@@ -1050,6 +1158,7 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 _localizationService.GetString("ErrorWhileUpdatingTask"));
         }
     }
+
 
     /// <inheritdoc />
     public async Task<OperationResult> DeleteTask(int id)

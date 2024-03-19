@@ -301,4 +301,5 @@ export const enUS= {
   'Location': 'Location',
   'Select date range': 'Select date range',
   'Manage tags': 'Manage tags',
+  'Middle': 'Middle',
 };

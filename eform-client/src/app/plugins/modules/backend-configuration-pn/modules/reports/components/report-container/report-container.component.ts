@@ -97,6 +97,8 @@ export class ReportContainerComponent implements OnInit, OnDestroy {
             asyncScheduler.schedule(() => this.viewportScroller.scrollToPosition(this.scrollPosition), 1000);
             this.startWithParams = false;
           }
+        } else {
+          this.reportsModel = [];
         }
       });
   }

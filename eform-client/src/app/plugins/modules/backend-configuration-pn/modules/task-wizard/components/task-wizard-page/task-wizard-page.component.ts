@@ -13,13 +13,17 @@ import {TranslateService} from '@ngx-translate/core';
 import {MatDialog, MatDialogRef, MatDialogState} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
 import {AppSettingsStateService} from 'src/app/modules/application-settings/components/store';
-import {TaskWizardCreateModalComponent, TaskWizardUpdateModalComponent} from '../../components';
+import {
+  TaskWizardCreateModalComponent,
+  TaskWizardMultipleDeactivateComponent,
+  TaskWizardUpdateModalComponent
+} from '../../components';
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
 import {AuthStateService} from 'src/app/common/store';
 import {ActivatedRoute} from '@angular/router';
 import {StatisticsStateService} from '../../../statistics/store';
 import * as R from 'ramda';
-import {selectAuthIsAuth} from 'src/app/state';
+import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state';
 import {Store} from '@ngrx/store';
 import {
   selectTaskWizardPropertyIds
@@ -62,7 +66,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   getFiltersAsyncSub$: Subscription;
   changePropertySub$: Subscription;
   getPlannedTaskWorkersSub$: Subscription;
+  selectedPlanningsCheckboxes: number[] = [];
   public isAuth$ = this.store.select(selectAuthIsAuth);
+  public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
+  deactivateMultipleTasksSub$: Subscription;
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -211,7 +218,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
+          this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
           this.updateModal.componentInstance.fillModelAndCopyModel({
             eformId: data.model.eformId,
             folderId: data.model.folderId,
@@ -281,7 +288,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
       tap(data => {
         if (data && data.success && data.model) {
-          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
+          this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
           if (data.model.repeatType === 1 && data.model.repeatEvery === 0) {
             data.model.repeatType = 0;
             data.model.repeatEvery = 0;
@@ -339,7 +346,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onCreateTask() {
-    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
+    this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
     this.createModal.componentInstance.planningTagsModal = this.planningTagsModal;
     this.createModal.componentInstance.properties = this.properties;
     this.createModal.componentInstance.tags = this.tags;
@@ -460,5 +467,27 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   ngOnDestroy(): void {
+  }
+
+  selectedPlanningsChanged(model: number[]) {
+    this.selectedPlanningsCheckboxes = model;
+  }
+
+  showDeactivateMultipleTasksModal() {
+    const taskWizardMultipleDeactivateModal = this.dialog.open(TaskWizardMultipleDeactivateComponent,
+      dialogConfigHelper(this.overlay, this.selectedPlanningsCheckboxes.length));
+    this.deactivateMultipleTasksSub$ = taskWizardMultipleDeactivateModal.componentInstance.deactivateMultipleTasks
+      .subscribe(_ => this.deactivateMultipleTasks(taskWizardMultipleDeactivateModal));
+  }
+
+  deactivateMultipleTasks(taskWizardMultipleDeactivateModal: MatDialogRef<TaskWizardMultipleDeactivateComponent>) {
+    this.backendConfigurationPnTaskWizardService.deactivateMultipleTasks(this.selectedPlanningsCheckboxes)
+      .subscribe((data) => {
+        if (data && data.success) {
+          taskWizardMultipleDeactivateModal.close();
+          this.updateTable();
+          this.selectedPlanningsCheckboxes = [];
+        }
+      });
   }
 }

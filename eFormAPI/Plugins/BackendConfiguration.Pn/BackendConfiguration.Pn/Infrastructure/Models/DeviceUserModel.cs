@@ -49,6 +49,14 @@ public class DeviceUserModel
     public bool IsBackendUser { get; set; }
     public bool HasWorkOrdersAssigned { get; set; }
 
+    public string Manufacturer { get; set; }
+
+    public string Model { get; set; }
+    public string Os { get; set; }
+    public string OsVersion { get; set; }
+
+    public string Version { get; set; }
+
     public static implicit operator DeviceUserModel(Microting.EformAngularFrontendBase.Infrastructure.Data.Models.DeviceUserModel model)
     {
         return new DeviceUserModel

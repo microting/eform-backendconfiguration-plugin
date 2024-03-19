@@ -48,6 +48,13 @@ public class TaskWizardController : Controller
     }
 
     [HttpPut]
+    [Route("deactivate")]
+    public async Task<OperationResult> DeactivateList([FromBody] List<int> ids)
+    {
+        return await _backendConfigurationTaskWizardService.DeactivateList(ids);
+    }
+
+    [HttpPut]
     public async Task<OperationResult> UpdateTask([FromBody] TaskWizardCreateModel updateModel)
     {
         return await _backendConfigurationTaskWizardService.UpdateTask(updateModel);

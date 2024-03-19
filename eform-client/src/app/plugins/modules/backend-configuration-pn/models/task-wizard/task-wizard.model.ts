@@ -8,10 +8,14 @@ export interface TaskWizardModel {
   tags: SharedTagModel[],
   taskName: string,
   eform: string,
+  eformId: number,
   startDate: Date,
   repeatType: RepeatTypeEnum,
   repeatEvery: number,
   status: TaskWizardStatusesEnum,
   assignedTo: string[],
   createdInGuide: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  planningId: number;
 }

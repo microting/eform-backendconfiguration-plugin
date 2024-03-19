@@ -8,12 +8,16 @@ export let BackendConfigurationPnTaskWizardMethods = {
   TaskWizard: 'api/backend-configuration-pn/task-wizard',
   Index: 'api/backend-configuration-pn/task-wizard/index',
   Properties: 'api/backend-configuration-pn/task-wizard/properties',
+  Deactivate: 'api/backend-configuration-pn/task-wizard/deactivate',
 };
 
 @Injectable({
   providedIn: 'root',
 })
 export class BackendConfigurationPnTaskWizardService {
+  deactivateMultipleTasks(selectedPlanningsCheckboxes: number[]): Observable<OperationResult> {
+    return this.apiBaseService.put(BackendConfigurationPnTaskWizardMethods.Deactivate, selectedPlanningsCheckboxes);
+  }
   constructor(private apiBaseService: ApiBaseService) {
   }
 

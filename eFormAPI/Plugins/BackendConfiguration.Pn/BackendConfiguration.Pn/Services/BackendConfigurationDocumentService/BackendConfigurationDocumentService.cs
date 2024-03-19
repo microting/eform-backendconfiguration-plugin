@@ -529,7 +529,13 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     documentUploadedDataModel.File = documentUploadedData.FileName;
                     documentUploadedDataModel.UpdatedByUserId = _userService.UserId;
                     await documentUploadedDataModel.Update(_caseTemplatePnDbContext);
+                } else {
+                    documentUploadedDataModel.Name = documentUploadedData.Name;
+                    documentUploadedDataModel.File = documentUploadedData.FileName;
+                    documentUploadedDataModel.Hash = documentUploadedData.Hash;
+                    await documentUploadedDataModel.Update(_caseTemplatePnDbContext);
                 }
+
             }
         }
 

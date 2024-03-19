@@ -318,10 +318,12 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     );
     expect(itemPlanning.repeatEvery).eq(12);
     expect(itemPlanning.repeatType).eq('Måned');
-
     const today = new Date();
-    const todayDate = format(today, 'dd.MM.y');
-    const newDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+    const leapYear = today.getFullYear() % 4 === 0 && (today.getFullYear() % 100 !== 0 || today.getFullYear() % 400 === 0);
+    const todayDate = format(today, 'dd.MM.yyyy'); // Make sure the year format is correct ('yyyy')
+    const newDate = leapYear && today.getMonth() === 1 && today.getDate() === 29
+      ? new Date(today.getFullYear() + 1, 1, 28)
+      : new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
     const newDateDate = format(newDate, 'dd.MM.y');
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
@@ -380,8 +382,11 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     expect(itemPlanning.repeatType).eq('Måned');
 
     const today = new Date();
-    const todayDate = format(today, 'dd.MM.y');
-    const newDate = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
+    const leapYear = today.getFullYear() % 4 === 0 && (today.getFullYear() % 100 !== 0 || today.getFullYear() % 400 === 0);
+    const todayDate = format(today, 'dd.MM.yyyy'); // Make sure the year format is correct ('yyyy')
+    const newDate = leapYear && today.getMonth() === 1 && today.getDate() === 29
+      ? new Date(today.getFullYear() + 2, 1, 28)
+      : new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
     const newDateDate = format(newDate, 'dd.MM.y');
     expect(itemPlanning.nextExecution.split(' ')[0]).eq(newDateDate);
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];

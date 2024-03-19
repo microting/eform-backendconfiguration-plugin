@@ -135,6 +135,8 @@ export class DocumentsDocumentEditComponent implements OnInit {
     if (filesIndexByLanguage !== -1) {
       this.documentModel.documentUploadedDatas[filesIndexByLanguage].file = null;
       this.documentModel.documentUploadedDatas[filesIndexByLanguage].name = '';
+      this.documentModel.documentUploadedDatas[filesIndexByLanguage].fileName = '';
+      //this.documentModel.documentUploadedDatas[filesIndexByLanguage].hash = '';
     }
   }
 

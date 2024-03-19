@@ -429,11 +429,19 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
         {
             // var result = await _deviceUsersService.Create(deviceUserModel);
             var siteName = deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName;
+
+            var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x => x.Name == deviceUserModel.UserFirstName + " " + deviceUserModel.UserLastName && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (site != null)
+            {
+                return new OperationDataResult<int>(false, "TheEmployeeAlreadyExist");
+            }
+
             var siteDto = await core.SiteCreate(siteName, deviceUserModel.UserFirstName, deviceUserModel.UserLastName,
                 null, deviceUserModel.LanguageCode).ConfigureAwait(false);
 
-            var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
+            site = await sdkDbContext.Sites.Where(x => x.MicrotingUid == siteDto.SiteId).FirstAsync().ConfigureAwait(false);
 
             if (deviceUserModel.TimeRegistrationEnabled == true)
             {
