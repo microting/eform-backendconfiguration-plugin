@@ -226,7 +226,7 @@ export const da = {
   Awaiting: 'Afventer',
   Urgent: 'Haster',
   High: 'Høj',
-  Medium: 'Medium',
+  Medium: 'Middel',
   Low: 'Lav',
   'No items found': 'Listen er tom',
   'Select filter': 'Vælg filter',

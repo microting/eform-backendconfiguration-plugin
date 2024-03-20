@@ -320,7 +320,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 LanguageId = danishLanguage.Id,
                                 // Name = "05. Halebid og klargøring af stalde",
-                                Name = "Halebid",
+                                Name = "05. Halebid",
                                 Description = ""
                             },
 
@@ -328,7 +328,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 LanguageId = englishLanguage.Id,
                                 // Name = "05. Tailbite and preparation of stables",
-                                Name = "Tail biting",
+                                Name = "05. Tail biting",
                                 Description = ""
                             },
 
@@ -336,7 +336,7 @@ public static class BackendConfigurationPropertyAreasServiceHelper
                             {
                                 LanguageId = germanLanguage.Id,
                                 // Name = "05. Stallungen",
-                                Name = "Schwanzbeißen",
+                                Name = "05. Schwanzbeißen",
                                 Description = ""
                             }
                         ], property.FolderId).ConfigureAwait(false);

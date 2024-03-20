@@ -2485,6 +2485,37 @@
     }
   },
   {
+    "Key": "Created",
+    "LocalizedValue": {
+      "da": "Oprettet",
+      "de": "Erstellt",
+      "en-US": "Created",
+      "uk-UA": "Створено",
+      "pl-PL": "Utworzono",
+      "no-NO": "Opprettet",
+      "sv-SE": "Skapad",
+      "es-ES": "Creado",
+      "fr-FR": "Créé",
+      "it-IT": "Creato",
+      "nl-NL": "Aangemaakt",
+      "pt-BR": "Criado",
+      "pt-PT": "Criado",
+      "fi-FI": "Luotu",
+      "et-ET": "Loodud",
+      "lv-LV": "Izveidots",
+      "lt-LT": "Sukurta",
+      "ro-RO": "Creat",
+      "hr-HR": "Stvoreno",
+      "sl-SL": "Ustvarjeno",
+      "cs-CZ": "Vytvořeno",
+      "sk-SK": "Vytvorené",
+      "hu-HU": "Létrehozva",
+      "bg-BG": "Създаден",
+      "el-GR": "Δημιουργήθηκε",
+      "is-IS": "Búið til"
+    }
+  },
+  {
     "Key": "DoneBy",
     "LocalizedValue": {
       "da": "Udført af",

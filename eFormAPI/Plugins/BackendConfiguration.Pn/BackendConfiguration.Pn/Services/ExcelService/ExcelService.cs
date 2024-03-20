@@ -107,43 +107,43 @@ public class ExcelService : IExcelService
 			const int startColumnForHeaderTable = 1;
 			var currentRow = 1;
 			var currentColumn = startColumnForHeaderTable;
-			worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Font.Bold = true;
-			// worksheet.Range(currentRow, currentColumn, currentRow, currentColumn).Cells().Style.Alignment
-			//     .Horizontal = XLAlignmentHorizontalValues.Center;
-			SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 6));
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Priority");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Status");
-			worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Date");
-
-			currentColumn = startColumnForHeaderTable;
-			//* table data
-			worksheet.Cell(currentRow, currentColumn++).Value = await _backendConfigurationPnDbContext.Properties
-				.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false);
-			worksheet.Cell(currentRow, currentColumn++).Value =
-				string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
-			worksheet.Cell(currentRow, currentColumn++).Value =
-				string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy;
-			worksheet.Cell(currentRow, currentColumn++).Value = filtersLastAssignedTo;
-			worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus())
-				? ""
-				: _localizationService.GetString(filtersModel.GetStringStatus());
-			var dateValue = !filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("dd.MM.yyyy");
-			dateValue += !filtersModel.DateTo.HasValue ? "" : "-";
-			dateValue += !filtersModel.DateTo.HasValue
-				? ""
-				: filtersModel.DateTo.Value.ToString("dd.MM.yyyy");
-			worksheet.Cell(currentRow, currentColumn).Value = dateValue;
+			// worksheet.Range(currentRow, currentColumn, currentRow, currentColumn + 5).Cells().Style.Font.Bold = true;
+			// // worksheet.Range(currentRow, currentColumn, currentRow, currentColumn).Cells().Style.Alignment
+			// //     .Horizontal = XLAlignmentHorizontalValues.Center;
+			// SetBorders(worksheet.Range(currentRow, currentColumn, currentRow + 1, currentColumn + 6));
+			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
+			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("PropertyArea");
+			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy");
+			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("LastAssignedTo");
+			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Priority");
+			// worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Status");
+			// worksheet.Cell(currentRow++, currentColumn).Value = _localizationService.GetString("Date");
+			//
+			// currentColumn = startColumnForHeaderTable;
+			// //* table data
+			// worksheet.Cell(currentRow, currentColumn++).Value = await _backendConfigurationPnDbContext.Properties
+			// 	.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false);
+			// worksheet.Cell(currentRow, currentColumn++).Value =
+			// 	string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName;
+			// worksheet.Cell(currentRow, currentColumn++).Value =
+			// 	string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy;
+			// worksheet.Cell(currentRow, currentColumn++).Value = filtersLastAssignedTo;
+			// worksheet.Cell(currentRow, currentColumn++).Value = string.IsNullOrEmpty(filtersModel.GetStringStatus())
+			// 	? ""
+			// 	: _localizationService.GetString(filtersModel.GetStringStatus());
+			// var dateValue = !filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("dd.MM.yyyy");
+			// dateValue += !filtersModel.DateTo.HasValue ? "" : "-";
+			// dateValue += !filtersModel.DateTo.HasValue
+			// 	? ""
+			// 	: filtersModel.DateTo.Value.ToString("dd.MM.yyyy");
+			// worksheet.Cell(currentRow, currentColumn).Value = dateValue;
 
 			// worksheet.Cell(currentRow, currentColumn).Value
 			// worksheet.Cell(currentRow++, currentColumn).Value
 
 			const int startColumnForDataTable = 1;
-			currentRow++;
-			currentRow++;
+			//currentRow++;
+			//currentRow++;
 			currentColumn = startColumnForDataTable;
 			SetBorders(worksheet.Range(currentRow, startColumnForDataTable, workOrderCaseModels.Count + currentRow,
 				startColumnForDataTable + 11));
@@ -155,8 +155,8 @@ public class ExcelService : IExcelService
 			// table report
 			//* header table
 			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Id");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedDate");
-			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Property");
+			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Created");
+			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Location");
 			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("Area");
 			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy1");
 			worksheet.Cell(currentRow, currentColumn++).Value = _localizationService.GetString("CreatedBy2");

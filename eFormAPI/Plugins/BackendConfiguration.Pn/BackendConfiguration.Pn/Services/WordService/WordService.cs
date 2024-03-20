@@ -163,33 +163,33 @@ public class WordService : IWordService
 
         var itemsHtml = new StringBuilder();
         itemsHtml.Append(@"<div style='font-family:Calibri;'>");
-        itemsHtml.Append(@"<table width=""100%"" border=""1"">");
-        itemsHtml.Append(@"<tr style='font-weight:bold;font-size:6pt;'>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("PropertyArea")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("LastAssignedTo")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Status")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Date")}</td>");
-        itemsHtml.Append(@"</tr>");
-        itemsHtml.Append(@"<tr style='font-size:6pt;'>");
-        itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false)}</td>");
-        itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName)}</td>");
-        itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
-        itemsHtml.Append($@"<td>{filtersLastAssignedTo}</td>");
-        itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus()))}</td>");
-        itemsHtml.Append($@"<td>{(!filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d"))}");
-        itemsHtml.Append($@"{(!filtersModel.DateTo.HasValue ? "" : " - " + filtersModel.DateTo.Value.ToString("d"))}</td>");
-        itemsHtml.Append(@"</tr>");
-        itemsHtml.Append(@"</table>");
+        // itemsHtml.Append(@"<table width=""100%"" border=""1"">");
+        // itemsHtml.Append(@"<tr style='font-weight:bold;font-size:6pt;'>");
+        // itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
+        // itemsHtml.Append($@"<td>{_localizationService.GetString("PropertyArea")}</td>");
+        // itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy")}</td>");
+        // itemsHtml.Append($@"<td>{_localizationService.GetString("LastAssignedTo")}</td>");
+        // itemsHtml.Append($@"<td>{_localizationService.GetString("Status")}</td>");
+        // itemsHtml.Append($@"<td>{_localizationService.GetString("Date")}</td>");
+        // itemsHtml.Append(@"</tr>");
+        // itemsHtml.Append(@"<tr style='font-size:6pt;'>");
+        // itemsHtml.Append($@"<td>{await _dbContext.Properties.Where(x => x.Id == filtersModel.PropertyId).Select(x => x.Name).FirstAsync().ConfigureAwait(false)}</td>");
+        // itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.AreaName) ? "" : filtersModel.AreaName)}</td>");
+        // itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.CreatedBy) ? "" : filtersModel.CreatedBy)}</td>");
+        // itemsHtml.Append($@"<td>{filtersLastAssignedTo}</td>");
+        // itemsHtml.Append($@"<td>{(string.IsNullOrEmpty(filtersModel.GetStringStatus()) ? "" : _localizationService.GetString(filtersModel.GetStringStatus()))}</td>");
+        // itemsHtml.Append($@"<td>{(!filtersModel.DateFrom.HasValue ? "" : filtersModel.DateFrom.Value.ToString("d"))}");
+        // itemsHtml.Append($@"{(!filtersModel.DateTo.HasValue ? "" : " - " + filtersModel.DateTo.Value.ToString("d"))}</td>");
+        // itemsHtml.Append(@"</tr>");
+        // itemsHtml.Append(@"</table>");
         itemsHtml.Append(@"<p></p>"); // enter
 
         itemsHtml.Append(@"<table width=""100%"" border=""1"">");
         // Table header
         itemsHtml.Append(@"<tr style='font-weight:bold;font-size:6pt;'>");
         itemsHtml.Append($@"<td>{_localizationService.GetString("Id")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedDate")}</td>");
-        itemsHtml.Append($@"<td>{_localizationService.GetString("Property")}</td>");
+        itemsHtml.Append($@"<td>{_localizationService.GetString("Created")}</td>");
+        itemsHtml.Append($@"<td>{_localizationService.GetString("Location")}</td>");
         itemsHtml.Append($@"<td>{_localizationService.GetString("Area")}</td>");
         itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy1")}</td>");
         itemsHtml.Append($@"<td>{_localizationService.GetString("CreatedBy2")}</td>");
