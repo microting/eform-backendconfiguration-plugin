@@ -84,7 +84,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
   //     await itemsPlanningPlanningPage.rowNum(),
   //     'items planning not create or create not correct'
   //   ).eq(1);
-  //   const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+  //   const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
   //   expect(itemPlanning.eFormName).eq('2.3 Gyllekøling: Driftsstop');
   //   expect(itemPlanning.name).eq(areaRule.name);
   //   expect(itemPlanning.folderName).eq(
@@ -154,7 +154,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
   //     await itemsPlanningPlanningPage.rowNum(),
   //     'items planning not create or create not correct'
   //   ).eq(1);
-  //   const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+  //   const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
   //   expect(itemPlanning.eFormName).eq('2.3 Gyllekøling: Driftsstop');
   //   expect(itemPlanning.name).eq(areaRule.name);
   //   expect(itemPlanning.folderName).eq(
@@ -230,7 +230,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kontrol flydelag');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
@@ -310,7 +310,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kontrol flydelag');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
@@ -372,7 +372,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kontrol flydelag');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(

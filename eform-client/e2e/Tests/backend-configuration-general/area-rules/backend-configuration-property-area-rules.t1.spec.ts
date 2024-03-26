@@ -92,7 +92,7 @@ describe('Backend Configuration Area Rules Type1', function () {
     expect(rowNum - 1).eq(await backendConfigurationAreaRulesPage.rowNum());
   });
   after(async () => {
-    await backendConfigurationAreaRulesPage.clearTable();
+    //await backendConfigurationAreaRulesPage.clearTable();
     await backendConfigurationPropertiesPage.goToProperties();
     await backendConfigurationPropertiesPage.clearTable();
     await backendConfigurationPropertyWorkersPage.goToPropertyWorkers();

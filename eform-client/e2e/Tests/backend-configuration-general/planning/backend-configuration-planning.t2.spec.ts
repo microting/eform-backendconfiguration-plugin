@@ -72,7 +72,7 @@ describe('Backend Configuration Area Rules Planning Type2', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlannings = await itemsPlanningPlanningPage.getAllPlannings();
+    const itemPlannings = await itemsPlanningPlanningPage.getAllPlannings(0, true);
     // first planning
     expect(itemPlannings[0].eFormName).eq('Kontrol flydelag');
     expect(itemPlannings[0].name).eq(areaRule.name + ': Flydelag');
