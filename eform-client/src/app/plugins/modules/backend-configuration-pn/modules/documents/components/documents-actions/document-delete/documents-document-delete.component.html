@@ -1,5 +1,6 @@
 <h3 mat-dialog-title>{{'Are you sure you want to delete' | translate}}?</h3>
-<div mat-dialog-content class="d-flex flex-column">
+<div mat-dialog-content>
+  <div class="d-flex flex-column">
   <h6>{{'Rather than deleting the file, you can also hide the display of the file on your mobile. You do this by selecting Plan next to the document you want to hide and then de-activating the display of the PDF file.' | translate}}</h6>
   <mat-card class="mb-2" *ngFor="let translation of languages; let translationIndex = index">
     <mat-card-title><h4>{{ languages[translationIndex].text }}</h4></mat-card-title>
@@ -68,6 +69,7 @@
       </div>
     </mat-card-content>
   </mat-card>
+</div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button

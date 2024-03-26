@@ -1,5 +1,6 @@
 <h3 mat-dialog-title>{{'Create document' | translate}}</h3>
-<div mat-dialog-content class="d-flex flex-column">
+<div mat-dialog-content>
+  <div class="d-flex flex-column">
   <mat-card class="mb-3">
     <mat-card-content *ngIf="folders">
       <div class="d-flex flex-column">
@@ -189,6 +190,7 @@
       </mat-form-field>
     </mat-card-content>
   </mat-card>
+</div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button

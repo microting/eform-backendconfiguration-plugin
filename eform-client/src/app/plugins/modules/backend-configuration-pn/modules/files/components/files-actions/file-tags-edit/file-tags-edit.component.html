@@ -1,5 +1,6 @@
 <h3 mat-dialog-title>{{'Edit file tags' | translate}}</h3>
-<div mat-dialog-content class="d-flex flex-column">
+<div mat-dialog-content>
+  <div  class="d-flex flex-column">
   <mat-form-field>
     <mat-label>{{ 'Current tags' | translate }}</mat-label>
     <mtx-select
@@ -14,6 +15,7 @@
       appendTo="body"
     ></mtx-select>
   </mat-form-field>
+</div>
 </div>
 <div mat-dialog-actions class="d-flex flex-row justify-content-end">
   <button
