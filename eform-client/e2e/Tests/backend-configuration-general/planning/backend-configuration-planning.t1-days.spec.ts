@@ -84,7 +84,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    let itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kvittering');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
@@ -100,6 +100,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
     const lastExecution = itemPlanning.lastExecution.split(' ')[0];
     expect(lastExecution).eq(todayDate);
 
+    itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     const workers = await itemPlanning.readPairing();
     expect([
       {
@@ -145,7 +146,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kvittering');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
@@ -215,7 +216,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kvittering');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
@@ -285,7 +286,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kvittering');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
@@ -355,7 +356,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kvittering');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
@@ -425,7 +426,7 @@ describe('Backend Configuration Area Rules Planning Type1', function () {
       await itemsPlanningPlanningPage.rowNum(),
       'items planning not create or create not correct'
     ).eq(1);
-    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject();
+    const itemPlanning = await itemsPlanningPlanningPage.getLastPlanningRowObject(true);
     expect(itemPlanning.eFormName).eq('Kvittering');
     expect(itemPlanning.name).eq(areaRule.name);
     expect(itemPlanning.folderName).eq(
