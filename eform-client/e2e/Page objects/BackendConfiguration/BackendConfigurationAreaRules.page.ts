@@ -449,12 +449,12 @@ export class AreaRuleRowObject {
     //     this.ruleAlarm = await ele.getText();
     //   //}
     // } catch (e) {}
-    try {
-      const ele = await (await $$('td.ruleWeekDay')[rowNum]).$('mtx-grid-cell > span');
-      //if (ele && (await ele.isDisplayed())) {
-        this.ruleWeekDay = await ele.getText();
-      //}
-    } catch (e) {}
+    // try {
+    //   const ele = await (await $$('td.ruleWeekDay')[rowNum]).$('mtx-grid-cell > span');
+    //   //if (ele && (await ele.isDisplayed())) {
+    //     this.ruleWeekDay = await ele.getText();
+    //   //}
+    // } catch (e) {}
     try {
       this.editRuleBtn = await $('#showEditRuleBtn-'+rowNum);
     } catch (e) {}

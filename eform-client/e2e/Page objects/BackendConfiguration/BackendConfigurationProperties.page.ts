@@ -446,7 +446,7 @@ export class PropertyRowObject {
         await (await $(`#checkboxAssignmentEdit${bindAreas[i]}`).scrollIntoView());
         await (
           await $(`#checkboxAssignmentEdit${bindAreas[i]}`)).click();
-        await browser.pause(5000);
+        await browser.pause(1000);
       }
     }
   }
