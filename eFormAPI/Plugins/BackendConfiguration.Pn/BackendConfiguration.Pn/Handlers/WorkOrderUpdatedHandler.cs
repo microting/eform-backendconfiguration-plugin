@@ -106,7 +106,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
 
             var textStatus = "";
 
-            switch (workOrderCase.CaseStatusesEnum)
+            switch (status)
             {
                 case CaseStatusesEnum.Ongoing:
                     textStatus = _backendConfigurationLocalizationService.GetString("Ongoing");
@@ -200,7 +200,7 @@ public class WorkOrderUpdatedHandler : IHandleMessages<WorkOrderUpdated>
                 ((DataElement) mainElement.ElementList[0]).DataItemList.RemoveAt(1);
             }
             int caseId = 0;
-            if (workOrderCase.CaseStatusesEnum != CaseStatusesEnum.Completed)
+            if (status != CaseStatusesEnum.Completed)
             {
                 caseId = (int)await _sdkCore.CaseCreate(mainElement, "", (int)site.MicrotingUid, folderId);
             }
