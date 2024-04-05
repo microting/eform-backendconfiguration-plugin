@@ -167,7 +167,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model[0].StartTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.StartDate.ToString(CultureInfo.InvariantCulture)));
 		Assert.That(result.Model[0].Tags, Is.EqualTo(planning.PlanningsTags.Select(x => x.PlanningTag).Select(x => new CommonTagModel(){Name = x.Name, Id = x.Id}).ToList()));
 		Assert.That(result.Model[0].TaskName, Is.Null);
-		Assert.That(result.Model[0].Workers, Is.EqualTo(sites.Select(x => x.Name).ToList()));
+		Assert.That(result.Model[0].WorkerNames, Is.EqualTo(sites.Select(x => x.Name).ToList()));
 	}
 
 	[Test]
@@ -296,7 +296,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model[0].StartTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.StartDate.ToString(CultureInfo.InvariantCulture)));
 		Assert.That(result.Model[0].Tags, Is.EqualTo(planning.PlanningsTags.Select(x => x.PlanningTag).Select(x => new CommonTagModel() { Name = x.Name, Id = x.Id }).ToList()));
 		Assert.That(result.Model[0].TaskName, Is.Null);
-		Assert.That(result.Model[0].Workers, Is.EqualTo(sites.Where(x => x.Id == sites.Last().Id).Select(x => x.Name).ToList()));
+		Assert.That(result.Model[0].WorkerNames, Is.EqualTo(sites.Where(x => x.Id == sites.Last().Id).Select(x => x.Name).ToList()));
 	}
 
 	[Test]
@@ -425,7 +425,7 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model[0].StartTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.StartDate.ToString(CultureInfo.InvariantCulture)));
 		Assert.That(result.Model[0].Tags, Is.EqualTo(planning.PlanningsTags.Select(x => x.PlanningTag).Select(x => new CommonTagModel() { Name = x.Name, Id = x.Id }).ToList()));
 		Assert.That(result.Model[0].TaskName, Is.Null);
-		Assert.That(result.Model[0].Workers, Is.EqualTo(sites.Where(x => x.Id == sites.Last().Id).Select(x => x.Name).ToList()));
+		Assert.That(result.Model[0].WorkerNames, Is.EqualTo(sites.Where(x => x.Id == sites.Last().Id).Select(x => x.Name).ToList()));
 	}
 
 	[Test]
@@ -554,6 +554,6 @@ public class BackendConfigurationTaskTrackerServiceHelperTest : TestBaseSetup
 		Assert.That(result.Model[0].StartTask.ToString(CultureInfo.InvariantCulture), Is.EqualTo(compliance.StartDate.ToString(CultureInfo.InvariantCulture)));
 		Assert.That(result.Model[0].Tags, Is.EqualTo(planning.PlanningsTags.Select(x => x.PlanningTag).Select(x => new CommonTagModel() { Name = x.Name, Id = x.Id }).ToList()));
 		Assert.That(result.Model[0].TaskName, Is.Null);
-		Assert.That(result.Model[0].Workers, Is.EqualTo(sites.Where(x => x.Id == sites.Last().Id).Select(x => x.Name).ToList()));
+		Assert.That(result.Model[0].WorkerNames, Is.EqualTo(sites.Where(x => x.Id == sites.Last().Id).Select(x => x.Name).ToList()));
 	}
 }
