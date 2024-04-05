@@ -42,12 +42,15 @@ import {AppSettingsStateService} from 'src/app/modules/application-settings/comp
 import {ItemsPlanningPnTagsService} from '../../../../../items-planning-pn/services';
 import {PlanningTagsComponent} from '../../../../../items-planning-pn/modules/plannings/components';
 import {StatisticsStateService} from '../../../statistics/store';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {
   selectTaskTrackerFilters,
   selectStatisticsPropertyId
 } from '../../../../state';
+import {
+  TaskTrackerSelectWorkerModalComponent
+} from 'src/app/plugins/modules/backend-configuration-pn/modules/task-tracker/components';
 
 @AutoUnsubscribe()
 @Component({
@@ -73,6 +76,8 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   appLanguages: LanguagesModel = new LanguagesModel();
   createModal: MatDialogRef<TaskWizardCreateModalComponent>;
   updateModal: MatDialogRef<TaskWizardUpdateModalComponent>;
+  selectWorkerForEditModal: MatDialogRef<TaskTrackerSelectWorkerModalComponent>;
+  selectWorkerForEditModalSub$: Subscription;
   plannedTaskDays: PlannedTaskDaysModel;
   selectedPropertyId: number | null = null;
   view = [1000, 300];
@@ -88,8 +93,10 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   getPlanningsTagsSub$: Subscription;
   getLanguagesSub$: Subscription;
   changePropertySub$: Subscription;
+  changePropertySub2$: Subscription;
   updateTaskInModalSub$: Subscription;
   getTaskByIdSub$: Subscription;
+  getTaskByIdSub2$: Subscription;
   updateTaskSub$: Subscription;
   createTaskSub$: Subscription;
   createTaskInModalSub$: Subscription;
@@ -125,6 +132,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
     private itemsPlanningPnTagsService: ItemsPlanningPnTagsService,
     public statisticsStateService: StatisticsStateService,
     private route: ActivatedRoute,
+    private router: Router,
   ) {
     iconRegistry.addSvgIconLiteral('file-excel', sanitizer.bypassSecurityTrustHtml(ExcelIcon));
     this.route.queryParams.subscribe(x => {
@@ -215,6 +223,50 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   openCreateModal() {
     const createModal = this.dialog.open(TaskTrackerCreateShowModalComponent, dialogConfigHelper(this.overlay));
     this.taskCreatedSub$ = createModal.componentInstance.taskCreated.subscribe(() => this.updateTable());
+  }
+
+  openSelectWorkerModal(task: TaskModel) {
+    this.getTaskByIdSub2$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanId).pipe(
+      tap(data => {
+        if (data && data.success && data.model) {
+          this.selectWorkerForEditModal = this.dialog.open(TaskTrackerSelectWorkerModalComponent,
+            {...dialogConfigHelper(this.overlay), minWidth: 600});
+          this.selectWorkerForEditModal.componentInstance.fillModelAndCopyModel({
+            eformId: data.model.eformId,
+            folderId: data.model.folderId,
+            propertyId: data.model.propertyId,
+            repeatEvery: data.model.repeatEvery,
+            repeatType: data.model.repeatType,
+            sites: data.model.assignedTo,
+            startDate: data.model.startDate,
+            status: data.model.status,
+            tagIds: data.model.tags,
+            translates: data.model.translations,
+            itemPlanningTagId: data.model.itemPlanningTagId,
+          });
+          this.propertyService.getLinkedSites(data.model.propertyId)
+            .subscribe((sites) => {
+              if (sites && sites.success && sites.model) {
+                // only take the sites that are in the data.model.assignedTo
+                this.selectWorkerForEditModal.componentInstance.sites =
+                  sites.model.filter(x => data.model.assignedTo.includes(x.id));
+                if (this.selectWorkerForEditModal.componentInstance.sites.length === 1) {
+                  this.selectWorkerForEditModal.componentInstance.selectedSite = this.selectWorkerForEditModal.componentInstance.sites[0];
+                }
+              }
+            });
+          this.selectWorkerForEditModalSub$ = this.selectWorkerForEditModal.componentInstance.workerSelected.subscribe(worker => {
+            this.router.navigate([
+              '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId + '/' + worker.id,
+            ], {
+              relativeTo: this.route, queryParams: {
+                reverseRoute: '/plugins/backend-configuration-pn/task-tracker/'
+              }
+            }).then();
+          });
+        }
+      })
+    ).subscribe();
   }
 
   openEditTaskModal(task: TaskModel) {

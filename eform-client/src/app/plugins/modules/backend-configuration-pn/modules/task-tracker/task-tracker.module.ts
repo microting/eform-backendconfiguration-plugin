@@ -7,7 +7,7 @@ import {
   TaskTrackerTableComponent,
   TaskTrackerFiltersComponent,
   TaskTrackerCreateShowModalComponent,
-  TaskTrackerShownColumnsComponent
+  TaskTrackerShownColumnsComponent, TaskTrackerSelectWorkerModalComponent
 } from './components';
 import {TaskTrackerRouting} from './task-tracker.routing';
 import {EformSharedModule} from 'src/app/common/modules/eform-shared/eform-shared.module';
@@ -27,6 +27,7 @@ import {MatCheckboxModule} from '@angular/material/checkbox';
 import {PlanningsModule} from '../../../items-planning-pn/modules/plannings/plannings.module';
 import {StatisticsModule} from '../statistics/statistics.module';
 import {MatChipsModule} from '@angular/material/chips';
+import {NgSelectModule} from "@ng-select/ng-select";
 
 @NgModule({
   declarations: [
@@ -34,32 +35,34 @@ import {MatChipsModule} from '@angular/material/chips';
     TaskTrackerTableComponent,
     TaskTrackerFiltersComponent,
     TaskTrackerCreateShowModalComponent,
-    TaskTrackerShownColumnsComponent
+    TaskTrackerShownColumnsComponent,
+    TaskTrackerSelectWorkerModalComponent
   ],
-    imports: [
-        CommonModule,
-        TranslateModule,
-        RouterModule,
-        TaskTrackerRouting,
-        EformSharedModule,
-        ReactiveFormsModule,
-        EformImportedModule,
-        FormsModule,
-        MatButtonModule,
-        MatCheckboxModule,
-        MatTooltipModule,
-        MatIconModule,
-        MatFormFieldModule,
-        MtxSelectModule,
-        MatInputModule,
-        MtxGridModule,
-        MatDialogModule,
-        MatCardModule,
-        MatTableModule,
-        PlanningsModule,
-        StatisticsModule,
-        MatChipsModule,
-    ],
+  imports: [
+    CommonModule,
+    TranslateModule,
+    RouterModule,
+    TaskTrackerRouting,
+    EformSharedModule,
+    ReactiveFormsModule,
+    EformImportedModule,
+    FormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatTooltipModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MtxSelectModule,
+    MatInputModule,
+    MtxGridModule,
+    MatDialogModule,
+    MatCardModule,
+    MatTableModule,
+    PlanningsModule,
+    StatisticsModule,
+    MatChipsModule,
+    NgSelectModule,
+  ],
   providers: [],
 })
 export class TaskTrackerModule {

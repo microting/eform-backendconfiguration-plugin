@@ -5,7 +5,8 @@ export interface TaskModel {
   property: string;
   taskName: string;
   tags: SharedTagModel[];
-  workers: string[];
+  workerNames: string[];
+  workerIds: number[];
   startTask: Date;
   repeatEvery: number;
   repeatType: RepeatTypeEnum;

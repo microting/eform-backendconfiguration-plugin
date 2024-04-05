@@ -224,28 +224,30 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
 
             if(foundCase != null) {
                 // var now = DateTime.UtcNow;
-                var newDoneAt = new DateTime(model.DoneAt.AddDays(1).Year, model.DoneAt.AddDays(1).Month,
-                    model.DoneAt.AddDays(1).Day, 0, 0,
+                var newDoneAt = new DateTime(model.DoneAt.Year, model.DoneAt.Month,
+                    model.DoneAt.Day, 0, 0,
                     0, DateTimeKind.Utc);
                 foundCase.DoneAtUserModifiable = newDoneAt;
                 foundCase.DoneAt = newDoneAt;
 
                 var site = await sdkDbContext.Sites
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .FirstOrDefaultAsync(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}");
-                if (site != null)
-                {
-                    foundCase.SiteId = site.Id;
-                }
-                else
-                {
-                    await core.SiteCreate($"{currentUser.FirstName} {currentUser.LastName}", currentUser.FirstName, currentUser.LastName,
-                        null, "da");
-                    site = await sdkDbContext.Sites
-                        .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                        .FirstOrDefaultAsync(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}");
-                    foundCase.SiteId = site.Id;
-                }
+                    .FirstOrDefaultAsync(x => x.Id == model.SiteId).ConfigureAwait(false);
+                // if (site != null)
+                // {
+                //     foundCase.SiteId = site.Id;
+                // }
+                // else
+                // {
+                //     await core.SiteCreate($"{currentUser.FirstName} {currentUser.LastName}", currentUser.FirstName, currentUser.LastName,
+                //         null, "da");
+                //     site = await sdkDbContext.Sites
+                //         .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                //         .FirstOrDefaultAsync(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}");
+                //     foundCase.SiteId = site.Id;
+                // }
+
+                foundCase.SiteId = model.SiteId;
                 foundCase.Status = 100;
                 foundCase.WorkflowState = Constants.WorkflowStates.Created;
                 await foundCase.Update(sdkDbContext).ConfigureAwait(false);
@@ -305,7 +307,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
                     planningCaseSite.MicrotingSdkCaseId = foundCase.Id;
                     planningCaseSite.MicrotingSdkCaseDoneAt = foundCase.DoneAt;
                     planningCaseSite.DoneByUserId = (int)foundCase.SiteId;
-                    planningCaseSite.DoneByUserName = $"{currentUser.FirstName} {currentUser.LastName}";
+                    planningCaseSite.DoneByUserName = site.Name;
                     await planningCaseSite.Update(_itemsPlanningPnDbContext).ConfigureAwait(false);
 
                     var planningCase = await _itemsPlanningPnDbContext.PlanningCases

@@ -53,7 +53,10 @@ public class TaskTrackerModel
 	/// <summary>
 	/// Gets or sets the workers of the task tracker model.
 	/// </summary>
-	public List<string> Workers { get; set; }
+	public List<string> WorkerNames { get; set; }
+		= [];
+
+	public List<int> WorkerIds { get; set; }
 		= [];
 
 	/// <summary>

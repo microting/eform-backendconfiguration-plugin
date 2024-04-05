@@ -14,6 +14,7 @@ import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {Store} from '@ngrx/store';
+import {selectCurrentUserFullName} from "src/app/state";
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -25,6 +26,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   @Input() tasks: TaskModel[] = [];
   @Output() updateTable: EventEmitter<void> = new EventEmitter<void>();
   @Output() openAreaRulePlanningModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
+  @Output() openSelectWorkerModal: EventEmitter<TaskModel> = new EventEmitter<TaskModel>();
 
   days: Date[] = [];
   daysInTable: Date[] = [];
@@ -40,7 +42,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     {header: this.translateService.stream('Folder'), sortProp: {id: 'sdkFolderName'}, field: 'sdkFolderName', sortable: false},
     {header: this.translateService.stream('Task'), field: 'taskName', sortable: false},
     {header: this.translateService.stream('Tags'), sortProp: {id: 'Tags'}, field: 'tags', sortable: false},
-    {header: this.translateService.stream('Workers'), sortProp: {id: 'Workers'}, field: 'workers', sortable: false},
+    {header: this.translateService.stream('Workers'), sortProp: {id: 'Workers'}, field: 'workerNames', sortable: false},
     {header: this.translateService.stream('Start'), sortProp: {id: 'Start'}, field: 'startTask', sortable: false,
       type: 'date',
       typeParameter: {format: 'dd.MM.y'}},
@@ -75,6 +77,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     'background-red-dark': (data, index) => data.taskIsExpired === true && index % 2 === 1,
     //'background-yellow': (data, index) => data.taskIsExpired === false,
   };
+  private selectCurrentUserFullName$ = this.store.select(selectCurrentUserFullName);
+  private currentUserFullName: string;
 
   constructor(
     private store: Store,
@@ -100,6 +104,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
         return {weekNumber: x.weekNumber, length: x.weekRange};
       });
     }
+    this.selectCurrentUserFullName$.subscribe((selectCurrentUserFullName$) =>
+      this.currentUserFullName = selectCurrentUserFullName$);
   }
 
   getColorByDayAndTask(day: Date, task: TaskModel): string {
@@ -142,10 +148,21 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     if (task.taskIsExpired) { // When clicking on a task
       // eslint-disable-next-line max-len
       // that is overdue, the ones marked with red background, the user should navigate to plugins/backend-configuration-pn/compliances/case/121/21/1/2023-01-31T00:00:00/false/34
-      this.router.navigate([
-        '/plugins/backend-configuration-pn/compliances/case/'+task.sdkCaseId +'/'+ task.templateId+'/'+ task.propertyId+'/'+ task.deadlineTask.toISOString()+'/'+false+'/'+ task.complianceId,
-      ], {relativeTo: this.route, queryParams: {
-          reverseRoute: '/plugins/backend-configuration-pn/task-tracker/'}}).then();
+      if (task.workerIds.length === 1) {
+        if (task.workerNames[0] === this.currentUserFullName) {
+          this.router.navigate([
+            '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId,
+          ], {
+            relativeTo: this.route, queryParams: {
+              reverseRoute: '/plugins/backend-configuration-pn/task-tracker/'
+            }
+          }).then();
+        } else {
+          this.openSelectWorkerModal.emit(task);
+        }
+      } else {
+        this.openSelectWorkerModal.emit(task);
+      }
     } else { // When clicking on a task that is not overdue, the user should be presented with the area rule planning modal for assigning workers
       this.openAreaRulePlanningModal.emit(task);
     }

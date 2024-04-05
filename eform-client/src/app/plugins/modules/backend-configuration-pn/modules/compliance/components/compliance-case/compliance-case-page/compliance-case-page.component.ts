@@ -36,6 +36,7 @@ export class ComplianceCasePageComponent implements OnInit {
   deadline: string;
   thirtyDays: string;
   complianceId: number;
+  workerId: number;
   currenteForm: TemplateDto = new TemplateDto();
   replyElement: ReplyElementDto = new ReplyElementDto();
   reverseRoute: string;
@@ -44,7 +45,6 @@ export class ComplianceCasePageComponent implements OnInit {
   maxDate: Date;
 
   constructor(
-    private authStore: Store,
     private activateRoute: ActivatedRoute,
     private backendConfigurationPnCompliancesService: BackendConfigurationPnCompliancesService,
     private eFormService: EFormService,
@@ -57,6 +57,7 @@ export class ComplianceCasePageComponent implements OnInit {
       this.deadline = params['deadline'];
       this.thirtyDays = params['thirtyDays'];
       this.complianceId = +params['complianceId'];
+      this.workerId = +params['siteId'];
     });
     activateRoute.queryParams.subscribe((params) => {
       this.reverseRoute = params['reverseRoute'];
@@ -104,6 +105,7 @@ export class ComplianceCasePageComponent implements OnInit {
     this.replyRequest.elementList = this.requestModels;
     this.replyRequest.doneAt = this.replyElement.doneAt;
     this.replyRequest.extraId = this.complianceId;
+    this.replyRequest.siteId = this.workerId;
     this.backendConfigurationPnCompliancesService
       .updateCase(this.replyRequest, this.currenteForm.id)
       .subscribe((operation) => {

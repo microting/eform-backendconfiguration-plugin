@@ -5,7 +5,7 @@ import {
 } from '../compliance-case/compliance-case-page/compliance-case-page.component';
 
 const routes: Routes = [
-  {path: ':sdkCaseId/:templateId/:propertyId/:deadline/:thirtyDays/:complianceId', component: ComplianceCasePageComponent}
+  {path: ':sdkCaseId/:templateId/:propertyId/:deadline/:thirtyDays/:complianceId/:siteId', component: ComplianceCasePageComponent}
 ];
 
 @NgModule({

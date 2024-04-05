@@ -81,6 +81,7 @@ public class BackendConfigurationCaseService : IBackendConfigurationCaseService
                 //     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 //     .Single(x => x.Name == $"{currentUser.FirstName} {currentUser.LastName}").Id;
                 foundCase.Status = 100;
+                foundCase.SiteId = model.SiteId;
                 await foundCase.Update(sdkDbContext);
                 var planningCase = await _dbContext.PlanningCases.SingleAsync(x => x.MicrotingSdkCaseId == model.Id);
                 var planningCaseSite = await _dbContext.PlanningCaseSites.FirstOrDefaultAsync(x => x.MicrotingSdkCaseId == model.Id && x.PlanningCaseId == planningCase.Id && x.Status == 100);

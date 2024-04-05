@@ -182,6 +182,8 @@ public static class BackendConfigurationTaskTrackerHelper
 					.Select(x => sitesWithNames.Where(y => y.Key == x).Select(y => y.Value).FirstOrDefault())
 					.ToList();
 
+				var workerIds = sitesWithNames.Select(x => x.Key).ToList();
+
 				var areaRulePlanningQuery = backendConfigurationPnDbContext.AreaRulePlannings
 					.Include(x => x.AreaRulePlanningTags)
 					.Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -261,7 +263,8 @@ public static class BackendConfigurationTaskTrackerHelper
 						Property = propertyName,
 						Tags = itemPlanningTags, //planning.PlanningsTags.Select(x => new CommonTagModel{Id = x.PlanningTag.Id, Name = x.PlanningTag.Name}).ToList(),
 						DeadlineTask = deadlineDate,
-						Workers = workerNames,
+						WorkerNames = workerNames,
+						WorkerIds = workerIds,
 						StartTask = startDate,
 						RepeatEvery = planning.RepeatEvery,
 						RepeatType = (RepeatType)planning.RepeatType,

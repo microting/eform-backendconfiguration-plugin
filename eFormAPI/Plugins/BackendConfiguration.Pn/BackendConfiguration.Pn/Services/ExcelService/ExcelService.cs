@@ -686,7 +686,7 @@ public class ExcelService : IExcelService
 				}
 				if (GetEnabledColumn("workers"))
 				{
-					ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.Workers);
+					ws.Cell(x, y).Value = string.Join(", ", taskTrackerModel.WorkerNames);
 					y++;
 				}
 				if (GetEnabledColumn("start"))
