@@ -77,6 +77,9 @@ export class TaskManagementTableComponent implements OnInit {
       header: this.translateService.stream('Actions'),
       field: 'actions',
       type: 'button',
+      width: '100px',
+      pinned: 'right',
+      right: '0px',
       buttons: [
         {
           type: 'icon',

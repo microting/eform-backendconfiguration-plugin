@@ -1,14 +1,16 @@
 <h3 mat-dialog-title>{{'Select folder' | translate}}</h3>
-<div mat-dialog-content class="d-flex flex-column mb-1">
-  <mat-card class="mb-1">
-    <mat-card-content>
-      <app-eform-tree-view-picker
-        [nodes]="folders"
-        [focusedNodeId]="eFormSdkFolderId"
-        [showActions]="false"
-        [allowSelectingParents]="false"
-        (nodeSelected)="select($event)"
-      ></app-eform-tree-view-picker>
-    </mat-card-content>
-  </mat-card>
+<div mat-dialog-content>
+  <div class="d-flex flex-column mb-1">
+    <mat-card class="mb-1">
+      <mat-card-content>
+        <app-eform-tree-view-picker
+          [nodes]="folders"
+          [focusedNodeId]="eFormSdkFolderId"
+          [showActions]="false"
+          [allowSelectingParents]="false"
+          (nodeSelected)="select($event)"
+        ></app-eform-tree-view-picker>
+      </mat-card-content>
+    </mat-card>
+  </div>
 </div>
