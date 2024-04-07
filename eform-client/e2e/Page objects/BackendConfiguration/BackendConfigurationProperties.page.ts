@@ -1,5 +1,6 @@
 import Page from '../Page';
 import * as R from 'ramda';
+import { $ } from '@wdio/globals';
 
 export class BackendConfigurationPropertiesPage extends Page {
   constructor() {

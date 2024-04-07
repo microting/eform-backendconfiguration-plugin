@@ -7,6 +7,7 @@ import {generateRandmString} from '../../../Helpers/helper-functions';
 import
   backendConfigurationFilesPage, {BackendFileCreate}
   from '../../../Page objects/BackendConfiguration/BackendConfigurationFiles.page';
+import { $ } from '@wdio/globals';
 
 const properties: PropertyCreateUpdate[] = [
   {

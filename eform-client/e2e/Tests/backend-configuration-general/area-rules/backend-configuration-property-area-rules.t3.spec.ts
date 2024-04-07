@@ -9,6 +9,7 @@ import backendConfigurationAreaRulesPage, {
   AreaRuleCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
 import selectableLists from '../../../Page objects/SelectableLists.page';
+import { $ } from '@wdio/globals';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),

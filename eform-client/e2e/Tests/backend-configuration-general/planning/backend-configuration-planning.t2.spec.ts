@@ -10,6 +10,7 @@ import backendConfigurationAreaRulesPage, {
   AreaRulePlanningCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
 import itemsPlanningPlanningPage from '../../../Page objects/ItemsPlanning/ItemsPlanningPlanningPage';
+import { $ } from '@wdio/globals';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),

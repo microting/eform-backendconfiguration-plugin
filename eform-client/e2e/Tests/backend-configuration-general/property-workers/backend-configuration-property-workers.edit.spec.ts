@@ -5,6 +5,7 @@ import backendConfigurationPropertiesPage, {
 import { generateRandmString } from '../../../Helpers/helper-functions';
 import { expect } from 'chai';
 import backendConfigurationPropertyWorkersPage from '../../../Page objects/BackendConfiguration/BackendConfigurationPropertyWorkers.page';
+import { $ } from '@wdio/globals';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),
