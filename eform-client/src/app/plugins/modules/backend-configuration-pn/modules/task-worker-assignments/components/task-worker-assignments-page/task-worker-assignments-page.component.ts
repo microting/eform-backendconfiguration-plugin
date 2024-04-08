@@ -227,7 +227,7 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
   }
 
   onEditTask(model: TaskWorkerModel) {
-    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
+    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 800});
@@ -253,7 +253,7 @@ export class TaskWorkerAssignmentsPageComponent implements OnInit, OnDestroy {
             this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.updateModal.componentInstance.changeProperty.subscribe(propertyId => {
-            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
               .subscribe(([folders, sites]) => {
                 if (folders && folders.success && folders.model) {
                   this.updateModal.componentInstance.foldersTreeDto = folders.model;

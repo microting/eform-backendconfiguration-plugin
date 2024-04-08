@@ -220,10 +220,10 @@ export class BackendConfigurationPnPropertiesService {
     );
   }
 
-  getLinkedSites(id: number): Observable<OperationDataResult<CommonDictionaryModel[]>> {
+  getLinkedSites(id: number, compliance: boolean): Observable<OperationDataResult<CommonDictionaryModel[]>> {
     return this.apiBaseService.get(
       BackendConfigurationPnPropertiesMethods.GetLinkedSites,
-      { propertyId: id }
+      { propertyId: id, compliance: compliance}
     );
   }
 

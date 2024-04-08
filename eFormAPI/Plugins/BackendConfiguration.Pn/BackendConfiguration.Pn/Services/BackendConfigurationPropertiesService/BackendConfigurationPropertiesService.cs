@@ -704,18 +704,28 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
     }
 
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId, bool compliance)
     {
         try
         {
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var currentUser = await _userService.GetCurrentUserAsync();
+
+            var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x =>
+                x.Name == currentUser.FirstName + " " + currentUser.LastName
+                && x.WorkflowState != Constants.WorkflowStates.Removed);
 
             var siteIds = await _backendConfigurationPnDbContext.PropertyWorkers
                 .Where(x => x.PropertyId == propertyId)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Select(x => x.WorkerId)
                 .ToListAsync();
+
+            if (site != null && !siteIds.Contains(site.Id) && compliance)
+            {
+                siteIds.Add(site.Id);
+            }
 
             var sites = await sdkDbContext.Sites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)

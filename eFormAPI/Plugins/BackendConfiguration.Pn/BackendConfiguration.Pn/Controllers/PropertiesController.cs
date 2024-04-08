@@ -129,9 +129,9 @@ public class PropertiesController : Controller
 
     [HttpGet]
     [Route("get-linked-sites")]
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId, bool compliance)
     {
-        return await _backendConfigurationPropertiesService.GetLinkedSites(propertyId);
+        return await _backendConfigurationPropertiesService.GetLinkedSites(propertyId, compliance);
     }
 
     [HttpPost]

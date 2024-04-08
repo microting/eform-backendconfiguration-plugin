@@ -251,13 +251,14 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
     }
 
     /// <inheritdoc />
-    public async Task<OperationDataResult<TaskWizardTaskModel>> GetTaskById(int id)
+    public async Task<OperationDataResult<TaskWizardTaskModel>> GetTaskById(int id, bool compliance)
     {
         try
         {
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
             var userLanguage = await _userService.GetCurrentUserLanguage();
+            var currentUser = await _userService.GetCurrentUserAsync();
             var query = _backendConfigurationPnDbContext.AreaRulePlannings
                 .Include(x => x.PlanningSites)
                 .Include(x => x.AreaRule.AreaRuleTranslations)
@@ -265,6 +266,9 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.Id == id)
                 .AsNoTracking();
+            var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x =>
+                x.Name == currentUser.FirstName + " " + currentUser.LastName
+                && x.WorkflowState != Constants.WorkflowStates.Removed);
 
             if (!await query.Select(x => x.Id).AnyAsync())
             {
@@ -299,6 +303,11 @@ public class BackendConfigurationTaskWizardService : IBackendConfigurationTaskWi
                         .ToList()
                 })
                 .FirstOrDefaultAsync();
+
+            if (site != null && !areaRulePlanning.AssignedTo.Contains(site.Id) && compliance)
+            {
+                areaRulePlanning.AssignedTo.Add(site.Id);
+            }
 
             var eFormName = await sdkDbContext.CheckListTranslations
                 .Where(x => x.LanguageId == userLanguage.Id)

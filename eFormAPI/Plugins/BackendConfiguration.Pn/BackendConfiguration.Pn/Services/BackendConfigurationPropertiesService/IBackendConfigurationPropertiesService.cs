@@ -46,6 +46,6 @@ public interface IBackendConfigurationPropertiesService
     Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedFoldersList(List<int> propertyIds);
     Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(int propertyId);
     Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(List<int> propertyIds);
-    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId, bool compliance);
     Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(List<int> propertyId);
 }

@@ -25,8 +25,8 @@ export class BackendConfigurationPnTaskWizardService {
     return this.apiBaseService.post(BackendConfigurationPnTaskWizardMethods.Index, model);
   }
 
-  getTaskById(id: number): Observable<OperationDataResult<TaskWizardTaskModel>> {
-    return this.apiBaseService.get(`${BackendConfigurationPnTaskWizardMethods.TaskWizard}/${id}`);
+  getTaskById(id: number, compliance: boolean): Observable<OperationDataResult<TaskWizardTaskModel>> {
+    return this.apiBaseService.get(`${BackendConfigurationPnTaskWizardMethods.TaskWizard}/${id}?compliance=${compliance}`);
   }
 
   createTask(createModel: TaskWizardCreateModel): Observable<OperationResult> {

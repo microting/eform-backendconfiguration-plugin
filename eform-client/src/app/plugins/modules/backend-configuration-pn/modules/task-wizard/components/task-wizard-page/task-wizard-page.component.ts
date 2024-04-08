@@ -215,7 +215,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onEditTask(model: TaskWizardModel) {
-    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
+    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
@@ -241,7 +241,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.updateModal.componentInstance.changeProperty.subscribe(propertyId => {
-            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
               .subscribe(([folders, sites]) => {
                 if (folders && folders.success && folders.model) {
                   this.updateModal.componentInstance.foldersTreeDto = folders.model;
@@ -285,7 +285,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onCopyTask(model: TaskWizardModel) {
-    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
+    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
@@ -315,7 +315,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
-            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
               .subscribe(([folders, sites]) => {
                 if (folders && folders.success && folders.model) {
                   this.createModal.componentInstance.foldersTreeDto = folders.model;
@@ -355,7 +355,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       this.changePropertySub$.unsubscribe();
     }
     this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
-      zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+      zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
         .subscribe(([folders, sites]) => {
           if (folders && folders.success && folders.model) {
             this.createModal.componentInstance.foldersTreeDto = folders.model;

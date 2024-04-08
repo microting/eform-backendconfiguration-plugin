@@ -10,7 +10,7 @@ public interface IBackendConfigurationTaskWizardService
 {
     Task<OperationDataResult<List<TaskWizardModel>>> Index(TaskWizardRequestModel requestModel);
     Task<OperationDataResult<List<CommonDictionaryModel>>> GetProperties(bool fullNames);
-    Task<OperationDataResult<TaskWizardTaskModel>> GetTaskById(int id);
+    Task<OperationDataResult<TaskWizardTaskModel>> GetTaskById(int id, bool compliance);
     Task<OperationResult> CreateTask(TaskWizardCreateModel createModel);
     Task<OperationResult> DeactivateList(List<int> ids);
     Task<OperationResult> UpdateTask(TaskWizardCreateModel updateModel);
