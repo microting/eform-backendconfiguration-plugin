@@ -217,7 +217,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
                     [
                         "1412",
                         "142663new2",
-                        "142664new2"
+                        "142664new2",
                     ];
                     string contents;
                     using (var sr = new StreamReader(resourceStream))
