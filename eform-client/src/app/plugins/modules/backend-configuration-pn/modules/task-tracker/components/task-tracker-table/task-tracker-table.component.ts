@@ -6,7 +6,14 @@ import {
   Output, SimpleChanges,
 } from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {Columns, ColumnsModel, DateListModel, TaskModel} from '../../../../models';
+import {
+  Columns,
+  ColumnsModel,
+  ComplianceModel,
+  DateListModel,
+  ReportEformItemModel,
+  TaskModel
+} from '../../../../models';
 import {RepeatTypeEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
@@ -14,7 +21,14 @@ import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserFullName} from "src/app/state";
+import {selectCurrentUserFullName} from 'src/app/state';
+import {
+  ComplianceDeleteComponent
+} from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {Subscription} from 'rxjs';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -65,9 +79,25 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
           tooltip: this.translateService.stream('Edit'),
           click: (record: TaskModel) => this.redirectToCompliance(record),
         },
+        {
+          type: 'icon',
+          tooltip:  this.translateService.stream('Delete Case'),
+          icon: 'delete',
+          color: 'warn',
+          click: (record: TaskModel) => this.onShowDeleteComplianceModal(record),
+        }
       ],
     },
   ];
+  complianceDeleteComponentAfterClosedSub$: Subscription;
+
+  onShowDeleteComplianceModal(item: TaskModel) {
+    let complianceModel = new ComplianceModel();
+    complianceModel.id = item.complianceId;
+    this.complianceDeleteComponentAfterClosedSub$ = this.dialog.open(ComplianceDeleteComponent,
+      {...dialogConfigHelper(this.overlay, complianceModel)})
+      .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
+  }
 
   get columns() {
     return this.tableHeaders.map(x => x.field);
@@ -81,6 +111,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   private currentUserFullName: string;
 
   constructor(
+    private dialog: MatDialog,
+    private overlay: Overlay,
     private store: Store,
     private translateService: TranslateService,
     private taskTrackerStateService: TaskTrackerStateService,
