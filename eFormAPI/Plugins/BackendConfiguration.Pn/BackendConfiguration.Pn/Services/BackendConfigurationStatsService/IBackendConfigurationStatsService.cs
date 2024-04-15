@@ -8,7 +8,7 @@ public interface IBackendConfigurationStatsService
 {
     Task<OperationDataResult<PlannedTaskDays>> GetPlannedTaskDays(int? propertyId);
 
-    Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId);
+    Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId, int? priority, int? status);
 
     Task<OperationDataResult<DocumentUpdatedDays>> GetDocumentUpdatedDays(int? propertyId);
 

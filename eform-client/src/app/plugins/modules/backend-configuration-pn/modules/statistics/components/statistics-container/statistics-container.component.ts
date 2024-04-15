@@ -195,7 +195,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       status: 1,
       createdBy: null,
       lastAssignedTo: null,
-      priority: null, // Setting this to null, since the value is not working as expected
+      priority: event, // Setting this to null, since the value is not working as expected
       delayed: false,
     }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-management'], {queryParams: {diagramForShow: 'ad-hoc-task-priorities'}}).then();

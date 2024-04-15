@@ -108,7 +108,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     }
 
     /// <inheritdoc />
-    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId)
+    public async Task<OperationDataResult<AdHocTaskPriorities>> GetAdHocTaskPriorities(int? propertyId, int? priority, int? status)
     {
         try
         {
@@ -119,14 +119,38 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                 .ThenInclude(x => x.Property)
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .Where(x => x.PropertyWorker.Property.WorkorderEnable)
-                .Where(x => x.LeadingCase)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
-                .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+                .Where(x => x.LeadingCase);
 
-            if (propertyId.HasValue)
+            if (propertyId.HasValue && propertyId != -1)
             {
                 query = query
                     .Where(x => x.PropertyWorker.PropertyId == propertyId);
+            }
+
+            if (priority.HasValue && priority != -1)
+            {
+                query = query
+                    .Where(x => x.Priority == priority.ToString());
+            }
+
+            if (status.HasValue && status != -1)
+            {
+                query = query
+                    .Where(x => x.CaseStatusesEnum == (CaseStatusesEnum)status);
+            }
+            else
+            {
+                if (status == -1)
+                {
+                    query = query
+                        .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+                }
+                else
+                {
+                    query = query
+                        .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                        .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+                }
             }
 
             result.Urgent = await query

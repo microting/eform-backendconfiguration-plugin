@@ -47,6 +47,8 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   adHocTaskPrioritiesModel: AdHocTaskPrioritiesModel;
   adHocTaskWorkers: AdHocTaskWorkers;
   selectedPropertyId: number | null = null;
+  selectedPriority: number | null = null;
+  selectedStatus: number | null = null;
   view = [1000, 300];
   diagramForShow: string = '';
 
@@ -95,10 +97,18 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe(x => {
       if (x && x.diagramForShow) {
         this.diagramForShow = x.diagramForShow;
-        this.selectTaskManagementPropertyId$.subscribe((propertyId) => {
-          if (propertyId) {
-            this.selectedPropertyId = propertyId;
+        // this.selectTaskManagementPropertyId$.subscribe((propertyId) => {
+        //   debugger;
+        //   if (propertyId) {
+        //     this.selectedPropertyId = propertyId;
+        //   }
+        // });
+        this.selectTaskManagementFilters$.subscribe((filters) => {
+          if (filters.propertyId) {
+            this.selectedPropertyId = filters.propertyId;
           }
+          this.selectedPriority = filters.priority;
+          this.selectedStatus = filters.status;
         });
         this.updateTable();
         this.getStats();
@@ -109,17 +119,18 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
     this.getPropertyIdAsyncSub$ = this.selectTaskManagementFilters$
       .pipe(skip(1))
       .subscribe(filters => {
-        if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
-          this.selectedPropertyId = filters.propertyId;
+        // if (filters.propertyId !== -1 && filters.propertyId !== this.selectedPropertyId) {
+        //   this.selectedPropertyId = filters.propertyId;
           if (this.diagramForShow) {
             this.getStats();
           }
-        } else if (filters.propertyId === -1 && this.selectedPropertyId !== null) {
-          this.selectedPropertyId = null;
-          if (this.diagramForShow) {
-            this.getStats();
-          }
-        }
+        // } else if (filters.propertyId === -1 && this.selectedPropertyId !== null) {
+        //   this.selectedPropertyId = null;
+        //   if (this.diagramForShow) {
+        //     this.getStats();
+        //   }
+        // }
+        this.updateTable();
       });
   }
 
@@ -224,7 +235,8 @@ export class TaskManagementContainerComponent implements OnInit, OnDestroy {
   }
 
   getAdHocTaskPriorities() {
-    this.getAdHocTaskPrioritiesSub$ = this.statisticsStateService.getAdHocTaskPriorities(this.selectedPropertyId)
+    this.getAdHocTaskPrioritiesSub$ = this.statisticsStateService.getAdHocTaskPriorities(
+      this.selectedPropertyId, this.selectedPriority, this.selectedStatus)
       .pipe(tap(model => {
         if (model && model.success && model.model) {
           this.adHocTaskPrioritiesModel = model.model;

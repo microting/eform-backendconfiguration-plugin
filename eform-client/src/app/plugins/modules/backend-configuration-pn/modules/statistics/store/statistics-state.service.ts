@@ -27,24 +27,34 @@ export class StatisticsStateService {
     this.selectStatisticsPropertyId$.subscribe((id) => this.propertyId = id);
   }
 
-  getPlannedTaskDays(propertyId: number | null = undefined): Observable<OperationDataResult<PlannedTaskDaysModel>> {
-    return this.service.getPlannedTaskDays({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
+  getPlannedTaskDays(propertyId: number | null = undefined):
+    Observable<OperationDataResult<PlannedTaskDaysModel>> {
+    return this.service.getPlannedTaskDays({
+      propertyId: propertyId === undefined ? this.getPropertyId() : propertyId, priority: null, status: null});
   }
 
-  getAdHocTaskPriorities(propertyId: number | null = undefined): Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
-    return this.service.getAdHocTaskPriorities({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
+  getAdHocTaskPriorities(propertyId: number | null = undefined, priority: number | null = undefined, status: number | null = undefined):
+    Observable<OperationDataResult<AdHocTaskPrioritiesModel>> {
+    return this.service.getAdHocTaskPriorities({
+      propertyId: propertyId === undefined ? this.getPropertyId() : propertyId, priority: priority, status: status});
   }
 
-  getDocumentUpdatedDays(propertyId: number | null = undefined): Observable<OperationDataResult<DocumentUpdatedDaysModel>> {
-    return this.service.getDocumentUpdatedDays({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
+  getDocumentUpdatedDays(propertyId: number | null = undefined):
+    Observable<OperationDataResult<DocumentUpdatedDaysModel>> {
+    return this.service.getDocumentUpdatedDays({
+      propertyId: propertyId === undefined ? this.getPropertyId() : propertyId, priority: null, status: null});
   }
 
-  getPlannedTaskWorkers(propertyId: number | null = undefined): Observable<OperationDataResult<PlannedTaskWorkers>> {
-    return this.service.getPlannedTaskWorkers({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
+  getPlannedTaskWorkers(propertyId: number | null = undefined):
+    Observable<OperationDataResult<PlannedTaskWorkers>> {
+    return this.service.getPlannedTaskWorkers({
+      propertyId: propertyId === undefined ? this.getPropertyId() : propertyId, priority: null, status: null});
   }
 
-  getAdHocTaskWorkers(propertyId: number | null = undefined): Observable<OperationDataResult<AdHocTaskWorkers>> {
-    return this.service.getAdHocTaskWorkers({propertyId: propertyId === undefined ? this.getPropertyId() : propertyId});
+  getAdHocTaskWorkers(propertyId: number | null = undefined):
+    Observable<OperationDataResult<AdHocTaskWorkers>> {
+    return this.service.getAdHocTaskWorkers({
+      propertyId: propertyId === undefined ? this.getPropertyId() : propertyId, priority: null, status: null});
   }
 
   getPropertyId(): number | null {

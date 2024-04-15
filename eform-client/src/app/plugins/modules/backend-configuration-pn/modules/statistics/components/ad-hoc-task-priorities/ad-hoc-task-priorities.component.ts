@@ -208,8 +208,9 @@ export class AdHocTaskPrioritiesComponent implements OnChanges, OnDestroy {
       this.clickOnDiagram.emit();
     } else {
       // lookup the chartData.name in the priorityNames array and get the index
-      const priorityIndex = this.priorityNames.indexOf(chartData.name);
-      this.clickOnDiagram.emit(priorityIndex + 1);
+      const translatedPriorityIndex = this.priorityNamesTranslated.indexOf(chartData.name);
+      //const priorityIndex = this.priorityNames.indexOf(chartData.name);
+      this.clickOnDiagram.emit(translatedPriorityIndex + 1);
     }
   }
 
