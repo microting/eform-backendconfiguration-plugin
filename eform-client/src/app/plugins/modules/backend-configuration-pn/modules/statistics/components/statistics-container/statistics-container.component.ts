@@ -192,7 +192,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       areaName: null,
       dateFrom: null,
       dateTo: null,
-      status: 1,
+      status: null,
       createdBy: null,
       lastAssignedTo: null,
       priority: event, // Setting this to null, since the value is not working as expected
