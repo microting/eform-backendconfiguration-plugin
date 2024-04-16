@@ -42,15 +42,15 @@ public class StatsController : Controller
 
     [HttpGet]
     [Route("planned-task-workers")]
-    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers([FromQuery, CanBeNull] int? propertyId)
+    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers([FromQuery, CanBeNull] int? propertyId, [FromQuery, CanBeNull] int? siteId)
     {
-        return await _statsService.GetPlannedTaskWorkers(propertyId);
+        return await _statsService.GetPlannedTaskWorkers(propertyId, siteId);
     }
 
     [HttpGet]
     [Route("ad-hoc-task-workers")]
-    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers([FromQuery, CanBeNull] int? propertyId)
+    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers([FromQuery, CanBeNull] int? propertyId, [FromQuery, CanBeNull] int? siteId)
     {
-        return await _statsService.GetAdHocTaskWorkers(propertyId);
+        return await _statsService.GetAdHocTaskWorkers(propertyId, siteId);
     }
 }

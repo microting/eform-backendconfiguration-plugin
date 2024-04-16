@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using JetBrains.Annotations;
+
 namespace BackendConfiguration.Pn.Controllers;
 
 using Infrastructure.Helpers;
@@ -129,14 +131,14 @@ public class PropertiesController : Controller
 
     [HttpGet]
     [Route("get-linked-sites")]
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId, bool compliance)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int? propertyId, bool compliance)
     {
         return await _backendConfigurationPropertiesService.GetLinkedSites(propertyId, compliance);
     }
 
     [HttpPost]
     [Route("get-linked-sites")]
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([FromBody] List<int> propertyIds)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([FromBody] [CanBeNull] List<int> propertyIds)
     {
         return await _backendConfigurationPropertiesService.GetLinkedSites(propertyIds);
     }

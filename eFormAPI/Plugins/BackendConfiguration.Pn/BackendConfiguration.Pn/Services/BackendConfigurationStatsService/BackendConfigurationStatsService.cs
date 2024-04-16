@@ -229,7 +229,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     }
 
     /// <inheritdoc />
-    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers(int? propertyId)
+    public async Task<OperationDataResult<PlannedTaskWorkers>> GetPlannedTaskWorkers(int? propertyId, int? siteId)
     {
         try
         {
@@ -256,6 +256,12 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                                 // x.AreaRulePlanning.AreaRule.Area.AreaProperties.Select(y => y.PropertyId)
                                     // .Contains(propertyId.Value)
                                 );
+            }
+
+            if (siteId.HasValue)
+            {
+                query = query
+                    .Where(x => x.SiteId == siteId.Value);
             }
 
             var groupedData = await query
@@ -299,7 +305,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
     }
 
     /// <inheritdoc />
-    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers(int? propertyId)
+    public async Task<OperationDataResult<AdHocTaskWorkers>> GetAdHocTaskWorkers(int? propertyId, int? siteId)
     {
         try
         {
@@ -318,7 +324,7 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
             //     .Include(x => x.Property)
             //     .Where(x => x.Property.WorkorderEnable);
             //
-            if (propertyId.HasValue)
+            if (propertyId.HasValue && propertyId != -1)
             {
                 query = query
                     .Where(x => x.PropertyWorker.PropertyId == propertyId.Value);
@@ -368,6 +374,13 @@ public class BackendConfigurationStatsService: IBackendConfigurationStatsService
                         .FirstOrDefault()
                 })
                 .ToList();
+
+            if (siteId.HasValue)
+            {
+                result.TaskWorkers = result.TaskWorkers
+                    .Where(x => x.WorkerId == siteId.Value)
+                    .ToList();
+            }
 
             return new OperationDataResult<AdHocTaskWorkers>(true, result);
         }

@@ -214,9 +214,9 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   clickOnPlannedTaskWorkers(workerId: number | null) {
     this.store.dispatch(taskWizardUpdateFilters({
       propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
-      assignToIds: this.selectedPropertyId && workerId ? [workerId] : [],
+      assignToIds: workerId ? [workerId] : [],
       tagIds: [],
-      status: this.selectedPropertyId && workerId ? TaskWizardStatusesEnum.Active : null,
+      status: TaskWizardStatusesEnum.Active,
       folderIds: [],
     }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-wizard'], {queryParams: {showDiagram: true}}).then();
@@ -230,7 +230,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       dateTo: null,
       status: 1,
       createdBy: null,
-      lastAssignedTo: this.selectedPropertyId && workerId ? workerId : null,
+      lastAssignedTo: workerId ? workerId : null,
       priority: null,
       delayed: false,
     }));
