@@ -288,4 +288,5 @@ export const da = {
   'Manage tags': 'Redigér etiketter',
   'Middle': 'Middel',
   'Are you sure you want to permanently delete this case': 'Er du sikker på, at du vil slette denne sag permanent',
+  'Repeated': 'Gentag',
 };

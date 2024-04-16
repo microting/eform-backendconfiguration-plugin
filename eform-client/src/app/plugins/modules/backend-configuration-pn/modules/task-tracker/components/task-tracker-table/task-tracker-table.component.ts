@@ -29,6 +29,7 @@ import {dialogConfigHelper} from 'src/app/common/helpers';
 import {Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {Overlay} from '@angular/cdk/overlay';
+import {ThemePalette} from "@angular/material/core";
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -57,9 +58,9 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     {header: this.translateService.stream('Task'), field: 'taskName', sortable: false},
     {header: this.translateService.stream('Tags'), sortProp: {id: 'Tags'}, field: 'tags', sortable: false},
     {header: this.translateService.stream('Workers'), sortProp: {id: 'Workers'}, field: 'workerNames', sortable: false},
-    {header: this.translateService.stream('Start'), sortProp: {id: 'Start'}, field: 'startTask', sortable: false,
-      type: 'date',
-      typeParameter: {format: 'dd.MM.y'}},
+    // {header: this.translateService.stream('Start'), sortProp: {id: 'Start'}, field: 'startTask', sortable: false,
+    //   type: 'date',
+    //   typeParameter: {format: 'dd.MM.y'}},
     {header: this.translateService.stream('Repeated'), sortProp: {id: 'Repeated'}, field: 'repeated', sortable: false,
     formatter: (data: TaskModel) => {
       return this.getRepeatEveryAndRepeatTypeByTask(data);
@@ -83,7 +84,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
           type: 'icon',
           tooltip:  this.translateService.stream('Delete Case'),
           icon: 'delete',
-          color: 'warn',
+          //color: (record: TaskModel) => this.deleteIconColor(record), // TODO: Uncomment when the logic is implemented
           click: (record: TaskModel) => this.onShowDeleteComplianceModal(record),
         }
       ],
