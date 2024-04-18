@@ -81,6 +81,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
           click: (record: TaskModel) => this.redirectToCompliance(record),
         },
         {
+          iif: (record: TaskModel) => record.createdInWizard,
           type: 'icon',
           tooltip:  this.translateService.stream('Delete Case'),
           icon: 'delete',
@@ -184,7 +185,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       if (task.workerIds.length === 1) {
         if (task.workerNames[0] === this.currentUserFullName) {
           this.router.navigate([
-            '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId,
+            '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId + '/' + task.workerIds[0],
           ], {
             relativeTo: this.route, queryParams: {
               reverseRoute: '/plugins/backend-configuration-pn/task-tracker/'
