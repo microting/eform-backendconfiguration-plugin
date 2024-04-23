@@ -574,6 +574,68 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     .Where(x => x.OriginalId == "142142new1")
                                                     .Select(x => x.Id)
                                                     .FirstAsync().ConfigureAwait(false);
+
+                                                var planningTagSlurryTankEnv = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                                                    x => x.Name == "Miljøledelse").ConfigureAwait(false);
+
+                                                if (planningTagSlurryTankEnv == null)
+                                                {
+                                                    planningTagSlurryTankEnv = new PlanningTag
+                                                    {
+                                                        Name = "Miljøledelse",
+                                                        CreatedByUserId = userId,
+                                                        UpdatedByUserId = userId
+                                                    };
+                                                    await planningTagSlurryTankEnv.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                }
+
+                                                var planningTagSlurryTank = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                                                    x => x.Name == "Gyllebeholder").ConfigureAwait(false);
+
+
+                                                if (planningTagSlurryTank == null)
+                                                {
+                                                    planningTagSlurryTank = new PlanningTag
+                                                    {
+                                                        Name = "Gyllebeholder",
+                                                        CreatedByUserId = userId,
+                                                        UpdatedByUserId = userId
+                                                    };
+                                                    await planningTagSlurryTank.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                }
+
+                                                var planningTagSlurryTankFloatingLayerTag = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                                                    x => x.Name == "Flyderlag").ConfigureAwait(false);
+
+                                                if (planningTagSlurryTankFloatingLayerTag == null)
+                                                {
+                                                    planningTagSlurryTankFloatingLayerTag = new PlanningTag
+                                                    {
+                                                        Name = "Flyderlag",
+                                                        CreatedByUserId = userId,
+                                                        UpdatedByUserId = userId
+                                                    };
+                                                    await planningTagSlurryTankFloatingLayerTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                }
+
+                                                var name = areaRule.AreaRuleTranslations
+                                                    .Where(x => x.LanguageId == 1)
+                                                    .Select(x => x.Name)
+                                                    .FirstOrDefault();
+
+                                                var planningTagSlurryTankNameTag = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                                                    x => x.Name == name).ConfigureAwait(false);
+
+                                                if (planningTagSlurryTankNameTag == null)
+                                                {
+                                                    planningTagSlurryTankNameTag = new PlanningTag
+                                                    {
+                                                        Name = name,
+                                                        CreatedByUserId = userId,
+                                                        UpdatedByUserId = userId
+                                                    };
+                                                    await planningTagSlurryTankNameTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                }
                                                 var planningForType2TypeTankOpen = await CreateItemPlanningObject(
                                                         eformId,
                                                         eformName, areaRule.AreaRulesPlannings[0].FolderId,
@@ -630,63 +692,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 }
 
-                                                var planningTagSlurryTankEnv = await itemsPlanningPnDbContext
-                                                    .PlanningTags.FirstOrDefaultAsync(
-                                                        x => x.Name == "Miljøledelse").ConfigureAwait(false);
-                                                if (planningTagSlurryTankEnv == null)
-                                                {
-                                                    planningTagSlurryTankEnv = new PlanningTag
-                                                    {
-                                                        Name = "Miljøledelse",
-                                                        CreatedByUserId = userId,
-                                                        UpdatedByUserId = userId
-                                                    };
-                                                    await planningTagSlurryTankEnv.Create(itemsPlanningPnDbContext)
-                                                        .ConfigureAwait(false);
-                                                }
-                                                var areaRulePlanningTag =new AreaRulePlanningTag
-                                                {
-                                                    ItemPlanningTagId = planningTagSlurryTankEnv.Id,
-                                                    AreaRulePlanningId = areaRule.AreaRulesPlannings[0].Id,
-                                                };
-
-                                                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
-                                                    .ConfigureAwait(false);
-
                                                 planningForType2TypeTankOpen.ReportGroupPlanningTagId =
-                                                    planningTagSlurryTankEnv.Id;
-
-                                                var planningTagSlurryTank = await itemsPlanningPnDbContext.PlanningTags
-                                                    .FirstOrDefaultAsync(
-                                                        x => x.Name == "Gyllebeholder").ConfigureAwait(false);
-                                                if (planningTagSlurryTank == null)
-                                                {
-                                                    planningTagSlurryTank = new PlanningTag
-                                                    {
-                                                        Name = "Gyllebeholder",
-                                                        CreatedByUserId = userId,
-                                                        UpdatedByUserId = userId
-                                                    };
-                                                    await planningTagSlurryTank.Create(itemsPlanningPnDbContext)
-                                                        .ConfigureAwait(false);
-                                                }
-                                                areaRulePlanningTag =new AreaRulePlanningTag
-                                                {
-                                                    ItemPlanningTagId = planningTagSlurryTank.Id,
-                                                    AreaRulePlanningId = areaRule.AreaRulesPlannings[0].Id,
-                                                };
-
-                                                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
-                                                    .ConfigureAwait(false);
-
-                                                var planningsTag = new PlanningsTags()
-                                                {
-                                                    PlanningId = planningForType2TypeTankOpen.Id,
-                                                    PlanningTagId = planningTagSlurryTank.Id
-                                                };
-
-                                                await planningsTag.Create(itemsPlanningPnDbContext)
-                                                    .ConfigureAwait(false);
+                                                    planningTagSlurryTankNameTag.Id;
 
                                                 await planningForType2TypeTankOpen.Update(
                                                     itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -1369,6 +1376,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
         // create folder with name tank
         var folderId = await core.FolderCreate(translatesForFolder, areaRule.FolderId).ConfigureAwait(false);
         var planningForType2TypeTankOpenId = 0;
+        var propertyItemPlanningTagId = await backendConfigurationPnDbContext.Properties
+            .Where(x => x.Id == areaRule.PropertyId)
+            .Select(x => x.ItemPlanningTagId)
+            .FirstAsync().ConfigureAwait(false);
         // if (areaRule.Type == AreaRuleT2TypesEnum.Open)
         // {
             const string eformName = "Kontrol flydelag";
@@ -1376,6 +1387,68 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                 .Where(x => x.OriginalId == "142142new1")
                 .Select(x => x.Id)
                 .FirstAsync().ConfigureAwait(false);
+
+            var planningTagSlurryTankEnv = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                x => x.Name == "Miljøledelse").ConfigureAwait(false);
+
+            if (planningTagSlurryTankEnv == null)
+            {
+                planningTagSlurryTankEnv = new PlanningTag
+                {
+                    Name = "Miljøledelse",
+                    CreatedByUserId = userId,
+                    UpdatedByUserId = userId
+                };
+                await planningTagSlurryTankEnv.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            var planningTagSlurryTank = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                x => x.Name == "Gyllebeholder").ConfigureAwait(false);
+
+
+            if (planningTagSlurryTank == null)
+            {
+                planningTagSlurryTank = new PlanningTag
+                {
+                    Name = "Gyllebeholder",
+                    CreatedByUserId = userId,
+                    UpdatedByUserId = userId
+                };
+                await planningTagSlurryTank.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            var planningTagSlurryTankFloatingLayerTag = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                x => x.Name == "Flyderlag").ConfigureAwait(false);
+
+            if (planningTagSlurryTankFloatingLayerTag == null)
+            {
+                planningTagSlurryTankFloatingLayerTag = new PlanningTag
+                {
+                    Name = "Flyderlag",
+                    CreatedByUserId = userId,
+                    UpdatedByUserId = userId
+                };
+                await planningTagSlurryTankFloatingLayerTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
+
+            var name = areaRule.AreaRuleTranslations
+                .Where(x => x.LanguageId == 1)
+                .Select(x => x.Name)
+                .FirstOrDefault();
+
+            var planningTagSlurryTankNameTag = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
+                x => x.Name == name).ConfigureAwait(false);
+
+            if (planningTagSlurryTankNameTag == null)
+            {
+                planningTagSlurryTankNameTag = new PlanningTag
+                {
+                    Name = name,
+                    CreatedByUserId = userId,
+                    UpdatedByUserId = userId
+                };
+                await planningTagSlurryTankNameTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+            }
 
             if (areaRulePlanningModel.Status)
             {
@@ -1429,33 +1502,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                 }
 
-                var planningTagSlurryTankEnv = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
-                    x => x.Name == "Miljøledelse").ConfigureAwait(false);
-                if (planningTagSlurryTankEnv == null)
-                {
-                    planningTagSlurryTankEnv = new PlanningTag
-                    {
-                        Name = "Miljøledelse",
-                        CreatedByUserId = userId,
-                        UpdatedByUserId = userId
-                    };
-                    await planningTagSlurryTankEnv.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
-                }
+                planningForType2TypeTankOpen.ReportGroupPlanningTagId = planningTagSlurryTankNameTag.Id;
 
-                planningForType2TypeTankOpen.ReportGroupPlanningTagId = planningTagSlurryTankEnv.Id;
-
-                var planningTagSlurryTank = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
-                    x => x.Name == "Gyllebeholder").ConfigureAwait(false);
-                if (planningTagSlurryTank == null)
-                {
-                    planningTagSlurryTank = new PlanningTag
-                    {
-                        Name = "Gyllebeholder",
-                        CreatedByUserId = userId,
-                        UpdatedByUserId = userId
-                    };
-                    await planningTagSlurryTank.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
-                }
 
                 var planningsTag = new PlanningsTags()
                 {
@@ -1467,18 +1515,70 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                     .ConfigureAwait(false);
 
                 await planningForType2TypeTankOpen.Update(itemsPlanningPnDbContext).ConfigureAwait(false);
+
+                planningForType2TypeTankOpenId = planningForType2TypeTankOpen.Id;
+
+                var areaRulePlanning = await CreateAreaRulePlanningObject(areaRulePlanningModel,
+                    areaRule, planningForType2TypeTankOpenId,
+                    folderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
+
+                var areaRulePlanningTag = new AreaRulePlanningTag
+                {
+                    ItemPlanningTagId = planningTagSlurryTankEnv.Id,
+                    AreaRulePlanningId = areaRulePlanning.Id
+                };
+
+                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
+                areaRulePlanningTag = new AreaRulePlanningTag
+                {
+                    ItemPlanningTagId = planningTagSlurryTank.Id,
+                    AreaRulePlanningId = areaRulePlanning.Id
+                };
+
+                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
+                areaRulePlanningTag = new AreaRulePlanningTag
+                {
+                    ItemPlanningTagId = planningTagSlurryTankFloatingLayerTag.Id,
+                    AreaRulePlanningId = areaRulePlanning.Id
+                };
+
+                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
+                areaRulePlanningTag = new AreaRulePlanningTag
+                {
+                    ItemPlanningTagId = planningTagSlurryTankNameTag.Id,
+                    AreaRulePlanningId = areaRulePlanning.Id
+                };
+
+                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
+                areaRulePlanningTag = new AreaRulePlanningTag
+                {
+                    ItemPlanningTagId = propertyItemPlanningTagId,
+                    AreaRulePlanningId = areaRulePlanning.Id
+                };
+
+                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
+                areaRulePlanning.ItemPlanningTagId = planningTagSlurryTankNameTag.Id;
+                await areaRulePlanning.Update(backendConfigurationPnDbContext)
+                    .ConfigureAwait(false);
+
                 await PairItemWithSiteHelper.Pair(
                     areaRulePlanningModel.AssignedSites.Select(x => x.SiteId).ToList(), eformId,
                     planningForType2TypeTankOpen.Id,
                     folderId, core, itemsPlanningPnDbContext, areaRulePlanningModel.UseStartDateAsStartOfPeriod,
                     localizationService).ConfigureAwait(false);
-                planningForType2TypeTankOpenId = planningForType2TypeTankOpen.Id;
             }
             //}
 
-        await CreateAreaRulePlanningObject(areaRulePlanningModel,
-            areaRule, planningForType2TypeTankOpenId,
-            folderId, backendConfigurationPnDbContext, userId).ConfigureAwait(false);
 
         // var planningForType2AlarmYesId = 0;
         // if (areaRule.Type is AreaRuleT2TypesEnum.Open or AreaRuleT2TypesEnum.Closed
