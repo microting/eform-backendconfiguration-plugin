@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -628,8 +629,10 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                             ? 1
                                                             : areaRulePlanningModel.TypeSpecificFields.DayOfMonth;
                                                 }
-                                                var planningTagSlurryTankEnv = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
-                                                    x => x.Name == "Miljøledelse").ConfigureAwait(false);
+
+                                                var planningTagSlurryTankEnv = await itemsPlanningPnDbContext
+                                                    .PlanningTags.FirstOrDefaultAsync(
+                                                        x => x.Name == "Miljøledelse").ConfigureAwait(false);
                                                 if (planningTagSlurryTankEnv == null)
                                                 {
                                                     planningTagSlurryTankEnv = new PlanningTag
@@ -638,12 +641,24 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         CreatedByUserId = userId,
                                                         UpdatedByUserId = userId
                                                     };
-                                                    await planningTagSlurryTankEnv.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                    await planningTagSlurryTankEnv.Create(itemsPlanningPnDbContext)
+                                                        .ConfigureAwait(false);
                                                 }
-                                                planningForType2TypeTankOpen.ReportGroupPlanningTagId = planningTagSlurryTankEnv.Id;
+                                                var areaRulePlanningTag =new AreaRulePlanningTag
+                                                {
+                                                    ItemPlanningTagId = planningTagSlurryTankEnv.Id,
+                                                    AreaRulePlanningId = areaRule.AreaRulesPlannings[0].Id,
+                                                };
 
-                                                var planningTagSlurryTank = await itemsPlanningPnDbContext.PlanningTags.FirstOrDefaultAsync(
-                                                    x => x.Name == "Gyllebeholder").ConfigureAwait(false);
+                                                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
+                                                    .ConfigureAwait(false);
+
+                                                planningForType2TypeTankOpen.ReportGroupPlanningTagId =
+                                                    planningTagSlurryTankEnv.Id;
+
+                                                var planningTagSlurryTank = await itemsPlanningPnDbContext.PlanningTags
+                                                    .FirstOrDefaultAsync(
+                                                        x => x.Name == "Gyllebeholder").ConfigureAwait(false);
                                                 if (planningTagSlurryTank == null)
                                                 {
                                                     planningTagSlurryTank = new PlanningTag
@@ -652,8 +667,17 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                         CreatedByUserId = userId,
                                                         UpdatedByUserId = userId
                                                     };
-                                                    await planningTagSlurryTank.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                    await planningTagSlurryTank.Create(itemsPlanningPnDbContext)
+                                                        .ConfigureAwait(false);
                                                 }
+                                                areaRulePlanningTag =new AreaRulePlanningTag
+                                                {
+                                                    ItemPlanningTagId = planningTagSlurryTank.Id,
+                                                    AreaRulePlanningId = areaRule.AreaRulesPlannings[0].Id,
+                                                };
+
+                                                await areaRulePlanningTag.Create(backendConfigurationPnDbContext)
+                                                    .ConfigureAwait(false);
 
                                                 var planningsTag = new PlanningsTags()
                                                 {
@@ -661,7 +685,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     PlanningTagId = planningTagSlurryTank.Id
                                                 };
 
-                                                await planningsTag.Create(itemsPlanningPnDbContext).ConfigureAwait(false);
+                                                await planningsTag.Create(itemsPlanningPnDbContext)
+                                                    .ConfigureAwait(false);
 
                                                 await planningForType2TypeTankOpen.Update(
                                                     itemsPlanningPnDbContext).ConfigureAwait(false);
@@ -679,7 +704,8 @@ public static class BackendConfigurationAreaRulePlanningsServiceHelper
                                                     eformId,
                                                     planningForType2TypeTankOpen.Id,
                                                     areaRule.AreaRulesPlannings[0].FolderId, core,
-                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod, localizationService).ConfigureAwait(false);
+                                                    itemsPlanningPnDbContext, rulePlanning.UseStartDateAsStartOfPeriod,
+                                                    localizationService).ConfigureAwait(false);
                                                 areaRule.AreaRulesPlannings[0].DayOfMonth =
                                                     (int)areaRulePlanningModel.TypeSpecificFields?.DayOfMonth == 0
                                                         ? 1
