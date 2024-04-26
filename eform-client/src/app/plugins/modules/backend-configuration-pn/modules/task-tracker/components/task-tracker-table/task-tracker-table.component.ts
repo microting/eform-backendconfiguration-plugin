@@ -6,7 +6,14 @@ import {
   Output, SimpleChanges,
 } from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {Columns, ColumnsModel, DateListModel, TaskModel} from '../../../../models';
+import {
+  Columns,
+  ColumnsModel,
+  ComplianceModel,
+  DateListModel,
+  ReportEformItemModel,
+  TaskModel
+} from '../../../../models';
 import {RepeatTypeEnum} from '../../../../enums';
 import {TranslateService} from '@ngx-translate/core';
 import * as R from 'ramda';
@@ -14,7 +21,15 @@ import {TaskTrackerStateService} from '../store';
 import {set} from 'date-fns';
 import {MtxGridColumn, MtxGridRowClassFormatter} from '@ng-matero/extensions/grid';
 import {Store} from '@ngrx/store';
-import {selectCurrentUserFullName} from "src/app/state";
+import {selectCurrentUserFullName} from 'src/app/state';
+import {
+  ComplianceDeleteComponent
+} from 'src/app/plugins/modules/backend-configuration-pn/modules/compliance/components';
+import {dialogConfigHelper} from 'src/app/common/helpers';
+import {Subscription} from 'rxjs';
+import {MatDialog} from '@angular/material/dialog';
+import {Overlay} from '@angular/cdk/overlay';
+import {ThemePalette} from "@angular/material/core";
 
 @Component({
   selector: 'app-task-tracker-table',
@@ -43,9 +58,9 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
     {header: this.translateService.stream('Task'), field: 'taskName', sortable: false},
     {header: this.translateService.stream('Tags'), sortProp: {id: 'Tags'}, field: 'tags', sortable: false},
     {header: this.translateService.stream('Workers'), sortProp: {id: 'Workers'}, field: 'workerNames', sortable: false},
-    {header: this.translateService.stream('Start'), sortProp: {id: 'Start'}, field: 'startTask', sortable: false,
-      type: 'date',
-      typeParameter: {format: 'dd.MM.y'}},
+    // {header: this.translateService.stream('Start'), sortProp: {id: 'Start'}, field: 'startTask', sortable: false,
+    //   type: 'date',
+    //   typeParameter: {format: 'dd.MM.y'}},
     {header: this.translateService.stream('Repeated'), sortProp: {id: 'Repeated'}, field: 'repeated', sortable: false,
     formatter: (data: TaskModel) => {
       return this.getRepeatEveryAndRepeatTypeByTask(data);
@@ -65,9 +80,26 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
           tooltip: this.translateService.stream('Edit'),
           click: (record: TaskModel) => this.redirectToCompliance(record),
         },
+        {
+          iif: (record: TaskModel) => record.createdInWizard,
+          type: 'icon',
+          tooltip:  this.translateService.stream('Delete Case'),
+          icon: 'delete',
+          //color: (record: TaskModel) => this.deleteIconColor(record), // TODO: Uncomment when the logic is implemented
+          click: (record: TaskModel) => this.onShowDeleteComplianceModal(record),
+        }
       ],
     },
   ];
+  complianceDeleteComponentAfterClosedSub$: Subscription;
+
+  onShowDeleteComplianceModal(item: TaskModel) {
+    let complianceModel = new ComplianceModel();
+    complianceModel.id = item.complianceId;
+    this.complianceDeleteComponentAfterClosedSub$ = this.dialog.open(ComplianceDeleteComponent,
+      {...dialogConfigHelper(this.overlay, complianceModel)})
+      .afterClosed().subscribe(data => data ? this.updateTable.emit() : undefined);
+  }
 
   get columns() {
     return this.tableHeaders.map(x => x.field);
@@ -81,6 +113,8 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
   private currentUserFullName: string;
 
   constructor(
+    private dialog: MatDialog,
+    private overlay: Overlay,
     private store: Store,
     private translateService: TranslateService,
     private taskTrackerStateService: TaskTrackerStateService,
@@ -151,7 +185,7 @@ export class TaskTrackerTableComponent implements OnInit, OnChanges {
       if (task.workerIds.length === 1) {
         if (task.workerNames[0] === this.currentUserFullName) {
           this.router.navigate([
-            '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId,
+            '/plugins/backend-configuration-pn/compliances/case/' + task.sdkCaseId + '/' + task.templateId + '/' + task.propertyId + '/' + task.deadlineTask.toISOString() + '/' + false + '/' + task.complianceId + '/' + task.workerIds[0],
           ], {
             relativeTo: this.route, queryParams: {
               reverseRoute: '/plugins/backend-configuration-pn/task-tracker/'

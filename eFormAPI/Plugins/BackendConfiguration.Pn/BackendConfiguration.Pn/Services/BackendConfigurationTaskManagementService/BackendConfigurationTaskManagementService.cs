@@ -105,6 +105,12 @@ public class BackendConfigurationTaskManagementService : IBackendConfigurationTa
                     _ => query
                 };
             }
+            else
+            {
+                query = query
+                    .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.Completed)
+                    .Where(x => x.CaseStatusesEnum != CaseStatusesEnum.NewTask);
+            }
 
             if (!string.IsNullOrEmpty(filtersModel.AreaName))
             {

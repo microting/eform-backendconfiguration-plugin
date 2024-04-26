@@ -4,6 +4,7 @@ import backendConfigurationPropertiesPage, {
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationProperties.page';
 import { generateRandmString } from '../../../Helpers/helper-functions';
 import backendConfigurationPropertyWorkersPage from '../../../Page objects/BackendConfiguration/BackendConfigurationPropertyWorkers.page';
+import { $ } from '@wdio/globals';
 
 const expect = require('chai').expect;
 const property: PropertyCreateUpdate = {

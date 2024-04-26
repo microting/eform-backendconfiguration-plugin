@@ -3,6 +3,7 @@ import backendConfigurationPropertiesPage, {
   PropertyCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationProperties.page';
 import { generateRandmString } from '../../../Helpers/helper-functions';
+import { $ } from '@wdio/globals';
 
 const expect = require('chai').expect;
 

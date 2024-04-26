@@ -1,5 +1,6 @@
 import backendConfigurationPropertiesPage from './BackendConfigurationProperties.page';
 import Page from '../Page';
+import { $ } from '@wdio/globals';
 
 class BackendConfigurationPropertyWorkersPage extends Page {
   constructor() {

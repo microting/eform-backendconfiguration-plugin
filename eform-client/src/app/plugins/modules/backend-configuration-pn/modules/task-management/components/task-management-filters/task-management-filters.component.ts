@@ -101,7 +101,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
             }),
             lastAssignedTo: new FormControl({
               value: filters.lastAssignedTo,
-              disabled: !filters.propertyId || filters.propertyId === -1,
+              disabled: false,
+              //, disabled: !filters.propertyId || filters.propertyId === -1,
             }),
             status: new FormControl({
               value: filters.status,
@@ -124,8 +125,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           });
           if (filters.propertyId && filters.propertyId !== -1) {
             this.getPropertyAreas(filters.propertyId);
-            this.getSites(filters.propertyId);
           }
+          this.getSites(filters.propertyId);
         }
       });
     this.propertyIdValueChangesSub$ = this.filtersForm
@@ -134,8 +135,8 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         if (this.taskManagementStateService.getCurrentPropertyId() !== value) {
           if (value !== -1) {
             this.getPropertyAreas(value);
-            this.getSites(value);
           }
+          this.getSites(value);
           this.taskManagementStateService.updatePropertyId(value);
           this.filtersForm.patchValue({
             areaName: null,
@@ -157,11 +158,11 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
           } else {
             this.filtersForm.get('createdBy').disable();
           }
-          if (value !== -1) {
-            this.filtersForm.get('lastAssignedTo').enable();
-          } else {
-            this.filtersForm.get('lastAssignedTo').disable();
-          }
+          // if (value !== -1) {
+          //   this.filtersForm.get('lastAssignedTo').enable();
+          // } else {
+          //   this.filtersForm.get('lastAssignedTo').disable();
+          // }
           this.filtersForm.get('status').enable();
           this.filtersForm.get('date').enable();
         }
@@ -251,12 +252,14 @@ export class TaskManagementFiltersComponent implements OnInit, OnDestroy {
         const sites = result.model;
         this.propertyService.getSimplePropertiesAssignments().subscribe((data) => {
           if (data && data.success && data.model) {
-            data.model.forEach(
-              (x) =>
-                (x.assignments = x.assignments.filter(
-                  (x) => x.isChecked && x.propertyId === propertyId
-                ))
-            );
+            if (propertyId !== -1) {
+              data.model.forEach(
+                (x) =>
+                  (x.assignments = x.assignments.filter(
+                    (x) => x.isChecked && x.propertyId === propertyId
+                  ))
+              );
+            }
             data.model = data.model.filter((x) => x.assignments.length > 0 && x.taskManagementEnabled);
             this.assignedSitesToProperty = data.model.map((x) => {
               const site = sites.find((y) => y.id === x.siteId);

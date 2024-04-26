@@ -186,7 +186,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
         var document = await _caseTemplatePnDbContext.Documents
             .Include(x => x.DocumentTranslations)
             .Include(x => x.DocumentProperties)
-            .Include(x => x.DocumentUploadedDatas)
+            .Include(x => x.DocumentUploadedDatas. Where(y => y.WorkflowState != Constants.WorkflowStates.Removed))
             .FirstOrDefaultAsync(x => x.Id == id).ConfigureAwait(false);
 
         if (document == null)
@@ -213,7 +213,8 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
                     Name = x.Name,
                     Hash = x.Hash,
                     FileName = x.File,
-                    Extension = x.Extension
+                    Extension = x.Extension,
+                    UploadedDataId = x.Id
                 }).ToList(),
             DocumentTranslations = document.DocumentTranslations
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -434,6 +435,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
             else
             {
                 var documentUploadedDataModel = await _caseTemplatePnDbContext.DocumentUploadedDatas
+                    .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                 .FirstAsync(x => x.DocumentId == document.Id
                                  && x.LanguageId == documentUploadedData.LanguageId
                                  && x.Extension == documentUploadedData.Extension)
@@ -505,6 +507,7 @@ public class BackendConfigurationDocumentService : IBackendConfigurationDocument
 
                         documentUploadedDataConvertedFileModel.File = fileNameConvertedFile;
                         documentUploadedDataConvertedFileModel.Hash = checkSumConvertedFile;
+                        documentUploadedDataConvertedFileModel.Name = model.DocumentTranslations.First(x => x.ExtensionFile == "docx").Name;
                         await documentUploadedDataConvertedFileModel.Update(_caseTemplatePnDbContext).ConfigureAwait(false);
 
                         var documentTranslation = _caseTemplatePnDbContext.DocumentTranslations

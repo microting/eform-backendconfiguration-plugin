@@ -1,6 +1,7 @@
 import Page from '../Page';
 import {selectValueInNgSelector} from '../../Helpers/helper-functions';
 import tagsModalPage from '../TagsModal.page';
+import { $ } from '@wdio/globals';
 
 export class BackendConfigurationFilesPage extends Page {
   constructor() {

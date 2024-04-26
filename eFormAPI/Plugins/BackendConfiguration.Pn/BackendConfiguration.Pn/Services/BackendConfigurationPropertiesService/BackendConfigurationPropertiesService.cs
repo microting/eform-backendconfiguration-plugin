@@ -25,6 +25,7 @@ SOFTWARE.
 using BackendConfiguration.Pn.Infrastructure.Helpers;
 using BackendConfiguration.Pn.Infrastructure.Models.Settings;
 using BackendConfiguration.Pn.Services.RebusService;
+using JetBrains.Annotations;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Infrastructure.Helpers.PluginDbOptions;
 using Rebus.Bus;
@@ -704,18 +705,34 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
     }
 
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int? propertyId, bool compliance)
     {
         try
         {
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
+            var currentUser = await _userService.GetCurrentUserAsync();
 
-            var siteIds = await _backendConfigurationPnDbContext.PropertyWorkers
-                .Where(x => x.PropertyId == propertyId)
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            var site = await sdkDbContext.Sites.SingleOrDefaultAsync(x =>
+                x.Name == currentUser.FirstName + " " + currentUser.LastName
+                && x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            var query = _backendConfigurationPnDbContext.PropertyWorkers
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (propertyId != null)
+            {
+                query = query.Where(x => x.PropertyId == propertyId);
+            }
+
+            var siteIds = await query
                 .Select(x => x.WorkerId)
                 .ToListAsync();
+
+            if (site != null && !siteIds.Contains(site.Id) && compliance)
+            {
+                siteIds.Add(site.Id);
+            }
 
             var sites = await sdkDbContext.Sites
                 .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
@@ -735,17 +752,23 @@ public class BackendConfigurationPropertiesService : IBackendConfigurationProper
         }
     }
 
-    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(List<int> propertyIds)
+    public async Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([CanBeNull] List<int> propertyIds)
     {
         try
         {
             var core = await _coreHelper.GetCore();
             var sdkDbContext = core.DbContextHelper.GetDbContext();
 
-            var siteIds = await _backendConfigurationPnDbContext.PropertyWorkers
-                .Where(x => propertyIds.Contains(x.PropertyId))
-                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                .Select(x => x.WorkerId)
+            var query =  _backendConfigurationPnDbContext.PropertyWorkers
+                //.Where(x => propertyIds.Contains(x.PropertyId))
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed);
+
+            if (propertyIds.Any())
+            {
+                query = query.Where(x => propertyIds.Contains(x.PropertyId));
+            }
+
+            var siteIds = await query.Select(x => x.WorkerId)
                 .ToListAsync();
 
             var sites = await sdkDbContext.Sites

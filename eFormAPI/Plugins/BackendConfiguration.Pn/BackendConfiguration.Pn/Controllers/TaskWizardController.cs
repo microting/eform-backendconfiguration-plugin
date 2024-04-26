@@ -36,9 +36,9 @@ public class TaskWizardController : Controller
 
     [HttpGet]
     [Route("{id:int}")]
-    public async Task<OperationDataResult<TaskWizardTaskModel>> GetTaskById(int id)
+    public async Task<OperationDataResult<TaskWizardTaskModel>> GetTaskById(int id, bool compliance)
     {
-        return await _backendConfigurationTaskWizardService.GetTaskById(id);
+        return await _backendConfigurationTaskWizardService.GetTaskById(id, compliance);
     }
 
     [HttpPost]

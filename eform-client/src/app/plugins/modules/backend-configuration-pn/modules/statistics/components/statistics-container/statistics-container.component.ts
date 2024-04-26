@@ -192,10 +192,10 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       areaName: null,
       dateFrom: null,
       dateTo: null,
-      status: 1,
+      status: null,
       createdBy: null,
       lastAssignedTo: null,
-      priority: null, // Setting this to null, since the value is not working as expected
+      priority: event, // Setting this to null, since the value is not working as expected
       delayed: false,
     }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-management'], {queryParams: {diagramForShow: 'ad-hoc-task-priorities'}}).then();
@@ -214,9 +214,9 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
   clickOnPlannedTaskWorkers(workerId: number | null) {
     this.store.dispatch(taskWizardUpdateFilters({
       propertyIds: this.selectedPropertyId ? [this.selectedPropertyId] : [],
-      assignToIds: this.selectedPropertyId && workerId ? [workerId] : [],
+      assignToIds: workerId ? [workerId] : [],
       tagIds: [],
-      status: this.selectedPropertyId && workerId ? TaskWizardStatusesEnum.Active : null,
+      status: TaskWizardStatusesEnum.Active,
       folderIds: [],
     }));
     this.router.navigate(['/plugins/backend-configuration-pn/task-wizard'], {queryParams: {showDiagram: true}}).then();
@@ -230,7 +230,7 @@ export class StatisticsContainerComponent implements OnInit, OnDestroy {
       dateTo: null,
       status: 1,
       createdBy: null,
-      lastAssignedTo: this.selectedPropertyId && workerId ? workerId : null,
+      lastAssignedTo: workerId ? workerId : null,
       priority: null,
       delayed: false,
     }));

@@ -1,6 +1,7 @@
 import Page from '../Page';
 import {selectDateOnDatePicker, selectValueInNgSelector} from '../../Helpers/helper-functions';
 import path from "path";
+import { $ } from '@wdio/globals';
 
 export class BackendConfigurationAreaRulesPage extends Page {
   constructor() {
@@ -744,6 +745,7 @@ export class AreaRuleRowObject {
         await backendConfigurationAreaRulesPage.planStartFrom()
       ).isExisting()
     ) {
+      // @ts-ignore
       plan.startDate = await (
         await backendConfigurationAreaRulesPage.planStartFrom()
       ).getValue();

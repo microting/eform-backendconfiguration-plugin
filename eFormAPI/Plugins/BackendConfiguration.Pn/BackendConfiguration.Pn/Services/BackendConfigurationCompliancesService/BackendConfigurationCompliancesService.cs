@@ -382,7 +382,7 @@ public class BackendConfigurationCompliancesService : IBackendConfigurationCompl
         }
         await compliance.Delete(_backendConfigurationPnDbContext).ConfigureAwait(false);
 
-        return new OperationResult(true, _localizationService.GetString("ComplianceHasBeenDeleted"));
+        return new OperationResult(true, _localizationService.GetString("TaskDeletedSuccessful"));
     }
 
     private async Task<PlanningCaseSite> SetFieldValue(PlanningCaseSite planningCaseSite, int caseId, Language language)

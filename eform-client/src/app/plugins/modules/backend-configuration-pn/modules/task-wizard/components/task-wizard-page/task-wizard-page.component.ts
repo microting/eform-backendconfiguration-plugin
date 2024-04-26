@@ -26,6 +26,7 @@ import * as R from 'ramda';
 import {selectAuthIsAdmin, selectAuthIsAuth} from 'src/app/state';
 import {Store} from '@ngrx/store';
 import {
+  selectTaskManagementFilters, selectTaskWizardFilters,
   selectTaskWizardPropertyIds
 } from '../../../../state';
 
@@ -64,12 +65,15 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   updateTaskInModalSub$: Subscription;
   tagsChangedSub$: Subscription;
   getFiltersAsyncSub$: Subscription;
+  getPropertyIdsAsyncSub$: Subscription;
   changePropertySub$: Subscription;
   getPlannedTaskWorkersSub$: Subscription;
   selectedPlanningsCheckboxes: number[] = [];
   public isAuth$ = this.store.select(selectAuthIsAuth);
   public selectAuthIsAdmin$ = this.store.select(selectAuthIsAdmin);
   deactivateMultipleTasksSub$: Subscription;
+  selectedWorkerId: number | null = null;
+  selectedStatus: number | null = null;
 
   get propertyName(): string {
     if (this.properties && this.selectedPropertyId) {
@@ -81,6 +85,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     return '';
   }
   private selectTaskWizardPropertyIds$ = this.store.select(selectTaskWizardPropertyIds);
+  private selectTaskWizardFilters$ = this.store.select(selectTaskWizardFilters);
 
   constructor(
     private store: Store,
@@ -99,7 +104,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.route.queryParams.subscribe(x => {
       if (x && x.showDiagram) {
         this.showDiagram = x.showDiagram;
-        this.getPlannedTaskWorkers();
+        //this.getPlannedTaskWorkers();
       } else {
         this.showDiagram = false;
       }
@@ -112,11 +117,12 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
     this.getTags();
     this.getTasks();
     this.getEnabledLanguages();
-    this.getFiltersAsyncSub$ = this.selectTaskWizardPropertyIds$
+    this.getSites();
+    this.getPropertyIdsAsyncSub$ = this.selectTaskWizardPropertyIds$
       .pipe(
-        tap(filters => {
-          if (filters.length !== 0 && !R.equals(propertyIds, filters)) {
-            propertyIds = filters;
+        tap(propertyIdList => {
+          if (propertyIdList.length !== 0 && !R.equals(propertyIds, propertyIdList)) {
+            propertyIds = propertyIdList;
             this.getFolders();
             this.getSites();
           }
@@ -124,6 +130,10 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
         tap(_ => {
           if (this.showDiagram) {
             this.selectedPropertyId = _[0] || null;
+            this.selectTaskWizardFilters$.subscribe(filters => {
+              this.selectedWorkerId = filters.assignToIds[0] || null;
+              this.selectedStatus = filters.status || null;
+            });
             this.getPlannedTaskWorkers();
           }
         })
@@ -168,9 +178,9 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   getSites() {
     let propertyIds: number[] = [];
     this.selectTaskWizardPropertyIds$.subscribe(x => propertyIds = x);
-    if (propertyIds.length === 0) {
-      return;
-    }
+    // if (propertyIds.length === 0) {
+    //   return;
+    // }
     this.getSitesSub$ = this.propertyService
       .getLinkedSitesByMultipleProperties(propertyIds)
       .pipe(tap(result => {
@@ -215,7 +225,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onEditTask(model: TaskWizardModel) {
-    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
+    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
@@ -241,7 +251,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.updateModal.componentInstance.changeProperty.subscribe(propertyId => {
-            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
               .subscribe(([folders, sites]) => {
                 if (folders && folders.success && folders.model) {
                   this.updateModal.componentInstance.foldersTreeDto = folders.model;
@@ -285,7 +295,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   onCopyTask(model: TaskWizardModel) {
-    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id).pipe(
+    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(model.id, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.createModal = this.dialog.open(TaskWizardCreateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 1024});
@@ -315,7 +325,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
             this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
-            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
               .subscribe(([folders, sites]) => {
                 if (folders && folders.success && folders.model) {
                   this.createModal.componentInstance.foldersTreeDto = folders.model;
@@ -355,7 +365,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
       this.changePropertySub$.unsubscribe();
     }
     this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
-      zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+      zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
         .subscribe(([folders, sites]) => {
           if (folders && folders.success && folders.model) {
             this.createModal.componentInstance.foldersTreeDto = folders.model;
@@ -457,7 +467,7 @@ export class TaskWizardPageComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   getPlannedTaskWorkers() {
-    this.getPlannedTaskWorkersSub$ = this.statisticsStateService.getPlannedTaskWorkers(this.selectedPropertyId)
+    this.getPlannedTaskWorkersSub$ = this.statisticsStateService.getPlannedTaskWorkers(this.selectedPropertyId, null, this.selectedWorkerId)
       .pipe(tap(model => {
         if (model && model.success && model.model) {
           this.plannedTaskWorkers = model.model;

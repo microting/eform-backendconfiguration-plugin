@@ -226,7 +226,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   }
 
   openSelectWorkerModal(task: TaskModel) {
-    this.getTaskByIdSub2$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanId).pipe(
+    this.getTaskByIdSub2$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanId, true).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.selectWorkerForEditModal = this.dialog.open(TaskTrackerSelectWorkerModalComponent,
@@ -244,7 +244,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
             translates: data.model.translations,
             itemPlanningTagId: data.model.itemPlanningTagId,
           });
-          this.propertyService.getLinkedSites(data.model.propertyId)
+          this.propertyService.getLinkedSites(data.model.propertyId, true)
             .subscribe((sites) => {
               if (sites && sites.success && sites.model) {
                 // only take the sites that are in the data.model.assignedTo
@@ -270,7 +270,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
   }
 
   openEditTaskModal(task: TaskModel) {
-    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanId).pipe(
+    this.getTaskByIdSub$ = this.backendConfigurationPnTaskWizardService.getTaskById(task.areaRulePlanId, false).pipe(
       tap(data => {
         if (data && data.success && data.model) {
           this.updateModal = this.dialog.open(TaskWizardUpdateModalComponent, {...dialogConfigHelper(this.overlay), minWidth: 600});
@@ -296,7 +296,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
             this.changePropertySub$.unsubscribe();
           }
           this.changePropertySub$ = this.updateModal.componentInstance.changeProperty.subscribe(propertyId => {
-            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+            zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
               .subscribe(([folders, sites]) => {
                 if (folders && folders.success && folders.model) {
                   this.updateModal.componentInstance.foldersTreeDto = folders.model;
@@ -345,7 +345,7 @@ export class TaskTrackerContainerComponent implements OnInit, OnDestroy {
       this.changePropertySub$.unsubscribe();
     }
     this.changePropertySub$ = this.createModal.componentInstance.changeProperty.subscribe(propertyId => {
-      zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId))
+      zip(this.propertyService.getLinkedFolderDtos(propertyId), this.propertyService.getLinkedSites(propertyId, false))
         .subscribe(([folders, sites]) => {
           if (folders && folders.success && folders.model) {
             this.createModal.componentInstance.foldersTreeDto = folders.model;

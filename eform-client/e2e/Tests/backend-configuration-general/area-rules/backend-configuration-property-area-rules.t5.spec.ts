@@ -8,6 +8,7 @@ import backendConfigurationPropertyWorkersPage from '../../../Page objects/Backe
 import backendConfigurationAreaRulesPage, {
   AreaRuleCreateUpdate,
 } from '../../../Page objects/BackendConfiguration/BackendConfigurationAreaRules.page';
+import { $ } from '@wdio/globals';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),

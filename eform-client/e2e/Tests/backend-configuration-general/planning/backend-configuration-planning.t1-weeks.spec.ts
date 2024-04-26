@@ -12,6 +12,7 @@ import backendConfigurationAreaRulesPage, {
 import { format } from 'date-fns';
 import itemsPlanningPlanningPage from '../../../Page objects/ItemsPlanning/ItemsPlanningPlanningPage';
 import applicationSettingsPage from '../../../Page objects/ApplicationSettings.page';
+import { $ } from '@wdio/globals';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),

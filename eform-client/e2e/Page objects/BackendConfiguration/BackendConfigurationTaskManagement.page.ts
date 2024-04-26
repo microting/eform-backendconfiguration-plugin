@@ -1,6 +1,7 @@
 import Page from '../Page';
 import backendConfigurationPropertiesPage from './BackendConfigurationProperties.page';
 import {selectDateRangeOnDatePicker, selectValueInNgSelector} from '../../Helpers/helper-functions';
+import { $ } from '@wdio/globals';
 
 export class BackendConfigurationTaskManagementPage extends Page {
   constructor() {

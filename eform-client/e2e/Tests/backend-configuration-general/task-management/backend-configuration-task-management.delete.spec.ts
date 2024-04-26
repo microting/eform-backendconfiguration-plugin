@@ -8,6 +8,7 @@ import backendConfigurationPropertyWorkersPage from '../../../Page objects/Backe
 import backendConfigurationTaskManagementPage, {TaskManagementFilters} from '../../../Page objects/BackendConfiguration/BackendConfigurationTaskManagement.page';
 import selectableLists, {EntitySelectItemEditRowObject, SelectableListRowObject} from '../../../Page objects/SelectableLists.page';
 import myEformsPage from '../../../Page objects/MyEforms.page';
+import { $ } from '@wdio/globals';
 
 const property: PropertyCreateUpdate = {
   name: generateRandmString(),

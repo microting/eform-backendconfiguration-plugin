@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 
+using JetBrains.Annotations;
+
 namespace BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 
 using Infrastructure.Helpers;
@@ -46,6 +48,6 @@ public interface IBackendConfigurationPropertiesService
     Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedFoldersList(List<int> propertyIds);
     Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(int propertyId);
     Task<OperationDataResult<List<PropertyFolderModel>>> GetLinkedFolderDtos(List<int> propertyIds);
-    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int propertyId);
-    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(List<int> propertyId);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites(int? propertyId, bool compliance);
+    Task<OperationDataResult<List<CommonDictionaryModel>>> GetLinkedSites([CanBeNull] List<int> propertyId);
 }
