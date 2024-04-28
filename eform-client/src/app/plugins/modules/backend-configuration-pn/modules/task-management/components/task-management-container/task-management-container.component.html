@@ -37,17 +37,16 @@
       {{ 'Show' | translate }}
     </button>
     <button
-      *ngIf="(selectTaskManagementPropertyId$ | async) !== -1"
+      *ngIf="(selectTaskManagementPropertyId$ | async) !== null"
       mat-icon-button
       id="wordBtn"
-      [disabled]="selectTaskManagementPropertyIdIsNullOrUndefined$ | async"
       (click)="onDownloadWordReport()"
       matTooltip="{{ 'Word report' | translate }}"
     >
       <mat-icon svgIcon="file-word"></mat-icon>
     </button>
     <button
-      *ngIf="(selectTaskManagementPropertyId$ | async) !== -1"
+      *ngIf="(selectTaskManagementPropertyId$ | async) !== null"
       mat-icon-button
       id="excelBtn"
       [disabled]="selectTaskManagementPropertyIdIsNullOrUndefined$ | async"
