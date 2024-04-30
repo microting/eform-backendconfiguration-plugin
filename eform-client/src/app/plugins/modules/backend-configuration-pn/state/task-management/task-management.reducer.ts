@@ -26,8 +26,8 @@ export interface TaskManagementState {
 export const taskManagementInitialState: TaskManagementState = {
   pagination: {
     pageSize: 10,
-    sort: 'Id',
-    isSortDsc: false,
+    sort: 'UpdatedAt',
+    isSortDsc: true,
     offset: 0,
     pageIndex: 0,
     total: 0,
